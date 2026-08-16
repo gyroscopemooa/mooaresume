@@ -1,0 +1,10 @@
+.card{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:9px;align-items:center;margin-bottom:10px;padding:11px 13px;border:1px solid #cfe0d7;border-radius:10px;background:#f7fbf9;text-align:left}
+.card>svg{width:18px;color:#176b4a}
+.card>div{display:flex;min-width:0;flex-direction:column}
+.card b{overflow:hidden;text-overflow:ellipsis;color:#24332c;font-size:10px;white-space:nowrap}
+.card span{margin-top:3px;color:#7c8982;font-size:8px}
+.card em{display:flex;align-items:center;gap:4px;color:#176b4a;font-size:8px;font-style:normal;font-weight:800}
+.card em svg{width:12px}
+.card button{display:grid;place-items:center;padding:4px;border:0;background:transparent;color:#839089;cursor:pointer}
+.card button svg{width:14px}
+@media(max-width:560px){.card{grid-template-columns:20px minmax(0,1fr) auto}.card em{grid-column:2}.card button{grid-column:3;grid-row:1/3}}

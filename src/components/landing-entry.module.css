@@ -1,0 +1,18 @@
+.wrap{width:100%;margin:30px auto 0;text-align:left}
+.inputBox{overflow:hidden;border:1px solid #cfdcd5;border-radius:14px;background:#fff;box-shadow:0 12px 35px rgba(29,70,51,.1)}
+.inputBox textarea{display:block;width:100%;min-height:280px;padding:22px 24px;border:0;resize:vertical;outline:0;line-height:1.65;font-size:14px;color:#17221d}
+.inputBox textarea::placeholder{color:#96a19b}
+.meta{display:flex;align-items:center;gap:9px;padding:11px 16px;border-top:1px solid #e5ebe8;background:#fafcfb;color:#77847d}
+.meta label{display:flex;align-items:center;gap:5px;color:#176b4a;font-size:10px;font-weight:800;cursor:pointer}
+.meta label svg{width:14px}
+.meta input{display:none}
+.meta>span{font-size:9px}
+.meta>small{margin-left:auto;font-size:9px}
+.primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:11px;padding:15px;border:0;border-radius:10px;background:#176b4a;color:#fff;font-weight:800;cursor:pointer;box-shadow:0 7px 20px rgba(23,107,74,.16)}
+.primary:hover{background:#0d5237}
+.primary svg{width:17px}
+.sub{display:flex;justify-content:center;align-items:center;margin-top:11px;font-size:9px;color:#77847d}
+.sub>span{display:flex;align-items:center;gap:4px}
+.sub svg{width:12px;color:#176b4a}
+.error{margin:7px 0 0;color:#a34848;font-size:10px;text-align:center}
+@media(max-width:650px){.wrap{margin-top:24px}.inputBox textarea{min-height:220px;padding:18px}.meta>span{display:none}}

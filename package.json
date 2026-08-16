@@ -1,0 +1,48 @@
+{
+  "name": "mooa-resume",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/dev-tunnel.ps1",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "eval": "vitest run src/evals",
+    "eval:live": "vitest run --config vitest.live.config.ts",
+    "check:e2e": "node scripts/check-e2e-readiness.mjs",
+    "db:remote:list": "supabase migration list",
+    "db:remote:plan": "supabase db push --dry-run",
+    "db:remote:push": "supabase db push"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "latest",
+    "@polar-sh/sdk": "^0.49.0",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
+    "lucide-react": "latest",
+    "mammoth": "^1.12.1",
+    "next": "latest",
+    "pdfjs-dist": "^6.2.108",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-hook-form": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "@testing-library/react": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-next": "latest",
+    "jsdom": "latest",
+    "supabase": "^2.114.0",
+    "tailwindcss": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}

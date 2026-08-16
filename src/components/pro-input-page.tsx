@@ -1,0 +1,238 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft, ArrowRight, Check, FileCheck2, FilePenLine, LockKeyhole, Plus, Sparkles, Trash2, Upload,
+} from "lucide-react";
+import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
+import { JobPostingInput } from "@/components/job-posting-input";
+import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake";
+import { AdditionalInfoInput } from "@/components/additional-info-input";
+import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
+import {
+  candidateMaterialDraftSchema,
+  createCandidateExperience,
+  createCandidateProfileEntry,
+  type CandidateExperienceInput,
+  type CandidateFreeformAttachment,
+  type CandidateProfileEntry,
+  type ExperienceCategory,
+  type ProfileEntryCategory,
+} from "@/domain/candidate-material";
+import { writingStyleConfig, type WritingStyle } from "@/domain/writing-style";
+import styles from "./pro-input-page.module.css";
+import actionStyles from "./blocked-action.module.css";
+
+type Props = { mode: "CREATE" | "BUILD" | "POLISH" };
+
+const modeContent = {
+  CREATE: {
+    label: "처음부터 작성 · PRO",
+    title: "경험 후보를 찾고 사실을 확인한 뒤 초안을 만듭니다.",
+    description: "공고와 지원자료, 자유롭게 적은 경험을 먼저 구조화하고 문항별 추천 소재와 꼭 필요한 질문을 거쳐 작성합니다.",
+    cta: "경험 탐색 범위 확인",
+    steps: [
+      ["01", "경험 후보 정리", "지원자료와 자유입력에서 사용 가능한 사실을 찾습니다."],
+      ["02", "문항별 소재 추천", "공고 요구와 문항 의도에 맞는 경험을 배치합니다."],
+      ["03", "사실 2~4개 확인", "초안에 꼭 필요한 정보만 짧게 질문합니다."],
+      ["04", "확인 후 초안 작성", "사용자가 확인한 사실만 사용해 초안과 검수본을 만듭니다."],
+    ],
+  },
+  BUILD: {
+    label: "내용 보완 · PRO",
+    title: "현재 초안에서 부족한 경험과 근거를 채웁니다.",
+    description: "작성한 문장을 보존하면서 공고와 지원자료에서 더 적합한 근거를 찾고, 꼭 필요한 정보만 추가로 확인합니다.",
+    cta: "보완 작업 범위 확인",
+    steps: [
+      ["01", "부족한 근거 탐색", "공고 요구와 현재 초안 사이의 빈칸을 찾습니다."],
+      ["02", "사용 가능한 경험 추천", "이력서와 경력자료에서 보완할 소재를 제안합니다."],
+      ["03", "필요한 사실만 질문", "결과·역할처럼 빠진 정보만 짧게 확인합니다."],
+      ["04", "내용 강화 및 교차검수", "기존 초안을 발전시키고 문항 간 중복까지 확인합니다."],
+    ],
+  },
+  POLISH: {
+    label: "최종 첨삭 · PRO",
+    title: "완성한 지원서를 공고와 함께 바로 최종 검수합니다.",
+    description: "긴 경험 인터뷰 없이 자료를 교차검증하고, 사실과 말투를 보존하는 최소 수정 원칙으로 제출본을 만듭니다.",
+    cta: "최종검수 범위 확인",
+    steps: [
+      ["01", "제출 조건 확인", "문항 충족, 글자 수, 맞춤법과 표현을 점검합니다."],
+      ["02", "자료 교차검증", "공고·이력서·경력기술서와 충돌하는 내용을 찾습니다."],
+      ["03", "최소 수정 첨삭", "좋은 문장은 유지하고 필요한 부분만 정확히 고칩니다."],
+      ["04", "최종본과 면접 리스크", "제출본과 지원서에서 이어질 예상질문을 제공합니다."],
+    ],
+  },
+} as const;
+
+const materialStorageKey = "mooa:guest-candidate-materials:v1";
+const experienceCategories: Array<[ExperienceCategory, string]> = [
+  ["CAREER_INTERNSHIP", "경력·인턴"], ["PART_TIME", "아르바이트"], ["PROJECT", "프로젝트"], ["SCHOOL_MAJOR", "학교·전공"],
+  ["CLUB_STUDENT_COUNCIL", "동아리·학생회"], ["AWARD", "공모전·수상"], ["EDUCATION_BOOTCAMP", "교육·부트캠프"],
+  ["INTERNATIONAL", "해외 경험"], ["VOLUNTEER", "봉사활동"], ["MILITARY", "군 복무"], ["PERSONAL_PROJECT", "개인·사이드 프로젝트"],
+  ["FREELANCE", "프리랜서"], ["RESEARCH_PAPER", "연구·논문"],
+  ["HOBBY", "취미에서 얻은 경험"], ["OTHER", "기타 경험"],
+];
+const categoryLabels = Object.fromEntries(experienceCategories) as Record<ExperienceCategory, string>;
+const profileCategories: Array<[ProfileEntryCategory, string]> = [
+  ["EDUCATION", "학력·전공"], ["GRADE", "학점"], ["CERTIFICATION", "자격증"], ["SKILL", "보유 기술"],
+  ["LANGUAGE", "어학성적"], ["TRAINING", "교육·수료"], ["AWARD", "수상"], ["OTHER", "기타 스펙"],
+];
+const writingStyles: WritingStyle[] = ["CONCISE", "BALANCED", "STRENGTH_FOCUSED"];
+const profileCategoryLabels = Object.fromEntries(profileCategories) as Record<ProfileEntryCategory, string>;
+
+export function ProInputPage({ mode }: Props) {
+  const router = useRouter();
+  const content = modeContent[mode];
+  const Icon = mode === "POLISH" ? FileCheck2 : mode === "BUILD" ? FilePenLine : Sparkles;
+  const [questions, setQuestions] = useState<CoverLetterQuestion[]>([createCoverLetterQuestion()]);
+  const [posting, setPosting] = useState("");
+  const [postingUrl, setPostingUrl] = useState("");
+  const [postingFilenames, setPostingFilenames] = useState<string[]>([]);
+  const [resumeFile, setResumeFile] = useState<ResumeAttachment | null>(null);
+  const [resumeError, setResumeError] = useState("");
+  const [showBlockedTip, setShowBlockedTip] = useState(false);
+  const [experiences, setExperiences] = useState<CandidateExperienceInput[]>([]);
+  const [profileEntries, setProfileEntries] = useState<CandidateProfileEntry[]>([]);
+  const [freeformNotes, setFreeformNotes] = useState("");
+  const [freeformAttachments, setFreeformAttachments] = useState<CandidateFreeformAttachment[]>([]);
+  const [writingStyle, setWritingStyle] = useState<WritingStyle>("BALANCED");
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const guest = loadGuestDraft();
+      if (guest) { setQuestions(guest.questions ?? (guest.questionDrafts ?? [guest.draftText]).map((answer, index) => createCoverLetterQuestion(answer, index))); setWritingStyle(guest.writingStyle); }
+      try {
+        const parsed = candidateMaterialDraftSchema.safeParse(JSON.parse(sessionStorage.getItem(materialStorageKey) ?? "null"));
+        if (parsed.success) {
+          setExperiences(parsed.data.experiences);
+          setProfileEntries(parsed.data.profileEntries);
+          setFreeformNotes(parsed.data.freeformNotes);
+          setFreeformAttachments(parsed.data.freeformAttachments);
+        }
+      } catch {
+        sessionStorage.removeItem(materialStorageKey);
+      }
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  function continueFlow() {
+    const draftText = serializeQuestionAnswers(questions);
+    saveGuestDraft({
+      draftText,
+      questionDrafts: questions.map((question) => question.answer),
+      questions,
+      targetLength: 700,
+      temporaryWritingMode: mode,
+      selectedProduct: "PRO",
+      writingStyle,
+      sourceFilename: resumeFile?.filename,
+      sourceFileExtension: resumeFile?.extension,
+      sourceFileSizeBytes: resumeFile?.sizeBytes,
+    });
+    sessionStorage.setItem("mooa:guest-job-posting:v1", posting);
+    sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: postingUrl, text: posting, filenames: postingFilenames }));
+    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes, freeformAttachments, experiences, profileEntries }));
+    router.push("/analysis/prepare");
+  }
+
+  function updateExperience(id: string, field: keyof CandidateExperienceInput, value: string) {
+    setExperiences((current) => current.map((item) => item.id === id ? { ...item, [field]: value } : item));
+  }
+
+  function updateProfileEntry(id: string, field: keyof CandidateProfileEntry, value: string) {
+    setProfileEntries((current) => current.map((item) => item.id === id ? { ...item, [field]: value } : item));
+  }
+
+  const hasPostingSource = Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length);
+  const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
+  const blockedReason = !hasPostingSource
+    ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."
+    : mode !== "CREATE" && !hasCoverLetterAnswer
+      ? "첨삭할 자기소개서 답변이 하나 이상 필요해요. 빈 문항은 그대로 두어도 됩니다."
+      : "";
+
+  return <main className={styles.page}>
+    <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>PRO · 기업 지원서 1건 · 9,900원</span></header>
+    <div className={styles.container}>
+      <Link href="/onboarding" className={styles.back}><ArrowLeft/> 이전으로</Link>
+      <div className={styles.heading}><Icon/><div><small>{content.label}</small><h1>{content.title}</h1><p>{content.description}</p></div></div>
+
+      <section className={styles.flow}>
+        <div><small>이 유형의 진행 순서</small><h2>{mode === "CREATE" ? "경험을 찾고 확인한 뒤 쓰는 흐름" : mode === "BUILD" ? "부족한 내용을 찾아 채우는 흐름" : "작성본을 바로 검수하는 흐름"}</h2></div>
+        <ol>{content.steps.map(([number,title,description]) => <li key={number}><span>{number}</span><div><b>{title}</b><p>{description}</p></div></li>)}</ol>
+      </section>
+
+      <section className={styles.form}>
+
+        <JobPostingInput url={postingUrl} text={posting} filenames={postingFilenames} onUrlChange={setPostingUrl} onTextChange={setPosting} onFilenamesChange={setPostingFilenames}/>
+        {mode === "CREATE" ? <section className={styles.createEmpty}><FilePenLine/><div><b>아직 작성한 자기소개서가 없어요.</b><p>바로 문장을 만들지 않고 아래 지원자료와 경험을 정리한 뒤, 문항별 소재와 필요한 사실부터 확인합니다.</p></div></section> : <div className={styles.questionSection}><ResumeIntake questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
+        <section className={styles.optionalMaterials}>
+          <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>로그인 후 여러 파일 업로드</small></div>
+          <div className={styles.files}><button type="button" disabled><Upload/> 이력서 <small>선택</small></button><button type="button" disabled><Upload/> 경력기술서 <small>선택</small></button><button type="button" disabled><Upload/> 포트폴리오 <small>선택</small></button><button type="button" disabled><Upload/> 기타 자료 <small>선택 · 여러 개</small></button></div>
+        </section>
+        <section className={styles.experienceSection}>
+          <div className={styles.sectionTitle}><div><span>추가로 알려주고 싶은 경험·정보 <b>선택</b></span><h3>직접 적거나 가지고 있는 자료를 한 번에 첨부하세요.</h3></div><small>PDF · DOCX · TXT · MD</small></div>
+          <AdditionalInfoInput text={freeformNotes} attachments={freeformAttachments} onTextChange={setFreeformNotes} onAttachmentsChange={setFreeformAttachments}/>
+          <p className={styles.freeformHelp}>많이 알려주실수록 더 적합한 소재를 찾는 데 도움이 됩니다. 입력 내용은 바로 자기소개서에 쓰지 않고 경험 후보로 정리한 뒤, 필요한 사실만 다시 확인합니다.</p>
+        </section>
+        <details className={styles.structuredInputs}><summary><Plus/> 경험을 하나씩 자세히 추가하기 <span>선택</span></summary><div className={styles.structuredBody}>
+        <section className={styles.experienceSection}>
+          <div className={styles.sectionTitle}><div><span>자격·스펙 직접 추가 <b>선택</b></span><h3>이력서에서 빠진 자격, 기술, 어학이나 교육 정보를 간단히 추가할 수 있어요.</h3></div><small>증빙파일 필수 아님</small></div>
+          <div className={styles.categoryGrid}>{profileCategories.map(([category, label]) => <button type="button" key={category} onClick={() => setProfileEntries((current) => [...current, createCandidateProfileEntry(category)])}><Plus/> {label}</button>)}</div>
+          <div className={styles.experienceList}>{profileEntries.map((entry, index) => <article key={entry.id}>
+            <header><div><span>{profileCategoryLabels[entry.category]}</span><b>자격·스펙 {index + 1}</b></div><button type="button" aria-label={`자격·스펙 ${index + 1} 삭제`} onClick={() => setProfileEntries((current) => current.filter((item) => item.id !== entry.id))}><Trash2/></button></header>
+            <div className={styles.experienceGrid}>
+              <label><span>명칭</span><input value={entry.name} onChange={(event) => updateProfileEntry(entry.id, "name", event.target.value)} placeholder="예: 산업안전기사"/></label>
+              <label><span>점수·등급·상태</span><input value={entry.valueOrStatus} onChange={(event) => updateProfileEntry(entry.id, "valueOrStatus", event.target.value)} placeholder="예: 취득 · 필기 합격 · OPIc IH"/></label>
+              <label><span>취득·수료 시기</span><input value={entry.date} onChange={(event) => updateProfileEntry(entry.id, "date", event.target.value)} placeholder="YYYY.MM · 예: 2026.05"/></label>
+              <label><span>기관 <b>선택</b></span><input value={entry.institution} onChange={(event) => updateProfileEntry(entry.id, "institution", event.target.value)} placeholder="예: 한국산업인력공단"/></label>
+              <label className={styles.full}><span>활용 경험이나 설명 <b>선택</b></span><textarea rows={3} value={entry.applicationNote} onChange={(event) => updateProfileEntry(entry.id, "applicationNote", event.target.value)} placeholder="취득만 적어도 괜찮아요. 실제로 활용한 경험이 있다면 함께 알려주세요. 예: 위험성평가 실습에서 관련 기준을 활용함"/></label>
+            </div>
+          </article>)}</div>
+        </section>
+        <section className={styles.experienceSection}>
+          <div className={styles.sectionTitle}><div><span>서류에 없는 추가 경험 <b>선택</b></span><h3>이력서에 적지 않은 경험도 자소서의 좋은 소재가 될 수 있어요.</h3></div><small>최대 30개</small></div>
+          <div className={styles.categoryGrid}>{experienceCategories.map(([category, label]) => <button type="button" key={category} onClick={() => setExperiences((current) => [...current, createCandidateExperience(category)])}><Plus/> {label}</button>)}</div>
+          {experiences.length === 0 && <p className={styles.emptyExperience}>해당되는 경험이 없다면 건너뛰어도 됩니다. 결제 후 AI가 공고에 필요한 정보만 다시 확인해요.</p>}
+          <div className={styles.experienceList}>{experiences.map((experience, index) => <article key={experience.id}>
+            <header><div><span>{categoryLabels[experience.category]}</span><b>추가 경험 {index + 1}</b></div><button type="button" aria-label={`추가 경험 ${index + 1} 삭제`} onClick={() => setExperiences((current) => current.filter((item) => item.id !== experience.id))}><Trash2/></button></header>
+            <div className={styles.experienceGrid}>
+              <label><span>경험 이름</span><input value={experience.title} onChange={(event) => updateExperience(experience.id, "title", event.target.value)} placeholder="예: 편의점 야간 아르바이트"/></label>
+              <label><span>기간</span><input value={experience.period} onChange={(event) => updateExperience(experience.id, "period", event.target.value)} placeholder="예: 2023.03 ~ 2023.11"/></label>
+              <label className={styles.full}><span>이 경험을 한 줄로 알려주세요 <b>이것만 적어도 가능</b></span><textarea rows={3} value={experience.summary} onChange={(event) => updateExperience(experience.id, "summary", event.target.value)} placeholder="예: 편의점에서 1년 동안 재고와 시재를 확인하고 교대 인수인계를 했어요."/></label>
+            </div>
+            <details className={styles.experienceDetails}><summary>기억나는 내용을 더 알려주기 <span>모두 선택</span></summary><div className={styles.experienceGrid}>
+              <label className={styles.full}><span>당시 상황 또는 맡은 일</span><textarea rows={3} value={experience.situation} onChange={(event) => updateExperience(experience.id, "situation", event.target.value)} placeholder="무엇을 맡았고 어떤 상황이었나요?"/></label>
+              <label className={styles.full}><span>내가 직접 한 행동</span><textarea rows={3} value={experience.action} onChange={(event) => updateExperience(experience.id, "action", event.target.value)} placeholder="본인이 직접 판단하거나 실행한 일을 적어주세요."/></label>
+              <label><span>결과 또는 변화·배운 점</span><textarea rows={3} value={experience.result} onChange={(event) => updateExperience(experience.id, "result", event.target.value)} placeholder="수치가 없어도 실제 변화나 배운 점이면 충분해요."/></label>
+              <label><span>강조하고 싶은 점</span><textarea rows={3} value={experience.emphasis} onChange={(event) => updateExperience(experience.id, "emphasis", event.target.value)} placeholder="예: 업무 연속성, 정확성, 고객 대응"/></label>
+            </div></details>
+          </article>)}</div>
+          {experiences.length > 0 && <div className={styles.bankNotice}><Check/><span><b>입력한 경험은 Experience Bank 후보로 정리됩니다.</b><small>공고와 연결 가능성이 높은 경험을 먼저 찾고, 부족한 사실만 AI가 추가로 질문해요.</small></span></div>}
+        </section>
+        </div></details>
+
+        <div className={styles.included}><b>PRO 결과에 포함</b><span><Check/> 공고 요구역량</span><span><Check/> 경험 근거 매칭</span><span><Check/> 문항 간 중복·충돌</span><span><Check/> 문항별 Before/After</span><span><Check/> 최종본·면접 예상질문</span></div>
+        <section className={styles.styleSection}>
+          <div className={styles.sectionTitle}><div><span>작성 스타일</span><h3>어떤 느낌으로 작성할까요?</h3></div><small>나중에 변경 가능</small></div>
+          <div className={styles.styleGrid}>{writingStyles.map((style) => { const option = writingStyleConfig[style]; return <button type="button" key={style} className={writingStyle === style ? styles.styleSelected : ""} onClick={() => setWritingStyle(style)}>
+            <span className={styles.styleRadio} aria-hidden="true"/>
+            <b>{option.label}{style === "BALANCED" && <em>추천</em>}</b>
+            <p>{option.description}</p>
+          </button>; })}</div>
+          <p className={styles.styleSafety}><LockKeyhole/> 어떤 스타일을 선택해도 없는 경험·역할·사건·성과·수치는 만들지 않습니다.</p>
+          {mode === "POLISH" && writingStyle === "STRENGTH_FOCUSED" && <p className={styles.polishConstraint}>강점을 적극적으로 찾되, 최종 첨삭 단계에서는 기존 말투와 좋은 문장을 우선 보존합니다.</p>}
+        </section>
+        <div className={styles.notice}><LockKeyhole/><span><b>아직 서버로 전송하지 않습니다.</b><small>다음 화면에서 범위를 확인한 뒤 로그인·결제 경계로 이동합니다.</small></span></div>
+        {blockedReason && <p className={actionStyles.message}><b>아직 {content.cta}을 진행할 수 없어요.</b><br/>{blockedReason}</p>}
+        <div className={actionStyles.wrap} onMouseEnter={() => blockedReason && setShowBlockedTip(true)} onMouseLeave={() => setShowBlockedTip(false)} onFocus={() => blockedReason && setShowBlockedTip(true)} onBlur={() => setShowBlockedTip(false)}>
+          {blockedReason && showBlockedTip && <div role="tooltip" className={actionStyles.tooltip}>{blockedReason}</div>}
+          <button className={styles.submit} aria-disabled={Boolean(blockedReason)} onClick={() => { if (blockedReason) { setShowBlockedTip(true); return; } continueFlow(); }}>{content.cta} <ArrowRight/></button>
+        </div>
+      </section>
+    </div>
+  </main>;
+}

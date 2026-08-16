@@ -1,0 +1,64 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-top: 28px;
+  margin-bottom: 0;
+  padding: 26px 32px;
+  border: 1px solid #d9e5df;
+  border-radius: 15px;
+  background: linear-gradient(90deg, #eef8f3, #fff);
+}
+.banner > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #176b4a;
+  color: #fff;
+}
+.icon svg {
+  width: 18px;
+}
+.banner span {
+  display: flex;
+  flex-direction: column;
+}
+.banner small {
+  color: #176b4a;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+}
+.banner b {
+  margin-top: 4px;
+  font-size: 18px;
+}
+.banner p {
+  max-width: 470px;
+  margin: 0;
+  color: #68756f;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.banner p strong {
+  color: #17221d;
+}
+@media (max-width: 700px) {
+  .banner {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: 18px;
+    padding: 23px;
+  }
+  .banner b {
+    font-size: 16px;
+  }
+}
