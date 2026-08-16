@@ -49,6 +49,21 @@ export function ApplicationCaseHandoff({ guest }: Props) {
     setMessage(error ? "로그인 링크를 보내지 못했습니다." : "이메일로 로그인 링크를 보냈습니다.");
   }
 
+  async function signInWithGoogle() {
+    setBusy(true);
+    setMessage("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/analysis/prepare`,
+      },
+    });
+    if (error) {
+      setBusy(false);
+      setMessage("Google 濡쒓렇??瑜?珥덇린?뷀븯吏 紐삵뻽?듬땲??");
+    }
+  }
   async function saveApplicationCase() {
     if (!guest) {
       setMessage("저장할 입력 내용을 찾지 못했습니다.");
@@ -149,6 +164,8 @@ export function ApplicationCaseHandoff({ guest }: Props) {
   }
 
   return <div className={styles.login}>
+    <button className={styles.oauthButton} type="button" disabled={busy} onClick={() => void signInWithGoogle()}>{"Google\uB85C \uACC4\uC18D\uD558\uAE30"}</button>
+    <div className={styles.divider}><span>{"\uB610\uB294 \uC774\uBA54\uC77C\uB85C \uB85C\uADF8\uC778"}</span></div>
     <label><Mail/><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소"/></label>
     <button type="button" disabled={busy} onClick={() => void sendLoginLink()}>{busy ? "전송 중..." : "로그인 링크 받기"} <ArrowRight/></button>
     {message && <p>{message}</p>}

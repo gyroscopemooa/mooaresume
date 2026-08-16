@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Noto_Sans_KR } from "next/font/google";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
+
+const notoSansKr = Noto_Sans_KR({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -32,7 +35,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body className={notoSansKr.variable}>{children}</body>
     </html>
   );
 }
