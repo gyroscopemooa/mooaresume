@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, LockKeyhole, Upload } from "lucide-react";
 import { decideWritingMode } from "@/domain/writing-mode";
 import { saveGuestDraft } from "@/lib/guest-draft";
-import { extractLocalDocument } from "@/lib/local-document";
 import { AttachmentCard } from "./attachment-card";
 import styles from "./landing-entry.module.css";
 
@@ -28,6 +27,7 @@ export function LandingEntry() {
     setBusy(true);
     setError("");
     try {
+      const { extractLocalDocument } = await import("@/lib/local-document");
       const extracted = await extractLocalDocument(file);
       setDraft(extracted.text);
       setAttachedFile({

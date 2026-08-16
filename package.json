@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build": "next build",
     "dev": "next dev",
     "dev:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/dev-tunnel.ps1",
-    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -15,10 +15,15 @@
     "check:e2e": "node scripts/check-e2e-readiness.mjs",
     "db:remote:list": "supabase migration list",
     "db:remote:plan": "supabase db push --dry-run",
-    "db:remote:push": "supabase db push"
+    "db:remote:push": "supabase db push",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
+    "@opennextjs/cloudflare": "^1.20.2",
     "@polar-sh/sdk": "^0.49.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
@@ -43,6 +48,7 @@
     "supabase": "^2.114.0",
     "tailwindcss": "latest",
     "typescript": "latest",
-    "vitest": "latest"
+    "vitest": "latest",
+    "wrangler": "^4.123.0"
   }
 }

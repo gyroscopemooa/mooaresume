@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { FileText, LoaderCircle, Paperclip, X } from "lucide-react";
 import type { CandidateFreeformAttachment } from "@/domain/candidate-material";
-import { extractLocalDocument } from "@/lib/local-document";
 import styles from "./additional-info-input.module.css";
 
 type Props = {
@@ -34,6 +33,7 @@ export function AdditionalInfoInput({
     setBusy(true);
     setError("");
     try {
+      const { extractLocalDocument } = await import("@/lib/local-document");
       const extracted = await Promise.all(files.map(extractLocalDocument));
       const next = extracted.map((file) => ({
         filename: file.filename,

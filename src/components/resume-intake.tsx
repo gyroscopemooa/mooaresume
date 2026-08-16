@@ -7,7 +7,6 @@ import { AttachmentCard } from "@/components/attachment-card";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import { countNonWhitespaceCharacters } from "@/domain/usage-entitlement";
-import { extractLocalDocument } from "@/lib/local-document";
 import styles from "./resume-intake.module.css";
 
 export type ResumeAttachment = { filename: string; extension: string; sizeBytes: number };
@@ -46,6 +45,7 @@ export function ResumeIntake({ questions, onChange, attachment, onAttachmentChan
     if (!selected) return;
     setBusy(true); onError?.("");
     try {
+      const { extractLocalDocument } = await import("@/lib/local-document");
       const extracted = await extractLocalDocument(selected);
       setBulk(extracted.text);
       onChange(splitCoverLetterDraft(extracted.text));

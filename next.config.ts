@@ -16,6 +16,7 @@ const privatePaths = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  serverExternalPackages: ["pdfjs-dist", "mammoth"],
   async redirects() {
     return [
       { source: "/start", destination: "/begin", permanent: false },
@@ -32,3 +33,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());

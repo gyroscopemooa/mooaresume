@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, FileCheck2, FilePenLine, LockKeyhole, Sparkles, Upload } from "lucide-react";
 import { decideWritingMode, type WritingMode } from "@/domain/writing-mode";
-import { extractLocalDocument } from "@/lib/local-document";
 import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import { AttachmentCard } from "@/components/attachment-card";
 import styles from "./onboarding.module.css";
@@ -86,6 +85,7 @@ export default function OnboardingPage() {
     setBusy(true);
     setError("");
     try {
+      const { extractLocalDocument } = await import("@/lib/local-document");
       const result = await extractLocalDocument(file);
       setDraft(result.text);
       setFilename(result.filename);
