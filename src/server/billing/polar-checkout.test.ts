@@ -49,7 +49,7 @@ describe("Polar SDK checkout gateway", () => {
         allowedCharacters: quote.allowedCharacters,
       }),
       externalCustomerId: "user-1",
-      allowDiscountCodes: false,
+      allowDiscountCodes: true,
       allowTrial: false,
       currency: "krw",
       locale: "ko-KR",

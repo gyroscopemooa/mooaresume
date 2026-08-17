@@ -13,6 +13,12 @@ function isSameOrigin(request: NextRequest) {
   return !origin || origin === request.nextUrl.origin;
 }
 
+function getCheckoutSiteUrl(request: NextRequest) {
+  const hostname = request.nextUrl.hostname;
+  if (hostname === "localhost" || hostname === "127.0.0.1") return request.nextUrl.origin;
+  return getSiteUrl();
+}
+
 function getCustomerIp(request: NextRequest) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   if (forwarded && isIP(forwarded)) return forwarded;
@@ -39,7 +45,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const siteUrl = getSiteUrl();
+    const siteUrl = getCheckoutSiteUrl(request);
     const result = await createQuickCheckout({
       rawRequest: body,
       loadContext: async (analysisRunId) => {
@@ -75,15 +81,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
-      return NextResponse.json({ error: "결제 요청 값이 올바르지 않습니다." }, { status: 400 });
+      return NextResponse.json({
+        error: "결제 요청 값이 올바르지 않습니다.",
+        ...(process.env.NODE_ENV !== "production" ? { issues: error.issues } : {}),
+      }, { status: 400 });
     }
     if (error instanceof QuickCheckoutError) {
       const status = error.code === "P0002" ? 404 : error.code === "55000" ? 409 : 400;
       return NextResponse.json({ error: error.message, code: error.code }, { status });
     }
+    const detail = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     console.error("polar_checkout_failed", {
-      error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+      error: detail,
+      server: process.env.POLAR_SERVER ?? "sandbox",
+      hasProductId: Boolean(process.env.POLAR_QUICK_PRODUCT_ID),
     });
-    return NextResponse.json({ error: "결제 페이지를 만들지 못했습니다." }, { status: 502 });
+    return NextResponse.json({
+      error: "결제 페이지를 만들지 못했습니다.",
+      ...(process.env.NODE_ENV !== "production" ? { detail } : {}),
+    }, { status: 502 });
   }
 }

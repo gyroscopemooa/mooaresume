@@ -64,6 +64,30 @@ describe("Polar webhook entitlement processing", () => {
     expect(JSON.stringify(vi.mocked(store.grantPaidOrder).mock.calls)).not.toContain("signed payload");
   });
 
+  it("accepts a paid order delivered as order.updated", async () => {
+    const result = await processPolarWebhook({
+      rawBody: "{}",
+      headers,
+      secret: "secret",
+      expectedQuickProductId: "product-quick",
+      repository: repository(),
+      verifyEvent: vi.fn(() => ({ ...paidEvent(), type: "order.updated" }) as never),
+    });
+    expect(result).toMatchObject({ disposition: "PROCESSED", eventType: "order.updated", repositoryResult: "GRANTED" });
+  });
+
+  it("accepts a paid order with a Polar discount", async () => {
+    const result = await processPolarWebhook({
+      rawBody: "{}",
+      headers,
+      secret: "secret",
+      expectedQuickProductId: "product-quick",
+      repository: repository(),
+      verifyEvent: vi.fn(() => paidEvent({ totalAmount: quote.totalPriceKrw - 1_000, discountId: "discount-1" }) as never),
+    });
+    expect(result).toMatchObject({ disposition: "PROCESSED", repositoryResult: "GRANTED" });
+  });
+
   it.each([
     ["wrong product", { productId: "other-product" }, "POLAR_PRODUCT_MISMATCH"],
     ["wrong currency", { currency: "usd" }, "POLAR_CURRENCY_MISMATCH"],

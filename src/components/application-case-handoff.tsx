@@ -139,8 +139,10 @@ export function ApplicationCaseHandoff({ guest }: Props) {
       const result: unknown = await response.json();
       if (!response.ok) {
         const errorMessage = result && typeof result === "object" && "error" in result && typeof result.error === "string"
-          ? result.error
-          : "결제 페이지를 만들지 못했습니다.";
+          ? ("detail" in result && typeof result.detail === "string"
+              ? `${result.error} (${result.detail})`
+              : "issues" in result && Array.isArray(result.issues) ? `${result.error} (${JSON.stringify(result.issues)})` : result.error)
+          : "결제 요청에 실패했습니다.";
         setMessage(errorMessage);
         return;
       }

@@ -13,7 +13,7 @@ const quickCheckoutContextSchema = z.object({
   openCheckout: z.object({
     checkoutId: z.string().min(1),
     checkoutUrl: z.string().url(),
-    expiresAt: z.string().datetime(),
+    expiresAt: z.string().datetime({ offset: true }),
   }).nullable().optional(),
 });
 
@@ -87,7 +87,7 @@ export async function createQuickCheckout(input: {
   const session = z.object({
     checkoutId: z.string().min(1),
     checkoutUrl: z.string().url(),
-    expiresAt: z.string().datetime(),
+    expiresAt: z.string().datetime({ offset: true }),
   }).parse(registered.data);
 
   return {

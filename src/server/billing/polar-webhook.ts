@@ -76,7 +76,12 @@ function assertPaidOrder(
   ) {
     throw new Error("POLAR_METADATA_QUOTE_MISMATCH");
   }
-  if (event.data.totalAmount !== quote.totalPriceKrw) {
+  const discounted = event.data.totalAmount !== quote.totalPriceKrw;
+  if (
+    event.data.totalAmount <= 0
+    || event.data.totalAmount > quote.totalPriceKrw
+    || (discounted && !event.data.discountId)
+  ) {
     throw new Error("POLAR_ORDER_AMOUNT_MISMATCH");
   }
 
@@ -96,11 +101,12 @@ export async function processPolarWebhook(input: {
   const eventId = getEventId(input.headers);
   const payloadSha256 = createHash("sha256").update(input.rawBody).digest("hex");
 
-  if (event.type === "order.paid") {
-    const metadata = assertPaidOrder(event, input.expectedQuickProductId);
+  if (event.type === "order.paid" || (event.type === "order.updated" && event.data.status === "paid")) {
+    const paidEvent = event as unknown as Extract<VerifiedPolarEvent, { type: "order.paid" }>;
+    const metadata = assertPaidOrder(paidEvent, input.expectedQuickProductId);
     const repositoryResult = await input.repository.grantPaidOrder({
       eventId,
-      eventType: event.type,
+      eventType: "order.paid",
       payloadSha256,
       providerOrderId: event.data.id,
       providerCheckoutId: event.data.checkoutId ?? "",
@@ -125,7 +131,7 @@ export async function processPolarWebhook(input: {
   if (event.type === "order.refunded") {
     const repositoryResult = await input.repository.refundOrder({
       eventId,
-      eventType: event.type,
+      eventType: "order.refunded",
       payloadSha256,
       providerOrderId: event.data.id,
       refundedAt: event.timestamp.toISOString(),

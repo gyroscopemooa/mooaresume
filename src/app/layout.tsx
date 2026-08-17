@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   category: "employment",
   keywords: ["자소서 첨삭", "자기소개서 첨삭", "AI 자소서", "취업 준비", "대기업 자소서", "생산직 자소서"],
   formatDetection: { email: false, address: false, telephone: false },
+  icons: { icon: "/icon.svg", shortcut: "/icon.svg" },
   openGraph: {
     type: "website",
     locale: "ko_KR",
