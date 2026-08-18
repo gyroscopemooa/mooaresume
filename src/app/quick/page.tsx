@@ -41,6 +41,16 @@ export default function QuickPage() {
       setError("첨삭할 자기소개서를 입력하거나 파일을 올려 주세요.");
       return;
     }
+    const answeredQuestions = questions.filter((question) => question.answer.trim());
+    if (answeredQuestions.length > 5) {
+      setError("\uD55C \uC9C0\uC6D0 \uAC74\uC5D0\uB294 \uCD5C\uB300 5\uAC1C \uBB38\uD56D\uAE4C\uC9C0 \uC785\uB825\uD560 \uC218 \uC788\uC5B4\uC694. \uB2E4\uB978 \uC9C0\uC6D0\uC11C\uB294 \uBC18\uB4DC\uC2DC \uBCC4\uB3C4 \uC9C0\uC6D0 \uAC74\uC73C\uB85C \uC9C4\uD589\uD574 \uC8FC\uC138\uC694.");
+      return;
+    }
+    if (questions.length > 1 && answeredQuestions.some((question) => question.targetLength === null)) {
+      setError("\uBB38\uD56D\uBCC4 \uC785\uB825\uB85C \uC9C4\uD589\uD560 \uB54C\uB294 \uAC01 \uBB38\uD56D\uC758 \uBAA9\uD45C \uAE00\uC790 \uC218\uB97C \uC785\uB825\uD574 \uC8FC\uC138\uC694.");
+      return;
+    }
+
     const combinedDraft = serializeQuestionAnswers(questions);
     saveGuestDraft({
       draftText: combinedDraft,

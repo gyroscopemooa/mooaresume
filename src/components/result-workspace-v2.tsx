@@ -4,16 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Clipboard,
-  Download, FileText, Lightbulb, LockKeyhole, PencilLine, RotateCcw, Sparkles,
+  Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw, Sparkles,
 } from "lucide-react";
 import { buildFinalDocumentText, countCompactCharacters, type ResultDocument } from "@/domain/result-document";
 import { sampleResultDocument } from "@/fixtures/result-document";
+import { diffText } from "@/lib/text-diff";
 import { FinalUpgradeCard } from "@/components/final-upgrade-card";
 import { ApplicationTrackerCard } from "@/components/application-tracker-card";
 import { CandidateProfileCard } from "@/components/candidate-profile-card";
 import styles from "./result-workspace-v2.module.css";
 
 type View = "overview" | "revision" | "fit" | "interview" | "final";
+
+function DiffAnswer({ original, revised, side }: { original: string; revised: string; side: "before" | "after" }) {
+  return <p className={styles.diffText}>{diffText(original, revised).filter((part) => part.type === "equal" || (side === "before" ? part.type === "removed" : part.type === "added")).map((part, index) => <span key={`${part.type}-${index}`} className={part.type === "equal" ? undefined : part.type === "added" ? styles.added : styles.removed}>{part.value}</span>)}</p>;
+}
 
 export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: ResultDocument }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
@@ -22,6 +27,7 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
   const [editing, setEditing] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
+  const [showChanges, setShowChanges] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -98,7 +104,7 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
       </section>}
 
       {view === "revision" && <section className={styles.workspace}>
-        <div className={styles.title}><div><span className={styles.eyebrow}>BEFORE → AFTER</span><h2>문항별 첨삭 결과</h2></div><p>기본은 읽기 모드입니다. 필요한 문항만 직접 수정하세요.</p></div>
+        <div className={styles.title}><div><span className={styles.eyebrow}>BEFORE → AFTER</span><h2>문항별 첨삭 결과</h2></div><button type="button" className={styles.diffToggle} aria-pressed={showChanges} onClick={() => setShowChanges((current) => !current)}><GitCompareArrows/>{showChanges ? "\uBCC0\uACBD\uC810 \uC228\uAE30\uAE30" : "\uBCC0\uACBD\uC810 \uD45C\uC2DC"}</button><p>기본은 읽기 모드입니다. 필요한 문항만 직접 수정하세요.</p></div>
         {result.questions.map((question) => {
           const answer = answers[question.id] ?? question.revisedAnswer;
           const isEditing = editing === question.id;
@@ -106,11 +112,15 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
-            <div className={styles.compare}><section><small>첨삭 전</small><p>{question.originalAnswer}</p></section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : <p className={styles.after}>{answer}</p>}</section></div>
+            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <p className={styles.after}>{answer}</p>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
         })}
+        {result.consultingAdvice.length > 0 && <section className={styles.consulting}>
+          <div><span className={styles.eyebrow}>{"\uCD94\uAC00 \uCEE8\uC124\uD305 \uD53C\uB4DC\uBC31"}</span><h3>{"\uB354 \uC88B\uC544\uC9C0\uAE30 \uC704\uD55C \uC2E4\uD589 \uC81C\uC548"}</h3></div>
+          <div className={styles.adviceGrid}>{result.consultingAdvice.map((item, index) => <article key={item.id} data-priority={item.priority}><span>{String(index + 1).padStart(2, "0")}</span><div><h4>{item.title}</h4><p>{item.guidance}</p><small>{item.rationale}</small></div></article>)}</div>
+        </section>}
       </section>}
 
       {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div><div className={styles.matches}>{result.requirementMatches.map((match) => <article key={match.id} data-status={match.status}><div>{match.status === "matched" ? <CheckCircle2/> : <AlertCircle/>}<b>{match.status === "matched" ? "근거 있음" : match.status === "partial" ? "보완 필요" : "근거 없음"}</b></div><section><h3>{match.requirement}</h3><p><b>현재 근거</b>{match.evidence}</p><p><b>권장 행동</b>{match.recommendation}</p></section></article>)}</div><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
@@ -119,7 +129,7 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
 
       {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={download}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{question.title}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div><p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX · PDF 내보내기 예정</span></footer></section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={result.company} role={result.role} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
-      {view === "final" && <FinalUpgradeCard />}
+      {view === "final" && <FinalUpgradeCard product={result.product} />}
     </div>
   </main>;
 }

@@ -60,6 +60,15 @@ export const resultCandidateProfileSchema = z.object({
   })).max(100),
 });
 
+export const consultingAdviceSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["add", "remove", "strengthen", "structure", "clarify"]),
+  title: z.string().min(1),
+  guidance: z.string().min(1),
+  rationale: z.string().min(1),
+  priority: z.enum(["high", "medium", "low"]),
+});
+
 export const resultDocumentSchema = z.object({
   schemaVersion: z.literal("1.0"),
   caseId: z.string().min(1),
@@ -92,6 +101,7 @@ export const resultDocumentSchema = z.object({
   questions: z.array(resultQuestionSchema).min(1),
   requirementMatches: z.array(requirementMatchSchema),
   verificationQuestions: z.array(z.string().min(1)),
+  consultingAdvice: z.array(consultingAdviceSchema).max(8).default([]),
   interviewQuestions: z.array(interviewQuestionSchema),
 });
 

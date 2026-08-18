@@ -1,98 +1,39 @@
 import type { AnalysisRequest, ResumeAnalysisProvider } from "@/application/analysis-contract";
+import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
 import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
 
-function toResultDocument(
-  request: AnalysisRequest,
-  gatewayResult: QuickGatewayResult,
-): ResultDocument {
+function getQuestions(request: AnalysisRequest) {
   const source = request.documents.find((document) => document.kind === "cover_letter");
-  if (!source) throw new Error("분석할 자기소개서가 필요합니다.");
+  if (!source) throw new Error("QUICK_COVER_LETTER_REQUIRED");
+  return (request.questions ?? splitCoverLetterDraft(source.text)).filter((question) => question.answer.trim()).map((question, index) => ({ ...question, order: index + 1, targetLength: question.targetLength ?? request.targetLength }));
+}
 
+function toResultDocument(request: AnalysisRequest, gatewayResult: QuickGatewayResult): ResultDocument {
+  const source = request.documents.find((document) => document.kind === "cover_letter");
+  if (!source) throw new Error("QUICK_COVER_LETTER_REQUIRED");
+  const questions = getQuestions(request);
   const output = gatewayResult.output;
+  const revisions = new Map((output.revisions ?? (output.revision ? [{ ...output.revision, questionOrder: 1 }] : [])).map((revision) => [revision.questionOrder, revision]));
   return resultDocumentSchema.parse({
-    schemaVersion: "1.0",
-    caseId: request.requestId,
-    product: "QUICK",
-    isSample: false,
-    company: "지원 기업",
-    role: "지원 직무",
-    applicationLabel: "QUICK 자기소개서 첨삭",
-    analyzedAt: new Date().toISOString(),
-    analysisRun: {
-      provider: "openai",
-      responseId: gatewayResult.execution.responseId,
-      model: gatewayResult.execution.model,
-      promptVersion: gatewayResult.execution.promptVersion,
-      rubricVersion: gatewayResult.execution.rubricVersion,
-      schemaVersion: gatewayResult.execution.schemaVersion,
-      inputTokens: gatewayResult.execution.inputTokens,
-      outputTokens: gatewayResult.execution.outputTokens,
-      totalTokens: gatewayResult.execution.totalTokens,
-    },
+    schemaVersion: "1.0", caseId: request.requestId, product: "QUICK", isSample: false, company: "Applicant company", role: "Applicant role", applicationLabel: "QUICK cover-letter revision", analyzedAt: new Date().toISOString(),
+    analysisRun: { provider: "openai", responseId: gatewayResult.execution.responseId, model: gatewayResult.execution.model, promptVersion: gatewayResult.execution.promptVersion, rubricVersion: gatewayResult.execution.rubricVersion, schemaVersion: gatewayResult.execution.schemaVersion, inputTokens: gatewayResult.execution.inputTokens, outputTokens: gatewayResult.execution.outputTokens, totalTokens: gatewayResult.execution.totalTokens },
     readiness: output.readiness,
-    attachments: source.filename ? [{
-      id: `${request.requestId}-source`,
-      filename: source.filename,
-      extension: source.filename.split(".").pop()?.toUpperCase() || "TEXT",
-      sizeBytes: new TextEncoder().encode(source.text).length,
-      parseStatus: "ready",
-      parserLabel: "로컬 추출 원문",
-      sectionCount: 1,
-    }] : [],
-    candidateProfile: {
-      snapshotLabel: "QUICK 분석 입력",
-      items: [],
-    },
-    priorities: output.priorities.map((priority, index) => ({
-      id: `priority-${index + 1}`,
-      title: priority.title,
-      description: priority.description,
-      category: priority.category,
-      severity: priority.severity,
-    })),
-    questions: [{
-      id: "quick-question-1",
-      order: 1,
-      title: "자기소개서",
-      prompt: "입력한 자기소개서 문항",
-      targetLength: request.targetLength,
-      originalAnswer: source.text,
-      revisedAnswer: output.revision.revisedAnswer,
-      highlightedPhrases: output.revision.highlightedPhrases,
-      revisionReasons: output.revision.reasons.map((reason) => reason.reason),
-      verificationNote: output.revision.verificationNote ?? undefined,
-    }],
-    requirementMatches: [],
-    verificationQuestions: output.verificationQuestions,
-    interviewQuestions: [],
+    attachments: source.filename ? [{ id: `${request.requestId}-source`, filename: source.filename, extension: source.filename.split(".").pop()?.toUpperCase() || "TEXT", sizeBytes: new TextEncoder().encode(source.text).length, parseStatus: "ready", parserLabel: "Source document", sectionCount: questions.length }] : [],
+    candidateProfile: { snapshotLabel: "QUICK input", items: [] }, priorities: output.priorities.map((priority, index) => ({ id: `priority-${index + 1}`, title: priority.title, description: priority.description, category: priority.category, severity: priority.severity })),
+    questions: questions.map((question) => { const revision = revisions.get(question.order); if (!revision) throw new Error("QUICK_QUESTION_RESULT_MISSING"); return { id: `quick-question-${question.order}`, order: question.order, title: question.title || `Question ${question.order}`, prompt: question.prompt || "Cover-letter question", targetLength: question.targetLength, originalAnswer: question.answer, revisedAnswer: revision.revisedAnswer, highlightedPhrases: revision.highlightedPhrases.filter((phrase) => revision.revisedAnswer.includes(phrase)), revisionReasons: revision.reasons.map((reason) => reason.reason), verificationNote: revision.verificationNote ?? undefined }; }),
+    requirementMatches: [], verificationQuestions: output.verificationQuestions, consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })), interviewQuestions: [],
   });
 }
 
 export class QuickAnalysisProvider implements ResumeAnalysisProvider {
-  constructor(
-    private readonly gateway: QuickAnalysisGateway,
-    private readonly maxAttempts = 2,
-  ) {}
-
+  constructor(private readonly gateway: QuickAnalysisGateway, private readonly maxAttempts = 2) {}
   async analyze(request: AnalysisRequest): Promise<ResultDocument> {
-    if (request.product !== "QUICK") {
-      throw new Error("QuickAnalysisProvider는 QUICK 요청만 처리합니다.");
-    }
-    const source = request.documents.find((document) => document.kind === "cover_letter");
-    if (!source) throw new Error("분석할 자기소개서가 필요합니다.");
-
-    let feedback: string[] = [];
-    for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) {
-      const gatewayResult = await this.gateway.analyze(request, feedback);
-      const issues = validateQuickAnalysis(source.text, gatewayResult.output, request.targetLength);
-      if (issues.length === 0) return toResultDocument(request, gatewayResult);
-      feedback = issues.map((issue) => issue.message);
-    }
-
-    throw new QuickAnalysisValidationError(
-      feedback.map((message) => ({ code: "INVALID_EVIDENCE" as const, message })),
-    );
+    if (request.product !== "QUICK") throw new Error("QUICK_ANALYSIS_REQUIRED");
+    const questions = getQuestions(request); if (!questions.length) throw new Error("QUICK_QUESTION_REQUIRED");
+    let feedback: string[] = []; let lastIssues: ReturnType<typeof validateQuickAnalysis> = [];
+    for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) { const gatewayResult = await this.gateway.analyze(request, feedback); const issues = validateQuickAnalysis(questions, gatewayResult.output); lastIssues = issues; if (!issues.length) return toResultDocument(request, gatewayResult); feedback = issues.map((issue) => issue.message); }
+    throw new QuickAnalysisValidationError(lastIssues);
   }
 }

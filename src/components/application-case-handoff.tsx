@@ -64,6 +64,21 @@ export function ApplicationCaseHandoff({ guest }: Props) {
       setMessage("Google 濡쒓렇??瑜?珥덇린?뷀븯吏 紐삵뻽?듬땲??");
     }
   }
+  async function beginQuickCheckout(analysisRunId: string) {
+    const response = await fetch("/api/checkouts/quick", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analysisRunId }),
+    });
+    const result: unknown = await response.json();
+    if (!response.ok || !result || typeof result !== "object" || !("checkoutUrl" in result) || typeof result.checkoutUrl !== "string") {
+      const errorMessage = result && typeof result === "object" && "error" in result && typeof result.error === "string"
+        ? result.error
+        : "\uACB0\uC81C \uD398\uC774\uC9C0\uB85C \uC5F0\uACB0\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
+      throw new Error(errorMessage);
+    }
+    window.location.assign(result.checkoutUrl);
+  }
   async function saveApplicationCase() {
     if (!guest) {
       setMessage("저장할 입력 내용을 찾지 못했습니다.");
@@ -113,10 +128,12 @@ export function ApplicationCaseHandoff({ guest }: Props) {
       }
       if (result && typeof result === "object" && "applicationCaseId" in result && typeof result.applicationCaseId === "string") {
         setSavedCaseId(result.applicationCaseId);
-        if ("analysisRunId" in result && typeof result.analysisRunId === "string") {
-          setSavedAnalysisRunId(result.analysisRunId);
+        const analysisRunId = "analysisRunId" in result && typeof result.analysisRunId === "string" ? result.analysisRunId : null;
+        if (analysisRunId) setSavedAnalysisRunId(analysisRunId);
+        setMessage("\uC785\uB825 \uB0B4\uC6A9\uC744 \uBE44\uACF5\uAC1C\uB85C \uC800\uC7A5\uD558\uACE0 \uACB0\uC81C \uD398\uC774\uC9C0\uB85C \uC774\uB3D9\uD569\uB2C8\uB2E4.");
+        if ((guest.selectedProduct ?? "QUICK") === "QUICK" && analysisRunId) {
+          await beginQuickCheckout(analysisRunId);
         }
-        setMessage("지원 건과 분석 Snapshot을 비공개로 저장했습니다.");
       }
     } catch {
       setMessage("브라우저 입력을 저장하는 중 오류가 발생했습니다.");
@@ -158,11 +175,11 @@ export function ApplicationCaseHandoff({ guest }: Props) {
     }
   }
 
-    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>비공개 저장 완료</b><small>지원 건 ID · {savedCaseId}</small></span></div>{(guest?.selectedProduct ?? "QUICK") === "QUICK" && savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void startQuickCheckout()}>{busy ? "결제 페이지 준비 중..." : "결제하고 분석 시작"} <ArrowRight/></button>}{message && <p>{message}</p>}</div>;
+    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{(guest?.selectedProduct ?? "QUICK") === "QUICK" && busy ? "결제 페이지로 이동 중..." : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{(guest?.selectedProduct ?? "QUICK") === "QUICK" && savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void startQuickCheckout()}>{busy ? "결제 페이지 준비 중..." : "결제하고 분석 시작"} <ArrowRight/></button>}{message && <p>{message}</p>}</div>;
   }
 
   if (authenticated) {
-    return <div className={styles.action}><button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : "지원 건 비공개 저장"} <ArrowRight/></button>{message && <p>{message}</p>}</div>;
+    return <div className={styles.action}><button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "\uC800\uC7A5 \uC911..." : (guest?.selectedProduct ?? "QUICK") === "QUICK" ? "\uACB0\uC81C\uD558\uACE0 \uBD84\uC11D \uC2DC\uC791" : "\uC9C0\uC6D0 \uAC74 \uBE44\uACF5\uAC1C \uC800\uC7A5"} <ArrowRight/></button>{message && <p>{message}</p>}</div>;
   }
 
   return <div className={styles.login}>

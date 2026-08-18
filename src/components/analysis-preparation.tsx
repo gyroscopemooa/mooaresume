@@ -59,6 +59,9 @@ export function AnalysisPreparation() {
       guest?.questionDrafts ?? [guest?.draftText ?? ""],
   );
   const quickQuote = createQuickCheckoutQuote(totalCharacters);
+  const filledQuestionCount = guest?.questions?.filter((question) => question.answer.trim()).length ?? guest?.questionDrafts?.filter((question) => question.trim()).length ?? (guest?.draftText?.trim() ? 1 : 0);
+  const totalQuestionCount = guest?.questions?.length ?? guest?.questionDrafts?.length ?? (guest?.draftText !== undefined ? 1 : 0);
+  const missingQuestionCount = Math.max(totalQuestionCount - filledQuestionCount, 0);
   const price =
     product === "PRO"
       ? "9,900원"
@@ -109,6 +112,9 @@ export function AnalysisPreparation() {
                   : ""}
               </small>
             </div>
+            {product === "QUICK" && missingQuestionCount > 0 && (
+              <p className={styles.missingNotice}>작성되지 않은 문항 {missingQuestionCount}개는 첨삭·생성 대상에서 제외됩니다. 빈 문항까지 보완하려면 PRO · 내용 보완으로 진행해 주세요.</p>
+            )}
             <div className={styles.materials}>
               <b>준비된 자료</b>
               {guest?.questions

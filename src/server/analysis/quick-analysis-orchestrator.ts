@@ -14,6 +14,10 @@ export interface QuickAnalysisRunRepository {
 
 function classifyFailure(error: unknown) {
   if (error instanceof Error && error.name === "QuickAnalysisValidationError") {
+    const issueCodes = "issues" in error && Array.isArray(error.issues)
+      ? error.issues.map((issue) => issue.code)
+      : [];
+    console.error("quick_analysis_validation_failed", { issueCodes });
     return { code: "AI_OUTPUT_VALIDATION_FAILED", retryable: false };
   }
   if (error instanceof Error && error.message.includes("OpenAI Responses API")) {

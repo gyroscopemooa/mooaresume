@@ -1,3 +1,23 @@
+# 2026-08-17 현재 공유 상태 업데이트
+
+- QUICK Sandbox 결제·webhook·entitlement·분석 실행 흐름은 로컬 E2E 확인 단계입니다.
+- DOCX 줄바꿈으로 인한 원문 근거 검증 오판을 수정했고, QUICK 관련 typecheck/test를 통과했습니다.
+- 빈 문항은 QUICK에서 임의 생성하지 않으며, BUILD 사용자는 빈 문항 보완을 위해 PRO · 내용 보완으로 안내합니다.
+- PRO 입력 UI는 있으나 PRO 결제 CTA와 실제 PRO 분석 실행 연결은 아직 미완료입니다.
+- 분석 시간 UX는 상단 상태바를 유지한 채 하단에 예상 2~5분, 단계 안내, 진행 바, 경과 시간, 5분 초과 안내를 추가했습니다.
+- 상세 상태·명령어·다음 우선순위는 루트 `DEVELOPMENT-HANDOFF.md`를 기준으로 합니다.
+# 2026-08-17 최신 상태
+
+- Google 로그인 버튼·callback·Noto Sans KR 복원 완료, 커밋 `9fcd617` 푸시 완료.
+- 홈과 `/analysis/prepare` 가독성 조정은 로컬 미커밋 상태.
+- typecheck, lint, 131개 테스트, build 통과.
+
+## 다음 작업
+
+1. 로컬 100%에서 홈과 `/analysis/prepare` 가독성 확인.
+2. 괜찮으면 가독성 변경 커밋 후 결과·PRO 화면에도 적용.
+3. 배포 후 Google 로그인 → Polar sandbox → QUICK 분석 → 결과 화면 E2E 테스트.
+
 # 2026-08-17 입력 드롭존 및 높이 조정 업데이트
 
 - 추가 경험·정보 입력 textarea 최소 높이를 132px에서 76px로 줄였다. 첨부 파일 목록은 입력창 상단에 표시된다.

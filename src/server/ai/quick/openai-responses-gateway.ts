@@ -63,6 +63,20 @@ function extractOutputText(envelope: z.infer<typeof responsesEnvelopeSchema>) {
   throw new Error("OpenAI 응답에서 구조화 결과 텍스트를 찾지 못했습니다.");
 }
 
+function toOpenAIStrictSchema(input: unknown): Record<string, unknown> {
+  const visit = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(visit);
+    if (!value || typeof value !== "object") return value;
+    const record = value as Record<string, unknown>;
+    const next = Object.fromEntries(Object.entries(record).map(([key, child]) => [key, visit(child)]));
+    if (next.type === "object" && next.properties && typeof next.properties === "object" && !Array.isArray(next.properties)) {
+      next.required = Object.keys(next.properties as Record<string, unknown>);
+      next.additionalProperties = false;
+    }
+    return next;
+  };
+  return visit(input) as Record<string, unknown>;
+}
 export class OpenAIResponsesGateway implements QuickAnalysisGateway {
   private readonly fetchImplementation: typeof fetch;
 
@@ -77,6 +91,7 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
         Authorization: `Bearer ${this.options.apiKey}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(540_000),
       body: JSON.stringify({
         model: this.options.model,
         instructions: buildQuickAnalysisInstructions(request),
@@ -86,7 +101,7 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
             type: "json_schema",
             name: "quick_resume_analysis",
             strict: true,
-            schema: getQuickAnalysisJsonSchema(),
+            schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema()),
           },
         },
       }),
@@ -94,7 +109,8 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
 
     if (!response.ok) {
       const requestId = response.headers.get("x-request-id");
-      throw new Error(`OpenAI Responses API 호출에 실패했습니다. status=${response.status}${requestId ? ` request_id=${requestId}` : ""}`);
+      const detail = (await response.text()).slice(0, 1_000);
+      throw new Error(`OpenAI Responses API 호출에 실패했습니다. status=${response.status}${requestId ? ` request_id=${requestId}` : ""}${detail ? ` detail=${detail}` : ""}`);
     }
 
     const envelope = responsesEnvelopeSchema.parse(await response.json());

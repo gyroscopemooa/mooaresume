@@ -136,6 +136,7 @@ export const sampleResultDocument: ResultDocument = {
     "점검 순서를 변경한 뒤 불량 건수 또는 검사 시간이 실제로 달라졌나요?",
     "팀장이나 작업자가 변경된 방식에 대해 남긴 피드백이 있나요?",
   ],
+  consultingAdvice: [],
   interviewQuestions: [
     {
       id: "interview-1",

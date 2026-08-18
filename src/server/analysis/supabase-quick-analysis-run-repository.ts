@@ -24,6 +24,14 @@ function client() {
 export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepository {
   constructor(private readonly ownerUserId: string) {}
 
+  async prepareRetry(analysisRunId: string) {
+    const { error } = await client().rpc("prepare_quick_analysis_retry", {
+      p_analysis_run_id: analysisRunId,
+      p_owner_user_id: this.ownerUserId,
+    });
+    if (error) throw new Error(`QUICK_ANALYSIS_RETRY_PREPARE_FAILED:${error.code}`);
+  }
+
   async begin(analysisRunId: string) {
     const { data, error } = await client().rpc("begin_quick_analysis", {
       p_analysis_run_id: analysisRunId,
