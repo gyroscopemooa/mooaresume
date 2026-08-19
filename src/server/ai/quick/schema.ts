@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 const quickEvidenceReasonSchema = z.object({ reason: z.string().min(1), evidenceQuote: z.string().min(1), category: z.enum(["objective", "qualitative", "needs_verification"]) });
-const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
+export const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type: z.enum(["good", "delete", "vague", "revise"]), comment: z.string().min(1) });
+const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(20), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
 const legacyQuickRevisionSchema = quickRevisionSchema.omit({ questionOrder: true });
 
 export const quickAnalysisOutputSchema = z.object({

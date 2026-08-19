@@ -6,7 +6,7 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Clipboard,
   Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw, Sparkles,
 } from "lucide-react";
-import { buildFinalDocumentText, countCompactCharacters, type ResultDocument } from "@/domain/result-document";
+import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document";
 import { sampleResultDocument } from "@/fixtures/result-document";
 import { diffText } from "@/lib/text-diff";
 import { FinalUpgradeCard } from "@/components/final-upgrade-card";
@@ -14,10 +14,58 @@ import { ApplicationTrackerCard } from "@/components/application-tracker-card";
 import { CandidateProfileCard } from "@/components/candidate-profile-card";
 import styles from "./result-workspace-v2.module.css";
 
-type View = "overview" | "revision" | "fit" | "interview" | "final";
+type View = "overview" | "submission" | "revision" | "fit" | "interview" | "final";
 
 function DiffAnswer({ original, revised, side }: { original: string; revised: string; side: "before" | "after" }) {
   return <p className={styles.diffText}>{diffText(original, revised).filter((part) => part.type === "equal" || (side === "before" ? part.type === "removed" : part.type === "added")).map((part, index) => <span key={`${part.type}-${index}`} className={part.type === "equal" ? undefined : part.type === "added" ? styles.added : styles.removed}>{part.value}</span>)}</p>;
+}
+
+const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = { good: "좋은 표현", delete: "삭제 추천", vague: "구체성 부족", revise: "수정 추천" };
+
+type AnnotationGroup = { start: number; end: number; phrase: string; items: ResultOriginalAnnotation[] };
+
+// 같은 구간(start·end)의 annotation은 한 그룹으로 묶는다. 부분 겹침은 인라인 마킹에서만 제외하고, 카드 목록(groups)엔 항상 전부 포함된다.
+function groupOriginalAnnotations(annotations: ResultOriginalAnnotation[]): { groups: AnnotationGroup[]; marks: AnnotationGroup[] } {
+  const sorted = [...annotations].sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const groups: AnnotationGroup[] = [];
+  for (const item of sorted) {
+    const last = groups[groups.length - 1];
+    if (last && item.start === last.start && item.end === last.end) {
+      last.items.push(item);
+      continue;
+    }
+    groups.push({ start: item.start, end: item.end, phrase: item.phrase, items: [item] });
+  }
+  const marks: AnnotationGroup[] = [];
+  for (const group of groups) {
+    const last = marks[marks.length - 1];
+    if (last && group.start < last.end) continue;
+    marks.push(group);
+  }
+  return { groups, marks };
+}
+
+type AnnotatedSegment = { key: string; value: string; type?: ResultOriginalAnnotation["type"] };
+
+// 원문(text)은 수정하지 않고, start/end로 잘라낸 조각만 순서대로 나열한다.
+function buildAnnotatedSegments(text: string, marks: AnnotationGroup[]): AnnotatedSegment[] {
+  const segments: AnnotatedSegment[] = [];
+  let cursor = 0;
+  marks.forEach((mark, index) => {
+    if (mark.start > cursor) segments.push({ key: `text-${index}`, value: text.slice(cursor, mark.start) });
+    segments.push({ key: `mark-${index}`, value: text.slice(mark.start, mark.end), type: mark.items[0].type });
+    cursor = mark.end;
+  });
+  if (cursor < text.length) segments.push({ key: "text-end", value: text.slice(cursor) });
+  return segments;
+}
+
+function AnnotatedOriginal({ text, marks }: { text: string; marks: AnnotationGroup[] }) {
+  const segments = buildAnnotatedSegments(text, marks);
+  return <p className={styles.annotatedText}>{segments.map((segment) => segment.type
+    ? <mark key={segment.key} data-type={segment.type}>{segment.value}</mark>
+    : <span key={segment.key}>{segment.value}</span>
+  )}</p>;
 }
 
 export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: ResultDocument }) {
@@ -70,6 +118,7 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
 
   const tabs: Array<[View, string, boolean]> = [
     ["overview", "한눈에 보기", false],
+    ["submission", "제출본", false],
     ["revision", "문항별 첨삭", false],
     ["fit", "공고·경험 분석", true],
     ["interview", "면접 준비", true],
@@ -101,6 +150,28 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
             <section className={styles.warning}><AlertCircle/><div><b>확인이 필요한 사실</b><p>{result.verificationQuestions[0]}</p><small>확인되지 않은 성과는 만들지 않았습니다.</small></div></section>
           </aside>
         </div>
+      </section>}
+
+      {view === "submission" && <section className={styles.workspace}>
+        <div className={styles.title}><div><span className={styles.eyebrow}>ORIGINAL</span><h2>제출본 피드백</h2></div><p>제출한 원문에서 좋은 표현과 보완이 필요한 부분을 짚어드립니다.</p></div>
+        {result.questions.map((question) => {
+          const annotations = question.originalAnnotations ?? [];
+          if (!annotations.length) return <article className={styles.question} key={question.id}>
+            <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div></header>
+            <p className={styles.prompt}>표시할 원문 피드백이 없습니다.</p>
+          </article>;
+          const { groups, marks } = groupOriginalAnnotations(annotations);
+          return <article className={styles.question} key={question.id}>
+            <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div></header>
+            <div className={styles.submissionCompare}>
+              <section><small>제출한 원문</small><AnnotatedOriginal text={question.originalAnswer} marks={marks}/></section>
+              <aside>{groups.map((group) => <div className={styles.annotationCard} key={`${group.start}-${group.end}`}>
+                <p className={styles.annotationQuote}>&ldquo;{group.phrase}&rdquo;</p>
+                {group.items.map((item) => <div key={item.id} data-type={item.type} className={styles.annotationItem}><span>{ANNOTATION_LABEL[item.type]}</span><p>{item.comment}</p></div>)}
+              </div>)}</aside>
+            </div>
+          </article>;
+        })}
       </section>}
 
       {view === "revision" && <section className={styles.workspace}>

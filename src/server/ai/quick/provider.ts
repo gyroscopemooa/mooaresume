@@ -2,7 +2,7 @@ import type { AnalysisRequest, ResumeAnalysisProvider } from "@/application/anal
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
-import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
+import { QuickAnalysisValidationError, resolveOriginalAnnotations, validateQuickAnalysis } from "./validator";
 
 function getQuestions(request: AnalysisRequest) {
   const source = request.documents.find((document) => document.kind === "cover_letter");
@@ -22,7 +22,17 @@ function toResultDocument(request: AnalysisRequest, gatewayResult: QuickGatewayR
     readiness: output.readiness,
     attachments: source.filename ? [{ id: `${request.requestId}-source`, filename: source.filename, extension: source.filename.split(".").pop()?.toUpperCase() || "TEXT", sizeBytes: new TextEncoder().encode(source.text).length, parseStatus: "ready", parserLabel: "Source document", sectionCount: questions.length }] : [],
     candidateProfile: { snapshotLabel: "QUICK input", items: [] }, priorities: output.priorities.map((priority, index) => ({ id: `priority-${index + 1}`, title: priority.title, description: priority.description, category: priority.category, severity: priority.severity })),
-    questions: questions.map((question) => { const revision = revisions.get(question.order); if (!revision) throw new Error("QUICK_QUESTION_RESULT_MISSING"); return { id: `quick-question-${question.order}`, order: question.order, title: question.title || `Question ${question.order}`, prompt: question.prompt || "Cover-letter question", targetLength: question.targetLength, originalAnswer: question.answer, revisedAnswer: revision.revisedAnswer, highlightedPhrases: revision.highlightedPhrases.filter((phrase) => revision.revisedAnswer.includes(phrase)), revisionReasons: revision.reasons.map((reason) => reason.reason), verificationNote: revision.verificationNote ?? undefined }; }),
+    questions: questions.map((question) => {
+      const revision = revisions.get(question.order); if (!revision) throw new Error("QUICK_QUESTION_RESULT_MISSING");
+      const { annotations } = resolveOriginalAnnotations(question.answer, revision.originalAnnotations ?? []);
+      return {
+        id: `quick-question-${question.order}`, order: question.order, title: question.title || `Question ${question.order}`, prompt: question.prompt || "Cover-letter question", targetLength: question.targetLength,
+        originalAnswer: question.answer, revisedAnswer: revision.revisedAnswer,
+        highlightedPhrases: revision.highlightedPhrases.filter((phrase) => revision.revisedAnswer.includes(phrase)), // deprecated, 미사용 — originalAnnotations 참고
+        originalAnnotations: annotations.map((annotation, index) => ({ id: `quick-question-${question.order}-annotation-${index + 1}`, phrase: annotation.phrase, type: annotation.type, comment: annotation.comment, start: annotation.start, end: annotation.end })),
+        revisionReasons: revision.reasons.map((reason) => reason.reason), verificationNote: revision.verificationNote ?? undefined,
+      };
+    }),
     requirementMatches: [], verificationQuestions: output.verificationQuestions, consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })), interviewQuestions: [],
   });
 }
