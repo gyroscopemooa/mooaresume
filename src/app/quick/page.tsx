@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, FileText, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, RotateCcw, ShieldCheck } from "lucide-react";
 import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake";
-import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
+import { clearGuestDraft, loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import type { WritingMode } from "@/domain/writing-mode";
 import { countNonWhitespaceCharacters, createQuickCheckoutQuote, QUICK_SOFT_LIMIT_CHARS } from "@/domain/usage-entitlement";
 import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
@@ -17,6 +17,16 @@ export default function QuickPage() {
   const [file, setFile] = useState<ResumeAttachment | null>(null);
   const [error, setError] = useState("");
   const [writingMode, setWritingMode] = useState<Extract<WritingMode, "BUILD" | "POLISH">>("POLISH");
+  const [resetKey, setResetKey] = useState(0);
+
+  function resetDraft() {
+    if (!window.confirm("입력한 자기소개서를 모두 지우고 새로 시작할까요?")) return;
+    clearGuestDraft();
+    setQuestions([createCoverLetterQuestion()]);
+    setFile(null);
+    setError("");
+    setResetKey((key) => key + 1);
+  }
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -72,10 +82,13 @@ export default function QuickPage() {
   return <main className={styles.page}>
     <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span><ShieldCheck/> 입력 자료는 공개되지 않아요</span></header>
     <div className={styles.container}>
-      <Link href="/onboarding" className={styles.back}><ArrowLeft/> 상품 선택으로</Link>
+      <div className={styles.topRow}>
+        <Link href="/onboarding" className={styles.back}><ArrowLeft/> 상품 선택으로</Link>
+        {(file || questions.some((question) => question.answer.trim())) && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
+      </div>
       <div className={styles.heading}><span>QUICK · 4,900원 · {writingMode === "BUILD" ? "내용 보완" : "최종 첨삭"}</span><h1>{writingMode === "BUILD" ? "현재 초안을 바탕으로 부족한 내용을 보완합니다." : "작성한 글을 빠르고 정확하게 고칩니다."}</h1><p>{writingMode === "BUILD" ? "새로운 경험을 임의로 만들지 않고 현재 글 안에서 논리와 구체성을 강화합니다." : "말투와 사실을 보존하면서 문장, 글자 수, 논리와 최종 수정본에 집중합니다."}</p></div>
       <section className={styles.form}>
-        <ResumeIntake questions={questions} onChange={(next) => { setQuestions(next); setError(""); }} attachment={file} onAttachmentChange={setFile} onError={setError}/>
+        <ResumeIntake key={resetKey} questions={questions} onChange={(next) => { setQuestions(next); setError(""); }} attachment={file} onAttachmentChange={setFile} onError={setError}/>
         <div className={`${styles.usage} ${totalCharacters > QUICK_SOFT_LIMIT_CHARS ? styles.overSoftLimit : ""}`}>
           <div><span>현재 지원서 전체</span><b>공백 제외 {totalCharacters.toLocaleString()}자</b></div>
           <div className={styles.usageBar}><i style={{width: `${Math.min(100, totalCharacters / quote.allowedCharacters * 100)}%`}}/></div>

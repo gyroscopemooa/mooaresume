@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // landing, without changing the URL shown in the browser.
 const DEV_HOST_PREFIX = "dev.";
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   if (hostname.startsWith(DEV_HOST_PREFIX)) {
     return NextResponse.rewrite(new URL("/dev-home", request.url));
