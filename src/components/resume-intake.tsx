@@ -66,7 +66,7 @@ export function ResumeIntake({ questions, onChange, attachment, onAttachmentChan
       <div className={styles.bulkFoot}><span>공백 제외 {countNonWhitespaceCharacters([bulk]).toLocaleString()}자</span><button type="button" disabled={!bulk.trim()} onClick={confirmQuestions}><ListChecks/> 문항 구분 확인하기</button></div>
       <p className={styles.help}>전체를 붙여넣은 뒤 문항 구분 확인하기를 누르면 질문·답변을 나누어 정리합니다. 회사의 문항별 글자 수 제한이 있다면 이 방식으로 진행하는 것을 추천해요.</p>
     </> : <>
-      <div className={styles.found}><Check/><span><b>{questions.filter((question) => question.answer.trim()).length}개 문항을 확인했어요.</b><small>질문·답변과 회사의 글자 수 제한을 확인해 주세요.</small></span><button type="button" onClick={() => { setBulk(serializeQuestionAnswers(questions)); setView("bulk"); }}>전체로 다시 입력</button></div>
+      <div className={styles.found}><Check/><span><b>{questions.filter((question) => question.answer.trim()).length}개 문항을 확인했어요.</b><small>질문·답변과 회사의 글자 수 제한을 확인해 주세요.</small></span><button type="button" onClick={() => { const merged = serializeQuestionAnswers(questions); setBulk(merged); onChange([{ ...(questions[0] ?? createCoverLetterQuestion()), answer: merged }]); setView("bulk"); }}>전체로 다시 입력</button></div>
       <QuestionEditor questions={questions} onChange={onChange} compact={compact}/>
       {!attachment && <label className={styles.secondaryUpload}><Upload/> 파일로 교체 <input type="file" accept=".pdf,.docx,.txt,.md" onChange={handleFile} disabled={busy}/></label>}
     </>}
