@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, Building2, Check, ChevronDown, FileSearch, Lightbulb,
-  ListChecks, MessageSquareText, Repeat, Search, ShieldCheck, Sparkles, Target, ThumbsUp,
+  ListChecks, MessageSquareText, Repeat, Search, ShieldCheck, Sparkles, Target, ThumbsUp, Users,
 } from "lucide-react";
 import { ComingSoonHeroInput } from "@/components/coming-soon-hero-input";
 import { WaitlistForm } from "@/components/waitlist-form";
 import { comingSoonPlans } from "@/data/coming-soon-plans";
 import { getSiteUrl } from "@/lib/site-url";
+import { getWaitlistCount } from "@/server/notifications/waitlist-repository";
 import styles from "./coming-soon.module.css";
+
+export const revalidate = 300;
 
 const engineFeatures = [
   { icon: Building2, title: "채용공고 요구역량 분석", body: "공고 문장에서 실제로 요구하는 역량과 우선순위를 정리합니다." },
@@ -72,8 +75,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
   const siteUrl = getSiteUrl();
+  const waitlistCount = await getWaitlistCount();
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -93,7 +97,7 @@ export default function Home() {
   };
 
   return (
-    <main className="home-page">
+    <main className={"home-page " + styles.theme}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
 
       <header className="site-header">
@@ -107,16 +111,16 @@ export default function Home() {
         </nav>
       </header>
 
-      <section className="hero container">
-        <div className="eyebrow">자소서 전용 AI 분석 엔진<span className={styles.badge}>출시 준비 중</span></div>
-        <h1>자소서, 감으로 고치지 마세요.<br /><em>지원하는 직무 기준</em>으로 분석하세요.</h1>
-        <p>채용공고와 자소서를 함께 분석하는<br />무아레쥬메의 자소서 전용 AI 분석 엔진</p>
-        <ComingSoonHeroInput />
-        <div className="trust-row">
-          <span><Check /> 없는 경험 생성 안 함</span>
-          <span><Check /> 로그인 없이 미리 써보기</span>
-          <span><Check /> 출시 시 가장 먼저 알림</span>
+      <section className={"hero container " + styles.heroFull}>
+        <div className={styles.heroTop}>
+          <span className="eyebrow">자소서 전용 AI 분석 엔진</span>
+          {waitlistCount !== null && waitlistCount > 0 && (
+            <span className={styles.counterBadge}><Users /> <b>{waitlistCount.toLocaleString()}명</b>이 출시를 기다리고 있어요</span>
+          )}
         </div>
+        <div className={styles.comingSoonMark}>COMING SOON</div>
+        <h1 className={styles.subHeadline}>자소서, 감으로 고치지 마세요.<br /><em>지원하는 직무 기준</em>으로 분석하세요.</h1>
+        <ComingSoonHeroInput />
       </section>
 
       <section className="proof container" aria-label="분석 결과 예시">

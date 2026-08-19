@@ -25,3 +25,17 @@ export async function saveWaitlistSignup(email: string): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+// Returns null (not 0) on any failure — e.g. the migration hasn't been applied
+// yet — so the landing page can hide the counter instead of showing "0명".
+export async function getWaitlistCount(): Promise<number | null> {
+  try {
+    const { count, error } = await createServiceRoleClient()
+      .from("waitlist_signups")
+      .select("*", { count: "exact", head: true });
+    if (error) return null;
+    return count ?? null;
+  } catch {
+    return null;
+  }
+}

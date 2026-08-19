@@ -3,7 +3,7 @@
 import { ChangeEvent, useState } from "react";
 import { ArrowRight, LockKeyhole, Upload } from "lucide-react";
 import { AttachmentCard } from "./attachment-card";
-import styles from "./landing-entry.module.css";
+import styles from "./coming-soon-hero-input.module.css";
 
 type AttachedFile = {
   filename: string;
