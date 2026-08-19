@@ -5,6 +5,7 @@ const privatePaths = [
   "analyze",
   "auth",
   "begin",
+  "dev-home",
   "entry",
   "onboarding",
   "pro",

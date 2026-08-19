@@ -1,0 +1,64 @@
+/* Coming Soon landing — sections not already covered by shared classes in globals.css */
+
+.badge{display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;border-radius:20px;background:var(--mint);color:var(--green);font-size:11px;font-weight:800;letter-spacing:.02em;vertical-align:middle}
+.badge svg{width:12px}
+
+.previewNote{margin:14px 0 0;text-align:center;font-size:12px;color:var(--muted)}
+
+.metricsRow{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.metricCard{background:#fff;padding:26px 24px;text-align:center}
+.metricCard small{display:block;color:var(--muted);font-size:12px;font-weight:700;margin-bottom:10px}
+.metricValue{display:flex;align-items:baseline;justify-content:center;gap:8px;font-family:Georgia,serif}
+.metricValue .from{font-size:20px;color:#9aa49f}
+.metricValue svg{width:14px;color:#9aa49f}
+.metricValue .to{font-size:32px;color:var(--green)}
+
+.insightGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.insightCard{padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.insightCard span{display:flex;align-items:center;gap:7px;color:var(--green);font-size:12px;font-weight:800}
+.insightCard span svg{width:14px}
+.insightCard p{margin:10px 0 0;font-size:13px;line-height:1.7;color:var(--muted)}
+
+.timeline{list-style:none;margin:0;padding:0;position:relative}
+.timeline li{display:grid;grid-template-columns:34px 1fr;gap:20px;padding:0 0 30px;position:relative}
+.timeline li:last-child{padding-bottom:0}
+.timelineDot{width:34px;height:34px;border-radius:50%;background:var(--mint);color:var(--green);display:grid;place-items:center;font:700 13px Georgia;position:relative;z-index:1}
+.timeline li:not(:last-child) .timelineDot::after{content:"";position:absolute;top:34px;left:50%;transform:translateX(-50%);width:1px;height:calc(100% + 30px - 34px);background:var(--line)}
+.timeline b{display:block;font-size:15px}
+.timeline p{margin:5px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
+
+.roadmapGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.roadmapItem{display:flex;align-items:flex-start;gap:10px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:13px;line-height:1.6}
+.roadmapItem svg{width:16px;color:var(--green);flex:none;margin-top:2px}
+
+.pricingGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.pricingCard{border:1px solid var(--line);border-radius:16px;padding:30px 26px;background:#fff}
+.pricingCard small{color:var(--green);font-size:12px;font-weight:800;letter-spacing:.04em}
+.pricingCard strong{display:block;font-size:30px;margin:10px 0 4px;font-family:Georgia,serif}
+.pricingCard h3{font-size:15px;margin:0 0 8px}
+.pricingCard p{font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 18px;min-height:66px}
+.pricingCard a{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:12px;font-size:13px;font-weight:700;color:var(--green)}
+.pricingCard a:hover{background:var(--mint)}
+.pricingNote{margin:20px 0 0;text-align:center;font-size:12px;color:var(--muted)}
+
+.faqList{max-width:760px;margin:0 auto}
+.faqItem{border-top:1px solid var(--line);padding:20px 0}
+.faqItem summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:15px;font-weight:700}
+.faqItem summary::-webkit-details-marker{display:none}
+.faqItem summary svg{width:16px;color:var(--muted);flex:none;transition:transform .15s}
+.faqItem[open] summary svg{transform:rotate(180deg)}
+.faqItem p{margin:12px 0 0;font-size:13px;line-height:1.75;color:var(--muted)}
+
+.waitlistSection{background:var(--mint);padding:80px 0;text-align:center}
+.waitlistSection .section-label{justify-content:center;width:100%}
+.waitlistSection h2{max-width:560px;margin-left:auto;margin-right:auto}
+.waitlistSection>p{max-width:480px;margin:0 auto;color:var(--muted);font-size:14px;line-height:1.7}
+
+@media(max-width:800px){
+  .metricsRow{grid-template-columns:1fr}
+  .insightGrid{grid-template-columns:1fr}
+  .roadmapGrid{grid-template-columns:1fr}
+  .pricingGrid{grid-template-columns:1fr}
+  .pricingCard p{min-height:0}
+  .waitlistSection{padding:56px 0}
+}

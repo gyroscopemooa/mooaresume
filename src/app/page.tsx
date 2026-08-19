@@ -1,24 +1,75 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud } from "lucide-react";
-import { LandingEntry } from "@/components/landing-entry";
-import { PricingComparison } from "@/components/pricing-comparison";
-import landingStyles from "./landing-sections.module.css";
-import outcomeStyles from "./outcome-learning.module.css";
-import positioningStyles from "./landing-positioning.module.css";
-import enterpriseStyles from "./enterprise-promo.module.css";
-import oneClickStyles from "./one-click.module.css";
+import {
+  AlertTriangle, ArrowRight, Building2, Check, ChevronDown, FileSearch, Lightbulb,
+  ListChecks, MessageSquareText, Repeat, Search, ShieldCheck, Sparkles, Target, ThumbsUp,
+} from "lucide-react";
+import { ComingSoonHeroInput } from "@/components/coming-soon-hero-input";
+import { WaitlistForm } from "@/components/waitlist-form";
+import { comingSoonPlans } from "@/data/coming-soon-plans";
 import { getSiteUrl } from "@/lib/site-url";
+import styles from "./coming-soon.module.css";
 
-const differences = [
-  { icon: FileSearch, title: "지원서 전체를 한 번에", body: "문항별 완성도뿐 아니라 경험 중복과 공고 연결까지 함께 봅니다." },
-  { icon: ShieldCheck, title: "없는 경험은 만들지 않게", body: "부족한 근거는 임의로 채우지 않고, 확인이 필요한 질문으로 돌려드립니다." },
-  { icon: Sparkles, title: "고칠 순서가 분명하게", body: "점수보다 중요한 개선 3가지를 근거와 함께 먼저 보여드립니다." },
+const engineFeatures = [
+  { icon: Building2, title: "채용공고 요구역량 분석", body: "공고 문장에서 실제로 요구하는 역량과 우선순위를 정리합니다." },
+  { icon: Target, title: "직무 적합도 분석", body: "지원 직무 기준으로 내 경험과 표현이 얼마나 연결되는지 봅니다." },
+  { icon: ListChecks, title: "문항 적합도", body: "문항이 묻는 질문에 실제로 답하고 있는지 교차 확인합니다." },
+  { icon: FileSearch, title: "내용 구체성", body: "상황·행동·결과가 구체적인 근거로 이어지는지 정밀 분석합니다." },
+  { icon: Repeat, title: "경험 중복 탐지", body: "문항 간 같은 경험이 반복되지 않는지 다각도로 확인합니다." },
+  { icon: AlertTriangle, title: "부족한 근거 탐지", body: "주장은 있지만 근거가 약한 문장을 데이터 기반으로 찾아냅니다." },
+  { icon: MessageSquareText, title: "표현력 및 전달력", body: "문장이 읽는 사람에게 명확하게 전달되는지 살펴봅니다." },
+  { icon: Sparkles, title: "핵심 경험 추출", body: "지원서 전체에서 가장 설득력 있는 경험을 교차 분석으로 골라냅니다." },
+  { icon: ShieldCheck, title: "제출 전 최종 검수", body: "제출 직전 오류와 불일치를 마지막으로 점검합니다." },
+];
+
+const processSteps = [
+  { title: "채용공고 분석", body: "공고 원문에서 핵심 문장을 추출합니다." },
+  { title: "직무 요구사항 추출", body: "요구 역량과 우대 조건을 정리합니다." },
+  { title: "자소서 분석", body: "문항별로 내용과 표현을 나눠 분석합니다." },
+  { title: "부족 내용·중복 경험 탐지", body: "근거가 약한 부분과 겹치는 경험을 찾습니다." },
+  { title: "개선 방향 제시", body: "무엇을, 왜 고쳐야 하는지 근거와 함께 제안합니다." },
+  { title: "최종 지원서 검수", body: "제출 전 마지막 오류와 불일치를 확인합니다." },
+  { title: "면접 예상질문", body: "제출한 지원서를 기준으로 예상 질문을 준비합니다." },
+];
+
+const insightCards = [
+  { icon: ThumbsUp, title: "강점", body: "이미 잘 전달되고 있는 부분입니다." },
+  { icon: AlertTriangle, title: "보완 필요", body: "근거를 더 채우면 좋은 문장입니다." },
+  { icon: Search, title: "누락된 직무 키워드", body: "공고에는 있지만 지원서엔 없는 표현입니다." },
+  { icon: Repeat, title: "반복되는 경험", body: "문항 간 같은 경험이 겹치는 지점입니다." },
+  { icon: Lightbulb, title: "AI 개선 제안", body: "고칠 이유와 함께 제시하는 방향입니다." },
+  { icon: MessageSquareText, title: "예상 면접 질문", body: "제출한 내용을 기준으로 준비하는 질문입니다." },
+];
+
+const roadmapFeatures = [
+  "공고 자동 분석", "직무 요구사항 추출", "자소서 정밀 진단", "문장별 피드백",
+  "경험 중복 검사", "부족 내용 AI 질문", "Before / After 비교", "제출 전 최종검수",
+  "직무 적합도 스코어", "예상 면접 질문", "모의면접", "현직자·직업상담사 검토 연계(예정)",
+];
+
+const faqs = [
+  { q: "AI 자소서 첨삭은 어떻게 진행되나요?", a: "채용공고와 자소서를 함께 분석해 문항 적합도, 구체성, 경험 중복 등을 점검하고 고칠 이유와 함께 개선 방향을 제시하는 방식으로 준비하고 있습니다. 정식 출시 전까지 세부 기준을 다듬는 중입니다." },
+  { q: "채용공고도 함께 분석하나요?", a: "네. 무아레쥬메는 자소서 문장만 보지 않고 채용공고의 요구역량과 함께 분석하는 것을 핵심 방향으로 준비하고 있습니다." },
+  { q: "작성하지 않은 자소서도 도움받을 수 있나요?", a: "아직 아무것도 작성하지 않은 상태부터 경험을 정리하고 초안을 만드는 흐름도 함께 준비하고 있습니다. 출시 시 상태에 맞는 방식으로 안내해드릴 예정입니다." },
+  { q: "HWP나 PDF 파일도 사용할 수 있나요?", a: "현재 PDF·DOCX·TXT·MD 형식은 지원하며, HWP는 향후 지원을 준비하고 있습니다." },
+  { q: "일반 ChatGPT와 무엇이 다른가요?", a: "범용 대화형 AI와 달리 채용공고 요구역량, 직무 적합도, 문항별 근거처럼 자소서 첨삭에 필요한 항목을 기준으로 분석하는 전용 엔진을 만들고 있습니다." },
+  { q: "면접 준비도 할 수 있나요?", a: "제출한 지원서를 기준으로 한 예상 면접 질문과 모의면접 기능을 준비하고 있습니다. 출시 시점에 순차적으로 제공될 예정입니다." },
+  { q: "언제 정식 출시되나요?", a: "현재 정식 AI 진단 기능을 준비하고 있습니다. 아래에서 출시 알림을 신청하시면 정식 오픈 소식을 가장 먼저 알려드립니다." },
 ];
 
 export const metadata: Metadata = {
+  title: "AI 자소서 첨삭 · 무아레쥬메 (출시 예정)",
+  description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진, 무아레쥬메가 출시를 준비하고 있습니다. 직무 적합도·문항 적합도·경험 중복까지 데이터 기반으로 진단합니다.",
   alternates: { canonical: "/" },
-  openGraph: { url: "/" },
+  openGraph: {
+    url: "/",
+    title: "AI 자소서 첨삭 · 무아레쥬메 (출시 예정)",
+    description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진. 출시 알림을 신청하세요.",
+  },
+  twitter: {
+    title: "AI 자소서 첨삭 · 무아레쥬메 (출시 예정)",
+    description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진. 출시 알림을 신청하세요.",
+  },
 };
 
 export default function Home() {
@@ -26,102 +77,142 @@ export default function Home() {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "MOOA Resume", alternateName: "무아레쥬메", url: siteUrl, description: "채용공고와 지원자의 경험을 연결하는 AI 자소서 첨삭 서비스" },
+      { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "MOOA Resume", alternateName: "무아레쥬메", url: siteUrl, description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진" },
       { "@type": "WebSite", "@id": `${siteUrl}/#website`, url: siteUrl, name: "MOOA Resume", alternateName: "무아레쥬메", inLanguage: "ko-KR", publisher: { "@id": `${siteUrl}/#organization` } },
-      { "@type": "Service", "@id": `${siteUrl}/#service`, name: "MOOA Resume AI 자소서 첨삭", serviceType: "AI 자기소개서 첨삭 및 취업 지원서 분석", provider: { "@id": `${siteUrl}/#organization` }, areaServed: "KR", availableLanguage: "ko" },
+      { "@type": "Service", "@id": `${siteUrl}/#service`, name: "무아레쥬메 AI 자소서 분석", serviceType: "채용공고 연계 AI 자기소개서 분석 및 첨삭", provider: { "@id": `${siteUrl}/#organization` }, areaServed: "KR", availableLanguage: "ko" },
+      {
+        "@type": "FAQPage",
+        "@id": `${siteUrl}/#faq`,
+        mainEntity: faqs.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      },
     ],
   };
+
   return (
     <main className="home-page">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
+
       <header className="site-header">
-        <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
-        <nav aria-label="주요 메뉴"><Link href="#how">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
+        <Link href="/" className="brand" aria-label="무아레쥬메 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
+        <nav aria-label="주요 메뉴">
+          <Link href="#features">분석 엔진</Link>
+          <Link href="#process">분석 과정</Link>
+          <Link href="#pricing">요금</Link>
+          <Link href="#faq">FAQ</Link>
+          <Link href="#waitlist" className="button button-small">출시 알림 받기</Link>
+        </nav>
       </header>
 
-      <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
-
       <section className="hero container">
-        <div className="eyebrow">AI 취업 지원서 코치</div>
-        <h1>좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
-        <p>채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
-        <LandingEntry />
-        <div className="trust-row"><span><Check/> 없는 경험 생성 금지</span><span><Check/> 내 말투와 사실 보존</span><span><Check/> 합격 확률 표시 없음</span></div>
+        <div className="eyebrow">자소서 전용 AI 분석 엔진<span className={styles.badge}>출시 준비 중</span></div>
+        <h1>자소서, 감으로 고치지 마세요.<br /><em>지원하는 직무 기준</em>으로 분석하세요.</h1>
+        <p>채용공고와 자소서를 함께 분석하는<br />무아레쥬메의 자소서 전용 AI 분석 엔진</p>
+        <ComingSoonHeroInput />
+        <div className="trust-row">
+          <span><Check /> 없는 경험 생성 안 함</span>
+          <span><Check /> 로그인 없이 미리 써보기</span>
+          <span><Check /> 출시 시 가장 먼저 알림</span>
+        </div>
       </section>
 
       <section className="proof container" aria-label="분석 결과 예시">
         <div className="result-preview">
-          <div className="preview-head"><div><span className="status-dot"/>분석 완료</div><span>현대모비스 · 생산관리</span></div>
-          <div className="preview-grid">
-            <div className="score-block"><small>지원서 준비도</small><strong>82</strong><span>/ 100</span><div className="score-bar"><i/></div><p>기본 구성은 탄탄해요. 이제 공고와의 연결을 더 선명하게 만들 차례예요.</p></div>
-            <div className="issues"><small>가장 먼저 고칠 3가지</small><ol><li><b>지원동기의 기업 연결이 약해요</b><span>공고의 ‘공정 개선’ 요구와 경험을 연결해 보세요.</span></li><li><b>성과의 근거가 부족해요</b><span>결과를 확인할 수 있는 기준이나 변화를 추가하세요.</span></li><li><b>2·3번 문항의 경험이 겹쳐요</b><span>3번에는 협업 경험을 배치하는 편이 좋아요.</span></li></ol></div>
+          <div className="preview-head"><div><span className="status-dot" />분석 결과 예시</div><span>현대모비스 · 생산관리</span></div>
+          <div className={styles.metricsRow}>
+            <div className={styles.metricCard}><small>직무 적합도</small><div className={styles.metricValue}><span className="from">61</span><ArrowRight /><span className="to">82</span></div></div>
+            <div className={styles.metricCard}><small>구체성</small><div className={styles.metricValue}><span className="from">58</span><ArrowRight /><span className="to">79</span></div></div>
+            <div className={styles.metricCard}><small>문항 적합도</small><div className={styles.metricValue}><span className="from">75</span><ArrowRight /><span className="to">91</span></div></div>
           </div>
         </div>
+        <p className={styles.previewNote}>* 실제 사용자의 분석 결과가 아닌 예시 화면입니다.</p>
+        <div className={styles.insightGrid}>
+          {insightCards.map(({ icon: Icon, title, body }) => (
+            <article key={title} className={styles.insightCard}><span><Icon /> {title}</span><p>{body}</p></article>
+          ))}
+        </div>
       </section>
 
-      <PricingComparison />
-
-      <section className={"section container " + landingStyles.states}>
-        <div className="section-label">어디까지 작성했든</div>
-        <h2>지금 상태에 맞는 방식으로<br/>바로 시작할 수 있어요.</h2>
+      <section className="section container" id="features">
+        <div className="section-label">자소서 전용 분석 엔진</div>
+        <h2>일반 AI 챗봇이 아니라,<br />자소서 전용 분석 엔진을 만들고 있습니다.</h2>
         <div className="feature-grid">
-          <article><span className={landingStyles.number}>01 · CREATE</span><h3>아직 아무것도 못 썼어요</h3><p>경험과 소재를 찾고 개요부터 함께 만들어요.</p></article>
-          <article><span className={landingStyles.number}>02 · BUILD</span><h3>써봤지만 내용이 부족해요</h3><p>부족한 행동과 결과를 확인해 현재 초안을 강화해요.</p></article>
-          <article><span className={landingStyles.number}>03 · POLISH</span><h3>거의 완성했어요</h3><p>말투와 사실을 보존하면서 제출 전 오류를 확인해요.</p></article>
+          {engineFeatures.map(({ icon: Icon, title, body }) => (
+            <article key={title}><div className="icon-box"><Icon /></div><h3>{title}</h3><p>{body}</p></article>
+          ))}
         </div>
       </section>
 
-      <section className="section container" id="how"><div className="section-label">왜 MOOA인가요?</div><h2>AI 답변이 아니라<br/>지원 과정 전체를 정리해요.</h2><div className="feature-grid">{differences.map(({icon: Icon,title,body})=><article key={title}><div className="icon-box"><Icon/></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
-
-      <section className={"container " + landingStyles.narrative}>
-        <div className={landingStyles.narrativeIntro}>
-          <span>FACT TO VALUE</span>
-          <h2>과장하지 않고,<br/>경험의 가치를 놓치지 않게.</h2>
-          <p>없는 성과를 꾸며내지도, 입력한 문장만 기계적으로 고치지도 않아요. 실제 경험 안에서 의미를 찾고 지원 직무가 이해할 수 있는 언어로 정리합니다.</p>
-        </div>
-        <div className={landingStyles.narrativeSteps}>
-          <article><span>01</span><div><b>사실은 지킵니다</b><p>제공한 경험과 수치, 역할의 경계를 바꾸지 않아요.</p></div></article>
-          <article><span>02</span><div><b>의미는 적극적으로 찾습니다</b><p>평범해 보이는 경험에서도 행동, 배운 점과 이전 가능한 강점을 찾아요.</p></div></article>
-          <article><span>03</span><div><b>직무 언어로 연결합니다</b><p>확인이 필요한 해석은 먼저 물어보고, 사실이 된 내용만 설득력 있게 작성해요.</p></div></article>
-        </div>
+      <section className="section container process" id="process">
+        <div><div className="section-label">분석 과정</div><h2>채용공고부터 면접까지,<br />하나의 흐름으로 분석합니다.</h2></div>
+        <ol className={styles.timeline}>
+          {processSteps.map((step, index) => (
+            <li key={step.title}>
+              <span className={styles.timelineDot}>{String(index + 1).padStart(2, "0")}</span>
+              <div><b>{step.title}</b><p>{step.body}</p></div>
+            </li>
+          ))}
+        </ol>
       </section>
 
-      <section className={"container " + outcomeStyles.section}>
-        <div>
-          <span>LEARNING LOOP</span>
-          <h2>감이 아니라,<br/>실제 지원 결과에서 배우는 서비스를 만듭니다.</h2>
-        </div>
-        <div className={outcomeStyles.body}>
-          <p>동의한 지원 사례의 결과가 축적될수록 경험 선택, 직무 연결과 지원서 검토 기준을 더 현실적으로 개선합니다.</p>
-          <strong>다른 사람의 자기소개서를 따라 쓰는 것이 아니라, 결과에서 나타나는 패턴을 분석 기준 개선에 활용합니다.</strong>
-          <small><ShieldCheck /> 개인정보와 원본 자료는 서비스 제공 및 동의한 개선 목적에 맞게 분리해 관리하도록 설계하고 있습니다.</small>
+      <section className="section container">
+        <div className="section-label">출시 예정 기능</div>
+        <h2>정밀 분석부터 면접 준비까지,<br />단계적으로 출시할 예정입니다.</h2>
+        <div className={styles.roadmapGrid}>
+          {roadmapFeatures.map((feature) => (
+            <div key={feature} className={styles.roadmapItem}><Check /><span>{feature}</span></div>
+          ))}
         </div>
       </section>
 
-      <section className="section container process"><div><div className="section-label">3단계로 간단하게</div><h2>자료를 넣으면,<br/>고칠 순서가 보여요.</h2></div><ol><li><span>01</span><div><b>채용공고와 지원서 입력</b><p>텍스트로 붙여넣거나 파일을 올리세요.</p></div></li><li><span>02</span><div><b>공고·경험·문항 교차 분석</b><p>요구역량과 실제 근거를 함께 확인해요.</p></div></li><li><span>03</span><div><b>우선순위대로 개선</b><p>이유가 분명한 제안부터 반영하세요.</p></div></li></ol></section>
-
-      <section className={"container " + positioningStyles.simple}>
-        <div className={positioningStyles.simpleHead}><div><span>ONE PLACE, FULL REVIEW</span><h2>입력은 간단하게.<br/>분석은 섬세하게.</h2></div><p><b>자소서, 한 번에 올리세요.</b><br/>채용공고와 자기소개서, 이력서와 경력기술서를 한곳에 넣으면 MOOA가 문항과 경험을 정리하고 고칠 이유까지 체계적으로 보여드립니다.</p></div>
-        <div className={positioningStyles.simpleGrid}><article><span><UploadCloud/></span><b>자료는 한 번에</b><p>전체 복붙이나 파일 업로드로 간편하게 시작해요.</p></article><article><span><ListChecks/></span><b>문항은 자동 정리</b><p>한 번에 넣은 지원서를 내부에서는 문항별로 나눠요.</p></article><article><span><ScanSearch/></span><b>공고와 경험은 함께</b><p>문장만 보지 않고 요구역량과 실제 근거를 연결해요.</p></article><article><span><ShieldCheck/></span><b>사실은 정확하게</b><p>없는 성과는 만들지 않고 확인된 내용으로 완성해요.</p></article></div>
+      <section className="section container" id="pricing">
+        <div className="section-label">가격 미리보기</div>
+        <h2>지금 필요한 범위만 선택할 수 있도록<br />준비하고 있습니다.</h2>
+        <div className={styles.pricingGrid}>
+          {comingSoonPlans.map((plan) => (
+            <article key={plan.id} className={styles.pricingCard}>
+              <small>{plan.id}</small>
+              <strong>{plan.price}</strong>
+              <h3>{plan.title}</h3>
+              <p>{plan.description}</p>
+              <Link href="#waitlist">출시 알림 받기 <ArrowRight /></Link>
+            </article>
+          ))}
+        </div>
+        <p className={styles.pricingNote}>정식 출시 예정 가격이며 출시 전까지 변경될 수 있습니다.</p>
       </section>
 
-      <section className={"container " + positioningStyles.ambition}>
-        <div className={positioningStyles.ambitionIntro}><span>BEYOND THE DOCUMENT</span><h2>우리의 준비는<br/>서류 합격에서 끝나지 않습니다.</h2><p>경쟁이 높은 채용일수록 잘 다듬은 한 문장보다 지원서 전체에서 무엇을 어떻게 보여주는지가 중요합니다. 서류에서 설득한 경험이 면접에서도 흔들리지 않도록 최종 합격까지 이어지는 준비를 설계합니다.</p><div className={positioningStyles.tags}><span>대기업 공채</span><span>생산직</span><span>반도체·자동차·에너지</span><span>경력직</span><span>공기업</span><span>중견기업</span></div></div>
-        <div className={positioningStyles.ambitionBody}><span>THE GOAL IS THE FINAL</span><h3>이번 지원을 꼭 잡고 싶다면,<br/>첨삭 이후까지 준비하세요.</h3><p>공고에 맞는 경험을 고르고, 문항별 근거를 보완하고, 제출 전 충돌을 점검한 뒤 실제 지원자료에서 이어질 면접 질문까지 준비합니다.</p><ol><li><span>01</span>공고 요구와 경험 근거 연결</li><li><span>02</span>문항별 소재 배치와 최종 첨삭</li><li><span>03</span>제출 전 검수와 면접 리스크 확인</li></ol><Link href="/onboarding">PRO로 제대로 준비하기 <ArrowRight/></Link></div>
+      <section className="section container" id="faq">
+        <div className="section-label">자주 묻는 질문</div>
+        <h2>출시 전, 미리 궁금하실 내용을<br />정리했습니다.</h2>
+        <div className={styles.faqList}>
+          {faqs.map(({ q, a }) => (
+            <details key={q} className={styles.faqItem}>
+              <summary>{q}<ChevronDown /></summary>
+              <p>{a}</p>
+            </details>
+          ))}
+        </div>
       </section>
 
-      <section className={"container " + enterpriseStyles.section}>
-        <div className={enterpriseStyles.copy}><span>HIGH-COMPETITION APPLICATION</span><h2>경쟁 높은 대기업 지원,<br/>더 꼼꼼하게.</h2><p><b>현대자동차 생산직, 기아, SK하이닉스, S-OIL처럼 꼭 잡고 싶은 채용</b>이 있다면 단순 문장 첨삭을 넘어 공고와 경험 전체를 함께 분석하세요.</p><div className={enterpriseStyles.companies}><span>현대자동차 생산직</span><span>기아</span><span>SK하이닉스</span><span>S-OIL</span></div><small>표시된 기업은 지원 대상의 예시이며, MOOA Resume와 공식 제휴·후원·인증 관계를 의미하지 않습니다.</small></div>
-        <div className={enterpriseStyles.scope}><span>한곳에서 이어지는 준비</span><h3>입력은 한 번에,<br/>지원 준비는 빠짐없이.</h3><ol><li>채용공고 핵심 요구 분석</li><li>지원 직무에 맞는 경험 선택</li><li>문항별 첨삭과 근거 보완</li><li>제출 전 오류·면접 리스크 점검</li></ol><Link href="/onboarding">대기업 지원 PRO로 준비하기 <ArrowRight/></Link></div>
+      <section className={styles.waitlistSection} id="waitlist">
+        <div className="container">
+          <div className="section-label">출시 알림 신청</div>
+          <h2>정식 출시 소식을,<br />가장 먼저 알려드릴게요.</h2>
+          <p>이메일을 남겨주시면 정식 오픈과 함께 가장 먼저 안내해드립니다. 스팸 없이 출시 소식만 보내드려요.</p>
+          <WaitlistForm />
+        </div>
       </section>
 
-      <section className={"container " + positioningStyles.manifesto}>
-        <div className={positioningStyles.manifestoIcon}><Target/></div>
-        <div className={positioningStyles.manifestoCopy}><span>MOOA RESUME · OUR GOAL</span><h2>무아레쥬메의 자소서 첨삭은<br/>1차 서류 합격이 목표가 아닙니다.</h2><strong>최종 합격 후 입사가 목표입니다.</strong><p>단순히 1차 합격을 위해 첨삭하시나요? 저희는 서류 합격, 면접 합격, 입사를 목표로 첨삭을 진행합니다.</p></div>
-        <div className={positioningStyles.manifestoGoal}><small>OUR FINAL GOAL</small><b>우리의 목표는<br/>최종 합격입니다.</b><Link href="/onboarding">지원 준비 시작하기 <ArrowRight/></Link></div>
-      </section>
-      <section className="cta-section"><div className="container"><div><span>첫 분석은 가볍게 시작하세요</span><h2>내 지원서에서 놓친 근거를<br/>지금 확인해 보세요.</h2></div><Link href="/analyze" className="button button-light">무료 진단 시작 <ArrowRight size={18}/></Link></div></section>
-      <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><span>© 2026 MOOA Resume</span></footer>
+      <footer className="container">
+        <div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div>
+        <p>지원자의 실제 경험을 존중하는 AI 취업 코치<br /><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p>
+        <Link href="/guide">이용방법 · 자주 묻는 질문</Link>
+        <span>© 2026 MOOA Resume</span>
+      </footer>
     </main>
   );
 }
