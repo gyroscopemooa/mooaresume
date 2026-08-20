@@ -39,6 +39,7 @@ const scope = {
 export function AnalysisPreparation() {
   const [guest, setGuest] = useState<GuestDraft | null>(null);
   const [postingLength, setPostingLength] = useState(0);
+  const [confirmedProduct, setConfirmedProduct] = useState<"QUICK" | "PRO" | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -53,7 +54,10 @@ export function AnalysisPreparation() {
     return () => window.clearTimeout(timeout);
   }, []);
 
-  const product = guest?.selectedProduct ?? "QUICK";
+  // Once a checkout has actually been paid, trust the server's own record of
+  // what was purchased over the browser's local draft, which can go stale or
+  // get lost on the round trip to Polar and back.
+  const product = confirmedProduct ?? guest?.selectedProduct ?? "QUICK";
   const totalCharacters = countNonWhitespaceCharacters(
     guest?.questions?.map((question) => question.answer) ??
       guest?.questionDrafts ?? [guest?.draftText ?? ""],
@@ -84,7 +88,7 @@ export function AnalysisPreparation() {
           <ShieldCheck /> 결제 전 AI 호출 없음
         </span>
       </header>
-      <QuickCheckoutReturn />
+      <QuickCheckoutReturn onProductConfirmed={setConfirmedProduct} />
       <div className={styles.container}>
         <Link href="/onboarding" className={styles.back}>
           <ArrowLeft /> 상품 선택으로

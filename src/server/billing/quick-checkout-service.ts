@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createQuickCheckoutQuote, toQuickCheckoutMetadata } from "@/domain/usage-entitlement";
+import { createCheckoutQuote, toCheckoutMetadata, type ProductTier } from "@/domain/usage-entitlement";
 import type { PolarCheckoutGateway } from "./polar-checkout";
 
 export const createQuickCheckoutRequestSchema = z.object({
@@ -9,6 +9,7 @@ export const createQuickCheckoutRequestSchema = z.object({
 const quickCheckoutContextSchema = z.object({
   analysisRunId: z.string().uuid(),
   applicationCaseId: z.string().uuid(),
+  product: z.enum(["QUICK", "PRO"]),
   totalCharacters: z.number().int().positive(),
   openCheckout: z.object({
     checkoutId: z.string().min(1),
@@ -60,11 +61,11 @@ export async function createQuickCheckout(input: {
     throw new QuickCheckoutError("분석 실행 정보가 일치하지 않습니다.", "ANALYSIS_RUN_MISMATCH");
   }
 
-  const quote = createQuickCheckoutQuote(context.totalCharacters);
+  const quote = createCheckoutQuote(context.product as ProductTier, context.totalCharacters);
   if (context.openCheckout) {
     return { ...context.openCheckout, quote, reused: true };
   }
-  const metadata = toQuickCheckoutMetadata(quote, context.applicationCaseId);
+  const metadata = toCheckoutMetadata(quote, context.applicationCaseId);
   const createdSession = await input.gateway.createCheckout({
     quote,
     metadata,

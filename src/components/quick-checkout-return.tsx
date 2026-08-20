@@ -11,6 +11,7 @@ const statusSchema = z.object({
   checkoutStatus: z.enum(["OPEN", "SUCCEEDED", "EXPIRED"]),
   analysisRunId: z.string().uuid(),
   analysisStatus: z.enum(["PENDING", "RUNNING", "COMPLETED", "FAILED"]),
+  product: z.enum(["QUICK", "PRO"]).optional(),
   entitlementStatus: z.enum(["ACTIVE", "CONSUMED", "REVOKED"]).nullable(),
   hasResult: z.boolean(),
   timeoutRefunded: z.boolean().optional(),
@@ -18,7 +19,11 @@ const statusSchema = z.object({
 });
 
 type Phase = "idle" | "waiting" | "analyzing" | "failed";
-const MAX_POLLS = 45;
+// Analysis normally takes 2~5 minutes and the server auto-refunds past 10
+// minutes (claim_quick_analysis_timeout_refund's 600s window). Poll well
+// past that server-side bound so a slow-but-healthy run is never mistaken
+// for a client-side timeout.
+const MAX_POLLS = 330;
 
 const formatElapsed = (seconds: number) => {
   const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
@@ -26,8 +31,11 @@ const formatElapsed = (seconds: number) => {
   return `${minutes}:${remainder}`;
 };
 
-export function QuickCheckoutReturn() {
+type Props = { onProductConfirmed?: (product: "QUICK" | "PRO") => void };
+
+export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
   const [phase, setPhase] = useState<Phase>("idle");
+  const [product, setProduct] = useState<"QUICK" | "PRO" | null>(null);
   const [message, setMessage] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
   const [retryRunId, setRetryRunId] = useState<string | null>(null);
@@ -72,6 +80,10 @@ export function QuickCheckoutReturn() {
         }
 
         const status = statusSchema.parse(await response.json());
+        if (status.product) {
+          setProduct(status.product);
+          onProductConfirmed?.(status.product);
+        }
         if (status.hasResult || status.analysisStatus === "COMPLETED") {
           window.location.replace(`/result?analysisRunId=${status.analysisRunId}`);
           return;
@@ -100,26 +112,34 @@ export function QuickCheckoutReturn() {
           executing.current = true;
           setPhase("analyzing");
           setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 화면을 닫아도 작업은 계속됩니다.");
-          const executeResponse = await fetch("/api/analysis-runs/quick/execute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ analysisRunId: status.analysisRunId }),
-          });
-          if (executeResponse.ok) {
-            const executed: unknown = await executeResponse.json();
-            if (executed && typeof executed === "object" && "resultUrl" in executed && typeof executed.resultUrl === "string") {
-              window.location.replace(executed.resultUrl);
+          try {
+            const executeResponse = await fetch("/api/analysis-runs/quick/execute", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ analysisRunId: status.analysisRunId }),
+            });
+            if (executeResponse.ok) {
+              const executed: unknown = await executeResponse.json();
+              if (executed && typeof executed === "object" && "resultUrl" in executed && typeof executed.resultUrl === "string") {
+                window.location.replace(executed.resultUrl);
+                return;
+              }
+            } else {
+              const failure: unknown = await executeResponse.json().catch(() => null);
+              const detail = failure && typeof failure === "object" && "detail" in failure && typeof failure.detail === "string"
+                ? failure.detail : "ANALYSIS_EXECUTION_FAILED";
+              setPhase("failed");
+              setMessage(`분석을 완료하지 못했습니다. (${detail})`);
               return;
             }
-          } else {
-            const failure: unknown = await executeResponse.json().catch(() => null);
-            const detail = failure && typeof failure === "object" && "detail" in failure && typeof failure.detail === "string"
-              ? failure.detail : "ANALYSIS_EXECUTION_FAILED";
-            setPhase("failed");
-            setMessage(`\uBD84\uC11D\uC744 \uC644\uB8CC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. (${detail})`);
-            return;
+          } catch {
+            // A network-level failure here does not mean the analysis itself
+            // failed: begin_quick_analysis already flipped the run to RUNNING
+            // server-side before the AI call started. Keep polling status
+            // instead of declaring failure from a dropped connection.
+          } finally {
+            executing.current = false;
           }
-          executing.current = false;
         }
 
         if (attempt < MAX_POLLS) {
@@ -140,7 +160,7 @@ export function QuickCheckoutReturn() {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, []);
+  }, [onProductConfirmed]);
 
   useEffect(() => {
     if (phase === "idle" || phase === "failed" || startedAt.current === null) return;
@@ -201,7 +221,7 @@ export function QuickCheckoutReturn() {
     <section className={styles.status} data-phase={phase}>
       {phase === "failed" ? <TriangleAlert /> : phase === "waiting" ? <LoaderCircle className={styles.spin} /> : <CheckCircle2 />}
       <div>
-        <b>{phase === "failed" ? "확인이 필요합니다" : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>
+        <b>{product ? `${product} · ` : ""}{phase === "failed" ? "확인이 필요합니다" : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>
         <p>{message}</p>
         {phase === "failed" && retryRunId && <button type="button" className={styles.emailButton} onClick={() => void retryAnalysis()}>
           {"\uAE30\uC874 \uACB0\uC81C\uB85C \uB2E4\uC2DC \uBD84\uC11D\uD558\uAE30"}

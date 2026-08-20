@@ -61,11 +61,11 @@ export function ApplicationCaseHandoff({ guest }: Props) {
     });
     if (error) {
       setBusy(false);
-      setMessage("Google 濡쒓렇??瑜?珥덇린?뷀븯吏 紐삵뻽?듬땲??");
+      setMessage("Google 로그인을 초기화하지 못했습니다.");
     }
   }
-  async function beginQuickCheckout(analysisRunId: string) {
-    const response = await fetch("/api/checkouts/quick", {
+  async function beginCheckout(analysisRunId: string, product: "QUICK" | "PRO") {
+    const response = await fetch(`/api/checkouts/${product.toLowerCase()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ analysisRunId }),
@@ -131,8 +131,12 @@ export function ApplicationCaseHandoff({ guest }: Props) {
         const analysisRunId = "analysisRunId" in result && typeof result.analysisRunId === "string" ? result.analysisRunId : null;
         if (analysisRunId) setSavedAnalysisRunId(analysisRunId);
         setMessage("\uC785\uB825 \uB0B4\uC6A9\uC744 \uBE44\uACF5\uAC1C\uB85C \uC800\uC7A5\uD558\uACE0 \uACB0\uC81C \uD398\uC774\uC9C0\uB85C \uC774\uB3D9\uD569\uB2C8\uB2E4.");
-        if ((guest.selectedProduct ?? "QUICK") === "QUICK" && analysisRunId) {
-          await beginQuickCheckout(analysisRunId);
+        if (analysisRunId) {
+          try {
+            await beginCheckout(analysisRunId, guest.selectedProduct ?? "QUICK");
+          } catch (checkoutError) {
+            setMessage(checkoutError instanceof Error ? checkoutError.message : "결제 페이지로 연결하는 중 오류가 발생했습니다.");
+          }
         }
       }
     } catch {
@@ -143,43 +147,24 @@ export function ApplicationCaseHandoff({ guest }: Props) {
   }
 
   if (savedCaseId) {
-  async function startQuickCheckout() {
-    if (!savedAnalysisRunId) return;
-    setBusy(true);
-    setMessage("");
-    try {
-      const response = await fetch("/api/checkouts/quick", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analysisRunId: savedAnalysisRunId }),
-      });
-      const result: unknown = await response.json();
-      if (!response.ok) {
-        const errorMessage = result && typeof result === "object" && "error" in result && typeof result.error === "string"
-          ? ("detail" in result && typeof result.detail === "string"
-              ? `${result.error} (${result.detail})`
-              : "issues" in result && Array.isArray(result.issues) ? `${result.error} (${JSON.stringify(result.issues)})` : result.error)
-          : "결제 요청에 실패했습니다.";
-        setMessage(errorMessage);
-        return;
+    async function retryCheckout() {
+      if (!savedAnalysisRunId) return;
+      setBusy(true);
+      setMessage("");
+      try {
+        await beginCheckout(savedAnalysisRunId, guest?.selectedProduct ?? "QUICK");
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "결제 페이지로 연결하는 중 오류가 발생했습니다.");
+      } finally {
+        setBusy(false);
       }
-      if (!result || typeof result !== "object" || !("checkoutUrl" in result) || typeof result.checkoutUrl !== "string") {
-        setMessage("결제 페이지 주소를 확인하지 못했습니다.");
-        return;
-      }
-      window.location.assign(result.checkoutUrl);
-    } catch {
-      setMessage("결제 페이지로 연결하는 중 오류가 발생했습니다.");
-    } finally {
-      setBusy(false);
     }
-  }
 
-    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{(guest?.selectedProduct ?? "QUICK") === "QUICK" && busy ? "결제 페이지로 이동 중..." : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{(guest?.selectedProduct ?? "QUICK") === "QUICK" && savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void startQuickCheckout()}>{busy ? "결제 페이지 준비 중..." : "결제하고 분석 시작"} <ArrowRight/></button>}{message && <p>{message}</p>}</div>;
+    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{busy ? "결제 페이지로 이동 중..." : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? "결제 페이지 준비 중..." : "결제하고 분석 시작"} <ArrowRight/></button>}{message && <p>{message}</p>}</div>;
   }
 
   if (authenticated) {
-    return <div className={styles.action}><button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "\uC800\uC7A5 \uC911..." : (guest?.selectedProduct ?? "QUICK") === "QUICK" ? "\uACB0\uC81C\uD558\uACE0 \uBD84\uC11D \uC2DC\uC791" : "\uC9C0\uC6D0 \uAC74 \uBE44\uACF5\uAC1C \uC800\uC7A5"} <ArrowRight/></button>{message && <p>{message}</p>}</div>;
+    return <div className={styles.action}><button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "\uC800\uC7A5 \uC911..." : "\uACB0\uC81C\uD558\uACE0 \uBD84\uC11D \uC2DC\uC791"} <ArrowRight/></button>{message && <p>{message}</p>}</div>;
   }
 
   return <div className={styles.login}>

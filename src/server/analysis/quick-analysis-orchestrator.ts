@@ -36,8 +36,8 @@ export class QuickAnalysisOrchestrator {
     let context: QuickAnalysisRunContext | null = null;
     try {
       context = await this.repository.begin(analysisRunId);
-      if (context.request.product !== "QUICK") {
-        throw new Error("QUICK_ANALYSIS_REQUIRED");
+      if (context.request.product !== "QUICK" && context.request.product !== "PRO") {
+        throw new Error("UNSUPPORTED_ANALYSIS_PRODUCT");
       }
       const result = resultDocumentSchema.parse(
         await this.provider.analyze(context.request),

@@ -21,7 +21,7 @@ describe("QUICK checkout service", () => {
     const result = await createQuickCheckout({
       rawRequest: { analysisRunId },
       loadContext: vi.fn().mockResolvedValue({
-        data: { analysisRunId, applicationCaseId, totalCharacters: 13_000 },
+        data: { analysisRunId, applicationCaseId, product: "QUICK", totalCharacters: 13_000 },
         error: null,
       }),
       gateway: polar,
@@ -53,7 +53,7 @@ describe("QUICK checkout service", () => {
         applicationCaseId: "33333333-3333-4333-8333-333333333333",
       },
       loadContext: vi.fn().mockResolvedValue({
-        data: { analysisRunId, applicationCaseId, totalCharacters: 1_000 },
+        data: { analysisRunId, applicationCaseId, product: "QUICK", totalCharacters: 1_000 },
         error: null,
       }),
       gateway: polar,
@@ -66,6 +66,53 @@ describe("QUICK checkout service", () => {
       quote: expect.objectContaining({ totalPriceKrw: 4_900 }),
       metadata: expect.objectContaining({ applicationCaseId }),
     }));
+  });
+
+  it("prices a PRO checkout at the fixed 9,900 KRW server-side rate", async () => {
+    const polar = gateway();
+    const result = await createQuickCheckout({
+      rawRequest: { analysisRunId },
+      loadContext: vi.fn().mockResolvedValue({
+        data: { analysisRunId, applicationCaseId, product: "PRO", totalCharacters: 25_000 },
+        error: null,
+      }),
+      gateway: polar,
+      user: { id: "user-1", email: "user@example.com" },
+      successUrl: "https://example.com/success",
+      returnUrl: "https://example.com/return",
+    });
+
+    expect(result.quote).toMatchObject({
+      productTier: "PRO",
+      totalCharacters: 25_000,
+      totalPriceKrw: 9_900,
+    });
+    expect(polar.createCheckout).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({ tier: "PRO", applicationCaseId }),
+    }));
+  });
+
+  it("reuses an already-open checkout instead of creating a duplicate one", async () => {
+    const polar = gateway();
+    const openCheckout = {
+      checkoutId: "checkout-existing",
+      checkoutUrl: "https://sandbox.polar.sh/checkout/checkout-existing",
+      expiresAt: "2026-08-17T02:00:00.000Z",
+    };
+    const result = await createQuickCheckout({
+      rawRequest: { analysisRunId },
+      loadContext: vi.fn().mockResolvedValue({
+        data: { analysisRunId, applicationCaseId, product: "PRO", totalCharacters: 1_000, openCheckout },
+        error: null,
+      }),
+      gateway: polar,
+      user: { id: "user-1" },
+      successUrl: "https://example.com/success",
+      returnUrl: "https://example.com/return",
+    });
+
+    expect(result).toMatchObject({ ...openCheckout, reused: true });
+    expect(polar.createCheckout).not.toHaveBeenCalled();
   });
 
   it("stops before Polar when the owned context cannot be prepared", async () => {

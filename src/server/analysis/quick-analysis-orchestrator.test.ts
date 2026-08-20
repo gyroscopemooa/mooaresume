@@ -23,6 +23,26 @@ function repository(): QuickAnalysisRunRepository {
 }
 
 describe("QUICK analysis orchestrator", () => {
+  it("also runs a PRO request through the same reused pipeline", async () => {
+    const proRequest = { ...request, product: "PRO" as const };
+    const store: QuickAnalysisRunRepository = {
+      begin: vi.fn().mockResolvedValue({ analysisRunId, request: proRequest }),
+      complete: vi.fn().mockResolvedValue(undefined),
+      fail: vi.fn().mockResolvedValue(undefined),
+    };
+    const proResult = { ...sampleResultDocument, product: "PRO" as const };
+    const provider: ResumeAnalysisProvider = {
+      analyze: vi.fn().mockResolvedValue(proResult),
+    };
+
+    const result = await new QuickAnalysisOrchestrator(store, provider).execute(analysisRunId);
+
+    expect(result).toEqual(proResult);
+    expect(provider.analyze).toHaveBeenCalledWith(proRequest);
+    expect(store.complete).toHaveBeenCalledWith(analysisRunId, proResult);
+    expect(store.fail).not.toHaveBeenCalled();
+  });
+
   it("begins once, runs the provider, and persists the validated result", async () => {
     const store = repository();
     const provider: ResumeAnalysisProvider = {

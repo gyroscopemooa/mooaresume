@@ -1,12 +1,12 @@
 import "server-only";
 
 import { Polar } from "@polar-sh/sdk";
-import type { CheckoutQuote, QuickCheckoutMetadata } from "@/domain/usage-entitlement";
+import type { CheckoutQuote, CheckoutMetadata } from "@/domain/usage-entitlement";
 import { PresentmentCurrency, type PresentmentCurrency as PresentmentCurrencyType } from "@polar-sh/sdk/models/components/presentmentcurrency.js";
 
 export type CreatePolarCheckoutInput = {
   quote: CheckoutQuote;
-  metadata: QuickCheckoutMetadata;
+  metadata: CheckoutMetadata;
   successUrl: string;
   returnUrl: string;
   externalCustomerId: string;
@@ -29,16 +29,16 @@ type PolarCheckoutClient = {
 export class PolarSdkCheckoutGateway implements PolarCheckoutGateway {
   constructor(
     private readonly client: PolarCheckoutClient,
-    private readonly quickProductId: string,
+    private readonly productIds: { QUICK: string; PRO: string },
     private readonly defaultPresentmentCurrency: PresentmentCurrencyType = "krw",
     private readonly defaultPresentmentPriceAmount: number | undefined = undefined,
   ) {}
 
   async createCheckout(input: CreatePolarCheckoutInput): Promise<PolarCheckoutSession> {
     const checkout = await this.client.checkouts.create({
-      products: [this.quickProductId],
+      products: [this.productIds[input.metadata.tier]],
       prices: {
-        [this.quickProductId]: [
+        [this.productIds[input.metadata.tier]]: [
           {
             amountType: "fixed",
             priceCurrency: "krw",
@@ -92,6 +92,7 @@ export class PolarSdkCheckoutGateway implements PolarCheckoutGateway {
 export function getPolarCheckoutConfiguration() {
   const accessToken = process.env.POLAR_ACCESS_TOKEN;
   const quickProductId = process.env.POLAR_QUICK_PRODUCT_ID;
+  const proProductId = process.env.POLAR_PRO_PRODUCT_ID;
   const server = process.env.POLAR_SERVER === "production" ? "production" : "sandbox";
   const defaultPresentmentCurrency = (process.env.POLAR_DEFAULT_PRESENTMENT_CURRENCY ?? "krw").trim().toLowerCase();
   const defaultPriceRaw = process.env.POLAR_DEFAULT_PRESENTMENT_PRICE_AMOUNT?.trim();
@@ -100,26 +101,26 @@ export function getPolarCheckoutConfiguration() {
     throw new Error("POLAR_DEFAULT_PRESENTMENT_CURRENCY must be a 3-letter currency and POLAR_DEFAULT_PRESENTMENT_PRICE_AMOUNT must be an integer");
   }
 
-  if (!accessToken || !quickProductId) {
-    throw new Error("POLAR_ACCESS_TOKEN과 POLAR_QUICK_PRODUCT_ID가 필요합니다.");
+  if (!accessToken || !quickProductId || !proProductId) {
+    throw new Error("POLAR_ACCESS_TOKEN, POLAR_QUICK_PRODUCT_ID, POLAR_PRO_PRODUCT_ID가 필요합니다.");
   }
-  return { accessToken, quickProductId, server, defaultPresentmentCurrency: defaultPresentmentCurrency as PresentmentCurrencyType, defaultPresentmentPriceAmount } as const;
+  return { accessToken, quickProductId, proProductId, server, defaultPresentmentCurrency: defaultPresentmentCurrency as PresentmentCurrencyType, defaultPresentmentPriceAmount } as const;
 }
 
 export function getPolarWebhookConfiguration() {
-  const { quickProductId } = getPolarCheckoutConfiguration();
+  const { quickProductId, proProductId } = getPolarCheckoutConfiguration();
   const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
   if (!webhookSecret) {
     throw new Error("POLAR_WEBHOOK_SECRET이 필요합니다.");
   }
-  return { quickProductId, webhookSecret };
+  return { quickProductId, proProductId, webhookSecret };
 }
 
 export function createPolarCheckoutGatewayFromEnv() {
   const config = getPolarCheckoutConfiguration();
   return new PolarSdkCheckoutGateway(
     new Polar({ accessToken: config.accessToken, server: config.server }),
-    config.quickProductId,
+    { QUICK: config.quickProductId, PRO: config.proProductId },
     config.defaultPresentmentCurrency,
     config.defaultPresentmentPriceAmount,
   );

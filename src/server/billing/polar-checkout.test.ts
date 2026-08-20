@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createQuickCheckoutQuote, toQuickCheckoutMetadata } from "@/domain/usage-entitlement";
+import { createCheckoutQuote, createQuickCheckoutQuote, toCheckoutMetadata, toQuickCheckoutMetadata } from "@/domain/usage-entitlement";
 import { PolarSdkCheckoutGateway } from "./polar-checkout";
 
 describe("Polar SDK checkout gateway", () => {
@@ -16,7 +16,7 @@ describe("Polar SDK checkout gateway", () => {
     );
     const gateway = new PolarSdkCheckoutGateway(
       { checkouts: { create } } as never,
-      "product-quick",
+      { QUICK: "product-quick", PRO: "product-pro" },
     );
 
     const result = await gateway.createCheckout({
@@ -53,6 +53,47 @@ describe("Polar SDK checkout gateway", () => {
       allowTrial: false,
       currency: "krw",
       locale: "ko-KR",
+    }), { timeoutMs: 10_000 });
+  });
+
+  it("selects the PRO product id and fixed 9,900 KRW price for a PRO checkout", async () => {
+    const create = vi.fn().mockResolvedValue({
+      id: "checkout-2",
+      url: "https://sandbox.polar.sh/checkout/checkout-2",
+      expiresAt: new Date("2026-08-17T01:00:00.000Z"),
+    });
+    const quote = createCheckoutQuote("PRO", 20_000);
+    const metadata = toCheckoutMetadata(
+      quote,
+      "11111111-1111-4111-8111-111111111111",
+    );
+    const gateway = new PolarSdkCheckoutGateway(
+      { checkouts: { create } } as never,
+      { QUICK: "product-quick", PRO: "product-pro" },
+    );
+
+    await gateway.createCheckout({
+      quote,
+      metadata,
+      successUrl: "https://example.com/analysis/prepare?checkout=success",
+      returnUrl: "https://example.com/analysis/prepare",
+      externalCustomerId: "user-1",
+      customerEmail: "user@example.com",
+      customerIpAddress: "203.0.113.10",
+    });
+
+    expect(quote.totalPriceKrw).toBe(9_900);
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      products: ["product-pro"],
+      prices: {
+        "product-pro": [{
+          amountType: "fixed",
+          priceCurrency: "krw",
+          priceAmount: 9_900,
+          taxBehavior: "inclusive",
+        }],
+      },
+      metadata: expect.objectContaining({ tier: "PRO" }),
     }), { timeoutMs: 10_000 });
   });
 });

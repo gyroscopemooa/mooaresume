@@ -3,11 +3,11 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { validateEvent } from "@polar-sh/sdk/webhooks";
-import { createQuickCheckoutQuote } from "@/domain/usage-entitlement";
+import { createCheckoutQuote, productTierSchema, type ProductTier } from "@/domain/usage-entitlement";
 
 const paidMetadataSchema = z.object({
   applicationCaseId: z.string().uuid(),
-  tier: z.literal("QUICK"),
+  tier: productTierSchema,
   totalCharacters: z.coerce.number().int().nonnegative(),
   baseCharacters: z.coerce.number().int().positive(),
   includedCharacters: z.coerce.number().int().positive(),
@@ -25,7 +25,7 @@ export type PolarEntitlementRepository = {
     providerOrderId: string;
     providerCheckoutId: string;
     applicationCaseId: string;
-    product: "QUICK";
+    product: ProductTier;
     allowedCharacters: number;
     amount: number;
     currency: string;
@@ -54,20 +54,20 @@ function getEventId(headers: Record<string, string>) {
 
 function assertPaidOrder(
   event: Extract<VerifiedPolarEvent, { type: "order.paid" }>,
-  expectedProductId: string,
+  expectedProductIds: Record<ProductTier, string>,
 ) {
   if (!event.data.paid || event.data.status !== "paid") {
     throw new Error("POLAR_ORDER_NOT_PAID");
   }
-  if (event.data.productId !== expectedProductId) {
+  const metadata = paidMetadataSchema.parse(event.data.metadata);
+  if (event.data.productId !== expectedProductIds[metadata.tier]) {
     throw new Error("POLAR_PRODUCT_MISMATCH");
   }
   if (event.data.currency.toLowerCase() !== "krw") {
     throw new Error("POLAR_CURRENCY_MISMATCH");
   }
 
-  const metadata = paidMetadataSchema.parse(event.data.metadata);
-  const quote = createQuickCheckoutQuote(metadata.totalCharacters);
+  const quote = createCheckoutQuote(metadata.tier, metadata.totalCharacters);
   if (
     metadata.baseCharacters !== quote.baseCharacters
     || metadata.includedCharacters !== quote.includedCharacters
@@ -92,7 +92,7 @@ export async function processPolarWebhook(input: {
   rawBody: string;
   headers: Record<string, string>;
   secret: string;
-  expectedQuickProductId: string;
+  expectedProductIds: Record<ProductTier, string>;
   repository: PolarEntitlementRepository;
   verifyEvent?: typeof validateEvent;
 }): Promise<PolarWebhookProcessResult> {
@@ -103,7 +103,7 @@ export async function processPolarWebhook(input: {
 
   if (event.type === "order.paid" || (event.type === "order.updated" && event.data.status === "paid")) {
     const paidEvent = event as unknown as Extract<VerifiedPolarEvent, { type: "order.paid" }>;
-    const metadata = assertPaidOrder(paidEvent, input.expectedQuickProductId);
+    const metadata = assertPaidOrder(paidEvent, input.expectedProductIds);
     const repositoryResult = await input.repository.grantPaidOrder({
       eventId,
       eventType: "order.paid",

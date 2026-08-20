@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { createQuickCheckoutQuote, toQuickCheckoutMetadata } from "@/domain/usage-entitlement";
+import { createCheckoutQuote, createQuickCheckoutQuote, toCheckoutMetadata, toQuickCheckoutMetadata } from "@/domain/usage-entitlement";
 import type { PolarEntitlementRepository } from "./polar-webhook";
 import { processPolarWebhook } from "./polar-webhook";
 
 const caseId = "11111111-1111-4111-8111-111111111111";
 const quote = createQuickCheckoutQuote(8_000);
 const metadata = toQuickCheckoutMetadata(quote, caseId);
+const proQuote = createCheckoutQuote("PRO", 20_000);
+const proMetadata = toCheckoutMetadata(proQuote, caseId);
 
 function repository(): PolarEntitlementRepository {
   return {
@@ -44,7 +46,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{signed payload}",
       headers,
       secret: "secret",
-      expectedQuickProductId: "product-quick",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: store,
       verifyEvent: vi.fn(() => paidEvent() as never),
     });
@@ -64,12 +66,57 @@ describe("Polar webhook entitlement processing", () => {
     expect(JSON.stringify(vi.mocked(store.grantPaidOrder).mock.calls)).not.toContain("signed payload");
   });
 
+  it("grants a verified PRO paid order using the PRO product id and quote", async () => {
+    const store = repository();
+    const result = await processPolarWebhook({
+      rawBody: "{}",
+      headers,
+      secret: "secret",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      repository: store,
+      verifyEvent: vi.fn(() => paidEvent({
+        productId: "product-pro",
+        netAmount: proQuote.totalPriceKrw,
+        totalAmount: proQuote.totalPriceKrw,
+        metadata: proMetadata,
+      }) as never),
+    });
+
+    expect(result).toEqual({
+      disposition: "PROCESSED",
+      eventType: "order.paid",
+      repositoryResult: "GRANTED",
+    });
+    expect(store.grantPaidOrder).toHaveBeenCalledWith(expect.objectContaining({
+      product: "PRO",
+      applicationCaseId: caseId,
+      allowedCharacters: proQuote.allowedCharacters,
+      amount: proQuote.totalPriceKrw,
+    }));
+  });
+
+  it("rejects a PRO order charged against the QUICK product id", async () => {
+    await expect(processPolarWebhook({
+      rawBody: "{}",
+      headers,
+      secret: "secret",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      repository: repository(),
+      verifyEvent: vi.fn(() => paidEvent({
+        productId: "product-quick",
+        netAmount: proQuote.totalPriceKrw,
+        totalAmount: proQuote.totalPriceKrw,
+        metadata: proMetadata,
+      }) as never),
+    })).rejects.toThrow("POLAR_PRODUCT_MISMATCH");
+  });
+
   it("accepts a paid order delivered as order.updated", async () => {
     const result = await processPolarWebhook({
       rawBody: "{}",
       headers,
       secret: "secret",
-      expectedQuickProductId: "product-quick",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => ({ ...paidEvent(), type: "order.updated" }) as never),
     });
@@ -81,7 +128,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
-      expectedQuickProductId: "product-quick",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({ totalAmount: quote.totalPriceKrw - 1_000, discountId: "discount-1" }) as never),
     });
@@ -98,7 +145,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
-      expectedQuickProductId: "product-quick",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent(overrides) as never),
     })).rejects.toThrow(message);
@@ -109,7 +156,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
-      expectedQuickProductId: "product-quick",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({
         metadata: { ...metadata, allowedCharacters: 999_999 },
@@ -123,7 +170,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
-      expectedQuickProductId: "product-quick",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: store,
       verifyEvent: vi.fn(() => ({
         type: "order.refunded",
@@ -145,7 +192,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
-      expectedQuickProductId: "product-quick",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: store,
       verifyEvent: vi.fn(() => ({
         type: "order.refunded",
