@@ -215,6 +215,7 @@ export default async function Home() {
         <div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div>
         <p>지원자의 실제 경험을 존중하는 AI 취업 코치<br /><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p>
         <Link href="/guide">이용방법 · 자주 묻는 질문</Link>
+        <a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a>
         <span>© 2026 MOOA Resume</span>
       </footer>
     </main>

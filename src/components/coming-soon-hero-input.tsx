@@ -2,6 +2,8 @@
 
 import { ChangeEvent, useState } from "react";
 import { ArrowRight, LockKeyhole, Upload } from "lucide-react";
+import { decideWritingMode } from "@/domain/writing-mode";
+import { saveGuestDraft } from "@/lib/guest-draft";
 import { AttachmentCard } from "./attachment-card";
 import styles from "./coming-soon-hero-input.module.css";
 
@@ -39,6 +41,32 @@ export function ComingSoonHeroInput() {
     }
   }
 
+  // The public landing remains a waitlist during pre-launch, but preserve the
+  // draft in the same session-backed format used by the live intake flow.
+  // At launch the CTA can switch to onboarding without losing what the user
+  // pasted or extracted from their file.
+  function preserveDraftForLaunch() {
+    const trimmedDraft = draft.trim();
+    if (!trimmedDraft) {
+      saveGuestDraft({ draftText: "", targetLength: 700, temporaryWritingMode: "CREATE" });
+      return;
+    }
+
+    const decision = decideWritingMode({
+      draft: trimmedDraft,
+      targetLength: 700,
+      hasJobPosting: true,
+    });
+    saveGuestDraft({
+      draftText: trimmedDraft,
+      targetLength: 700,
+      sourceFilename: attachedFile?.filename,
+      sourceFileExtension: attachedFile?.extension,
+      sourceFileSizeBytes: attachedFile?.sizeBytes,
+      temporaryWritingMode: decision.mode,
+    });
+  }
+
   return (
     <div className={styles.wrap}>
       {attachedFile && <AttachmentCard {...attachedFile} onRemove={() => setAttachedFile(null)} />}
@@ -63,7 +91,7 @@ export function ComingSoonHeroInput() {
         </div>
       </div>
       {error && <p className={styles.error}>{error}</p>}
-      <a href="#waitlist" className={styles.primary}>
+      <a href="#waitlist" className={styles.primary} onClick={preserveDraftForLaunch}>
         무료 진단 시작하기 <ArrowRight />
       </a>
       <div className={styles.sub}>

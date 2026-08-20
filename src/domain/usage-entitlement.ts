@@ -1,13 +1,17 @@
 import { z } from "zod";
 
 export const QUICK_BASE_PRICE_KRW = 4_900;
+export const PRO_BASE_PRICE_KRW = 9_900;
+export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
 export const QUICK_SOFT_LIMIT_CHARS = 7_000;
 export const QUICK_INCLUDED_LIMIT_CHARS = 12_000;
 export const QUICK_EXTRA_BLOCK_CHARS = 7_000;
 export const QUICK_EXTRA_BLOCK_PRICE_KRW = 2_900;
+export const productTierSchema = z.enum(["QUICK", "PRO"]);
+export type ProductTier = z.infer<typeof productTierSchema>;
 
 export const checkoutQuoteSchema = z.object({
-  productTier: z.literal("QUICK"),
+  productTier: productTierSchema,
   totalCharacters: z.number().int().nonnegative(),
   baseCharacters: z.number().int().positive(),
   includedCharacters: z.number().int().positive(),
@@ -22,15 +26,18 @@ export const checkoutQuoteSchema = z.object({
 
 export type CheckoutQuote = z.infer<typeof checkoutQuoteSchema>;
 
-export type QuickCheckoutMetadata = {
+export type CheckoutMetadata = {
   applicationCaseId?: string;
-  tier: "QUICK";
+  tier: ProductTier;
   totalCharacters: number;
   baseCharacters: number;
   includedCharacters: number;
   extraBlocks: number;
   allowedCharacters: number;
 };
+
+// Retained for established QUICK checkout call sites.
+export type QuickCheckoutMetadata = CheckoutMetadata;
 
 export function countNonWhitespaceCharacters(parts: readonly string[]): number {
   return parts.reduce((total, part) => total + part.replace(/\s/g, "").length, 0);
@@ -58,10 +65,33 @@ export function createQuickCheckoutQuote(totalCharacters: number): CheckoutQuote
   });
 }
 
-export function toQuickCheckoutMetadata(quote: CheckoutQuote, applicationCaseId?: string): QuickCheckoutMetadata {
+
+export function createProCheckoutQuote(totalCharacters: number): CheckoutQuote {
+  const normalizedTotal = Math.max(0, Math.floor(totalCharacters));
+  return checkoutQuoteSchema.parse({
+    productTier: "PRO",
+    totalCharacters: normalizedTotal,
+    baseCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    includedCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    extraBlocks: 0,
+    extraCharacters: 0,
+    allowedCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    basePriceKrw: PRO_BASE_PRICE_KRW,
+    extraPriceKrw: 0,
+    totalPriceKrw: PRO_BASE_PRICE_KRW,
+    needsScopeReview: normalizedTotal > PRO_INCLUDED_LIMIT_CHARS,
+  });
+}
+export function createCheckoutQuote(product: ProductTier, totalCharacters: number): CheckoutQuote {
+  return product === "PRO"
+    ? createProCheckoutQuote(totalCharacters)
+    : createQuickCheckoutQuote(totalCharacters);
+}
+
+export function toCheckoutMetadata(quote: CheckoutQuote, applicationCaseId?: string): CheckoutMetadata {
   return {
     applicationCaseId,
-    tier: "QUICK",
+    tier: quote.productTier,
     totalCharacters: quote.totalCharacters,
     baseCharacters: quote.baseCharacters,
     includedCharacters: quote.includedCharacters,
@@ -70,3 +100,6 @@ export function toQuickCheckoutMetadata(quote: CheckoutQuote, applicationCaseId?
   };
 }
 
+export function toQuickCheckoutMetadata(quote: CheckoutQuote, applicationCaseId?: string): QuickCheckoutMetadata {
+  return toCheckoutMetadata(quote, applicationCaseId);
+}

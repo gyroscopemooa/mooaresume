@@ -8,7 +8,17 @@ import {
 
 function isSameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
-  return !origin || origin === request.nextUrl.origin;
+  if (!origin) return true;
+
+  try {
+    const originHost = new URL(origin).host;
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    return [request.nextUrl.host, request.headers.get("host"), forwardedHost]
+      .filter((host): host is string => Boolean(host))
+      .includes(originHost);
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {
