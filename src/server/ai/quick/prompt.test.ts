@@ -189,4 +189,15 @@ describe("다른 작성 단계는 그대로 유지된다", () => {
     expect(instructions).toContain("지원자가 단계별로 입력한 사실 메모입니다");
     expect(instructions).not.toContain("실제로 채워 완성된 답변을 만드세요");
   });
+
+  it("CREATE에는 원문 문장 유지 규칙을 걸지 않는다", () => {
+    // The memo is not prose to preserve; CREATE is told the opposite, and both
+    // rules at once is a contradiction.
+    const create = buildQuickAnalysisInstructions({ ...request, writingMode: "CREATE" });
+    const polish = buildQuickAnalysisInstructions({ ...request, writingMode: "POLISH" });
+
+    expect(create).not.toContain("최소 하나는 거의 그대로 유지하세요");
+    expect(create).toContain("메모 문장을 그대로 옮기지 말고");
+    expect(polish).toContain("최소 하나는 거의 그대로 유지하세요");
+  });
 });

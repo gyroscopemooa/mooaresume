@@ -90,6 +90,20 @@ function HighlightedAnswer({ text, phrases }: { text: string; phrases: readonly 
     : <span key={index}>{part.value}</span>)}</p>;
 }
 
+/**
+ * Marks the sentences BUILD wrote that the applicant did not. The spans come
+ * from the same diff the 변경점 표시 toggle already uses, so nothing new has to
+ * be stored to know where the fill is. Shown by default in BUILD results —
+ * a proposal the reader cannot see is a proposal they will submit unread.
+ */
+function FilledAnswer({ original, revised }: { original: string; revised: string }) {
+  return <p className={styles.after}>{diffText(original, revised)
+    .filter((part) => part.type !== "removed")
+    .map((part, index) => part.type === "added"
+      ? <mark key={index} className={styles.filled}>{part.value}</mark>
+      : <span key={index}>{part.value}</span>)}</p>;
+}
+
 function DiffAnswer({ original, revised, side }: { original: string; revised: string; side: "before" | "after" }) {
   return <p className={styles.diffText}>{diffText(original, revised).filter((part) => part.type === "equal" || (side === "before" ? part.type === "removed" : part.type === "added")).map((part, index) => <span key={`${part.type}-${index}`} className={part.type === "equal" ? undefined : part.type === "added" ? styles.added : styles.removed}>{part.value}</span>)}</p>;
 }
@@ -144,6 +158,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
   }, [answers, restored, storageKey]);
 
   const subject = useMemo(() => resolveResultSubject(result), [result]);
+  const isFilledResult = result.writingMode === "BUILD";
   const applicationLabel = resolveApplicationLabel(result);
   // The shared builder is left untouched for the other result screens; the
   // resolved subject is handed to it instead of the stored placeholders.
@@ -251,6 +266,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
 
       {view === "revision" && <section className={styles.workspace}>
         <div className={styles.title}><div><span className={styles.eyebrow}>BEFORE → AFTER</span><h2>문항별 첨삭 결과</h2></div><button type="button" className={styles.diffToggle} aria-pressed={showChanges} onClick={() => setShowChanges((current) => !current)}><GitCompareArrows/>{showChanges ? "\uBCC0\uACBD\uC810 \uC228\uAE30\uAE30" : "\uBCC0\uACBD\uC810 \uD45C\uC2DC"}</button><p>기본은 읽기 모드입니다. 필요한 문항만 직접 수정하세요.</p></div>
+        {isFilledResult && <p className={styles.filledLegend}><mark className={styles.filled}>이렇게 표시된 부분</mark>은 비어 있거나 짧았던 곳을 채운 <b>제안</b>입니다. 없는 경험·수치는 넣지 않았지만, 사실과 다르면 직접 고쳐 주세요.</p>}
         {result.questions.map((question) => {
           const answer = answers[question.id] ?? question.revisedAnswer;
           const isEditing = editing === question.id;
@@ -258,7 +274,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
-            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}</section></div>
+            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
@@ -285,7 +301,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         </section>}
       </section>}
 
-      {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={downloadDocx}><Download/> DOCX 저장</button><button onClick={download}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div><p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer></section>}
+      {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={downloadDocx}><Download/> DOCX 저장</button><button onClick={download}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div><p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}{isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>비어 있던 부분을 채운 제안이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer></section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
       {view === "final" && <FinalUpgradeCard product={result.product} />}
     </div>

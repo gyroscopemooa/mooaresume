@@ -149,3 +149,39 @@ describe("ResultWorkspaceComplete 영문 자리표시자", () => {
     expect(screen.queryByText("Cover-letter question")).toBeNull();
   });
 });
+
+describe("ResultWorkspaceComplete 채운 부분 표시", () => {
+  const filled = {
+    ...sampleResultDocument,
+    writingMode: "BUILD" as const,
+    questions: sampleResultDocument.questions.map((question, index) => index === 0 ? {
+      ...question,
+      originalAnswer: "생산 현장 경험을 바탕으로 지원했습니다.",
+      revisedAnswer: "생산 현장 경험을 바탕으로 지원했습니다. 현장에서 기준을 정리하는 일을 해보고 싶습니다.",
+    } : question),
+  };
+
+  it("BUILD 결과는 새로 채운 부분을 표시하고 무엇인지 알려준다", () => {
+    render(<ResultWorkspaceComplete result={filled}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    expect(screen.getByText(/비어 있거나 짧았던 곳을 채운/)).toBeTruthy();
+    expect(document.querySelectorAll("mark").length).toBeGreaterThan(0);
+  });
+
+  it("최종 첨삭본은 제안을 빼지 않고 확인만 요청한다", () => {
+    render(<ResultWorkspaceComplete result={filled}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    expect(screen.getByText(/비어 있던 부분을 채운 제안이 포함되어 있습니다/)).toBeTruthy();
+    // The point of filling is a draft that can be submitted as it stands.
+    expect(screen.getByText(filled.questions[0].revisedAnswer)).toBeTruthy();
+  });
+
+  it("BUILD가 아닌 결과에는 표시하지 않는다", () => {
+    render(<ResultWorkspaceComplete result={{ ...filled, writingMode: "POLISH" as const }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    expect(screen.queryByText(/비어 있거나 짧았던 곳을 채운/)).toBeNull();
+  });
+});

@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.7";
+export const QUICK_PROMPT_VERSION = "quick-1.8";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -89,7 +89,13 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     // Wholesale rewriting is what a free chatbot already does. What is sold
     // here is the applicant's own document, improved — a draft they can still
     // defend in the interview room.
-    "각 문항에서 원문 문장 중 최소 하나는 거의 그대로 유지하세요. 지원자가 쓴 문장이 하나도 남지 않은 첨삭본은 첨삭이 아니라 대필입니다. 원문 전체를 쓸 수 없다고 판단했다면 그렇게 판단한 이유를 consultingAdvice에 적으세요.",
+    //
+    // CREATE is the exception: there its "원문" is the fact memo typed into the
+    // guided form, and that mode is separately told not to carry memo sentences
+    // across. Applying this rule there would order the model to do both.
+    ...(request.writingMode === "CREATE"
+      ? []
+      : ["각 문항에서 원문 문장 중 최소 하나는 거의 그대로 유지하세요. 지원자가 쓴 문장이 하나도 남지 않은 첨삭본은 첨삭이 아니라 대필입니다. 원문 전체를 쓸 수 없다고 판단했다면 그렇게 판단한 이유를 consultingAdvice에 적으세요."]),
     "각 revision의 originalAnnotations에는 제출 원문에서 짚어줄 표현을 최대 10개까지 넣으세요. 개수를 채우기 위해 억지로 만들지 마세요.",
     "originalAnnotations.phrase는 해당 문항의 원문 답변에 실제로 한 번만 등장하는 문구를 토씨와 띄어쓰기까지 그대로 복사하세요. 낱말 하나만 잘라내지 말고, 문제나 강점이 드러나는 구절이나 문장 단위로 잡으세요.",
     "originalAnnotations.type은 good, delete, vague, revise, fact 중 하나만 사용하세요.",

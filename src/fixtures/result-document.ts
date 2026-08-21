@@ -4,6 +4,7 @@ export const sampleResultDocument: ResultDocument = {
   schemaVersion: "1.0",
   caseId: "sample-hyundai-mobis-production",
   product: "PRO",
+  writingMode: "BUILD",
   isSample: true,
   coverageNotes: [],
   interviewRisks: [

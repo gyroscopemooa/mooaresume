@@ -383,3 +383,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 258 passed, `npx tsc --noEmit` clean. `npx eslint src` 경고 1건이 `pro-create-wizard.tsx`에 남아 있으나(`location.assign`) Codex 진행 중 파일이라 수정하지 않았습니다.
 - Rollback/recovery reference: 이 커밋을 revert하면 Codex 작업분 전체가 미커밋 상태로 돌아갑니다. 스키마·DB 변경은 없습니다.
 - User decision: 사용자가 인수 커밋과 후속 작업 계속을 지시했습니다.
+
+## 2026-08-22 — Claude: CREATE 지시문 충돌 해소 + BUILD 채운 부분 화면 표시
+
+- Agent/session: Claude, 사용자 지시로 인수 커밋 후 후속 작업 진행.
+- Status: completed.
+- Change (1) CREATE 충돌 해소: 전날 추가한 "각 문항에서 원문 문장 중 최소 하나는 거의 그대로 유지하세요"가 모드 분기 없이 전 모드에 걸려 있었습니다. CREATE에서는 "원문"이 Guided 폼에 입력한 사실 메모(`[지원 계기]` 머리말 포함)이고, CREATE 자체 지시문은 "메모 문장을 그대로 옮기지 말라"고 말합니다. 두 지시가 정면 충돌해 메모 문장이 결과에 그대로 박힐 수 있었습니다. CREATE만 이 규칙에서 제외하고, POLISH에는 유지되는지 함께 검사하는 테스트를 추가했습니다. `QUICK_PROMPT_VERSION` `quick-1.7` → `quick-1.8`.
+- Change (2) 작성 단계 기록: 결과 문서에 `writingMode`가 없어 화면이 BUILD 결과를 식별할 수 없었습니다. `resultDocumentSchema`에 `.default("POLISH")`로 추가하고 프로바이더가 저장하게 했습니다. 기존 저장 결과는 기본값으로 파싱되므로 영향이 없습니다. (Codex 인수 커밋이 끝나 `provider.ts` 충돌 위험이 해소된 뒤 진행했습니다.)
+- Change (3) 채운 부분 표시: BUILD 결과의 문항별 첨삭에서 새로 채운 구간을 파란 배경으로 표시하고 범례를 붙였습니다. 표시 구간은 이미 있는 `diffText`로 계산하므로 새로 저장하는 데이터가 없습니다.
+- 설계 정정: 결정 문서 §4의 초기 안("기본 복사 = 확인된 내용만, 제안 포함은 별도 버튼")을 폐기하고, **복사·다운로드에서 제안을 빼지 않는 것**으로 대체했습니다. 채운 부분을 덜어내면 다시 미완성 글이 되어 기능의 존재 이유를 무효화하기 때문입니다. 사용자의 "최종 첨삭본은 빈칸 없이 꽉 되어야 한다"는 결정과 정합합니다. 대신 최종 첨삭본 상단에 제안 포함 사실과 확인 위치를 고정 안내로 띄웁니다. 책임 소재는 버튼 분리가 아니라 §3 채우기 규칙(없는 수치·고유명사 금지)이 집니다.
+- Files/branch: `src/server/ai/quick/prompt.ts` + 테스트, `src/domain/result-document.ts`, `src/server/ai/quick/provider.ts`(1줄 추가), `src/fixtures/result-document.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + 테스트, `docs/build-mode-fill-in-decision.md`(§4 대체) on `main`.
+- Validation: 전체 `npx vitest run` 262 passed(이번 추가 4건). `npx tsc --noEmit` clean. `npx eslint src` 오류 0건(경고 1건은 Codex의 `pro-create-wizard.tsx`).
+- Rollback/recovery reference: 커밋 revert. `writingMode`는 기본값이 있어 되돌려도 저장된 결과가 깨지지 않습니다.
+- User decision: 사용자가 인수 커밋 후 후속 작업 계속을 지시했고, 최종 첨삭본은 빈칸 없이 완결되어야 한다고 결정했습니다.

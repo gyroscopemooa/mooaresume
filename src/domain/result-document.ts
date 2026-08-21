@@ -99,6 +99,10 @@ export const resultDocumentSchema = z.object({
   schemaVersion: z.literal("1.0"),
   caseId: z.string().min(1),
   product: z.enum(["QUICK", "PRO"]),
+  // The screen has to tell a filled-in BUILD result from a polished one: the
+  // parts BUILD wrote are proposals and must be marked as such. Defaulted so
+  // results saved before this field existed still parse.
+  writingMode: z.enum(["CREATE", "BUILD", "POLISH"]).default("POLISH"),
   isSample: z.boolean(),
   company: z.string().min(1),
   role: z.string().min(1),
