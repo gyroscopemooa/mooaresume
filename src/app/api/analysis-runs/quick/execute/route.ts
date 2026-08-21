@@ -77,7 +77,11 @@ export async function POST(request: NextRequest) {
       if (blockingIssues.length > 0) {
         await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true);
         const detail = blockingIssues.map((issue) => issue.message).join(" ");
+        // The codes alone say which rule fired, not which quote or number
+        // tripped it — and the detail never reaches the retry screen, so this
+        // log is the only place the cause is visible.
         console.error(`quick_analysis_validation_blocked:${blockingIssues.map((issue) => issue.code).join(",")}`);
+        for (const issue of blockingIssues) console.error(`  ${issue.code}: ${issue.message}`);
         return NextResponse.json({ error: "사실 확인에 실패해 결과를 보류했습니다.", detail, code: "OUTPUT_VALIDATION_FAILED" }, { status: 422 });
       }
 
