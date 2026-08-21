@@ -551,3 +551,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 282 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건. 코드에 Cloudflare 바인딩 참조가 남아 있지 않음을 확인했습니다.
 - 남은 것: `wrangler.jsonc`의 `send_email` 바인딩 선언이 이제 쓰이지 않습니다. 배포 설정이라 건드리지 않았습니다. 그리고 스케줄러 연결이 아직이므로 창을 닫으면 여전히 분석이 멈추고, 따라서 이메일도 그때는 발송되지 않습니다.
 - Rollback/recovery reference: 커밋 revert 시 Cloudflare 바인딩 버전으로 돌아갑니다(그 상태에서는 고객 발송이 불가능합니다).
+
+## 2026-08-22 — Claude: pg_cron으로 분석 진행 예약 (마이그레이션)
+
+- Agent/session: Claude, 사용자 지시.
+- Status: 마이그레이션 작성 완료. **적용과 설정값 입력은 사용자 몫이며, 그 전까지는 예약이 돌지 않습니다.**
+- Change: `supabase/migrations/20260822010000_schedule_analysis_advance.sql`. `pg_cron`과 `pg_net`을 활성화하고, 1분마다 `private.advance_analysis_runs()`를 실행해 `/api/analysis-runs/advance`를 호출합니다. 주기를 1분으로 잡은 이유는 엔드포인트가 한 번에 5건만 처리하고 할 일이 없으면 즉시 반환하기 때문이며, 분석이 5~10분 걸리고 환불 판정이 10분이라 확인 주기는 그보다 충분히 짧아야 하기 때문입니다.
+- 비밀 처리: 엔드포인트 주소와 공유 비밀을 마이그레이션에 넣지 않았습니다. `private.app_config` 테이블을 만들고 운영자가 Supabase SQL 편집기에서 직접 채웁니다. `private` 스키마는 API로 노출되지 않고 `anon`·`authenticated` 권한을 회수했으며, 함수 실행 권한도 회수했습니다. 커밋되는 파일에 비밀이 남지 않습니다.
+- 설정 누락 처리: 값이 없으면 함수가 **조용히 반환**합니다. 값을 안 넣었다는 이유로 매분 오류 로그를 남기는 것은 소음이고, 그 상태의 동작은 예약이 없던 때와 동일합니다.
+- 재적용 안전성: 스케줄 등록 전에 같은 이름의 작업이 있으면 먼저 해제하므로 중복 등록되지 않습니다. `create extension if not exists`, `create table if not exists`로 반복 실행에 안전합니다.
+- Files/branch: 신규 `supabase/migrations/20260822010000_schedule_analysis_advance.sql`, `docs/background-analysis-completion-decision.md` §6 갱신 on `main`.
+- 사용자가 해야 할 것: (1) 마이그레이션 적용, (2) Supabase 대시보드에서 `pg_cron`·`pg_net` 확장 활성화 확인, (3) SQL 편집기에서 `private.app_config`에 주소와 비밀 입력. 비밀을 다루는 작업이라 Claude가 하지 않습니다.
+- 확인 방법: `select * from cron.job where jobname = 'advance-analysis-runs';`, `select * from cron.job_run_details order by start_time desc limit 10;`
+- 남은 것: 예약이 실제로 도는 것을 확인한 뒤에만 결제 화면 문구를 "창을 닫아도 됩니다"로 바꿉니다. 지금은 "이 창을 열어둔 채로 기다려 주세요"를 유지합니다.
+- Rollback/recovery reference: `select cron.unschedule('advance-analysis-runs');` 로 예약만 해제하면 이전 동작으로 돌아갑니다. 테이블과 함수는 남겨도 무해합니다.

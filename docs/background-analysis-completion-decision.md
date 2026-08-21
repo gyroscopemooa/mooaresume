@@ -80,7 +80,29 @@ Cloudflare 크론 트리거는 워커의 `scheduled()` 핸들러를 호출하는
 | GitHub Actions `schedule` | 설정이 쉽고 로그가 보인다 | 최소 주기가 5분, 지연이 잦다 |
 | 외부 크론 서비스 | 즉시 사용 | 서비스가 하나 늘어난다 |
 
-초기에는 어느 쪽이든 된다. 주기는 **1~2분**을 기준으로 한다. OpenAI 작업이 5~10분 걸리므로 그보다 짧으면 충분하고, 환불 판정(10분)보다는 훨씬 짧아야 한다.
+**Supabase `pg_cron`을 채택했다.** 마이그레이션은 `supabase/migrations/20260822010000_schedule_analysis_advance.sql`.
+
+주기는 **1분**이다. 엔드포인트가 한 번에 최대 5건만 처리하고 할 일이 없으면 즉시 반환하므로, 조용한 1분은 요청 한 번 값이다. 분석이 5~10분 걸리고 환불 판정이 10분이므로 확인 주기는 그보다 충분히 짧아야 한다.
+
+### 6-1. 비밀을 커밋하지 않는 방법
+
+엔드포인트 주소와 공유 비밀은 마이그레이션 파일에 넣지 않는다. `private.app_config` 테이블을 만들고 운영자가 Supabase SQL 편집기에서 직접 채운다. `private` 스키마는 API로 노출되지 않으며 `anon`·`authenticated` 권한을 회수한다.
+
+설정이 비어 있으면 예약 함수는 **조용히 반환한다.** 값을 넣지 않았다는 이유로 매분 오류를 남기는 것은 정보가 아니라 소음이고, 그 상태의 동작은 이 작업이 없던 때와 같다.
+
+```sql
+insert into private.app_config (key, value) values
+  ('analysis_advance_url', 'https://<도메인>/api/analysis-runs/advance'),
+  ('analysis_cron_secret', '<ANALYSIS_CRON_SECRET와 같은 값>')
+on conflict (key) do update set value = excluded.value;
+```
+
+동작 확인:
+
+```sql
+select * from cron.job where jobname = 'advance-analysis-runs';
+select * from cron.job_run_details order by start_time desc limit 10;
+```
 
 ## 7. 이 결정이 바꾸는 문구
 
