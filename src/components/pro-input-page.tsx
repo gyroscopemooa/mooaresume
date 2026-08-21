@@ -15,6 +15,7 @@ import { GuidedCreateForm } from "@/components/guided-create-form";
 import { createGuidedCreateDraft, type GuidedCreateDraft } from "@/domain/guided-create";
 import { isLinkOnlyPosting } from "@/domain/job-posting-source";
 import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
+import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import {
   candidateMaterialDraftSchema,
   createCandidateExperience,
@@ -185,6 +186,13 @@ export function ProInputPage({ mode }: Props) {
 
   const hasPostingSource = Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length);
   const linkOnlyPosting = isLinkOnlyPosting({ url: postingUrl, text: posting, filenames: postingFilenames });
+  // Pasted in one piece with nothing to split on, the whole letter is analysed
+  // as a single question — so there is no short question to lengthen and no
+  // blank one to fill. Say so here rather than after the payment.
+  const bulkAnswer = questions.length === 1 && !questions[0].title.trim() && !questions[0].prompt.trim()
+    ? questions[0].answer
+    : "";
+  const unsplitDraft = Boolean(bulkAnswer.trim()) && splitCoverLetterDraft(bulkAnswer).length <= 1;
   const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
   const blockedReason = !hasPostingSource
     ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."
@@ -219,7 +227,7 @@ export function ProInputPage({ mode }: Props) {
           <label><span>지원 직무 <b>선택</b></span><input value={roleName} maxLength={120} onChange={(event) => setRoleName(event.target.value)} placeholder="예: 안전관리자"/></label>
         </div>
         <p className={styles.targetHint}>공고 하나에 여러 직무가 있을 때 어느 직무 기준으로 볼지 알려주시면, 그 직무의 요구사항만 대조합니다. 비워두면 공고 전체를 기준으로 봅니다.</p>
-        {mode === "CREATE" ? <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
+        {mode === "CREATE" ? <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{mode === "BUILD" && unsplitDraft && <p className={styles.postingWarning}><b>문항 구분이 아직 안 되어 있어요.</b> 이대로 진행하면 자기소개서 전체를 한 문항으로 보고 분석합니다. 비어 있거나 짧은 문항을 채워 드리려면 어느 문항이 부족한지 알아야 하므로, 위 &lsquo;문항 구분 확인하기&rsquo;를 먼저 눌러 주세요.</p>}</div>}
         <section className={styles.optionalMaterials}>
           <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>종류별 여러 파일 · 최대 10개</small></div>
           <MaterialUpload attachments={materialAttachments} onChange={setMaterialAttachments}/>

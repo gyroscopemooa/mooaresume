@@ -396,3 +396,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 262 passed(이번 추가 4건). `npx tsc --noEmit` clean. `npx eslint src` 오류 0건(경고 1건은 Codex의 `pro-create-wizard.tsx`).
 - Rollback/recovery reference: 커밋 revert. `writingMode`는 기본값이 있어 되돌려도 저장된 결과가 깨지지 않습니다.
 - User decision: 사용자가 인수 커밋 후 후속 작업 계속을 지시했고, 최종 첨삭본은 빈칸 없이 완결되어야 한다고 결정했습니다.
+
+## 2026-08-22 — Claude: 문항 구분 안 된 초안 경고 + 글자 수 표시 오해 수정
+
+- Agent/session: Claude. 사용자가 PRO BUILD 테스트 중 "전체 내용 붙여넣기에서 그대로 결제로 넘어간다", "12,000자를 다 채우라는 거냐"고 보고한 건입니다.
+- Status: completed.
+- Change (1) 문항 구분 경고: `docs/build-mode-fill-in-decision.md` §5에 "문항 구분이 없으면 채우기를 제공하지 않고 문항 구분 확인을 먼저 요청한다"고 적어 놓고 **서버 측 제한만 구현하고 입력 화면 안내를 만들지 않았습니다.** 그 결과 통짜로 붙여넣은 사용자가 아무 경고 없이 결제까지 진행한 뒤, 채워지지 않은 결과를 받게 되는 상태였습니다. 문서와 구현의 불일치입니다. 입력 화면에서 `splitCoverLetterDraft`로 실제 분리 여부를 미리 계산해, BUILD이면서 나뉘지 않는 초안일 때 안내를 띄웁니다. 링크만 입력했을 때와 같은 선례에 따라 **차단이 아니라 경고**이며 진행은 허용합니다.
+- Change (2) 글자 수 표시: 추가 정보 입력칸이 `직접 입력 0 / 12,000자`로 표시돼 목표 분량처럼 읽혔습니다. 자기소개서 분량과 무관한 자유 메모 상한인데 오해를 유발했습니다. `직접 입력 0자 · 최대 12,000자`로 바꿔 상한임을 분명히 했습니다.
+- Files/branch: `src/components/pro-input-page.tsx`, `src/components/additional-info-input.tsx` on `main`.
+- Validation: 전체 `npx vitest run` 262 passed, `npx tsc --noEmit` clean, 대상 파일 ESLint clean.
+- Rollback/recovery reference: 커밋 revert. 상태 계산과 문구 추가뿐이며 저장 데이터·프롬프트·스키마 변경 없음.
+- User decision: 사용자가 두 현상을 버그로 보고했고, 경고 방식은 링크 전용 입력 때 정한 선례(경고 후 진행 허용)를 따랐습니다.

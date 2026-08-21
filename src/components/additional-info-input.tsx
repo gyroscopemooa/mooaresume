@@ -89,7 +89,7 @@ export function AdditionalInfoInput({
           <input type="file" accept=".pdf,.docx,.txt,.md" multiple disabled={busy} onChange={(event) => { void addFiles(event.target.files); event.target.value = ""; }}/>
         </label>
       <p className={styles.fileHint}>PDF · DOCX · TXT · MD 지원 · 스캔 PDF/JPG/PNG는 결제 후 문서 인식 예정<br/>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요. 파일에 따라 추출이 제한될 수 있어 중요한 내용은 직접 입력해 주세요.</p>
-        <span>직접 입력 {text.length.toLocaleString()} / 12,000자{attachmentCharacters > 0 ? ` · 첨부 원문 ${attachmentCharacters.toLocaleString()}자` : ""}</span>
+        <span>직접 입력 {text.length.toLocaleString()}자 <small>최대 12,000자</small>{attachmentCharacters > 0 ? ` · 첨부 원문 ${attachmentCharacters.toLocaleString()}자` : ""}</span>
       </footer>
       {error && <p className={styles.error}>{error}</p>}
     </div>
