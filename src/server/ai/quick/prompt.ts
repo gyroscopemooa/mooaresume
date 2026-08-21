@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
-import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
+import { fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.6";
+export const QUICK_PROMPT_VERSION = "quick-1.7";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -17,7 +17,10 @@ const SUPPORTING_LABEL: Record<(typeof SUPPORTING_KINDS)[number], string> = {
 
 const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> = {
   POLISH: "작성 단계: 최종 첨삭. 완성된 글이므로 구조를 크게 흔들지 말고 표현·오류·적합성 점검을 우선하세요.",
-  BUILD: "작성 단계: 내용 보완. 근거가 얇은 문항은 제공된 지원자료에서 사실을 찾아 보강하되, 자료에 없는 내용은 만들지 말고 확인 질문으로 남기세요.",
+  // BUILD used to behave like POLISH: it read the materials and still left the
+  // blank question blank. "내용 보완"이라는 이름값을 하도록 바꾼 결정은
+  // docs/build-mode-fill-in-decision.md 참고.
+  BUILD: "작성 단계: 내용 보완. 비어 있거나 분량이 부족한 문항을 실제로 채워 완성된 답변을 만드세요. 지원자가 이미 쓴 문장은 유지하고 그 뒤를 이어서 씁니다.",
   // In this stage the "원문" is not a draft: it is the ordered notes the
   // applicant filled in on the guided screen. Treating it as prose to polish
   // returns the notes back almost unchanged.
@@ -47,7 +50,11 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       : request.writingStyle === "STRENGTH_FOCUSED"
         ? "작성 스타일: 강점 살리기. 같은 사실 안에서 강점과 직무 연결을 적극적으로 제안하되, 확인이 필요한 해석은 확정하지 마세요."
         : "작성 스타일: 균형 있게. 사실을 보존하면서 경험의 의미와 전달력을 자연스럽게 강화하세요.",
-    `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.`,
+    // Branching rather than editing: this line is shared with CREATE and POLISH,
+    // and rewriting it in place would change what those two modes do.
+    fillsBlankQuestions(request)
+      ? `목표 글자 수: 공백 제외 ${request.targetLength}자. 각 문항을 목표 글자 수에 가깝게 채우되, 채울 근거가 없으면 억지로 늘리지 말고 무엇을 더 알려주면 채울 수 있는지 consultingAdvice에 적으세요. 분량을 맞추려고 같은 말을 반복하거나 일반론을 덧붙이지 마세요.`
+      : `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.`,
     WRITING_MODE_INSTRUCTION[request.writingMode],
     // A posting for a large employer often covers several positions at once.
     // Without this the analysis matches every requirement on the page.
@@ -59,6 +66,18 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       : []),
     `분석 대상은 총 ${questions.length}개 문항입니다. revisions 배열에 questionOrder 1부터 ${questions.length}까지 각 문항의 수정본을 정확히 하나씩 모두 반환하세요.`,
     "하위 호환용 revision 필드에는 1번 문항과 동일한 수정본을 반환하세요.",
+    // The whole point of filling: a final draft full of [brackets] is not a
+    // deliverable, and invented figures are not either. Completing the sentence
+    // without the figure satisfies both — see the decision doc §3.
+    ...(fillsBlankQuestions(request)
+      ? [
+          "이 분석에는 아직 비어 있거나 분량이 부족한 문항이 포함될 수 있습니다. 그런 문항도 revisions에 반드시 포함하고, 문항 질문에 답하는 완성된 글을 쓰세요.",
+          "새로 쓰는 문장에는 지원자가 제공하지 않은 수치, 기간, 회사명, 자격증, 직함, 고유명사를 절대 넣지 마세요. 대신 지원자가 실제로 밝힌 행동·과정·태도·배운 점으로 문장을 완결하세요. 예를 들어 '후기 500건을 분석했습니다'가 아니라 '후기를 유형별로 분류해 반복되는 불편 사항을 정리했습니다'처럼 씁니다.",
+          "빈칸이나 대괄호 표기를 남기지 마세요. 최종 첨삭본은 그대로 제출할 수 있는 완결된 글이어야 합니다.",
+          "지원자료가 제공된 경우, 새로 쓰는 문장의 사실은 그 자료에서 확인되는 범위 안에서만 사용하세요. 자료에 없으면 수치 없는 서술로 씁니다.",
+          "새로 채운 내용은 확정된 사실이 아니라 제안입니다. 각 문항의 reasons에 어느 부분을 새로 채웠는지와 지원자가 무엇을 확인해야 하는지 한 줄로 밝히고, 확인이 필요한 항목은 verificationQuestions에 남기세요.",
+        ]
+      : []),
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
     // The applicant saw a phrase praised as 좋은 표현 and then found it missing
     // from the final draft, with no explanation. The two came out of the same

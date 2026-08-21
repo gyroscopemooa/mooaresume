@@ -23,9 +23,40 @@ function readQuestions(request: AnalysisRequest): CoverLetterQuestion[] {
  * kept in the stored document so PRO BUILD can fill them later — see
  * getUnansweredQuestions.
  */
+/**
+ * A draft pasted as one block comes back as a single question with no title and
+ * no prompt. There is no way to tell which question is short, and no per-question
+ * target length to aim at, so filling is not offered for it — see
+ * docs/build-mode-fill-in-decision.md §5.
+ */
+function hasSeparatedQuestions(request: AnalysisRequest) {
+  const questions = readQuestions(request);
+  if (questions.length > 1) return true;
+  const [only] = questions;
+  return Boolean(only && (only.title.trim() || only.prompt.trim()));
+}
+
+/**
+ * PRO BUILD is the only mode that writes missing content. QUICK BUILD still
+ * points out what is missing without filling it, because filling honestly needs
+ * the supporting-material cross-check that only PRO collects.
+ */
+export function fillsBlankQuestions(request: AnalysisRequest) {
+  return request.product === "PRO"
+    && request.writingMode === "BUILD"
+    && hasSeparatedQuestions(request);
+}
+
 export function getAnalysisQuestions(request: AnalysisRequest): AnalysisQuestion[] {
+  // When BUILD is filling, a blank question is still a question to answer — it
+  // just has no draft yet. Every consumer reads this one list, so including it
+  // here keeps the prompt, the assembler and the validator numbered alike.
+  const keep = fillsBlankQuestions(request)
+    ? (question: CoverLetterQuestion) => Boolean(question.answer.trim() || question.title.trim() || question.prompt.trim())
+    : (question: CoverLetterQuestion) => Boolean(question.answer.trim());
+
   return readQuestions(request)
-    .filter((question) => question.answer.trim())
+    .filter(keep)
     .map((question, index) => ({
       ...question,
       order: index + 1,
@@ -39,6 +70,10 @@ export function getAnalysisQuestions(request: AnalysisRequest): AnalysisQuestion
  * has to tell the user they were not covered instead of quietly dropping them.
  */
 export function getUnansweredQuestions(request: AnalysisRequest): CoverLetterQuestion[] {
+  // Nothing is left uncovered when BUILD fills them, and saying "제외했습니다"
+  // beside a written draft would contradict the result on screen.
+  if (fillsBlankQuestions(request)) return [];
+
   return readQuestions(request).filter(
     (question) => !question.answer.trim() && (question.title.trim() || question.prompt.trim()),
   );

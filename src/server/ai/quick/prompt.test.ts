@@ -122,3 +122,71 @@ describe("제출본 평가와 첨삭본의 일관성", () => {
     expect(buildQuickAnalysisInstructions(request)).toContain("모든 문항의 revisedAnswer를 정한 뒤 전체를 다시 읽고 정리하세요");
   });
 });
+
+describe("BUILD 채우기", () => {
+  const buildRequest: AnalysisRequest = {
+    ...request,
+    writingMode: "BUILD",
+    questions: [
+      { id: "q1", title: "지원동기", prompt: "지원 동기를 작성해 주세요.", answer: "생산 현장 경험을 바탕으로 지원했습니다.", targetLength: 700 },
+      { id: "q2", title: "협업 경험", prompt: "협업 경험을 작성해 주세요.", answer: "", targetLength: 700 },
+    ],
+  };
+
+  it("PRO BUILD는 빈 문항까지 첨삭 대상에 넣는다", () => {
+    const instructions = buildQuickAnalysisInstructions(buildRequest);
+
+    expect(instructions).toContain("questionOrder 1부터 2까지");
+    expect(instructions).toContain("비어 있거나 분량이 부족한 문항을 실제로 채워");
+    expect(instructions).toContain("빈칸이나 대괄호 표기를 남기지 마세요");
+  });
+
+  it("채울 때도 없는 수치와 고유명사는 금지한다", () => {
+    const instructions = buildQuickAnalysisInstructions(buildRequest);
+
+    expect(instructions).toContain("수치, 기간, 회사명, 자격증, 직함, 고유명사를 절대 넣지 마세요");
+    expect(instructions).toContain("목표 글자 수에 가깝게 채우되");
+    expect(instructions).not.toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+  });
+
+  it("채우는 문항에는 제외 안내를 붙이지 않는다", () => {
+    expect(buildQuickAnalysisInstructions(buildRequest)).not.toContain("아직 작성되지 않은 문항은 revisions에 넣지 마세요");
+  });
+
+  it("QUICK BUILD는 채우지 않고 기존대로 동작한다", () => {
+    const instructions = buildQuickAnalysisInstructions({ ...buildRequest, product: "QUICK" });
+
+    expect(instructions).toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+    expect(instructions).not.toContain("빈칸이나 대괄호 표기를 남기지 마세요");
+    expect(instructions).toContain("questionOrder 1부터 1까지");
+  });
+
+  it("문항 구분이 없는 통짜 붙여넣기에는 채우기를 제공하지 않는다", () => {
+    const bulk: AnalysisRequest = {
+      ...request,
+      writingMode: "BUILD",
+      questions: [{ id: "bulk", title: "", prompt: "", answer: "한 덩어리로 붙여넣은 자기소개서 본문입니다.", targetLength: 700 }],
+    };
+
+    expect(buildQuickAnalysisInstructions(bulk)).not.toContain("빈칸이나 대괄호 표기를 남기지 마세요");
+  });
+});
+
+describe("다른 작성 단계는 그대로 유지된다", () => {
+  // Locks the two modes this change must not reach. If either string moves,
+  // this fails instead of someone noticing on screen.
+  it("POLISH 지시문은 바뀌지 않는다", () => {
+    const instructions = buildQuickAnalysisInstructions({ ...request, writingMode: "POLISH" });
+
+    expect(instructions).toContain("작성 단계: 최종 첨삭. 완성된 글이므로 구조를 크게 흔들지 말고 표현·오류·적합성 점검을 우선하세요.");
+    expect(instructions).toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+    expect(instructions).not.toContain("실제로 채워 완성된 답변을 만드세요");
+  });
+
+  it("CREATE 지시문은 바뀌지 않는다", () => {
+    const instructions = buildQuickAnalysisInstructions({ ...request, writingMode: "CREATE" });
+
+    expect(instructions).toContain("지원자가 단계별로 입력한 사실 메모입니다");
+    expect(instructions).not.toContain("실제로 채워 완성된 답변을 만드세요");
+  });
+});

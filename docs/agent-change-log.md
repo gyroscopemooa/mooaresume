@@ -324,3 +324,52 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Rollback/recovery reference: **이 커밋 하나만 `git revert` 하면 완전히 되돌아갑니다.** 전부 CSS이고 다른 커밋과 섞이지 않았습니다. 배율만 조절하려면 `globals.css`의 `--app-scale` 값 하나만 바꾸면 됩니다(단, 브레이크포인트는 1.25 기준으로 맞춰져 있으므로 크게 벗어난 값은 함께 조정 필요).
 - Known issue (사전 존재, 미수정): `additional-info-input`의 파일 안내 문구가 375px 화면에서 이미 143px 넘쳐 잘리고 있었습니다(배율 적용 시 272px). 배율 때문에 생긴 문제가 아니며 Codex 담당 파일이라 건드리지 않았습니다. 별도 처리 필요.
 - User decision: 사용자가 브라우저 125% 확대와 같은 느낌을 요청했고 롤백 가능성을 전제로 진행을 승인했습니다.
+
+## 2026-08-22 — PRO 처음부터 작성 순차형 입력 흐름
+
+- Agent/session: Codex, current session.
+- Status: proposed.
+- Protected baseline: BUILD/POLISH의 한 화면 입력 흐름, 기존 Guided CREATE의 사실 수집·문항 배정 기능, 모든 자료 업로드 기능.
+- Change and reason: user explicitly requested that only PRO CREATE become a left-progress, one-primary-task-per-step flow: optional posting, optional company/role, optional labelled materials, freeform/attachment experience capture, existing guided fact questions, and question/direction confirmation. Preserve every existing input capability but avoid presenting them all at once. No step will call OpenAI; the existing one paid analysis remains the only model request.
+- Files/branch: planned focused CREATE-only component/style additions and a small `pro-input-page.tsx` composition change on dirty `main`; BUILD/POLISH remain unchanged.
+- Validation: pending component tests, TypeScript, lint, and local route verification.
+- Rollback/recovery reference: remove only the new CREATE wizard component/style and restore the prior CREATE branch; candidate data structures, handoff, analysis schema, and API behavior remain unchanged.
+- User decision: explicitly approved implementation and asked for an API-cost/price assessment; no paid API call or deployment is authorized.
+
+## 2026-08-22 — PRO CREATE 순차형 비교 화면
+
+- Agent/session: Codex, current session.
+- Status: proposed variant.
+- Protected baseline: existing `/pro/create` Guided CREATE implementation, BUILD/POLISH flows, and all input/upload capabilities.
+- Change and reason: user selected an isolated comparison route rather than replacing the current CREATE screen. Add `/pro/create-wizard` with left progress, one primary input group per step, optional posting/material steps, guided facts/questions, and the same single analysis handoff.
+- Files/branch: planned new route/component/style only; no rewrite of the active `pro-input-page.tsx`.
+- Validation: pending.
+- Rollback/recovery reference: remove only the new wizard route/component/style.
+- User decision: explicitly chose the separate comparison implementation.
+
+## 2026-08-22 — PRO CREATE 순차형 비교 화면 (completed locally)
+
+- Agent/session: Codex, current session.
+- Status: variant; active locally at `/pro/create-wizard`, not committed or deployed.
+- Change and reason: added a separate six-step wizard for applicants who cannot start from a finished self-introduction. Posting, target, materials, and freeform experience can all be skipped; the existing guided fact/question step remains the required factual basis before the same analysis-preparation handoff.
+- Files/branch: `src/app/pro/create-wizard/page.tsx`, `src/components/pro-create-wizard.tsx`, and `.module.css`.
+- Validation: `npx tsc --noEmit` and targeted ESLint passed.
+- Rollback/recovery reference: remove only the three new wizard files; `/pro/create` remains unchanged.
+- User decision: user selected this separate comparison route.
+
+## 2026-08-22 — Claude: PRO BUILD가 실제로 채우게 함 (서버 측)
+
+- Agent/session: Claude, this session. 사용자가 "300자만 쓴 사람, 문항 하나 비워둔 사람은 어느 유형이냐, 지금은 작성 자체를 안 해주지 않느냐"고 지적한 뒤, 세 유형을 실제로 다르게 만들자는 방향을 확정하고 지시했습니다.
+- Status: 서버 측 완료. 화면 표시(제안 색 구분 + 복사 분리)는 후속 작업으로 남음.
+- 새 결정 문서: `docs/build-mode-fill-in-decision.md`를 새로 만들었습니다. 사용자 지시대로 **기존 md는 한 글자도 수정하지 않았습니다.** 이 프로젝트 관행(문서가 §로 이전 결정을 대체 선언)을 따라, `docs/create-mode-and-pricing-decision.md` §2의 "QUICK — 작성 중인 글의 내용 보완" 항목의 의미를 새 문서 §8-1에서 좁혔습니다(QUICK BUILD는 지적만, PRO BUILD는 실제 채우기). 출력 분량 상한(§6)과 채우기 허용 조건(§5)은 기존 어느 문서에도 없던 항목이라 신규 추가했습니다.
+- Protected baseline: CREATE(1유형)와 POLISH(3유형)의 동작. **POLISH는 이미 원하는 동작을 하고 있어 옮기거나 복제하지 않았습니다.** 두 모드의 지시문이 바뀌지 않았음을 테스트로 고정했습니다.
+- Change and reason: BUILD는 이름이 "내용 보완"인데 실제로는 POLISH와 거의 같게 동작했습니다. 빈 문항은 `getAnalysisQuestions`의 필터에서 제거됐고, 공통 문장 "억지로 분량을 채우지 말고"가 BUILD도 함께 묶고 있었기 때문입니다. PRO BUILD에서만 빈 문항을 분석 대상에 포함하고 목표 글자 수에 가깝게 채우도록 했습니다.
+- 채우기 규칙: 빈칸·대괄호 표기를 남기지 않고 완결된 글을 쓰되, 제공되지 않은 수치·기간·회사명·자격증·직함·고유명사는 절대 넣지 않습니다. 대신 지원자가 밝힌 행동·과정·태도·배운 점으로 문장을 완결합니다(프롬프트에 예시 포함). 이 규칙은 검증기의 `NEW_NUMBER` 차단과도 맞물려, 새로 채운 문장 때문에 유료 분석이 실패하는 일을 구조적으로 막습니다.
+- 채우기 조건: 문항 구분이 없는 통짜 붙여넣기(제목·질문이 모두 빈 단일 문항)에는 제공하지 않습니다. 어느 문항이 부족한지 판단할 근거가 없고 분량 제어가 불가능하기 때문입니다.
+- 격리 방법: 변경 파일은 `questions.ts`와 `prompt.ts` **두 개뿐**입니다. 빈 문항 필터와 미작성 문항 조회를 공통 함수 안에서 모드 인식하도록 바꿔, 호출부 5곳(프롬프트 2, 프로바이더 1, 검증기 1, 안내문 1)이 자동으로 따라오게 했습니다. 덕분에 **Codex가 작업 중인 `provider.ts`·`validator.ts`·실행 라우트를 건드리지 않았습니다.** 공통 문장인 목표 글자 수 지시문은 수정하지 않고 모드별로 분기했습니다(수정하면 POLISH가 함께 바뀜).
+- Files/branch: `src/server/ai/quick/questions.ts`, `src/server/ai/quick/prompt.ts`(`QUICK_PROMPT_VERSION` `quick-1.6` → `quick-1.7`), `src/server/ai/quick/prompt.test.ts`, 신규 `docs/build-mode-fill-in-decision.md` on `main`.
+- Validation: 전체 `npx vitest run` 258 passed(이번 추가 7건). `npx tsc --noEmit` clean. `npx eslint src`는 경고 1건이 남지만 Codex의 신규 파일 `pro-create-wizard.tsx`의 것으로 이번 변경과 무관합니다. POLISH·CREATE 지시문 불변 테스트 2건이 회귀를 막습니다.
+- 남은 작업: 화면에서 채운 부분을 색으로 구분하고 "기본 복사 = 확인된 내용만 / 제안 포함 복사 = 별도 버튼"으로 나누는 작업. 결과 문서에 `writingMode`가 없어 화면이 BUILD 결과를 식별할 수 없으므로 `result-document.ts`와 `provider.ts` 수정이 필요합니다. `provider.ts`는 Codex 미커밋 변경이 있어 충돌을 피해 다음으로 미뤘습니다.
+- Codex 동시 작업 알림: 이번 세션 중 Codex가 `src/components/pro-create-wizard.tsx`, `.module.css`, `src/app/pro/create-wizard/`를 새로 만들었습니다(미커밋). Claude의 Guided CREATE(`guided-create-form.tsx`, `/pro/create`)와 **같은 1유형 영역**입니다. 두 구현이 공존하는 상태이므로 사용자 확인이 필요합니다.
+- Rollback/recovery reference: 이 커밋 하나를 revert하면 됩니다. 스키마·DB·가격·결제 흐름을 변경하지 않았고 저장된 결과에도 영향이 없습니다.
+- User decision: 사용자가 세 유형을 다르게 만들되 가격은 셋 다 같은 PRO 가격으로 유지하고, 최종 첨삭본은 빈칸 없이 꽉 채워야 한다고 결정했습니다.
