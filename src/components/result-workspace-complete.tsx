@@ -268,7 +268,11 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
                 {groups.length > 0 ? groups.map((group) => <div className={styles.annotationCard} key={`${group.start}-${group.end}`}>
                   <p className={styles.annotationQuote}>&ldquo;{group.phrase}&rdquo;</p>
                   {group.items.map((item) => <div key={item.id} data-type={item.type} className={styles.annotationItem}><span>{ANNOTATION_LABEL[item.type]}</span><p>{item.comment}</p>{item.suggestion && <p className={styles.annotationSuggestion}><b>이렇게 고쳐 보세요</b>{item.suggestion}</p>}</div>)}
-                </div>) : <p className={styles.emptyAnnotation}>제출 원문은 정상 연결됐습니다. 이 문항에는 별도로 표시할 변경 구간이 없습니다.</p>}
+                </div>) : <p className={styles.emptyAnnotation}>{question.originalAnswer.trim()
+                  ? "제출 원문은 정상 연결됐습니다. 이 문항에는 별도로 표시할 변경 구간이 없습니다."
+                  // Saying the submitted original "연결됐습니다" beside a question
+                  // that was never written contradicts the panel on the left.
+                  : "비워 두신 문항이라 짚어 드릴 원문이 없습니다. 새로 쓴 제안은 문항별 첨삭에서 확인하세요."}</p>}
               </aside>
             </div>
           </article>;

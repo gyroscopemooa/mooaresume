@@ -222,6 +222,14 @@ describe("ResultWorkspaceComplete 비워 둔 문항", () => {
     expect(() => render(<ResultWorkspaceComplete result={withBlank}/>)).not.toThrow();
   });
 
+  it("원문이 없는 문항에 원문이 연결됐다고 하지 않는다", () => {
+    render(<ResultWorkspaceComplete result={withBlank}/>);
+    fireEvent.click(screen.getByRole("button", { name: "제출본" }));
+
+    expect(screen.getByText(/짚어 드릴 원문이 없습니다/)).toBeTruthy();
+    expect(screen.queryByText(/제출 원문은 정상 연결됐습니다/)).toBeNull();
+  });
+
   it("빈 원문 자리에 왜 비어 있는지 설명한다", () => {
     render(<ResultWorkspaceComplete result={withBlank}/>);
     fireEvent.click(screen.getByRole("button", { name: "제출본" }));
