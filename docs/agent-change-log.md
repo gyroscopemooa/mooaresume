@@ -434,3 +434,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 267 passed(이번 추가 4건), `npx tsc --noEmit` clean, ESLint 오류 0건. 로컬 `/pro/create`에서 1단계가 문항 입력이고 총 10단계로 렌더되는 것을 확인했습니다.
 - Rollback/recovery reference: 커밋 revert. 한도는 상수 한 줄이며, 저장된 분석 결과나 결제 이력에는 영향이 없습니다.
 - User decision: 사용자가 8,000자 채택과 나머지 폼 수정을 지시했습니다.
+
+## 2026-08-22 — Claude: PRO BUILD 분석 실패(AI_OUTPUT_VALIDATION_FAILED) 원인 수정
+
+- Agent/session: Claude. 사용자가 PRO BUILD 실행 중 `AI_OUTPUT_VALIDATION_FAILED`로 분석이 막히고 재시도 2/3까지 간 상태를 보고했습니다.
+- Status: completed. 재시도 전에 배포되어야 효과가 있습니다.
+- 원인: 프롬프트와 검증기가 정면으로 모순돼 있었습니다. 검증기는 `evidenceQuote`가 **지원자가 제출한 글**에서 확인되지 않으면 `INVALID_EVIDENCE`를 내고, 이 코드는 차단 코드라 분석 전체가 실패합니다. 그리고 채용공고는 근거 출처에서 **의도적으로 제외**되어 있습니다(회사 요구가 지원자 경험으로 둔갑하지 않게 — Codex가 넣은 규칙). 그런데 Claude가 넣은 지시문은 "공고를 근거로 문장을 바꾼 경우 reasons에 공고의 어느 요구 때문인지 밝히고 evidenceQuote에는 원문 근거를 그대로 넣으세요"라고 해서, 모델이 공고 문장을 인용하도록 유도하고 있었습니다. **지시를 따르면 차단되는 상태**였습니다.
+- 2차 원인: BUILD가 채우는 빈 문항에는 인용할 자기 원문이 없는데, 스키마는 모든 revision에 `reasons` 최소 1개와 `evidenceQuote`를 요구합니다. 인용할 것이 없으니 모델이 만들어 내고, 그것이 소스에서 확인되지 않아 같은 차단으로 이어집니다.
+- Change: (1) 인용 가능한 출처를 명시하는 규칙 3줄을 전 모드 공통 위치에 추가 — 자소서 답변과 제출한 지원자료만 가능, 채용공고 불가, 방금 새로 쓴 문장 불가. (2) 공고 관련 지시문을 "reason 본문에서 공고 요구를 설명하고, evidenceQuote에는 그와 연결한 지원자 원문을 넣으라"로 교체. (3) 빈 문항 전용 규칙 추가 — 다른 문항의 답변이나 지원자료에서 인용하고, 인용할 것이 전혀 없으면 그 문항은 채우지 말고 무엇을 알려주면 채울 수 있는지 consultingAdvice에 적으라. `QUICK_PROMPT_VERSION` `quick-1.8` → `quick-1.9`.
+- 재시도에 대한 주의: 실행 라우트의 백그라운드 경로는 검증 실패 시 피드백을 넣어 자동 재시도하지 않고 그대로 실패시킵니다. 따라서 **프롬프트가 배포되기 전에 재시도하면 같은 이유로 다시 실패합니다.** 남은 시도 횟수만 소모됩니다.
+- Files/branch: `src/server/ai/quick/prompt.ts` + 테스트 on `main`.
+- Validation: 전체 `npx vitest run` 270 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건. 추가한 테스트가 "공고를 인용하라"는 옛 문구가 되살아나지 않는지도 함께 검사합니다.
+- Rollback/recovery reference: 커밋 revert 시 프롬프트가 이전 버전으로 돌아가며 같은 실패가 재현됩니다. 스키마·검증기·저장 데이터는 변경하지 않았습니다.
+- 미해결로 남긴 것: 검증 실패 상세 메시지가 재시도 화면에는 표시되지 않아 사용자가 원인 코드만 봅니다. 진단을 위해 상세를 노출할지는 별도 판단.

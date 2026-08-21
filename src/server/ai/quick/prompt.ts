@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.8";
+export const QUICK_PROMPT_VERSION = "quick-1.9";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -41,6 +41,14 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     "당신은 한국어 자기소개서 첨삭 엔진입니다.",
     "지원자가 제공하지 않은 경험, 사건, 역할, 회사, 직책, 기간, 자격, 수치 또는 성과를 절대 만들지 마세요.",
     "원문에서 직접 확인할 수 없는 주장은 needs_verification으로 분류하고 verificationNote 또는 verificationQuestions에 남기세요.",
+    // Every evidenceQuote is checked against the applicant's own documents, and
+    // a quote that is not found there fails the whole run. The posting is
+    // deliberately not part of that source — an employer requirement is not the
+    // applicant's experience — so quoting it is the one way to be blocked while
+    // following the instructions.
+    "evidenceQuote에는 지원자가 제출한 글에서 그대로 복사한 문구만 넣으세요. 인용할 수 있는 곳은 자기소개서 문항의 답변과 함께 제출한 지원자료(이력서·경력기술서·포트폴리오·추가 경험)뿐입니다.",
+    "채용공고 문장은 evidenceQuote로 쓸 수 없습니다. 공고는 지원자가 쓴 글이 아닙니다. 공고 요구는 reason 본문에서 설명하고, evidenceQuote에는 그 판단의 근거가 된 지원자 원문을 넣으세요.",
+    "방금 새로 작성한 문장을 evidenceQuote로 인용하지 마세요. 인용은 지원자가 원래 제출한 내용에서만 가능합니다.",
     "objective, qualitative, needs_verification 판단을 구분하세요.",
     "준비도 점수는 합격 확률이 아니며, 모든 점수와 수정 이유에 원문 근거를 붙이세요.",
     "수치가 없으면 정성적 행동과 확인 가능한 변화만 활용하세요. 임의의 숫자를 추가하지 마세요.",
@@ -76,6 +84,7 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
           "빈칸이나 대괄호 표기를 남기지 마세요. 최종 첨삭본은 그대로 제출할 수 있는 완결된 글이어야 합니다.",
           "지원자료가 제공된 경우, 새로 쓰는 문장의 사실은 그 자료에서 확인되는 범위 안에서만 사용하세요. 자료에 없으면 수치 없는 서술로 씁니다.",
           "새로 채운 내용은 확정된 사실이 아니라 제안입니다. 각 문항의 reasons에 어느 부분을 새로 채웠는지와 지원자가 무엇을 확인해야 하는지 한 줄로 밝히고, 확인이 필요한 항목은 verificationQuestions에 남기세요.",
+          "비어 있던 문항에는 인용할 원문이 없습니다. 그 문항의 evidenceQuote는 지원자가 작성한 다른 문항의 답변이나 제출한 지원자료에서 가져오세요. 인용할 것이 전혀 없으면 그 문항은 채우지 말고, 무엇을 알려주면 채울 수 있는지 consultingAdvice에 적으세요.",
         ]
       : []),
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
@@ -118,7 +127,7 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
           "채용공고가 함께 제공됩니다. 각 문항의 revisedAnswer를 만들 때, 원문에 이미 있는 내용 중 공고가 요구하는 역량과 이어지는 부분을 앞쪽에 배치하고 더 구체적으로 풀어 쓰세요. 공고와 관련이 적은 부분은 분량을 줄이세요.",
           "공고에 있지만 원문에서 확인되지 않는 자격, 경험, 도구, 수치, 전문 용어는 revisedAnswer에 절대 넣지 마세요. 공고의 표현을 지원서에 옮겨 심는 것은 첨삭이 아니라 사실 위조입니다.",
           "공고가 요구하는데 지원서에 근거가 없는 항목은 문장으로 만들지 말고, consultingAdvice에 '이 공고는 ○○를 요구하는데 지원서에 근거가 없습니다'와 지원자가 실제로 할 수 있는 행동을 함께 적으세요. 확인이 필요하면 verificationQuestions에도 남기세요.",
-          "공고를 근거로 문장을 바꾼 경우, 해당 revision의 reasons에 공고의 어느 요구 때문인지 밝히고 evidenceQuote에는 원문 근거를 그대로 넣으세요.",
+          "공고를 근거로 문장을 바꾼 경우, reason 본문에 공고의 어느 요구 때문인지 설명하세요. evidenceQuote에는 공고 문장이 아니라, 그 요구와 연결한 지원자 원문을 그대로 넣으세요.",
         ]
       : []),
     // Supporting documents were only mentioned in the BUILD stage line, so a

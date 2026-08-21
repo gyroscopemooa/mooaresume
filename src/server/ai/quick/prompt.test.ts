@@ -201,3 +201,40 @@ describe("다른 작성 단계는 그대로 유지된다", () => {
     expect(polish).toContain("최소 하나는 거의 그대로 유지하세요");
   });
 });
+
+describe("근거 인용 규칙", () => {
+  // The validator rejects a quote it cannot find in the applicant's own
+  // documents, and the posting is deliberately not one of them. The prompt used
+  // to invite a posting quote, which failed the run while following orders.
+  it("공고는 근거로 인용할 수 없다고 못 박는다", () => {
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("채용공고 문장은 evidenceQuote로 쓸 수 없습니다");
+    expect(instructions).toContain("지원자가 제출한 글에서 그대로 복사한 문구만 넣으세요");
+    expect(instructions).toContain("방금 새로 작성한 문장을 evidenceQuote로 인용하지 마세요");
+  });
+
+  it("공고를 근거로 고쳤을 때도 인용은 지원자 원문에서 하게 한다", () => {
+    const withPosting: AnalysisRequest = {
+      ...request,
+      documents: [...request.documents, { kind: "job_posting", text: "안전관리자 모집. 법적 선임 가능자 필수." }],
+    };
+
+    const instructions = buildQuickAnalysisInstructions(withPosting);
+    expect(instructions).toContain("evidenceQuote에는 공고 문장이 아니라");
+    expect(instructions).not.toContain("evidenceQuote에는 원문 근거를 그대로 넣으세요");
+  });
+
+  it("비어 있던 문항은 다른 문항이나 지원자료에서 인용하게 한다", () => {
+    const buildRequest: AnalysisRequest = {
+      ...request,
+      writingMode: "BUILD",
+      questions: [
+        { id: "q1", title: "지원동기", prompt: "지원 동기를 작성해 주세요.", answer: "생산 현장 경험을 바탕으로 지원했습니다.", targetLength: 700 },
+        { id: "q2", title: "협업 경험", prompt: "협업 경험을 작성해 주세요.", answer: "", targetLength: 700 },
+      ],
+    };
+
+    expect(buildQuickAnalysisInstructions(buildRequest)).toContain("비어 있던 문항에는 인용할 원문이 없습니다");
+  });
+});
