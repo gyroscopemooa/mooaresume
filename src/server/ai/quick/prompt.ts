@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.4";
+export const QUICK_PROMPT_VERSION = "quick-1.5";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -18,10 +18,19 @@ const SUPPORTING_LABEL: Record<(typeof SUPPORTING_KINDS)[number], string> = {
 const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> = {
   POLISH: "작성 단계: 최종 첨삭. 완성된 글이므로 구조를 크게 흔들지 말고 표현·오류·적합성 점검을 우선하세요.",
   BUILD: "작성 단계: 내용 보완. 근거가 얇은 문항은 제공된 지원자료에서 사실을 찾아 보강하되, 자료에 없는 내용은 만들지 말고 확인 질문으로 남기세요.",
-  CREATE: "작성 단계: 처음부터 작성. 제공된 지원자료의 사실만으로 구성하고, 사실이 부족한 부분은 채우지 말고 확인 질문으로 남기세요.",
+  // In this stage the "원문" is not a draft: it is the ordered notes the
+  // applicant filled in on the guided screen. Treating it as prose to polish
+  // returns the notes back almost unchanged.
+  CREATE: "작성 단계: 처음부터 작성. 각 문항의 원문은 완성된 글이 아니라 지원자가 단계별로 입력한 사실 메모입니다([지원 계기], [경험 ①] 같은 머리말이 붙어 있습니다). 이 메모의 사실만 사용해 문항 질문에 답하는 완결된 자기소개서 문장을 새로 작성하세요. 메모 문장을 그대로 옮기지 말고, 메모에 없는 경험·자격·수치는 만들지 말고 확인 질문으로 남기세요.",
 };
 export const QUICK_RUBRIC_VERSION = "quick-rubric-1.0";
 export const QUICK_SCHEMA_VERSION = "1.0";
+
+const hasJobPosting = (request: AnalysisRequest) =>
+  request.documents.some((document) => document.kind === "job_posting" && document.text.trim().length > 0);
+
+const hasSupportingMaterials = (request: AnalysisRequest) =>
+  request.documents.some((document) => SUPPORTING_KINDS.includes(document.kind as (typeof SUPPORTING_KINDS)[number]));
 
 export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
   const questions = getAnalysisQuestions(request);
@@ -60,6 +69,26 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     "originalAnnotations.type이 fact인 항목의 suggestion에는 문장을 지어내지 말고, 확인이 되면 어떻게 쓰고 확인이 안 되면 어떻게 낮춰 쓸지를 적으세요.",
     // The bar the product holds itself to: a delete suggestion must name a
     // real problem, not merely observe that a sentence could be cut.
+    // The posting used to appear only in the PRO requirement-match field, so
+    // the revisions themselves were written as if no posting existed. Tailoring
+    // means deciding what to lead with out of what the applicant already wrote
+    // — never importing a qualification or a keyword the source cannot support.
+    ...(hasJobPosting(request)
+      ? [
+          "채용공고가 함께 제공됩니다. 각 문항의 revisedAnswer를 만들 때, 원문에 이미 있는 내용 중 공고가 요구하는 역량과 이어지는 부분을 앞쪽에 배치하고 더 구체적으로 풀어 쓰세요. 공고와 관련이 적은 부분은 분량을 줄이세요.",
+          "공고에 있지만 원문에서 확인되지 않는 자격, 경험, 도구, 수치, 전문 용어는 revisedAnswer에 절대 넣지 마세요. 공고의 표현을 지원서에 옮겨 심는 것은 첨삭이 아니라 사실 위조입니다.",
+          "공고가 요구하는데 지원서에 근거가 없는 항목은 문장으로 만들지 말고, consultingAdvice에 '이 공고는 ○○를 요구하는데 지원서에 근거가 없습니다'와 지원자가 실제로 할 수 있는 행동을 함께 적으세요. 확인이 필요하면 verificationQuestions에도 남기세요.",
+          "공고를 근거로 문장을 바꾼 경우, 해당 revision의 reasons에 공고의 어느 요구 때문인지 밝히고 evidenceQuote에는 원문 근거를 그대로 넣으세요.",
+        ]
+      : []),
+    // Supporting documents were only mentioned in the BUILD stage line, so a
+    // PRO run in POLISH read the résumé and did nothing with it.
+    ...(hasSupportingMaterials(request)
+      ? [
+          "이력서·경력기술서·포트폴리오·추가 경험 자료가 함께 제공됩니다. 자소서 문항의 주장이 얇을 때 이 자료에서 확인되는 사실(기간, 소속, 역할, 담당 업무)로 뒷받침하세요. 자료에 없는 내용은 만들지 마세요.",
+          "자소서와 지원자료가 서로 어긋나면(기간, 직함, 소속, 성과) 어느 쪽이 맞는지 단정하지 말고 verificationQuestions에 확인 질문으로 남기세요.",
+        ]
+      : []),
     "consultingAdvice의 remove 제안은 '없어도 되는 문장'이 아니라 '두면 감점 요인이 되는 문장'만 대상으로 하세요. rationale에 무엇이 왜 문제인지 원문 근거와 함께 적고, 단순히 분량을 줄이기 위한 삭제는 제안하지 마세요.",
     "consultingAdvice의 모든 항목은 지원자가 바로 실행할 수 있는 구체적 행동이어야 합니다. '더 구체적으로 쓰세요' 같은 일반론은 넣지 마세요.",
     ...(getUnansweredQuestions(request).length > 0
@@ -81,6 +110,32 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
   ].join("\n");
 }
 
+/**
+ * Supporting documents are charged for as a flat PRO fee — begin_quick_analysis
+ * only counts the cover letter's characters — while each attachment may hold up
+ * to 50,000 characters and there may be twenty of them. Left unbounded, one
+ * upload-heavy run costs many times what it was priced at, so the prompt takes
+ * a fixed budget and says plainly where it stopped reading.
+ */
+export const SUPPORTING_CHARACTER_BUDGET = 30_000;
+
+function buildSupportingSections(request: AnalysisRequest) {
+  const sections: string[] = [];
+  let remaining = SUPPORTING_CHARACTER_BUDGET;
+
+  for (const kind of SUPPORTING_KINDS) {
+    for (const document of request.documents.filter((item) => item.kind === kind)) {
+      if (remaining <= 0) break;
+      const label = document.filename ? `[${SUPPORTING_LABEL[kind]} · ${document.filename}]` : `[${SUPPORTING_LABEL[kind]}]`;
+      const text = document.text.slice(0, remaining);
+      remaining -= text.length;
+      sections.push(label, text.length < document.text.length ? `${text}
+(분량이 많아 이후 내용은 생략했습니다.)` : text);
+    }
+  }
+  return sections;
+}
+
 export function buildQuickAnalysisInput(request: AnalysisRequest) {
   const coverLetter = request.documents.find((document) => document.kind === "cover_letter");
   if (!coverLetter) throw new Error("분석할 자기소개서가 필요합니다.");
@@ -94,10 +149,7 @@ export function buildQuickAnalysisInput(request: AnalysisRequest) {
   ]);
 
   const unanswered = getUnansweredQuestions(request);
-  const supporting = SUPPORTING_KINDS.flatMap((kind) => {
-    const documents = request.documents.filter((document) => document.kind === kind);
-    return documents.flatMap((document) => [`[${SUPPORTING_LABEL[kind]}]`, document.text]);
-  });
+  const supporting = buildSupportingSections(request);
 
   return [
     `[요청 ID] ${request.requestId}`,

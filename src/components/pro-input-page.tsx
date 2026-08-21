@@ -11,6 +11,8 @@ import { JobPostingInput } from "@/components/job-posting-input";
 import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake";
 import { AdditionalInfoInput } from "@/components/additional-info-input";
 import { MaterialUpload } from "@/components/material-upload";
+import { GuidedCreateForm } from "@/components/guided-create-form";
+import { createGuidedCreateDraft, type GuidedCreateDraft } from "@/domain/guided-create";
 import { isLinkOnlyPosting } from "@/domain/job-posting-source";
 import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import {
@@ -103,6 +105,7 @@ export function ProInputPage({ mode }: Props) {
   const [materialAttachments, setMaterialAttachments] = useState<CandidateMaterialAttachment[]>([]);
   const [companyName, setCompanyName] = useState("");
   const [roleName, setRoleName] = useState("");
+  const [guidedDraft, setGuidedDraft] = useState<GuidedCreateDraft>(createGuidedCreateDraft);
   const [writingStyle, setWritingStyle] = useState<WritingStyle>("BALANCED");
   const [resetKey, setResetKey] = useState(0);
 
@@ -125,6 +128,7 @@ export function ProInputPage({ mode }: Props) {
     setMaterialAttachments([]);
     setCompanyName("");
     setRoleName("");
+    setGuidedDraft(createGuidedCreateDraft());
     setWritingStyle("BALANCED");
     setResetKey((key) => key + 1);
   }
@@ -184,8 +188,12 @@ export function ProInputPage({ mode }: Props) {
   const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
   const blockedReason = !hasPostingSource
     ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."
-    : mode !== "CREATE" && !hasCoverLetterAnswer
-      ? "첨삭할 자기소개서 답변이 하나 이상 필요해요. 빈 문항은 그대로 두어도 됩니다."
+    : !hasCoverLetterAnswer
+      ? mode === "CREATE"
+        // Without this the run reached checkout and then failed on the server
+        // for having no source document at all.
+        ? "문항을 추가하고, 각 문항에 쓸 내용을 하나 이상 골라 주세요. 위 단계에서 입력한 내용이 문항별 초안의 재료가 됩니다."
+        : "첨삭할 자기소개서 답변이 하나 이상 필요해요. 빈 문항은 그대로 두어도 됩니다."
       : "";
 
   return <main className={styles.page}>
@@ -211,7 +219,7 @@ export function ProInputPage({ mode }: Props) {
           <label><span>지원 직무 <b>선택</b></span><input value={roleName} maxLength={120} onChange={(event) => setRoleName(event.target.value)} placeholder="예: 안전관리자"/></label>
         </div>
         <p className={styles.targetHint}>공고 하나에 여러 직무가 있을 때 어느 직무 기준으로 볼지 알려주시면, 그 직무의 요구사항만 대조합니다. 비워두면 공고 전체를 기준으로 봅니다.</p>
-        {mode === "CREATE" ? <section className={styles.createEmpty}><FilePenLine/><div><b>아직 작성한 자기소개서가 없어요.</b><p>바로 문장을 만들지 않고 아래 지원자료와 경험을 정리한 뒤, 문항별 소재와 필요한 사실부터 확인합니다.</p></div></section> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
+        {mode === "CREATE" ? <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
         <section className={styles.optionalMaterials}>
           <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>종류별 여러 파일 · 최대 10개</small></div>
           <MaterialUpload attachments={materialAttachments} onChange={setMaterialAttachments}/>
