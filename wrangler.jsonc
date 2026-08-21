@@ -7,6 +7,13 @@
 		"nodejs_compat",
 		"global_fetch_strictly_public"
 	],
+	// Wrangler treats this file as the source of truth for a Worker's variables
+	// and secrets. With no "vars" block here, every deploy was publishing an
+	// empty set and wiping whatever had been entered in the dashboard — which is
+	// why the runtime values kept disappearing after a deploy. Keeping them is
+	// the right default for this project: the values are secrets, so they must
+	// be set in the dashboard rather than committed here.
+	"keep_vars": true,
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
@@ -23,8 +30,5 @@
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
-	},
-	"send_email": [
-		{ "name": "EMAIL" }
-	]
+	}
 }

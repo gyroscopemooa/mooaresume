@@ -565,3 +565,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 확인 방법: `select * from cron.job where jobname = 'advance-analysis-runs';`, `select * from cron.job_run_details order by start_time desc limit 10;`
 - 남은 것: 예약이 실제로 도는 것을 확인한 뒤에만 결제 화면 문구를 "창을 닫아도 됩니다"로 바꿉니다. 지금은 "이 창을 열어둔 채로 기다려 주세요"를 유지합니다.
 - Rollback/recovery reference: `select cron.unschedule('advance-analysis-runs');` 로 예약만 해제하면 이전 동작으로 돌아갑니다. 테이블과 함수는 남겨도 무해합니다.
+
+## 2026-08-22 — Claude: 배포할 때마다 런타임 환경변수가 지워지던 원인 수정
+
+- Agent/session: Claude. 사용자가 "커밋 배포 후 런타임 환경변수가 사라진다, 다시 넣어도 또 사라질 것 같다"고 보고했습니다.
+- Status: 설정 수정 완료. **적용은 다음 배포부터이며, 그 전에 값을 한 번 더 넣어야 합니다.**
+- 원인: `wrangler.jsonc`에 `vars` 블록이 없었습니다. Wrangler는 이 파일을 워커 변수의 기준으로 삼기 때문에, 선언이 없으면 **배포할 때마다 빈 변수 집합을 게시하며 대시보드에 넣어둔 값을 지웁니다.** 명령어(`opennextjs-cloudflare build && opennextjs-cloudflare deploy`)나 빌드 커맨드 문제가 아니라 설정 파일 문제였습니다.
+- Change 1: `"keep_vars": true`를 추가했습니다. 배포가 대시보드의 변수·시크릿을 건드리지 않습니다. 값 자체를 이 파일에 적지 않은 이유는 커밋되는 파일이기 때문입니다 — API 키가 깃 저장소에 들어가서는 안 됩니다.
+- Change 2: 쓰이지 않는 `send_email` 바인딩 선언을 제거했습니다. 이메일 발송을 Resend로 옮긴 뒤 코드에 참조가 남아 있지 않음을 확인했습니다(`getCloudflareContext`·`env.EMAIL` 검색 결과 0건).
+- 빌드 변수와 런타임 변수의 구분(사용자 안내용): `NEXT_PUBLIC_*`는 Next.js가 **빌드 시점에 코드에 박아 넣으므로 빌드 변수**로 있어야 합니다(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL`). 나머지(`OPENAI_API_KEY`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `POLAR_*`, `ANALYSIS_CRON_SECRET`, `ANALYSIS_EMAIL_FROM`, `OPENAI_MODEL`)는 요청 시점에 읽으므로 **런타임 시크릿**이어야 합니다. 런타임 값만 넣고 `NEXT_PUBLIC_*`를 빌드에 안 넣으면 클라이언트 번들에 빈 값이 박힙니다.
+- Files/branch: `wrangler.jsonc` on `main`.
+- Validation: JSON 유효성과 `keep_vars` 반영을 확인했습니다. 배포 동작은 다음 배포에서 확인해야 합니다.
+- Rollback/recovery reference: `keep_vars` 한 줄을 지우면 이전 동작으로 돌아갑니다(그 경우 변수가 다시 지워집니다). `send_email` 바인딩은 이메일 발송을 Cloudflare로 되돌릴 때만 필요합니다.
