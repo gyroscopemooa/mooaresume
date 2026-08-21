@@ -523,3 +523,20 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/onboarding/onboarding.module.css`, `src/components/analysis-preparation.module.css`, `src/components/analysis-preparation.tsx` on `main`.
 - Validation: 전체 `npx vitest run` 277 passed, `npx tsc --noEmit` clean, 대상 파일 ESLint clean.
 - Rollback/recovery reference: 커밋 revert. 헤더는 `display:grid` 3줄과 그리드 배치 규칙만, 결제 화면은 `analysedQuestions` 계산과 렌더 참조만 되돌리면 됩니다.
+
+## 2026-08-22 — Claude: 서버가 분석을 끝까지 진행하는 예약 엔드포인트
+
+- Agent/session: Claude. 사용자가 이메일·환불 동작을 물었고, 확인 과정에서 Claude가 전날 결제 화면에 쓴 "창을 닫아도 계속 진행되고 이메일로 보내드립니다"가 **거짓**임이 드러났습니다. 사용자가 진행을 지시했습니다.
+- Status: 엔드포인트 완료. **스케줄러 연결은 아직 안 됐고, 연결 전까지는 동작이 이전과 같습니다.**
+- 문제: `/api/analysis-runs/quick/execute`를 부르는 곳이 `quick-checkout-return.tsx` 하나뿐이고 프로젝트에 크론·예약 워커가 없습니다. OpenAI 작업은 백그라운드에서 끝나지만 **결과를 가져와 검증·저장하는 일은 브라우저 폴링에서만** 일어납니다. 창을 닫으면 실행이 `RUNNING`에 남고, 완료 이메일도 그 요청 안에서 보내므로 발송되지 않으며, 10분 초과 자동 환불도 결제 상태 조회 라우트에서 트리거되어 마찬가지로 동작하지 않습니다. 결제는 이미 끝난 뒤라 돈만 나간 상태가 남습니다.
+- Change: `POST /api/analysis-runs/advance`를 추가했습니다. `RUNNING` 상태 실행을 오래된 순으로 최대 5건 조회해, 시작 후 10분이 지났으면 기존 `refundTimedOutQuickAnalysis`로 환불하고, 아니면 브라우저가 부르던 것과 **같은 함수들**(`advanceQuickBackgroundAnalysis`, 검증기, `createQuickAnalysisResult`, 저장소)로 진행합니다. 완료되면 소유자 이메일로 결과 링크를 보냅니다. 새 로직을 만들지 않은 이유는 경로가 둘로 갈라지면 한쪽에만 적용된 규칙이 생기기 때문입니다.
+- 접근 제어: `Authorization: Bearer $ANALYSIS_CRON_SECRET`. **비밀이 설정되지 않으면 503으로 항상 거부**합니다 — 설정 누락이 공개 엔드포인트가 되어서는 안 됩니다. 테스트 2건으로 고정했습니다.
+- 중복 처리: 새 잠금을 만들지 않았습니다. `complete_quick_analysis`가 `status='RUNNING'`을 `for update`로 확인하고, 결과 삽입은 `on conflict do nothing`이며, 환불은 `claim_quick_analysis_timeout_refund`가 한 번만 통과시킵니다. 열린 탭이 먼저 완료한 경우 `ANALYSIS_RUN_NOT_COMPLETABLE`을 오류가 아니라 `ALREADY_DONE`으로 처리합니다.
+- 권한: 저장소가 이미 `SUPABASE_SECRET_KEY`(서비스 롤)로 동작해 추가 권한 작업이 없었습니다. 이메일 주소는 `auth.admin.getUserById`로 조회합니다.
+- 새 결정 문서: `docs/background-analysis-completion-decision.md`. 스케줄러 선택지(Supabase `pg_cron`+`pg_net` / GitHub Actions / 외부 크론)와 Cloudflare 크론 트리거를 쓰지 않는 이유(OpenNext 생성 워커에 `scheduled()` 핸들러가 없고, 워커 생성에 손대면 배포 전체가 흔들림)를 적었습니다.
+- 문구: 결제 화면 안내는 **"이 창을 열어둔 채로 기다려 주세요"로 되돌린 상태를 유지**합니다. 예약 작업이 실제로 도는 것을 확인한 뒤에만 "창을 닫아도 됩니다"로 바꿉니다. 순서를 뒤집어 한 번 실패했습니다.
+- 이메일 미발송 사실 확인: `ANALYSIS_EMAIL_FROM`이 `.env.example`에 없었고 로컬에는 Cloudflare `EMAIL` 바인딩이 없습니다. **지금까지 완료 이메일이 발송된 적이 없습니다.** 두 값을 `.env.example`에 추가했습니다. 수신 주소는 Supabase 인증 이메일(구글 계정)이며 Polar 결제 입력 주소가 아닙니다.
+- Files/branch: 신규 `src/app/api/analysis-runs/advance/route.ts` + 테스트, 신규 `docs/background-analysis-completion-decision.md`, `.env.example` on `main`.
+- Validation: 전체 `npx vitest run` 279 passed(이번 추가 2건), `npx tsc --noEmit` clean, ESLint 오류 0건.
+- 사용자가 해야 할 것: `ANALYSIS_CRON_SECRET` 설정과 스케줄러 연결은 환경변수·외부 대시보드 작업이라 사용자 몫입니다.
+- Rollback/recovery reference: 라우트와 스케줄러 설정을 제거하면 이전 동작(브라우저 폴링 전용)으로 돌아갑니다. DB 함수·저장 형식·가격은 변경하지 않았습니다.
