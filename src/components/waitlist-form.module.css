@@ -12,4 +12,4 @@
 .done svg{width:22px;color:#176b4a;flex:none}
 .done b{font-size:14px}
 .done p{margin:4px 0 0;font-size:12px;color:#526059}
-@media(max-width:600px){.form{flex-direction:column}.form button{padding:14px;justify-content:center}}
+@media(max-width:750px){.form{flex-direction:column}.form button{padding:14px;justify-content:center}}

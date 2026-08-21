@@ -15,4 +15,4 @@
 .sub>span{display:flex;align-items:center;gap:5px}
 .sub svg{width:13px;color:var(--green)}
 .error{margin:8px 0 0;color:#a34848;font-size:12px;text-align:center}
-@media(max-width:650px){.wrap{margin-top:16px}.inputBox textarea{min-height:130px;padding:16px;font-size:15px}.meta{padding:10px 16px}.meta>span{display:none}.primary{margin-top:12px;padding:16px;font-size:16px}.sub{margin-top:10px}}
+@media(max-width:812px){.wrap{margin-top:16px}.inputBox textarea{min-height:130px;padding:16px;font-size:15px}.meta{padding:10px 16px}.meta>span{display:none}.primary{margin-top:12px;padding:16px;font-size:16px}.sub{margin-top:10px}}

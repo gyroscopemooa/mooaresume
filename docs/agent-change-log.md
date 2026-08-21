@@ -309,3 +309,18 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Rollback/recovery reference: `schema.ts`에서 `originalAnnotations`를 `revisedAnswer` 뒤로 되돌리고, `prompt.ts`에서 이번에 추가한 지시문 7줄을 제거한 뒤 `good` 정의를 이전 한 줄로 합치면 됩니다. 버전은 `quick-1.5`로 환원. 저장된 결과에는 영향이 없습니다.
 - Known limits: 이 변경은 강제가 아니라 유도입니다. 필드 순서와 지시문으로 모델이 앞선 판단을 지키도록 만들지만 100%는 아닙니다. `good` 표현이 최종본에 남았는지 기계적으로 검사하는 장치는 아직 없습니다 — 한 번 돌려보고 실제 준수율을 본 뒤 검사 추가 여부를 정하기로 했습니다.
 - User decision: 사용자가 "살리는 쪽이 맞다, 다 뜯어고치면 챗지피티와 다를 게 없다"고 방향을 정했고, 최종 첨삭본이 제출본 피드백을 참고해 정리되는 흐름이 맞다고 판단했습니다. 다른 부분은 손대지 말라고 명시했습니다.
+
+## 2026-08-22 — Claude: 앱 전체 배율 1.25배 (브라우저 125% 확대와 동일)
+
+- Agent/session: Claude, this session. 사용자가 "글자가 작다, 브라우저 100%에서 휠로 125% 하면 딱 맞는다, 전에 하드코딩 때문에 뒤죽박죽돼서 롤백했었다"며 롤백 준비를 전제로 요청했습니다.
+- Status: completed locally.
+- Protected baseline: 모든 화면의 레이아웃·색·간격 비율. **CSS 4,025개 px 값 중 단 하나도 수정하지 않았습니다.** 같은 시각 Codex가 작업 중인 `validator.ts`, `provider.ts`, `execute/route.ts`, `validator.test.ts`도 손대지 않았고 커밋에도 포함하지 않았습니다.
+- Change and reason: 화면이 전부 절대 픽셀로 짜여 있어(27개 스타일시트, px 값 4,025개) 글자 크기를 숫자로 키우는 방식은 지난번에 실패한 그 방법입니다. 대신 `body{zoom:var(--app-scale)}` 한 줄로 브라우저의 ctrl+휠 확대와 동일한 효과를 냅니다 — 글자·여백·테두리·레이아웃이 같은 비율로 함께 커지므로 디자인이 어긋날 여지가 없습니다. 배율은 `:root{--app-scale:1.25}` 한 곳에서만 정합니다.
+- 마케팅 홈(`.home-page`)은 자체 타이포그래피 조정(readability pass)이 이미 되어 있어 `zoom:calc(1 / 1.25)`로 배율을 상쇄해 기존 크기를 유지합니다.
+- 브레이크포인트 보정: 미디어쿼리는 확대된 콘텐츠가 아니라 실제 창 너비를 측정합니다. 배율만 올리면 모바일 레이아웃이 창 4분의 1만큼 늦게 나타나 중간 너비에서 화면이 눌립니다. 그래서 `@media ... max-width:N px`의 N을 모두 1.25배 했습니다(39개 파일, 61곳). 숫자 치환 외에 다른 변경은 없으며 `git diff`로 확인했습니다.
+- 부수 수정: 채용공고 입력창의 "공고 내용을 가져왔어요" 안내가 좌우 테두리에 붙던 문제(`.linkMessage`에 내부 여백이 없었음)를 고치고, 34px 고정 높이 푸터에 "링크 내용 불러오기" 버튼이 끼던 것을 줄바꿈 가능하도록 완화했습니다. 사용자가 지적한 그 지점입니다.
+- Files/branch: `src/app/globals.css`(배율 3줄 + 브레이크포인트), `src/components/job-posting-input.module.css`(여백 수정 + 브레이크포인트), 나머지 37개 `*.module.css`(브레이크포인트 숫자만) on `main`.
+- Validation: 전체 `npx vitest run` 251 passed; `npx tsc --noEmit` clean; 모든 CSS 파일 중괄호 균형 확인. 로컬에서 `zoom: 1.25` 적용 확인, **가로 스크롤 발생 없음**을 1265px / 1000px / 375px 세 너비에서 확인했습니다.
+- Rollback/recovery reference: **이 커밋 하나만 `git revert` 하면 완전히 되돌아갑니다.** 전부 CSS이고 다른 커밋과 섞이지 않았습니다. 배율만 조절하려면 `globals.css`의 `--app-scale` 값 하나만 바꾸면 됩니다(단, 브레이크포인트는 1.25 기준으로 맞춰져 있으므로 크게 벗어난 값은 함께 조정 필요).
+- Known issue (사전 존재, 미수정): `additional-info-input`의 파일 안내 문구가 375px 화면에서 이미 143px 넘쳐 잘리고 있었습니다(배율 적용 시 272px). 배율 때문에 생긴 문제가 아니며 Codex 담당 파일이라 건드리지 않았습니다. 별도 처리 필요.
+- User decision: 사용자가 브라우저 125% 확대와 같은 느낌을 요청했고 롤백 가능성을 전제로 진행을 승인했습니다.

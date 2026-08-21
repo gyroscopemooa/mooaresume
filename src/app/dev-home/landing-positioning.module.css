@@ -155,7 +155,7 @@
 .ambitionBody a svg {
   width: 13px;
 }
-@media (max-width: 800px) {
+@media (max-width: 1000px) {
   .simple {
     margin-bottom: 70px;
     padding: 30px 22px;
@@ -176,12 +176,12 @@
     padding: 26px 22px;
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .simpleGrid {
     grid-template-columns: 1fr;
   }
 }
 
 .manifesto{position:relative;display:grid;grid-template-columns:58px 1fr 290px;gap:28px;align-items:center;margin-bottom:90px;padding:48px;border-radius:20px;background:#0d3527;color:#fff;box-shadow:0 24px 65px rgba(13,53,39,.16);overflow:hidden}.manifesto:after{content:"";position:absolute;right:-90px;top:-120px;width:330px;height:330px;border:1px solid rgba(255,255,255,.08);border-radius:50%}.manifestoIcon{align-self:flex-start;display:grid;place-items:center;width:52px;height:52px;border:1px solid rgba(255,255,255,.15);border-radius:15px;background:rgba(255,255,255,.07);color:#a9d7c0}.manifestoIcon svg{width:23px}.manifestoCopy{position:relative;z-index:1}.manifestoCopy>span{color:#8fc5aa;font-size:9px;font-weight:900;letter-spacing:.14em}.manifestoCopy h2{margin:10px 0 13px;font-size:28px;line-height:1.4;letter-spacing:-.035em}.manifestoCopy strong{display:block;color:#b9e1cd;font-size:15px}.manifestoCopy p{max-width:650px;margin:13px 0 0;color:#bbd0c6;font-size:11px;line-height:1.75}.manifestoGoal{position:relative;z-index:1;padding:24px;border-left:1px solid rgba(255,255,255,.13)}.manifestoGoal small{color:#8fc5aa;font-size:8px;font-weight:900;letter-spacing:.12em}.manifestoGoal b{display:block;margin:9px 0 18px;font-size:20px;line-height:1.45}.manifestoGoal a{display:inline-flex;align-items:center;gap:6px;padding:9px 11px;border-radius:7px;background:#fff;color:#0d3527;font-size:9px;font-weight:900}.manifestoGoal a svg{width:12px}
-@media(max-width:800px){.manifesto{grid-template-columns:48px 1fr;padding:30px 24px}.manifestoGoal{grid-column:2;border-left:0;border-top:1px solid rgba(255,255,255,.13);padding:20px 0 0}.manifestoCopy h2{font-size:23px}}
-@media(max-width:480px){.manifesto{grid-template-columns:1fr}.manifestoIcon{display:none}.manifestoGoal{grid-column:1}}
+@media(max-width:1000px){.manifesto{grid-template-columns:48px 1fr;padding:30px 24px}.manifestoGoal{grid-column:2;border-left:0;border-top:1px solid rgba(255,255,255,.13);padding:20px 0 0}.manifestoCopy h2{font-size:23px}}
+@media(max-width:600px){.manifesto{grid-template-columns:1fr}.manifestoIcon{display:none}.manifestoGoal{grid-column:1}}
