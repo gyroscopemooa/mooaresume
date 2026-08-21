@@ -51,14 +51,30 @@
 .banner p strong {
   color: #17221d;
 }
-@media (max-width: 875px) {
+/*
+ * Stacking started at 875px, so every tablet width got the tall two-block
+ * version of a banner that fits side by side well past that. Keep the row until
+ * the text genuinely cannot hold it, and when it does stack, make it thin
+ * rather than tall — the complaint was bulk, not alignment.
+ */
+@media (max-width: 700px) {
   .banner {
     align-items: flex-start;
     flex-direction: column;
+    gap: 12px;
     margin-top: 18px;
-    padding: 23px;
+    padding: 18px 20px;
+  }
+  .banner > div {
+    align-items: center;
+    gap: 10px;
   }
   .banner b {
-    font-size: 16px;
+    font-size: 15px;
+  }
+  .banner p {
+    max-width: none;
+    font-size: 10px;
+    line-height: 1.6;
   }
 }
