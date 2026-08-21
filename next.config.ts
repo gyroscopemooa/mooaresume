@@ -17,7 +17,6 @@ const privatePaths = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["pdfjs-dist", "mammoth"],
   allowedDevOrigins: ["local.mooaresume.com", "dev.mooaresume.com"],
   async redirects() {
     return [

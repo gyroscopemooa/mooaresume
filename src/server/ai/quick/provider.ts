@@ -1,5 +1,6 @@
 import type { AnalysisRequest, ResumeAnalysisProvider } from "@/application/analysis-contract";
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
+import { resolveOriginalAnnotations } from "@/domain/result-original-annotations";
 import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
 import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
@@ -71,7 +72,23 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
     readiness: output.readiness,
     attachments: source.filename ? [{ id: `${request.requestId}-source`, filename: source.filename, extension: source.filename.split(".").pop()?.toUpperCase() || "TEXT", sizeBytes: new TextEncoder().encode(source.text).length, parseStatus: "ready", parserLabel: "Source document", sectionCount: questions.length }] : [],
     candidateProfile: { snapshotLabel: `${request.product} input`, items: [] }, priorities: output.priorities.map((priority, index) => ({ id: `priority-${index + 1}`, title: priority.title, description: priority.description, category: priority.category, severity: priority.severity })),
-    questions: questions.map((question) => { const revision = revisions.get(question.order)!; return { id: `quick-question-${question.order}`, order: question.order, title: question.title || `Question ${question.order}`, prompt: question.prompt || "Cover-letter question", targetLength: question.targetLength, originalAnswer: question.answer, revisedAnswer: revision.revisedAnswer, highlightedPhrases: revision.highlightedPhrases.map((phrase) => recoverHighlight(revision.revisedAnswer, phrase)).filter((phrase): phrase is string => phrase !== null), revisionReasons: revision.reasons.map((reason) => reason.reason), verificationNote: revision.verificationNote ?? undefined }; }),
+    questions: questions.map((question) => {
+      const revision = revisions.get(question.order)!;
+      const questionId = `quick-question-${question.order}`;
+      return {
+        id: questionId,
+        order: question.order,
+        title: question.title || `Question ${question.order}`,
+        prompt: question.prompt || "Cover-letter question",
+        targetLength: question.targetLength,
+        originalAnswer: question.answer,
+        revisedAnswer: revision.revisedAnswer,
+        highlightedPhrases: revision.highlightedPhrases.map((phrase) => recoverHighlight(revision.revisedAnswer, phrase)).filter((phrase): phrase is string => phrase !== null),
+        originalAnnotations: resolveOriginalAnnotations(question.answer, revision.originalAnnotations, `${questionId}-annotation`),
+        revisionReasons: revision.reasons.map((reason) => reason.reason),
+        verificationNote: revision.verificationNote ?? undefined,
+      };
+    }),
     requirementMatches: (output.requirementMatches ?? []).map((match, index) => ({ id: `requirement-${index + 1}`, ...match })),
     verificationQuestions: output.verificationQuestions,
     consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })),

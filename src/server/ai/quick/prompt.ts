@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.2";
+export const QUICK_PROMPT_VERSION = "quick-1.3";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -43,6 +43,10 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     `분석 대상은 총 ${questions.length}개 문항입니다. revisions 배열에 questionOrder 1부터 ${questions.length}까지 각 문항의 수정본을 정확히 하나씩 모두 반환하세요.`,
     "하위 호환용 revision 필드에는 1번 문항과 동일한 수정본을 반환하세요.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
+    "각 revision의 originalAnnotations에는 제출 원문에서 짚어줄 표현을 최대 8개까지 넣으세요. 개수를 채우기 위해 억지로 만들지 마세요.",
+    "originalAnnotations.phrase는 해당 문항의 원문 답변에 실제로 한 번만 등장하는 문구를 토씨와 띄어쓰기까지 그대로 복사하세요.",
+    "originalAnnotations.type은 good(이미 잘 쓴 표현), delete(두면 신뢰나 전달력을 해치는 표현), vague(구체성이 부족한 표현), revise(의미는 있으나 다듬을 표현) 중 하나만 사용하세요.",
+    "originalAnnotations.comment에는 해당 원문 표현을 왜 유지·삭제·구체화·수정해야 하는지 짧고 구체적으로 설명하세요.",
     // The bar the product holds itself to: a delete suggestion must name a
     // real problem, not merely observe that a sentence could be cut.
     "consultingAdvice의 remove 제안은 '없어도 되는 문장'이 아니라 '두면 감점 요인이 되는 문장'만 대상으로 하세요. rationale에 무엇이 왜 문제인지 원문 근거와 함께 적고, 단순히 분량을 줄이기 위한 삭제는 제안하지 마세요.",

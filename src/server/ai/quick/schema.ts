@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 const quickEvidenceReasonSchema = z.object({ reason: z.string().min(1), evidenceQuote: z.string().min(1), category: z.enum(["objective", "qualitative", "needs_verification"]) });
-const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
+const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type: z.enum(["good", "delete", "vague", "revise"]), comment: z.string().min(1) });
+const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(8), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
 const legacyQuickRevisionSchema = quickRevisionSchema.omit({ questionOrder: true });
 
 // PRO is sold on two things QUICK does not promise: matching the posting's
@@ -47,7 +48,29 @@ const quickRequestSchema = z.object(baseOutputShape);
 const proRequestSchema = z.object({ ...baseOutputShape, ...proOutputShape });
 
 export type QuickAnalysisOutput = z.infer<typeof quickAnalysisOutputSchema>;
-export function parseQuickAnalysisOutput(input: unknown): QuickAnalysisOutput { return quickAnalysisOutputSchema.parse(input); }
+
+function addLegacyOriginalAnnotations(input: unknown): unknown {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return input;
+  const output = { ...input } as Record<string, unknown>;
+  if (output.revision && typeof output.revision === "object" && !Array.isArray(output.revision)) {
+    const revision = { ...output.revision } as Record<string, unknown>;
+    if (!("originalAnnotations" in revision)) revision.originalAnnotations = [];
+    output.revision = revision;
+  }
+  if (Array.isArray(output.revisions)) {
+    output.revisions = output.revisions.map((value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+      const revision = { ...value } as Record<string, unknown>;
+      if (!("originalAnnotations" in revision)) revision.originalAnnotations = [];
+      return revision;
+    });
+  }
+  return output;
+}
+
+export function parseQuickAnalysisOutput(input: unknown): QuickAnalysisOutput {
+  return quickAnalysisOutputSchema.parse(addLegacyOriginalAnnotations(input));
+}
 
 /**
  * The JSON schema handed to OpenAI. Strict mode marks every declared property

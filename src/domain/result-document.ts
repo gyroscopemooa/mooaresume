@@ -19,6 +19,15 @@ export const resultPrioritySchema = z.object({
   severity: z.enum(["high", "medium", "low"]),
 });
 
+export const resultOriginalAnnotationSchema = z.object({
+  id: z.string().min(1),
+  phrase: z.string().min(1),
+  type: z.enum(["good", "delete", "vague", "revise"]),
+  comment: z.string().min(1),
+  start: z.number().int().nonnegative(),
+  end: z.number().int().nonnegative(),
+});
+
 export const resultQuestionSchema = z.object({
   id: z.string().min(1),
   order: z.number().int().positive(),
@@ -28,6 +37,7 @@ export const resultQuestionSchema = z.object({
   originalAnswer: z.string().min(1),
   revisedAnswer: z.string().min(1),
   highlightedPhrases: z.array(z.string().min(1)),
+  originalAnnotations: z.array(resultOriginalAnnotationSchema).optional(),
   revisionReasons: z.array(z.string().min(1)).min(1),
   verificationNote: z.string().optional(),
 });
@@ -112,6 +122,7 @@ export const resultDocumentSchema = z.object({
 
 export type ResultDocument = z.infer<typeof resultDocumentSchema>;
 export type ResultQuestion = z.infer<typeof resultQuestionSchema>;
+export type ResultOriginalAnnotation = z.infer<typeof resultOriginalAnnotationSchema>;
 export type ResultCandidateProfile = z.infer<typeof resultCandidateProfileSchema>;
 
 export function countCompactCharacters(value: string) {

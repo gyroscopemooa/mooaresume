@@ -42,6 +42,7 @@ describe("ResultWorkspaceCodexRestored 제출본 탭", () => {
     fireEvent.click(screen.getByRole("button", { name: "제출본" }));
 
     expect(screen.getByText("제출본 피드백")).toBeTruthy();
-    expect(screen.getAllByText("표시할 원문 피드백이 없습니다.").length).toBe(sampleResultDocument.questions.length);
+    expect(screen.getAllByText("이 결과에는 원문 피드백이 저장되지 않았습니다. 제출한 원문은 그대로 확인할 수 있습니다.").length).toBe(sampleResultDocument.questions.length);
+    expect(screen.getByText(sampleResultDocument.questions[0].originalAnswer)).toBeTruthy();
   });
 });

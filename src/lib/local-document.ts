@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 const MAX_LOCAL_FILE_BYTES = 10 * 1024 * 1024;
 
 export type LocalDocumentResult = {

@@ -6,69 +6,92 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Clipboard,
   Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw, Sparkles,
 } from "lucide-react";
-import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document-codex-restored";
-import { sampleResultDocument } from "@/fixtures/result-document-codex-restored";
+import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document";
+import { deriveFallbackOriginalAnnotations } from "@/domain/result-original-annotations";
+import { sampleResultDocument } from "@/fixtures/result-document";
 import { diffText } from "@/lib/text-diff";
 import { FinalUpgradeCard } from "@/components/final-upgrade-card";
 import { ApplicationTrackerCard } from "@/components/application-tracker-card";
 import { CandidateProfileCard } from "@/components/candidate-profile-card";
-import styles from "./result-workspace-codex-restored.module.css";
+import styles from "./result-workspace-complete.module.css";
 
 type View = "overview" | "submission" | "revision" | "fit" | "interview" | "final";
+
+const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
+  good: "좋은 표현",
+  delete: "삭제 추천",
+  vague: "구체성 부족",
+  revise: "수정 추천",
+};
+
+type AnnotationGroup = { start: number; end: number; phrase: string; items: ResultOriginalAnnotation[] };
+
+function groupOriginalAnnotations(annotations: ResultOriginalAnnotation[]): { groups: AnnotationGroup[]; marks: AnnotationGroup[] } {
+  const sorted = [...annotations].sort((left, right) => left.start - right.start || (right.end - right.start) - (left.end - left.start));
+  const groups: AnnotationGroup[] = [];
+  for (const item of sorted) {
+    const previous = groups.at(-1);
+    if (previous && item.start === previous.start && item.end === previous.end) previous.items.push(item);
+    else groups.push({ start: item.start, end: item.end, phrase: item.phrase, items: [item] });
+  }
+  const marks: AnnotationGroup[] = [];
+  for (const group of groups) {
+    const previous = marks.at(-1);
+    if (!previous || group.start >= previous.end) marks.push(group);
+  }
+  return { groups, marks };
+}
+
+function AnnotatedOriginal({ text, marks }: { text: string; marks: AnnotationGroup[] }) {
+  const segments: Array<{ value: string; type?: ResultOriginalAnnotation["type"] }> = [];
+  let cursor = 0;
+  for (const mark of marks) {
+    if (mark.start > cursor) segments.push({ value: text.slice(cursor, mark.start) });
+    segments.push({ value: text.slice(mark.start, mark.end), type: mark.items[0].type });
+    cursor = mark.end;
+  }
+  if (cursor < text.length) segments.push({ value: text.slice(cursor) });
+  return <p className={styles.annotatedText}>{segments.map((segment, index) => segment.type
+    ? <mark key={index} data-type={segment.type}>{segment.value}</mark>
+    : <span key={index}>{segment.value}</span>)}</p>;
+}
+
+/**
+ * Marks the phrases the analysis called out inside the revised answer. The
+ * data was being produced, validated and stored all along but never drawn, so
+ * "강조 표시" existed only in the sample fixture.
+ */
+function HighlightedAnswer({ text, phrases }: { text: string; phrases: readonly string[] }) {
+  const present = phrases.filter((phrase) => phrase && text.includes(phrase));
+  if (present.length === 0) return <p className={styles.after}>{text}</p>;
+
+  // Longest first so a phrase nested inside another still marks the wider span.
+  const ordered = [...present].sort((a, b) => b.length - a.length);
+  const parts: Array<{ value: string; marked: boolean }> = [{ value: text, marked: false }];
+  for (const phrase of ordered) {
+    for (let index = parts.length - 1; index >= 0; index -= 1) {
+      const part = parts[index];
+      if (part.marked) continue;
+      const at = part.value.indexOf(phrase);
+      if (at < 0) continue;
+      parts.splice(index, 1, ...[
+        { value: part.value.slice(0, at), marked: false },
+        { value: phrase, marked: true },
+        { value: part.value.slice(at + phrase.length), marked: false },
+      ].filter((next) => next.value));
+    }
+  }
+
+  return <p className={styles.after}>{parts.map((part, index) => part.marked
+    ? <mark key={index} className={styles.highlight}>{part.value}</mark>
+    : <span key={index}>{part.value}</span>)}</p>;
+}
 
 function DiffAnswer({ original, revised, side }: { original: string; revised: string; side: "before" | "after" }) {
   return <p className={styles.diffText}>{diffText(original, revised).filter((part) => part.type === "equal" || (side === "before" ? part.type === "removed" : part.type === "added")).map((part, index) => <span key={`${part.type}-${index}`} className={part.type === "equal" ? undefined : part.type === "added" ? styles.added : styles.removed}>{part.value}</span>)}</p>;
 }
 
-const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = { good: "좋은 표현", delete: "삭제 추천", vague: "구체성 부족", revise: "수정 추천" };
-
-type AnnotationGroup = { start: number; end: number; phrase: string; items: ResultOriginalAnnotation[] };
-
-// 같은 구간(start·end)의 annotation은 한 그룹으로 묶는다. 부분 겹침은 인라인 마킹에서만 제외하고, 카드 목록(groups)엔 항상 전부 포함된다.
-function groupOriginalAnnotations(annotations: ResultOriginalAnnotation[]): { groups: AnnotationGroup[]; marks: AnnotationGroup[] } {
-  const sorted = [...annotations].sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
-  const groups: AnnotationGroup[] = [];
-  for (const item of sorted) {
-    const last = groups[groups.length - 1];
-    if (last && item.start === last.start && item.end === last.end) {
-      last.items.push(item);
-      continue;
-    }
-    groups.push({ start: item.start, end: item.end, phrase: item.phrase, items: [item] });
-  }
-  const marks: AnnotationGroup[] = [];
-  for (const group of groups) {
-    const last = marks[marks.length - 1];
-    if (last && group.start < last.end) continue;
-    marks.push(group);
-  }
-  return { groups, marks };
-}
-
-type AnnotatedSegment = { key: string; value: string; type?: ResultOriginalAnnotation["type"] };
-
-// 원문(text)은 수정하지 않고, start/end로 잘라낸 조각만 순서대로 나열한다.
-function buildAnnotatedSegments(text: string, marks: AnnotationGroup[]): AnnotatedSegment[] {
-  const segments: AnnotatedSegment[] = [];
-  let cursor = 0;
-  marks.forEach((mark, index) => {
-    if (mark.start > cursor) segments.push({ key: `text-${index}`, value: text.slice(cursor, mark.start) });
-    segments.push({ key: `mark-${index}`, value: text.slice(mark.start, mark.end), type: mark.items[0].type });
-    cursor = mark.end;
-  });
-  if (cursor < text.length) segments.push({ key: "text-end", value: text.slice(cursor) });
-  return segments;
-}
-
-function AnnotatedOriginal({ text, marks }: { text: string; marks: AnnotationGroup[] }) {
-  const segments = buildAnnotatedSegments(text, marks);
-  return <p className={styles.annotatedText}>{segments.map((segment) => segment.type
-    ? <mark key={segment.key} data-type={segment.type}>{segment.value}</mark>
-    : <span key={segment.key}>{segment.value}</span>
-  )}</p>;
-}
-
-export function ResultWorkspaceCodexRestored({ result = sampleResultDocument }: { result?: ResultDocument }) {
+export function ResultWorkspaceComplete({ result = sampleResultDocument }: { result?: ResultDocument }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
@@ -128,7 +151,7 @@ export function ResultWorkspaceCodexRestored({ result = sampleResultDocument }: 
   return <main className={styles.page}>
     <header className={styles.header}>
       <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
-      <div><button onClick={() => copy("all", finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={download}><Download/> TXT 저장</button></div>
+      <div><em className={styles.completeBadge}>완성본 · 통합 작업공간</em><button onClick={() => copy("all", finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={download}><Download/> TXT 저장</button></div>
     </header>
 
     <div className={styles.container}>
@@ -147,31 +170,30 @@ export function ResultWorkspaceCodexRestored({ result = sampleResultDocument }: 
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
             <section className={styles.panel}><span className={styles.eyebrow}>분석한 원본</span>{result.attachments.map((file) => <div className={styles.file} key={file.id}><FileText/><span><b>{file.filename}</b><small>{file.extension} · {(file.sizeBytes/1024).toFixed(0)}KB · {file.sectionCount}개 문항</small></span><em><CheckCircle2/> 읽기 완료</em></div>)}<p className={styles.privacy}><LockKeyhole/> 원본은 수정하지 않고 결과와 분리해 보관합니다.</p></section>
+            {result.coverageNotes.length > 0 && <section className={styles.warning}><AlertCircle/><div><b>이번 분석에서 제외된 문항</b>{result.coverageNotes.map((note) => <p key={note}>{note}</p>)}<small>작성된 내용이 있어야 첨삭할 수 있습니다. 내용을 채운 뒤 다시 분석해 주세요.</small></div></section>}
             <section className={styles.warning}><AlertCircle/><div><b>확인이 필요한 사실</b><p>{result.verificationQuestions[0]}</p><small>확인되지 않은 성과는 만들지 않았습니다.</small></div></section>
           </aside>
         </div>
       </section>}
 
       {view === "submission" && <section className={styles.workspace}>
-        <div className={styles.title}><div><span className={styles.eyebrow}>ORIGINAL</span><h2>제출본 피드백</h2></div><p>제출한 원문에서 좋은 표현과 보완이 필요한 부분을 짚어드립니다.</p></div>
+        <div className={styles.title}><div><span className={styles.eyebrow}>ORIGINAL</span><h2>제출본 피드백</h2></div><p>실제로 분석한 원문에서 좋은 표현과 보완이 필요한 부분을 확인합니다.</p></div>
         {result.questions.map((question) => {
-          const annotations = question.originalAnnotations ?? [];
-          if (!annotations.length) return <article className={styles.question} key={question.id}>
-            <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div></header>
-            <div className={styles.submissionCompare}>
-              <section><small>제출한 원문</small><AnnotatedOriginal text={question.originalAnswer} marks={[]}/></section>
-              <aside><p className={styles.prompt}>이 결과에는 원문 피드백이 저장되지 않았습니다. 제출한 원문은 그대로 확인할 수 있습니다.</p></aside>
-            </div>
-          </article>;
+          const storedAnnotations = question.originalAnnotations ?? [];
+          const annotations = deriveFallbackOriginalAnnotations(question);
+          const usingFallback = storedAnnotations.length === 0 && annotations.length > 0;
           const { groups, marks } = groupOriginalAnnotations(annotations);
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div></header>
             <div className={styles.submissionCompare}>
               <section><small>제출한 원문</small><AnnotatedOriginal text={question.originalAnswer} marks={marks}/></section>
-              <aside>{groups.map((group) => <div className={styles.annotationCard} key={`${group.start}-${group.end}`}>
-                <p className={styles.annotationQuote}>&ldquo;{group.phrase}&rdquo;</p>
-                {group.items.map((item) => <div key={item.id} data-type={item.type} className={styles.annotationItem}><span>{ANNOTATION_LABEL[item.type]}</span><p>{item.comment}</p></div>)}
-              </div>)}</aside>
+              <aside>
+                {usingFallback && <p className={styles.fallbackNotice}>이 결과는 원문 주석 저장 기능이 추가되기 전에 분석되어, 저장된 첨삭 전후 차이만으로 변경 구간을 표시했습니다. OpenAI를 다시 호출하지 않았습니다.</p>}
+                {groups.length > 0 ? groups.map((group) => <div className={styles.annotationCard} key={`${group.start}-${group.end}`}>
+                  <p className={styles.annotationQuote}>&ldquo;{group.phrase}&rdquo;</p>
+                  {group.items.map((item) => <div key={item.id} data-type={item.type} className={styles.annotationItem}><span>{ANNOTATION_LABEL[item.type]}</span><p>{item.comment}</p></div>)}
+                </div>) : <p className={styles.emptyAnnotation}>제출 원문은 정상 연결됐습니다. 이 문항에는 별도로 표시할 변경 구간이 없습니다.</p>}
+              </aside>
             </div>
           </article>;
         })}
@@ -186,7 +208,7 @@ export function ResultWorkspaceCodexRestored({ result = sampleResultDocument }: 
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
-            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <p className={styles.after}>{answer}</p>}</section></div>
+            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
@@ -197,9 +219,9 @@ export function ResultWorkspaceCodexRestored({ result = sampleResultDocument }: 
         </section>}
       </section>}
 
-      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div><div className={styles.matches}>{result.requirementMatches.map((match) => <article key={match.id} data-status={match.status}><div>{match.status === "matched" ? <CheckCircle2/> : <AlertCircle/>}<b>{match.status === "matched" ? "근거 있음" : match.status === "partial" ? "보완 필요" : "근거 없음"}</b></div><section><h3>{match.requirement}</h3><p><b>현재 근거</b>{match.evidence}</p><p><b>권장 행동</b>{match.recommendation}</p></section></article>)}</div><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
+      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div>{result.requirementMatches.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>채용공고 내용이 충분하지 않아 요구역량을 대조하지 못했습니다.</b> 공고 원문을 붙여넣고 다시 분석하면 요구사항별로 지원서에 근거가 있는지 확인해 드립니다. 근거 없는 역량을 지어내지 않기 위해 비워 두었습니다.</p></div>}<div className={styles.matches}>{result.requirementMatches.map((match) => <article key={match.id} data-status={match.status}><div>{match.status === "matched" ? <CheckCircle2/> : <AlertCircle/>}<b>{match.status === "matched" ? "근거 있음" : match.status === "partial" ? "보완 필요" : "근거 없음"}</b></div><section><h3>{match.requirement}</h3><p><b>현재 근거</b>{match.evidence}</p><p><b>권장 행동</b>{match.recommendation}</p></section></article>)}</div><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
 
-      {view === "interview" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>INTERVIEW PREVIEW</span><h2>지원서에서 이어질 예상질문</h2></div><p>작성한 내용의 진위와 판단 과정을 확인할 가능성이 높은 질문입니다.</p></div><div className={styles.interviews}>{result.interviewQuestions.map((item,index) => <article key={item.id}><span>Q{index+1}</span><div><h3>{item.question}</h3><p>{item.reason}</p><section><b>답변에 포함할 내용</b>{item.answerGuide.map((guide) => <em key={guide}>{guide}</em>)}</section></div></article>)}</div></section>}
+      {view === "interview" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>INTERVIEW PREVIEW</span><h2>지원서에서 이어질 예상질문</h2></div><p>작성한 내용의 진위와 판단 과정을 확인할 가능성이 높은 질문입니다.</p></div>{result.interviewQuestions.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>이번 분석에서는 면접 예상질문을 만들지 못했습니다.</b> 지원서에 실제로 적힌 내용에서만 질문을 뽑기 때문에, 문항을 보완한 뒤 다시 분석하면 근거와 답변 포인트까지 함께 제공합니다.</p></div>}<div className={styles.interviews}>{result.interviewQuestions.map((item,index) => <article key={item.id}><span>Q{index+1}</span><div><h3>{item.question}</h3><p>{item.reason}</p><section><b>답변에 포함할 내용</b>{item.answerGuide.map((guide) => <em key={guide}>{guide}</em>)}</section></div></article>)}</div></section>}
 
       {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={download}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{question.title}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div><p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX · PDF 내보내기 예정</span></footer></section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={result.company} role={result.role} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
