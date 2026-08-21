@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ResultVariantNav } from "@/components/result-variant-nav";
 import { ResultWorkspaceV2 } from "@/components/result-workspace-v2";
 import { resultDocumentSchema } from "@/domain/result-document";
 import { createClient } from "@/lib/supabase/server";
@@ -9,7 +10,7 @@ export default async function ResultPage({
   searchParams: Promise<{ analysisRunId?: string }>;
 }) {
   const { analysisRunId } = await searchParams;
-  if (!analysisRunId) return <ResultWorkspaceV2 />;
+  if (!analysisRunId) return <><ResultVariantNav active="current"/><ResultWorkspaceV2 /></>;
 
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
@@ -27,5 +28,5 @@ export default async function ResultPage({
     return <main><p>아직 분석 결과가 준비되지 않았습니다.</p><Link href="/analysis/prepare">분석 준비 화면으로</Link></main>;
   }
 
-  return <ResultWorkspaceV2 result={parsed.data} />;
+  return <><ResultVariantNav active="current" analysisRunId={analysisRunId}/><ResultWorkspaceV2 result={parsed.data} /></>;
 }

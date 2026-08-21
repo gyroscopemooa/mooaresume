@@ -180,7 +180,7 @@ export function ProInputPage({ mode }: Props) {
     <div className={styles.container}>
       <div className={styles.topRow}>
         <Link href="/onboarding" className={styles.back}><ArrowLeft/> 이전으로</Link>
-        {(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0) && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
+        {mode === "CREATE" && (posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0) && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
       </div>
       <div className={styles.heading}><Icon/><div><small>{content.label}</small><h1>{content.title}</h1><p>{content.description}</p></div></div>
 
@@ -192,7 +192,7 @@ export function ProInputPage({ mode }: Props) {
       <section className={styles.form}>
 
         <JobPostingInput url={postingUrl} text={posting} filenames={postingFilenames} onUrlChange={setPostingUrl} onTextChange={setPosting} onFilenamesChange={setPostingFilenames}/>
-        {mode === "CREATE" ? <section className={styles.createEmpty}><FilePenLine/><div><b>아직 작성한 자기소개서가 없어요.</b><p>바로 문장을 만들지 않고 아래 지원자료와 경험을 정리한 뒤, 문항별 소재와 필요한 사실부터 확인합니다.</p></div></section> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
+        {mode === "CREATE" ? <section className={styles.createEmpty}><FilePenLine/><div><b>아직 작성한 자기소개서가 없어요.</b><p>바로 문장을 만들지 않고 아래 지원자료와 경험을 정리한 뒤, 문항별 소재와 필요한 사실부터 확인합니다.</p></div></section> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
         <section className={styles.optionalMaterials}>
           <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>로그인 후 여러 파일 업로드</small></div>
           <div className={styles.files}><button type="button" disabled><Upload/> 이력서 <small>선택</small></button><button type="button" disabled><Upload/> 경력기술서 <small>선택</small></button><button type="button" disabled><Upload/> 포트폴리오 <small>선택</small></button><button type="button" disabled><Upload/> 기타 자료 <small>선택 · 여러 개</small></button></div>

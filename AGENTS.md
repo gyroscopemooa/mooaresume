@@ -155,6 +155,18 @@ Ask before:
 
 Do not ask for confirmation for normal local file edits, tests, lint, typecheck, or read-only inspection when implementation was requested.
 
+## Cross-agent change preservation
+
+These rules apply to Codex, Claude, Cursor agents, and any other coding agent working in this repository.
+
+- Read `docs/agent-change-log.md` and inspect Git status/branches before editing overlapping code.
+- Treat user work and another agent's committed or uncommitted implementation as protected. Do not delete, replace, rename, reshape, or silently "improve" it.
+- Record every source, config, schema, prompt, UX, migration, deletion, rename, or behavior change in `docs/agent-change-log.md`, including agent, files, reason, validation, rollback reference, and status.
+- If an alternative implementation is desired, keep the existing implementation intact and create a separate branch or clearly named mirror/variant. Present both to the user before integration.
+- Obtain the user's explicit choice before replacing one variant with another, merging an alternative into the active path, or removing a protected variant.
+- If an overlapping change is unavoidable for correctness or security, record the intended transformation first, preserve a recoverable Git reference, and explain the impact before proceeding.
+- Never use a broad cherry-pick, merge, checkout, formatter, or generated rewrite that could overwrite another agent's work without first reviewing the exact diff.
+
 ## Git
 
 Prefer small checkpoints.
@@ -169,7 +181,7 @@ Do not rewrite unrelated files.
 
 ## Living checkpoint
 
-Treat `docs/development-checkpoint-2026-08-16.md` as the current living handoff document until it is explicitly replaced by a newer checkpoint file.
+Treat `docs/development-checkpoint-2026-08-21.md` as the current living handoff document until it is explicitly replaced by a newer checkpoint file.
 
 Whenever the user asks to save an intermediate state, record tomorrow's work, record the next task, pause for the day, or update the checkpoint:
 
@@ -193,3 +205,13 @@ If instructions conflict:
 5. older brainstorming/context
 
 If current official documentation proves a technical detail in the spec is stale, use the current official behavior and update the relevant documentation with the reason.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

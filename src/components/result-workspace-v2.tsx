@@ -16,6 +16,37 @@ import styles from "./result-workspace-v2.module.css";
 
 type View = "overview" | "revision" | "fit" | "interview" | "final";
 
+/**
+ * Marks the phrases the analysis called out inside the revised answer. The
+ * data was being produced, validated and stored all along but never drawn, so
+ * "강조 표시" existed only in the sample fixture.
+ */
+function HighlightedAnswer({ text, phrases }: { text: string; phrases: readonly string[] }) {
+  const present = phrases.filter((phrase) => phrase && text.includes(phrase));
+  if (present.length === 0) return <p className={styles.after}>{text}</p>;
+
+  // Longest first so a phrase nested inside another still marks the wider span.
+  const ordered = [...present].sort((a, b) => b.length - a.length);
+  const parts: Array<{ value: string; marked: boolean }> = [{ value: text, marked: false }];
+  for (const phrase of ordered) {
+    for (let index = parts.length - 1; index >= 0; index -= 1) {
+      const part = parts[index];
+      if (part.marked) continue;
+      const at = part.value.indexOf(phrase);
+      if (at < 0) continue;
+      parts.splice(index, 1, ...[
+        { value: part.value.slice(0, at), marked: false },
+        { value: phrase, marked: true },
+        { value: part.value.slice(at + phrase.length), marked: false },
+      ].filter((next) => next.value));
+    }
+  }
+
+  return <p className={styles.after}>{parts.map((part, index) => part.marked
+    ? <mark key={index} className={styles.highlight}>{part.value}</mark>
+    : <span key={index}>{part.value}</span>)}</p>;
+}
+
 function DiffAnswer({ original, revised, side }: { original: string; revised: string; side: "before" | "after" }) {
   return <p className={styles.diffText}>{diffText(original, revised).filter((part) => part.type === "equal" || (side === "before" ? part.type === "removed" : part.type === "added")).map((part, index) => <span key={`${part.type}-${index}`} className={part.type === "equal" ? undefined : part.type === "added" ? styles.added : styles.removed}>{part.value}</span>)}</p>;
 }
@@ -98,6 +129,7 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
             <section className={styles.panel}><span className={styles.eyebrow}>분석한 원본</span>{result.attachments.map((file) => <div className={styles.file} key={file.id}><FileText/><span><b>{file.filename}</b><small>{file.extension} · {(file.sizeBytes/1024).toFixed(0)}KB · {file.sectionCount}개 문항</small></span><em><CheckCircle2/> 읽기 완료</em></div>)}<p className={styles.privacy}><LockKeyhole/> 원본은 수정하지 않고 결과와 분리해 보관합니다.</p></section>
+            {result.coverageNotes.length > 0 && <section className={styles.warning}><AlertCircle/><div><b>이번 분석에서 제외된 문항</b>{result.coverageNotes.map((note) => <p key={note}>{note}</p>)}<small>작성된 내용이 있어야 첨삭할 수 있습니다. 내용을 채운 뒤 다시 분석해 주세요.</small></div></section>}
             <section className={styles.warning}><AlertCircle/><div><b>확인이 필요한 사실</b><p>{result.verificationQuestions[0]}</p><small>확인되지 않은 성과는 만들지 않았습니다.</small></div></section>
           </aside>
         </div>
@@ -112,7 +144,7 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
-            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <p className={styles.after}>{answer}</p>}</section></div>
+            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
@@ -123,9 +155,9 @@ export function ResultWorkspaceV2({ result = sampleResultDocument }: { result?: 
         </section>}
       </section>}
 
-      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div><div className={styles.matches}>{result.requirementMatches.map((match) => <article key={match.id} data-status={match.status}><div>{match.status === "matched" ? <CheckCircle2/> : <AlertCircle/>}<b>{match.status === "matched" ? "근거 있음" : match.status === "partial" ? "보완 필요" : "근거 없음"}</b></div><section><h3>{match.requirement}</h3><p><b>현재 근거</b>{match.evidence}</p><p><b>권장 행동</b>{match.recommendation}</p></section></article>)}</div><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
+      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div>{result.requirementMatches.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>채용공고 내용이 충분하지 않아 요구역량을 대조하지 못했습니다.</b> 공고 원문을 붙여넣고 다시 분석하면 요구사항별로 지원서에 근거가 있는지 확인해 드립니다. 근거 없는 역량을 지어내지 않기 위해 비워 두었습니다.</p></div>}<div className={styles.matches}>{result.requirementMatches.map((match) => <article key={match.id} data-status={match.status}><div>{match.status === "matched" ? <CheckCircle2/> : <AlertCircle/>}<b>{match.status === "matched" ? "근거 있음" : match.status === "partial" ? "보완 필요" : "근거 없음"}</b></div><section><h3>{match.requirement}</h3><p><b>현재 근거</b>{match.evidence}</p><p><b>권장 행동</b>{match.recommendation}</p></section></article>)}</div><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
 
-      {view === "interview" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>INTERVIEW PREVIEW</span><h2>지원서에서 이어질 예상질문</h2></div><p>작성한 내용의 진위와 판단 과정을 확인할 가능성이 높은 질문입니다.</p></div><div className={styles.interviews}>{result.interviewQuestions.map((item,index) => <article key={item.id}><span>Q{index+1}</span><div><h3>{item.question}</h3><p>{item.reason}</p><section><b>답변에 포함할 내용</b>{item.answerGuide.map((guide) => <em key={guide}>{guide}</em>)}</section></div></article>)}</div></section>}
+      {view === "interview" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>INTERVIEW PREVIEW</span><h2>지원서에서 이어질 예상질문</h2></div><p>작성한 내용의 진위와 판단 과정을 확인할 가능성이 높은 질문입니다.</p></div>{result.interviewQuestions.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>이번 분석에서는 면접 예상질문을 만들지 못했습니다.</b> 지원서에 실제로 적힌 내용에서만 질문을 뽑기 때문에, 문항을 보완한 뒤 다시 분석하면 근거와 답변 포인트까지 함께 제공합니다.</p></div>}<div className={styles.interviews}>{result.interviewQuestions.map((item,index) => <article key={item.id}><span>Q{index+1}</span><div><h3>{item.question}</h3><p>{item.reason}</p><section><b>답변에 포함할 내용</b>{item.answerGuide.map((guide) => <em key={guide}>{guide}</em>)}</section></div></article>)}</div></section>}
 
       {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={download}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{question.title}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div><p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX · PDF 내보내기 예정</span></footer></section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={result.company} role={result.role} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}

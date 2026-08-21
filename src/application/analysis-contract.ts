@@ -5,7 +5,10 @@ import { writingStyleSchema } from "@/domain/writing-style";
 export const analysisDocumentInputSchema = z.object({
   kind: z.enum(["cover_letter", "job_posting", "resume", "career_description", "portfolio"]),
   text: z.string().min(1),
-  filename: z.string().optional(),
+  // PostgreSQL represents an absent original_filename as null. Normalize it
+  // at the external boundary so a pasted text document can be analyzed just
+  // like an uploaded document without leaking nullable values downstream.
+  filename: z.preprocess((value) => value ?? undefined, z.string().optional()),
 });
 
 export const analysisQuestionInputSchema = z.object({

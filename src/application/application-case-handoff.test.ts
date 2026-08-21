@@ -69,4 +69,27 @@ describe("application case handoff", () => {
     });
     expect(buildApplicationCasePlan(input).documents[0].kind).toBe("JOB_POSTING");
   });
+
+  it("stores a heading-only question so PRO BUILD can still fill it in", () => {
+    const input = guestApplicationHandoffSchema.parse({
+      ...base,
+      questions: [
+        ...base.questions,
+        {
+          id: "question-4",
+          title: "",
+          prompt: "경력사항은 근무경력 위주로 작성해 주세요.",
+          answer: "",
+          targetLength: 700,
+        },
+      ],
+    });
+
+    const coverLetter = buildApplicationCasePlan(input).documents.find((document) => document.kind === "COVER_LETTER");
+    expect(coverLetter?.normalizedText).toContain("1. 지원동기");
+    // The unanswered prompt is what PRO BUILD is sold to complete, so it has to
+    // survive into the stored document. getAnalysisQuestions is what keeps it
+    // out of the revision contract.
+    expect(coverLetter?.normalizedText).toContain("경력사항은 근무경력 위주로 작성해 주세요.");
+  });
 });

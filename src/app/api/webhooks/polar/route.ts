@@ -30,6 +30,24 @@ export async function POST(request: Request) {
     console.error("polar_webhook_failed", {
       error: error instanceof Error ? error.message : "UNKNOWN_ERROR",
     });
+
+    // The Polar SDK parses+validates the full payload before we can even see
+    // the event type, so a schema hiccup on an event we don't act on (e.g.
+    // checkout.updated) throws before reaching our own dispatch logic below.
+    // Only fail loudly for the event types that actually grant/revoke
+    // entitlements; everything else is safe to acknowledge and ignore.
+    const criticalEventTypes = ["order.paid", "order.updated", "order.refunded"];
+    const rawType = (() => {
+      try {
+        return JSON.parse(rawBody)?.type;
+      } catch {
+        return undefined;
+      }
+    })();
+    if (typeof rawType === "string" && !criticalEventTypes.includes(rawType)) {
+      return NextResponse.json({ disposition: "IGNORED", eventType: rawType, reason: "UNPARSEABLE_NONCRITICAL_EVENT" }, { status: 202 });
+    }
+
     return NextResponse.json({ error: "WEBHOOK_PROCESSING_FAILED" }, { status: 500 });
   }
 }

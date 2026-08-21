@@ -2,7 +2,7 @@ import { isIP } from "node:net";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getSiteUrl } from "@/lib/site-url";
+import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
 import { createPolarCheckoutGatewayFromEnv } from "@/server/billing/polar-checkout";
 import { createQuickCheckout, QuickCheckoutError } from "@/server/billing/quick-checkout-service";
 
@@ -24,9 +24,7 @@ function isSameOrigin(request: NextRequest) {
 }
 
 function getCheckoutSiteUrl(request: NextRequest) {
-  const hostname = request.nextUrl.hostname;
-  if (hostname === "localhost" || hostname === "127.0.0.1") return request.nextUrl.origin;
-  return getSiteUrl();
+  return getCheckoutReturnOrigin(request.nextUrl);
 }
 
 function getCustomerIp(request: NextRequest) {

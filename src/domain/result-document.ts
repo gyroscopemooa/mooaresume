@@ -103,6 +103,11 @@ export const resultDocumentSchema = z.object({
   verificationQuestions: z.array(z.string().min(1)),
   consultingAdvice: z.array(consultingAdviceSchema).max(8).default([]),
   interviewQuestions: z.array(interviewQuestionSchema),
+  // What the run did NOT cover, stated plainly. A question the applicant left
+  // blank is excluded from the revision contract, and silently omitting it
+  // leaves the user believing it was reviewed. Defaulted so results saved
+  // before this field existed still parse.
+  coverageNotes: z.array(z.string().min(1)).default([]),
 });
 
 export type ResultDocument = z.infer<typeof resultDocumentSchema>;

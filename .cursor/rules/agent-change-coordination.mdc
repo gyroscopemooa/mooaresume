@@ -1,0 +1,17 @@
+---
+description: Preserve work from every agent and record all repository changes
+alwaysApply: true
+---
+
+# Cross-Agent Change Coordination
+
+- Read `AGENTS.md`, `CLAUDE.md`, and `docs/agent-change-log.md` before editing.
+- Inspect Git status and relevant branches before touching overlapping files.
+- Treat all user, Claude, Codex, and unknown-origin work as protected, whether committed or uncommitted.
+- Do not delete, replace, rename, refactor, or silently transform another implementation.
+- Log every source, config, schema, prompt, UX, migration, deletion, rename, and behavior change in `docs/agent-change-log.md`.
+- Each log entry must include agent, affected files, reason, validation, rollback reference, and current status.
+- Put alternatives on a separate branch or in a clearly named mirror/variant; keep the existing version intact.
+- Present variants to the user and obtain an explicit choice before integration or removal.
+- For unavoidable security/correctness overlap, log the intended transformation first and preserve a recoverable Git reference.
+- Never broad-merge, cherry-pick, format, or regenerate files without reviewing the exact overwrite risk.

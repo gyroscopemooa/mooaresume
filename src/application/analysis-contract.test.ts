@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisRequestSchema, type AnalysisRequest } from "./analysis-contract";
+import { analysisRequestSchema, validateAnalysisRequest, type AnalysisRequest } from "./analysis-contract";
 import { MockAnalysisProvider } from "./mock-analysis-provider";
 
 const request: AnalysisRequest = {
@@ -26,5 +26,24 @@ describe("analysis request contract", () => {
     expect(result.questions[0].originalAnswer).toBe(request.documents[0].text);
     expect(result.requirementMatches).toEqual([]);
     expect(result.interviewQuestions).toEqual([]);
+  });
+
+  it("normalizes a database null filename for pasted text documents", () => {
+    const proRequest = validateAnalysisRequest({
+      requestId: "case-1",
+      product: "PRO",
+      writingMode: "BUILD",
+      writingStyle: "BALANCED",
+      targetLength: 700,
+      documents: [
+        { kind: "cover_letter", text: "자기소개서 원문", filename: null },
+        { kind: "job_posting", text: "채용공고 원문", filename: null },
+      ],
+    });
+
+    expect(proRequest.documents).toEqual([
+      { kind: "cover_letter", text: "자기소개서 원문", filename: undefined },
+      { kind: "job_posting", text: "채용공고 원문", filename: undefined },
+    ]);
   });
 });

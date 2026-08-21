@@ -15,6 +15,7 @@ const responsesEnvelopeSchema = z.object({
   id: z.string().min(1),
   model: z.string().min(1),
   output_text: z.string().optional(),
+  status: z.enum(["queued", "in_progress", "completed", "failed", "cancelled", "incomplete"]).optional(),
   output: z.array(z.object({
     type: z.string(),
     content: z.array(z.object({
@@ -26,7 +27,7 @@ const responsesEnvelopeSchema = z.object({
     input_tokens: z.number().int().nonnegative().optional(),
     output_tokens: z.number().int().nonnegative().optional(),
     total_tokens: z.number().int().nonnegative().optional(),
-  }).passthrough().optional(),
+  }).passthrough().nullable().optional(),
 });
 
 export type QuickGatewayResult = {
@@ -42,6 +43,11 @@ export type QuickGatewayResult = {
     totalTokens: number | null;
   };
 };
+
+export type QuickBackgroundResponse =
+  | { status: "pending"; responseId: string }
+  | { status: "completed"; result: QuickGatewayResult }
+  | { status: "failed"; responseId: string; reason: string };
 
 export interface QuickAnalysisGateway {
   analyze(request: AnalysisRequest, validationFeedback?: string[]): Promise<QuickGatewayResult>;
@@ -101,7 +107,7 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
             type: "json_schema",
             name: "quick_resume_analysis",
             strict: true,
-            schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema()),
+            schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)),
           },
         },
       }),
@@ -129,6 +135,22 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
       },
     };
   }
+  async startBackground(request: AnalysisRequest): Promise<string> {
+    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model: this.options.model, background: true, instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
+    if (!response.ok) throw new Error(`OpenAI Responses API ??? ??????. status=${response.status}`);
+    return responsesEnvelopeSchema.parse(await response.json()).id;
+  }
+
+  async getBackground(responseId: string): Promise<QuickBackgroundResponse> {
+    const response = await this.fetchImplementation(`https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`, { headers: { Authorization: `Bearer ${this.options.apiKey}` }, signal: AbortSignal.timeout(30_000) });
+    if (!response.ok) throw new Error(`OpenAI Responses API ??? ??????. status=${response.status}`);
+    const envelope = responsesEnvelopeSchema.parse(await response.json());
+    if (envelope.status === "queued" || envelope.status === "in_progress" || !envelope.status) return { status: "pending", responseId: envelope.id };
+    if (envelope.status !== "completed") return { status: "failed", responseId: envelope.id, reason: envelope.status ?? "unknown" };
+    return { status: "completed", result: { output: parseQuickAnalysisOutput(JSON.parse(extractOutputText(envelope)) as unknown), execution: { responseId: envelope.id, model: envelope.model, promptVersion: QUICK_PROMPT_VERSION, rubricVersion: QUICK_RUBRIC_VERSION, schemaVersion: QUICK_SCHEMA_VERSION, inputTokens: envelope.usage?.input_tokens ?? null, outputTokens: envelope.usage?.output_tokens ?? null, totalTokens: envelope.usage?.total_tokens ?? null } } };
+  }
+
+
 }
 
 export function createOpenAIResponsesGatewayFromEnv() {

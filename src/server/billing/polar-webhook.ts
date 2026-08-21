@@ -17,6 +17,16 @@ const paidMetadataSchema = z.object({
 
 type VerifiedPolarEvent = ReturnType<typeof validateEvent>;
 
+export type PolarPaidOrder = {
+  paid: boolean;
+  status: string;
+  productId: string | null;
+  currency: string;
+  totalAmount: number;
+  discountId?: string | null;
+  metadata: unknown;
+};
+
 export type PolarEntitlementRepository = {
   grantPaidOrder(input: {
     eventId: string;
@@ -52,18 +62,18 @@ function getEventId(headers: Record<string, string>) {
   return eventId;
 }
 
-function assertPaidOrder(
-  event: Extract<VerifiedPolarEvent, { type: "order.paid" }>,
+export function validatePolarPaidOrder(
+  order: PolarPaidOrder,
   expectedProductIds: Record<ProductTier, string>,
 ) {
-  if (!event.data.paid || event.data.status !== "paid") {
+  if (!order.paid || order.status !== "paid") {
     throw new Error("POLAR_ORDER_NOT_PAID");
   }
-  const metadata = paidMetadataSchema.parse(event.data.metadata);
-  if (event.data.productId !== expectedProductIds[metadata.tier]) {
+  const metadata = paidMetadataSchema.parse(order.metadata);
+  if (order.productId !== expectedProductIds[metadata.tier]) {
     throw new Error("POLAR_PRODUCT_MISMATCH");
   }
-  if (event.data.currency.toLowerCase() !== "krw") {
+  if (order.currency.toLowerCase() !== "krw") {
     throw new Error("POLAR_CURRENCY_MISMATCH");
   }
 
@@ -76,11 +86,11 @@ function assertPaidOrder(
   ) {
     throw new Error("POLAR_METADATA_QUOTE_MISMATCH");
   }
-  const discounted = event.data.totalAmount !== quote.totalPriceKrw;
+  const discounted = order.totalAmount !== quote.totalPriceKrw;
   if (
-    event.data.totalAmount <= 0
-    || event.data.totalAmount > quote.totalPriceKrw
-    || (discounted && !event.data.discountId)
+    order.totalAmount <= 0
+    || order.totalAmount > quote.totalPriceKrw
+    || (discounted && !order.discountId)
   ) {
     throw new Error("POLAR_ORDER_AMOUNT_MISMATCH");
   }
@@ -103,7 +113,7 @@ export async function processPolarWebhook(input: {
 
   if (event.type === "order.paid" || (event.type === "order.updated" && event.data.status === "paid")) {
     const paidEvent = event as unknown as Extract<VerifiedPolarEvent, { type: "order.paid" }>;
-    const metadata = assertPaidOrder(paidEvent, input.expectedProductIds);
+    const metadata = validatePolarPaidOrder(paidEvent.data, input.expectedProductIds);
     const repositoryResult = await input.repository.grantPaidOrder({
       eventId,
       eventType: "order.paid",

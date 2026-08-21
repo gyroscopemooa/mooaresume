@@ -2,6 +2,20 @@ import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
 import type { QuickAnalysisOutput } from "./schema";
 
 export type QuickValidationIssue = { code: "NEW_NUMBER" | "INVALID_EVIDENCE" | "INVALID_HIGHLIGHT" | "LENGTH_OVER" | "QUESTION_MISMATCH"; message: string };
+
+/**
+ * Issues that must block a result from reaching the applicant, per the product
+ * philosophy's first rule: never present invented facts, roles, or numbers.
+ *
+ * The rest (a highlight that no longer matches, an over-length draft) are
+ * presentation defects. Failing the whole paid run over them would deny the
+ * user a usable result to protect a cosmetic detail, so they are reported but
+ * not fatal.
+ */
+export const BLOCKING_VALIDATION_CODES: ReadonlySet<QuickValidationIssue["code"]> = new Set([
+  "NEW_NUMBER",
+  "INVALID_EVIDENCE",
+]);
 const compactLength = (value: string) => value.replace(/\s/g, "").length;
 const numericTokens = (value: string) => new Set(value.match(/\d+(?:[.,]\d+)?%?/g) ?? []);
 const normalizeEvidence = (value: string) => value.replace(/\s+/g, " ").trim();

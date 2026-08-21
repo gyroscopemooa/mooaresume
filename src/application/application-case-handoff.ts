@@ -60,6 +60,38 @@ export type ApplicationCasePlan = {
   documents: PlannedDocument[];
 };
 
+function describeCandidateMaterials(materials: GuestApplicationHandoff["candidateMaterials"]): string {
+  const sections: string[] = [];
+
+  if (materials.profileEntries.length > 0) {
+    sections.push(
+      ["[기본 정보·자격]", ...materials.profileEntries.map((entry) => {
+        const parts = [entry.name, entry.valueOrStatus, entry.institution, entry.date].filter((part) => part.trim());
+        const note = entry.applicationNote.trim() ? ` / 활용 메모: ${entry.applicationNote.trim()}` : "";
+        return `- (${entry.category}) ${parts.join(" · ")}${note}`;
+      })].join("\n"),
+    );
+  }
+
+  if (materials.experiences.length > 0) {
+    sections.push(
+      ["[경험]", ...materials.experiences.map((experience) => {
+        const lines = [`- (${experience.category}) ${experience.title.trim() || "제목 없음"}${experience.period.trim() ? ` · ${experience.period.trim()}` : ""}`];
+        for (const [label, value] of [["요약", experience.summary], ["상황", experience.situation], ["행동", experience.action], ["결과", experience.result], ["강조하고 싶은 점", experience.emphasis]] as const) {
+          if (value.trim()) lines.push(`  ${label}: ${value.trim()}`);
+        }
+        return lines.join("\n");
+      })].join("\n"),
+    );
+  }
+
+  if (materials.freeformNotes.trim()) {
+    sections.push(`[자유 메모]\n${materials.freeformNotes.trim()}`);
+  }
+
+  return sections.join("\n\n");
+}
+
 export function buildApplicationCasePlan(input: GuestApplicationHandoff): ApplicationCasePlan {
   const documents: PlannedDocument[] = [];
   const answeredQuestions = input.questions.filter((question) => question.answer.trim());
@@ -69,7 +101,11 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
       kind: "COVER_LETTER",
       title: "자기소개서",
       sourceType: input.sourceFilename ? "FILE" : "TEXT",
-      normalizedText: serializeQuestionAnswers(answeredQuestions),
+      // Carry unanswered questions through to the saved document. They are the
+      // very thing PRO BUILD is sold to fill in ("빈 문항까지 보완하려면 PRO ·
+      // 내용 보완으로"), and dropping them here deleted the prompt before the
+      // analysis ever saw it.
+      normalizedText: serializeQuestionAnswers(input.questions, { includeEmptyAnswers: true }),
       originalFilename: input.sourceFilename,
       purpose: "PRIMARY",
     });
@@ -86,17 +122,15 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
   }
 
   const materials = input.candidateMaterials;
-  const structuredMaterials = {
-    freeformNotes: materials.freeformNotes,
-    experiences: materials.experiences,
-    profileEntries: materials.profileEntries,
-  };
   if (materials.freeformNotes.trim() || materials.experiences.length || materials.profileEntries.length) {
     documents.push({
       kind: "OTHER",
       title: "추가 경험·정보",
       sourceType: "TEXT",
-      normalizedText: JSON.stringify(structuredMaterials),
+      // Stored as readable prose rather than JSON.stringify: this text is fed
+      // straight into the analysis prompt, and a raw JSON blob buries the
+      // facts the model is supposed to draw evidence from.
+      normalizedText: describeCandidateMaterials(materials),
       purpose: "REFERENCE",
     });
   }

@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
+import { createPolarCheckoutReconciliationRuntime, reconcilePolarCheckout } from "@/server/billing/polar-checkout-reconciliation";
+import { SupabasePolarEntitlementRepository } from "@/server/billing/supabase-polar-entitlement-repository";
 
 const querySchema = z.object({
   checkoutId: z.string().uuid(),
+  reconcile: z.boolean(),
 });
 
 export async function GET(request: NextRequest) {
@@ -16,6 +19,7 @@ export async function GET(request: NextRequest) {
 
   const parsed = querySchema.safeParse({
     checkoutId: request.nextUrl.searchParams.get("checkoutId"),
+    reconcile: request.nextUrl.searchParams.get("reconcile") === "1",
   });
   if (!parsed.success) {
     return NextResponse.json({ error: "결제 식별자가 올바르지 않습니다." }, { status: 400 });
@@ -32,12 +36,49 @@ export async function GET(request: NextRequest) {
     }, { status });
   }
 
-  const checkout = z.object({
+  const checkoutSchema = z.object({
+    checkoutStatus: z.enum(["OPEN", "SUCCEEDED", "EXPIRED"]),
     analysisRunId: z.string().uuid(),
     analysisStatus: z.enum(["PENDING", "RUNNING", "COMPLETED", "FAILED"]),
+    product: z.enum(["QUICK", "PRO"]),
     entitlementStatus: z.enum(["ACTIVE", "CONSUMED", "REVOKED"]).nullable(),
-  }).passthrough().parse(data);
-  const retryAvailable = false;
+  }).passthrough();
+  let checkout = checkoutSchema.parse(data);
+  const { data: runDiagnostic } = await supabase.from("analysis_runs").select("failure_code, attempt_count, application_case_id, product").eq("id", checkout.analysisRunId).single();
+
+  if (
+    parsed.data.reconcile
+    && checkout.checkoutStatus === "OPEN"
+    && checkout.analysisStatus === "PENDING"
+    && checkout.entitlementStatus === null
+    && runDiagnostic?.application_case_id
+    && runDiagnostic.product === checkout.product
+  ) {
+    try {
+      const runtime = createPolarCheckoutReconciliationRuntime();
+      const reconciliation = await reconcilePolarCheckout({
+        checkoutId: parsed.data.checkoutId,
+        ownerUserId: authData.user.id,
+        applicationCaseId: runDiagnostic.application_case_id,
+        product: checkout.product,
+        expectedProductIds: runtime.expectedProductIds,
+        gateway: runtime.gateway,
+        repository: new SupabasePolarEntitlementRepository(),
+      });
+      if (reconciliation.disposition === "RECOVERED") {
+        const refreshed = await supabase.rpc("get_quick_checkout_return", {
+          p_provider_checkout_id: parsed.data.checkoutId,
+        });
+        if (!refreshed.error) checkout = checkoutSchema.parse(refreshed.data);
+      }
+    } catch (reconciliationError) {
+      console.error("polar_checkout_reconciliation_failed", {
+        error: reconciliationError instanceof Error ? reconciliationError.message : "UNKNOWN_ERROR",
+      });
+    }
+  }
+
+  const retryAvailable = checkout.analysisStatus === "FAILED" && checkout.entitlementStatus === "ACTIVE";
   if (checkout.analysisStatus === "RUNNING") {
     try {
       const timeout = await refundTimedOutQuickAnalysis({ analysisRunId: checkout.analysisRunId, ownerUserId: authData.user.id });
@@ -46,5 +87,5 @@ export async function GET(request: NextRequest) {
       console.error("quick_timeout_refund_failed", { error: timeoutError instanceof Error ? timeoutError.message : "UNKNOWN_ERROR" });
     }
   }
-  return NextResponse.json({ ...data, retryAvailable });
+  return NextResponse.json({ ...checkout, retryAvailable, failureCode: runDiagnostic?.failure_code ?? null, attemptCount: runDiagnostic?.attempt_count ?? null });
 }

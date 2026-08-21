@@ -16,6 +16,8 @@ const statusSchema = z.object({
   hasResult: z.boolean(),
   timeoutRefunded: z.boolean().optional(),
   retryAvailable: z.boolean().optional(),
+  failureCode: z.string().nullable().optional(),
+  attemptCount: z.number().int().nullable().optional(),
 });
 
 type Phase = "idle" | "waiting" | "analyzing" | "failed";
@@ -68,7 +70,7 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
 
       try {
         const response = await fetch(
-          `/api/checkouts/quick/status?checkoutId=${encodeURIComponent(checkoutId!)}`,
+          `/api/checkouts/quick/status?checkoutId=${encodeURIComponent(checkoutId!)}&reconcile=${attempt === 0 ? "1" : "0"}`,
           { cache: "no-store" },
         );
         if (!response.ok) {
@@ -96,7 +98,7 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
           }
           if (status.retryAvailable) {
             setRetryRunId(status.analysisRunId);
-            setMessage("\uACB0\uC81C\uB294 \uB2E4\uC2DC \uD558\uC9C0 \uC54A\uC544\uB3C4 \uB429\uB2C8\uB2E4. \uAE30\uC874 \uACB0\uC81C\uB85C \uBD84\uC11D\uC744 \uD55C \uBC88 \uB2E4\uC2DC \uC2DC\uB3C4\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.");
+            setMessage(`\uACB0\uC81C\uB294 \uB2E4\uC2DC \uD558\uC9C0 \uC54A\uC544\uB3C4 \uB429\uB2C8\uB2E4. \uAE30\uC874 \uACB0\uC81C\uB85C \uBD84\uC11D\uC744 \uD55C \uBC88 \uB2E4\uC2DC \uC2DC\uB3C4\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC6D0\uC778 \uCF54\uB4DC: ${status.failureCode ?? "UNKNOWN"}${status.attemptCount ? ` ? \uC2DC\uB3C4 ${status.attemptCount}/3` : ""}`);
             return;
           }
           setMessage("\uBD84\uC11D\uC744 \uC644\uB8CC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uACB0\uC81C\uB294 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC9C0 \uB9C8\uC138\uC694.");
@@ -104,14 +106,20 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
         }
         if (status.analysisStatus === "RUNNING") {
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 화면을 닫아도 작업은 계속됩니다.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 결과를 받으려면 이 화면을 열어둔 채로 기다려 주세요.");
+          if (!executing.current) {
+            executing.current = true;
+            try {
+              await fetch("/api/analysis-runs/quick/execute", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ analysisRunId: status.analysisRunId }) });
+            } finally { executing.current = false; }
+          }
           timer = window.setTimeout(() => void poll(attempt + 1), 2000);
           return;
         }
         if (status.entitlementStatus === "ACTIVE" && !executing.current) {
           executing.current = true;
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 화면을 닫아도 작업은 계속됩니다.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 결과를 받으려면 이 화면을 열어둔 채로 기다려 주세요.");
           try {
             const executeResponse = await fetch("/api/analysis-runs/quick/execute", {
               method: "POST",
@@ -124,10 +132,13 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
                 window.location.replace(executed.resultUrl);
                 return;
               }
-            } else {
+            } else if (executeResponse.status !== 202) {
               const failure: unknown = await executeResponse.json().catch(() => null);
               const detail = failure && typeof failure === "object" && "detail" in failure && typeof failure.detail === "string"
-                ? failure.detail : "ANALYSIS_EXECUTION_FAILED";
+                ? failure.detail
+                : failure && typeof failure === "object" && "issues" in failure && Array.isArray(failure.issues)
+                  ? failure.issues.map((issue) => typeof issue === "object" && issue && "message" in issue ? String(issue.message) : "invalid input").join("; ")
+                  : "ANALYSIS_EXECUTION_FAILED";
               setPhase("failed");
               setMessage(`분석을 완료하지 못했습니다. (${detail})`);
               return;
@@ -183,6 +194,7 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
         body: JSON.stringify({ analysisRunId, retry: true }),
       });
       const payload: unknown = await response.json().catch(() => null);
+      if (response.status === 202) { window.location.reload(); return; }
       if (response.ok && payload && typeof payload === "object" && "resultUrl" in payload && typeof payload.resultUrl === "string") {
         window.location.replace(payload.resultUrl);
         return;

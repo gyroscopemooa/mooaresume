@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, FileText, RotateCcw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, ShieldCheck } from "lucide-react";
 import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake";
 import { clearGuestDraft, loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import type { WritingMode } from "@/domain/writing-mode";
@@ -84,11 +84,10 @@ export default function QuickPage() {
     <div className={styles.container}>
       <div className={styles.topRow}>
         <Link href="/onboarding" className={styles.back}><ArrowLeft/> 상품 선택으로</Link>
-        {(file || questions.some((question) => question.answer.trim())) && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
       </div>
       <div className={styles.heading}><span>QUICK · 4,900원 · {writingMode === "BUILD" ? "내용 보완" : "최종 첨삭"}</span><h1>{writingMode === "BUILD" ? "현재 초안을 바탕으로 부족한 내용을 보완합니다." : "작성한 글을 빠르고 정확하게 고칩니다."}</h1><p>{writingMode === "BUILD" ? "새로운 경험을 임의로 만들지 않고 현재 글 안에서 논리와 구체성을 강화합니다." : "말투와 사실을 보존하면서 문장, 글자 수, 논리와 최종 수정본에 집중합니다."}</p></div>
       <section className={styles.form}>
-        <ResumeIntake key={resetKey} questions={questions} onChange={(next) => { setQuestions(next); setError(""); }} attachment={file} onAttachmentChange={setFile} onError={setError}/>
+        <ResumeIntake key={resetKey} questions={questions} onChange={(next) => { setQuestions(next); setError(""); }} attachment={file} onAttachmentChange={setFile} onError={setError} onReset={resetDraft} showReset={Boolean(file || questions.some((question) => question.answer.trim()))}/>
         <div className={`${styles.usage} ${totalCharacters > QUICK_SOFT_LIMIT_CHARS ? styles.overSoftLimit : ""}`}>
           <div><span>현재 지원서 전체</span><b>공백 제외 {totalCharacters.toLocaleString()}자</b></div>
           <div className={styles.usageBar}><i style={{width: `${Math.min(100, totalCharacters / quote.allowedCharacters * 100)}%`}}/></div>
