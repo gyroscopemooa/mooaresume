@@ -13,6 +13,7 @@ function filledDraft() {
     ...createGuidedCreateDraft(),
     motivation: "현장실습에서 안전관리자를 처음 봤습니다.",
     experienceOne: {
+      category: "경력·인턴",
       where: "롯데테크 현장실습 · 2025.03~2025.08 · 안전관리 보조",
       situation: "같은 공정에서 불량이 반복됐습니다.",
       action: "검사 기준서와 작업 순서를 직접 대조했습니다.",
@@ -22,9 +23,18 @@ function filledDraft() {
 }
 
 describe("GUIDED_STEPS", () => {
-  it("순서대로 진행할 단계가 있고 마지막은 문항 배정이다", () => {
-    expect(GUIDED_STEPS.length).toBeGreaterThanOrEqual(8);
+  it("문항을 먼저 묻고 마지막에 배정한다", () => {
+    // What to ask depends on what the questions ask, so the questions come first.
+    expect(GUIDED_STEPS[0].id).toBe("questions");
     expect(GUIDED_STEPS.at(-1)?.id).toBe("assign");
+    expect(GUIDED_STEPS.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("경험 상황 질문이 문제 해결형을 전제하지 않는다", () => {
+    const situation = GUIDED_STEPS.find((step) => step.id === "experienceOne-situation");
+
+    expect(situation?.title).toContain("어려웠거나");
+    expect(situation?.title).not.toContain("문제나 과제가 있었나요");
   });
 });
 
@@ -41,6 +51,7 @@ describe("composeGuidedAnswer", () => {
 
     expect(text).toContain("[지원 계기]");
     expect(text).toContain("[경험 ①]");
+    expect(text).toContain("경험 종류: 경력·인턴");
     expect(text).toContain("소속·기간·역할: 롯데테크 현장실습");
     expect(text).toContain("내가 한 행동: 검사 기준서와 작업 순서를 직접 대조했습니다.");
   });

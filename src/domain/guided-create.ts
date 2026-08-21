@@ -12,6 +12,8 @@ import { createCoverLetterQuestion, type CoverLetterQuestion } from "@/domain/co
  */
 
 export const guidedExperienceSchema = z.object({
+  // Defaulted so drafts saved before categories existed still parse.
+  category: z.string().max(40).default(""),
   where: z.string().max(200).default(""),
   situation: z.string().max(1500).default(""),
   action: z.string().max(1500).default(""),
@@ -25,8 +27,8 @@ export type GuidedBlockId = z.infer<typeof guidedBlockIdSchema>;
 export const guidedCreateDraftSchema = z.object({
   motivation: z.string().max(1500).default(""),
   aspiration: z.string().max(1500).default(""),
-  experienceOne: guidedExperienceSchema.default({ where: "", situation: "", action: "", result: "" }),
-  experienceTwo: guidedExperienceSchema.default({ where: "", situation: "", action: "", result: "" }),
+  experienceOne: guidedExperienceSchema.default({ category: "", where: "", situation: "", action: "", result: "" }),
+  experienceTwo: guidedExperienceSchema.default({ category: "", where: "", situation: "", action: "", result: "" }),
   strength: z.string().max(1500).default(""),
   goal: z.string().max(1500).default(""),
   assignments: z.record(z.string(), z.array(guidedBlockIdSchema)).default({}),
@@ -36,6 +38,18 @@ export type GuidedCreateDraft = z.infer<typeof guidedCreateDraftSchema>;
 export function createGuidedCreateDraft(): GuidedCreateDraft {
   return guidedCreateDraftSchema.parse({});
 }
+
+/**
+ * Asking someone who cannot write a cover letter to name "your best
+ * experience" hands them the same blank page they came here to escape. The
+ * list below is the one the PRO input screen already offers; picking from it
+ * is a much easier first move than recalling one unprompted.
+ */
+export const GUIDED_EXPERIENCE_CATEGORIES = [
+  "경력·인턴", "아르바이트", "프로젝트", "학교·전공", "동아리·학생회",
+  "공모전·수상", "교육·부트캠프", "해외 경험", "봉사활동", "군 복무",
+  "개인·사이드 프로젝트", "연구·논문", "취미에서 얻은 경험", "기타 경험",
+] as const;
 
 export const GUIDED_BLOCK_LABEL: Record<GuidedBlockId, string> = {
   motivation: "지원 계기",
@@ -59,6 +73,12 @@ export type GuidedStep = { id: string; title: string; help: string; optional?: b
  */
 export const GUIDED_STEPS: GuidedStep[] = [
   {
+    id: "questions",
+    title: "먼저, 자기소개서 문항을 알려 주세요.",
+    help: "회사가 준 질문을 그대로 적어 주세요. 어떤 문항인지 알아야 어떤 경험을 여쭤볼지 정할 수 있습니다.",
+    fields: [],
+  },
+  {
     id: "motivation",
     title: "이 회사·직무에 관심을 갖게 된 계기가 무엇인가요?",
     help: "멋진 문장이 아니어도 됩니다. 계기가 된 수업, 경험, 뉴스, 사람처럼 실제로 있었던 일을 그대로 적어 주세요.",
@@ -78,9 +98,11 @@ export const GUIDED_STEPS: GuidedStep[] = [
   },
   {
     id: "experienceOne-situation",
-    title: "그때 어떤 문제나 과제가 있었나요?",
-    help: "무엇이 잘 안 되고 있었는지, 왜 그게 문제였는지 적어 주세요.",
-    fields: [{ kind: "experience", path: "experienceOne", field: "situation", label: "상황과 과제", placeholder: "예: 같은 공정에서 같은 형태의 불량이 반복되는데 원인을 아무도 몰랐습니다.", rows: 4 }],
+    // "무슨 문제가 있었나요"만 물으면 문제 해결형이 아닌 경험에서 없는 문제를
+    // 지어내게 된다. 꾸준히 한 것, 처음 배운 것, 설득한 것도 좋은 소재다.
+    title: "그때 무엇이 어려웠거나, 무엇을 새로 해야 했나요?",
+    help: "꼭 대단한 문제가 아니어도 됩니다. 처음 해보는 일이었거나, 손이 많이 갔거나, 사람을 설득해야 했던 것도 좋습니다.",
+    fields: [{ kind: "experience", path: "experienceOne", field: "situation", label: "어려웠던 점 · 새로 해야 했던 일", placeholder: "예: 같은 공정에서 같은 형태의 불량이 반복되는데 원인을 아무도 몰랐습니다.", rows: 4 }],
   },
   {
     id: "experienceOne-action",
@@ -129,6 +151,7 @@ export const GUIDED_STEPS: GuidedStep[] = [
 
 function experienceText(experience: GuidedExperience) {
   return [
+    experience.category.trim() && `경험 종류: ${experience.category.trim()}`,
     experience.where.trim() && `소속·기간·역할: ${experience.where.trim()}`,
     experience.situation.trim() && `상황과 과제: ${experience.situation.trim()}`,
     experience.action.trim() && `내가 한 행동: ${experience.action.trim()}`,

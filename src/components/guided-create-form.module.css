@@ -45,3 +45,9 @@
 .empty{margin:0;color:#8a968f;font-size:9px;line-height:1.6}
 .notice{margin:0;padding:11px 13px;border-radius:8px;background:#f4f8f6;color:#2f4a3d;font-size:9px;line-height:1.65}
 @media (max-width:800px){.guided{padding:18px}}
+.categories{display:grid;gap:6px;margin-bottom:4px}
+.categories>span{color:#41544b;font-size:10px;font-weight:800}
+.categories>div{display:flex;flex-wrap:wrap;gap:5px}
+.categories button{padding:6px 10px;border:1px solid #dfe6e2;border-radius:16px;background:#fff;color:#68756f;font-size:9px;font-weight:800;cursor:pointer}
+.categories button:hover{border-color:#176b4a;color:#176b4a}
+.categories button[data-on=true]{border-color:#176b4a;background:#e7f3ec;color:#176b4a}

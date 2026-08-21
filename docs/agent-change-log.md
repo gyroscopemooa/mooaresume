@@ -407,3 +407,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 262 passed, `npx tsc --noEmit` clean, 대상 파일 ESLint clean.
 - Rollback/recovery reference: 커밋 revert. 상태 계산과 문구 추가뿐이며 저장 데이터·프롬프트·스키마 변경 없음.
 - User decision: 사용자가 두 현상을 버그로 보고했고, 경고 방식은 링크 전용 입력 때 정한 선례(경고 후 진행 허용)를 따랐습니다.
+
+## 2026-08-22 — Claude: Guided CREATE 질문 순서·소재 선택·질문 전제 수정
+
+- Agent/session: Claude. 사용자가 앞서 받은 진단 여섯 가지 중 즉시 가능한 셋을 수정하라고 지시했습니다.
+- Status: completed. 나머지 셋(경험 개수 유연화, 경험② 단계 분리, 이력서 참조)은 미착수.
+- Change (1) 문항을 1단계로: 무엇을 물을지는 자소서 문항에 달려 있는데, 문항 입력이 폼 아래 상시 영역에 있고 배정은 마지막 단계였습니다. 순서가 뒤집혀 있었습니다. 문항 입력을 첫 단계로 올리고 그 단계에서만 표시합니다.
+- Change (2) 경험 종류 먼저 고르기: "가장 자신 있는 경험 하나를 골라 주세요"는 자소서를 못 쓰는 사람에게 백지를 다시 내미는 질문입니다. PRO 입력 화면이 이미 쓰는 15종 목록을 칩으로 먼저 보여주고 고르게 했습니다. `guidedExperienceSchema`에 `category`를 `.default("")`로 추가했으므로 이전 초안도 그대로 파싱됩니다.
+- Change (3) 상황 질문 전제 완화: "그때 어떤 문제나 과제가 있었나요?"는 문제 해결형 경험을 전제합니다. 꾸준히 한 것, 처음 배운 것, 사람을 설득한 것에는 맞지 않고, 없는 문제를 지어내게 만드는 입구가 됩니다. "무엇이 어려웠거나, 무엇을 새로 해야 했나요?"로 넓혔습니다.
+- Files/branch: `src/domain/guided-create.ts` + 테스트, `src/components/guided-create-form.tsx` + `.module.css` + 테스트 on `main`.
+- Codex 영향: Codex의 `/pro/create-wizard`가 이 폼을 감싸 쓰므로 변경이 그쪽 화면에도 그대로 반영됩니다. 폼 바깥 구조는 건드리지 않았습니다.
+- Validation: 전체 `npx vitest run` 264 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건.
+- Rollback/recovery reference: 커밋 revert. `category`는 기본값이 있어 되돌려도 저장된 초안이 깨지지 않습니다.
+- User decision: 사용자가 진단 여섯 가지 중 셋을 지금 수정하라고 지시했습니다.

@@ -8,6 +8,7 @@ import {
   availableGuidedBlocks,
   createGuidedQuestion,
   GUIDED_BLOCK_LABEL,
+  GUIDED_EXPERIENCE_CATEGORIES,
   GUIDED_STEPS,
   type GuidedBlockId,
   type GuidedCreateDraft,
@@ -52,7 +53,9 @@ export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsC
     onQuestionsChange(applyGuidedAnswers(nextDraft, questions));
   }
 
-  const stepFilled = step.fields.length === 0
+  const stepFilled = step.id === "questions"
+    ? questions.some((question) => question.prompt.trim().length > 0)
+    : step.fields.length === 0
     ? questions.some((question) => (draft.assignments[question.id] ?? []).length > 0)
     : step.fields.some((field) => field.kind === "text"
       ? draft[field.path].trim().length > 0
@@ -93,6 +96,15 @@ export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsC
       </div>
     ) : (
       <div className={styles.fields}>
+        {step.id === "experienceOne-where" && <div className={styles.categories}>
+          <span>어떤 종류의 경험인가요?</span>
+          <div>{GUIDED_EXPERIENCE_CATEGORIES.map((category) => <button
+            key={category}
+            type="button"
+            data-on={draft.experienceOne.category === category}
+            onClick={() => setExperience("experienceOne", "category", draft.experienceOne.category === category ? "" : category)}
+          >{category}</button>)}</div>
+        </div>}
         {step.fields.map((field) => <label key={field.label}>
           <span>{field.label}</span>
           <textarea
@@ -117,7 +129,7 @@ export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsC
       </button>
     </footer>
 
-    <section className={styles.questions}>
+    {step.id === "questions" && <section className={styles.questions}>
       <div className={styles.questionsHead}>
         <div><span className={styles.eyebrow}>자기소개서 문항</span><h4>회사가 준 질문을 그대로 적어 주세요.</h4></div>
         <button type="button" onClick={() => onQuestionsChange([...questions, createGuidedQuestion()])}><Plus /> 문항 추가</button>
@@ -133,7 +145,7 @@ export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsC
         />
         <button type="button" aria-label={`문항 ${index + 1} 삭제`} onClick={() => onQuestionsChange(questions.filter((item) => item.id !== question.id))}><Trash2 /></button>
       </div>)}
-    </section>
+    </section>}
 
     <p className={styles.notice}>
       여기에 적은 사실만으로 초안을 만듭니다. 적지 않은 경험·자격·수치는 AI가 만들어 넣지 않고, 부족한 부분은 확인 질문으로 돌려드립니다.

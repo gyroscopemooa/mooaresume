@@ -20,17 +20,19 @@ function goToLastStep() {
 }
 
 describe("GuidedCreateForm", () => {
-  it("첫 단계부터 순서대로 질문한다", () => {
+  it("자기소개서 문항을 가장 먼저 묻는다", () => {
     setup(createGuidedCreateDraft());
 
     expect(screen.getByText(`처음부터 작성 · 1 / ${GUIDED_STEPS.length}`)).toBeTruthy();
     expect(screen.getByText(GUIDED_STEPS[0].title)).toBeTruthy();
+    expect(GUIDED_STEPS[0].id).toBe("questions");
     expect(screen.getByRole("button", { name: /이전/ }).hasAttribute("disabled")).toBe(true);
   });
 
   it("입력한 내용을 초안에 올린다", () => {
     const { onDraftChange } = setup(createGuidedCreateDraft());
 
+    fireEvent.click(screen.getByRole("button", { name: /다음/ }));
     fireEvent.change(screen.getByRole("textbox", { name: "계기" }), { target: { value: "현장실습에서 처음 봤습니다." } });
 
     expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({ motivation: "현장실습에서 처음 봤습니다." }));
@@ -65,5 +67,19 @@ describe("GuidedCreateForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "문항 1 삭제" }));
     expect((onQuestionsChange.mock.calls.at(-1)![0] as unknown[]).length).toBe(0);
+  });
+
+  it("경험을 물을 때 종류를 먼저 고르게 한다", () => {
+    // Naming your best experience from nothing is the blank page again.
+    const { onDraftChange } = setup(createGuidedCreateDraft());
+
+    const whereStep = GUIDED_STEPS.findIndex((step) => step.id === "experienceOne-where");
+    for (let step = 0; step < whereStep; step += 1) fireEvent.click(screen.getByRole("button", { name: /다음/ }));
+
+    fireEvent.click(screen.getByRole("button", { name: "아르바이트" }));
+
+    expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({
+      experienceOne: expect.objectContaining({ category: "아르바이트" }),
+    }));
   });
 });
