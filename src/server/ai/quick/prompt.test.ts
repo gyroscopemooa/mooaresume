@@ -146,6 +146,8 @@ describe("BUILD 채우기", () => {
 
     expect(instructions).toContain("수치, 기간, 회사명, 자격증, 직함, 고유명사를 절대 넣지 마세요");
     expect(instructions).toContain("목표 글자 수에 가깝게 늘리세요");
+    expect(instructions).toContain("아직 쓰이지 않은 사실을 가져와 문장으로 만듭니다");
+    expect(instructions).toContain("표현을 바꾸거나 순서를 정리하는 것은 분량을 채운 것이 아닙니다");
     expect(instructions).toContain("첨삭본이 원문보다 짧아지면 안 됩니다");
     expect(instructions).not.toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
   });

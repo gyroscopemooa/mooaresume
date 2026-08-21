@@ -475,3 +475,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/ai/quick/prompt.ts` + 테스트, `src/components/result-workspace-complete.tsx` + `.module.css` + 테스트 on `main`.
 - Validation: 전체 `npx vitest run` 274 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건.
 - Rollback/recovery reference: 커밋 revert. 저장된 결과·스키마·가격에는 영향 없음.
+
+## 2026-08-22 — Claude: 채우기 재료에 지원자료 허용 + 문항 미분리 시 결제 차단
+
+- Agent/session: Claude. 사용자가 "파란색은 다듬은 것이지 채운 것이 아니다, 그럼 진짜 채운 내용은 BUILD에 없는 것이냐"고 지적한 데 따른 수정입니다. 지적이 정확했습니다.
+- Status: completed.
+- 문제 1: 직전 커밋에서 Claude가 "분량을 늘리는 방법은 **원문의 사실 범위 안에서** 푸는 것"이라고 못 박아, 이력서에서 내용을 가져오는 경로를 스스로 막았습니다. 그 결과 첨삭본에 새 내용이 전혀 없고 표현만 바뀌었으며, 원문의 구체적 수치("674개 사업장 중 1위")까지 빠져 540자가 503자로 줄었습니다. 지원자료 관련 지시도 "뒷받침하세요"라고만 해서 이미 쓴 주장에 근거를 붙이라는 뜻으로만 읽혔습니다.
+- Change 1: 채우기 재료에 순서를 명시했습니다. 1) 원문 경험 구체화 2) **지원자료에서 이 문항과 관련 있는데 아직 쓰이지 않은 사실 가져오기** 3) 그래도 부족하면 멈추고 무엇이 필요한지 남기기. 자료에 적힌 것은 지원자가 직접 밝힌 사실이므로 가져다 쓰는 것이 창작이 아니라는 근거를 함께 넣었습니다. "표현을 바꾸거나 순서를 정리하는 것은 분량을 채운 것이 아니다"를 명시했고, 원문의 수치·고유명사를 첨삭 과정에서 빼지 말라는 규칙도 추가했습니다. `QUICK_PROMPT_VERSION` `quick-2.0` → `quick-2.1`.
+- 문제 2: 문항 미분리 상태에서 경고만 띄우고 결제를 허용한 결정이 실제로 세 가지 고장을 동시에 일으켰습니다 — (a) 문항별 목표 글자 수가 없어 기본값 700자가 자소서 전체에 적용, (b) 어느 문항이 짧은지 몰라 채우기 미동작, (c) 문항별 첨삭이 한 덩어리로 뭉침.
+- Change 2: 경고에서 **차단**으로 바꿨습니다. 사용자가 버튼 한 번(`문항 구분 확인하기`)으로 해결할 수 있는 문제라 결제 전에 그 한 번을 요구하는 편이 낫습니다. `docs/build-mode-fill-in-decision.md` §5를 이 결정으로 갱신하고 §3-1(채우기 재료 순서)을 신설했습니다.
+- 이미 저장된 결과에 대한 주의: 프롬프트 변경은 **새로 실행하는 분석부터** 적용됩니다. 저장된 결과는 새로고침해도 바뀌지 않습니다.
+- Files/branch: `src/server/ai/quick/prompt.ts` + 테스트, `src/components/pro-input-page.tsx`, `docs/build-mode-fill-in-decision.md` on `main`.
+- Validation: 전체 `npx vitest run` 274 passed, `npx tsc --noEmit` clean, ESLint 오류 0건.
+- Rollback/recovery reference: 커밋 revert. 스키마·저장 데이터·가격 변경 없음.

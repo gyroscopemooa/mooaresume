@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.0";
+export const QUICK_PROMPT_VERSION = "quick-2.1";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -66,9 +66,17 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       // target. Shrinking is now named as the failure it is, and the way to
       // lengthen — expanding what is already there — is spelled out, so
       // "don't invent" does not get read as "don't extend".
-      ? `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문이 목표에 못 미치는 문항은 목표 글자 수에 가깝게 늘리세요. **첨삭본이 원문보다 짧아지면 안 됩니다**(원문이 이미 목표를 넘은 경우는 예외입니다).
-분량을 늘리는 방법은 새로운 사실을 지어내는 것이 아니라, 원문에 이미 있는 경험을 더 구체적으로 푸는 것입니다. 무엇을 왜 했는지, 어떻게 판단했는지, 무엇이 어려웠는지, 무엇을 배웠는지를 원문의 사실 범위 안에서 풀어 쓰세요.
-같은 말을 반복하거나 일반론을 덧붙여 글자 수만 채우지 마세요. 그렇게까지 해도 목표에 닿지 않으면 거기서 멈추고, 무엇을 더 알려주면 채울 수 있는지 consultingAdvice에 적으세요.`
+      // The previous version said to expand "원문의 사실 범위 안에서", which
+      // ruled out the résumé — so nothing was ever added, only rephrased, and
+      // the answer came back shorter. A fact the applicant wrote in their own
+      // résumé is not an invention; moving it into an answer is the entire
+      // reason PRO collects those documents.
+      ? `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문이 목표에 못 미치는 문항은 목표 글자 수에 가깝게 늘리세요. 첨삭본이 원문보다 짧아지면 안 됩니다(원문이 이미 목표를 넘은 경우는 예외입니다).
+분량은 다음 순서로 채우세요.
+1) 원문에 이미 있는 경험을 더 구체적으로 풉니다. 무엇을 왜 했는지, 어떻게 판단했는지, 무엇이 어려웠는지, 무엇을 배웠는지를 씁니다.
+2) 그래도 부족하면 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험)에서 이 문항과 관련 있는데 아직 쓰이지 않은 사실을 가져와 문장으로 만듭니다. 자료에 적힌 것은 지원자가 직접 밝힌 사실이므로 가져다 쓰는 것이 맞습니다. 단, 자료에 없는 내용을 추측해 덧붙이지는 마세요.
+3) 1)과 2)로도 목표에 닿지 않으면 거기서 멈추고, 무엇을 더 알려주면 채울 수 있는지 consultingAdvice에 적으세요.
+표현을 바꾸거나 순서를 정리하는 것은 분량을 채운 것이 아닙니다. 같은 말을 반복하거나 일반론을 덧붙여 글자 수만 늘리지 마세요.`
       : `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.`,
     WRITING_MODE_INSTRUCTION[request.writingMode],
     // A posting for a large employer often covers several positions at once.
@@ -87,6 +95,7 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     ...(fillsBlankQuestions(request)
       ? [
           "이 분석에는 아직 비어 있거나 분량이 부족한 문항이 포함될 수 있습니다. 그런 문항도 revisions에 반드시 포함하고, 문항 질문에 답하는 완성된 글을 쓰세요.",
+          "원문에 있던 구체적인 수치나 고유명사(예: 대회 규모, 순위, 기간, 자격증 이름)를 첨삭 과정에서 빼지 마세요. 그것이 이 지원서에서 가장 검증 가능한 근거입니다.",
           "새로 쓰는 문장에는 지원자가 제공하지 않은 수치, 기간, 회사명, 자격증, 직함, 고유명사를 절대 넣지 마세요. 대신 지원자가 실제로 밝힌 행동·과정·태도·배운 점으로 문장을 완결하세요. 예를 들어 '후기 500건을 분석했습니다'가 아니라 '후기를 유형별로 분류해 반복되는 불편 사항을 정리했습니다'처럼 씁니다.",
           "빈칸이나 대괄호 표기를 남기지 마세요. 최종 첨삭본은 그대로 제출할 수 있는 완결된 글이어야 합니다.",
           "지원자료가 제공된 경우, 새로 쓰는 문장의 사실은 그 자료에서 확인되는 범위 안에서만 사용하세요. 자료에 없으면 수치 없는 서술로 씁니다.",

@@ -196,6 +196,13 @@ export function ProInputPage({ mode }: Props) {
   const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
   const blockedReason = !hasPostingSource
     ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."
+    // A warning was not enough. With one question the whole letter is analysed
+    // as a single item: the per-question target falls back to a default, so a
+    // long letter is measured against 700 characters, nothing can be filled
+    // because there is no short question to find, and the per-question review
+    // collapses into one block. One button press fixes all three.
+    : unsplitDraft
+      ? "자기소개서 문항 구분을 먼저 확인해 주세요. 문항이 나뉘어 있어야 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다."
     : !hasCoverLetterAnswer
       ? mode === "CREATE"
         // Without this the run reached checkout and then failed on the server
@@ -227,7 +234,7 @@ export function ProInputPage({ mode }: Props) {
           <label><span>지원 직무 <b>선택</b></span><input value={roleName} maxLength={120} onChange={(event) => setRoleName(event.target.value)} placeholder="예: 안전관리자"/></label>
         </div>
         <p className={styles.targetHint}>공고 하나에 여러 직무가 있을 때 어느 직무 기준으로 볼지 알려주시면, 그 직무의 요구사항만 대조합니다. 비워두면 공고 전체를 기준으로 봅니다.</p>
-        {mode === "CREATE" ? <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{mode === "BUILD" && unsplitDraft && <p className={styles.postingWarning}><b>문항 구분이 아직 안 되어 있어요.</b> 이대로 진행하면 자기소개서 전체를 한 문항으로 보고 분석합니다. 비어 있거나 짧은 문항을 채워 드리려면 어느 문항이 부족한지 알아야 하므로, 위 &lsquo;문항 구분 확인하기&rsquo;를 먼저 눌러 주세요.</p>}</div>}
+        {mode === "CREATE" ? <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{unsplitDraft && <p className={styles.postingWarning}><b>문항 구분이 아직 안 되어 있어요.</b> 위 &lsquo;문항 구분 확인하기&rsquo;를 누르면 질문과 답변을 나누어 정리합니다. 문항이 나뉘어야 회사가 요구한 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다.</p>}</div>}
         <section className={styles.optionalMaterials}>
           <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>종류별 여러 파일 · 최대 10개</small></div>
           <MaterialUpload attachments={materialAttachments} onChange={setMaterialAttachments}/>
