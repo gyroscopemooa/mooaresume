@@ -13,3 +13,5 @@
 .filledNotice{display:flex;gap:8px;margin:0;padding:14px 24px;border-top:1px solid #e3e9e6;background:#f6f9fe;color:#3c4a5c;font-size:10px;line-height:1.7}
 .filledNotice svg{width:15px;flex:none;color:#1d4ea3}
 .filledNotice b{color:#17221d}
+.blankOriginal{margin:9px 0 0;padding:12px 13px;border:1px dashed #cfdad4;border-radius:8px;color:#6f7c75;font-size:10px;line-height:1.7}
+.blankOriginal b{color:#1d4ea3}

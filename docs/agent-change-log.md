@@ -447,3 +447,18 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 270 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건. 추가한 테스트가 "공고를 인용하라"는 옛 문구가 되살아나지 않는지도 함께 검사합니다.
 - Rollback/recovery reference: 커밋 revert 시 프롬프트가 이전 버전으로 돌아가며 같은 실패가 재현됩니다. 스키마·검증기·저장 데이터는 변경하지 않았습니다.
 - 미해결로 남긴 것: 검증 실패 상세 메시지가 재시도 화면에는 표시되지 않아 사용자가 원인 코드만 봅니다. 진단을 위해 상세를 노출할지는 별도 판단.
+
+## 2026-08-22 — Claude: 빈 문항을 채운 결과가 저장 단계에서 거부되던 문제
+
+- Agent/session: Claude. 사용자가 개발 서버 로그를 공유해 원인이 특정됐습니다.
+- Status: completed.
+- 실제 원인(로그로 확정): `AI_OUTPUT_VALIDATION_FAILED`가 아니라 결과 조립 단계의 스키마 거부였습니다.
+  `[{"code":"too_small","path":["questions",3,"originalAnswer"],"message":"expected string to have >=1 characters"}]`
+  `resultQuestionSchema.originalAnswer`가 `z.string().min(1)`인데, BUILD가 채우는 빈 문항은 원래 답변이 빈 문자열입니다. Claude가 빈 문항을 분석 대상에 포함시키면서 이 제약을 놓쳤습니다.
+- 심각도: 검증 실패보다 나빴습니다. OpenAI 호출과 검증은 모두 성공한 뒤 저장 직전에 `ZodError`가 났고, 그 경로는 `repository.fail`을 부르지 않아 실행 상태가 `RUNNING`에 남습니다. 사용자는 400을 반복해서 받았습니다(로그에 POST 3회).
+- Change: (1) `originalAnswer`를 빈 문자열 허용으로 변경. 빈 문항에는 원래 답변이 없는 것이 사실이므로 값을 지어내지 않고 스키마를 사실에 맞췄습니다. (2) 제출본 탭에서 원문이 비어 있으면 빈 칸을 보여주는 대신 "이 문항은 비워 두셨습니다. 오른쪽 첨삭본은 다른 문항과 지원자료의 사실로 새로 쓴 제안입니다"를 표시합니다.
+- 재실행 비용: 이 실패는 OpenAI 응답이 이미 `response_id`로 저장된 뒤에 발생하므로, 수정 후 다시 실행하면 **모델을 다시 호출하지 않고 저장된 응답을 다시 읽습니다.** 7분을 다시 기다리지 않습니다.
+- Files/branch: `src/domain/result-document.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + 테스트 on `main`.
+- Validation: 전체 `npx vitest run` 272 passed(이번 추가 2건), `npx tsc --noEmit` clean, ESLint 오류 0건.
+- Rollback/recovery reference: 커밋 revert. 저장된 결과에는 영향이 없습니다(제약을 푸는 방향이라 기존 데이터는 모두 계속 통과).
+- 남은 개선: 조립 단계 `ZodError`가 `repository.fail`을 거치지 않아 실행이 `RUNNING`에 남습니다. 실패로 기록하고 재시도 가능하게 만드는 편이 안전합니다. 별도 판단 필요.

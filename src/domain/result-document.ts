@@ -38,7 +38,10 @@ export const resultQuestionSchema = z.object({
   title: z.string().min(1),
   prompt: z.string().min(1),
   targetLength: z.number().int().positive(),
-  originalAnswer: z.string().min(1),
+  // Empty on purpose: BUILD fills questions the applicant left blank, and a
+  // blank question has no original answer. Requiring one character here failed
+  // the whole assembly after the analysis had already run and been paid for.
+  originalAnswer: z.string(),
   revisedAnswer: z.string().min(1),
   highlightedPhrases: z.array(z.string().min(1)),
   originalAnnotations: z.array(resultOriginalAnnotationSchema).optional(),

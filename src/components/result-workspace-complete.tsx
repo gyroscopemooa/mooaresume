@@ -251,7 +251,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div></header>
             <div className={styles.submissionCompare}>
-              <section><small>제출한 원문</small><AnnotatedOriginal text={question.originalAnswer} marks={marks}/></section>
+              <section><small>제출한 원문</small>{question.originalAnswer.trim() ? <AnnotatedOriginal text={question.originalAnswer} marks={marks}/> : <p className={styles.blankOriginal}>이 문항은 비워 두셨습니다. 오른쪽 첨삭본은 다른 문항과 지원자료의 사실로 새로 쓴 <b>제안</b>이니, 사실과 맞는지 확인해 주세요.</p>}</section>
               <aside>
                 {usingFallback && <p className={styles.fallbackNotice}>이 결과는 원문 주석 저장 기능이 추가되기 전에 분석되어, 저장된 첨삭 전후 차이만으로 변경 구간을 표시했습니다. OpenAI를 다시 호출하지 않았습니다.</p>}
                 {groups.length > 0 ? groups.map((group) => <div className={styles.annotationCard} key={`${group.start}-${group.end}`}>

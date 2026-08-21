@@ -185,3 +185,26 @@ describe("ResultWorkspaceComplete 채운 부분 표시", () => {
     expect(screen.queryByText(/비어 있거나 짧았던 곳을 채운/)).toBeNull();
   });
 });
+
+describe("ResultWorkspaceComplete 비워 둔 문항", () => {
+  // BUILD keeps blank questions in the analysis, so a result can carry a
+  // question with no original at all. The assembler used to reject that.
+  const withBlank = {
+    ...sampleResultDocument,
+    writingMode: "BUILD" as const,
+    questions: sampleResultDocument.questions.map((question, index) => index === 0
+      ? { ...question, originalAnswer: "" }
+      : question),
+  };
+
+  it("원문이 없는 문항도 결과로 받아들인다", () => {
+    expect(() => render(<ResultWorkspaceComplete result={withBlank}/>)).not.toThrow();
+  });
+
+  it("빈 원문 자리에 왜 비어 있는지 설명한다", () => {
+    render(<ResultWorkspaceComplete result={withBlank}/>);
+    fireEvent.click(screen.getByRole("button", { name: "제출본" }));
+
+    expect(screen.getByText(/이 문항은 비워 두셨습니다/)).toBeTruthy();
+  });
+});
