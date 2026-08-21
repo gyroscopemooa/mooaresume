@@ -6,6 +6,29 @@ export const sampleResultDocument: ResultDocument = {
   product: "PRO",
   isSample: true,
   coverageNotes: [],
+  interviewRisks: [
+    {
+      id: "interview-risk-1",
+      topic: "현장실습에서 맡은 실제 역할",
+      risk: "개선을 제안한 사람과 결정한 사람이 누구였는지 되물으면 답이 흔들릴 수 있습니다. 지원서에는 관찰과 판단만 있고 권한이 드러나지 않습니다.",
+      evidenceQuote: "확인한 내용을 작업자와 팀장에게 먼저 공유하고",
+      preparation: "본인이 직접 한 일과 팀장이 결정한 일을 나눠 말할 수 있게 정리해 두세요. 실습생이었다는 점을 숨기지 않는 편이 오히려 신뢰를 얻습니다.",
+    },
+    {
+      id: "interview-risk-2",
+      topic: "개선 효과의 근거",
+      risk: "시험했다는 서술 뒤에 결과가 없어, 효과를 묻는 질문에 체감으로만 답하게 됩니다.",
+      evidenceQuote: "점검 순서를 통일해 시험했습니다",
+      preparation: "불량 건수나 검사 시간의 변화가 확인되면 숫자로, 확인되지 않으면 수치는 확인하지 못했다고 먼저 밝히고 관찰한 변화만 말하세요.",
+    },
+    {
+      id: "interview-risk-3",
+      topic: "생산관리를 고른 이유",
+      risk: "품질이나 설비가 아니라 왜 생산관리인지 되물을 수 있습니다. 세 부서를 함께 언급했기 때문입니다.",
+      evidenceQuote: "생산·품질·설비 부서가 같은 기준으로 문제를 이해할 수 있도록 근거를 정리하고",
+      preparation: "부서를 잇는 역할이 왜 본인에게 맞는지, 실습에서 그 역할을 실제로 해본 순간 하나를 준비해 두세요.",
+    },
+  ],
   company: "현대모비스",
   role: "생산관리",
   applicationLabel: "생산관리 신입 지원서",
@@ -83,6 +106,15 @@ export const sampleResultDocument: ResultDocument = {
       originalAnswer: "생산 과정에서 발생한 문제를 해결한 경험을 바탕으로 현대모비스의 생산 경쟁력 향상에 기여하고 싶습니다. 현장에서 문제를 발견하고 팀원들과 해결해 나가겠습니다.",
       revisedAnswer: "생산 현장에서 문제를 발견하고 기준과 데이터를 바탕으로 개선을 실행하는 생산관리자가 되고 싶어 현대모비스에 지원했습니다. 현장실습 당시 특정 조립 공정에서 같은 형태의 불량이 반복됐지만, 작업자는 설비 상태의 일시적인 문제로 판단하고 있었습니다. 저는 막연히 원인을 추측하기보다 검사 기준서와 실제 작업 순서를 단계별로 대조했습니다. 그 과정에서 검사 전에 확인해야 할 부품 방향과 체결 순서가 작업자마다 다르다는 점을 발견했습니다. 확인한 내용을 작업자와 팀장에게 먼저 공유하고, 기존 작업을 방해하지 않는 범위에서 점검 순서를 통일해 시험했습니다. 이후에는 교대 시에도 같은 기준으로 확인할 수 있도록 핵심 점검 항목을 짧게 정리했습니다. 이 경험을 통해 생산 문제는 개인의 주의만 요구해서 해결되는 것이 아니라, 누구나 동일하게 실행할 수 있는 기준과 공유 방식이 함께 마련돼야 한다는 점을 배웠습니다. 입사 후에는 공정 데이터와 현장 의견을 함께 살피며 이상 징후를 빠르게 찾겠습니다. 또한 생산·품질·설비 부서가 같은 기준으로 문제를 이해할 수 있도록 근거를 정리하고, 실행 가능한 개선안을 끝까지 관리해 안정적인 생산성과 품질 확보에 기여하겠습니다.",
       highlightedPhrases: ["검사 기준서와 실제 작업 순서를 단계별로 대조했습니다", "공정 데이터와 현장 의견을 함께 살피며", "실행 가능한 개선안을 끝까지 관리해"],
+      // Demonstrates what a run saved *with* semantic annotations looks like.
+      // Questions 2 and 3 deliberately keep none, so the same sample also shows
+      // the legacy before/after fallback side by side.
+      originalAnnotations: [
+        { id: "motivation-annotation-1", phrase: "생산 과정에서 발생한 문제를 해결한 경험", type: "fact", comment: "무엇을 어떻게 해결했는지가 없어, 제출본만으로는 실제로 있었던 성과인지 확인할 수 없습니다.", suggestion: "확인이 된다면 어느 공정에서 어떤 문제였는지까지 적고, 확인이 어렵다면 '해결했다' 대신 '원인을 좁혀 본 경험'처럼 낮춰 쓰세요.", start: 0, end: 22 },
+        { id: "motivation-annotation-2", phrase: "현대모비스의 생산 경쟁력 향상에 기여하고 싶습니다", type: "revise", comment: "회사 이름만 바꾸면 어느 지원서에도 그대로 들어가는 문장이라 이 회사를 고른 이유가 드러나지 않습니다.", suggestion: "기준과 데이터를 근거로 개선을 실행하는 생산관리자가 되고 싶어 현대모비스에 지원했습니다.", start: 29, end: 56 },
+        { id: "motivation-annotation-3", phrase: "현장에서 문제를 발견하고", type: "good", comment: "생산관리가 실제로 하는 일을 정확히 짚었습니다. 뒤에 근거만 붙으면 그대로 살릴 수 있는 문장입니다.", start: 58, end: 71 },
+        { id: "motivation-annotation-4", phrase: "팀원들과 해결해 나가겠습니다", type: "vague", comment: "무엇을 어떤 방식으로 하겠다는 내용이 없어 다짐으로만 남습니다.", suggestion: "이상 징후를 데이터로 정리해 생산·품질·설비 부서와 함께 원인을 좁혀 나가겠습니다.", start: 72, end: 87 },
+      ],
       revisionReasons: ["막연한 기여 의지를 실제 행동으로 전환", "채용공고의 공정 데이터 기반 개선 요구와 연결", "지원 직무에서 실행할 행동을 구체화"],
       verificationNote: "점검 순서 변경 후 실제 불량 건수나 검사 시간의 변화가 확인된다면 추가할 수 있습니다.",
     },

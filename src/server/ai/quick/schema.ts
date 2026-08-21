@@ -1,8 +1,14 @@
 import { z } from "zod";
 
 const quickEvidenceReasonSchema = z.object({ reason: z.string().min(1), evidenceQuote: z.string().min(1), category: z.enum(["objective", "qualitative", "needs_verification"]) });
-const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type: z.enum(["good", "delete", "vague", "revise"]), comment: z.string().min(1) });
-const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(8), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
+// One annotation carries two separate jobs: comment says WHY the phrase is a
+// problem, suggestion shows HOW to fix it. Merging them into one sentence is
+// what made the submission feedback read as a vague label. "fact" is the fifth
+// type on purpose — an unverified achievement is the one thing this product
+// must never let through silently, and verificationNote alone never says which
+// sentence it means.
+const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type: z.enum(["good", "delete", "vague", "revise", "fact"]), comment: z.string().min(1), suggestion: z.string().nullable() });
+const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
 const legacyQuickRevisionSchema = quickRevisionSchema.omit({ questionOrder: true });
 
 // PRO is sold on two things QUICK does not promise: matching the posting's
@@ -22,6 +28,17 @@ const interviewQuestionOutputSchema = z.object({
   answerGuide: z.array(z.string().min(1)).min(1).max(4),
 });
 
+// Sold on the pricing table as "면접 리스크 분석" but never asked for, so the
+// PRO interview tab only ever showed questions. A risk is not a question: it
+// names the sentence in the application that will be pressed on, why it is
+// exposed, and what to have ready before the room.
+const interviewRiskOutputSchema = z.object({
+  topic: z.string().min(1),
+  risk: z.string().min(1),
+  evidenceQuote: z.string().min(1),
+  preparation: z.string().min(1),
+});
+
 const baseOutputShape = {
   schemaVersion: z.literal("1.0"),
   readiness: z.object({ score: z.number().int().min(0).max(100), label: z.string().min(1), summary: z.string().min(1), reasons: z.array(z.string().min(1)).min(1).max(5) }),
@@ -35,6 +52,7 @@ const baseOutputShape = {
 const proOutputShape = {
   requirementMatches: z.array(requirementMatchOutputSchema).min(1).max(8),
   interviewQuestions: z.array(interviewQuestionOutputSchema).min(3).max(6),
+  interviewRisks: z.array(interviewRiskOutputSchema).min(2).max(5),
 };
 
 // Parsing stays permissive: QUICK responses simply omit the PRO fields.
@@ -42,6 +60,7 @@ export const quickAnalysisOutputSchema = z.object({
   ...baseOutputShape,
   requirementMatches: proOutputShape.requirementMatches.optional(),
   interviewQuestions: proOutputShape.interviewQuestions.optional(),
+  interviewRisks: proOutputShape.interviewRisks.optional(),
 });
 
 const quickRequestSchema = z.object(baseOutputShape);
@@ -49,19 +68,34 @@ const proRequestSchema = z.object({ ...baseOutputShape, ...proOutputShape });
 
 export type QuickAnalysisOutput = z.infer<typeof quickAnalysisOutputSchema>;
 
+/**
+ * Results and recovered background responses saved before `originalAnnotations`
+ * (and later before `suggestion`) existed must still parse. Absence is filled
+ * in; nothing already stored is overwritten.
+ */
+function normalizeAnnotations(value: unknown): unknown {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+    const annotation = { ...item } as Record<string, unknown>;
+    if (!("suggestion" in annotation)) annotation.suggestion = null;
+    return annotation;
+  });
+}
+
 function addLegacyOriginalAnnotations(input: unknown): unknown {
   if (!input || typeof input !== "object" || Array.isArray(input)) return input;
   const output = { ...input } as Record<string, unknown>;
   if (output.revision && typeof output.revision === "object" && !Array.isArray(output.revision)) {
     const revision = { ...output.revision } as Record<string, unknown>;
-    if (!("originalAnnotations" in revision)) revision.originalAnnotations = [];
+    revision.originalAnnotations = normalizeAnnotations(revision.originalAnnotations);
     output.revision = revision;
   }
   if (Array.isArray(output.revisions)) {
     output.revisions = output.revisions.map((value) => {
       if (!value || typeof value !== "object" || Array.isArray(value)) return value;
       const revision = { ...value } as Record<string, unknown>;
-      if (!("originalAnnotations" in revision)) revision.originalAnnotations = [];
+      revision.originalAnnotations = normalizeAnnotations(revision.originalAnnotations);
       return revision;
     });
   }

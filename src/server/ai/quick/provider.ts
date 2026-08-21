@@ -49,6 +49,21 @@ function recoverHighlight(revisedAnswer: string, phrase: string): string | null 
   return null;
 }
 
+/**
+ * Neither QUICK nor PRO collects a company or a role, so the required heading
+ * columns used to be filled with English placeholders ("Applicant company")
+ * that rendered verbatim on the applicant's own result screen. Name the thing
+ * that was actually analysed instead, and never invent an employer.
+ */
+function describeSubject(filename: string | undefined) {
+  const documentName = filename?.replace(/\.[^.]+$/, "").trim();
+  return {
+    company: documentName || "내 자기소개서",
+    role: "자기소개서 첨삭",
+    applicationLabel: "자기소개서 첨삭",
+  };
+}
+
 export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResult: QuickGatewayResult): ResultDocument {
   const source = request.documents.find((document) => document.kind === "cover_letter");
   if (!source) throw new Error("QUICK_COVER_LETTER_REQUIRED");
@@ -67,7 +82,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
   });
 
   return resultDocumentSchema.parse({
-    schemaVersion: "1.0", caseId: request.requestId, product: request.product, isSample: false, company: "Applicant company", role: "Applicant role", applicationLabel: `${request.product} cover-letter revision`, analyzedAt: new Date().toISOString(),
+    schemaVersion: "1.0", caseId: request.requestId, product: request.product, isSample: false, ...describeSubject(source.filename), analyzedAt: new Date().toISOString(),
     analysisRun: { provider: "openai", responseId: gatewayResult.execution.responseId, model: gatewayResult.execution.model, promptVersion: gatewayResult.execution.promptVersion, rubricVersion: gatewayResult.execution.rubricVersion, schemaVersion: gatewayResult.execution.schemaVersion, inputTokens: gatewayResult.execution.inputTokens, outputTokens: gatewayResult.execution.outputTokens, totalTokens: gatewayResult.execution.totalTokens },
     readiness: output.readiness,
     attachments: source.filename ? [{ id: `${request.requestId}-source`, filename: source.filename, extension: source.filename.split(".").pop()?.toUpperCase() || "TEXT", sizeBytes: new TextEncoder().encode(source.text).length, parseStatus: "ready", parserLabel: "Source document", sectionCount: questions.length }] : [],
@@ -78,8 +93,8 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
       return {
         id: questionId,
         order: question.order,
-        title: question.title || `Question ${question.order}`,
-        prompt: question.prompt || "Cover-letter question",
+        title: question.title.trim() || question.prompt.trim().slice(0, 120) || `문항 ${question.order}`,
+        prompt: question.prompt.trim() || question.title.trim() || `문항 ${question.order}`,
         targetLength: question.targetLength,
         originalAnswer: question.answer,
         revisedAnswer: revision.revisedAnswer,
@@ -93,6 +108,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
     verificationQuestions: output.verificationQuestions,
     consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })),
     interviewQuestions: (output.interviewQuestions ?? []).map((item, index) => ({ id: `interview-${index + 1}`, ...item })),
+    interviewRisks: (output.interviewRisks ?? []).map((item, index) => ({ id: `interview-risk-${index + 1}`, ...item })),
     coverageNotes,
   });
 }

@@ -1,7 +1,11 @@
 import { diffText } from "@/lib/text-diff";
 import type { ResultOriginalAnnotation, ResultQuestion } from "@/domain/result-document";
 
-export type OriginalAnnotationDraft = Pick<ResultOriginalAnnotation, "phrase" | "type" | "comment">;
+export type OriginalAnnotationDraft = Pick<ResultOriginalAnnotation, "phrase" | "type" | "comment"> & {
+  // The model returns null when there is nothing to rewrite (good, fact); the
+  // stored document simply omits the field in that case.
+  suggestion?: string | null;
+};
 
 export function resolveOriginalAnnotations(
   originalAnswer: string,
@@ -11,7 +15,15 @@ export function resolveOriginalAnnotations(
   return drafts.flatMap((draft, index) => {
     const start = originalAnswer.indexOf(draft.phrase);
     if (start < 0 || originalAnswer.indexOf(draft.phrase, start + draft.phrase.length) >= 0) return [];
-    return [{ ...draft, id: `${idPrefix}-${index + 1}`, start, end: start + draft.phrase.length }];
+    const { suggestion, ...rest } = draft;
+    const trimmed = suggestion?.trim();
+    return [{
+      ...rest,
+      ...(trimmed ? { suggestion: trimmed } : {}),
+      id: `${idPrefix}-${index + 1}`,
+      start,
+      end: start + draft.phrase.length,
+    }];
   });
 }
 

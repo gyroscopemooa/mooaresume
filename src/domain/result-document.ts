@@ -22,8 +22,12 @@ export const resultPrioritySchema = z.object({
 export const resultOriginalAnnotationSchema = z.object({
   id: z.string().min(1),
   phrase: z.string().min(1),
-  type: z.enum(["good", "delete", "vague", "revise"]),
+  // "fact" marks a claim the submitted text alone cannot verify. Optional
+  // `suggestion` carries the rewritten example; results saved before it
+  // existed simply have none, so it must stay optional.
+  type: z.enum(["good", "delete", "vague", "revise", "fact"]),
   comment: z.string().min(1),
+  suggestion: z.string().min(1).optional(),
   start: z.number().int().nonnegative(),
   end: z.number().int().nonnegative(),
 });
@@ -48,6 +52,18 @@ export const requirementMatchSchema = z.object({
   status: z.enum(["matched", "partial", "missing"]),
   evidence: z.string().min(1),
   recommendation: z.string().min(1),
+});
+
+// The pricing table sells "면접 리스크 분석" as part of PRO. A risk is not a
+// question: it names the weak link in the application, quotes the sentence it
+// comes from, and says what to prepare. Defaulted so results saved before this
+// field existed still parse.
+export const interviewRiskSchema = z.object({
+  id: z.string().min(1),
+  topic: z.string().min(1),
+  risk: z.string().min(1),
+  evidenceQuote: z.string().min(1),
+  preparation: z.string().min(1),
 });
 
 export const interviewQuestionSchema = z.object({
@@ -113,6 +129,7 @@ export const resultDocumentSchema = z.object({
   verificationQuestions: z.array(z.string().min(1)),
   consultingAdvice: z.array(consultingAdviceSchema).max(8).default([]),
   interviewQuestions: z.array(interviewQuestionSchema),
+  interviewRisks: z.array(interviewRiskSchema).default([]),
   // What the run did NOT cover, stated plainly. A question the applicant left
   // blank is excluded from the revision contract, and silently omitting it
   // leaves the user believing it was reviewed. Defaulted so results saved
@@ -123,6 +140,7 @@ export const resultDocumentSchema = z.object({
 export type ResultDocument = z.infer<typeof resultDocumentSchema>;
 export type ResultQuestion = z.infer<typeof resultQuestionSchema>;
 export type ResultOriginalAnnotation = z.infer<typeof resultOriginalAnnotationSchema>;
+export type ResultInterviewRisk = z.infer<typeof interviewRiskSchema>;
 export type ResultCandidateProfile = z.infer<typeof resultCandidateProfileSchema>;
 
 export function countCompactCharacters(value: string) {

@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.3";
+export const QUICK_PROMPT_VERSION = "quick-1.4";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -43,10 +43,13 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     `분석 대상은 총 ${questions.length}개 문항입니다. revisions 배열에 questionOrder 1부터 ${questions.length}까지 각 문항의 수정본을 정확히 하나씩 모두 반환하세요.`,
     "하위 호환용 revision 필드에는 1번 문항과 동일한 수정본을 반환하세요.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
-    "각 revision의 originalAnnotations에는 제출 원문에서 짚어줄 표현을 최대 8개까지 넣으세요. 개수를 채우기 위해 억지로 만들지 마세요.",
-    "originalAnnotations.phrase는 해당 문항의 원문 답변에 실제로 한 번만 등장하는 문구를 토씨와 띄어쓰기까지 그대로 복사하세요.",
-    "originalAnnotations.type은 good(이미 잘 쓴 표현), delete(두면 신뢰나 전달력을 해치는 표현), vague(구체성이 부족한 표현), revise(의미는 있으나 다듬을 표현) 중 하나만 사용하세요.",
-    "originalAnnotations.comment에는 해당 원문 표현을 왜 유지·삭제·구체화·수정해야 하는지 짧고 구체적으로 설명하세요.",
+    "각 revision의 originalAnnotations에는 제출 원문에서 짚어줄 표현을 최대 10개까지 넣으세요. 개수를 채우기 위해 억지로 만들지 마세요.",
+    "originalAnnotations.phrase는 해당 문항의 원문 답변에 실제로 한 번만 등장하는 문구를 토씨와 띄어쓰기까지 그대로 복사하세요. 낱말 하나만 잘라내지 말고, 문제나 강점이 드러나는 구절이나 문장 단위로 잡으세요.",
+    "originalAnnotations.type은 good(이미 잘 쓴 표현), delete(두면 신뢰나 전달력을 해치는 표현), vague(구체성이 부족한 표현), revise(의미는 있으나 다듬을 표현), fact(원문만으로는 사실 확인이 되지 않는 성과·수치·역할) 중 하나만 사용하세요.",
+    "originalAnnotations.type은 한 문항 안에서 한 종류로 쏠리지 않게 하고, 잘 쓴 부분이 있으면 good도 반드시 포함하세요. 순서만 바뀐 문장은 delete가 아닙니다.",
+    "originalAnnotations.comment에는 그 표현이 왜 문제인지(또는 왜 좋은지)만 적으세요. 다른 화면을 확인하라는 안내나 일반론은 넣지 마세요.",
+    "originalAnnotations.suggestion에는 지원자가 그대로 참고할 수 있는 고쳐 쓴 예시 문장을 한 줄로 적으세요. 원문에 없는 경험·수치·성과를 넣지 말고, 예시를 제시할 수 없으면 null로 두세요. good과 fact처럼 고쳐 쓸 것이 없으면 null이 정상입니다.",
+    "originalAnnotations.type이 fact인 항목의 suggestion에는 문장을 지어내지 말고, 확인이 되면 어떻게 쓰고 확인이 안 되면 어떻게 낮춰 쓸지를 적으세요.",
     // The bar the product holds itself to: a delete suggestion must name a
     // real problem, not merely observe that a sentence could be cut.
     "consultingAdvice의 remove 제안은 '없어도 되는 문장'이 아니라 '두면 감점 요인이 되는 문장'만 대상으로 하세요. rationale에 무엇이 왜 문제인지 원문 근거와 함께 적고, 단순히 분량을 줄이기 위한 삭제는 제안하지 마세요.",
@@ -58,6 +61,8 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       ? [
           "requirementMatches: 채용공고의 핵심 요구사항마다 지원서·지원자료에서 근거를 찾아 matched/partial/missing으로 판정하고, evidence에는 실제 원문 근거를, recommendation에는 다음 행동을 적으세요. 근거가 없으면 missing으로 두고 지어내지 마세요.",
           "interviewQuestions: 지원서에 실제로 적힌 내용에서 이어질 면접 질문을 만들고, reason에는 왜 그 질문이 나오는지, answerGuide에는 답변에 포함해야 할 사실을 적으세요.",
+          "interviewRisks: 면접에서 압박이 들어올 지점을 2~5개 찾으세요. topic에는 무엇에 대한 리스크인지, risk에는 면접관이 어떻게 파고들지, evidenceQuote에는 그 판단의 근거가 되는 지원서 원문을 그대로, preparation에는 면접 전에 준비해 둘 구체적 대비를 적으세요.",
+          "interviewRisks는 예상질문의 반복이 아니라, 답변이 흔들릴 수 있는 약한 고리와 그 대비여야 합니다. 근거 없는 추측성 리스크는 만들지 마세요.",
         ]
       : []),
     "출력은 지정된 JSON Schema를 정확히 따르세요.",
