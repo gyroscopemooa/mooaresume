@@ -212,7 +212,7 @@ export function ProInputPage({ mode }: Props) {
       : "";
 
   return <main className={styles.page}>
-    <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>PRO · 기업 지원서 1건 · 9,900원</span></header>
+    <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>PRO · 기업 지원서 1건 · 12,900원</span></header>
     <div className={styles.container}>
       <div className={styles.topRow}>
         <Link href="/onboarding" className={styles.back}><ArrowLeft/> 이전으로</Link>

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const QUICK_BASE_PRICE_KRW = 4_900;
-export const PRO_BASE_PRICE_KRW = 9_900;
+export const QUICK_BASE_PRICE_KRW = 5_900;
+export const PRO_BASE_PRICE_KRW = 12_900;
 export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
 export const QUICK_SOFT_LIMIT_CHARS = 7_000;
 // A Korean cover letter runs 4-7 questions of 500-1,000 characters, so the

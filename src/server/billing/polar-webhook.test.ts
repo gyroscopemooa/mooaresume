@@ -175,7 +175,7 @@ describe("Polar webhook entitlement processing", () => {
       verifyEvent: vi.fn(() => ({
         type: "order.refunded",
         timestamp: new Date("2026-08-17T01:00:00.000Z"),
-        data: { id: "order-1", refundedAmount: 1_000, netAmount: 4_900 },
+        data: { id: "order-1", refundedAmount: 1_000, netAmount: 5_900 },
       }) as never),
     });
 
@@ -197,7 +197,7 @@ describe("Polar webhook entitlement processing", () => {
       verifyEvent: vi.fn(() => ({
         type: "order.refunded",
         timestamp: new Date("2026-08-17T01:00:00.000Z"),
-        data: { id: "order-1", refundedAmount: 4_900, netAmount: 4_900 },
+        data: { id: "order-1", refundedAmount: 5_900, netAmount: 5_900 },
       }) as never),
     });
 

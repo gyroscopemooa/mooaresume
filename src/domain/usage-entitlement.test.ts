@@ -11,7 +11,7 @@ describe("QUICK usage entitlement", () => {
     // Korean application realistically takes.
     const quote = createQuickCheckoutQuote(5_800);
     expect(quote.extraBlocks).toBe(0);
-    expect(quote.totalPriceKrw).toBe(4_900);
+    expect(quote.totalPriceKrw).toBe(5_900);
     expect(quote.allowedCharacters).toBe(8_000);
   });
 
@@ -19,7 +19,7 @@ describe("QUICK usage entitlement", () => {
     const quote = createQuickCheckoutQuote(8_001);
     expect(quote.extraBlocks).toBe(1);
     expect(quote.extraCharacters).toBe(7_000);
-    expect(quote.totalPriceKrw).toBe(7_800);
+    expect(quote.totalPriceKrw).toBe(8_800);
     expect(quote.needsScopeReview).toBe(true);
   });
 

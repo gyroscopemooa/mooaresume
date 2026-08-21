@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -18,6 +18,7 @@ import {
 } from "@/domain/usage-entitlement";
 import { writingStyleConfig } from "@/domain/writing-style";
 import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
+import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import { ApplicationCaseHandoff } from "@/components/application-case-handoff";
 import { QuickCheckoutReturn } from "@/components/quick-checkout-return";
 import styles from "./analysis-preparation.module.css";
@@ -80,6 +81,17 @@ export function AnalysisPreparation() {
   // what was purchased over the browser's local draft, which can go stale or
   // get lost on the round trip to Polar and back.
   const product = confirmedProduct ?? guest?.selectedProduct ?? "QUICK";
+  // What the analysis will actually see: the server re-splits the stored cover
+  // letter, so a whole-letter paste becomes several questions there while the
+  // browser still holds it as one.
+  const analysedQuestions = useMemo(() => {
+    const stored = guest?.questions ?? [];
+    const isBulk = stored.length === 1 && !stored[0].title.trim() && !stored[0].prompt.trim();
+    if (!isBulk) return stored;
+    const split = splitCoverLetterDraft(stored[0].answer);
+    return split.length > 1 ? split : stored;
+  }, [guest?.questions]);
+
   const totalCharacters = countNonWhitespaceCharacters(
     guest?.questions?.map((question) => question.answer) ??
       guest?.questionDrafts ?? [guest?.draftText ?? ""],
@@ -90,7 +102,7 @@ export function AnalysisPreparation() {
   const missingQuestionCount = Math.max(totalQuestionCount - filledQuestionCount, 0);
   const price =
     product === "PRO"
-      ? "9,900원"
+      ? "12,900원"
       : `${quickQuote.totalPriceKrw.toLocaleString()}원`;
   const modeLabel =
     guest?.temporaryWritingMode === "CREATE"
@@ -143,8 +155,8 @@ export function AnalysisPreparation() {
             )}
             <div className={styles.materials}>
               <b>준비된 자료</b>
-              {guest?.questions
-                ?.filter((question) => question.answer.trim())
+              {analysedQuestions
+                .filter((question) => question.answer.trim())
                 .map((question, index) => (
                   <article key={question.id}>
                     <FileText />
@@ -167,7 +179,8 @@ export function AnalysisPreparation() {
                     </span>
                     <Check />
                   </article>
-                )) ?? (
+                ))}
+              {analysedQuestions.length === 0 && (
                 <article>
                   <FileText />
                   <span>

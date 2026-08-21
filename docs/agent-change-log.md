@@ -501,3 +501,25 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/ai/quick/prompt.ts` + 테스트, `src/components/analysis-preparation.tsx` + `.module.css` on `main`.
 - Validation: 전체 `npx vitest run` 277 passed(이번 추가 2건), `npx tsc --noEmit` clean, ESLint 오류 0건.
 - 미해결로 남긴 것: (1) 결제 화면 상단 모드 라벨이 "최종 첨삭"으로 표시되는데 빈 문항이 있으면 "내용 보완"이어야 합니다 — 모드 자동 판정 또는 라벨 전달을 확인해야 합니다. (2) 준비된 자료의 글자 수가 0으로 보인다는 보고 — 실제 값이 있는데 0이면 결제 금액 계산에 영향이 있습니다. 둘 다 사용자 화면 확인이 필요해 이번에 손대지 않았습니다.
+
+## 2026-08-21 21:40 KST — 랜딩 이후 가격 5,900 / 12,900 / 19,900 반영
+
+- Agent/session: Codex, current session.
+- Status: completed locally; not committed or pushed.
+- Protected baseline: current onboarding, begin/entry, QUICK/PRO input, pricing comparison, and billing flow behavior outside the listed price values.
+- Change and reason: user explicitly requested that post-landing prices change from 4,900 / 9,900 / 14,900 to 5,900 / 12,900 / 19,900, without touching unrelated code. Updated user-facing price labels after landing, QUICK/PRO server-owned checkout base prices, and dependent test expectations. Also updated the FINAL upgrade note from 5,000원 to 7,000원 to match the new displayed ladder.
+- Files/branch: `src/app/begin/page.tsx`, `src/app/entry/page.tsx`, `src/app/onboarding/page.tsx`, `src/app/quick/page.tsx`, `src/components/analysis-preparation.tsx`, `src/components/pricing-comparison.tsx`, `src/components/pro-input-page.tsx`, `src/data/coming-soon-plans.ts`, `src/domain/usage-entitlement.ts`, `src/domain/usage-entitlement.test.ts`, `src/server/billing/polar-checkout.test.ts`, `src/server/billing/quick-checkout-service.test.ts` on dirty `main`.
+- Validation: targeted app-source price search completed; `vitest` price-related tests passed (15 tests across 4 files).
+- Rollback/recovery reference: revert only the listed files' price-value edits.
+- User decision: explicitly approved the narrow price change and asked that unrelated code not be modified.
+
+## 2026-08-22 — Claude: 흐름 화면 워드마크 중앙 정렬 + 결제 화면이 실제 분석 단위를 보여주도록 수정
+
+- Agent/session: Claude. 사용자가 온보딩 스크린샷을 보고 "로고는 중앙이 나을 듯"이라고 지적했고, 같은 스크린샷에서 별도 문제가 발견됐습니다.
+- Status: completed.
+- Change 1 (워드마크): 온보딩과 결제 확인 화면 헤더가 `justify-content: space-between`이라, 로고가 콘텐츠 폭의 왼쪽 끝에 놓여 화면 기준으로는 어중간하게 중앙 근처로 보였습니다. 두 화면 모두 내비게이션이 없고 로고 옆에 항목이 하나뿐인 **단일 작업 흐름 화면**이므로, 3열 그리드(`1fr auto 1fr`)로 워드마크를 실제 중앙에 놓고 오른쪽 항목만 우측에 붙였습니다. 결제 흐름에서 흔한 형태이며, 왼쪽 정렬을 지탱할 메뉴가 없습니다. 온보딩만 지적받았지만 바로 다음 화면인 결제 확인도 같은 구조라 함께 적용했습니다.
+- Change 2 (실제 분석 단위 표시): 스크린샷에서 발견한 별도 문제입니다. 결제 화면의 "준비된 자료"가 `1. 자기소개서 문항 1 · 공백 제외 1,803자` 한 항목으로만 표시됐는데, 실제로는 서버가 저장된 자소서를 다시 나눠 4문항으로 분석합니다. 브라우저는 통짜 붙여넣기를 문항 1개로 들고 있고, 화면이 그 상태를 그대로 보여줬기 때문입니다. 결제 직전에 **문항 수도 문항별 글자 수 제한도 사실과 다르게** 보이던 셈입니다. 화면이 서버와 같은 `splitCoverLetterDraft`를 돌려 실제 분석 단위를 표시하도록 했습니다.
+- 확인된 것(사용자 스크린샷): 앞서 미해결로 남겼던 두 항목이 모두 정상으로 확인됐습니다. (1) 모드 라벨이 `내용 보완`으로 올바르게 표시됩니다. (2) 글자 수가 `1,803자`, `2자`(공고 "11"), 이력서 파일명까지 정상 표시됩니다. 직전 커밋에서 추가한 지원자료 목록과 소요 시간 안내도 화면에 정상 반영됐습니다.
+- Files/branch: `src/app/onboarding/onboarding.module.css`, `src/components/analysis-preparation.module.css`, `src/components/analysis-preparation.tsx` on `main`.
+- Validation: 전체 `npx vitest run` 277 passed, `npx tsc --noEmit` clean, 대상 파일 ESLint clean.
+- Rollback/recovery reference: 커밋 revert. 헤더는 `display:grid` 3줄과 그리드 배치 규칙만, 결제 화면은 `analysedQuestions` 계산과 렌더 참조만 되돌리면 됩니다.

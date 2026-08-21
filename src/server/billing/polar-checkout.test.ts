@@ -56,7 +56,7 @@ describe("Polar SDK checkout gateway", () => {
     }), { timeoutMs: 10_000 });
   });
 
-  it("selects the PRO product id and fixed 9,900 KRW price for a PRO checkout", async () => {
+  it("selects the PRO product id and fixed 12,900 KRW price for a PRO checkout", async () => {
     const create = vi.fn().mockResolvedValue({
       id: "checkout-2",
       url: "https://sandbox.polar.sh/checkout/checkout-2",
@@ -82,14 +82,14 @@ describe("Polar SDK checkout gateway", () => {
       customerIpAddress: "203.0.113.10",
     });
 
-    expect(quote.totalPriceKrw).toBe(9_900);
+    expect(quote.totalPriceKrw).toBe(12_900);
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
       products: ["product-pro"],
       prices: {
         "product-pro": [{
           amountType: "fixed",
           priceCurrency: "krw",
-          priceAmount: 9_900,
+          priceAmount: 12_900,
           taxBehavior: "inclusive",
         }],
       },
