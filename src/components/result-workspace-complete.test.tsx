@@ -213,8 +213,10 @@ describe("ResultWorkspaceComplete 비워 둔 문항", () => {
   const withBlank = {
     ...sampleResultDocument,
     writingMode: "BUILD" as const,
+    // A question that was never written has nothing to annotate either — the
+    // resolver drops any phrase it cannot find in the original.
     questions: sampleResultDocument.questions.map((question, index) => index === 0
-      ? { ...question, originalAnswer: "" }
+      ? { ...question, originalAnswer: "", originalAnnotations: [] }
       : question),
   };
 
