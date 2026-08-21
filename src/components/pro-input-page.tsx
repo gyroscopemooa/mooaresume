@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft, ArrowRight, Check, FileCheck2, FilePenLine, LockKeyhole, Plus, RotateCcw, Sparkles, Trash2, Upload,
+  ArrowLeft, ArrowRight, Check, FileCheck2, FilePenLine, LockKeyhole, Plus, RotateCcw, Sparkles, Trash2,
 } from "lucide-react";
 import { clearGuestDraft, loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import { JobPostingInput } from "@/components/job-posting-input";
 import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake";
 import { AdditionalInfoInput } from "@/components/additional-info-input";
+import { MaterialUpload } from "@/components/material-upload";
 import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import {
   candidateMaterialDraftSchema,
@@ -17,6 +18,7 @@ import {
   createCandidateProfileEntry,
   type CandidateExperienceInput,
   type CandidateFreeformAttachment,
+  type CandidateMaterialAttachment,
   type CandidateProfileEntry,
   type ExperienceCategory,
   type ProfileEntryCategory,
@@ -97,6 +99,7 @@ export function ProInputPage({ mode }: Props) {
   const [profileEntries, setProfileEntries] = useState<CandidateProfileEntry[]>([]);
   const [freeformNotes, setFreeformNotes] = useState("");
   const [freeformAttachments, setFreeformAttachments] = useState<CandidateFreeformAttachment[]>([]);
+  const [materialAttachments, setMaterialAttachments] = useState<CandidateMaterialAttachment[]>([]);
   const [writingStyle, setWritingStyle] = useState<WritingStyle>("BALANCED");
   const [resetKey, setResetKey] = useState(0);
 
@@ -116,6 +119,7 @@ export function ProInputPage({ mode }: Props) {
     setProfileEntries([]);
     setFreeformNotes("");
     setFreeformAttachments([]);
+    setMaterialAttachments([]);
     setWritingStyle("BALANCED");
     setResetKey((key) => key + 1);
   }
@@ -131,6 +135,7 @@ export function ProInputPage({ mode }: Props) {
           setProfileEntries(parsed.data.profileEntries);
           setFreeformNotes(parsed.data.freeformNotes);
           setFreeformAttachments(parsed.data.freeformAttachments);
+          setMaterialAttachments(parsed.data.materialAttachments);
         }
       } catch {
         sessionStorage.removeItem(materialStorageKey);
@@ -155,7 +160,7 @@ export function ProInputPage({ mode }: Props) {
     });
     sessionStorage.setItem("mooa:guest-job-posting:v1", posting);
     sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: postingUrl, text: posting, filenames: postingFilenames }));
-    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes, freeformAttachments, experiences, profileEntries }));
+    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes, freeformAttachments, experiences, profileEntries, materialAttachments }));
     router.push("/analysis/prepare");
   }
 
@@ -180,7 +185,7 @@ export function ProInputPage({ mode }: Props) {
     <div className={styles.container}>
       <div className={styles.topRow}>
         <Link href="/onboarding" className={styles.back}><ArrowLeft/> 이전으로</Link>
-        {mode === "CREATE" && (posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0) && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
+        {mode === "CREATE" && (posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0) && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
       </div>
       <div className={styles.heading}><Icon/><div><small>{content.label}</small><h1>{content.title}</h1><p>{content.description}</p></div></div>
 
@@ -192,10 +197,10 @@ export function ProInputPage({ mode }: Props) {
       <section className={styles.form}>
 
         <JobPostingInput url={postingUrl} text={posting} filenames={postingFilenames} onUrlChange={setPostingUrl} onTextChange={setPosting} onFilenamesChange={setPostingFilenames}/>
-        {mode === "CREATE" ? <section className={styles.createEmpty}><FilePenLine/><div><b>아직 작성한 자기소개서가 없어요.</b><p>바로 문장을 만들지 않고 아래 지원자료와 경험을 정리한 뒤, 문항별 소재와 필요한 사실부터 확인합니다.</p></div></section> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
+        {mode === "CREATE" ? <section className={styles.createEmpty}><FilePenLine/><div><b>아직 작성한 자기소개서가 없어요.</b><p>바로 문장을 만들지 않고 아래 지원자료와 경험을 정리한 뒤, 문항별 소재와 필요한 사실부터 확인합니다.</p></div></section> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
         <section className={styles.optionalMaterials}>
-          <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>로그인 후 여러 파일 업로드</small></div>
-          <div className={styles.files}><button type="button" disabled><Upload/> 이력서 <small>선택</small></button><button type="button" disabled><Upload/> 경력기술서 <small>선택</small></button><button type="button" disabled><Upload/> 포트폴리오 <small>선택</small></button><button type="button" disabled><Upload/> 기타 자료 <small>선택 · 여러 개</small></button></div>
+          <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>종류별 여러 파일 · 최대 10개</small></div>
+          <MaterialUpload attachments={materialAttachments} onChange={setMaterialAttachments}/>
         </section>
         <section className={styles.experienceSection}>
           <div className={styles.sectionTitle}><div><span>추가로 알려주고 싶은 경험·정보 <b>선택</b></span><h3>직접 적거나 가지고 있는 자료를 한 번에 첨부하세요.</h3></div><small>PDF · DOCX · TXT · MD</small></div>

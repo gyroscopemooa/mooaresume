@@ -63,6 +63,10 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
           "interviewQuestions: 지원서에 실제로 적힌 내용에서 이어질 면접 질문을 만들고, reason에는 왜 그 질문이 나오는지, answerGuide에는 답변에 포함해야 할 사실을 적으세요.",
           "interviewRisks: 면접에서 압박이 들어올 지점을 2~5개 찾으세요. topic에는 무엇에 대한 리스크인지, risk에는 면접관이 어떻게 파고들지, evidenceQuote에는 그 판단의 근거가 되는 지원서 원문을 그대로, preparation에는 면접 전에 준비해 둘 구체적 대비를 적으세요.",
           "interviewRisks는 예상질문의 반복이 아니라, 답변이 흔들릴 수 있는 약한 고리와 그 대비여야 합니다. 근거 없는 추측성 리스크는 만들지 마세요.",
+          // Says out loud that empty is allowed. Without this the model reads
+          // the three PRO fields as "always fill these in".
+          "채용공고가 비어 있거나 요구사항을 읽어낼 수 없을 만큼 짧으면 requirementMatches를 빈 배열로 두세요. 공고에 없는 요구사항을 지어내지 마세요.",
+          "지원서에 근거가 없어 물어볼 것이 없으면 interviewQuestions와 interviewRisks도 빈 배열로 두세요. 개수를 채우기 위해 만들지 마세요.",
         ]
       : []),
     "출력은 지정된 JSON Schema를 정확히 따르세요.",

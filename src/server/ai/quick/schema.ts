@@ -49,10 +49,15 @@ const baseOutputShape = {
   consultingAdvice: z.array(z.object({ kind: z.enum(["add", "remove", "strengthen", "structure", "clarify"]), title: z.string().min(1), guidance: z.string().min(1), rationale: z.string().min(1), priority: z.enum(["high", "medium", "low"]) })).min(4).max(8).optional(),
 };
 
+// No minimum on purpose. A required minimum forces the model to produce a
+// requirement match even when the posting is a single junk character, so it
+// has to invent one — the exact opposite of this product's first rule. Empty
+// is a legitimate, honest answer, and the result screen already has copy for
+// it ("채용공고 내용이 충분하지 않아 요구역량을 대조하지 못했습니다").
 const proOutputShape = {
-  requirementMatches: z.array(requirementMatchOutputSchema).min(1).max(8),
-  interviewQuestions: z.array(interviewQuestionOutputSchema).min(3).max(6),
-  interviewRisks: z.array(interviewRiskOutputSchema).min(2).max(5),
+  requirementMatches: z.array(requirementMatchOutputSchema).max(8),
+  interviewQuestions: z.array(interviewQuestionOutputSchema).max(6),
+  interviewRisks: z.array(interviewRiskOutputSchema).max(5),
 };
 
 // Parsing stays permissive: QUICK responses simply omit the PRO fields.

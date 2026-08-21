@@ -58,3 +58,16 @@ describe("getQuickAnalysisJsonSchema", () => {
     expect(quick).not.toContain("interviewRisks");
   });
 });
+
+describe("PRO 요청 스키마", () => {
+  it("근거가 없으면 공고 대조·면접 항목을 비워 둘 수 있다", () => {
+    const properties = (getQuickAnalysisJsonSchema("PRO") as { properties: Record<string, Record<string, unknown>> }).properties;
+
+    // A required minimum would force the model to invent a requirement match
+    // for a posting that says nothing.
+    for (const field of ["requirementMatches", "interviewQuestions", "interviewRisks"]) {
+      expect(properties[field]).toBeDefined();
+      expect(properties[field].minItems).toBeUndefined();
+    }
+  });
+});

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
+import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { coverLetterQuestionSchema, serializeQuestionAnswers } from "@/domain/cover-letter-question";
 import { writingModeSchema } from "@/domain/writing-mode";
 import { writingStyleSchema } from "@/domain/writing-style";
@@ -25,6 +25,7 @@ export const guestApplicationHandoffSchema = z.object({
     freeformAttachments: [],
     experiences: [],
     profileEntries: [],
+    materialAttachments: [],
   }),
 }).superRefine((value, context) => {
   const hasCoverLetter = value.questions.some((question) => question.answer.trim());
@@ -41,7 +42,7 @@ export const guestApplicationHandoffSchema = z.object({
 export type GuestApplicationHandoff = z.infer<typeof guestApplicationHandoffSchema>;
 
 export type PlannedDocument = {
-  kind: "JOB_POSTING" | "COVER_LETTER" | "OTHER";
+  kind: "JOB_POSTING" | "COVER_LETTER" | "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "OTHER";
   title: string;
   sourceType: "TEXT" | "FILE" | "URL";
   normalizedText: string;
@@ -131,6 +132,20 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
       // straight into the analysis prompt, and a raw JSON blob buries the
       // facts the model is supposed to draw evidence from.
       normalizedText: describeCandidateMaterials(materials),
+      purpose: "REFERENCE",
+    });
+  }
+
+  // Labelled uploads keep their own document kind so the prompt can name them.
+  // getRunningContext maps RESUME/CAREER_DOCUMENT/PORTFOLIO into the supporting
+  // set, which only PRO runs are allowed to read.
+  for (const attachment of materials.materialAttachments) {
+    documents.push({
+      kind: attachment.kind,
+      title: CANDIDATE_MATERIAL_LABEL[attachment.kind],
+      sourceType: "FILE",
+      normalizedText: attachment.text,
+      originalFilename: attachment.filename,
       purpose: "REFERENCE",
     });
   }

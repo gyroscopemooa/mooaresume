@@ -16,6 +16,7 @@ const emptyMaterials = {
   freeformAttachments: [],
   experiences: [],
   profileEntries: [],
+  materialAttachments: [],
 };
 
 export function ApplicationCaseHandoff({ guest }: Props) {

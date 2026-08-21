@@ -93,3 +93,42 @@ describe("application case handoff", () => {
     expect(coverLetter?.normalizedText).toContain("경력사항은 근무경력 위주로 작성해 주세요.");
   });
 });
+
+describe("지원자료 종류별 업로드", () => {
+  const withMaterials = {
+    ...base,
+    candidateMaterials: {
+      ...base.candidateMaterials,
+      materialAttachments: [
+        { kind: "RESUME" as const, filename: "이력서.pdf", extension: "pdf", sizeBytes: 2048, text: "울산대학교 기계공학 · 자동차 부품 품질 1년 8개월" },
+        { kind: "CAREER_DOCUMENT" as const, filename: "경력기술서.docx", extension: "docx", sizeBytes: 4096, text: "품질검사 공정 개선 담당" },
+      ],
+    },
+  };
+
+  it("이력서와 경력기술서를 각자의 문서 종류로 저장한다", () => {
+    const plan = buildApplicationCasePlan(guestApplicationHandoffSchema.parse(withMaterials));
+    const resume = plan.documents.find((document) => document.kind === "RESUME");
+    const career = plan.documents.find((document) => document.kind === "CAREER_DOCUMENT");
+
+    expect(resume?.originalFilename).toBe("이력서.pdf");
+    expect(resume?.title).toBe("이력서");
+    expect(resume?.purpose).toBe("REFERENCE");
+    expect(career?.title).toBe("경력기술서");
+    expect(career?.normalizedText).toContain("품질검사 공정 개선");
+  });
+
+  it("종류 없는 자유 첨부는 예전처럼 OTHER로 남는다", () => {
+    const plan = buildApplicationCasePlan(guestApplicationHandoffSchema.parse(withMaterials));
+    const other = plan.documents.filter((document) => document.kind === "OTHER");
+
+    expect(other.some((document) => document.originalFilename === "경험정리.txt")).toBe(true);
+  });
+
+  it("업로드가 없던 시절의 저장 데이터도 그대로 처리한다", () => {
+    const plan = buildApplicationCasePlan(guestApplicationHandoffSchema.parse(base));
+
+    expect(plan.documents.some((document) => document.kind === "RESUME")).toBe(false);
+    expect(plan.documents.some((document) => document.kind === "COVER_LETTER")).toBe(true);
+  });
+});
