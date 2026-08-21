@@ -93,16 +93,20 @@ Cloudflare 크론 트리거는 워커의 `scheduled()` 핸들러를 호출하는
 
 **예약 작업이 실제로 도는 것을 확인한 뒤에만** 문구를 바꾼다. 순서를 뒤집으면 지키지 못할 약속을 다시 하게 된다. 한 번 이미 그렇게 했다.
 
-## 8. 이메일이 실제로 나가려면
+## 8. 이메일 발송 — Cloudflare 바인딩에서 Resend로
 
-현재 발송은 두 가지가 모두 있어야 동작한다.
+처음 구현은 Cloudflare의 `send_email` 바인딩을 썼다. 그 바인딩은 **Cloudflare 계정에서 인증한 주소로만** 보낼 수 있다. 자기 자신에게 알림을 보내는 용도이며, 미리 알 수 없는 고객 주소로는 보낼 수 없다. 게다가 로컬 개발 서버에는 바인딩이 존재하지 않아 호출이 조용히 건너뛰어졌다. **그래서 완료 이메일이 한 번도 발송된 적이 없다.**
+
+Resend로 교체했다. 평범한 HTTPS 호출이라 로컬과 배포 환경이 동일하게 동작한다.
 
 ```
-ANALYSIS_EMAIL_FROM   환경변수        없으면 SKIPPED_NOT_CONFIGURED
-EMAIL                 Cloudflare 바인딩  없으면 SKIPPED_BINDING_MISSING
+RESEND_API_KEY        없으면 SKIPPED_NOT_CONFIGURED
+ANALYSIS_EMAIL_FROM   없으면 SKIPPED_NOT_CONFIGURED (도메인 소유 인증 필요)
 ```
 
-`.env.example`에 `ANALYSIS_EMAIL_FROM`이 없고, 로컬 개발 서버에는 Cloudflare 바인딩이 없다. **지금까지 완료 이메일이 발송된 적이 없다.** 예약 작업을 붙여도 이 두 가지가 없으면 이메일은 여전히 나가지 않는다.
+설정이 없으면 예외를 던지지 않고 건너뛴다. 발송 실패도 마찬가지다 — 분석은 이미 결제되고 저장된 뒤이므로, 메일 문제로 결과를 잃게 해서는 안 된다.
+
+`wrangler.jsonc`의 `send_email` 바인딩 선언은 이제 쓰이지 않는다. 배포 설정이라 이번에 건드리지 않았고, 정리는 별도 판단으로 남긴다.
 
 수신 주소는 Supabase 인증 이메일(구글 로그인 계정)이며 Polar 결제 시 입력한 주소가 아니다. 두 주소가 다를 수 있다는 점은 별도 판단이 필요하다.
 

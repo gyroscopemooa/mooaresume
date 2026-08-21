@@ -540,3 +540,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 279 passed(이번 추가 2건), `npx tsc --noEmit` clean, ESLint 오류 0건.
 - 사용자가 해야 할 것: `ANALYSIS_CRON_SECRET` 설정과 스케줄러 연결은 환경변수·외부 대시보드 작업이라 사용자 몫입니다.
 - Rollback/recovery reference: 라우트와 스케줄러 설정을 제거하면 이전 동작(브라우저 폴링 전용)으로 돌아갑니다. DB 함수·저장 형식·가격은 변경하지 않았습니다.
+
+## 2026-08-22 — Claude: 완료 이메일 발송을 Cloudflare 바인딩에서 Resend로 교체
+
+- Agent/session: Claude. 사용자가 "받는 게 아니라 보내는 건데 Cloudflare 이메일을 쓴다고?"라고 지적한 데서 출발했습니다. 지적이 정확했습니다.
+- Status: completed. 사용자가 Resend 가입과 도메인 소유 인증을 이미 마쳤다고 확인했습니다.
+- 문제: 기존 발송 코드는 Cloudflare `send_email` 바인딩을 사용했습니다. 이 바인딩은 **Cloudflare 계정에서 인증한 주소로만** 보낼 수 있어, 미리 알 수 없는 고객 주소로는 보낼 수 없습니다. 자기 자신에게 알림을 보내는 용도입니다. 또한 로컬 개발 서버에는 바인딩이 없어 호출이 조용히 건너뛰어졌습니다. 두 이유로 **완료 이메일이 한 번도 발송된 적이 없습니다.**
+- Change: `sendAnalysisCompleteEmail`을 Resend HTTPS 호출로 교체했습니다. 함수 시그니처는 유지해 호출부(실행 라우트, 예약 진행 라우트) 수정이 없습니다. 테스트를 위해 `fetch` 주입을 옵션 인자로 열었습니다(게이트웨이가 쓰는 방식과 동일). 설정이 없으면 예외 대신 건너뛰고, 발송 실패도 던지지 않고 `FAILED`로 보고합니다 — 분석은 이미 결제·저장된 뒤라 메일 문제로 결과를 잃게 해서는 안 됩니다.
+- Files/branch: `src/server/notifications/analysis-complete-email.ts` + 신규 테스트, `.env.example`(`RESEND_API_KEY` 추가), `docs/background-analysis-completion-decision.md` §8 갱신 on `main`.
+- Validation: 전체 `npx vitest run` 282 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건. 코드에 Cloudflare 바인딩 참조가 남아 있지 않음을 확인했습니다.
+- 남은 것: `wrangler.jsonc`의 `send_email` 바인딩 선언이 이제 쓰이지 않습니다. 배포 설정이라 건드리지 않았습니다. 그리고 스케줄러 연결이 아직이므로 창을 닫으면 여전히 분석이 멈추고, 따라서 이메일도 그때는 발송되지 않습니다.
+- Rollback/recovery reference: 커밋 revert 시 Cloudflare 바인딩 버전으로 돌아갑니다(그 상태에서는 고객 발송이 불가능합니다).
