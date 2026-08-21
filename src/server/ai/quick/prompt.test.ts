@@ -241,3 +241,21 @@ describe("근거 인용 규칙", () => {
     expect(buildQuickAnalysisInstructions(buildRequest)).toContain("비어 있던 문항에는 인용할 원문이 없습니다");
   });
 });
+
+describe("사실 보존과 문항 형식", () => {
+  it("사고·수치·자격은 다시 써도 남기라고 못 박는다", () => {
+    // A near-miss the applicant prevented was lost mid-rewrite and nothing
+    // flagged it — losing a clause is not read as a deletion.
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("발생할 뻔한 사건");
+    expect(instructions).toContain("마지막에 원문과 대조해 확인하세요");
+  });
+
+  it("문항이 요구하는 형식을 따르게 한다", () => {
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("경력사항 문항은 이야기하듯 풀어 쓰지 말고");
+    expect(instructions).toContain("같은 이야기를 같은 방식으로 두 번 쓰면");
+  });
+});

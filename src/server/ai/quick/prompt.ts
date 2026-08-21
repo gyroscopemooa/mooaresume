@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.1";
+export const QUICK_PROMPT_VERSION = "quick-2.2";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -103,6 +103,8 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
           "비어 있던 문항에는 인용할 원문이 없습니다. 그 문항의 evidenceQuote는 지원자가 작성한 다른 문항의 답변이나 제출한 지원자료에서 가져오세요. 인용할 것이 전혀 없으면 그 문항은 채우지 말고, 무엇을 알려주면 채울 수 있는지 consultingAdvice에 적으세요.",
         ]
       : []),
+    "문항이 요구하는 형식을 그대로 따르세요. 문항 질문에 '경력 위주로', '항목별로', '3가지로', '담당업무와 실적 중심으로' 같은 지시가 있으면 그 형식으로 씁니다. 예를 들어 경력사항 문항은 이야기하듯 풀어 쓰지 말고 소속·기간·고용형태·담당업무·실적을 항목으로 정리하세요.",
+    "같은 경험을 여러 문항에 써야 한다면 문항마다 다른 측면을 쓰세요. 한 문항이 그 경험의 의미와 배움을 다뤘다면 다른 문항에서는 사실 정보(소속·기간·역할·담당업무)만 정리하는 식으로 나눕니다. 같은 이야기를 같은 방식으로 두 번 쓰면 지원서 전체가 소재가 하나뿐인 것처럼 읽힙니다.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
     // The applicant saw a phrase praised as 좋은 표현 and then found it missing
     // from the final draft, with no explanation. The two came out of the same
@@ -111,6 +113,10 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     "각 문항은 반드시 이 순서로 작업하세요. ① originalAnnotations로 제출 원문을 먼저 평가한다 ② 그 평가에 맞춰 revisedAnswer를 쓴다. 평가와 수정본이 서로 어긋나서는 안 됩니다.",
     "good으로 표시한 표현의 내용은 revisedAnswer에 반드시 남아야 합니다. 표현을 자연스럽게 다듬는 것은 괜찮지만 통째로 빼지 마세요.",
     "원문에 있던 내용을 revisedAnswer에서 뺐다면, 그 문장에 대한 originalAnnotations 항목을 만들고 comment에 왜 뺐는지 적으세요. 설명 없이 사라지는 문장이 있어서는 안 됩니다.",
+    // A "사람이 다칠 뻔했고 내가 막았다" clause was dropped while the sentence
+    // around it was rewritten, and nothing flagged it: the model does not read
+    // losing a clause mid-rewrite as a deletion. Name the categories instead.
+    "다음은 문장을 다시 쓰더라도 반드시 남기세요. 사고·부상·위험이 실제로 발생했거나 발생할 뻔한 사건, 지원자가 그것을 발견하거나 막은 행동, 수치와 고유명사, 자격·수상·직책. 이것들이 지원서에서 가장 검증 가능하고 직무와 직결되는 근거입니다. 문장을 압축하면서 이런 사실이 빠지지 않았는지 마지막에 원문과 대조해 확인하세요.",
     // Wholesale rewriting is what a free chatbot already does. What is sold
     // here is the applicant's own document, improved — a draft they can still
     // defend in the interview room.

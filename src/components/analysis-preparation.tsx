@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Clock,
   FileText,
   LockKeyhole,
   ShieldCheck,
@@ -16,29 +17,36 @@ import {
   createQuickCheckoutQuote,
 } from "@/domain/usage-entitlement";
 import { writingStyleConfig } from "@/domain/writing-style";
+import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { ApplicationCaseHandoff } from "@/components/application-case-handoff";
 import { QuickCheckoutReturn } from "@/components/quick-checkout-return";
 import styles from "./analysis-preparation.module.css";
 
 const scope = {
+  // "QUICK 전체"로 뭉뚱그리면 PRO 화면만 보는 사람은 무엇이 포함인지 모른다.
+  // 그리고 채우기 여부가 두 상품의 실제 경계이므로 양쪽 목록에 명시한다 —
+  // 밝히지 않으면 QUICK 구매자의 환불 사유가 된다.
   QUICK: [
     "맞춤법·표현·논리",
     "핵심 개선점 3개",
     "문항별 Before/After",
     "최종 첨삭본",
+    "부족한 부분 지적 (내용을 대신 채우지는 않습니다)",
   ],
   PRO: [
-    "QUICK 전체",
+    "첨삭·개선점·Before/After·최종본 전부",
+    "빈 문항과 부족한 분량을 실제로 채움",
+    "이력서·경력기술서와 자소서 교차 확인",
     "공고 요구역량 분석",
     "경험 근거·문항 배치",
-    "자료 간 충돌·중복",
-    "면접 예상질문",
+    "면접 예상질문과 면접 리스크",
   ],
 } as const;
 
 export function AnalysisPreparation() {
   const [guest, setGuest] = useState<GuestDraft | null>(null);
   const [postingLength, setPostingLength] = useState(0);
+  const [materialSummary, setMaterialSummary] = useState<string[]>([]);
   const [confirmedProduct, setConfirmedProduct] = useState<"QUICK" | "PRO" | null>(null);
 
   useEffect(() => {
@@ -50,6 +58,20 @@ export function AnalysisPreparation() {
           "",
         ).length,
       );
+      // The résumé is what makes a PRO run different — it is the document that
+      // catches a mismatch between the letter and the applicant's own record —
+      // so it has to appear in the list of what is about to be analysed.
+      const materials = candidateMaterialDraftSchema.safeParse(
+        JSON.parse(sessionStorage.getItem("mooa:guest-candidate-materials:v1") ?? "null"),
+      );
+      setMaterialSummary(materials.success
+        ? [
+            ...materials.data.materialAttachments.map((file) => `${CANDIDATE_MATERIAL_LABEL[file.kind]} · ${file.filename}`),
+            ...materials.data.freeformAttachments.map((file) => `추가 자료 · ${file.filename}`),
+            ...(materials.data.profileEntries.length > 0 ? [`자격·스펙 ${materials.data.profileEntries.length}개`] : []),
+            ...(materials.data.experiences.length > 0 ? [`추가 경험 ${materials.data.experiences.length}개`] : []),
+          ]
+        : []);
     }, 0);
     return () => window.clearTimeout(timeout);
   }, []);
@@ -175,6 +197,20 @@ export function AnalysisPreparation() {
                   {postingLength > 0 && <Check />}
                 </article>
               )}
+              {product === "PRO" && materialSummary.map((item) => (
+                <article key={item}>
+                  <FileText />
+                  <span><strong>{item.split(" · ")[0]}</strong><small>{item.split(" · ")[1] ?? "직접 입력"}</small></span>
+                  <Check />
+                </article>
+              ))}
+            </div>
+            <div className={styles.runtimeNotice}>
+              <Clock />
+              <span>
+                <b>분석에는 5~10분 정도 걸립니다.</b>
+                <small>창을 닫아도 계속 진행되고, 끝나면 이메일로 결과 링크를 보내드립니다. 분석에 실패하면 추가 결제 없이 다시 시도할 수 있습니다.</small>
+              </span>
             </div>
             <div className={styles.privacy}>
               <LockKeyhole />
