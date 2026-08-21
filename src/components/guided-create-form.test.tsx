@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { createGuidedCreateDraft, createGuidedQuestion, GUIDED_STEPS, type GuidedCreateDraft } from "@/domain/guided-create";
+import { buildGuidedSteps, createGuidedCreateDraft, createGuidedQuestion, type GuidedCreateDraft, type GuidedStep } from "@/domain/guided-create";
 import { GuidedCreateForm } from "./guided-create-form";
 
 afterEach(cleanup);
@@ -13,8 +13,10 @@ function setup(draft: GuidedCreateDraft, questions = [createGuidedQuestion("지�
   return { onDraftChange, onQuestionsChange, questions };
 }
 
+const defaultSteps: GuidedStep[] = buildGuidedSteps(createGuidedCreateDraft());
+
 function goToLastStep() {
-  for (let step = 1; step < GUIDED_STEPS.length; step += 1) {
+  for (let step = 1; step < defaultSteps.length; step += 1) {
     fireEvent.click(screen.getByRole("button", { name: /다음/ }));
   }
 }
@@ -23,9 +25,9 @@ describe("GuidedCreateForm", () => {
   it("자기소개서 문항을 가장 먼저 묻는다", () => {
     setup(createGuidedCreateDraft());
 
-    expect(screen.getByText(`처음부터 작성 · 1 / ${GUIDED_STEPS.length}`)).toBeTruthy();
-    expect(screen.getByText(GUIDED_STEPS[0].title)).toBeTruthy();
-    expect(GUIDED_STEPS[0].id).toBe("questions");
+    expect(screen.getByText(`처음부터 작성 · 1 / ${defaultSteps.length}`)).toBeTruthy();
+    expect(screen.getByText(defaultSteps[0].title)).toBeTruthy();
+    expect(defaultSteps[0].id).toBe("questions");
     expect(screen.getByRole("button", { name: /이전/ }).hasAttribute("disabled")).toBe(true);
   });
 
@@ -73,13 +75,13 @@ describe("GuidedCreateForm", () => {
     // Naming your best experience from nothing is the blank page again.
     const { onDraftChange } = setup(createGuidedCreateDraft());
 
-    const whereStep = GUIDED_STEPS.findIndex((step) => step.id === "experienceOne-where");
+    const whereStep = defaultSteps.findIndex((item) => item.id === "experience-0-where");
     for (let step = 0; step < whereStep; step += 1) fireEvent.click(screen.getByRole("button", { name: /다음/ }));
 
     fireEvent.click(screen.getByRole("button", { name: "아르바이트" }));
 
     expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({
-      experienceOne: expect.objectContaining({ category: "아르바이트" }),
+      experiences: [expect.objectContaining({ category: "아르바이트" })],
     }));
   });
 });

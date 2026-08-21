@@ -51,3 +51,7 @@
 .categories button{padding:6px 10px;border:1px solid #dfe6e2;border-radius:16px;background:#fff;color:#68756f;font-size:9px;font-weight:800;cursor:pointer}
 .categories button:hover{border-color:#176b4a;color:#176b4a}
 .categories button[data-on=true]{border-color:#176b4a;background:#e7f3ec;color:#176b4a}
+.addExperience{display:flex;align-items:center;gap:7px;width:100%;padding:12px 14px;border:1px dashed #b8d3c5;border-radius:9px;background:#f4faf7;color:#176b4a;font-size:10px;font-weight:800;cursor:pointer}
+.addExperience:hover{border-color:#176b4a;background:#eaf5ef}
+.addExperience svg{width:13px}
+.addExperience small{font-weight:400;color:#7d9a8b}

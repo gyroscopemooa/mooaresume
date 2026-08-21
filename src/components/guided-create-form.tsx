@@ -6,11 +6,12 @@ import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
 import {
   applyGuidedAnswers,
   availableGuidedBlocks,
+  buildGuidedSteps,
+  createGuidedExperience,
   createGuidedQuestion,
-  GUIDED_BLOCK_LABEL,
+  guidedBlockLabel,
   GUIDED_EXPERIENCE_CATEGORIES,
-  GUIDED_STEPS,
-  type GuidedBlockId,
+  MAX_GUIDED_EXPERIENCES,
   type GuidedCreateDraft,
   type GuidedExperience,
 } from "@/domain/guided-create";
@@ -31,21 +32,33 @@ type Props = {
  */
 export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsChange }: Props) {
   const [stepIndex, setStepIndex] = useState(0);
-  const step = GUIDED_STEPS[stepIndex];
-  const isLast = stepIndex === GUIDED_STEPS.length - 1;
+  const steps = useMemo(() => buildGuidedSteps(draft), [draft]);
+  const step = steps[Math.min(stepIndex, steps.length - 1)];
+  const isLast = stepIndex >= steps.length - 1;
   const blocks = useMemo(() => availableGuidedBlocks(draft), [draft]);
 
   function setText(path: "motivation" | "aspiration" | "strength" | "goal", value: string) {
     onDraftChange({ ...draft, [path]: value });
   }
 
-  function setExperience(path: "experienceOne" | "experienceTwo", field: keyof GuidedExperience, value: string) {
-    onDraftChange({ ...draft, [path]: { ...draft[path], [field]: value } });
+  function setExperience(index: number, field: keyof GuidedExperience, value: string) {
+    const experiences = draft.experiences.length > 0 ? draft.experiences : [createGuidedExperience()];
+    onDraftChange({
+      ...draft,
+      experiences: experiences.map((experience, position) => position === index ? { ...experience, [field]: value } : experience),
+    });
+  }
+
+  // Adding one appends four more steps, so move straight into the first of them.
+  function addExperience() {
+    if (draft.experiences.length >= MAX_GUIDED_EXPERIENCES) return;
+    onDraftChange({ ...draft, experiences: [...draft.experiences, createGuidedExperience()] });
+    setStepIndex(stepIndex + 1);
   }
 
   // An assignment decides what a question's source text says, so the shared
   // question list is rewritten in the same step the draft changes.
-  function toggleAssignment(questionId: string, block: GuidedBlockId) {
+  function toggleAssignment(questionId: string, block: string) {
     const current = draft.assignments[questionId] ?? [];
     const next = current.includes(block) ? current.filter((item) => item !== block) : [...current, block];
     const nextDraft = { ...draft, assignments: { ...draft.assignments, [questionId]: next } };
@@ -59,12 +72,12 @@ export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsC
     ? questions.some((question) => (draft.assignments[question.id] ?? []).length > 0)
     : step.fields.some((field) => field.kind === "text"
       ? draft[field.path].trim().length > 0
-      : draft[field.path][field.field].trim().length > 0);
+      : (draft.experiences[field.index]?.[field.field] ?? "").trim().length > 0);
 
   return <section className={styles.guided}>
     <header>
       <div>
-        <span className={styles.eyebrow}>처음부터 작성 · {stepIndex + 1} / {GUIDED_STEPS.length}</span>
+        <span className={styles.eyebrow}>처음부터 작성 · {stepIndex + 1} / {steps.length}</span>
         <h3>{step.title}</h3>
         <p>{step.help}</p>
       </div>
@@ -72,7 +85,7 @@ export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsC
     </header>
 
     <div className={styles.progress} role="presentation">
-      {GUIDED_STEPS.map((item, index) => <i key={item.id} data-done={index < stepIndex} data-current={index === stepIndex} />)}
+      {steps.map((item, index) => <i key={item.id} data-done={index < stepIndex} data-current={index === stepIndex} />)}
     </div>
 
     {step.id === "assign" ? (
@@ -89,42 +102,50 @@ export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsC
                 type="button"
                 data-on={assigned.includes(block)}
                 onClick={() => toggleAssignment(question.id, block)}
-              >{assigned.includes(block) && <Check />}{GUIDED_BLOCK_LABEL[block]}</button>)}
+              >{assigned.includes(block) && <Check />}{guidedBlockLabel(block)}</button>)}
             </div>
           </article>;
         })}
       </div>
     ) : (
       <div className={styles.fields}>
-        {step.id === "experienceOne-where" && <div className={styles.categories}>
+        {step.experienceIndex !== undefined && step.fields[0]?.kind === "experience" && step.fields[0].field === "where" && <div className={styles.categories}>
           <span>어떤 종류의 경험인가요?</span>
-          <div>{GUIDED_EXPERIENCE_CATEGORIES.map((category) => <button
-            key={category}
-            type="button"
-            data-on={draft.experienceOne.category === category}
-            onClick={() => setExperience("experienceOne", "category", draft.experienceOne.category === category ? "" : category)}
-          >{category}</button>)}</div>
+          <div>{GUIDED_EXPERIENCE_CATEGORIES.map((category) => {
+            const current = draft.experiences[step.experienceIndex!]?.category ?? "";
+            return <button
+              key={category}
+              type="button"
+              data-on={current === category}
+              onClick={() => setExperience(step.experienceIndex!, "category", current === category ? "" : category)}
+            >{category}</button>;
+          })}</div>
         </div>}
         {step.fields.map((field) => <label key={field.label}>
           <span>{field.label}</span>
           <textarea
             rows={field.rows}
             placeholder={field.placeholder}
-            value={field.kind === "text" ? draft[field.path] : draft[field.path][field.field]}
+            value={field.kind === "text" ? draft[field.path] : draft.experiences[field.index]?.[field.field] ?? ""}
             onChange={(event) => field.kind === "text"
               ? setText(field.path, event.target.value)
-              : setExperience(field.path, field.field, event.target.value)}
+              : setExperience(field.index, field.field, event.target.value)}
           />
         </label>)}
       </div>
     )}
+
+    {step.offersAnotherExperience && <button type="button" className={styles.addExperience} onClick={addExperience}>
+      <Plus /> 경험 하나 더 추가하기
+      <small>문항마다 다른 경험을 쓰면 내용이 겹치지 않습니다</small>
+    </button>}
 
     <footer>
       <button type="button" className={styles.back} disabled={stepIndex === 0} onClick={() => setStepIndex((current) => Math.max(0, current - 1))}>
         <ArrowLeft /> 이전
       </button>
       <span className={styles.status}>{stepFilled ? "입력됨" : step.optional ? "선택 항목" : "아직 비어 있어요"}</span>
-      <button type="button" className={styles.next} disabled={isLast} onClick={() => setStepIndex((current) => Math.min(GUIDED_STEPS.length - 1, current + 1))}>
+      <button type="button" className={styles.next} disabled={isLast} onClick={() => setStepIndex((current) => Math.min(steps.length - 1, current + 1))}>
         다음 <ArrowRight />
       </button>
     </footer>

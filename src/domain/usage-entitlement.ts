@@ -4,7 +4,13 @@ export const QUICK_BASE_PRICE_KRW = 4_900;
 export const PRO_BASE_PRICE_KRW = 9_900;
 export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
 export const QUICK_SOFT_LIMIT_CHARS = 7_000;
-export const QUICK_INCLUDED_LIMIT_CHARS = 12_000;
+// A Korean cover letter runs 4-7 questions of 500-1,000 characters, so the
+// realistic ceiling is about 6,000 once the question headings are counted.
+// 12,000 was double that — room nobody used, priced as if they might. 8,000
+// keeps roughly 30% headroom over the longest real case. Raising a limit later
+// is easy; lowering one after people rely on it is not, which is why this is
+// set before launch rather than after.
+export const QUICK_INCLUDED_LIMIT_CHARS = 8_000;
 export const QUICK_EXTRA_BLOCK_CHARS = 7_000;
 export const QUICK_EXTRA_BLOCK_PRICE_KRW = 2_900;
 export const productTierSchema = z.enum(["QUICK", "PRO"]);

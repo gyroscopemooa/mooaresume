@@ -420,3 +420,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 264 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건.
 - Rollback/recovery reference: 커밋 revert. `category`는 기본값이 있어 되돌려도 저장된 초안이 깨지지 않습니다.
 - User decision: 사용자가 진단 여섯 가지 중 셋을 지금 수정하라고 지시했습니다.
+
+## 2026-08-22 — Claude: QUICK 포함 한도 8,000자 + Guided CREATE 경험 개수 자유화
+
+- Agent/session: Claude. 사용자가 한도 조정과 CREATE 폼 나머지 수정을 지시했습니다.
+- Status: completed. CREATE 진단 6건 중 5건 완료, 남은 1건은 "이력서를 참조해 이미 아는 내용을 다시 묻지 않기"(AI 호출 증가 → 가격 재검토 필요).
+- Change (1) QUICK 포함 한도 12,000 → 8,000자: 공백 제외 기준으로 한국 자소서의 현실 최대는 문항 제목까지 포함해 약 6,000자입니다(7문항 × 700자 + 오버헤드). 12,000은 그 두 배로, 아무도 쓰지 않는 여유를 가격에 반영하고 있었습니다. 8,000은 최장 현실 케이스 대비 약 30% 여유입니다. 사용자가 제안한 6,000은 공기업 5~7문항 자소서가 정확히 걸리는 지점이라 채택하지 않았습니다. **한도는 올리기 쉽고 낮추기 어려우므로(쓰던 사용자가 막힘) 실사용자가 0인 지금 조정했습니다.** 초과 시 7,000자당 2,900원 추가 과금 구조는 그대로입니다. PRO 30,000자는 초과 시 동작이 달라(추가 결제가 아닌 `needsScopeReview`) 별도 판단으로 남겼습니다.
+- Change (2) 경험을 고정 2개에서 목록으로: `experienceOne`/`experienceTwo` 두 칸이 고정이라 문항이 3~4개인 자소서에서 같은 경험을 재탕하게 됐습니다. 그건 이 제품이 "문항 간 경험 중복"이라고 지적하는 바로 그 결함입니다. `experiences` 배열(최대 5개)로 바꾸고, 소재 식별자를 `experience-0` 형태로 위치 기반으로 만들었습니다.
+- Change (3) 모든 경험을 같은 방식으로 질문: 첫 경험은 4단계로 나눠 묻고 두 번째는 한 화면에 몰아넣어, "두 번째는 덜 중요하다"는 인상을 줬습니다. 실제로는 두 번째가 더 좋은 소재인 경우가 많습니다. 단계를 `buildGuidedSteps(draft)`로 초안에서 생성해 경험마다 동일한 4단계를 부여하고, 마지막 경험의 끝에서만 "경험 하나 더 추가하기"를 제안합니다. 추가하면 4단계가 함께 늘고 바로 그 첫 단계로 이동합니다.
+- 하위 호환 주의: 게스트 초안(sessionStorage)에 저장된 이전 형식(`experienceOne`/`experienceTwo`)은 새 스키마에서 무시됩니다. 진행 중이던 세션의 경험 입력이 비워질 수 있습니다. 실사용자가 없어 마이그레이션은 넣지 않았습니다.
+- Files/branch: `src/domain/usage-entitlement.ts` + 테스트, `src/domain/guided-create.ts` + 테스트, `src/components/guided-create-form.tsx` + `.module.css` + 테스트 on `main`.
+- Codex 영향: `/pro/create-wizard`가 이 폼을 감싸 쓰므로 변경이 그대로 반영됩니다.
+- Validation: 전체 `npx vitest run` 267 passed(이번 추가 4건), `npx tsc --noEmit` clean, ESLint 오류 0건. 로컬 `/pro/create`에서 1단계가 문항 입력이고 총 10단계로 렌더되는 것을 확인했습니다.
+- Rollback/recovery reference: 커밋 revert. 한도는 상수 한 줄이며, 저장된 분석 결과나 결제 이력에는 영향이 없습니다.
+- User decision: 사용자가 8,000자 채택과 나머지 폼 수정을 지시했습니다.
