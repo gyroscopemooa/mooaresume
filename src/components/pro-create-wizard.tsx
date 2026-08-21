@@ -1,0 +1,22 @@
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { ArrowLeft, ArrowRight, Check, LockKeyhole } from "lucide-react";
+import { JobPostingInput } from "@/components/job-posting-input";
+import { MaterialUpload } from "@/components/material-upload";
+import { AdditionalInfoInput } from "@/components/additional-info-input";
+import { GuidedCreateForm } from "@/components/guided-create-form";
+import { createGuidedCreateDraft } from "@/domain/guided-create";
+import { createCoverLetterQuestion, serializeQuestionAnswers } from "@/domain/cover-letter-question";
+import { saveGuestDraft } from "@/lib/guest-draft";
+import type { CandidateFreeformAttachment, CandidateMaterialAttachment } from "@/domain/candidate-material";
+import type { WritingStyle } from "@/domain/writing-style";
+import styles from "./pro-create-wizard.module.css";
+const steps=["채용공고","희망 직무","가진 자료","경험 메모","사실 확인","작성 방향"];
+const materialKey="mooa:guest-candidate-materials:v1";
+export function ProCreateWizard(){
+ const [step,setStep]=useState(0),[posting,setPosting]=useState(""),[url,setUrl]=useState(""),[filenames,setFilenames]=useState<string[]>([]),[company,setCompany]=useState(""),[role,setRole]=useState(""),[notes,setNotes]=useState(""),[files,setFiles]=useState<CandidateFreeformAttachment[]>([]),[materials,setMaterials]=useState<CandidateMaterialAttachment[]>([]),[draft,setDraft]=useState(createGuidedCreateDraft),[questions,setQuestions]=useState([createCoverLetterQuestion()]),[style,setStyle]=useState<WritingStyle>("BALANCED");
+ const canFinish=questions.some(q=>q.answer.trim());
+ function finish(){if(!canFinish)return;saveGuestDraft({draftText:serializeQuestionAnswers(questions),questionDrafts:questions.map(q=>q.answer),questions,targetLength:700,temporaryWritingMode:"CREATE",selectedProduct:"PRO",companyName:company.trim()||undefined,roleName:role.trim()||undefined,writingStyle:style});sessionStorage.setItem("mooa:guest-job-posting:v1",posting);sessionStorage.setItem("mooa:guest-job-posting-source:v1",JSON.stringify({url,text:posting,filenames}));sessionStorage.setItem(materialKey,JSON.stringify({schemaVersion:"1.0",freeformNotes:notes,freeformAttachments:files,experiences:[],profileEntries:[],materialAttachments:materials}));location.assign("/analysis/prepare");}
+ return <main className={styles.page}><header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><small>PRO · 처음부터 작성</small></header><div className={styles.layout}><aside><b>작성 진행</b>{steps.map((label,i)=><button key={label} data-active={i===step} data-done={i<step} onClick={()=>setStep(i)}><span>{i<step?<Check/>:i+1}</span>{label}</button>)}<p>모르는 것은 건너뛰어도 됩니다. 초안에는 입력한 사실만 사용합니다.</p></aside><section><small>처음부터 작성 · {step+1} / {steps.length}</small>{step===0&&<><h1>지원할 공고가 있나요?</h1><p>있으면 더 맞춤으로 작성합니다. 아직 없다면 건너뛰어도 됩니다.</p><JobPostingInput url={url} text={posting} filenames={filenames} onUrlChange={setUrl} onTextChange={setPosting} onFilenamesChange={setFilenames}/></>}{step===1&&<><h1>희망 회사와 직무를 알려주세요.</h1><p>모르면 비워도 됩니다. 예: 고객응대, 사무보조, 생산관리</p><label>희망 회사<input value={company} onChange={e=>setCompany(e.target.value)}/></label><label>희망 직무<input value={role} onChange={e=>setRole(e.target.value)}/></label></>}{step===2&&<><h1>가지고 있는 자료만 올려주세요.</h1><p>이력서나 자격증이 없어도 다음 단계로 갈 수 있습니다.</p><MaterialUpload attachments={materials} onChange={setMaterials}/></>}{step===3&&<><h1>기억나는 경험을 편하게 적어주세요.</h1><p>워홀, 알바, 프로젝트, 자격증처럼 대충 적어도 괜찮습니다.</p><AdditionalInfoInput text={notes} attachments={files} onTextChange={setNotes} onAttachmentsChange={setFiles}/></>}{step===4&&<GuidedCreateForm draft={draft} onDraftChange={setDraft} questions={questions} onQuestionsChange={setQuestions}/>} {step===5&&<><h1>작성 방향을 확인해 주세요.</h1><p>{canFinish?"문항에 쓸 사실이 준비됐습니다. 분석에서 초안을 만듭니다.":"사실 확인 단계에서 문항을 추가하고, 쓸 소재를 하나 이상 선택해 주세요."}</p><div className={styles.styles}>{(["CONCISE","BALANCED","STRENGTH_FOCUSED"] as WritingStyle[]).map(value=><button key={value} data-active={style===value} onClick={()=>setStyle(value)}>{value==="CONCISE"?"담백하게":value==="BALANCED"?"균형 있게":"강점 살리기"}</button>)}</div><p className={styles.safe}><LockKeyhole/>없는 경험·수치·성과는 만들지 않습니다.</p></>}<footer><button disabled={step===0} onClick={()=>setStep(Math.max(0,step-1))}><ArrowLeft/> 이전</button>{step<5?<button onClick={()=>setStep(step+1)}>다음 <ArrowRight/></button>:<button disabled={!canFinish} onClick={finish}>분석 범위 확인 <ArrowRight/></button>}</footer></section></div></main>;
+}

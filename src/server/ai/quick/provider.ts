@@ -123,7 +123,7 @@ export class QuickAnalysisProvider implements ResumeAnalysisProvider {
     if (request.product !== "QUICK" && request.product !== "PRO") throw new Error("UNSUPPORTED_ANALYSIS_PRODUCT");
     const questions = getQuestions(request); if (!questions.length) throw new Error("QUICK_QUESTION_REQUIRED");
     let feedback: string[] = []; let lastIssues: ReturnType<typeof validateQuickAnalysis> = [];
-    for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) { const gatewayResult = await this.gateway.analyze(request, feedback); const issues = validateQuickAnalysis(questions, gatewayResult.output); lastIssues = issues; if (!issues.length) return createQuickAnalysisResult(request, gatewayResult); feedback = issues.map((issue) => issue.message); }
+    for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) { const gatewayResult = await this.gateway.analyze(request, feedback); const issues = validateQuickAnalysis(request, gatewayResult.output); lastIssues = issues; if (!issues.length) return createQuickAnalysisResult(request, gatewayResult); feedback = issues.map((issue) => issue.message); }
     throw new QuickAnalysisValidationError(lastIssues);
   }
 }

@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { sendAnalysisCompleteEmail } from "@/server/notifications/analysis-complete-email";
 import { OpenAIResponsesGateway } from "@/server/ai/quick/openai-responses-gateway";
 import { createQuickAnalysisResult, QuickQuestionResultMissingError } from "@/server/ai/quick/provider";
-import { getAnalysisQuestions } from "@/server/ai/quick/questions";
 import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "@/server/ai/quick/validator";
 import { advanceQuickBackgroundAnalysis } from "@/server/analysis/quick-background-execution";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
       // dropped it, letting fabricated numbers and unsupported evidence reach
       // the applicant unchecked. Only factuality issues block — see
       // BLOCKING_VALIDATION_CODES.
-      const blockingIssues = validateQuickAnalysis(getAnalysisQuestions(step.request), background.result.output)
+      const blockingIssues = validateQuickAnalysis(step.request, background.result.output)
         .filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
       if (blockingIssues.length > 0) {
         await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true);

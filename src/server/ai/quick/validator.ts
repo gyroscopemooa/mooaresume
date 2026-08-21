@@ -1,4 +1,6 @@
+import type { AnalysisRequest } from "@/application/analysis-contract";
 import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
+import { getAnalysisQuestions } from "./questions";
 import type { QuickAnalysisOutput } from "./schema";
 
 export type QuickValidationIssue = { code: "NEW_NUMBER" | "INVALID_EVIDENCE" | "INVALID_HIGHLIGHT" | "LENGTH_OVER" | "QUESTION_MISMATCH"; message: string };
@@ -31,12 +33,25 @@ function evidenceMatchesSource(source: string, quote: string) {
 }
 type QuickQuestion = CoverLetterQuestion & { order: number; targetLength: number };
 
+function candidateEvidenceSource(request: AnalysisRequest) {
+  const permittedDocuments = request.product === "PRO"
+    ? request.documents.filter((document) => document.kind !== "job_posting")
+    : request.documents.filter((document) => document.kind === "cover_letter");
+  return permittedDocuments.map((document) => document.text).join("\n");
+}
+
+export function validateQuickAnalysis(request: AnalysisRequest, output: QuickAnalysisOutput): QuickValidationIssue[];
 export function validateQuickAnalysis(questions: QuickQuestion[], output: QuickAnalysisOutput): QuickValidationIssue[];
 export function validateQuickAnalysis(original: string, output: QuickAnalysisOutput, targetLength: number): QuickValidationIssue[];
-export function validateQuickAnalysis(input: QuickQuestion[] | string, output: QuickAnalysisOutput, targetLength?: number): QuickValidationIssue[] {
-  const questions: QuickQuestion[] = typeof input === "string" ? [{ id: "legacy", title: "", prompt: "", answer: input, order: 1, targetLength: targetLength ?? 700 }] : input;
+export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] | string, output: QuickAnalysisOutput, targetLength?: number): QuickValidationIssue[] {
+  const request = typeof input === "string" || Array.isArray(input) ? null : input;
+  const questions: QuickQuestion[] = typeof input === "string"
+    ? [{ id: "legacy", title: "", prompt: "", answer: input, order: 1, targetLength: targetLength ?? 700 }]
+    : request ? getAnalysisQuestions(request) : input as QuickQuestion[];
   const issues: QuickValidationIssue[] = [];
-  const sourceText = questions.map((question) => question.answer).join("\n");
+  // A PRO revision can rely on submitted additional experience and attachments.
+  // A job posting remains excluded so employer requirements never become facts.
+  const sourceText = request ? candidateEvidenceSource(request) : questions.map((question) => question.answer).join("\n");
   const normalizedSource = normalizeEvidence(sourceText);
   for (const priority of output.priorities) if (!evidenceMatchesSource(normalizedSource, priority.evidenceQuote)) issues.push({ code: "INVALID_EVIDENCE", message: `우선순위의 근거가 원문에서 확인되지 않습니다: "${priority.evidenceQuote}"` });
   const revisionList = output.revisions ?? (output.revision ? [{ ...output.revision, questionOrder: 1 }] : []);
@@ -44,9 +59,9 @@ export function validateQuickAnalysis(input: QuickQuestion[] | string, output: Q
   if (revisions.size !== questions.length || questions.some((question) => !revisions.has(question.order))) issues.push({ code: "QUESTION_MISMATCH", message: "입력한 모든 문항의 첨삭 결과가 필요합니다." });
   for (const question of questions) {
     const revision = revisions.get(question.order); if (!revision) continue;
-    const normalizedOriginal = normalizeEvidence(question.answer); const sourceNumbers = numericTokens(question.answer);
+    const sourceNumbers = numericTokens(sourceText);
     for (const number of numericTokens(revision.revisedAnswer)) if (!sourceNumbers.has(number)) issues.push({ code: "NEW_NUMBER", message: `문항 ${question.order} 원문에 없는 수치 "${number}"가 첨삭본에 추가되었습니다.` });
-    for (const reason of revision.reasons) if (!evidenceMatchesSource(normalizedOriginal, reason.evidenceQuote)) issues.push({ code: "INVALID_EVIDENCE", message: `문항 ${question.order} 수정 이유의 근거가 원문에서 확인되지 않습니다: "${reason.evidenceQuote}"` });
+    for (const reason of revision.reasons) if (!evidenceMatchesSource(normalizedSource, reason.evidenceQuote)) issues.push({ code: "INVALID_EVIDENCE", message: `문항 ${question.order} 수정 이유의 근거가 원문에서 확인되지 않습니다: "${reason.evidenceQuote}"` });
     for (const phrase of revision.highlightedPhrases) if (!revision.revisedAnswer.includes(phrase)) issues.push({ code: "INVALID_HIGHLIGHT", message: `문항 ${question.order} 강조 문구가 첨삭본에 없습니다: "${phrase}"` });
     if (compactLength(revision.revisedAnswer) > Math.ceil(Math.max(question.targetLength, compactLength(question.answer)) * 1.15)) issues.push({ code: "LENGTH_OVER", message: `문항 ${question.order} 첨삭본이 목표 글자 수의 허용 범위를 초과했습니다.` });
   }

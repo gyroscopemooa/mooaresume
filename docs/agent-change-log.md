@@ -373,3 +373,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Codex 동시 작업 알림: 이번 세션 중 Codex가 `src/components/pro-create-wizard.tsx`, `.module.css`, `src/app/pro/create-wizard/`를 새로 만들었습니다(미커밋). Claude의 Guided CREATE(`guided-create-form.tsx`, `/pro/create`)와 **같은 1유형 영역**입니다. 두 구현이 공존하는 상태이므로 사용자 확인이 필요합니다.
 - Rollback/recovery reference: 이 커밋 하나를 revert하면 됩니다. 스키마·DB·가격·결제 흐름을 변경하지 않았고 저장된 결과에도 영향이 없습니다.
 - User decision: 사용자가 세 유형을 다르게 만들되 가격은 셋 다 같은 PRO 가격으로 유지하고, 최종 첨삭본은 빈칸 없이 꽉 채워야 한다고 결정했습니다.
+
+## 2026-08-22 — Claude: Codex 진행분 인수 커밋
+
+- Agent/session: Claude, 사용자 지시("이 부분 이어받아서 일단 커밋 한번 하고")로 Codex의 미커밋 작업을 대신 커밋했습니다.
+- Status: committed. 코드 내용은 수정하지 않고 있는 그대로 커밋했습니다.
+- 인수한 내용: (1) PRO 근거 검증 범위 확대 — `validateQuickAnalysis`가 문항 목록 대신 요청 전체를 받아, PRO에서는 이력서·경력기술서·포트폴리오·추가 경험까지 사실 출처로 인정하되 채용공고는 제외합니다(회사 요구사항이 지원자 경험으로 둔갑하지 않게). QUICK은 자소서 원문으로 한정한 기존 동작 유지. (2) `provider.ts`와 실행 라우트가 요청을 그대로 넘기도록 호출부 수정. (3) 신규 `validator.test.ts`. (4) 신규 `/pro/create-wizard` 라우트와 `pro-create-wizard.tsx` 스텁 — Claude의 `GuidedCreateForm`·`MaterialUpload`를 재사용해 단계 위저드로 감싸는 구조이며, 기존 `/pro/create`를 대체하지 않고 별도 라우트로 존재합니다.
+- 상호작용 확인: Codex의 검증기가 내부에서 `getAnalysisQuestions(request)`를 호출하는데, 같은 시각 Claude가 그 함수를 PRO BUILD에서 빈 문항을 포함하도록 바꿨습니다. 두 변경이 맞물려 **PRO BUILD가 채운 문항도 동일한 근거 검증을 받습니다.** 의도한 조합이며 전체 258개 테스트가 통과합니다.
+- Validation: `npx vitest run` 258 passed, `npx tsc --noEmit` clean. `npx eslint src` 경고 1건이 `pro-create-wizard.tsx`에 남아 있으나(`location.assign`) Codex 진행 중 파일이라 수정하지 않았습니다.
+- Rollback/recovery reference: 이 커밋을 revert하면 Codex 작업분 전체가 미커밋 상태로 돌아갑니다. 스키마·DB 변경은 없습니다.
+- User decision: 사용자가 인수 커밋과 후속 작업 계속을 지시했습니다.
