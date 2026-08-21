@@ -161,12 +161,33 @@ describe("ResultWorkspaceComplete 채운 부분 표시", () => {
     } : question),
   };
 
-  it("BUILD 결과는 새로 채운 부분을 표시하고 무엇인지 알려준다", () => {
+  it("BUILD 결과는 달라진 부분을 표시하고 무엇인지 정확히 설명한다", () => {
     render(<ResultWorkspaceComplete result={filled}/>);
     fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
 
-    expect(screen.getByText(/비어 있거나 짧았던 곳을 채운/)).toBeTruthy();
+    expect(screen.getByText(/원문에서 달라진 부분/)).toBeTruthy();
+    // Rephrasing marks too, so the legend must not claim it is all new.
+    expect(screen.getByText(/표현만 다듬은 곳도 포함되니/)).toBeTruthy();
     expect(document.querySelectorAll("mark").length).toBeGreaterThan(0);
+  });
+
+  it("원문이 없던 문항은 전체가 새로 쓴 제안이라고 밝힌다", () => {
+    const blank = {
+      ...filled,
+      questions: filled.questions.map((question, index) => index === 0 ? { ...question, originalAnswer: "" } : question),
+    };
+
+    render(<ResultWorkspaceComplete result={blank}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    expect(screen.getByText(/전체가 새로 쓴 제안/)).toBeTruthy();
+  });
+
+  it("원문이 있는 문항에는 전체가 새로 썼다고 하지 않는다", () => {
+    render(<ResultWorkspaceComplete result={filled}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    expect(screen.queryByText(/전체가 새로 쓴 제안/)).toBeNull();
   });
 
   it("최종 첨삭본은 제안을 빼지 않고 확인만 요청한다", () => {

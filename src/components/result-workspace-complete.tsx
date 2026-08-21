@@ -91,10 +91,13 @@ function HighlightedAnswer({ text, phrases }: { text: string; phrases: readonly 
 }
 
 /**
- * Marks the sentences BUILD wrote that the applicant did not. The spans come
- * from the same diff the 변경점 표시 toggle already uses, so nothing new has to
- * be stored to know where the fill is. Shown by default in BUILD results —
- * a proposal the reader cannot see is a proposal they will submit unread.
+ * Marks what changed from the applicant's own text. The spans come from the
+ * same word-level diff the 변경점 표시 toggle uses, so nothing extra is stored.
+ *
+ * The label matters: Korean inflects at the end of almost every word, so a
+ * rephrased sentence marks almost entirely. Calling that "what we wrote for
+ * you" overstates it — calling it "what changed" is exactly what the diff
+ * knows.
  */
 function FilledAnswer({ original, revised }: { original: string; revised: string }) {
   return <p className={styles.after}>{diffText(original, revised)
@@ -102,6 +105,14 @@ function FilledAnswer({ original, revised }: { original: string; revised: string
     .map((part, index) => part.type === "added"
       ? <mark key={index} className={styles.filled}>{part.value}</mark>
       : <span key={index}>{part.value}</span>)}</p>;
+}
+
+/** A question that started empty has no original to diff against at all. */
+function BlankOriginalNotice({ original }: { original: string }) {
+  if (original.trim()) return null;
+  return <p className={styles.fillNotice} data-kind="written">
+    이 문항은 비워 두셨던 곳이라 <b>전체가 새로 쓴 제안</b>입니다. 사실과 맞는지 확인한 뒤 사용하세요.
+  </p>;
 }
 
 function DiffAnswer({ original, revised, side }: { original: string; revised: string; side: "before" | "after" }) {
@@ -266,7 +277,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
 
       {view === "revision" && <section className={styles.workspace}>
         <div className={styles.title}><div><span className={styles.eyebrow}>BEFORE → AFTER</span><h2>문항별 첨삭 결과</h2></div><button type="button" className={styles.diffToggle} aria-pressed={showChanges} onClick={() => setShowChanges((current) => !current)}><GitCompareArrows/>{showChanges ? "\uBCC0\uACBD\uC810 \uC228\uAE30\uAE30" : "\uBCC0\uACBD\uC810 \uD45C\uC2DC"}</button><p>기본은 읽기 모드입니다. 필요한 문항만 직접 수정하세요.</p></div>
-        {isFilledResult && <p className={styles.filledLegend}><mark className={styles.filled}>이렇게 표시된 부분</mark>은 비어 있거나 짧았던 곳을 채운 <b>제안</b>입니다. 없는 경험·수치는 넣지 않았지만, 사실과 다르면 직접 고쳐 주세요.</p>}
+        {isFilledResult && <p className={styles.filledLegend}><mark className={styles.filled}>파란색</mark>은 <b>원문에서 달라진 부분</b>입니다. 표현만 다듬은 곳도 포함되니, 새로 채워진 내용인지는 왼쪽 원문과 비교해 확인해 주세요. 없는 경험·수치는 넣지 않았지만 <b>제안</b>이므로 사실과 다르면 직접 고치시면 됩니다.</p>}
         {result.questions.map((question) => {
           const answer = answers[question.id] ?? question.revisedAnswer;
           const isEditing = editing === question.id;
@@ -274,7 +285,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
-            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}</section></div>
+            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;

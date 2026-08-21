@@ -462,3 +462,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: 전체 `npx vitest run` 272 passed(이번 추가 2건), `npx tsc --noEmit` clean, ESLint 오류 0건.
 - Rollback/recovery reference: 커밋 revert. 저장된 결과에는 영향이 없습니다(제약을 푸는 방향이라 기존 데이터는 모두 계속 통과).
 - 남은 개선: 조립 단계 `ZodError`가 `repository.fail`을 거치지 않아 실행이 `RUNNING`에 남습니다. 실패로 기록하고 재시도 가능하게 만드는 편이 안전합니다. 별도 판단 필요.
+
+## 2026-08-22 — Claude: BUILD가 분량을 늘리지 않고 줄이던 문제 + 표시 문구 정정
+
+- Agent/session: Claude. 사용자가 "문항 1이 첨삭 전 540자인데 최종 503자, 700자 목표인데 왜 줄었냐"고 보고했습니다.
+- Status: completed.
+- 문제 1 (실제 결함): BUILD가 채우지 않고 압축했습니다. 원인은 목표 글자 수 지시문 자체에 빠져나갈 구멍이 있었기 때문입니다 — "목표 글자 수에 가깝게 채우되, **채울 근거가 없으면 억지로 늘리지 말고**"라고 같은 문장 안에서 면책을 줬고, 프롬프트 전반이 반복·일반론·임의 수치 금지로 채워져 있어 모델에게 가장 안전한 선택이 압축이었습니다. 짧아지면 안 된다는 금지도 없었습니다.
+- Change 1: BUILD 모드 문장에 "이 단계에서 글을 압축하거나 요약하지 마세요" 추가. 목표 글자 수 지시문을 교체 — 원문이 목표에 못 미치면 늘리고, **첨삭본이 원문보다 짧아지면 안 되며**(원문이 이미 목표를 넘은 경우 제외), 늘리는 방법은 새 사실 추가가 아니라 원문에 있는 경험을 더 구체적으로 푸는 것(무엇을 왜 했는지, 어떻게 판단했는지, 무엇이 어려웠는지, 무엇을 배웠는지)임을 명시. `QUICK_PROMPT_VERSION` `quick-1.9` → `quick-2.0`.
+- 문제 2 (표시 문구): 첨삭본 거의 전체가 파랗게 칠해졌습니다. `diffText`가 단어 단위인데 한국어는 어미가 붙어 문장을 다시 쓰면 대부분의 단어가 다른 토큰이 되기 때문입니다. 표시 자체는 정확했으나 범례가 "비어 있거나 짧았던 곳을 채운 제안"이라고 해서, 지원자가 직접 쓴 내용을 다시 쓴 부분까지 우리가 채운 것처럼 과장했습니다.
+- Change 2: 인라인 표시는 사용자 요청에 따라 **그대로 유지**하고 범례만 사실에 맞게 정정 — "파란색은 원문에서 달라진 부분입니다. 표현만 다듬은 곳도 포함되니, 새로 채워진 내용인지는 왼쪽 원문과 비교해 확인해 주세요." 원문이 아예 없던 문항에만 "전체가 새로 쓴 제안"을 별도로 표시합니다.
+- 작업 중 되돌린 것: 표시를 문장 단위 안내로 바꾸는 안을 만들었다가, 사용자가 "그전이 나았다"고 해서 인라인 표시를 복원했습니다. 과장 문제는 범례 문구로만 해결했습니다.
+- Files/branch: `src/server/ai/quick/prompt.ts` + 테스트, `src/components/result-workspace-complete.tsx` + `.module.css` + 테스트 on `main`.
+- Validation: 전체 `npx vitest run` 274 passed(이번 추가 3건), `npx tsc --noEmit` clean, ESLint 오류 0건.
+- Rollback/recovery reference: 커밋 revert. 저장된 결과·스키마·가격에는 영향 없음.

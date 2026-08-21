@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.9";
+export const QUICK_PROMPT_VERSION = "quick-2.0";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -20,7 +20,7 @@ const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> =
   // BUILD used to behave like POLISH: it read the materials and still left the
   // blank question blank. "내용 보완"이라는 이름값을 하도록 바꾼 결정은
   // docs/build-mode-fill-in-decision.md 참고.
-  BUILD: "작성 단계: 내용 보완. 비어 있거나 분량이 부족한 문항을 실제로 채워 완성된 답변을 만드세요. 지원자가 이미 쓴 문장은 유지하고 그 뒤를 이어서 씁니다.",
+  BUILD: "작성 단계: 내용 보완. 비어 있거나 분량이 부족한 문항을 실제로 채워 완성된 답변을 만드세요. 지원자가 이미 쓴 문장은 유지하고 그 뒤를 이어서 씁니다. 이 단계에서 글을 압축하거나 요약하지 마세요.",
   // In this stage the "원문" is not a draft: it is the ordered notes the
   // applicant filled in on the guided screen. Treating it as prose to polish
   // returns the notes back almost unchanged.
@@ -61,7 +61,14 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     // Branching rather than editing: this line is shared with CREATE and POLISH,
     // and rewriting it in place would change what those two modes do.
     fillsBlankQuestions(request)
-      ? `목표 글자 수: 공백 제외 ${request.targetLength}자. 각 문항을 목표 글자 수에 가깝게 채우되, 채울 근거가 없으면 억지로 늘리지 말고 무엇을 더 알려주면 채울 수 있는지 consultingAdvice에 적으세요. 분량을 맞추려고 같은 말을 반복하거나 일반론을 덧붙이지 마세요.`
+      // The first version of this line ended with an escape hatch, and the
+      // model took it: a 540-character answer came back at 503 against a 700
+      // target. Shrinking is now named as the failure it is, and the way to
+      // lengthen — expanding what is already there — is spelled out, so
+      // "don't invent" does not get read as "don't extend".
+      ? `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문이 목표에 못 미치는 문항은 목표 글자 수에 가깝게 늘리세요. **첨삭본이 원문보다 짧아지면 안 됩니다**(원문이 이미 목표를 넘은 경우는 예외입니다).
+분량을 늘리는 방법은 새로운 사실을 지어내는 것이 아니라, 원문에 이미 있는 경험을 더 구체적으로 푸는 것입니다. 무엇을 왜 했는지, 어떻게 판단했는지, 무엇이 어려웠는지, 무엇을 배웠는지를 원문의 사실 범위 안에서 풀어 쓰세요.
+같은 말을 반복하거나 일반론을 덧붙여 글자 수만 채우지 마세요. 그렇게까지 해도 목표에 닿지 않으면 거기서 멈추고, 무엇을 더 알려주면 채울 수 있는지 consultingAdvice에 적으세요.`
       : `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.`,
     WRITING_MODE_INSTRUCTION[request.writingMode],
     // A posting for a large employer often covers several positions at once.
