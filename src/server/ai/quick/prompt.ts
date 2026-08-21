@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-1.5";
+export const QUICK_PROMPT_VERSION = "quick-1.6";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -60,9 +60,24 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     `분석 대상은 총 ${questions.length}개 문항입니다. revisions 배열에 questionOrder 1부터 ${questions.length}까지 각 문항의 수정본을 정확히 하나씩 모두 반환하세요.`,
     "하위 호환용 revision 필드에는 1번 문항과 동일한 수정본을 반환하세요.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
+    // The applicant saw a phrase praised as 좋은 표현 and then found it missing
+    // from the final draft, with no explanation. The two came out of the same
+    // response without either one looking at the other; now the judgement is
+    // made first and the rewrite has to honour it.
+    "각 문항은 반드시 이 순서로 작업하세요. ① originalAnnotations로 제출 원문을 먼저 평가한다 ② 그 평가에 맞춰 revisedAnswer를 쓴다. 평가와 수정본이 서로 어긋나서는 안 됩니다.",
+    "good으로 표시한 표현의 내용은 revisedAnswer에 반드시 남아야 합니다. 표현을 자연스럽게 다듬는 것은 괜찮지만 통째로 빼지 마세요.",
+    "원문에 있던 내용을 revisedAnswer에서 뺐다면, 그 문장에 대한 originalAnnotations 항목을 만들고 comment에 왜 뺐는지 적으세요. 설명 없이 사라지는 문장이 있어서는 안 됩니다.",
+    // Wholesale rewriting is what a free chatbot already does. What is sold
+    // here is the applicant's own document, improved — a draft they can still
+    // defend in the interview room.
+    "각 문항에서 원문 문장 중 최소 하나는 거의 그대로 유지하세요. 지원자가 쓴 문장이 하나도 남지 않은 첨삭본은 첨삭이 아니라 대필입니다. 원문 전체를 쓸 수 없다고 판단했다면 그렇게 판단한 이유를 consultingAdvice에 적으세요.",
     "각 revision의 originalAnnotations에는 제출 원문에서 짚어줄 표현을 최대 10개까지 넣으세요. 개수를 채우기 위해 억지로 만들지 마세요.",
     "originalAnnotations.phrase는 해당 문항의 원문 답변에 실제로 한 번만 등장하는 문구를 토씨와 띄어쓰기까지 그대로 복사하세요. 낱말 하나만 잘라내지 말고, 문제나 강점이 드러나는 구절이나 문장 단위로 잡으세요.",
-    "originalAnnotations.type은 good(이미 잘 쓴 표현), delete(두면 신뢰나 전달력을 해치는 표현), vague(구체성이 부족한 표현), revise(의미는 있으나 다듬을 표현), fact(원문만으로는 사실 확인이 되지 않는 성과·수치·역할) 중 하나만 사용하세요.",
+    "originalAnnotations.type은 good, delete, vague, revise, fact 중 하나만 사용하세요.",
+    // good used to mean "not bad", so the model praised sentences it went on to
+    // delete. It now means a commitment: this sentence survives.
+    "good은 '나쁘지 않다'가 아니라 '고칠 필요가 없어서 최종 첨삭본에 그대로 넣을 문장'에만 주세요. 뺄 문장이라면 절대 good으로 표시하지 마세요.",
+    "delete는 두면 신뢰나 전달력을 해치는 표현, vague는 구체성이 부족한 표현, revise는 의미는 있으나 다듬을 표현, fact는 원문만으로 사실 확인이 되지 않는 성과·수치·역할입니다.",
     "originalAnnotations.type은 한 문항 안에서 한 종류로 쏠리지 않게 하고, 잘 쓴 부분이 있으면 good도 반드시 포함하세요. 순서만 바뀐 문장은 delete가 아닙니다.",
     "originalAnnotations.comment에는 그 표현이 왜 문제인지(또는 왜 좋은지)만 적으세요. 다른 화면을 확인하라는 안내나 일반론은 넣지 마세요.",
     "originalAnnotations.suggestion에는 지원자가 그대로 참고할 수 있는 고쳐 쓴 예시 문장을 한 줄로 적으세요. 원문에 없는 경험·수치·성과를 넣지 말고, 예시를 제시할 수 없으면 null로 두세요. good과 fact처럼 고쳐 쓸 것이 없으면 null이 정상입니다.",
@@ -85,12 +100,15 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     // PRO run in POLISH read the résumé and did nothing with it.
     ...(hasSupportingMaterials(request)
       ? [
-          "이력서·경력기술서·포트폴리오·추가 경험 자료가 함께 제공됩니다. 자소서 문항의 주장이 얇을 때 이 자료에서 확인되는 사실(기간, 소속, 역할, 담당 업무)로 뒷받침하세요. 자료에 없는 내용은 만들지 마세요.",
+          "이력서·경력기술서·포트폴리오·추가 경험 자료가 함께 제공됩니다. 자소서 문항의 주장이 얇을 때 이 자료에서 확인되는 사실(기간, 소속, 역할, 담당 업무, 수치)로 뒷받침하세요. 수정 이유와 우선순위의 근거는 자소서 원문 또는 이 지원자료에서 실제 문구를 인용하세요. 자료에 없는 내용은 만들지 마세요.",
           "자소서와 지원자료가 서로 어긋나면(기간, 직함, 소속, 성과) 어느 쪽이 맞는지 단정하지 말고 verificationQuestions에 확인 질문으로 남기세요.",
         ]
       : []),
     "consultingAdvice의 remove 제안은 '없어도 되는 문장'이 아니라 '두면 감점 요인이 되는 문장'만 대상으로 하세요. rationale에 무엇이 왜 문제인지 원문 근거와 함께 적고, 단순히 분량을 줄이기 위한 삭제는 제안하지 마세요.",
     "consultingAdvice의 모든 항목은 지원자가 바로 실행할 수 있는 구체적 행동이어야 합니다. '더 구체적으로 쓰세요' 같은 일반론은 넣지 마세요.",
+    // The final tab is a view of these same revisions, so the only place a
+    // whole-document pass can happen is here, after every question is written.
+    "모든 문항의 revisedAnswer를 정한 뒤 전체를 다시 읽고 정리하세요. 문항 간에 같은 경험이 반복되면 한 문항에서만 자세히 쓰고 나머지 문항은 다른 경험이나 다른 측면으로 조정하세요. 이 화면의 문항별 첨삭본이 그대로 최종 제출본이 됩니다.",
     ...(getUnansweredQuestions(request).length > 0
       ? ["아직 작성되지 않은 문항은 revisions에 넣지 마세요. 다만 지원서 전체 구성을 판단할 때 참고하고, 필요하면 verificationQuestions나 consultingAdvice에서 언급하세요."]
       : []),

@@ -71,3 +71,14 @@ describe("PRO 요청 스키마", () => {
     }
   });
 });
+
+describe("생성 순서", () => {
+  it("원문 평가가 수정본보다 먼저 오도록 필드 순서를 잡는다", () => {
+    const revision = (getQuickAnalysisJsonSchema("QUICK") as unknown as {
+      properties: { revision: { properties: Record<string, unknown> } };
+    }).properties.revision.properties;
+    const order = Object.keys(revision);
+
+    expect(order.indexOf("originalAnnotations")).toBeLessThan(order.indexOf("revisedAnswer"));
+  });
+});

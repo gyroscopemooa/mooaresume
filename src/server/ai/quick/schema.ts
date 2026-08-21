@@ -8,7 +8,12 @@ const quickEvidenceReasonSchema = z.object({ reason: z.string().min(1), evidence
 // must never let through silently, and verificationNote alone never says which
 // sentence it means.
 const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type: z.enum(["good", "delete", "vague", "revise", "fact"]), comment: z.string().min(1), suggestion: z.string().nullable() });
-const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
+// Field order is the generation order: a model writes these properties top to
+// bottom, so judging the submitted text *before* rewriting it is the whole
+// reason originalAnnotations comes first. With the revision written first, the
+// annotations were produced after the fact and could praise a sentence the
+// revision had already deleted. Ordering only — nothing stored changes.
+const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
 const legacyQuickRevisionSchema = quickRevisionSchema.omit({ questionOrder: true });
 
 // PRO is sold on two things QUICK does not promise: matching the posting's

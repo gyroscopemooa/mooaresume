@@ -269,3 +269,43 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Rollback/recovery reference: (A) 프롬프트의 `hasJobPosting`/`hasSupportingMaterials` 분기와 두 헬퍼를 제거하고 버전을 `quick-1.4`로 환원, (B) `buildSupportingSections`를 이전 인라인 `flatMap`으로 되돌리기, (D) `guided-create.*`와 `guided-create-form.*`를 삭제하고 `pro-input-page.tsx`의 CREATE 분기를 이전 `createEmpty` 섹션으로, 차단 조건을 `mode !== "CREATE" && !hasCoverLetterAnswer`로 되돌리기. 저장된 결과와 진행 중인 분석에는 영향이 없습니다.
 - Known limits: Guided CREATE는 1단계입니다. 질문지가 고정이고, 공고·이력서를 읽어 문항별 소재를 AI가 추천하거나 부족한 사실을 되묻는 부분(가격표의 "문항별 소재 추천", "부족 정보 AI 질문", "문항별 개요 생성")은 아직 없습니다. 그 단계는 호출이 늘어나므로 가격 재검토가 필요합니다.
 - User decision: 사용자가 A·B·D 진행을 지시했고, C(결제 전 차단)는 런칭 전이라는 이유로 생략하고 D로 바로 가라고 했습니다.
+
+## 2026-08-22 — PRO 추가 경험 근거 검증 정합성 보정
+
+- Agent/session: Codex, current session.
+- Status: proposed.
+- Protected baseline: current QUICK validation behavior and all existing result/dashboard variants.
+- Change and reason: PRO already sends user-entered additional experience, resume, career-document, and portfolio text to the one analysis request, but the post-response validator checks only cover-letter text. A fact such as a user-entered work period or metric can therefore be treated as fabricated and block the run. Make the validator accept candidate facts found in PRO supporting material while never treating the job posting as a candidate-fact source; retain the existing strict QUICK behavior.
+- Files/branch: planned focused edits to `src/server/ai/quick/validator.ts`, `provider.ts`, execution route, prompt wording, and targeted tests on `main`.
+- Validation: pending targeted tests, TypeScript, and lint.
+- Rollback/recovery reference: revert only this focused validator/request-context change; no schemas, database records, or stored user documents are changed.
+- User decision: user explicitly requested the fix after reproducing a PRO failure with pasted additional experience information.
+
+## 2026-08-22 — PRO 추가 경험 근거 검증 정합성 보정 (completed locally)
+
+- Agent/session: Codex, current session.
+- Status: active local change; not committed or deployed.
+- Protected baseline: current QUICK validation behavior and all result/dashboard variants remain unchanged.
+- Change and reason: PRO validation now accepts candidate facts and numeric values present in the submitted cover letter or PRO supporting materials. Job-posting text remains excluded from this fact source, so employer requirements cannot be turned into applicant experience. QUICK remains limited to the cover-letter source.
+- Files/branch: `src/server/ai/quick/validator.ts`, `src/server/ai/quick/provider.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`, `src/server/ai/quick/prompt.ts`, and new `src/server/ai/quick/validator.test.ts` on dirty `main`.
+- Validation: targeted PRO/QUICK validation and prompt tests (13 passed), `npx tsc --noEmit`, targeted ESLint, and `git diff --check` passed.
+- Rollback/recovery reference: revert only the files above; no migration, stored user data, API call count, or output schema changed.
+- User decision: user approved the repair and asked whether it would add API/token cost. It reuses the existing single PRO request and existing 30,000-character supporting-material budget; it makes no additional OpenAI request.
+
+## 2026-08-22 — Claude: 제출본 평가와 첨삭본의 일관성 (평가 먼저, 그다음 수정)
+
+- Agent/session: Claude, this session. 사용자가 "제출본에서 좋은 표현이라 해놓고 최종 첨삭본에서는 삭제됐다"고 보고한 뒤, 어디까지 살릴지 함께 정리하고 진행 지시를 받았습니다.
+- Status: completed locally.
+- Protected baseline: 결과 화면 변형 전부, Guided CREATE, 결제·분석 파이프라인 구조 — 수정하지 않았습니다. **같은 시각 Codex가 작업 중인 `validator.ts`, `provider.ts`, `execute/route.ts`, `validator.test.ts`도 건드리지 않았습니다.**
+- Codex와의 겹침: `prompt.ts`는 두 에이전트가 같은 시간대에 수정했습니다. Claude가 파일을 읽고 수정해 다시 쓰는 시점에 Codex의 지원자료 근거 문구(103행, "…담당 업무, 수치…" 및 근거 인용 문장)가 이미 들어 있었고, 그 줄은 그대로 보존했습니다(`git diff`로 확인). 커밋에는 그 한 줄이 함께 포함됩니다.
+- Change and reason (1) 생성 순서: `quickRevisionSchema`에서 `originalAnnotations`를 `revisedAnswer` **앞으로** 옮겼습니다. 모델은 JSON 속성을 위에서 아래로 생성하므로, 지금까지는 수정본을 먼저 쓴 뒤 주석을 달았습니다. 그래서 이미 삭제한 문장을 "좋은 표현"이라고 칭찬하는 일이 구조적으로 가능했습니다. 순서만 바꾼 것이며 저장 형식·파싱·기존 데이터에는 영향이 없습니다.
+- Change and reason (2) `good`의 정의를 좁힘: 기존 "이미 잘 쓴 표현"은 너무 느슨해 "나쁘지 않음"에도 붙었습니다. **"고칠 필요가 없어서 최종 첨삭본에 그대로 넣을 문장"**으로 좁히고, 뺄 문장이면 애초에 good을 주지 말라고 명시했습니다. 삭제 추천에 이미 적용된 엄격함("없어도 되는 문장이 아니라 두면 감점되는 문장")을 칭찬 쪽에도 맞춘 것입니다.
+- Change and reason (3) 말없이 사라지는 문장 금지: good으로 표시한 내용은 수정본에 반드시 남기고, 원문에서 뺀 내용이 있으면 그 문장에 대한 주석을 만들어 comment에 왜 뺐는지 적게 했습니다. 삭제를 금지하지는 않습니다 — 설명 없는 삭제만 금지합니다. 사용자가 화난 지점은 삭제가 아니라 설명 없는 모순이었습니다.
+- Change and reason (4) 대필 방지: 문항마다 원문 문장 중 최소 하나는 거의 그대로 유지하게 했습니다. "지원자가 쓴 문장이 하나도 남지 않은 첨삭본은 첨삭이 아니라 대필"이라는 기준을 프롬프트에 명시했습니다. 원문 전체가 사용 불가 수준이면 그 판단 이유를 consultingAdvice에 적게 했습니다. 이 제품이 무료 챗봇과 갈라서는 지점이라는 사용자 판단을 그대로 반영했습니다.
+- Change and reason (5) 전체 정리 단계: 최종 첨삭본 탭은 문항별 첨삭을 재배치한 화면일 뿐 별도 산출물이 아닙니다. 그래서 전체를 다시 보는 일은 문항별 첨삭 안에서 일어나야 합니다. 모든 문항을 쓴 뒤 전체를 다시 읽고 문항 간 경험 중복을 조정하라는 지시를 마지막에 두었습니다. 호출을 2회로 늘리는 방안(첨삭 → 최종 정리)은 채택하지 않았습니다. 순서 지시만으로 어디까지 되는지 먼저 보고 판단하기로 했습니다.
+- Cost note: 호출 횟수·출력 분량 변화 없음. 지시문 몇 줄이 입력에 추가될 뿐입니다. `QUICK_PROMPT_VERSION` `quick-1.5` → `quick-1.6`.
+- Files/branch: `src/server/ai/quick/prompt.ts`(+ Codex 한 줄 포함), `src/server/ai/quick/schema.ts`(필드 순서만), `prompt.test.ts`, `schema.test.ts` on `main`.
+- Validation: 전체 `npx vitest run` 251 passed(Codex의 `validator.test.ts` 포함); `npx tsc --noEmit` clean; `npx eslint src` 전체 clean. 두 에이전트의 변경이 함께 있는 상태로 통과했습니다.
+- Rollback/recovery reference: `schema.ts`에서 `originalAnnotations`를 `revisedAnswer` 뒤로 되돌리고, `prompt.ts`에서 이번에 추가한 지시문 7줄을 제거한 뒤 `good` 정의를 이전 한 줄로 합치면 됩니다. 버전은 `quick-1.5`로 환원. 저장된 결과에는 영향이 없습니다.
+- Known limits: 이 변경은 강제가 아니라 유도입니다. 필드 순서와 지시문으로 모델이 앞선 판단을 지키도록 만들지만 100%는 아닙니다. `good` 표현이 최종본에 남았는지 기계적으로 검사하는 장치는 아직 없습니다 — 한 번 돌려보고 실제 준수율을 본 뒤 검사 추가 여부를 정하기로 했습니다.
+- User decision: 사용자가 "살리는 쪽이 맞다, 다 뜯어고치면 챗지피티와 다를 게 없다"고 방향을 정했고, 최종 첨삭본이 제출본 피드백을 참고해 정리되는 흐름이 맞다고 판단했습니다. 다른 부분은 손대지 말라고 명시했습니다.

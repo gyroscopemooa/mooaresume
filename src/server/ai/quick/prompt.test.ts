@@ -95,3 +95,30 @@ describe("지원자료 분량 상한", () => {
     expect(usedNa).toBeLessThanOrEqual(SUPPORTING_CHARACTER_BUDGET - 20_000);
   });
 });
+
+describe("제출본 평가와 첨삭본의 일관성", () => {
+  it("원문을 먼저 평가하고 그 평가에 맞춰 고치라고 순서를 정한다", () => {
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("① originalAnnotations로 제출 원문을 먼저 평가한다");
+    expect(instructions).toContain("평가와 수정본이 서로 어긋나서는 안 됩니다");
+  });
+
+  it("good은 최종본에 남길 문장에만 주도록 좁힌다", () => {
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("뺄 문장이라면 절대 good으로 표시하지 마세요");
+    expect(instructions).toContain("good으로 표시한 표현의 내용은 revisedAnswer에 반드시 남아야 합니다");
+  });
+
+  it("설명 없이 사라지는 문장을 금지하고 원문 문장을 최소 하나 남기게 한다", () => {
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("설명 없이 사라지는 문장이 있어서는 안 됩니다");
+    expect(instructions).toContain("최소 하나는 거의 그대로 유지하세요");
+  });
+
+  it("모든 문항을 쓴 뒤 전체를 다시 보고 정리하게 한다", () => {
+    expect(buildQuickAnalysisInstructions(request)).toContain("모든 문항의 revisedAnswer를 정한 뒤 전체를 다시 읽고 정리하세요");
+  });
+});
