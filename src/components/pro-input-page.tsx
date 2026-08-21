@@ -11,6 +11,7 @@ import { JobPostingInput } from "@/components/job-posting-input";
 import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake";
 import { AdditionalInfoInput } from "@/components/additional-info-input";
 import { MaterialUpload } from "@/components/material-upload";
+import { isLinkOnlyPosting } from "@/domain/job-posting-source";
 import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import {
   candidateMaterialDraftSchema,
@@ -100,6 +101,8 @@ export function ProInputPage({ mode }: Props) {
   const [freeformNotes, setFreeformNotes] = useState("");
   const [freeformAttachments, setFreeformAttachments] = useState<CandidateFreeformAttachment[]>([]);
   const [materialAttachments, setMaterialAttachments] = useState<CandidateMaterialAttachment[]>([]);
+  const [companyName, setCompanyName] = useState("");
+  const [roleName, setRoleName] = useState("");
   const [writingStyle, setWritingStyle] = useState<WritingStyle>("BALANCED");
   const [resetKey, setResetKey] = useState(0);
 
@@ -120,6 +123,8 @@ export function ProInputPage({ mode }: Props) {
     setFreeformNotes("");
     setFreeformAttachments([]);
     setMaterialAttachments([]);
+    setCompanyName("");
+    setRoleName("");
     setWritingStyle("BALANCED");
     setResetKey((key) => key + 1);
   }
@@ -153,6 +158,8 @@ export function ProInputPage({ mode }: Props) {
       targetLength: 700,
       temporaryWritingMode: mode,
       selectedProduct: "PRO",
+      companyName: companyName.trim() || undefined,
+      roleName: roleName.trim() || undefined,
       writingStyle,
       sourceFilename: resumeFile?.filename,
       sourceFileExtension: resumeFile?.extension,
@@ -173,6 +180,7 @@ export function ProInputPage({ mode }: Props) {
   }
 
   const hasPostingSource = Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length);
+  const linkOnlyPosting = isLinkOnlyPosting({ url: postingUrl, text: posting, filenames: postingFilenames });
   const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
   const blockedReason = !hasPostingSource
     ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."
@@ -197,6 +205,12 @@ export function ProInputPage({ mode }: Props) {
       <section className={styles.form}>
 
         <JobPostingInput url={postingUrl} text={posting} filenames={postingFilenames} onUrlChange={setPostingUrl} onTextChange={setPosting} onFilenamesChange={setPostingFilenames}/>
+        {linkOnlyPosting && <p className={styles.postingWarning}><b>링크만으로는 공고 내용을 읽을 수 없어요.</b> 이 서비스는 링크를 열지 않고 입력된 글자만 분석합니다. 지금 진행하면 공고 요구사항 대조는 제공되지 않습니다. 위 &lsquo;링크 내용 불러오기&rsquo;를 누르거나, 공고 상세 내용을 복사해 붙여넣어 주세요.</p>}
+        <div className={styles.targetFields}>
+          <label><span>지원 회사 <b>선택</b></span><input value={companyName} maxLength={120} onChange={(event) => setCompanyName(event.target.value)} placeholder="예: 롯데테크"/></label>
+          <label><span>지원 직무 <b>선택</b></span><input value={roleName} maxLength={120} onChange={(event) => setRoleName(event.target.value)} placeholder="예: 안전관리자"/></label>
+        </div>
+        <p className={styles.targetHint}>공고 하나에 여러 직무가 있을 때 어느 직무 기준으로 볼지 알려주시면, 그 직무의 요구사항만 대조합니다. 비워두면 공고 전체를 기준으로 봅니다.</p>
         {mode === "CREATE" ? <section className={styles.createEmpty}><FilePenLine/><div><b>아직 작성한 자기소개서가 없어요.</b><p>바로 문장을 만들지 않고 아래 지원자료와 경험을 정리한 뒤, 문항별 소재와 필요한 사실부터 확인합니다.</p></div></section> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}</div>}
         <section className={styles.optionalMaterials}>
           <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>종류별 여러 파일 · 최대 10개</small></div>

@@ -15,6 +15,11 @@ export const guestDraftSchema = z.object({
   temporaryWritingMode: z.enum(["CREATE", "BUILD", "POLISH"]).optional(),
   writingStyle: writingStyleSchema.default("BALANCED"),
   selectedProduct: z.enum(["QUICK", "PRO"]).optional(),
+  // Collected at input so a posting listing several positions can say which
+  // one the applicant is going for. Optional: drafts saved before these
+  // existed still parse.
+  companyName: z.string().max(120).optional(),
+  roleName: z.string().max(120).optional(),
   savedAt: z.string().datetime(),
 });
 export type GuestDraft = z.infer<typeof guestDraftSchema>;

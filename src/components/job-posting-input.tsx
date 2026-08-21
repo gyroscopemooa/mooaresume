@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Image as ImageIcon, Link2, Paperclip, X } from "lucide-react";
+import { Download, FileText, Image as ImageIcon, Link2, LoaderCircle, Paperclip, X } from "lucide-react";
 import { countNonWhitespaceCharacters } from "@/domain/usage-entitlement";
+import { findJobPostingUrl, parseJobPostingInput } from "@/domain/job-posting-source";
 import styles from "./job-posting-input.module.css";
 
 type Props = {
@@ -14,7 +15,7 @@ type Props = {
   onFilenamesChange: (value: string[]) => void;
 };
 
-const urlPattern = /https?:\/\/[^\s]+/i;
+
 
 export function JobPostingInput({
   url,
@@ -25,14 +26,50 @@ export function JobPostingInput({
   onFilenamesChange,
 }: Props) {
   const [dragging, setDragging] = useState(false);
+  const [loadingLink, setLoadingLink] = useState(false);
+  const [linkMessage, setLinkMessage] = useState("");
   const value = text || url;
-  const detectedUrl = value.match(urlPattern)?.[0] ?? url;
+  const detectedUrl = findJobPostingUrl(value) || url;
 
   function update(valueNext: string) {
-    const trimmed = valueNext.trim();
-    const matchedUrl = valueNext.match(urlPattern)?.[0] ?? "";
-    onUrlChange(matchedUrl);
-    onTextChange(/^https?:\/\/\S+$/i.test(trimmed) ? "" : valueNext);
+    const parsed = parseJobPostingInput(valueNext);
+    onUrlChange(parsed.url);
+    onTextChange(parsed.text);
+  }
+
+  /**
+   * Experimental. Nothing here opens the link during analysis — the fetched
+   * text is written straight into the field above so the applicant reads and
+   * corrects it before paying. When a posting cannot be read (details drawn by
+   * script, or posted as an image) we say so rather than guessing.
+   */
+  async function loadLink() {
+    if (!detectedUrl || loadingLink) return;
+    setLoadingLink(true);
+    setLinkMessage("");
+    try {
+      const response = await fetch("/api/job-postings/fetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: detectedUrl }),
+      });
+      const result: unknown = await response.json();
+      const parsed = result && typeof result === "object" ? result as Record<string, unknown> : {};
+      if (parsed.ok === true && typeof parsed.text === "string") {
+        onTextChange(`${detectedUrl}
+
+${parsed.text}`);
+        setLinkMessage(parsed.truncated === true
+          ? "공고 내용을 가져왔어요. 너무 길어 앞부분만 담았으니 확인해 주세요."
+          : "공고 내용을 가져왔어요. 내용이 맞는지 확인하고 필요하면 고쳐 주세요.");
+        return;
+      }
+      setLinkMessage("이 링크에서는 공고 내용을 읽지 못했어요. 공고 상세 내용을 복사해 붙여넣어 주세요.");
+    } catch {
+      setLinkMessage("공고를 가져오지 못했어요. 공고 상세 내용을 복사해 붙여넣어 주세요.");
+    } finally {
+      setLoadingLink(false);
+    }
   }
 
   function addFiles(fileList: FileList | null) {
@@ -115,12 +152,20 @@ export function JobPostingInput({
               }}
             />
           </label>
+          {detectedUrl && (
+            <button type="button" className={styles.linkLoad} onClick={() => void loadLink()} disabled={loadingLink}>
+              {loadingLink ? <LoaderCircle className={styles.spin} /> : <Download />}
+              {loadingLink ? "불러오는 중" : "링크 내용 불러오기"}
+              <small>실험적</small>
+            </button>
+          )}
           <span>
             공백 제외 {countNonWhitespaceCharacters([text]).toLocaleString()} /
             20,000자
           </span>
         </footer>
         <p className={styles.dropHint}>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요.</p>
+        {linkMessage && <p className={styles.linkMessage}>{linkMessage}</p>}
       </div>
       {sourceLabel && (
         <div className={styles.detected}>

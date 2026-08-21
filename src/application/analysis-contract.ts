@@ -25,6 +25,11 @@ export const analysisRequestSchema = z.object({
   writingMode: z.enum(["CREATE", "BUILD", "POLISH"]),
   writingStyle: writingStyleSchema,
   targetLength: z.number().int().min(100).max(3000),
+  // A posting can list several positions. Saying which one the applicant is
+  // going for is the difference between matching their requirements and
+  // matching all four positions at once.
+  companyName: z.string().max(120).optional(),
+  roleName: z.string().max(120).optional(),
   documents: z.array(analysisDocumentInputSchema).min(1),
   questions: z.array(analysisQuestionInputSchema).min(1).max(20).optional(),
 });

@@ -102,7 +102,9 @@ export function ApplicationCaseHandoff({ guest }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: "새 지원서",
+          title: guest.companyName?.trim() || "새 지원서",
+          companyName: guest.companyName,
+          roleName: guest.roleName,
           product: guest.selectedProduct ?? "QUICK",
           writingMode: guest.temporaryWritingMode ?? "POLISH",
           writingStyle: guest.writingStyle,

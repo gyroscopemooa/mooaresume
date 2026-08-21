@@ -40,6 +40,14 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
         : "작성 스타일: 균형 있게. 사실을 보존하면서 경험의 의미와 전달력을 자연스럽게 강화하세요.",
     `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.`,
     WRITING_MODE_INSTRUCTION[request.writingMode],
+    // A posting for a large employer often covers several positions at once.
+    // Without this the analysis matches every requirement on the page.
+    ...(request.roleName?.trim()
+      ? [`지원 직무는 "${request.roleName.trim()}"입니다. 채용공고에 여러 직무가 함께 적혀 있으면 이 직무의 요구사항만 대조하고, 다른 직무의 요건은 근거로 쓰지 마세요.`]
+      : []),
+    ...(request.companyName?.trim()
+      ? [`지원 회사는 "${request.companyName.trim()}"입니다. 회사명을 언급할 때 이 이름만 사용하고, 회사에 대해 제공되지 않은 사실은 만들지 마세요.`]
+      : []),
     `분석 대상은 총 ${questions.length}개 문항입니다. revisions 배열에 questionOrder 1부터 ${questions.length}까지 각 문항의 수정본을 정확히 하나씩 모두 반환하세요.`,
     "하위 호환용 revision 필드에는 1번 문항과 동일한 수정본을 반환하세요.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
@@ -93,6 +101,8 @@ export function buildQuickAnalysisInput(request: AnalysisRequest) {
 
   return [
     `[요청 ID] ${request.requestId}`,
+    ...(request.companyName?.trim() ? [`[지원 회사] ${request.companyName.trim()}`] : []),
+    ...(request.roleName?.trim() ? [`[지원 직무] ${request.roleName.trim()}`] : []),
     `[작성 단계] ${request.writingMode}`,
     `[작성 스타일] ${request.writingStyle}`,
     `[자기소개서 문항별 원문 - 총 ${questions.length}개]`,

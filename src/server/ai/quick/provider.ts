@@ -55,11 +55,15 @@ function recoverHighlight(revisedAnswer: string, phrase: string): string | null 
  * that rendered verbatim on the applicant's own result screen. Name the thing
  * that was actually analysed instead, and never invent an employer.
  */
-function describeSubject(filename: string | undefined) {
+function describeSubject(request: AnalysisRequest, filename: string | undefined) {
+  const company = request.companyName?.trim();
+  const role = request.roleName?.trim();
+  if (company) return { company, role: role || "자기소개서 첨삭", applicationLabel: "자기소개서 첨삭" };
+
   const documentName = filename?.replace(/\.[^.]+$/, "").trim();
   return {
     company: documentName || "내 자기소개서",
-    role: "자기소개서 첨삭",
+    role: role || "자기소개서 첨삭",
     applicationLabel: "자기소개서 첨삭",
   };
 }
@@ -82,7 +86,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
   });
 
   return resultDocumentSchema.parse({
-    schemaVersion: "1.0", caseId: request.requestId, product: request.product, isSample: false, ...describeSubject(source.filename), analyzedAt: new Date().toISOString(),
+    schemaVersion: "1.0", caseId: request.requestId, product: request.product, isSample: false, ...describeSubject(request, source.filename), analyzedAt: new Date().toISOString(),
     analysisRun: { provider: "openai", responseId: gatewayResult.execution.responseId, model: gatewayResult.execution.model, promptVersion: gatewayResult.execution.promptVersion, rubricVersion: gatewayResult.execution.rubricVersion, schemaVersion: gatewayResult.execution.schemaVersion, inputTokens: gatewayResult.execution.inputTokens, outputTokens: gatewayResult.execution.outputTokens, totalTokens: gatewayResult.execution.totalTokens },
     readiness: output.readiness,
     attachments: source.filename ? [{ id: `${request.requestId}-source`, filename: source.filename, extension: source.filename.split(".").pop()?.toUpperCase() || "TEXT", sizeBytes: new TextEncoder().encode(source.text).length, parseStatus: "ready", parserLabel: "Source document", sectionCount: questions.length }] : [],
