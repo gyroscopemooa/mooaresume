@@ -13,7 +13,13 @@ afterEach(cleanup);
 
 describe("ResultWorkspaceComplete 제출본 탭", () => {
   it("저장된 구버전 결과도 실제 원문과 첨삭 차이로 표시한다", () => {
-    render(<ResultWorkspaceComplete result={sampleResultDocument}/>);
+    // 주석이 한 문항에도 없는 결과라야 진짜 구버전이다. 샘플은 한 문항에만
+    // 주석이 있어 이제 나머지 문항을 비워 두므로, 여기서는 전부 지워 쓴다.
+    const legacy = {
+      ...sampleResultDocument,
+      questions: sampleResultDocument.questions.map((question) => ({ ...question, originalAnnotations: undefined })),
+    };
+    render(<ResultWorkspaceComplete result={legacy}/>);
 
     fireEvent.click(screen.getByRole("button", { name: "제출본" }));
 
@@ -21,6 +27,18 @@ describe("ResultWorkspaceComplete 제출본 탭", () => {
     expect(screen.getAllByText(/분석 엔진을 다시 호출하지 않았습니다/).length).toBeGreaterThan(0);
     expect(document.querySelectorAll("mark[data-type='revise']").length).toBeGreaterThan(0);
     expect(screen.getByText(sampleResultDocument.questions[0].title)).toBeTruthy();
+  });
+
+  it("주석을 저장한 결과에서는 빈 문항에 표시를 지어내지 않는다", () => {
+    // 한 문항이라도 주석이 있으면 그 실행은 주석을 만들 수 있었다는 뜻이다.
+    // 그런 실행에서 비어 있는 문항은 "잡을 게 없었다"는 판단이지 누락이 아니며,
+    // 여기에 단어 단위 diff 조각("되었습니다", "선택하게")을 전부 수정 추천으로
+    // 붙이면 다른 문항의 진짜 주석이 묻힌다.
+    render(<ResultWorkspaceComplete result={sampleResultDocument}/>);
+    fireEvent.click(screen.getByRole("button", { name: "제출본" }));
+
+    const generic = screen.queryAllByText(/기존 분석의 첨삭본에서 변경된 원문 구간입니다/);
+    expect(generic).toHaveLength(0);
   });
 
   it("새 분석에 저장된 의미 기반 원문 피드백을 우선 표시한다", () => {

@@ -234,6 +234,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
     writingMode: result.writingMode,
     shortQuestionCount: result.questions.filter((question) => countCompactCharacters(answers[question.id] ?? question.revisedAnswer) < question.targetLength * 0.7).length,
   }), [answers, result]);
+  // One annotated question anywhere proves the run supported annotations, so a
+  // question without them was judged clean rather than left unprocessed.
+  const resultStoresAnnotations = result.questions.some((question) => question.originalAnnotations?.length);
   const finalText = useMemo(
     () => buildFinalDocumentText({ ...result, company: subject.name, role: subject.qualifier ?? applicationLabel, questions: result.questions.map((question) => ({ ...question, title: resolveQuestionTitle(question) })) }, answers),
     [answers, applicationLabel, result, subject],
@@ -386,7 +389,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         {result.coverageNotes.length > 0 && <CoverageNotice notes={result.coverageNotes}/>}
         {result.questions.map((question) => {
           const storedAnnotations = question.originalAnnotations ?? [];
-          const annotations = deriveFallbackOriginalAnnotations(question);
+          const annotations = deriveFallbackOriginalAnnotations(question, resultStoresAnnotations);
           const usingFallback = storedAnnotations.length === 0 && annotations.length > 0;
           const { groups, marks } = groupOriginalAnnotations(annotations);
           return <article className={styles.question} key={question.id}>

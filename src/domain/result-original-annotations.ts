@@ -41,8 +41,22 @@ function trimmedSpan(value: string, offset: number) {
  */
 export function deriveFallbackOriginalAnnotations(
   question: Pick<ResultQuestion, "id" | "originalAnswer" | "revisedAnswer" | "originalAnnotations">,
+  /**
+   * Whether this result stores annotations at all. Pass false only for a
+   * result saved before they existed.
+   *
+   * Without this the fallback fired for any question the analysis chose not to
+   * annotate, filling the tab with word-diff fragments — "되었습니다",
+   * "선택하게" — each labelled 수정 추천 over the same generic sentence. Korean
+   * inflects at the end of nearly every word, so that diff marks grammar, not
+   * judgement. An empty list on a run that annotated elsewhere is a verdict
+   * (nothing to flag here), not missing data, and inventing marks for it buries
+   * the real ones.
+   */
+  resultStoresAnnotations = false,
 ): ResultOriginalAnnotation[] {
   if (question.originalAnnotations?.length) return question.originalAnnotations;
+  if (resultStoresAnnotations) return [];
 
   const annotations: ResultOriginalAnnotation[] = [];
   let originalOffset = 0;
