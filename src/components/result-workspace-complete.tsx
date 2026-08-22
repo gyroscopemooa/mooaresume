@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Clipboard,
   Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw, Sparkles,
 } from "lucide-react";
 import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document";
 import { recommendNextStep } from "@/domain/next-step";
+import { saveGuestDraft } from "@/lib/guest-draft";
+import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { deriveFallbackOriginalAnnotations } from "@/domain/result-original-annotations";
 import { resolveApplicationLabel, resolveQuestionTitle, resolveResultSubject, toFilenameToken } from "@/domain/result-labels";
 import { buildDocx, DOCX_MIME_TYPE } from "@/lib/docx";
@@ -186,6 +189,44 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
   );
   const baseFilename = `MOOA_${toFilenameToken(subject.name)}_최종첨삭본`;
 
+  const router = useRouter();
+  const [revisionRequest, setRevisionRequest] = useState("");
+
+  /**
+   * Re-runs the analysis with an instruction attached.
+   *
+   * The draft it carries forward is what is on screen now — including anything
+   * hand-edited — because that is the version the applicant is reacting to.
+   * The request itself travels separately from the materials all the way down;
+   * filed as a material, "leave 에이텍 out" reads as more material about 에이텍.
+   */
+  function startRevision() {
+    if (!revisionRequest.trim()) return;
+    const questions = [...result.questions]
+      .sort((left, right) => left.order - right.order)
+      .map((question, index) => ({
+        ...createCoverLetterQuestion(answers[question.id] ?? question.revisedAnswer, index),
+        title: question.title,
+        prompt: question.prompt,
+        targetLength: question.targetLength,
+      }));
+    saveGuestDraft({
+      draftText: finalText,
+      questionDrafts: questions.map((question) => question.answer),
+      questions,
+      targetLength: result.questions[0]?.targetLength ?? 700,
+      // The draft is complete by now; what is wanted is another pass over it.
+      temporaryWritingMode: "POLISH",
+      selectedProduct: "PRO",
+      companyName: result.company,
+      roleName: result.role,
+      writingStyle: "BALANCED",
+      revisionRequest: revisionRequest.trim(),
+    });
+    router.push("/analysis/prepare");
+  }
+
+
   async function copy(id: string, text: string) {
     await navigator.clipboard.writeText(text);
     setCopied(id);
@@ -325,6 +366,30 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
       </section>}
 
       {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={downloadDocx}><Download/> DOCX 저장</button><button onClick={download}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>{question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}<p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}{isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>비어 있던 부분을 채운 제안이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer></section>}
+      {/* Sits before the next-step card because it acts on the draft in hand
+          rather than moving to another stage. Only on the final tab, and only
+          on a real result — there is nothing to revise on the sample. */}
+      {view === "final" && !result.isSample && <section className={styles.revision}>
+        <div>
+          <span className={styles.eyebrow}>추가 요청</span>
+          <h2>고치고 싶은 방향이 있나요?</h2>
+          <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다.</p>
+        </div>
+        <textarea
+          rows={3}
+          value={revisionRequest}
+          onChange={(event) => setRevisionRequest(event.target.value)}
+          placeholder="예: 에이텍 경력은 빼고 직업상담 관련 경력으로만 구성해 주세요."
+          aria-label="재첨삭 요청사항"
+        />
+        <div className={styles.revisionFoot}>
+          <small>새 분석이므로 PRO 1회 결제가 필요합니다. 지금 결과는 그대로 남아 있습니다.</small>
+          <button type="button" disabled={!revisionRequest.trim()} onClick={startRevision}>
+            요청사항 반영해 다시 첨삭받기 <ArrowRight/>
+          </button>
+        </div>
+      </section>}
+
       {/* The result screen ended here, with nothing indicating the product had
           a next stage. The stages have a real order and the applicant is the
           only one who cannot see it — so this names what the next one would do

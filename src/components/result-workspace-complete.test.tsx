@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { sampleResultDocument } from "@/fixtures/result-document";
 import { ResultWorkspaceComplete } from "./result-workspace-complete";
+
+// 재첨삭 요청이 결과 화면에서 분석 준비 화면으로 넘어가므로 컴포넌트가
+// 라우터를 사용합니다. 테스트에는 앱 라우터가 없어 최소한으로 대체합니다.
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 afterEach(cleanup);
 
@@ -237,5 +242,54 @@ describe("ResultWorkspaceComplete 비워 둔 문항", () => {
     fireEvent.click(screen.getByRole("button", { name: "제출본" }));
 
     expect(screen.getByText(/이 문항은 비워 두셨습니다/)).toBeTruthy();
+  });
+});
+
+describe("재첨삭 요청", () => {
+  function openFinalTab() {
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+  }
+
+  it("요청사항을 적기 전에는 보내지 못한다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
+    openFinalTab();
+
+    expect(screen.getByRole("button", { name: /다시 첨삭받기/ }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("요청사항과 화면의 최종 답변을 함께 넘긴다", () => {
+    // 직접 수정한 내용이 있으면 그 버전이 넘어가야 한다 — 지원자가 반응하고
+    // 있는 대상은 화면에 보이는 글이기 때문이다.
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
+    openFinalTab();
+
+    fireEvent.change(screen.getByLabelText("재첨삭 요청사항"), {
+      target: { value: "에이텍 경력은 빼주세요." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /다시 첨삭받기/ }));
+
+    const saved = JSON.parse(sessionStorage.getItem("mooa:guest-draft:v1") ?? "{}");
+    expect(saved.revisionRequest).toBe("에이텍 경력은 빼주세요.");
+    expect(saved.selectedProduct).toBe("PRO");
+    // 완성된 글을 한 번 더 보는 것이므로 처음부터 쓰는 단계가 아니다.
+    expect(saved.temporaryWritingMode).toBe("POLISH");
+    expect(saved.questions[0].answer).toBe(sampleResultDocument.questions[0].revisedAnswer);
+    expect(push).toHaveBeenCalledWith("/analysis/prepare");
+  });
+
+  it("샘플 결과에는 재첨삭을 권하지 않는다", () => {
+    // 고칠 대상이 없는 예시 화면이다.
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: true }}/>);
+    openFinalTab();
+
+    expect(screen.queryByLabelText("재첨삭 요청사항")).toBeNull();
+  });
+
+  it("직접 수정이 더 빠른 경우를 함께 안내한다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
+    openFinalTab();
+
+    expect(screen.getByText(/직접 수정/)).toBeTruthy();
+    expect(screen.getByText(/PRO 1회 결제가 필요합니다/)).toBeTruthy();
   });
 });

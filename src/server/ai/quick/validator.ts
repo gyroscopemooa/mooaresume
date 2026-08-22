@@ -33,9 +33,20 @@ function evidenceMatchesSource(source: string, quote: string) {
 }
 type QuickQuestion = CoverLetterQuestion & { order: number; targetLength: number };
 
+/**
+ * Everything the applicant themselves wrote, and nothing else.
+ *
+ * The posting is excluded because an employer requirement is not the
+ * applicant's experience. A revision request is excluded for the same reason
+ * from the other direction: it is an instruction about the draft, not a fact
+ * within it, and quoting "에이텍 내용은 빼주세요" as evidence for a judgement
+ * would be exactly the unfounded claim this check exists to catch.
+ */
+const NON_EVIDENCE_KINDS: ReadonlySet<string> = new Set(["job_posting", "revision_request"]);
+
 function candidateEvidenceSource(request: AnalysisRequest) {
   const permittedDocuments = request.product === "PRO"
-    ? request.documents.filter((document) => document.kind !== "job_posting")
+    ? request.documents.filter((document) => !NON_EVIDENCE_KINDS.has(document.kind))
     : request.documents.filter((document) => document.kind === "cover_letter");
   return permittedDocuments.map((document) => document.text).join("\n");
 }

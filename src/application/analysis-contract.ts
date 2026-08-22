@@ -3,7 +3,7 @@ import type { ResultDocument } from "@/domain/result-document";
 import { writingStyleSchema } from "@/domain/writing-style";
 
 export const analysisDocumentInputSchema = z.object({
-  kind: z.enum(["cover_letter", "job_posting", "resume", "career_description", "portfolio"]),
+  kind: z.enum(["cover_letter", "job_posting", "resume", "career_description", "portfolio", "revision_request"]),
   text: z.string().min(1),
   // PostgreSQL represents an absent original_filename as null. Normalize it
   // at the external boundary so a pasted text document can be analyzed just

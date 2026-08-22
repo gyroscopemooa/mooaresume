@@ -9,7 +9,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.5";
+export const QUICK_PROMPT_VERSION = "quick-2.6";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -34,6 +34,21 @@ const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> =
 };
 export const QUICK_RUBRIC_VERSION = "quick-rubric-1.0";
 export const QUICK_SCHEMA_VERSION = "1.0";
+
+/**
+ * The applicant's instruction for a re-run, e.g. "에이텍 내용은 빼고 관련
+ * 직무로만 구성해주세요". Deliberately not one of SUPPORTING_KINDS: a material
+ * answers "what else is true about me", an instruction answers "what should
+ * this draft do differently", and feeding the second in as the first has the
+ * model treating "leave X out" as a reason to write more about X.
+ */
+const revisionRequestText = (request: AnalysisRequest) =>
+  request.documents
+    .filter((document) => document.kind === "revision_request")
+    .map((document) => document.text.trim())
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 2_000);
 
 const hasJobPosting = (request: AnalysisRequest) =>
   request.documents.some((document) => document.kind === "job_posting" && document.text.trim().length > 0);
@@ -118,6 +133,14 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     // nowhere to put a title, and forcing one there produces a label, not a
     // heading.
     "각 문항의 subheading에는 그 문항 답변 맨 위에 붙일 한 줄 소제목을 제안하세요. 답변에 실제로 담긴 경험과 핵심 주장을 드러내는 12~25자의 문장형으로 쓰고, '지원 동기', '성장 과정' 같은 문항 이름 반복이나 '열정과 도전' 같은 상투어는 쓰지 마세요. 답변에 없는 사실이나 수치를 소제목에 넣지 마세요. 문항이 항목 정리 형식(예: 경력사항)을 요구해 소제목이 어울리지 않으면 null을 반환하세요.",
+    ...(revisionRequestText(request)
+      ? [
+          `지원자가 이전 첨삭 결과를 보고 다시 요청했습니다. 요청사항: "${revisionRequestText(request)}"`,
+          "이 요청사항은 지원자의 경험이 아니라 이번 첨삭을 어떻게 해달라는 지시입니다. 요청사항의 문장을 evidenceQuote로 인용하지 말고, 자기소개서 본문에 그대로 옮겨 쓰지도 마세요.",
+          "요청사항이 특정 경력·경험을 빼달라고 하면, 그 내용을 첨삭본에서 실제로 빼고 남은 소재로 분량을 다시 채우세요. 요청을 반영했다는 사실과 무엇이 빠졌는지는 각 문항의 reasons에 한 줄로 밝히세요.",
+          "요청사항이 사실과 충돌하거나(없는 경험을 넣어달라는 등) 그대로 따르면 지원서가 거짓이 되는 경우에는 따르지 말고, 왜 그대로 반영할 수 없는지 consultingAdvice에 적으세요.",
+        ]
+      : []),
     "문항이 요구하는 형식을 그대로 따르세요. 문항 질문에 '경력 위주로', '항목별로', '3가지로', '담당업무와 실적 중심으로' 같은 지시가 있으면 그 형식으로 씁니다. 예를 들어 경력사항 문항은 이야기하듯 풀어 쓰지 말고 소속·기간·고용형태·담당업무·실적을 항목으로 정리하세요.",
     "같은 경험을 여러 문항에 써야 한다면 문항마다 다른 측면을 쓰세요. 한 문항이 그 경험의 의미와 배움을 다뤘다면 다른 문항에서는 사실 정보(소속·기간·역할·담당업무)만 정리하는 식으로 나눕니다. 같은 이야기를 같은 방식으로 두 번 쓰면 지원서 전체가 소재가 하나뿐인 것처럼 읽힙니다.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",

@@ -72,12 +72,15 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     const { data: documents, error: documentsError } = await client().from("documents").select("id, kind").in("id", (versions ?? []).map((version) => version.document_id));
     if (documentsError) throw new Error(`QUICK_ANALYSIS_DOCUMENT_LOAD_FAILED:${documentsError.code}`);
     const kinds = new Map((documents ?? []).map((document) => [document.id, document.kind]));
-    const documentKind = (id: string) => { const value = kinds.get(id); if (value === "COVER_LETTER") return "cover_letter"; if (value === "JOB_POSTING") return "job_posting"; if (value === "RESUME") return "resume"; if (value === "CAREER_DOCUMENT") return "career_description"; return "portfolio"; };
+    // Mirrors the mapping in begin_quick_analysis. REVISION_REQUEST must be
+    // named explicitly: the trailing "portfolio" default would turn an
+    // instruction into supporting material and quotable evidence at once.
+    const documentKind = (id: string) => { const value = kinds.get(id); if (value === "COVER_LETTER") return "cover_letter"; if (value === "JOB_POSTING") return "job_posting"; if (value === "RESUME") return "resume"; if (value === "CAREER_DOCUMENT") return "career_description"; if (value === "REVISION_REQUEST") return "revision_request"; return "portfolio"; };
     // Supporting materials (이력서·경력기술서·포트폴리오·추가 경험) are a PRO
     // feature. begin_quick_analysis gates them in SQL; gate them identically
     // here so a run does not analyze a different document set depending on
     // whether it was started or resumed.
-    const supportingKinds = new Set(["resume", "career_description", "portfolio"]);
+    const supportingKinds = new Set(["resume", "career_description", "portfolio", "revision_request"]);
     const requestDocuments = (versions ?? [])
       .filter((version) => version.normalized_text?.trim())
       .map((version) => ({ kind: documentKind(version.document_id), text: version.normalized_text, filename: version.original_filename ?? undefined }))

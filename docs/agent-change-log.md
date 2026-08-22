@@ -836,3 +836,18 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 테스트 2건 추가: 모든 추천에 안심 문구가 있는지, 이유가 조건부 표현인지. 문구가 다시 강요조로 돌아가면 테스트가 잡습니다.
 - Files/branch: `src/domain/next-step.ts` + `.test.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` on `main`.
 - Validation: `npx vitest run` 337 passed(신규 2건), `npx tsc --noEmit` clean, ESLint 0건. 로컬 `/result`에서 렌더링 실측 — "선택 사항 │ 최종 첨삭으로 더 다듬어 보기 │ **채운 결과는 이대로 제출하셔도 됩니다.** 한 번 더 손보고 싶다면… │ 어떻게 달라지는지 보기".
+
+## 2026-08-22 — Claude: 요청사항을 적고 다시 첨삭받기 (quick-2.6)
+
+- Agent/session: Claude. 사용자 요청 — 완성본에서 요청사항을 적고 재첨삭. CREATE·BUILD 테스트 통과 후 진행.
+- Status: 코드 완료 / **마이그레이션 적용 필요**.
+- 설계의 핵심: 요청사항은 **자료가 아니라 지시**입니다. 기존 "추가 정보 입력"에 넣으면 AI가 "에이텍 빼주세요"를 **에이텍에 관한 재료**로 읽어 오히려 더 쓸 수 있습니다. 그래서 문서 종류를 새로 만들어 끝까지 분리했습니다.
+  - `document_kind` enum에 `REVISION_REQUEST` 추가(마이그레이션 `20260822020000`). `begin_quick_analysis`의 매핑에 명시적으로 추가했습니다 — 기존 `else 'portfolio'` 폴백에 걸리면 지시가 **지원자료이자 인용 가능한 근거**가 되어 정반대 결과가 납니다. 재개 경로(`getRunningContext`)의 매핑도 같이 맞췄습니다.
+  - **검증기에서 제외**: `NON_EVIDENCE_KINDS`에 채용공고와 함께 넣었습니다. "에이텍 빼주세요"를 판단 근거로 인용하는 것은 이 검증이 막으려는 바로 그 일입니다.
+  - `SUPPORTING_KINDS`에는 **넣지 않았습니다** — 자료 블록에 섞이면 안 됩니다.
+  - 프롬프트에 별도 지시 블록 3줄: 요청은 경험이 아니라 지시임(인용·본문 삽입 금지), 빼달라면 실제로 빼고 남은 소재로 분량을 다시 채우고 무엇이 빠졌는지 reasons에 밝힐 것, 사실과 충돌하면 따르지 말고 consultingAdvice에 이유를 적을 것. `QUICK_PROMPT_VERSION` quick-2.5 → **quick-2.6**.
+- 화면(최종 첨삭본 탭, 실제 결과에서만): 요청사항 입력칸 + "새 분석이므로 PRO 1회 결제가 필요합니다. 지금 결과는 그대로 남아 있습니다." 안내. **"문장 몇 개만 바꾸실 거라면 직접 수정이 빠릅니다"를 함께 적었습니다** — 무료로 되는 일을 유료로 유도하지 않기 위해서입니다. 넘기는 초안은 화면에 보이는 최종 답변(직접 수정분 포함)입니다.
+- Codex 테스트 파일 수정: 컴포넌트가 라우터를 쓰게 되어 기존 17건이 "app router not mounted"로 실패했습니다. 파일 상단에 `next/navigation` 최소 모킹 4줄을 추가했을 뿐, 기존 테스트의 의도·내용은 건드리지 않았습니다. (처음엔 `window.location.assign`으로 우회했으나 Next 린트 규칙 위반이고, 핸들러를 `finalText` 위에 선언해 React 컴파일러 메모이제이션도 깨져 되돌렸습니다.)
+- Files/branch: `supabase/migrations/20260822020000_revision_request_document.sql`(신규), `src/application/analysis-contract.ts`, `src/application/application-case-handoff.ts`, `src/lib/guest-draft.ts`, `src/server/ai/quick/prompt.ts`, `validator.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/components/application-case-handoff.tsx`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
+- Validation: `npx vitest run` 341 passed(신규 4건), `npx tsc --noEmit` clean, ESLint 0건.
+- **남은 일(사용자)**: `20260822020000_revision_request_document.sql`을 Supabase에 적용해야 동작합니다. 적용 전에는 요청사항 저장 시 enum 값이 없어 실패합니다.

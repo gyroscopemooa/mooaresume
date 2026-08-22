@@ -108,6 +108,7 @@ export function ApplicationCaseHandoff({ guest }: Props) {
           product: guest.selectedProduct ?? "QUICK",
           writingMode: guest.temporaryWritingMode ?? "POLISH",
           writingStyle: guest.writingStyle,
+          revisionRequest: guest.revisionRequest,
           targetLength: guest.targetLength,
           questions,
           sourceFilename: guest.sourceFilename,

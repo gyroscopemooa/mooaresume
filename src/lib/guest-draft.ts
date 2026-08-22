@@ -20,6 +20,8 @@ export const guestDraftSchema = z.object({
   // existed still parse.
   companyName: z.string().max(120).optional(),
   roleName: z.string().max(120).optional(),
+  // Present only on a re-run started from a finished result.
+  revisionRequest: z.string().max(2_000).optional(),
   savedAt: z.string().datetime(),
 });
 export type GuestDraft = z.infer<typeof guestDraftSchema>;

@@ -11,6 +11,8 @@ export const guestApplicationHandoffSchema = z.object({
   product: z.enum(["QUICK", "PRO"]),
   writingMode: writingModeSchema,
   writingStyle: writingStyleSchema,
+  // Set only when the applicant asked for a re-run from a finished result.
+  revisionRequest: z.string().max(2_000).optional(),
   targetLength: z.number().int().min(100).max(3000),
   questions: z.array(coverLetterQuestionSchema).max(20).default([]),
   sourceFilename: z.string().max(255).optional(),
@@ -42,7 +44,7 @@ export const guestApplicationHandoffSchema = z.object({
 export type GuestApplicationHandoff = z.infer<typeof guestApplicationHandoffSchema>;
 
 export type PlannedDocument = {
-  kind: "JOB_POSTING" | "COVER_LETTER" | "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "OTHER";
+  kind: "JOB_POSTING" | "COVER_LETTER" | "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "REVISION_REQUEST" | "OTHER";
   title: string;
   sourceType: "TEXT" | "FILE" | "URL";
   normalizedText: string;
@@ -134,6 +136,16 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
       sourceType: input.jobPosting.url && !input.jobPosting.text.trim() ? "URL" : "TEXT",
       normalizedText: input.jobPosting.text.trim() || input.jobPosting.url,
       purpose: "JOB_CONTEXT",
+    });
+  }
+
+  if (input.revisionRequest?.trim()) {
+    documents.push({
+      kind: "REVISION_REQUEST",
+      title: "재첨삭 요청사항",
+      sourceType: "TEXT",
+      normalizedText: input.revisionRequest.trim(),
+      purpose: "REFERENCE",
     });
   }
 
