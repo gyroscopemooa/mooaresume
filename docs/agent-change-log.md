@@ -725,3 +725,19 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/domain/example.ts`, `src/fixtures/product-examples.ts`, `src/app/examples/page.tsx` + `.module.css` on `main`.
 - Validation: `npx vitest run` 310 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬에서 4개 탭을 모두 클릭해 실측 — 라벨이 "처음부터 작성/내용 보완/최종 첨삭/PRO 교차 분석"으로 서로 구분되고, 주석·리스크 렌더링 개수가 픽스처와 일치함을 확인했습니다.
 - 별도 보고(코드 변경 없음): 요금표(`pricing-comparison.tsx`) 41개 항목을 코드와 대조한 결과 **"경험 자동 추출"과 "문항별 개요 생성" 두 항목은 구현 근거를 찾지 못했습니다.** 요금표 행 자체가 유일한 출현 위치입니다. 판매 문구 삭제는 제품 결정이라 코드를 건드리지 않고 사용자에게 보고했습니다.
+
+## 2026-08-22 — Claude: 문항별 소제목 제안 구현, 요금표 문구 실제 기능에 맞게 수정 (quick-2.4)
+
+- Agent/session: Claude. 앞선 요금표 대조에서 근거를 찾지 못한 두 항목에 대해 사용자가 "경험 자동 추출은 어쨌든 내용 채워주는 기능 있으니 그걸로 이름 바꾸고, 문항별 개요 생성은 만들어주자 — 소제목 생성, 소제목도 자소서에서 중요"라고 결정했습니다.
+- Status: completed.
+- 요금표 문구 수정(`pricing-comparison.tsx`): "경험 자동 추출" → **"이력서 사실로 빈 내용 채우기"**. 이력서에서 경험을 뽑아 목록으로 보여주는 기능은 없지만, 자료의 사실을 답변에 채워 넣는 기능은 실제로 있습니다(`expandsToTargetLength` 3단계 채움). 없는 기능을 파는 대신 있는 기능의 이름을 정확히 붙였습니다. "문항별 개요 생성" → **"문항별 소제목 제안"**(아래에서 실제 구현).
+- 소제목 기능 구현: 한국 자소서는 답변 위에 지원자가 직접 붙인 한 줄 소제목을 함께 제출하는 경우가 많고, 이 한 줄이 약하면 답변을 읽기도 전에 주목도를 잃습니다.
+  - AI 출력 스키마(`schema.ts`): `quickRevisionSchema`에 `subheading: z.string().nullable()` 추가. **optional이 아니라 nullable**로 둬서 모델이 매 문항마다 판단을 내리도록 강제하고, 어울리지 않는 문항에서만 명시적으로 null을 반환하게 했습니다.
+  - 프롬프트(`prompt.ts`): 12~25자 문장형, 답변에 실제로 담긴 경험과 주장을 드러낼 것, 문항 이름 반복("지원 동기")과 상투어("열정과 도전") 금지, 답변에 없는 사실·수치 금지, 항목 정리 형식(경력사항 등)이면 null. `QUICK_PROMPT_VERSION` quick-2.3 → **quick-2.4**.
+  - 하위 호환: 소제목이 없던 시절의 저장 응답은 `subheading` 키 자체가 없어 파싱이 깨집니다. `addLegacyOriginalAnnotations` 정규화에 `undefined → null` 보정을 추가했습니다(`originalAnnotations`가 이미 받던 것과 같은 처리). 기존 스키마 테스트 2건이 이 문제를 잡아냈습니다.
+  - 저장 문서(`result-document.ts`): `subheading: z.string().min(1).optional()` — 이전에 저장된 결과가 계속 파싱되어야 하므로 optional.
+  - 표시: 최종 첨삭본 탭에 "소제목 제안" 배지와 함께 답변 위에 표시, DOCX·TXT 내보내기에는 `[소제목]` 형태로 답변 바로 위에 포함(실제 지원서 양식에 타이핑하는 형태와 동일). 직접 수정한 답변에도 소제목이 유지됩니다.
+- Files/branch: `src/server/ai/quick/schema.ts`, `prompt.ts`, `provider.ts`, `src/domain/result-document.ts`, `src/components/result-workspace-complete.tsx` + `.module.css`, `src/components/pricing-comparison.tsx`, 관련 테스트 픽스처 4건 on `main`.
+- Validation: `npx vitest run` 317 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건.
+- 별도 확인(코드 변경 없음): 사용자가 보고한 Hydration 오류는 깨끗한 브라우저에서 `/analysis/prepare?checkout=success`를 새로 로드해 재현되지 않았습니다. 사용자 로그에서 오류 직전에 Fast Refresh 재빌드가 반복된 점, 오류 메시지 자체가 브라우저 확장 프로그램 가능성을 언급하는 점으로 보아 제 실시간 편집 중의 Fast Refresh 아티팩트이거나 확장 프로그램일 가능성이 높습니다. 잠재 원인으로 의심한 `crypto.randomUUID()`와 `new Date()`는 각각 `useMemo`(클라이언트 전용 경로)와 이벤트 핸들러 안에 있어 SSR 불일치를 만들지 않음을 확인했습니다.
+- Rollback: `subheading` 관련 추가분을 모두 제거하면 됩니다. 저장 문서 필드가 optional이라 이미 저장된 결과는 영향받지 않습니다.

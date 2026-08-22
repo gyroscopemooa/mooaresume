@@ -13,7 +13,7 @@ const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type
 // reason originalAnnotations comes first. With the revision written first, the
 // annotations were produced after the fact and could praise a sentence the
 // revision had already deleted. Ordering only — nothing stored changes.
-const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
+const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), subheading: z.string().nullable(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
 const legacyQuickRevisionSchema = quickRevisionSchema.omit({ questionOrder: true });
 
 // PRO is sold on two things QUICK does not promise: matching the posting's
@@ -99,6 +99,7 @@ function addLegacyOriginalAnnotations(input: unknown): unknown {
   if (output.revision && typeof output.revision === "object" && !Array.isArray(output.revision)) {
     const revision = { ...output.revision } as Record<string, unknown>;
     revision.originalAnnotations = normalizeAnnotations(revision.originalAnnotations);
+    if (revision.subheading === undefined) revision.subheading = null;
     output.revision = revision;
   }
   if (Array.isArray(output.revisions)) {
@@ -106,6 +107,7 @@ function addLegacyOriginalAnnotations(input: unknown): unknown {
       if (!value || typeof value !== "object" || Array.isArray(value)) return value;
       const revision = { ...value } as Record<string, unknown>;
       revision.originalAnnotations = normalizeAnnotations(revision.originalAnnotations);
+      if (revision.subheading === undefined) revision.subheading = null;
       return revision;
     });
   }

@@ -42,6 +42,11 @@ export const resultQuestionSchema = z.object({
   // blank question has no original answer. Requiring one character here failed
   // the whole assembly after the analysis had already run and been paid for.
   originalAnswer: z.string(),
+  // A Korean cover letter answer is usually submitted under a one-line title
+  // of the applicant's own making, and a weak one costs the reader's attention
+  // before the answer is read. Optional because every result stored before this
+  // existed has to keep parsing.
+  subheading: z.string().min(1).optional(),
   revisedAnswer: z.string().min(1),
   highlightedPhrases: z.array(z.string().min(1)),
   originalAnnotations: z.array(resultOriginalAnnotationSchema).optional(),
@@ -161,7 +166,12 @@ export function buildFinalDocumentText(
   const heading = `${document.company} · ${document.role}\n`;
   const body = [...document.questions]
     .sort((left, right) => left.order - right.order)
-    .map((question) => `${question.order}. ${question.title}\n${answers[question.id] ?? question.revisedAnswer}`)
+    .map((question) => {
+      // Bracketed because that is how a subheading is actually typed into the
+      // form — it is part of the submitted answer, not a label on it.
+      const subheading = question.subheading ? `[${question.subheading}]\n` : "";
+      return `${question.order}. ${question.title}\n${subheading}${answers[question.id] ?? question.revisedAnswer}`;
+    })
     .join("\n\n");
   return `${heading}\n${body}`;
 }

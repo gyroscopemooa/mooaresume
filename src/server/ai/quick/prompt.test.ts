@@ -352,3 +352,30 @@ describe("CREATE는 자료만으로도 빈 문항을 채운다", () => {
     expect(instructions).toContain("questionOrder 1부터 0까지");
   });
 });
+
+describe("문항별 소제목 제안", () => {
+  it("소제목을 제안하라고 지시한다", () => {
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("subheading");
+    expect(instructions).toContain("한 줄 소제목");
+  });
+
+  it("상투어와 문항 이름 반복을 금지한다", () => {
+    // 소제목이 "지원 동기"나 "열정과 도전"이면 없느니만 못하다 — 읽는 사람의
+    // 주의를 답변 앞에서 먼저 잃는다.
+    const instructions = buildQuickAnalysisInstructions(request);
+
+    expect(instructions).toContain("상투어");
+    expect(instructions).toContain("문항 이름 반복");
+  });
+
+  it("항목 정리 형식 문항에는 null을 허용한다", () => {
+    // 경력사항처럼 항목으로 정리하는 문항은 소제목을 붙일 자리가 없다.
+    expect(buildQuickAnalysisInstructions(request)).toContain("null을 반환하세요");
+  });
+
+  it("소제목에 없는 사실을 넣지 못하게 한다", () => {
+    expect(buildQuickAnalysisInstructions(request)).toContain("답변에 없는 사실이나 수치를 소제목에 넣지 마세요");
+  });
+});

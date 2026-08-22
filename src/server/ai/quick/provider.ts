@@ -101,6 +101,9 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
         prompt: question.prompt.trim() || question.title.trim() || `문항 ${question.order}`,
         targetLength: question.targetLength,
         originalAnswer: question.answer,
+        // Dropped when the model returns null, which is what it is told to do
+        // when the question's own format leaves no room for a title.
+        subheading: revision.subheading?.trim() || undefined,
         revisedAnswer: revision.revisedAnswer,
         highlightedPhrases: revision.highlightedPhrases.map((phrase) => recoverHighlight(revision.revisedAnswer, phrase)).filter((phrase): phrase is string => phrase !== null),
         originalAnnotations: resolveOriginalAnnotations(question.answer, revision.originalAnnotations, `${questionId}-annotation`),

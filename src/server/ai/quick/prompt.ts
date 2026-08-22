@@ -9,7 +9,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.3";
+export const QUICK_PROMPT_VERSION = "quick-2.4";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -108,6 +108,12 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
           "비어 있던 문항에는 인용할 원문이 없습니다. 그 문항의 evidenceQuote는 지원자가 작성한 다른 문항의 답변이나 제출한 지원자료에서 가져오세요. 인용할 것이 전혀 없으면 그 문항은 채우지 말고, 무엇을 알려주면 채울 수 있는지 consultingAdvice에 적으세요.",
         ]
       : []),
+    // Korean applications are usually submitted with a one-line title above
+    // each answer, and a generic one costs the reader's attention before the
+    // answer is read. Nullable rather than always-on: a 경력사항 item list has
+    // nowhere to put a title, and forcing one there produces a label, not a
+    // heading.
+    "각 문항의 subheading에는 그 문항 답변 맨 위에 붙일 한 줄 소제목을 제안하세요. 답변에 실제로 담긴 경험과 핵심 주장을 드러내는 12~25자의 문장형으로 쓰고, '지원 동기', '성장 과정' 같은 문항 이름 반복이나 '열정과 도전' 같은 상투어는 쓰지 마세요. 답변에 없는 사실이나 수치를 소제목에 넣지 마세요. 문항이 항목 정리 형식(예: 경력사항)을 요구해 소제목이 어울리지 않으면 null을 반환하세요.",
     "문항이 요구하는 형식을 그대로 따르세요. 문항 질문에 '경력 위주로', '항목별로', '3가지로', '담당업무와 실적 중심으로' 같은 지시가 있으면 그 형식으로 씁니다. 예를 들어 경력사항 문항은 이야기하듯 풀어 쓰지 말고 소속·기간·고용형태·담당업무·실적을 항목으로 정리하세요.",
     "같은 경험을 여러 문항에 써야 한다면 문항마다 다른 측면을 쓰세요. 한 문항이 그 경험의 의미와 배움을 다뤘다면 다른 문항에서는 사실 정보(소속·기간·역할·담당업무)만 정리하는 식으로 나눕니다. 같은 이야기를 같은 방식으로 두 번 쓰면 지원서 전체가 소재가 하나뿐인 것처럼 읽힙니다.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",

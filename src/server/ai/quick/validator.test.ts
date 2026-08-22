@@ -8,6 +8,7 @@ const output = (revisedAnswer: string, evidenceQuote: string): QuickAnalysisOutp
   readiness: { score: 70, label: "보완 권장", summary: "경험을 구체화할 수 있습니다.", reasons: ["제공한 경험이 있습니다."] },
   priorities: [{ title: "경험을 연결하세요.", description: "제공 자료의 사실을 활용하세요.", category: "evidence", severity: "high", evidenceQuote }],
   revision: {
+    subheading: null,
     revisedAnswer,
     highlightedPhrases: ["고객 응대"],
     originalAnnotations: [],
