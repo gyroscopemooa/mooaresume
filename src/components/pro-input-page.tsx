@@ -98,6 +98,11 @@ export function ProInputPage({ mode }: Props) {
   const [postingFilenames, setPostingFilenames] = useState<string[]>([]);
   const [resumeFile, setResumeFile] = useState<ResumeAttachment | null>(null);
   const [resumeError, setResumeError] = useState("");
+  // Set when the applicant arrived here from a finished result asking for a
+  // re-run with materials attached. It is carried, shown, and saved again —
+  // this page's save used to omit it, which silently dropped the instruction
+  // on the way through.
+  const [carriedRequest, setCarriedRequest] = useState("");
   const [showBlockedTip, setShowBlockedTip] = useState(false);
   const [experiences, setExperiences] = useState<CandidateExperienceInput[]>([]);
   const [profileEntries, setProfileEntries] = useState<CandidateProfileEntry[]>([]);
@@ -137,7 +142,7 @@ export function ProInputPage({ mode }: Props) {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const guest = loadGuestDraft();
-      if (guest) { setQuestions(guest.questions ?? (guest.questionDrafts ?? [guest.draftText]).map((answer, index) => createCoverLetterQuestion(answer, index))); setWritingStyle(guest.writingStyle); }
+      if (guest) { setQuestions(guest.questions ?? (guest.questionDrafts ?? [guest.draftText]).map((answer, index) => createCoverLetterQuestion(answer, index))); setWritingStyle(guest.writingStyle); setCarriedRequest(guest.revisionRequest ?? ""); }
       try {
         const parsed = candidateMaterialDraftSchema.safeParse(JSON.parse(sessionStorage.getItem(materialStorageKey) ?? "null"));
         if (parsed.success) {
@@ -169,6 +174,7 @@ export function ProInputPage({ mode }: Props) {
       sourceFilename: resumeFile?.filename,
       sourceFileExtension: resumeFile?.extension,
       sourceFileSizeBytes: resumeFile?.sizeBytes,
+      revisionRequest: carriedRequest.trim() || undefined,
     });
     sessionStorage.setItem("mooa:guest-job-posting:v1", posting);
     sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: postingUrl, text: posting, filenames: postingFilenames }));
@@ -242,6 +248,11 @@ export function ProInputPage({ mode }: Props) {
           </Link>
           <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/>
         </> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{unsplitDraft && <p className={styles.postingWarning}><b>문항 구분이 아직 안 되어 있어요.</b> 위 &lsquo;문항 구분 확인하기&rsquo;를 누르면 질문과 답변을 나누어 정리합니다. 문항이 나뉘어야 회사가 요구한 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다.</p>}</div>}
+        {carriedRequest.trim() && <section className={styles.carriedRequest}>
+          <span>이어서 진행 중인 요청사항</span>
+          <q>{carriedRequest.trim()}</q>
+          <small>자료를 추가한 뒤 계속하시면 이 요청사항이 함께 반영됩니다.</small>
+        </section>}
         <section className={styles.optionalMaterials}>
           <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>종류별 여러 파일 · 최대 10개</small></div>
           <MaterialUpload attachments={materialAttachments} onChange={setMaterialAttachments}/>

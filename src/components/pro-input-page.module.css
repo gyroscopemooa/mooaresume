@@ -20,3 +20,7 @@
 .wizardLink span{display:grid;gap:3px}
 .wizardLink b{font-size:11px}
 .wizardLink small{color:#68756f;font-size:9px;line-height:1.6}
+.carriedRequest{display:grid;gap:7px;margin-bottom:16px;padding:16px 18px;border:1px solid #cfe3d7;border-left-width:3px;border-radius:10px;background:#f4faf6}
+.carriedRequest>span{color:#12824f;font-size:9px;font-weight:800}
+.carriedRequest q{color:#17221d;font-size:12px;font-weight:700;quotes:"C" "D"}
+.carriedRequest small{color:#5c6b63;font-size:9px}

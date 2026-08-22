@@ -865,3 +865,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/domain/next-step.ts` + `.test.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
 - Validation: `npx vitest run` 343 passed(신규 3건), `npx tsc --noEmit` clean, ESLint 0건. 초안이 실제로 넘어가는지, 요청사항 없이 넘어가는지, 목적지가 단계별로 갈리는지 테스트로 고정했습니다.
 - 확인됨(사용자 제공): `cron.job` 조회 결과 `advance-analysis-runs` 1건, `* * * * *`, `active = true`. 스케줄은 정상입니다. `private.app_config`에 URL·비밀키가 들어갔는지는 아직 미확인이며, 비어 있으면 크론이 돌아도 아무 일도 하지 않습니다.
+
+## 2026-08-22 — Claude: 재첨삭에 자료 추가 경로 분기
+
+- Agent/session: Claude. 사용자 질문 — 재첨삭 패널에 자료 업로드를 넣는 게 나은지, 그냥 PRO 입력 페이지를 한 번 더 거치게 하는 게 나은지. "그럼 그냥 프로 한 번 더 하면 되지?" 할 수 있지만 **거기엔 요청사항 칸이 없다**는 점을 사용자가 짚었습니다.
+- Status: completed.
+- 확인한 사실이 판단을 갈랐습니다: `ProInputPage`의 `saveGuestDraft` 호출에 `revisionRequest`가 **없습니다.** 즉 재첨삭을 PRO 입력 페이지로 보내면 **요청사항이 조용히 사라집니다.** 사용자의 우려가 실제 코드 결함이었습니다.
+- 결정: 업로드 UI를 재첨삭 패널에 **복제하지 않고**, 결과가 잘못되는 두 가지 경우에 각각 맞는 경로를 둡니다.
+  - **"강조가 틀렸다"** — 문장 한 줄이면 됩니다. 패널에서 바로 `/analysis/prepare`(결제 확인)로 갑니다. 한 줄 말하려고 큰 입력 페이지를 통과시키는 마찰이 이 기능을 안 쓰게 만듭니다.
+  - **"자료가 부족했다"** — 이력서를 올릴 화면이 필요합니다. `/pro/polish`로 가되 **요청사항을 들고 갑니다.**
+- `ProInputPage` 수정: 게스트 초안에서 `revisionRequest`를 복원하고, 저장 시 다시 포함하며, 화면에 "이어서 진행 중인 요청사항"으로 인용해 보여줍니다. 넘어온 요청이 보존된다는 사실이 보이지 않으면 사용자는 다시 입력하거나 사라졌다고 생각합니다.
+- Files/branch: `src/components/pro-input-page.tsx` + `.module.css`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
+- Validation: `npx vitest run` 345 passed(신규 2건), `npx tsc --noEmit` clean, ESLint 0건. 자료 경로가 요청사항을 들고 `/pro/polish`로 가는지, 두 버튼 모두 빈 요청사항에서 막히는지 테스트로 고정했습니다.

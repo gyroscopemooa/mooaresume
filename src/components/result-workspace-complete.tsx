@@ -234,10 +234,18 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
     router.push(destination);
   }
 
-  function startRevision() {
+  /**
+   * Two ways to re-run, because two different things go wrong with a result.
+   *
+   * "Wrong emphasis" needs only a sentence — that path stays here and goes
+   * straight to confirmation, since sending someone through a full input page
+   * to say one line is the friction that stops them bothering. "Not enough to
+   * work with" needs the materials screen, and the instruction rides along
+   * rather than being retyped there.
+   */
+  function startRevision(destination: "/analysis/prepare" | "/pro/polish") {
     if (!revisionRequest.trim()) return;
-    // The draft is complete by now; what is wanted is another pass over it.
-    carryDraftForward("/analysis/prepare", { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
+    carryDraftForward(destination, { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
   }
 
 
@@ -387,7 +395,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         <div>
           <span className={styles.eyebrow}>추가 요청</span>
           <h2>고치고 싶은 방향이 있나요?</h2>
-          <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다.</p>
+          <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다. 넣지 못한 이력서·경력기술서가 있다면 <b>자료도 더 넣고</b> 진행할 수 있습니다.</p>
         </div>
         <textarea
           rows={3}
@@ -398,9 +406,14 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         />
         <div className={styles.revisionFoot}>
           <small>새 분석이므로 PRO 1회 결제가 필요합니다. 지금 결과는 그대로 남아 있습니다.</small>
-          <button type="button" disabled={!revisionRequest.trim()} onClick={startRevision}>
-            요청사항 반영해 다시 첨삭받기 <ArrowRight/>
-          </button>
+          <div className={styles.revisionActions}>
+            <button type="button" className={styles.revisionSecondary} disabled={!revisionRequest.trim()} onClick={() => startRevision("/pro/polish")}>
+              자료도 더 넣고 진행
+            </button>
+            <button type="button" disabled={!revisionRequest.trim()} onClick={() => startRevision("/analysis/prepare")}>
+              요청사항만 반영해 다시 첨삭받기 <ArrowRight/>
+            </button>
+          </div>
         </div>
       </section>}
 
