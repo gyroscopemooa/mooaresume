@@ -787,3 +787,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts` on `main`.
 - Validation: `npx vitest run` 328 passed(신규 4건), `npx tsc --noEmit` clean, ESLint 0건. 답변이 있는 문항의 렌더링 형식이 그대로임을 테스트로 고정했습니다.
 - Rollback: `question.answer.trim()` 분기를 되돌리고 추가한 규칙 2줄을 제거하면 됩니다.
+
+## 2026-08-22 — Claude: SEO 보강(추가만), 런칭 점검에서 www 장애 발견
+
+- Agent/session: Claude. 사용자가 런칭 전 점검과 "네이버·한글 '무아레쥬메' 검색이 잘 되게, 단 지금 디자인·문구는 수정하지 말고 추가만" 요청.
+- Status: 코드 변경 완료 / 인프라 항목은 사용자 확인 대기.
+- 추가한 것 (사용자에게 보이는 화면은 전혀 바뀌지 않음):
+  - `sitemap.ts`: `/guide` 추가. 공개·색인 가능한 페이지인데 사이트맵에 없었습니다. 로그인·결제·초안이 필요한 제품 라우트는 의도적으로 제외했습니다(빈 폼이 색인되어 봐야 도움이 안 됩니다).
+  - `layout.tsx` `keywords`: **브랜드명이 아예 없었습니다.** "무아레쥬메", "무아 레쥬메", "MOOA Resume", "mooaresume"와 한국어 검색어("AI 자기소개서", "자소서 첨삭 사이트", "자소서 AI 첨삭", "채용공고 분석") 추가.
+- 확인만 하고 바꾸지 않은 것: 랜딩(`/`)과 제품 홈(`/dev-home`) 모두 `alternateName: "무아레쥬메"`가 포함된 Organization/WebSite/Service/FAQPage 구조화 데이터를 이미 갖추고 있고, `canonical`도 양쪽에 설정되어 있습니다. 배포본에서 `canonical`·`og:url`·구조화 데이터 URL이 모두 `https://mooaresume.com`으로 정상 출력됨을 브라우저로 확인했습니다.
+- **런칭 블로커 발견**: `https://www.mooaresume.com`이 **522 Connection timed out**을 반환합니다. Cloudflare까지는 도달하지만 그 뒤 오리진이 없습니다. DNS 레코드는 존재하나 워커/Pages에 연결되지 않은 상태로 보입니다. 코드로 고칠 수 없는 인프라 설정이라 사용자에게 보고했습니다.
+- 네이버 소유권 확인(`NAVER_SITE_VERIFICATION`)은 토큰을 받지 못해 환경변수 방식 그대로입니다. 구글과 **같은 빌드 시점 문제**를 겪을 것이므로, 토큰을 받으면 구글과 같이 코드에 고정해야 합니다.
+- Files/branch: `src/app/sitemap.ts`, `src/app/layout.tsx` on `main`.
+- Validation: `npx vitest run` 328 passed, `npx tsc --noEmit` clean, ESLint 0건.

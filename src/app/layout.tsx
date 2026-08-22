@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   creator: "MOOA Resume",
   publisher: "MOOA Resume",
   category: "employment",
-  keywords: ["자소서 첨삭", "자기소개서 첨삭", "AI 자소서", "취업 준비", "대기업 자소서", "생산직 자소서"],
+  keywords: ["무아레쥬메", "무아 레쥬메", "MOOA Resume", "mooaresume", "자소서 첨삭", "자기소개서 첨삭", "AI 자소서", "AI 자기소개서", "자소서 첨삭 사이트", "자소서 AI 첨삭", "취업 준비", "대기업 자소서", "생산직 자소서", "채용공고 분석"],
   formatDetection: { email: false, address: false, telephone: false },
   icons: { icon: "/icon.svg", shortcut: "/icon.svg" },
   openGraph: {
