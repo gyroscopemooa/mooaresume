@@ -145,7 +145,7 @@ export default function OnboardingPage() {
         )}
 
         <details className={styles.unknown}>
-          <summary>어떤 단계인지 모르겠어요 <span>AI 비용 없이 임시 확인</span></summary>
+          <summary>어떤 단계인지 모르겠어요 <span>결제 없이 무료로 확인</span></summary>
           <div className={styles.unknownBody}>
             {filename && (
               <AttachmentCard

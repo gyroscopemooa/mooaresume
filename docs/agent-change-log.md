@@ -701,3 +701,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/layout.tsx` on `main`.
 - Validation: `npx tsc --noEmit` clean, ESLint 0건. 로컬 dev 서버(사용자가 이미 켜둔 것)에 브라우저로 접속해 확인 — `window.clarity`가 함수로 존재, Clarity·wcslog 스크립트 태그 둘 다 주입됨, `window.wcs_add.wa === "1c6334533aa6fe0"` 확인, 콘솔 에러 없음.
 - 남은 일(사용자): `.env.local`과 Cloudflare 배포 환경변수에 `GOOGLE_SITE_VERIFICATION=y6v6fCOXM0u3Uq5XESQB1g-yduLoGXJvARLW3I6RGEk` 추가.
+
+## 2026-08-22 — Claude: 분석 준비 화면에 PRO 작성 유형 배지, 운영자용 문구 정정
+
+- Agent/session: Claude. 사용자가 "analysis/prepare에 크리에이트 프로인지 빌드인지 프로 종류 나오게 하는 거 어떻게 생각하냐"와 "온보딩의 'AI 비용 없이 임시 확인' 같은 문구가 고객에게 보여지는 게 맞냐"고 물었습니다.
+- Status: completed.
+- PRO 작성 유형 배지: 작성 유형은 **이미 표시되고 있었지만** 가격 아래 8px 회색 줄("기업 지원서 1건 · 처음부터 작성 · 균형 있게")에 묻혀 있었습니다. PRO 세 유형이 같은 가격이라 화면상 구분이 이 한 줄뿐이고, 유형을 잘못 고른 채 결제하면 분석이 소진되어 되돌릴 수 없습니다. → PRO일 때만 상품명 옆에 배지로 표시(`.mode`)했습니다. 기존 회색 줄은 그대로 뒀습니다(스타일·말투 정보도 함께 담고 있어 제거하면 정보가 사라집니다).
+- 운영자용 문구: 사용자가 지목한 두 문구는 성격이 다르다고 판단해 다르게 처리했습니다.
+  - `src/app/onboarding/page.tsx`의 "AI 비용 없이 임시 확인" → "결제 없이 무료로 확인". "AI 비용"은 **우리 API 요금**을 가리키는 운영자 언어입니다. 고객이 알고 싶은 건 "이거 열면 돈 나가나?"이므로 그 질문에 답하는 말로 바꿨습니다.
+  - `job-posting-input.tsx`의 "지금은 서버나 AI로 전송하지 않습니다"와 `pro-input-page.tsx`의 "아직 서버로 전송하지 않습니다"는 **그대로 뒀습니다.** 이건 개발용 디버그 정보가 아니라 "내 이력서가 아직 업로드되지 않았다"는 개인정보 안내로, 고객이 실제로 신경 쓰는 내용입니다. 숨기면 신뢰 신호가 사라지고, 사용자가 개발 중 헷갈릴 우려도 함께 해결됩니다(아무것도 감추지 않으므로).
+- Files/branch: `src/components/analysis-preparation.tsx` + `.module.css`, `src/app/onboarding/page.tsx` on `main`.
+- Validation: `npx vitest run` 310 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬 dev 서버에서 sessionStorage에 PRO/CREATE 초안을 넣고 `/analysis/prepare` 확인 — 배지가 "처음부터 작성"으로 렌더링됨을 실측. 테스트용 sessionStorage 값은 확인 후 삭제했습니다.
+- 미해결(사용자 확인 대기): "크리에이트 프로가 분석이 안 됨" — 오류 코드나 로그가 없어 원인을 특정하지 못했습니다. 정적 분석으로 자료-only CREATE 경로(`begin_quick_analysis` → `splitCoverLetterDraft` → `getAnalysisQuestions`)를 따라가 봤지만 문항 2개가 정상적으로 파싱·포함되는 것으로 보입니다. 추측으로 고치지 않고 사용자에게 화면 오류 코드와 터미널 로그를 요청했습니다.

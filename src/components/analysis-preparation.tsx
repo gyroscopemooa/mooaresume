@@ -141,7 +141,12 @@ export function AnalysisPreparation() {
         <div className={styles.grid}>
           <section className={styles.summary}>
             <div className={styles.product}>
-              <span>{product}</span>
+              {/* The three PRO modes cost the same and read the same on this
+                  screen, so the only place the choice was visible was an 8px
+                  grey line below the price. Wrong-mode runs are unrecoverable
+                  — the analysis is paid for and consumed — so the mode belongs
+                  beside the product name, not in the fine print. */}
+              <span>{product}{product === "PRO" && <em className={styles.mode}>{modeLabel}</em>}</span>
               <strong>{price}</strong>
               <small>
                 기업 지원서 1건 · {modeLabel} · {styleLabel}
