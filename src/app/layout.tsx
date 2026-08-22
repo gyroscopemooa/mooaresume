@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
+import Script from "next/script";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -36,7 +37,34 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <body className={notoSansKr.variable}>{children}</body>
+      <body className={notoSansKr.variable}>
+        {children}
+        {/* next/script's onLoad prop needs "use client", which the root layout
+            can't be (it exports metadata). Naver's own snippet relies on
+            wcslog.js loading and running before wcs_add/wcs_do exist, which a
+            plain blocking <script src> gives for free — creating the tag by
+            hand and hooking its own onload reproduces that without needing a
+            client boundary. */}
+        <Script id="naver-wcslog" strategy="afterInteractive">
+          {`(function(){
+  var s = document.createElement("script");
+  s.src = "//wcs.pstatic.net/wcslog.js";
+  s.onload = function() {
+    window.wcs_add = window.wcs_add || {};
+    window.wcs_add["wa"] = "1c6334533aa6fe0";
+    if (window.wcs) { window.wcs_do(); }
+  };
+  document.head.appendChild(s);
+})();`}
+        </Script>
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`(function(c,l,a,r,i,t,y){
+  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+})(window, document, "clarity", "script", "y66zftrtdb");`}
+        </Script>
+      </body>
     </html>
   );
 }

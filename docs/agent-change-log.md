@@ -690,3 +690,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/result-variant-nav.tsx`, `src/app/onboarding/page.tsx`, `src/components/result-workspace-complete.tsx`, `result-workspace-complete.test.tsx` on `main`.
 - Validation: `npx vitest run` 310 passed, `npx tsc --noEmit` clean, ESLint 0건.
 - Rollback: `ResultVariantNav`의 프로덕션 가드 한 줄만 지우면 이전 동작(모든 환경에서 비교 내비게이션 노출)으로 돌아갑니다.
+
+## 2026-08-22 — Claude: 네이버 웹로그 분석·Microsoft Clarity 추적 스크립트 추가
+
+- Agent/session: Claude. 사용자가 네이버 웹마스터도구의 웹로그 분석 스크립트, 구글 서치콘솔 메타태그, Microsoft Clarity 스크립트 세 개를 붙여주고 사이트에 넣어달라고 요청했습니다.
+- Status: completed.
+- 구글 사이트 확인 메타태그: 새로 만들지 않았습니다 — `src/app/layout.tsx`의 `metadata.verification.google`이 이미 `GOOGLE_SITE_VERIFICATION` 환경변수를 읽어 메타태그로 렌더링하도록 되어 있었고 `.env.example`에도 이미 문서화돼 있었습니다. 값 자체는 비밀이 아니지만(HTML에 그대로 노출되는 값), 환경변수 입력은 사용자가 IDE에서 하기로 한 기존 합의에 따라 코드는 건드리지 않고 값만 안내했습니다.
+- 네이버 웹로그 분석(wcslog.js): 원본 스니펫은 `<script src>`(동기 차단 로드) 다음 줄의 인라인 스크립트가 `window.wcs`를 확인하는 구조라, wcslog.js가 완전히 실행된 뒤에만 `wcs_add`를 설정하고 `wcs_do()`를 호출합니다. `next/script`의 `onLoad` 콜백은 이 순서를 그대로 재현하는 표준 방법이지만 **Server Component에서는 이벤트 핸들러 prop을 못 씁니다** — 루트 레이아웃은 `metadata`를 export해야 해서 `"use client"`로 바꿀 수 없습니다. 대신 `<Script>` 하나 안에서 직접 `<script>` 태그를 만들고 그 자체의 `onload`에 `wcs_add` 설정과 `wcs_do()` 호출을 넣어, prop 없이 순서를 보장했습니다.
+- Microsoft Clarity: 원본 IIFE를 그대로 `<Script strategy="afterInteractive">`의 내용으로 넣었습니다. 별도 이벤트 핸들러가 필요 없는 스니펫이라 Server Component 안에서 그대로 동작합니다.
+- Files/branch: `src/app/layout.tsx` on `main`.
+- Validation: `npx tsc --noEmit` clean, ESLint 0건. 로컬 dev 서버(사용자가 이미 켜둔 것)에 브라우저로 접속해 확인 — `window.clarity`가 함수로 존재, Clarity·wcslog 스크립트 태그 둘 다 주입됨, `window.wcs_add.wa === "1c6334533aa6fe0"` 확인, 콘솔 에러 없음.
+- 남은 일(사용자): `.env.local`과 Cloudflare 배포 환경변수에 `GOOGLE_SITE_VERIFICATION=y6v6fCOXM0u3Uq5XESQB1g-yduLoGXJvARLW3I6RGEk` 추가.
