@@ -157,10 +157,10 @@ export function ProCreateWizard() {
           onFilenamesChange={setPostingFilenames}
         />}
 
-        {current === 1 && <div className={styles.target}>
+        {current === 1 && <>
           <label>희망 회사<input value={company} onChange={(event) => setCompany(event.target.value)} placeholder="예: 롯데테크" /></label>
           <label>희망 직무<input value={role} onChange={(event) => setRole(event.target.value)} placeholder="예: 안전관리자" /></label>
-        </div>}
+        </>}
 
         {/* Materials and the free memo are one step: they answer the same
             question — "what do you have?" — and splitting them made the flow

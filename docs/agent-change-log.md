@@ -593,3 +593,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/guided-create-form.tsx` + `.module.css`, `src/components/pro-create-wizard.tsx` + `.module.css`, `src/components/pro-input-page.tsx` + `.module.css` on `main`.
 - Validation: 전체 `npx vitest run` 282 passed, `npx tsc --noEmit` clean, `npx eslint src` 오류·경고 0건(직전까지 남아 있던 `location.assign` 경고도 해소). 로컬에서 `/pro/create-wizard`가 `1단계 / 5단계`와 사이드바 5개 항목으로 렌더되는 것을 확인했습니다.
 - Rollback/recovery reference: 커밋 revert. `GuidedStepBody` 분리는 순수 리팩터링이라 `/pro/create` 동작에는 영향이 없습니다.
+
+## 2026-08-22 — Claude: 위저드 디자인 회귀 수정 (간격·글자 크기·체크 아이콘)
+
+- Agent/session: Claude. 사용자가 "디자인이 너무 별로다, 최소 Codex가 만든 버전이 나았다 — 디자인이나 글자 크기 등", 이어서 "왼쪽 진행단계 번호 크기도 다르고 체크표시 위치도 애매하다"고 지적했습니다. 세 가지 모두 원인이 달랐습니다.
+- Status: completed.
+- 원인 1 (Claude가 만든 회귀): `GuidedCreateForm`에서 본문을 `GuidedStepBody`로 분리할 때 바깥 래퍼 `.guided`(`display:grid; gap:14px; padding; border; background`)를 잃었습니다. 위저드 안에서 폼 요소들이 간격 없이 붙어 나왔습니다. → 본문에 `.stepBody{display:grid;gap:14px}` 래퍼를 다시 씌웠습니다. 테두리·배경은 부모가 제공하므로 넣지 않았습니다.
+- 원인 2 (Claude가 만든 회귀): 위저드 CSS가 이미 `.layout label`·`.layout input`을 스타일하는데 Claude가 `.target` 래퍼로 덮어써 원래 디자인과 어긋났습니다. → `.target`을 제거하고 Codex의 기본 라벨 스타일로 되돌렸습니다. 사이드바에 추가한 `em`도 회색이라 짙은 녹색 배경에서 안 보였습니다 → 배경에 맞는 색으로 수정.
+- 원인 3 (원래 있던 버그): `.layout aside button`의 `font:700 10px inherit`이 **유효하지 않은 CSS**입니다. `font` 축약형 안에서 `inherit`을 패밀리 자리에 쓸 수 없어 **선언 전체가 무시**됐고, 버튼이 상속된 16px로 렌더됐습니다(배율 적용 시 20px). → `font-weight:700; font-size:10px`로 분리했습니다.
+- 원인 4 (원래 있던 버그): `.layout aside svg{width:11px}`가 너비만 지정해, lucide 아이콘의 `height="24"` 표현 속성이 남아 체크 표시가 20px 원을 세로로 넘쳤습니다. → `height:11px` 추가.
+- 추가: `.questionLength`가 `.layout input`(명시도 0,1,1)에 밀려 넓어지던 문제를 `.questions .questionLength`(0,2,0)로 해결했습니다.
+- Files/branch: `src/components/guided-create-form.tsx` + `.module.css`, `src/components/pro-create-wizard.tsx` + `.module.css` on `main`.
+- Validation: 전체 `npx vitest run` 282 passed, `npx tsc --noEmit` clean, ESLint 0건. 브라우저에서 실측 — 사이드바 버튼 16px → 10px, 원 크기 전 항목 균일, 체크 아이콘 14×14가 25×25 원 안에 **가로·세로 오차 0**으로 중앙 정렬됨을 확인했습니다.
+- 참고: 다른 파일의 `font:inherit`은 전체 값이 CSS 전역 키워드라 유효합니다. 이번 문제는 축약형 중간에 끼운 경우에만 해당합니다.

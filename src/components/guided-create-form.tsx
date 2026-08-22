@@ -78,7 +78,7 @@ export function GuidedStepBody({ step, draft, onDraftChange, questions, onQuesti
     onQuestionsChange(applyGuidedAnswers(nextDraft, questions));
   }
 
-  return <>
+  return <div className={styles.stepBody}>
     {step.id === "assign" ? (
       <div className={styles.assign}>
         {questions.length === 0 && <p className={styles.empty}>문항 단계로 돌아가 자기소개서 문항을 먼저 추가해 주세요.</p>}
@@ -167,7 +167,7 @@ export function GuidedStepBody({ step, draft, onDraftChange, questions, onQuesti
     <p className={styles.notice}>
       여기에 적은 사실만으로 초안을 만듭니다. 적지 않은 경험·자격·수치는 AI가 만들어 넣지 않고, 부족한 부분은 확인 질문으로 돌려드립니다.
     </p>
-  </>;
+  </div>;
 }
 
 export function GuidedCreateForm({ draft, onDraftChange, questions, onQuestionsChange }: Props) {
