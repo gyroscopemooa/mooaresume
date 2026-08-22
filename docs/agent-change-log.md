@@ -890,3 +890,21 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/domain/next-step.ts` + `.test.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
 - Validation: `npx vitest run` 346 passed, `npx tsc --noEmit` clean, ESLint 0건.
 - 확인됨(사용자 제공): `private.app_config`에 `analysis_advance_url`·`analysis_cron_secret` 두 키가 모두 존재합니다. 크론 스케줄(1건, active)과 함께 **설정은 완료**입니다. 실제 실행 성공 여부는 `cron.job_run_details`로 확인이 남았고, 그것이 확인되면 결제 화면 문구를 "창을 닫아도 됩니다"로 바꿀 수 있습니다.
+
+## 2026-08-22 — Claude: "창을 닫아도 됩니다"로 문구 변경 (예약 작업 동작 확인 후)
+
+- Agent/session: Claude. 사용자가 `cron.job_run_details` 결과 제공 — `succeeded`가 매분 연속 5건.
+- Status: completed.
+- 배경: `docs/background-analysis-completion-decision.md` §7에 "**예약 작업이 실제로 도는 것을 확인한 뒤에만** 문구를 바꾼다. 순서를 뒤집으면 지키지 못할 약속을 다시 하게 된다. 한 번 이미 그렇게 했다"고 적어둔 조건이 이제 충족됐습니다. 확인된 항목 전부:
+  - `cron.job`: `advance-analysis-runs` 1건, `* * * * *`, `active = true`
+  - `private.app_config`: `analysis_advance_url`, `analysis_cron_secret` 둘 다 존재
+  - `cron.job_run_details`: 매분 `succeeded`
+  - `.env.local`: `ANALYSIS_CRON_SECRET`, `RESEND_API_KEY`, `ANALYSIS_EMAIL_FROM` 설정됨
+  - 사용자가 완료 이메일 실제 수신 확인
+- 변경한 문구 2곳:
+  - `analysis-preparation.tsx` 결제 직전 안내: "이 창을 열어둔 채로 기다려 주세요" → "분석에는 5~10분이 걸립니다. **창을 닫으셔도 서버에서 계속 진행되고, 끝나면 결과 링크를 이메일로 보내드립니다.** 기다리시면 완료 즉시 결과 화면으로 이동합니다." 실패 시 추가 결제 없이 재시도 가능하다는 안내는 유지했습니다.
+  - `quick-checkout-return.tsx` 분석 중 메시지 2곳(동일 문자열): "결과를 받으려면 이 화면을 열어둔 채로 기다려 주세요" → "창을 닫으셔도 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다."
+- 소요 시간(5~10분)을 함께 밝혔습니다. 기다릴지 닫을지 판단하려면 얼마나 걸리는지가 필요한데 어느 문구에도 없었습니다.
+- Files/branch: `src/components/analysis-preparation.tsx`, `src/components/quick-checkout-return.tsx` on `main`.
+- Validation: `npx vitest run` 346 passed, `npx tsc --noEmit` clean, ESLint 0건.
+- 주의: 이 약속은 **배포 환경에도 같은 설정이 있어야** 유지됩니다. `private.app_config`의 `analysis_advance_url`이 로컬 주소를 가리키고 있다면 배포 후 실제 도메인으로 바꿔야 하고, Cloudflare에도 `ANALYSIS_CRON_SECRET`·`RESEND_API_KEY`·`ANALYSIS_EMAIL_FROM`이 있어야 합니다.

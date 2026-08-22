@@ -106,7 +106,7 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
         }
         if (status.analysisStatus === "RUNNING") {
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 결과를 받으려면 이 화면을 열어둔 채로 기다려 주세요.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
           if (!executing.current) {
             executing.current = true;
             try {
@@ -119,7 +119,7 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
         if (status.entitlementStatus === "ACTIVE" && !executing.current) {
           executing.current = true;
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 결과를 받으려면 이 화면을 열어둔 채로 기다려 주세요.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
           try {
             const executeResponse = await fetch("/api/analysis-runs/quick/execute", {
               method: "POST",

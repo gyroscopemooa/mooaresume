@@ -227,7 +227,7 @@ export function AnalysisPreparation() {
               <Clock />
               <span>
                 <b>분석에는 5~10분 정도 걸립니다.</b>
-                <small>이 창을 열어둔 채로 기다려 주세요. 완료되면 결과 화면으로 바로 이동합니다. 분석에 실패하면 추가 결제 없이 다시 시도할 수 있습니다.</small>
+                <small>분석에는 5~10분이 걸립니다. 창을 닫으셔도 서버에서 계속 진행되고, 끝나면 결과 링크를 이메일로 보내드립니다. 기다리시면 완료 즉시 결과 화면으로 이동합니다. 분석에 실패하면 추가 결제 없이 다시 시도할 수 있습니다.</small>
               </span>
             </div>
             <div className={styles.privacy}>
