@@ -227,7 +227,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
   return <main className={styles.page}>
     <header className={styles.header}>
       <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
-      <div><em className={styles.completeBadge}>완성본 · 통합 작업공간</em><button onClick={() => copy("all", finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={downloadDocx}><Download/> DOCX 저장</button><button onClick={download}><Download/> TXT 저장</button></div>
+      <div><em className={styles.completeBadge}>완성본</em><button onClick={() => copy("all", finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={downloadDocx}><Download/> DOCX 저장</button><button onClick={download}><Download/> TXT 저장</button></div>
     </header>
 
     <div className={styles.container}>

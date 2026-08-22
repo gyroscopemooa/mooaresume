@@ -800,3 +800,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 네이버 소유권 확인(`NAVER_SITE_VERIFICATION`)은 토큰을 받지 못해 환경변수 방식 그대로입니다. 구글과 **같은 빌드 시점 문제**를 겪을 것이므로, 토큰을 받으면 구글과 같이 코드에 고정해야 합니다.
 - Files/branch: `src/app/sitemap.ts`, `src/app/layout.tsx` on `main`.
 - Validation: `npx vitest run` 328 passed, `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-22 — Claude: 결과 화면에서 개발용 비교 내비게이션·내부 용어 제거
+
+- Agent/session: Claude. 사용자가 "대시보드 최종 결과판에 아직 '결과 버전 비교', '통합 작업공간' 문구들 있는데 없애지 말고 안 보이게 해달라고 했지 않나"라고 재지적했습니다.
+- Status: completed.
+- 이전 조치의 한계: 앞서 `ResultVariantNav`에 `NODE_ENV === "production"` 가드를 넣었지만, **사용자의 테스트는 로컬 개발 서버에서 이뤄지므로 계속 보였습니다.** 배포에서만 숨기는 것은 "고객이 보는 화면을 확인하려는" 실제 목적을 충족하지 못했습니다.
+- 조치 1: 결제한 지원자가 실제로 도착하는 두 경로(`/result`, `/result/complete`)에서 `ResultVariantNav` 렌더링을 제거했습니다. **비교 전용 5개 경로**(`/result/v2`, `/result/codex`, `/result/claude`, `/result/claude-restored`, `/result/codex-restored`)에서는 그대로 유지되므로 개발 중 비교는 계속 가능합니다. 컴포넌트·비교 페이지·각 버전 구현 모두 삭제하지 않았습니다(셰어드워크 보존).
+- 조치 2: `완성본 · 통합 작업공간` 배지에서 "통합 작업공간"을 뺐습니다. 이 표현은 제품을 만들 때 쓰던 **내부 아키텍처 용어**이고, 배지가 가리키는 탭 이름은 "완성본"입니다. 지원자에게는 의미가 없는 말이라 배지 자체는 남기고 내부 용어만 덜어냈습니다.
+- Files/branch: `src/app/result/page.tsx`, `src/app/result/complete/page.tsx`, `src/components/result-workspace-complete.tsx` on `main`.
+- Validation: `npx vitest run` 328 passed, `npx tsc --noEmit` clean, ESLint 0건.
