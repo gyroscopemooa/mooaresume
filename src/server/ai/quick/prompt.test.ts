@@ -64,6 +64,19 @@ describe("공고와 지원자료를 첨삭에 반영", () => {
   it("자료 파일 이름을 함께 표시한다", () => {
     expect(buildQuickAnalysisInput(withResume)).toContain("[이력서 · 이력서.pdf]");
   });
+
+  // A real case: the applicant's own answer said "대학을 졸업하고 현대자동차에서
+  // 일했다", but their résumé shows the school ending the same month Hyundai
+  // started and the actual degree finishing three years after Hyundai ended.
+  // No single figure was wrong — the *order* was — and that shape needed its
+  // own instruction; the existing 기간/직함/소속/성과 mismatch rule does not
+  // cover "A 하고 나서 B" contradicted by two date ranges.
+  it("자료의 기간이 자소서의 사건 순서와 어긋날 수 있다고 알린다", () => {
+    const instructions = buildQuickAnalysisInstructions(withResume);
+
+    expect(instructions).toContain("~한 후");
+    expect(instructions).toContain("순서를 지원자료의 경력·학력 시작일·종료일과 대조");
+  });
 });
 
 describe("지원자료 분량 상한", () => {

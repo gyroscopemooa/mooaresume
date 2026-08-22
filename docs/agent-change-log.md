@@ -630,3 +630,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/domain/guided-create.ts`, `src/domain/guided-create-assign.test.ts`(신규), `src/components/guided-create-form.tsx` + `.module.css` + `.test.tsx`, `src/components/pro-create-wizard.tsx` on `main`.
 - Validation: `npx vitest run` 299 passed(신규 12건), `npx tsc --noEmit` clean, ESLint 0건.
 - Rollback: `guidedBlockPreview`·`recommendGuidedBlocks` 호출부를 제거하면 칩이 라벨만 표시하던 이전 동작으로 돌아갑니다. 도메인 함수는 순수 함수라 남겨둬도 부작용이 없습니다.
+
+## 2026-08-22 — Claude: 자소서 서사 순서와 이력서 날짜의 모순 감지
+
+- Agent/session: Claude. 사용자가 실제 PRO CREATE 결과를 이력서 원본(PDF)과 대조하며 "대학 졸업 후 현대자동차"라는 문장이 틀렸다고 지적했습니다. 직접 PDF를 열어 확인했습니다.
+- Status: completed.
+- 확인된 사실(이력서 학력 탭 원문): 울산과학대학교 중퇴 2014.09, 현대자동차 재직 2014.09~2015.03, 국가평생교육진흥원(학점은행제) 심리학과 졸업 2018.09. 즉 실제 졸업은 현대차 퇴사보다 3년 반 뒤이고, 중퇴와 현대차 입사는 같은 달입니다. AI가 쓴 "대학 졸업 후에는 현대자동차 생산 현장을 경험했고"는 순서가 거꾸로입니다.
+- 원인: 이 문장은 지원자 본인이 CREATE 단계에서 입력한 원래 표현("대학을 졸업하고, 캐나다 워홀...")을 AI가 그대로 받아쓴 것입니다. 기존 규칙(`자소서와 지원자료가 서로 어긋나면(기간, 직함, 소속, 성과)...`)은 **숫자·직함 같은 단일 사실의 불일치**만 다루고, "~한 후"류 **서술 순서**가 이력서의 시작·종료일과 모순되는 경우는 다루지 않았습니다.
+- 조치: `src/server/ai/quick/prompt.ts`에 지원자료가 있을 때 걸리는 규칙을 하나 추가했습니다 — "~한 후, ~하고 나서, 이후에는" 같은 순서 서술을 지원자료의 경력·학력 시작·종료일과 대조하고, 겹치거나 순서가 반대이면 그 순서를 그대로 쓰지 말고 시간 표현 없이 사실만 쓰거나 verificationQuestions로 남기라는 지시입니다.
+- 별도로 확인한 것(코드 문제 아님): "청년재단만 나온 것 같다"는 지적은 실제로는 틀렸습니다 — 세 문항 모두 울산과학대학교 대학일자리센터가 포함돼 있습니다. 강조 표시(노란 밑줄)가 청년재단 쪽에 걸려 상대적으로 덜 보였을 뿐입니다. 다만 직무 적합도상 울산과학대(직업상담사 타이틀)가 청년재단보다 비중이 작게 실린 건 사실이며, 이는 CREATE 단계에서 사용자가 직접 입력한 텍스트 분량 차이일 가능성이 높아 프롬프트로 단정 짓지 않았습니다. 사용자가 다음 테스트로 "이력서만으로" 돌려보기로 함.
+- Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts` on `main`.
+- Validation: `npx vitest run` 300 passed(신규 1건), `npx tsc --noEmit` clean, ESLint 0건. PDF는 프로젝트의 `pdfjs-dist`로 직접 텍스트 추출해 날짜를 확인했습니다(임시 스크립트, 커밋하지 않음).
+- Rollback: 새로 추가한 규칙 문자열 한 줄을 제거하면 이전 동작으로 돌아갑니다.

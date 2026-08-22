@@ -160,6 +160,13 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       ? [
           "이력서·경력기술서·포트폴리오·추가 경험 자료가 함께 제공됩니다. 자소서 문항의 주장이 얇을 때 이 자료에서 확인되는 사실(기간, 소속, 역할, 담당 업무, 수치)로 뒷받침하세요. 수정 이유와 우선순위의 근거는 자소서 원문 또는 이 지원자료에서 실제 문구를 인용하세요. 자료에 없는 내용은 만들지 마세요.",
           "자소서와 지원자료가 서로 어긋나면(기간, 직함, 소속, 성과) 어느 쪽이 맞는지 단정하지 말고 verificationQuestions에 확인 질문으로 남기세요.",
+          // The mismatch above is about a single fact disagreeing. This one is
+          // about a *sequence* — "학교를 졸업하고 회사에 들어갔다" — that the
+          // dates on the resume can directly contradict even when no single
+          // figure is wrong. An applicant's own summary of their timeline is
+          // often simplified or wrong in exactly this way, and the résumé's
+          // start/end dates are the more reliable source for order.
+          "자소서 문장이 '~한 후', '~하고 나서', '이후에는' 같은 표현으로 사건의 순서를 서술하면, 그 순서를 지원자료의 경력·학력 시작일·종료일과 대조하세요. 날짜가 겹치거나 순서가 반대이면(예: 재직 기간과 재학 기간이 겹침, 졸업일이 다음 경력의 시작일보다 늦음) 그 순서를 그대로 새 문장에 쓰지 말고, 시간 표현 없이 사실만 서술하거나 verificationQuestions에 확인을 남기세요.",
         ]
       : []),
     "consultingAdvice의 remove 제안은 '없어도 되는 문장'이 아니라 '두면 감점 요인이 되는 문장'만 대상으로 하세요. rationale에 무엇이 왜 문제인지 원문 근거와 함께 적고, 단순히 분량을 줄이기 위한 삭제는 제안하지 마세요.",
