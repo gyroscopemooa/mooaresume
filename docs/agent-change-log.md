@@ -1019,3 +1019,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 한계는 남습니다: 프롬프트는 확률적이라 규칙을 좁혀도 보장은 아닙니다. 실제 출력에서 모든 문항이 같은 형태로 시작하는지 확인이 필요하며, 그때는 조건을 더 조이거나 장단점 문항으로만 한정하는 선택지가 있습니다.
 - Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts`, `docs/editing-philosophy-2-consultant-field-notes.md` on `main`.
 - Validation: `npx vitest run` 382 passed(신규 1건, 기존 1건 교체), `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-22 — Claude: 두괄식 적용 문항 수에 상한 추가
+
+- Agent/session: Claude. 사용자 확인 — "모든 자소서가 다 두괄식이면 별로임. 장단점이나 한 번만 저런 거 활용하는 정도임."
+- Status: completed.
+- 직전 커밋에서 기본값을 '유지'로 뒤집고 판정 기준을 도달 여부로 바꿨지만, **지원서 전체 단위의 상한이 없었습니다.** 판단이 문항별로만 이뤄지므로 각 문항이 저마다 "이 문항은 해당된다"고 보면 결국 전부에 걸릴 수 있습니다.
+- 조치: `"두괄식 재배치는 지원서 전체에서 한 문항, 많아야 두 문항에만 적용하세요. 장점·단점 문항이 있으면 그 문항을 먼저 선택합니다. 여러 문항이 모두 결론을 앞세우면 그 자체가 하나의 틀이 되어 효과가 사라집니다."` — 소제목 일관성 규칙과 같은 **문서 단위 제약**이며, 우선순위(장단점 먼저)까지 지정해 어느 문항에 쓸지 모델이 임의로 고르지 않게 했습니다.
+- 철학2 §4-1 기준표 아래에 같은 내용을 정리했습니다("강조는 드물어야 강조다").
+- Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts`, `docs/editing-philosophy-2-consultant-field-notes.md` on `main`.
+- Validation: `npx vitest run` 383 passed(신규 1건), `npx tsc --noEmit` clean, ESLint 0건.
