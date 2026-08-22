@@ -9,7 +9,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.4";
+export const QUICK_PROMPT_VERSION = "quick-2.5";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -52,6 +52,10 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     "evidenceQuote에는 지원자가 제출한 글에서 그대로 복사한 문구만 넣으세요. 인용할 수 있는 곳은 자기소개서 문항의 답변과 함께 제출한 지원자료(이력서·경력기술서·포트폴리오·추가 경험)뿐입니다.",
     "채용공고 문장은 evidenceQuote로 쓸 수 없습니다. 공고는 지원자가 쓴 글이 아닙니다. 공고 요구는 reason 본문에서 설명하고, evidenceQuote에는 그 판단의 근거가 된 지원자 원문을 넣으세요.",
     "방금 새로 작성한 문장을 evidenceQuote로 인용하지 마세요. 인용은 지원자가 원래 제출한 내용에서만 가능합니다.",
+    // The input format's own labels are not the applicant's writing, and
+    // quoting one fails validation every time.
+    "이 입력의 형식 표시(예: '[문항 1]', '제목:', '질문:', '답변:', '(아직 작성되지 않았습니다...)')는 지원자가 쓴 글이 아닙니다. evidenceQuote에 절대 넣지 마세요.",
+    "아직 작성되지 않은 문항뿐이라 인용할 답변이 없다면, priorities의 evidenceQuote는 제출된 지원자료(이력서·경력기술서·포트폴리오)의 실제 문구에서 가져오세요.",
     "objective, qualitative, needs_verification 판단을 구분하세요.",
     "준비도 점수는 합격 확률이 아니며, 모든 점수와 수정 이유에 원문 근거를 붙이세요.",
     "수치가 없으면 정성적 행동과 확인 가능한 변화만 활용하세요. 임의의 숫자를 추가하지 마세요.",
@@ -237,7 +241,14 @@ export function buildQuickAnalysisInput(request: AnalysisRequest) {
     `[문항 ${question.order}]`,
     ...(question.title ? [`제목: ${question.title}`] : []),
     ...(question.prompt ? [`질문: ${question.prompt}`] : []),
-    `답변:\n${question.answer}`,
+    // A blank answer used to render as a bare "답변:" with nothing under it,
+    // which reads as a quotable line. Asked for a priority's evidenceQuote and
+    // having no applicant sentence anywhere in the question block, the model
+    // quoted the label — and the validator, which searches the applicant's
+    // documents rather than this scaffolding, blocked the whole paid run.
+    question.answer.trim()
+      ? `답변:\n${question.answer}`
+      : "답변: (아직 작성되지 않았습니다. 이 문항의 근거는 지원자료에서 찾으세요.)",
   ]);
 
   const unanswered = getUnansweredQuestions(request);

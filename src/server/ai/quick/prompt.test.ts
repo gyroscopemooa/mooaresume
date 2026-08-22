@@ -379,3 +379,47 @@ describe("문항별 소제목 제안", () => {
     expect(buildQuickAnalysisInstructions(request)).toContain("답변에 없는 사실이나 수치를 소제목에 넣지 마세요");
   });
 });
+
+describe("빈 문항이 인용 가능한 것처럼 보이지 않게 한다", () => {
+  // 실제 장애: 자료만으로 진행한 CREATE에서 모든 답변이 비어 있자, 모델이
+  // priorities의 evidenceQuote로 입력 형식 라벨인 "답변:"을 인용했다.
+  // 검증기는 지원자 문서에서만 인용을 찾으므로 결제된 실행 전체가 막혔다.
+  const blank: AnalysisRequest = {
+    ...request,
+    product: "PRO",
+    writingMode: "CREATE",
+    documents: [
+      ...request.documents,
+      { kind: "resume", text: "울산과학대학교 대학일자리센터 · 상담 및 컨설팅 8개월" },
+    ],
+    questions: [
+      { id: "q1", title: "", prompt: "지원 동기를 서술하세요.", answer: "", targetLength: 700 },
+      { id: "q2", title: "", prompt: "강점을 서술하세요.", answer: "", targetLength: 500 },
+    ],
+  };
+
+  it("빈 답변은 비어 있다고 밝히고 어디서 근거를 찾을지 알려준다", () => {
+    const input = buildQuickAnalysisInput(blank);
+
+    expect(input).toContain("답변: (아직 작성되지 않았습니다");
+    expect(input).not.toContain("답변:\n\n");
+  });
+
+  it("답변이 있는 문항은 예전 형식 그대로 둔다", () => {
+    const input = buildQuickAnalysisInput(request);
+
+    expect(input).toContain("답변:\n");
+    expect(input).not.toContain("아직 작성되지 않았습니다");
+  });
+
+  it("형식 라벨을 인용하지 말라고 지시한다", () => {
+    const instructions = buildQuickAnalysisInstructions(blank);
+
+    expect(instructions).toContain("형식 표시");
+    expect(instructions).toContain("evidenceQuote에 절대 넣지 마세요");
+  });
+
+  it("인용할 답변이 없으면 지원자료에서 가져오라고 지시한다", () => {
+    expect(buildQuickAnalysisInstructions(blank)).toContain("priorities의 evidenceQuote는 제출된 지원자료");
+  });
+});

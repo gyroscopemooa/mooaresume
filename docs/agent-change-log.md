@@ -771,3 +771,19 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/layout.tsx` on `main`.
 - Validation: `npx vitest run` 324 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬에서 메타태그가 올바른 값으로 렌더링됨을 브라우저로 확인. 배포 후 실제 반영은 사용자 확인 필요.
 - 남은 일(사용자): 배포 후 `https://mooaresume.com` 소스에서 태그를 확인하고 Search Console에서 "확인"을 다시 누르세요.
+
+## 2026-08-22 — Claude: 빈 문항이 인용 가능한 것처럼 보이던 문제 수정 (quick-2.5)
+
+- Agent/session: Claude. 사용자가 로그 제공: `quick_analysis_validation_blocked:INVALID_EVIDENCE` / `우선순위의 근거가 원문에서 확인되지 않습니다: "답변:"` / 422.
+- Status: completed.
+- 원인: `buildQuickAnalysisInput`이 모든 문항을 `답변:
+{answer}` 형태로 렌더링했습니다. 자료만으로 진행하는 CREATE는 모든 답변이 비어 있으므로 프롬프트에 **`답변:` 라벨만 덩그러니** 남습니다. 모델은 `priorities[].evidenceQuote`(필수, `min(1)`)를 채워야 하는데 문항 블록 안에 지원자가 쓴 문장이 하나도 없자 **입력 형식 라벨인 `"답변:"` 자체를 인용**했습니다. 검증기(`candidateEvidenceSource`)는 지원자 문서에서만 인용을 찾으므로 이 라벨이 발견될 리 없고, `INVALID_EVIDENCE`는 차단 코드라 **결제된 실행 전체가 422로 막혔습니다.**
+- 조치 (3가지, 모두 프롬프트 계층):
+  1. 빈 답변은 `답변: (아직 작성되지 않았습니다. 이 문항의 근거는 지원자료에서 찾으세요.)`로 렌더링합니다. 인용 가능한 빈 줄이 아니라 상태 설명임을 분명히 하고, 대안을 같은 자리에서 알려줍니다.
+  2. 입력 형식 표시(`[문항 1]`, `제목:`, `질문:`, `답변:` 등)는 지원자가 쓴 글이 아니므로 evidenceQuote에 넣지 말라는 규칙을 추가했습니다.
+  3. 인용할 답변이 아예 없을 때 `priorities`의 근거는 지원자료(이력서 등)에서 가져오라는 규칙을 추가했습니다.
+- 검증기는 바꾸지 않았습니다. 라벨을 근거로 통과시키는 것은 "근거는 지원자가 쓴 것이어야 한다"는 제품 원칙을 깨는 일이라, 검증기를 느슨하게 하는 대신 모델이 그런 인용을 만들 이유를 제거했습니다.
+- `QUICK_PROMPT_VERSION` quick-2.4 → **quick-2.5**.
+- Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts` on `main`.
+- Validation: `npx vitest run` 328 passed(신규 4건), `npx tsc --noEmit` clean, ESLint 0건. 답변이 있는 문항의 렌더링 형식이 그대로임을 테스트로 고정했습니다.
+- Rollback: `question.answer.trim()` 분기를 되돌리고 추가한 규칙 2줄을 제거하면 됩니다.
