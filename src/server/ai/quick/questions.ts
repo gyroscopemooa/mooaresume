@@ -66,6 +66,25 @@ export function expandsToTargetLength(request: AnalysisRequest) {
     && hasSeparatedQuestions(request);
 }
 
+/**
+ * POLISH reaching the target from the applicant's own words, and no further.
+ *
+ * Leaving a 409-character answer at 409 against a 700 limit meant paying for a
+ * result that still carried the defect, with the only remedy being another
+ * purchase. Elaborating what is already written — what was done, why, how it
+ * was judged — adds no facts, so it stays inside what "polish" means.
+ *
+ * What it must NOT do is tier 2: pulling unused facts out of the résumé. That,
+ * and filling blank questions, is what BUILD is for, and the boundary between
+ * the two modes is which materials may be opened, not how long the answer ends
+ * up.
+ */
+export function expandsFromOwnContent(request: AnalysisRequest) {
+  return request.product === "PRO"
+    && request.writingMode === "POLISH"
+    && hasSeparatedQuestions(request);
+}
+
 export function fillsBlankQuestions(request: AnalysisRequest) {
   return request.product === "PRO"
     && request.writingMode === "BUILD"

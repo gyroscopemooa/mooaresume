@@ -975,3 +975,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/analysis-preparation.tsx` + `.module.css` + `.test.tsx`(신규) on `main`.
 - Validation: `npx vitest run` 367 passed(신규 4건), `npx tsc --noEmit` clean, ESLint 0건.
 - **미승인 보류**: POLISH가 원문 확장(채우기 1단계)까지 하도록 하는 변경은 사용자 확인을 받지 않아 적용하지 않았습니다.
+
+## 2026-08-22 — Claude: POLISH가 자기 글 안에서 목표 분량까지 늘리도록 + 줄이기 규칙 축 교정 (quick-2.9)
+
+- Agent/session: Claude. 사용자 승인("어느 정도 채워줘")과 함께, **제 이전 규칙이 잘못됐다는 지적**을 받았습니다 — "실무에선 너무 거품 뜬구름 문장이면 간결하게 하는 게 중요하고, 두괄식으로 간결하게 임팩트 있는 것도 오히려 더 중요할 때가 있다."
+- Status: completed.
+- 변경 1 — POLISH 확장(`expandsFromOwnContent` 신규): PRO POLISH도 목표에 못 미치면 **지원자가 이미 쓴 내용을 더 구체적으로 풀어** 목표에 가깝게 늘립니다. **지원자료(이력서 등)에서 새 사실을 가져오는 것(채우기 2단계)과 빈 문항 채움은 명시적으로 금지**했습니다. 두 모드의 경계는 **길이가 아니라 어느 재료를 열 수 있느냐**이며, BUILD는 여전히 빈 문항 + 새 재료라는 차별점을 갖습니다.
+  - 물타기 방지를 같은 문단에 넣었습니다 — "'많은 것을 배웠습니다', '최선을 다하겠습니다' 같은 일반론으로 글자 수를 채우는 것은 늘린 것이 아니라 **망친 것**입니다. 그렇게 채우느니 짧게 두고 consultingAdvice에 적으세요."
+- 변경 2 — **줄이기 규칙의 축 교정**(사용자 지적 반영): 직전 커밋(quick-2.8)에서 제가 넣은 규칙은 **글자 수를 보호**하고 예외를 둘(목표 초과·중복)로 한정했습니다. **축이 틀렸습니다.** 뜬구름 문장을 쳐내고 두괄식으로 재배치하는 것은 실무의 정당한 기술이고 그 결과 짧아지는 것은 결함이 아닙니다. 지켜야 할 것은 분량이 아니라 **사실**입니다.
+  - `LENGTH_INTEGRITY_RULE`로 분리해 두 분기가 공유합니다: 추상 표현·반복·상투적 다짐은 덜어내도 되고 **두괄식 간결화도 권장**하되, 지원자가 밝힌 사실·경험, 특히 수치·기간·소속·직함·자격증·고유명사는 분량을 이유로 빼지 말 것. 요약하면 **"없애도 되는 것은 '말'이고, 없애면 안 되는 것은 '사실'"**.
+- 변경 3 — 안내 문구 정정: `/analysis/prepare`의 "최종 첨삭은 ... **분량이 크게 늘지 않습니다**"가 변경 1로 인해 거짓이 되므로 "**이미 쓰신 내용을 풀어 쓰는 데까지만** 합니다"로 고쳤습니다. 두 변경이 물려 있어 함께 적용했습니다.
+- 기존 테스트 3건이 옛 POLISH 동작을 고정하고 있어 갱신했습니다. 의도 중 살아 있는 부분(POLISH는 BUILD의 빈 문항 채우기 지시를 받지 않는다)은 유지했고, BUILD의 "짧아지면 안 됩니다"가 그대로인지 확인하는 테스트도 남겼습니다.
+- Files/branch: `src/server/ai/quick/questions.ts`, `prompt.ts`, `prompt.test.ts`, `src/components/analysis-preparation.tsx` on `main`. `QUICK_PROMPT_VERSION` quick-2.8 → **quick-2.9**.
+- Validation: `npx vitest run` 368 passed, `npx tsc --noEmit` clean, ESLint 0건.

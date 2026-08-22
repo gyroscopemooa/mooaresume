@@ -179,7 +179,7 @@ export function AnalysisPreparation() {
               // Informing, never blocking. A short answer can be a deliberate
               // choice; a wrong mode cannot be undone after payment.
               <p className={styles.shortNotice}>
-                문항당 목표 분량의 <b>{Math.round(fillRatio * 100)}%</b>가 작성돼 있습니다. 최종 첨삭은 이미 쓰신 내용을 다듬는 단계라 분량이 크게 늘지 않습니다. 이력서에서 소재를 더 가져와 채우려면 <b>내용 보완</b>이 맞습니다.
+                문항당 목표 분량의 <b>{Math.round(fillRatio * 100)}%</b>가 작성돼 있습니다. 최종 첨삭은 <b>이미 쓰신 내용을 풀어 쓰는 데까지만</b> 합니다. 이력서에서 새 소재를 가져와 채우려면 <b>내용 보완</b>이 맞습니다.
                 <Link href="/onboarding">유형 다시 고르기 <ArrowRight /></Link>
               </p>
             )}
