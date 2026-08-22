@@ -466,3 +466,45 @@ describe("상담 노트에서 추가한 규칙", () => {
     expect(text).toContain("임의의 숫자를 추가하지 마세요");
   });
 });
+
+describe("최종 첨삭도 원문을 지워서 줄이지 않는다", () => {
+  // 사용자가 700자 문항에서 409자·389자 결과를 받고 "글자수가 적어졌다"고
+  // 보고했다. POLISH에는 채우기 지시도, 줄이지 말라는 지시도 없어서 다듬는
+  // 김에 내용까지 덜어낼 수 있었다. BUILD·CREATE에서 이미 고친 것과 같은 결함.
+  it("POLISH에 분량을 지워 줄이지 말라고 지시한다", () => {
+    const instructions = buildQuickAnalysisInstructions({ ...request, writingMode: "POLISH" });
+
+    expect(instructions).toContain("원문에 있던 내용을 지워서 분량을 줄이지는 마세요");
+    expect(instructions).toContain("원문에 있던 구체적인 사실(수치, 기간, 소속, 자격증 이름, 고유명사)은 분량을 이유로 빼지 마세요");
+  });
+
+  it("줄여도 되는 두 경우는 그대로 허용한다", () => {
+    // 목표 초과분을 줄이는 것과 군더더기를 덜어내는 것은 첨삭의 본래 일이다.
+    const instructions = buildQuickAnalysisInstructions({ ...request, writingMode: "POLISH" });
+
+    expect(instructions).toContain("원문이 목표 글자 수를 넘겨 줄여야 할 때");
+    expect(instructions).toContain("같은 말이 반복되거나 군더더기라서 덜어낸 때");
+  });
+
+  it("다듬어 생긴 자리를 버리지 말라고 지시한다", () => {
+    expect(buildQuickAnalysisInstructions({ ...request, writingMode: "POLISH" }))
+      .toContain("자리가 남으면 그 자리는 원문에 이미 있는 경험을 더 구체적으로");
+  });
+
+  it("QUICK에도 같은 보호가 걸린다", () => {
+    expect(buildQuickAnalysisInstructions({ ...request, product: "QUICK" }))
+      .toContain("원문에 있던 내용을 지워서 분량을 줄이지는 마세요");
+  });
+
+  it("채우기 모드의 지시는 그대로 유지된다", () => {
+    // 두 분기는 서로 다른 문구를 쓴다. 이 줄이 사라지면 BUILD가 다시 짧아진다.
+    const build = buildQuickAnalysisInstructions({
+      ...request,
+      product: "PRO",
+      writingMode: "BUILD",
+      questions: [{ id: "q1", title: "", prompt: "지원 동기를 서술하세요.", answer: "짧은 답변입니다.", targetLength: 700 }],
+    });
+
+    expect(build).toContain("첨삭본이 원문보다 짧아지면 안 됩니다");
+  });
+});

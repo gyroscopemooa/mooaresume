@@ -9,7 +9,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.7";
+export const QUICK_PROMPT_VERSION = "quick-2.8";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -101,7 +101,9 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
 2) 그래도 부족하면 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험)에서 이 문항과 관련 있는데 아직 쓰이지 않은 사실을 가져와 문장으로 만듭니다. 자료에 적힌 것은 지원자가 직접 밝힌 사실이므로 가져다 쓰는 것이 맞습니다. 단, 자료에 없는 내용을 추측해 덧붙이지는 마세요.
 3) 1)과 2)로도 목표에 닿지 않으면 거기서 멈추고, 무엇을 더 알려주면 채울 수 있는지 consultingAdvice에 적으세요.
 표현을 바꾸거나 순서를 정리하는 것은 분량을 채운 것이 아닙니다. 같은 말을 반복하거나 일반론을 덧붙여 글자 수만 늘리지 마세요.`
-      : `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.`,
+      : `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.
+다만 원문에 있던 내용을 지워서 분량을 줄이지는 마세요. 첨삭본이 원문보다 짧아지는 경우는 (1) 원문이 목표 글자 수를 넘겨 줄여야 할 때, (2) 같은 말이 반복되거나 군더더기라서 덜어낸 때뿐입니다. 표현을 다듬어 자리가 남으면 그 자리는 원문에 이미 있는 경험을 더 구체적으로 쓰는 데 쓰세요.
+원문에 있던 구체적인 사실(수치, 기간, 소속, 자격증 이름, 고유명사)은 분량을 이유로 빼지 마세요. 그것이 이 지원서에서 가장 검증 가능한 근거입니다.`,
     WRITING_MODE_INSTRUCTION[request.writingMode],
     // A posting for a large employer often covers several positions at once.
     // Without this the analysis matches every requirement on the page.

@@ -934,3 +934,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - `consultingAdvice`는 화면에서 `kind`를 표시하지 않아 UI 변경이 없었고, 주석 유형만 라벨("다듬으면 좋음")과 색을 추가했습니다.
 - Files/branch: `src/server/ai/quick/schema.ts` + `.test.ts`, `prompt.ts` + `.test.ts`, `src/domain/result-document.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` on `main`. `QUICK_PROMPT_VERSION` quick-2.6 → **quick-2.7**.
 - Validation: `npx vitest run` 354 passed(신규 8건), `npx tsc --noEmit` clean, ESLint 0건. 기존 분류만 쓰던 응답이 그대로 파싱되는지도 테스트로 고정했습니다.
+
+## 2026-08-22 — Claude: 최종 첨삭(POLISH)이 원문을 지워 분량을 줄이던 문제 수정 (quick-2.8)
+
+- Agent/session: Claude. 사용자가 PRO POLISH 결과에서 "글자수도 적어진 것 같다"고 보고. 화면 실측치 409/700, 389/700, 487/700 · 모두 "분량 보완 필요".
+- Status: completed.
+- 원인: `expandsToTargetLength`(PRO && BUILD/CREATE)가 아닌 분기, 즉 **POLISH와 QUICK 전체**가 받는 지시는 `"원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요"` 한 줄뿐이었습니다. **줄이지 말라는 규칙이 없었습니다.** 앞서 BUILD에서 540자→503자로 발견해 고쳤던 것과 **같은 결함이 POLISH에는 그대로 남아 있었습니다.** 당시 BUILD만 분기했고 이후 CREATE를 추가했을 뿐이라, POLISH는 한 번도 보호받은 적이 없습니다.
+- 조치(해당 분기에 3문장 추가, 기존 문장은 유지):
+  - 원문에 있던 내용을 지워서 분량을 줄이지 말 것.
+  - 짧아져도 되는 경우를 **두 가지로 한정** — (1) 원문이 목표를 넘겨 줄여야 할 때, (2) 반복·군더더기를 덜어낸 때. 이 둘은 첨삭의 본래 일이므로 막지 않았습니다.
+  - 표현을 다듬어 생긴 자리는 버리지 말고 원문의 경험을 더 구체적으로 쓰는 데 쓸 것.
+  - 수치·기간·소속·자격증 이름 등 구체적 사실은 분량을 이유로 빼지 말 것(채우기 분기에 이미 있던 규칙을 이쪽에도 추가).
+- 채우기 분기는 손대지 않았습니다. 두 분기가 서로 다른 문구를 쓰므로, BUILD의 "짧아지면 안 됩니다"가 그대로 남아 있는지 확인하는 테스트를 함께 넣었습니다.
+- Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts` on `main`. `QUICK_PROMPT_VERSION` quick-2.7 → **quick-2.8**.
+- Validation: `npx vitest run` 360 passed(신규 5건), `npx tsc --noEmit` clean, ESLint 0건.
