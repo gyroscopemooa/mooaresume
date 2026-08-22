@@ -666,3 +666,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/guided-create-form.tsx` on `main`.
 - Validation: `npx vitest run` 307 passed, `npx tsc --noEmit` clean, ESLint 0건. 문구만 바뀌었으므로 테스트 대상 로직 변경 없음.
 - 별도 확인(코드 아님): 결제 후 "분석 시작"에서 폴라 결제 페이지로 안 넘어가는 문제를 문의받아 `/api/checkouts/pro/route.ts`를 확인했습니다. 이 경로는 이번 세션에서 건드린 적이 없고, `POLAR_ACCESS_TOKEN`·`POLAR_QUICK_PRODUCT_ID`·`POLAR_PRO_PRODUCT_ID` 중 하나라도 없으면 서버가 에러를 던지고 화면에 "결제 페이지를 만들지 못했습니다"가 뜨도록 이미 짜여 있습니다(로컬은 `detail` 필드로 원인까지 보임). 로컬 환경변수 문제로 추정되며, 사용자가 화면 메시지와 터미널의 `polar_checkout_failed` 로그를 확인하기로 함.
+
+## 2026-08-22 — Claude: 자료만으로 채우는 CREATE가 결제 단계에서 막히던 것 수정
+
+- Agent/session: Claude. 사용자가 "POST /api/checkouts/pro 400"을 보고했습니다. 오늘 앞서 CREATE가 자료만으로 진행되게 만들었는데, 그 작업이 저장 단계(`buildApplicationCasePlan`)까지는 미치지 않아 실제로는 결제 직전에 막히고 있었습니다.
+- Status: completed.
+- 원인: `src/application/application-case-handoff.ts`의 `buildApplicationCasePlan`이 `answeredQuestions.length > 0`(답변이 하나라도 있는 문항)일 때만 자기소개서 원문(PRIMARY 문서)을 만들었습니다. 자료만으로 진행하는 CREATE는 모든 문항의 `answer`가 빈 문자열이라 `answeredQuestions.length === 0` → **원문 문서가 아예 저장되지 않았습니다.** 결제 RPC(`prepare_quick_checkout`, `enable_pro_billing.sql`)는 PRIMARY 문서 글자 수가 0이면 `PRIMARY_DOCUMENT_REQUIRED`(errcode 22023)를 던지고, 이 코드는 라우트에서 400으로 매핑됩니다. 즉 분석 단계는 이미 고쳐졌는데, **그 앞의 저장 단계가 여전히 옛날 전제로 막고 있었습니다.**
+- 조치: `fillsQuestionsFromMaterials`(`server/ai/quick/questions.ts`)와 같은 조건 — PRO && CREATE && 문항에 제목/질문 있음 && 지원자료(이력서 등) 첨부됨 — 을 이 저장 단계에도 추가해, 이 경우에도 PRIMARY 문서를 만들도록 했습니다. `serializeQuestionAnswers(..., { includeEmptyAnswers: true })`가 이미 답변 없는 문항도 문항 제목으로 채우므로, 글자 수가 0이 되지 않습니다. 두 계층이 서로 다른 모듈(`application/`은 저장 전 단계, `server/ai/quick/`은 분석 프롬프트 단계)이라 함수를 공유하지 않고 조건만 그대로 옮겨 적었습니다.
+- Files/branch: `src/application/application-case-handoff.ts`, `application-case-handoff.test.ts` on `main`.
+- Validation: `npx vitest run` 310 passed(신규 3건), `npx tsc --noEmit` clean, ESLint 0건. 메모도 자료도 없는 CREATE와 BUILD는 여전히 원문 문서를 만들지 않음을 테스트로 고정했습니다.
+- Rollback: `createsFromMaterialsOnly` 조건과 그 사용처를 제거하면 이전 동작(메모 없으면 무조건 저장 안 됨 → 결제 400)으로 돌아갑니다.

@@ -70,6 +70,62 @@ describe("application case handoff", () => {
     expect(buildApplicationCasePlan(input).documents[0].kind).toBe("JOB_POSTING");
   });
 
+  it("자료만 있고 메모가 하나도 없는 CREATE도 원문 문서를 만든다", () => {
+    // The wizard now lets someone finish CREATE with a résumé and zero typed
+    // memo — see fillsQuestionsFromMaterials in server/ai/quick/questions.ts.
+    // Without this branch every question had an empty answer, no PRIMARY
+    // document was ever planned, and the checkout precondition on the primary
+    // document's character count rejected the run before analysis started.
+    const input = guestApplicationHandoffSchema.parse({
+      ...base,
+      writingMode: "CREATE",
+      questions: [
+        { id: "q1", title: "", prompt: "지원 동기를 서술하세요.", answer: "", targetLength: 700 },
+        { id: "q2", title: "", prompt: "강점을 서술하세요.", answer: "", targetLength: 500 },
+      ],
+      candidateMaterials: {
+        ...base.candidateMaterials,
+        materialAttachments: [{ kind: "RESUME" as const, filename: "이력서.pdf", extension: "pdf", sizeBytes: 2048, text: "울산대 기계공학 · 품질 1년 8개월" }],
+      },
+    });
+
+    const coverLetter = buildApplicationCasePlan(input).documents.find((document) => document.kind === "COVER_LETTER");
+    expect(coverLetter).toBeDefined();
+    expect(coverLetter?.normalizedText.length).toBeGreaterThan(0);
+    expect(coverLetter?.normalizedText).toContain("지원 동기를 서술하세요.");
+  });
+
+  it("메모도 자료도 없는 CREATE는 여전히 원문 문서를 만들지 않는다", () => {
+    // Nothing to write from — this case should stay blocked, same as before.
+    const input = guestApplicationHandoffSchema.parse({
+      ...base,
+      writingMode: "CREATE",
+      questions: [
+        { id: "q1", title: "", prompt: "지원 동기를 서술하세요.", answer: "", targetLength: 700 },
+      ],
+    });
+
+    expect(buildApplicationCasePlan(input).documents.find((document) => document.kind === "COVER_LETTER")).toBeUndefined();
+  });
+
+  it("BUILD는 자료가 있어도 이 예외의 대상이 아니다", () => {
+    // BUILD's blank-question fill already has its own path (fillsBlankQuestions,
+    // ungated on materials); this branch exists only for CREATE.
+    const input = guestApplicationHandoffSchema.parse({
+      ...base,
+      writingMode: "BUILD",
+      questions: [
+        { id: "q1", title: "", prompt: "지원 동기를 서술하세요.", answer: "", targetLength: 700 },
+      ],
+      candidateMaterials: {
+        ...base.candidateMaterials,
+        materialAttachments: [{ kind: "RESUME" as const, filename: "이력서.pdf", extension: "pdf", sizeBytes: 2048, text: "울산대 기계공학 · 품질 1년 8개월" }],
+      },
+    });
+
+    expect(buildApplicationCasePlan(input).documents.find((document) => document.kind === "COVER_LETTER")).toBeUndefined();
+  });
+
   it("stores a heading-only question so PRO BUILD can still fill it in", () => {
     const input = guestApplicationHandoffSchema.parse({
       ...base,

@@ -97,7 +97,22 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
   const documents: PlannedDocument[] = [];
   const answeredQuestions = input.questions.filter((question) => question.answer.trim());
 
-  if (answeredQuestions.length > 0) {
+  // The wizard now lets CREATE finish on uploaded materials with zero memo —
+  // see fillsQuestionsFromMaterials in server/ai/quick/questions.ts, which
+  // this mirrors without importing it (that module is analysis-layer, this
+  // one builds the submission before an AnalysisRequest exists). Without this
+  // branch, a materials-only run had no answered question anywhere, so no
+  // PRIMARY document was ever saved, the checkout precondition saw a
+  // zero-character primary document, and every such run was rejected with
+  // PRIMARY_DOCUMENT_REQUIRED before the analysis it was designed for could
+  // even start.
+  const hasQuestionPrompts = input.questions.some((question) => question.title.trim() || question.prompt.trim());
+  const createsFromMaterialsOnly = input.product === "PRO"
+    && input.writingMode === "CREATE"
+    && hasQuestionPrompts
+    && input.candidateMaterials.materialAttachments.length > 0;
+
+  if (answeredQuestions.length > 0 || createsFromMaterialsOnly) {
     documents.push({
       kind: "COVER_LETTER",
       title: "자기소개서",
