@@ -920,3 +920,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
   - 저장은 여전히 **병합**(`mergeFreeformAttachments`)이고, 함께 넘어온 자료 개수는 라벨 첨부와 자유 첨부를 **합산**해 셉니다.
 - Files/branch: `src/components/additional-info-input.tsx`, `src/components/result-workspace-complete.tsx` + `.module.css` on `main`.
 - Validation: `npx vitest run` 346 passed, `npx tsc --noEmit` clean, ESLint 0건. `aria-label`을 prop으로 넘겨 기존 재첨삭 테스트(`getByLabelText("재첨삭 요청사항")`)가 그대로 통과합니다.
+
+## 2026-08-22 — Claude: 상담 노트의 5개 원칙을 프롬프트에 추가 (quick-2.7)
+
+- Agent/session: Claude. 사용자가 실제 유료 첨삭본 3건을 공유하며 "바꾸거나 삭제하라는 게 아니라 참고할 만한 게 있으면 **추가**하라"고 요청. `docs/editing-philosophy-2-consultant-field-notes.md`에 정리한 우선순위 1~5를 한 번에 구현했습니다.
+- Status: completed.
+- **전부 덧붙이기입니다.** 기존 규칙·문구·스키마 값은 하나도 수정하거나 삭제하지 않았고, enum에는 값만 추가했습니다. 창작 금지 규칙 두 줄이 그대로 남아 있는지 확인하는 테스트를 함께 넣었습니다 — 그 줄이 사라지면 프레이밍 제안이 곧 대필이 되기 때문입니다.
+- 1) **`reframe` 조언**(`consultingAdvice.kind` 추가): 사실을 바꾸지 않고 같은 경험을 다른 각도로 배치하도록 제안. 상담 노트의 "내가 다쳤다 → 목격했다" 사례를 프롬프트 예시로 넣었습니다. **가드레일 규칙을 별도 한 줄로 추가** — 지원자가 목격하지 않은 일을 목격했다고 쓰게 하거나 역할을 바꿔 말하게 하는 제안은 금지, 확인이 필요하면 verificationQuestions로. 이 기능은 가치와 위험이 같은 자리에 있어 경계를 프롬프트가 직접 그어야 합니다.
+- 2) **소제목 전체 일관성**: 지금까지 문항별 독립 판단이라 1번에만 소제목이 붙는 결과가 가능했습니다. 한 문항에 제안했으면 어울리는 다른 문항에도 제안하도록 했습니다.
+- 3) **`polish` 주석 유형**(`originalAnnotations.type` 추가): "떨어질 이유는 아니지만 흠으로 잡힐 필요는 없는" 층위. 접속사 뒤 문장부호, 단어 반복, 문단 길이 불균형 등에만 쓰고 **내용 문제는 기존 vague·revise·delete로 분류**하도록 명시했으며 문항당 2개로 제한했습니다. 색은 6종 중 가장 조용한 회색 — 선택 사항이 결함처럼 보이면 안 됩니다.
+- 4) **면접 질문 유도**: `interviewQuestions.reason`에 그 질문을 부르는 지원서 문장을 지목하도록 했습니다. 어느 대목이 질문을 만드는지 알아야 준비할 자리를 찾습니다.
+- 5) **채용 유형별 톤**: 사용자 입력을 새로 받지 않고 **채용공고·직무명에서 추론**하도록 했습니다. 인턴·신입 지원서의 "제도를 개선하겠다" 류 권한 전제 표현에만 여지를 두는 표현을 제안하고, **경력직에는 적용하지 않도록** 명시했습니다. 입력 하나를 더 받는 UX 비용 없이 같은 효과를 노렸습니다.
+- `consultingAdvice`는 화면에서 `kind`를 표시하지 않아 UI 변경이 없었고, 주석 유형만 라벨("다듬으면 좋음")과 색을 추가했습니다.
+- Files/branch: `src/server/ai/quick/schema.ts` + `.test.ts`, `prompt.ts` + `.test.ts`, `src/domain/result-document.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` on `main`. `QUICK_PROMPT_VERSION` quick-2.6 → **quick-2.7**.
+- Validation: `npx vitest run` 354 passed(신규 8건), `npx tsc --noEmit` clean, ESLint 0건. 기존 분류만 쓰던 응답이 그대로 파싱되는지도 테스트로 고정했습니다.

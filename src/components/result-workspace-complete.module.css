@@ -38,3 +38,6 @@
 .revisionFoot button:disabled{background:#cbd4cf;cursor:not-allowed}
 .revisionFoot button svg{width:14px}
 .revisionCarried{margin:0 0 10px;color:#7d8983;font-size:10px;line-height:1.7}
+.annotatedText mark[data-type=polish]{background:#eef1f0;color:#5c6b63}
+.annotationList article[data-type=polish]{border-left-color:#8a968f}
+.annotationList article[data-type=polish] b{color:#5c6b63}

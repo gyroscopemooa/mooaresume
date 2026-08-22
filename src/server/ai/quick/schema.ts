@@ -7,7 +7,7 @@ const quickEvidenceReasonSchema = z.object({ reason: z.string().min(1), evidence
 // type on purpose — an unverified achievement is the one thing this product
 // must never let through silently, and verificationNote alone never says which
 // sentence it means.
-const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type: z.enum(["good", "delete", "vague", "revise", "fact"]), comment: z.string().min(1), suggestion: z.string().nullable() });
+const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type: z.enum(["good", "delete", "vague", "revise", "fact", "polish"]), comment: z.string().min(1), suggestion: z.string().nullable() });
 // Field order is the generation order: a model writes these properties top to
 // bottom, so judging the submitted text *before* rewriting it is the whole
 // reason originalAnnotations comes first. With the revision written first, the
@@ -51,7 +51,7 @@ const baseOutputShape = {
   revisions: z.array(quickRevisionSchema).min(1).max(20).optional(),
   revision: legacyQuickRevisionSchema,
   verificationQuestions: z.array(z.string().min(1)).max(5),
-  consultingAdvice: z.array(z.object({ kind: z.enum(["add", "remove", "strengthen", "structure", "clarify"]), title: z.string().min(1), guidance: z.string().min(1), rationale: z.string().min(1), priority: z.enum(["high", "medium", "low"]) })).min(4).max(8).optional(),
+  consultingAdvice: z.array(z.object({ kind: z.enum(["add", "remove", "strengthen", "structure", "clarify", "reframe"]), title: z.string().min(1), guidance: z.string().min(1), rationale: z.string().min(1), priority: z.enum(["high", "medium", "low"]) })).min(4).max(8).optional(),
 };
 
 // No minimum on purpose. A required minimum forces the model to produce a

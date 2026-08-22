@@ -9,7 +9,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.6";
+export const QUICK_PROMPT_VERSION = "quick-2.7";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -141,6 +141,37 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
           "요청사항이 사실과 충돌하거나(없는 경험을 넣어달라는 등) 그대로 따르면 지원서가 거짓이 되는 경우에는 따르지 말고, 왜 그대로 반영할 수 없는지 consultingAdvice에 적으세요.",
         ]
       : []),
+    // Everything below is additive — drawn from the operator's own paid 첨삭
+    // notes, recorded in docs/editing-philosophy-2-consultant-field-notes.md.
+    // None of it relaxes the no-fabrication rules above.
+
+    // The governing idea in those notes: the goal is not the highest score but
+    // the fewest pretexts. Nobody is rejected over a comma, but an evaluator
+    // looking for a reason to cut an applicant can find a hundred, so there is
+    // no gain in handing one over. This layer has to stay visibly separate
+    // from real problems or it inflates trivia into defects.
+    "originalAnnotations의 polish 유형은 '이것 때문에 떨어지지는 않지만 굳이 흠으로 잡힐 필요가 없는 것'입니다. 접속사 뒤 문장부호 흔들림, 같은 단어 반복, 문단 길이 불균형, 어색한 조사처럼 사소하지만 다듬으면 깔끔해지는 부분에만 쓰세요. 내용상 문제는 polish가 아니라 vague·revise·delete로 분류하세요. polish는 문항당 2개를 넘기지 마세요.",
+
+    // Same facts, different angle. This is the move that separates a
+    // consultant from a checker, and it invents nothing: if the applicant did
+    // not witness it, they cannot write it. See §2 of the notes — "내가
+    // 다쳤다"는 부주의로, "목격했다"는 동기로 읽힌다.
+    "consultingAdvice의 reframe 유형은 사실을 바꾸지 않고 같은 경험을 다른 각도에서 배치하도록 제안하는 것입니다. 예를 들어 안전 직무 지원자가 '내가 작업 중 다쳤다'라고 쓴 경우, 사실을 지우라는 것이 아니라 '동료의 사고를 현장에서 목격하고 그 뒤의 어려움을 함께 겪었다'처럼 지원자가 실제로 겪은 범위 안에서 읽히는 방향을 바꿀 수 있는지 제안합니다. 같은 문장이 읽는 사람에게 어떻게 도착하는지가 달라지기 때문입니다.",
+    "reframe 제안은 반드시 지원자가 실제로 겪은 사실 안에서만 하세요. 지원자가 목격하지 않은 일을 목격했다고 쓰게 하거나, 역할을 바꿔 말하게 하는 제안은 금지입니다. 확인이 필요하면 그 자체를 verificationQuestions에 남기세요.",
+
+    // A subheading on question 1 and none on question 3 reads as an unfinished
+    // document. Judged per question, that inconsistency is invisible.
+    "소제목은 지원서 전체에서 일관되게 다루세요. 한 문항에 소제목을 제안했다면 소제목이 어울리는 다른 문항에도 제안하고, 어울리지 않는 문항(항목 정리 형식 등)에만 null을 반환하세요.",
+
+    // The cover letter is read again in the interview room. Predicting the
+    // questions is half of it; the notes describe steering them.
+    "interviewQuestions의 reason에는 그 질문을 부르는 지원서의 문장이나 표현을 구체적으로 지목하세요. 어느 대목이 질문을 만드는지 알아야 지원자가 면접에서 준비할 자리를 찾을 수 있습니다.",
+
+    // The same sentence reads as initiative from a manager and as presumption
+    // from an intern. The posting usually says which, so this needs no extra
+    // input from the applicant.
+    "채용공고나 직무명에서 이 채용이 인턴·신입인지 경력직인지 알 수 있으면 조언의 톤을 맞추세요. 인턴·신입 지원서에서 '제도를 개선하겠다', '체계를 바꾸겠다'처럼 권한을 전제하는 표현은 신입에게 그런 기회가 주어지는 경우가 드물어 부담스럽게 읽힐 수 있습니다. 경험 자체는 살리되 '기회가 주어진다면 이 경험을 살려 기여하고 싶습니다'처럼 여지를 두는 표현을 consultingAdvice로 제안하세요. 경력직 지원서에는 이 조언을 적용하지 마세요.",
+
     "문항이 요구하는 형식을 그대로 따르세요. 문항 질문에 '경력 위주로', '항목별로', '3가지로', '담당업무와 실적 중심으로' 같은 지시가 있으면 그 형식으로 씁니다. 예를 들어 경력사항 문항은 이야기하듯 풀어 쓰지 말고 소속·기간·고용형태·담당업무·실적을 항목으로 정리하세요.",
     "같은 경험을 여러 문항에 써야 한다면 문항마다 다른 측면을 쓰세요. 한 문항이 그 경험의 의미와 배움을 다뤘다면 다른 문항에서는 사실 정보(소속·기간·역할·담당업무)만 정리하는 식으로 나눕니다. 같은 이야기를 같은 방식으로 두 번 쓰면 지원서 전체가 소재가 하나뿐인 것처럼 읽힙니다.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",

@@ -423,3 +423,46 @@ describe("빈 문항이 인용 가능한 것처럼 보이지 않게 한다", () 
     expect(buildQuickAnalysisInstructions(blank)).toContain("priorities의 evidenceQuote는 제출된 지원자료");
   });
 });
+
+describe("상담 노트에서 추가한 규칙", () => {
+  const instructions = () => buildQuickAnalysisInstructions(request);
+
+  it("구실 제거 층위를 내용 문제와 분리한다", () => {
+    // "떨어질 이유는 아니지만 흠으로 잡힐 필요는 없다"는 층위. 이것이
+    // 내용 문제와 섞이면 사소한 것이 결함으로 부풀려진다.
+    expect(instructions()).toContain("polish 유형은");
+    expect(instructions()).toContain("내용상 문제는 polish가 아니라");
+  });
+
+  it("프레이밍 제안이 사실을 바꾸지 못하게 막는다", () => {
+    // 이 기능의 가치와 위험이 같은 자리에 있다. 각도를 바꾸는 것과
+    // 없던 일을 만드는 것의 경계를 프롬프트가 직접 그어야 한다.
+    expect(instructions()).toContain("reframe 유형은 사실을 바꾸지 않고");
+    expect(instructions()).toContain("지원자가 목격하지 않은 일을 목격했다고 쓰게 하거나");
+  });
+
+  it("소제목을 지원서 전체 단위로 일관되게 다루라고 지시한다", () => {
+    // 1번에만 소제목이 붙은 지원서는 미완성으로 읽힌다.
+    expect(instructions()).toContain("소제목은 지원서 전체에서 일관되게");
+  });
+
+  it("면접 질문을 부르는 문장을 지목하게 한다", () => {
+    expect(instructions()).toContain("그 질문을 부르는 지원서의 문장");
+  });
+
+  it("신입에게만 권한 전제 표현을 조심시키고 경력직은 제외한다", () => {
+    const text = instructions();
+
+    expect(text).toContain("인턴·신입");
+    expect(text).toContain("경력직 지원서에는 이 조언을 적용하지 마세요");
+  });
+
+  it("추가 규칙이 기존 창작 금지 원칙을 무르지 않는다", () => {
+    // 이번 추가는 전부 덧붙이기다. 아래 두 줄이 사라지면 프레이밍 제안이
+    // 곧 대필이 된다.
+    const text = instructions();
+
+    expect(text).toContain("지원자가 제공하지 않은 경험, 사건, 역할, 회사, 직책, 기간, 자격, 수치 또는 성과를 절대 만들지 마세요.");
+    expect(text).toContain("임의의 숫자를 추가하지 마세요");
+  });
+});

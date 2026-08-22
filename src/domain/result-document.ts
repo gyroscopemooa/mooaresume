@@ -25,7 +25,7 @@ export const resultOriginalAnnotationSchema = z.object({
   // "fact" marks a claim the submitted text alone cannot verify. Optional
   // `suggestion` carries the rewritten example; results saved before it
   // existed simply have none, so it must stay optional.
-  type: z.enum(["good", "delete", "vague", "revise", "fact"]),
+  type: z.enum(["good", "delete", "vague", "revise", "fact", "polish"]),
   comment: z.string().min(1),
   suggestion: z.string().min(1).optional(),
   start: z.number().int().nonnegative(),
@@ -96,7 +96,7 @@ export const resultCandidateProfileSchema = z.object({
 
 export const consultingAdviceSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["add", "remove", "strengthen", "structure", "clarify"]),
+  kind: z.enum(["add", "remove", "strengthen", "structure", "clarify", "reframe"]),
   title: z.string().min(1),
   guidance: z.string().min(1),
   rationale: z.string().min(1),

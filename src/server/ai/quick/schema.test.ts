@@ -82,3 +82,44 @@ describe("생성 순서", () => {
     expect(order.indexOf("originalAnnotations")).toBeLessThan(order.indexOf("revisedAnswer"));
   });
 });
+
+describe("상담 노트 기반 신규 분류", () => {
+  it("polish 주석과 reframe 조언을 받아들인다", () => {
+    const parsed = parseQuickAnalysisOutput({
+      ...baseOutput,
+      revision: { ...baseRevision, subheading: null, originalAnnotations: [{ phrase: "그러나", type: "polish", comment: "뒤에 마침표가 아니라 쉼표가 자연스럽습니다.", suggestion: null }] },
+      revisions: [{
+        ...baseRevision,
+        subheading: null,
+        originalAnnotations: [{ phrase: "그러나", type: "polish", comment: "뒤에 마침표가 아니라 쉼표가 자연스럽습니다.", suggestion: null }],
+      }],
+      consultingAdvice: [
+        { kind: "reframe", title: "사고 경험의 각도", guidance: "직접 다친 일보다 목격한 일로 서술하면 동기로 읽힙니다.", rationale: "안전 직무에서 부주의로 읽힐 여지를 줄입니다.", priority: "medium" },
+        { kind: "add", title: "제목", guidance: "안내", rationale: "근거", priority: "low" },
+        { kind: "clarify", title: "제목", guidance: "안내", rationale: "근거", priority: "low" },
+        { kind: "structure", title: "제목", guidance: "안내", rationale: "근거", priority: "low" },
+      ],
+    });
+
+    expect(parsed.revisions?.[0].originalAnnotations[0].type).toBe("polish");
+    expect(parsed.consultingAdvice?.[0].kind).toBe("reframe");
+  });
+
+  it("예전 분류만 쓰던 응답도 그대로 통과한다", () => {
+    // 값을 추가했을 뿐이므로 기존 저장 결과가 깨져서는 안 된다.
+    const parsed = parseQuickAnalysisOutput({
+      ...baseOutput,
+      revision: { ...baseRevision, subheading: null, originalAnnotations: [] },
+      revisions: [{
+        ...baseRevision,
+        subheading: null,
+        originalAnnotations: [
+          { phrase: "가", type: "good", comment: "설명", suggestion: null },
+          { phrase: "나", type: "fact", comment: "설명", suggestion: null },
+        ],
+      }],
+    });
+
+    expect(parsed.revisions?.[0].originalAnnotations).toHaveLength(2);
+  });
+});
