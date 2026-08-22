@@ -656,3 +656,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/ai/quick/questions.ts`, `prompt.ts`, `questions.test.ts`, `prompt.test.ts`, `src/components/pro-create-wizard.tsx` on `main`.
 - Validation: `npx vitest run` 307 passed(신규 8건), `npx tsc --noEmit` clean, ESLint 0건. 위저드 컴포넌트 자체의 RTL 테스트는 추가하지 않았습니다 — 실제 게이트 로직은 `getAnalysisQuestions`/`getUnansweredQuestions` 테스트로 이미 커버되고, `readyToFinish`는 그 결과를 그대로 잇는 한 줄짜리 OR 조건입니다.
 - Rollback: `readyToFinish`의 `|| materialAttachments.length > 0`과 두 곳의 `|| fillsQuestionsFromMaterials(request)`를 제거하면 이전 동작(메모 없으면 무조건 막힘)으로 돌아갑니다.
+
+## 2026-08-22 — Claude: CREATE 안내 문구를 실제 채움 동작에 맞게 정정
+
+- Agent/session: Claude. 사용자가 CREATE 단계 하단 고정 안내 문구("여기에 적은 사실만으로 초안을 만듭니다... 부족한 부분은 확인 질문으로 돌려드립니다")를 보고 "이게 지금 실제 동작이랑 맞나? BUILD는 이거보다 더 채워지는 거 아닌가?"라고 물었습니다.
+- Status: completed.
+- 확인 결과: 이 문구는 이번 세션 앞부분에 CREATE가 지원자료(이력서 등)를 쓰게 하고 목표 분량까지 채우게 만들기 전에 쓰인 문구라 **낡았습니다.** "여기에 적은 사실만으로"는 이제 사실이 아니고(자료도 근거로 씁니다), "부족한 부분은 확인 질문으로 돌려드립니다"는 3단계 채움 우선순위(① 원문 확장 ② 자료에서 가져오기 ③ 그래도 없으면 질문)의 **마지막 단계만** 말하고 있어, 마치 기본 동작인 것처럼 읽혔습니다.
+- BUILD와 다른가: 오늘 세션에서 `expandsToTargetLength`(목표 분량까지 채우기)와 채움 3단계 규칙을 CREATE·BUILD 공통으로 만들었기 때문에, **채움 강도는 이제 둘이 같습니다.** 다른 점은 강도가 아니라 "원문"의 정체입니다 — BUILD는 기존 자소서 문장을 유지·확장하고, CREATE는 단계별 메모를 원재료로 문장을 새로 만듭니다.
+- Files/branch: `src/components/guided-create-form.tsx` on `main`.
+- Validation: `npx vitest run` 307 passed, `npx tsc --noEmit` clean, ESLint 0건. 문구만 바뀌었으므로 테스트 대상 로직 변경 없음.
+- 별도 확인(코드 아님): 결제 후 "분석 시작"에서 폴라 결제 페이지로 안 넘어가는 문제를 문의받아 `/api/checkouts/pro/route.ts`를 확인했습니다. 이 경로는 이번 세션에서 건드린 적이 없고, `POLAR_ACCESS_TOKEN`·`POLAR_QUICK_PRODUCT_ID`·`POLAR_PRO_PRODUCT_ID` 중 하나라도 없으면 서버가 에러를 던지고 화면에 "결제 페이지를 만들지 못했습니다"가 뜨도록 이미 짜여 있습니다(로컬은 `detail` 필드로 원인까지 보임). 로컬 환경변수 문제로 추정되며, 사용자가 화면 메시지와 터미널의 `polar_checkout_failed` 로그를 확인하기로 함.

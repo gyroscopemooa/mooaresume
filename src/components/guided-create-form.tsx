@@ -190,8 +190,15 @@ export function GuidedStepBody({ step, draft, onDraftChange, questions, onQuesti
       <p className={styles.questionHint}>글자 수는 회사가 요구한 숫자를 넣어 주세요. 모르면 비워두면 700자로 봅니다.</p>
     </section>}
 
+    {/* Went stale the moment CREATE started reading uploaded materials and
+        writing to the target length: it told the applicant "여기 적은 사실
+        만으로" while the prompt was already pulling résumé facts in, and it
+        made "확인 질문" sound like the default outcome when it is the last
+        of three tiers — expand what is written, then borrow from materials,
+        only then ask. */}
     <p className={styles.notice}>
-      여기에 적은 사실만으로 초안을 만듭니다. 적지 않은 경험·자격·수치는 AI가 만들어 넣지 않고, 부족한 부분은 확인 질문으로 돌려드립니다.
+      여기 적은 사실과 함께 제출한 자료(이력서 등)의 사실을 근거로 문장을 완성합니다. 예를 들어 수치를 안 적었다면 수치 없이 완결된 문장으로 채웁니다.
+      어느 쪽에도 없는 경험·자격·수치는 AI가 만들어 넣지 않으며, 그래도 채울 근거가 전혀 없는 문항만 확인 질문으로 남습니다.
     </p>
   </div>;
 }
