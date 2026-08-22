@@ -676,3 +676,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/application/application-case-handoff.ts`, `application-case-handoff.test.ts` on `main`.
 - Validation: `npx vitest run` 310 passed(신규 3건), `npx tsc --noEmit` clean, ESLint 0건. 메모도 자료도 없는 CREATE와 BUILD는 여전히 원문 문서를 만들지 않음을 테스트로 고정했습니다.
 - Rollback: `createsFromMaterialsOnly` 조건과 그 사용처를 제거하면 이전 동작(메모 없으면 무조건 저장 안 됨 → 결제 400)으로 돌아갑니다.
+
+## 2026-08-22 — Claude: 완성본 외 비교용 화면 숨김, OpenAI 노출 문구 제거
+
+- Agent/session: Claude. 사용자가 "완성본만 남기고 나머지 예시 참고본들 안 보이게 해달라"와 "결과 대시보드나 다른 페이지에 OpenAI API 같은 문구가 안 보이게 해달라"고 요청했습니다.
+- Status: completed.
+- 비교 화면 숨김: `/result`, `/result/complete`, `/result/v2`, `/result/codex`, `/result/claude`, `/result/claude-restored`, `/result/codex-restored` 7개 라우트가 전부 `ResultVariantNav`(6개 버전을 나란히 보여주는 개발용 비교 도구)를 항상 렌더링했습니다. 실제 결제·이메일 링크는 `/result`로만 연결되는데, 그 화면에도 "Codex 빨간펜 미러", "Claude 복원판(전체)" 같은 **내부 작업용 이름**이 그대로 노출되고 있었습니다.
+  - 조치: 페이지 7개를 각각 고치는 대신 `ResultVariantNav` 컴포넌트 자체에 `if (process.env.NODE_ENV === "production") return null;`을 추가했습니다. 비교 화면과 각 버전 구현은 그대로 남겨(삭제·이름변경 없음, 셰어드워크 보존 규칙 준수) 로컬 개발에서는 계속 비교할 수 있고, 배포 환경에서만 아무것도 렌더링하지 않습니다.
+- OpenAI 문구 제거: 사용자 화면에 노출되는 곳 2군데를 찾아 고쳤습니다(내부 코드의 `OPENAI_API_KEY` 환경변수명, `OpenAIResponsesGateway` 클래스명, 코드 주석은 사용자에게 안 보이므로 그대로 둠).
+  - `src/app/onboarding/page.tsx`: "서버 전송·저장·OpenAI API 호출을 하지 않습니다" → "...AI 분석 엔진 호출을 하지 않습니다"
+  - `src/components/result-workspace-complete.tsx`: 옛 결과의 대체 안내 문구 "OpenAI를 다시 호출하지 않았습니다" → "분석 엔진을 다시 호출하지 않았습니다" (연결된 테스트도 같이 수정)
+  - "ChatGPT"가 들어간 FAQ 문구(`src/app/page.tsx`)는 사용자가 "있어도 상관없다"고 해 그대로 두었습니다.
+- Files/branch: `src/components/result-variant-nav.tsx`, `src/app/onboarding/page.tsx`, `src/components/result-workspace-complete.tsx`, `result-workspace-complete.test.tsx` on `main`.
+- Validation: `npx vitest run` 310 passed, `npx tsc --noEmit` clean, ESLint 0건.
+- Rollback: `ResultVariantNav`의 프로덕션 가드 한 줄만 지우면 이전 동작(모든 환경에서 비교 내비게이션 노출)으로 돌아갑니다.

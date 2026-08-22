@@ -163,7 +163,7 @@ export default function OnboardingPage() {
               <LockKeyhole />
               <span>
                 <b>파일은 이 브라우저 안에서만 읽어요.</b>
-                <small>결제 전에는 서버 전송·저장·OpenAI API 호출을 하지 않습니다.</small>
+                <small>결제 전에는 서버 전송·저장·AI 분석 엔진 호출을 하지 않습니다.</small>
               </span>
             </div>
             <div className={styles.inputs}>

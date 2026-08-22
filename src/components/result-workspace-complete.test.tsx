@@ -13,7 +13,7 @@ describe("ResultWorkspaceComplete 제출본 탭", () => {
     fireEvent.click(screen.getByRole("button", { name: "제출본" }));
 
     expect(screen.getByText("제출본 피드백")).toBeTruthy();
-    expect(screen.getAllByText(/OpenAI를 다시 호출하지 않았습니다/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/분석 엔진을 다시 호출하지 않았습니다/).length).toBeGreaterThan(0);
     expect(document.querySelectorAll("mark[data-type='revise']").length).toBeGreaterThan(0);
     expect(screen.getByText(sampleResultDocument.questions[0].title)).toBeTruthy();
   });
