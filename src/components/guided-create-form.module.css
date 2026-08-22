@@ -59,3 +59,7 @@
 .questionLength:focus{outline:0;border-color:#176b4a}
 .questionHint{margin:4px 0 0;color:#8a968f;font-size:9px;line-height:1.6}
 .stepBody{display:grid;gap:14px}
+.chips button b{font-weight:800}
+.chips button i{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#98a49e;font-style:normal;font-weight:600}
+.chips button[data-on=true] i{color:#4e8a70}
+.recommend{display:block;width:100%;margin:0 0 9px;padding:8px 11px;border:1px dashed #b7d6c5;border-radius:8px;background:#f4faf6;color:#176b4a;text-align:left;font-size:9px;font-weight:800;cursor:pointer}

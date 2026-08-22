@@ -10,6 +10,8 @@ import {
   createGuidedExperience,
   createGuidedQuestion,
   guidedBlockLabel,
+  guidedBlockPreview,
+  recommendGuidedBlocks,
   GUIDED_EXPERIENCE_CATEGORIES,
   MAX_GUIDED_EXPERIENCES,
   type GuidedCreateDraft,
@@ -70,6 +72,13 @@ export function GuidedStepBody({ step, draft, onDraftChange, questions, onQuesti
     });
   }
 
+  function applyRecommendation(questionId: string, prompt: string) {
+    const next = recommendGuidedBlocks(prompt, blocks);
+    const nextDraft = { ...draft, assignments: { ...draft.assignments, [questionId]: next } };
+    onDraftChange(nextDraft);
+    onQuestionsChange(applyGuidedAnswers(nextDraft, questions));
+  }
+
   function toggleAssignment(questionId: string, block: string) {
     const current = draft.assignments[questionId] ?? [];
     const next = current.includes(block) ? current.filter((item) => item !== block) : [...current, block];
@@ -84,16 +93,33 @@ export function GuidedStepBody({ step, draft, onDraftChange, questions, onQuesti
         {questions.length === 0 && <p className={styles.empty}>문항 단계로 돌아가 자기소개서 문항을 먼저 추가해 주세요.</p>}
         {questions.map((question, index) => {
           const assigned = draft.assignments[question.id] ?? [];
+          const recommended = recommendGuidedBlocks(question.prompt, blocks);
           return <article key={question.id}>
             <header><span>문항 {index + 1}</span><b>{question.prompt.trim() || "질문 없음"}</b></header>
+            {/* "골라 주세요" asks for the judgement the applicant came here
+                without. One tap fills in a sensible answer and every chip stays
+                clickable, so this is a starting point rather than a lock. */}
+            {assigned.length === 0 && recommended.length > 0 && <button
+              type="button"
+              className={styles.recommend}
+              onClick={() => applyRecommendation(question.id, question.prompt)}
+            >이 문항 추천대로 담기 · {recommended.map(guidedBlockLabel).join(", ")}</button>}
             <div className={styles.chips}>
               {blocks.length === 0 && <small>앞 단계에서 내용을 입력하면 여기에 소재가 나타납니다.</small>}
-              {blocks.map((block) => <button
-                key={block}
-                type="button"
-                data-on={assigned.includes(block)}
-                onClick={() => toggleAssignment(question.id, block)}
-              >{assigned.includes(block) && <Check />}{guidedBlockLabel(block)}</button>)}
+              {blocks.map((block) => {
+                const preview = guidedBlockPreview(draft, block, 24);
+                return <button
+                  key={block}
+                  type="button"
+                  data-on={assigned.includes(block)}
+                  onClick={() => toggleAssignment(question.id, block)}
+                >
+                  {assigned.includes(block) && <Check />}
+                  <b>{guidedBlockLabel(block)}</b>
+                  {/* The label alone cannot tell 경험 ① from 경험 ②. */}
+                  {preview && <i>{preview}</i>}
+                </button>;
+              })}
             </div>
           </article>;
         })}

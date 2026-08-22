@@ -617,3 +617,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/ai/quick/prompt.ts`, `questions.ts`, `prompt.test.ts`, `src/components/pro-create-wizard.tsx` + `.module.css` on `main`. 프롬프트 버전 quick-2.2 → quick-2.3.
 - Validation: `npx vitest run` 287 passed(신규 5건), `npx tsc --noEmit` clean, ESLint 0건. 기존 모드 고정 테스트(POLISH·QUICK·BUILD)는 그대로 통과합니다.
 - Rollback: `expandsToTargetLength` 호출부를 `fillsBlankQuestions`로 되돌리고 CREATE 지시문을 이전 문장으로 되돌리면 됩니다.
+
+## 2026-08-22 — Claude: 소재 배정 단계에 내용 미리보기와 문항별 추천 추가
+
+- Agent/session: Claude. 사용자가 위저드 마지막 단계(소재 배정)를 실제로 사용하며 "지원계기·하고싶은일·경험1,2·강점·입사후목표 이게 무슨 단계인지, 뭘 선택해야 하는지 설명이 부족하다"고 지적했습니다.
+- Status: completed.
+- 문제 1: 칩이 **라벨만** 표시했습니다. "경험 ①"과 "경험 ②"는 열 단계 전에 입력한 것이라 라벨만으로는 구분되지 않아, 고르는 일이 추측이 됐습니다. → `guidedBlockPreview(draft, block, limit)`를 추가해 사용자가 쓴 내용 일부를 칩에 함께 보여줍니다. 경험은 소속·기간(`where`)을 우선 표시합니다 — 종류(`category`)는 항목 간 중복되고 상황(`situation`)은 문장 조각으로 읽힙니다.
+- 문제 2: **무엇을 골라야 하는지** 알려주지 않았습니다. "어울리는 소재를 고르세요"는 자소서를 처음 쓰는 사람이 갖고 있지 않은 판단을 요구합니다. → `recommendGuidedBlocks(prompt, available)`를 추가하고, 아직 아무것도 고르지 않은 문항에 "이 문항 추천대로 담기" 버튼을 띄웁니다. 규칙은 지원 동기·입사 후 계획·성격/강점 세 가지이며, 걸리지 않는 문항(학교생활·특기사항 등)에는 경험을 권합니다. 모든 칩은 그대로 클릭 가능하므로 추천은 출발점이지 고정이 아닙니다.
+- 문제 3: 단계 설명이 이 단계가 무엇인지 말하지 않았습니다. → help 문구에 마지막 단계임, 조각이 앞 단계 입력에서 왔음, 한 문항에 2~3개면 충분함, 같은 조각 재사용 가능함, 모르면 추천 버튼을 쓰라는 안내를 넣었습니다.
+- 문제 4(직전 커밋의 회귀): 어제 추가한 "많이 적을수록 결과가 좋아집니다" 안내가 **입력할 것이 없는 배정 단계와 문항 입력 단계에도** 표시됐습니다. → 지원자 본인의 소재를 수집하는 단계에만 표시하도록 범위를 좁혔습니다.
+- Codex 테스트 수정: `guided-create-form.test.tsx`의 `getByRole("button", { name: "지원 계기" })`가 실패합니다. 칩의 접근성 이름에 미리보기가 포함되어 더 이상 라벨과 같지 않기 때문입니다. 의도를 바꾸지 않고 매처만 `/^지원 계기/`로 바꿨습니다(앵커가 필요한 이유는 추천 버튼이 적용할 라벨 목록을 이름에 담기 때문입니다). 삭제·재작성은 하지 않았습니다.
+- Files/branch: `src/domain/guided-create.ts`, `src/domain/guided-create-assign.test.ts`(신규), `src/components/guided-create-form.tsx` + `.module.css` + `.test.tsx`, `src/components/pro-create-wizard.tsx` on `main`.
+- Validation: `npx vitest run` 299 passed(신규 12건), `npx tsc --noEmit` clean, ESLint 0건.
+- Rollback: `guidedBlockPreview`·`recommendGuidedBlocks` 호출부를 제거하면 칩이 라벨만 표시하던 이전 동작으로 돌아갑니다. 도메인 함수는 순수 함수라 남겨둬도 부작용이 없습니다.

@@ -193,7 +193,7 @@ export function buildGuidedSteps(draft: GuidedCreateDraft): GuidedStep[] {
     {
       id: "assign",
       title: "각 문항에 어떤 내용을 쓸지 골라 주세요.",
-      help: "문항마다 어울리는 소재를 고르면, 입력한 사실만으로 문항별 초안을 만듭니다.",
+      help: "마지막 단계입니다. 앞에서 적은 내용이 아래 조각으로 정리돼 있습니다. 문항마다 쓸 조각을 골라 담아 주세요. 한 문항에 2~3개면 충분하고, 같은 조각을 여러 문항에 써도 됩니다. 무엇을 고를지 모르겠으면 문항마다 있는 추천 버튼을 누르세요.",
       fields: [],
     },
   ];
@@ -235,6 +235,52 @@ export function availableGuidedBlocks(draft: GuidedCreateDraft): GuidedBlockId[]
  * The result is labelled as notes, not prose: the analysis is told to write the
  * answer from these facts rather than to lightly edit them.
  */
+/**
+ * A few words of what the applicant actually wrote for a block.
+ *
+ * The assignment step listed blocks by label alone — "경험 ①", "경험 ②" — ten
+ * steps after they were typed. Two experiences are indistinguishable that way,
+ * so choosing between them meant guessing. The applicant's own words identify
+ * their own material better than any label we could invent.
+ */
+export function guidedBlockPreview(draft: GuidedCreateDraft, block: string, limit = 42): string {
+  const index = experienceBlockIndex(block);
+  const experience = index === null ? null : draft.experiences[index];
+  const source = experience
+    // Where it happened identifies an experience; the category alone repeats
+    // across entries and the situation reads as a sentence fragment.
+    ? [experience.where, experience.category, experience.situation].map((value) => value.trim()).find(Boolean) ?? ""
+    : guidedBlockText(draft, block);
+  const text = source.replace(/\s+/g, " ").trim();
+  return text.length > limit ? `${text.slice(0, limit)}…` : text;
+}
+
+const RECOMMENDATION_RULES: ReadonlyArray<{ pattern: RegExp; blocks: readonly GuidedBlockId[] }> = [
+  { pattern: /동기|지원(한|하신|하게)|지원\s*(이유|계기)|왜\s*지원|관심을?\s*(갖|가지)/, blocks: ["motivation", "aspiration"] },
+  { pattern: /입사\s*후|포부|계획|목표|비전|성장/, blocks: ["goal", "aspiration"] },
+  { pattern: /성격|장단점|장점|단점|강점|약점|가치관|일하는\s*방식/, blocks: ["strength"] },
+];
+
+/**
+ * Which blocks suit a question, for someone who has never seen a cover letter.
+ *
+ * "골라 주세요" assumes the applicant knows which of their own material answers
+ * "성격의 장단점" — that is the very judgement they came here without. The
+ * recommendation is a starting point, not a lock: every chip stays clickable.
+ * Experiences are appended to every recommendation because a claim with no
+ * episode behind it is the thing this product exists to prevent.
+ */
+export function recommendGuidedBlocks(prompt: string, available: readonly GuidedBlockId[]): GuidedBlockId[] {
+  const text = prompt.trim();
+  const experiences = available.filter((block) => experienceBlockIndex(block) !== null);
+  const matched = RECOMMENDATION_RULES.find((rule) => rule.pattern.test(text));
+  const base = matched ? matched.blocks : [];
+  // No rule matched — an experience-driven question ("학교생활", "사례") is the
+  // common shape of the rest, and an episode answers those better than a claim.
+  const picked = [...base, ...experiences.slice(0, matched ? 1 : 2)];
+  return available.filter((block) => picked.includes(block));
+}
+
 export function composeGuidedAnswer(draft: GuidedCreateDraft, blocks: readonly string[]): string {
   return blocks
     .filter((block) => hasGuidedBlock(draft, block))

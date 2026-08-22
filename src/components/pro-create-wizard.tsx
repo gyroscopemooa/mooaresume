@@ -179,7 +179,7 @@ export function ProCreateWizard() {
             leaves out the part that decides the result: the draft is built from
             what is typed here and nothing else. Someone who writes three words
             per step and gets a thin draft was never told why. */}
-        {guidedStep && <p className={styles.hint}>
+        {guidedStep && guidedStep.fields.length > 0 && guidedStep.id !== "questions" && <p className={styles.hint}>
           문장으로 쓰지 않아도 됩니다. 떠오르는 단어만 나열해도 AI가 문장으로 만들어 줍니다.
           다만 <b>여기 적은 내용만</b> 초안에 들어가므로, 많이 적을수록 결과가 좋아집니다.
         </p>}
