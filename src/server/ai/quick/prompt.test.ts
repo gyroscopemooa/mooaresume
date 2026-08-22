@@ -311,3 +311,44 @@ describe("CREATE도 목표 분량까지 쓴다", () => {
       .toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
   });
 });
+
+describe("CREATE는 자료만으로도 빈 문항을 채운다", () => {
+  // The wizard used to require typing something into every question before it
+  // would let you finish, even with a full résumé attached. Someone whose
+  // résumé already answers the question should not have to retype it.
+  const create: AnalysisRequest = {
+    ...request,
+    product: "PRO",
+    writingMode: "CREATE",
+    documents: [
+      ...request.documents,
+      { kind: "resume", text: "울산대 기계공학 · 품질 1년 8개월", filename: "이력서.pdf" },
+    ],
+    questions: [
+      { id: "q1", title: "", prompt: "지원 동기를 서술하세요.", answer: "", targetLength: 700 },
+      { id: "q2", title: "", prompt: "강점을 서술하세요.", answer: "", targetLength: 500 },
+    ],
+  };
+
+  it("메모가 하나도 없어도 두 문항 모두 분석 대상에 포함한다", () => {
+    const instructions = buildQuickAnalysisInstructions(create);
+
+    expect(instructions).toContain("questionOrder 1부터 2까지");
+  });
+
+  it("빈 문항 채우기 규칙(원문 없음·자료 범위 안에서만·확인 필요 표시)을 적용한다", () => {
+    const instructions = buildQuickAnalysisInstructions(create);
+
+    expect(instructions).toContain("비어 있던 문항에는 인용할 원문이 없습니다");
+    expect(instructions).toContain("자료에서 확인되는 범위 안에서만 사용하세요");
+  });
+
+  it("자료가 전혀 없으면 빈 메모 문항을 분석 대상에서 뺀다", () => {
+    const withoutMaterials = { ...create, documents: request.documents, questions: create.questions };
+    const instructions = buildQuickAnalysisInstructions(withoutMaterials);
+
+    // 0개 문항이면 목록 문구 자체가 만들어지지 않는다 — 실질적으로 아무것도
+    // 분석하지 않는다는 뜻이고, 이게 이전까지의 동작이었다.
+    expect(instructions).toContain("questionOrder 1부터 0까지");
+  });
+});

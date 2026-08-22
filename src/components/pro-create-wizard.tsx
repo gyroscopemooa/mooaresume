@@ -62,7 +62,12 @@ export function ProCreateWizard() {
   const isReview = current === total - 1;
   const stage = guidedStep ? intro.length : isReview ? intro.length + 1 : current;
 
-  const readyToFinish = questions.some((question) => question.answer.trim());
+  // A rich résumé already answers most questions on its own — someone who
+  // has one should not be forced through the interview to retype what it
+  // already says. See fillsQuestionsFromMaterials: the backend writes any
+  // question with no memo from the uploaded materials when they exist.
+  const readyToFinish = questions.some((question) => question.answer.trim())
+    || materialAttachments.length > 0;
   const assignStepIndex = intro.length + guidedSteps.findIndex((step) => step.id === "assign");
 
   function addExperience() {
@@ -187,6 +192,15 @@ export function ProCreateWizard() {
         {guidedStep?.id === "assign" && questions.length > draft.experiences.length && <p className={styles.hint}>
           문항이 {questions.length}개인데 경험은 {draft.experiences.length}개입니다.
           이대로도 되지만, 경험을 더 넣으면 문항마다 다른 이야기를 쓸 수 있습니다.
+        </p>}
+
+        {/* readyToFinish now accepts uploaded materials with nothing assigned
+            at all — this is the one place that says so, since "아무것도
+            고르지 않아도 된다" contradicts every other instruction on this
+            step if left unsaid. */}
+        {guidedStep?.id === "assign" && materialAttachments.length > 0 && <p className={styles.hint}>
+          문항에 아무것도 담지 않아도 진행할 수 있습니다. 비어 있는 문항은 업로드한 자료(이력서 등)에서 관련 사실을 찾아 채웁니다.
+          다만 자료에 없는 이야기는 자동으로 채워지지 않으니, 자료에 없는 내용은 위 조각으로 직접 담아야 반영됩니다.
         </p>}
 
         {guidedStep && <GuidedStepBody

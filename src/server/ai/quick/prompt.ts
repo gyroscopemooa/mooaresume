@@ -1,5 +1,13 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
-import { expandsToTargetLength, fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
+import {
+  expandsToTargetLength,
+  fillsBlankQuestions,
+  fillsQuestionsFromMaterials,
+  getAnalysisQuestions,
+  getUnansweredQuestions,
+  hasSupportingMaterials,
+  SUPPORTING_KINDS,
+} from "./questions";
 
 export const QUICK_PROMPT_VERSION = "quick-2.3";
 
@@ -7,8 +15,6 @@ export const QUICK_PROMPT_VERSION = "quick-2.3";
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
 // so every PRO promise that depends on them — 자료 간 충돌 검사, 근거 보완,
 // 더 적합한 경험 추천 — was impossible to deliver.
-const SUPPORTING_KINDS = ["resume", "career_description", "portfolio"] as const;
-
 const SUPPORTING_LABEL: Record<(typeof SUPPORTING_KINDS)[number], string> = {
   resume: "이력서",
   career_description: "경력기술서",
@@ -31,9 +37,6 @@ export const QUICK_SCHEMA_VERSION = "1.0";
 
 const hasJobPosting = (request: AnalysisRequest) =>
   request.documents.some((document) => document.kind === "job_posting" && document.text.trim().length > 0);
-
-const hasSupportingMaterials = (request: AnalysisRequest) =>
-  request.documents.some((document) => SUPPORTING_KINDS.includes(document.kind as (typeof SUPPORTING_KINDS)[number]));
 
 export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
   const questions = getAnalysisQuestions(request);
@@ -94,7 +97,7 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     // The whole point of filling: a final draft full of [brackets] is not a
     // deliverable, and invented figures are not either. Completing the sentence
     // without the figure satisfies both — see the decision doc §3.
-    ...(fillsBlankQuestions(request)
+    ...(fillsBlankQuestions(request) || fillsQuestionsFromMaterials(request)
       ? [
           "이 분석에는 아직 비어 있거나 분량이 부족한 문항이 포함될 수 있습니다. 그런 문항도 revisions에 반드시 포함하고, 문항 질문에 답하는 완성된 글을 쓰세요.",
           "원문에 있던 구체적인 수치나 고유명사(예: 대회 규모, 순위, 기간, 자격증 이름)를 첨삭 과정에서 빼지 마세요. 그것이 이 지원서에서 가장 검증 가능한 근거입니다.",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { buildQuickAnalysisInstructions } from "./prompt";
-import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
+import { fillsQuestionsFromMaterials, getAnalysisQuestions, getUnansweredQuestions, hasSupportingMaterials } from "./questions";
 
 function requestWithDraft(text: string, overrides: Partial<AnalysisRequest> = {}): AnalysisRequest {
   return {
@@ -62,5 +62,40 @@ describe("analysis question selection", () => {
   it("asks for the PRO-only sections only when the run is PRO", () => {
     expect(buildQuickAnalysisInstructions(requestWithDraft(draft, { product: "PRO" }))).toContain("requirementMatches");
     expect(buildQuickAnalysisInstructions(requestWithDraft(draft))).not.toContain("requirementMatches");
+  });
+});
+
+describe("fillsQuestionsFromMaterials", () => {
+  const questions: AnalysisRequest["questions"] = [
+    { id: "q1", title: "", prompt: "지원 동기를 서술하세요.", answer: "", targetLength: 700 },
+    { id: "q2", title: "", prompt: "강점을 서술하세요.", answer: "", targetLength: 500 },
+  ];
+  const base = requestWithDraft("", { product: "PRO", writingMode: "CREATE", questions });
+  const withResume: AnalysisRequest = {
+    ...base,
+    documents: [...base.documents, { kind: "resume", text: "울산대 기계공학 · 품질 1년 8개월" }],
+  };
+
+  it("자료와 CREATE가 같이 있어야 켜진다", () => {
+    expect(fillsQuestionsFromMaterials(withResume)).toBe(true);
+    expect(fillsQuestionsFromMaterials(base)).toBe(false);
+    expect(fillsQuestionsFromMaterials({ ...withResume, writingMode: "POLISH" })).toBe(false);
+    expect(fillsQuestionsFromMaterials({ ...withResume, product: "QUICK" })).toBe(false);
+  });
+
+  it("메모가 전혀 없어도 자료가 있으면 두 문항 모두 분석 대상에 포함한다", () => {
+    // 이게 이번에 고친 것: 이전에는 answer가 비어 있으면 무조건 걸러졌다.
+    expect(getAnalysisQuestions(withResume).map((question) => question.order)).toEqual([1, 2]);
+    expect(getUnansweredQuestions(withResume)).toEqual([]);
+  });
+
+  it("자료가 없으면 여전히 걸러진다 — 채울 근거가 없다", () => {
+    expect(getAnalysisQuestions(base)).toEqual([]);
+    expect(getUnansweredQuestions(base)).toHaveLength(2);
+  });
+
+  it("hasSupportingMaterials는 이력서·경력기술서·포트폴리오만 본다", () => {
+    expect(hasSupportingMaterials(withResume)).toBe(true);
+    expect(hasSupportingMaterials({ ...base, documents: [...base.documents, { kind: "job_posting", text: "모집 공고" }] })).toBe(false);
   });
 });

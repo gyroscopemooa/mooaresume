@@ -2,6 +2,15 @@ import type { AnalysisRequest } from "@/application/analysis-contract";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
 
+// Documents beyond the cover letter and the posting. Lives here rather than in
+// prompt.ts because getAnalysisQuestions also needs to know whether they exist
+// — prompt.ts already imports from this file, and the reverse would cycle.
+export const SUPPORTING_KINDS = ["resume", "career_description", "portfolio"] as const;
+
+export function hasSupportingMaterials(request: AnalysisRequest) {
+  return request.documents.some((document) => SUPPORTING_KINDS.includes(document.kind as (typeof SUPPORTING_KINDS)[number]));
+}
+
 export type AnalysisQuestion = CoverLetterQuestion & { order: number; targetLength: number };
 
 function readQuestions(request: AnalysisRequest): CoverLetterQuestion[] {
@@ -63,11 +72,26 @@ export function fillsBlankQuestions(request: AnalysisRequest) {
     && hasSeparatedQuestions(request);
 }
 
+/**
+ * CREATE with nothing typed into any question, but a résumé (or career
+ * description, or portfolio) attached. The wizard's per-question interview is
+ * for someone with no material at all; someone who already has a detailed
+ * résumé should not have to retype it into memo fields the résumé already
+ * answers. Gated on materials existing — a CREATE question with no memo and
+ * no material really has nothing, and writing it would only invent.
+ */
+export function fillsQuestionsFromMaterials(request: AnalysisRequest) {
+  return request.product === "PRO"
+    && request.writingMode === "CREATE"
+    && hasSeparatedQuestions(request)
+    && hasSupportingMaterials(request);
+}
+
 export function getAnalysisQuestions(request: AnalysisRequest): AnalysisQuestion[] {
   // When BUILD is filling, a blank question is still a question to answer — it
   // just has no draft yet. Every consumer reads this one list, so including it
   // here keeps the prompt, the assembler and the validator numbered alike.
-  const keep = fillsBlankQuestions(request)
+  const keep = fillsBlankQuestions(request) || fillsQuestionsFromMaterials(request)
     ? (question: CoverLetterQuestion) => Boolean(question.answer.trim() || question.title.trim() || question.prompt.trim())
     : (question: CoverLetterQuestion) => Boolean(question.answer.trim());
 
@@ -86,9 +110,10 @@ export function getAnalysisQuestions(request: AnalysisRequest): AnalysisQuestion
  * has to tell the user they were not covered instead of quietly dropping them.
  */
 export function getUnansweredQuestions(request: AnalysisRequest): CoverLetterQuestion[] {
-  // Nothing is left uncovered when BUILD fills them, and saying "제외했습니다"
-  // beside a written draft would contradict the result on screen.
-  if (fillsBlankQuestions(request)) return [];
+  // Nothing is left uncovered when BUILD or materials-only CREATE fills them,
+  // and saying "제외했습니다" beside a written draft would contradict the
+  // result on screen.
+  if (fillsBlankQuestions(request) || fillsQuestionsFromMaterials(request)) return [];
 
   return readQuestions(request).filter(
     (question) => !question.answer.trim() && (question.title.trim() || question.prompt.trim()),

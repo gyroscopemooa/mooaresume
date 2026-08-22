@@ -642,3 +642,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts` on `main`.
 - Validation: `npx vitest run` 300 passed(신규 1건), `npx tsc --noEmit` clean, ESLint 0건. PDF는 프로젝트의 `pdfjs-dist`로 직접 텍스트 추출해 날짜를 확인했습니다(임시 스크립트, 커밋하지 않음).
 - Rollback: 새로 추가한 규칙 문자열 한 줄을 제거하면 이전 동작으로 돌아갑니다.
+
+## 2026-08-22 — Claude: CREATE, 이력서 등 자료만 넣어도 진행되게
+
+- Agent/session: Claude. 사용자가 실제로 이력서(자격증·경력 다수 포함) PDF만 업로드하고 위저드 인터뷰에는 아무것도 입력하지 않은 채 진행하려다 "아직 문항에 쓸 소재가 정해지지 않았습니다 · 소재 고르러 가기"에 막혔습니다. 자료만으로 진행되는 게 맞다고 판단해 구현했습니다.
+- Status: completed.
+- 원인: `getAnalysisQuestions`의 CREATE 필터가 `answer.trim()`이 있는 문항만 남겼습니다. 인터뷰 단계에서 아무 조각도 배정하지 않으면 모든 문항의 answer가 비어 있어 **분석 대상이 0개**가 됐고, 위저드의 `readyToFinish`도 `questions.some(answer.trim())`만 봐서 진행 버튼이 막혔습니다. 이력서에 자격증·경력이 아무리 많아도 반영될 길이 없었습니다.
+- 조치:
+  - `questions.ts`에 `fillsQuestionsFromMaterials(request)` 추가 — PRO && CREATE && 문항 분리됨 && 지원자료(이력서·경력기술서·포트폴리오) 있음. `hasSupportingMaterials`와 `SUPPORTING_KINDS`를 prompt.ts에서 questions.ts로 옮겨 공유했습니다(prompt.ts가 이미 questions.ts를 참조하므로 반대 방향 import는 순환 참조가 됩니다).
+  - `getAnalysisQuestions`의 keep 필터와 `getUnansweredQuestions`의 early-return을 `fillsBlankQuestions(request) || fillsQuestionsFromMaterials(request)`로 넓혔습니다. BUILD가 빈 문항을 채우던 것과 정확히 같은 경로를 CREATE도 씁니다.
+  - `prompt.ts`의 "빈 문항 채우기" 지시 블록(원문 없음·자료 범위 안에서만·확인 필요 표시·인용할 것 없으면 채우지 말고 consultingAdvice) 게이트도 같은 조건으로 넓혔습니다. 이 블록은 이미 "인용할 것이 전혀 없으면 그 문항은 채우지 말라"는 규칙을 담고 있어, 이력서에 없는 문항을 지어내는 걸 별도로 막을 필요가 없었습니다.
+  - `pro-create-wizard.tsx`의 `readyToFinish`에 `|| materialAttachments.length > 0`을 추가하고, 소재 배정 단계에 자료가 있을 때만 보이는 안내("문항에 아무것도 담지 않아도 진행할 수 있습니다. 비어 있는 문항은 업로드한 자료에서 채웁니다")를 넣었습니다.
+- Files/branch: `src/server/ai/quick/questions.ts`, `prompt.ts`, `questions.test.ts`, `prompt.test.ts`, `src/components/pro-create-wizard.tsx` on `main`.
+- Validation: `npx vitest run` 307 passed(신규 8건), `npx tsc --noEmit` clean, ESLint 0건. 위저드 컴포넌트 자체의 RTL 테스트는 추가하지 않았습니다 — 실제 게이트 로직은 `getAnalysisQuestions`/`getUnansweredQuestions` 테스트로 이미 커버되고, `readyToFinish`는 그 결과를 그대로 잇는 한 줄짜리 OR 조건입니다.
+- Rollback: `readyToFinish`의 `|| materialAttachments.length > 0`과 두 곳의 `|| fillsQuestionsFromMaterials(request)`를 제거하면 이전 동작(메모 없으면 무조건 막힘)으로 돌아갑니다.
