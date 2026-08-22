@@ -29,7 +29,15 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: "AI 자소서 첨삭 | MOOA Resume", description: "공고와 경험, 자소서를 연결하는 AI 취업 지원서 코치" },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
   verification: {
-    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    // Checked into the repo on purpose. This token is not a credential — it is
+    // published in the HTML of every page for anyone to read, and Google
+    // requires it to stay there permanently or the property loses its verified
+    // status. Behind an env var it produced the one failure it could: this
+    // export is evaluated when the page is generated, so a value present only
+    // at runtime yields no tag at all, and the live site served none while
+    // local development looked fine. An override is still honoured for anyone
+    // deploying this under a different Search Console property.
+    google: process.env.GOOGLE_SITE_VERIFICATION || "y6v6fCOXM0u3Uq5XESQB1g-yduLoGXJvARLW3I6RGEk",
     other: process.env.NAVER_SITE_VERIFICATION ? { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION } : {},
   },
 };

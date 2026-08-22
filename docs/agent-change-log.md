@@ -758,3 +758,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 324 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건.
 - 남은 확인(사용자): 이번 수정은 **재시도 경로**를 고친 것입니다. 그 실행이 애초에 왜 FAILED가 됐는지는 별개이며, 실패 코드를 알아야 합니다. 새 분석을 시도했을 때 화면의 "원인 코드"를 확인해 주세요.
 - Rollback: `canRetryAnalysis` 호출부를 이전 인라인 조건으로 되돌리고 `QuickRetryRefusedError` 분기를 제거하면 됩니다.
+
+## 2026-08-22 — Claude: 구글 소유권 확인 메타태그를 코드에 고정
+
+- Agent/session: Claude. 사용자가 "소유권 확인 계속 실패"를 보고했습니다.
+- Status: completed (배포 필요).
+- 진단: 배포된 `https://mooaresume.com`을 브라우저로 열어 확인한 결과 **`google-site-verification` 메타태그가 아예 없었습니다.** 원인이 두 개 겹쳐 있었습니다.
+  1. 로컬 `.env.local` 13번 줄이 `GOOGLE_SITE_VERIFICATION=GOOGLE_SITE_VERIFICATION=y6v6...` 형태로 **변수 이름이 두 번** 들어가 있었습니다(붙여넣기 실수). 값이 `GOOGLE_SITE_VERIFICATION=y6v6...`가 되어 태그 내용이 잘못 렌더링됩니다. 수정했습니다(`.env.local`은 `.gitignore` 대상이라 커밋되지 않습니다).
+  2. 더 근본적인 문제: `layout.tsx`의 `metadata` export는 **페이지가 생성되는 시점에 평가**됩니다. Cloudflare 대시보드에 런타임 변수로만 넣으면 빌드 시점에는 존재하지 않아 **태그가 아예 생성되지 않습니다.** 로컬 개발에서는 정상으로 보이고 배포에서만 사라지는 형태라 발견이 늦었습니다.
+- 조치: 토큰을 코드에 직접 넣었습니다. 이 값은 **비밀이 아닙니다** — 모든 페이지 HTML에 공개되며, 구글은 확인 후에도 태그를 영구히 유지할 것을 요구합니다. 환경변수로 감싸는 것은 보안 이득이 전혀 없으면서 빌드/런타임 시점 문제라는 실패 경로만 만들었습니다. 다른 Search Console 속성으로 배포할 경우를 위해 `process.env.GOOGLE_SITE_VERIFICATION` 우선 적용은 남겨두었습니다.
+- 네이버(`NAVER_SITE_VERIFICATION`)는 토큰을 받지 못해 기존 환경변수 방식을 유지했습니다. 같은 빌드 시점 문제를 겪을 수 있으므로, 네이버 소유권 확인도 실패하면 같은 방식으로 고정해야 합니다.
+- Files/branch: `src/app/layout.tsx` on `main`.
+- Validation: `npx vitest run` 324 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬에서 메타태그가 올바른 값으로 렌더링됨을 브라우저로 확인. 배포 후 실제 반영은 사용자 확인 필요.
+- 남은 일(사용자): 배포 후 `https://mooaresume.com` 소스에서 태그를 확인하고 Search Console에서 "확인"을 다시 누르세요.
