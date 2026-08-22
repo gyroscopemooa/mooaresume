@@ -959,3 +959,19 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 판단 유지: **POLISH가 BUILD처럼 채우게 만들지는 않았습니다.** 세 모드를 구분한 결정(`docs/create-mode-and-pricing-decision.md`)을 유지하며, 대신 애초에 POLISH로 잘못 보내지 않는 쪽을 고쳤습니다. POLISH가 원문을 지우지 않도록 하는 보호는 직전 커밋(quick-2.8)에서 이미 넣었습니다.
 - Files/branch: `src/domain/writing-mode.ts`, `writing-mode.test.ts` on `main`.
 - Validation: `npx vitest run` 363 passed(신규 3건), `npx tsc --noEmit` clean, ESLint 0건. 기존 6건 판단 테스트는 그대로 통과합니다.
+
+## 2026-08-22 — Claude: 분량 부족 상태로 최종 첨삭을 고르면 결제 전에 안내
+
+- Agent/session: Claude. 사용자가 제안 문구를 확인하고 진행을 승인했습니다.
+- Status: completed.
+- 위치 선택: **팝업이 아니라 `/analysis/prepare` 화면의 인라인 한 줄**입니다. 이유는 두 가지입니다.
+  1. 그 화면은 이미 "분석 시작 전 확인"이고, 문항별로 `공백 제외 409자 / 제한 700자`를 **이미 보여주고 있었습니다.** 숫자는 있는데 해석이 없었을 뿐입니다.
+  2. **결제 전이 유일하게 유형 변경이 공짜인 시점**입니다. 지금 "분량 보완 필요"는 결제 후에 뜨는데, 그때는 알려줘도 다시 결제하는 것 말고 할 수 있는 게 없습니다.
+- 임계값은 `decideWritingMode`가 내용 보완으로 라우팅하는 기준과 **같은 0.78**을 씁니다. 안내와 추천이 서로 다른 말을 하면 안 되기 때문입니다.
+- 비율은 **문항당 평균**입니다(문항별로 1.0에서 잘라 평균). 직전 커밋에서 고친 것과 같은 이유 — 합계로 보면 문항이 많을수록 무조건 "충분히 썼다"가 됩니다. 예: 두 문항 각 430자는 합계 860자로 700자를 넘지만 문항당 61%입니다.
+- 표시 조건을 좁게 뒀습니다: **POLISH를 고른 경우에만**, **0.78 미만일 때만**. BUILD는 이 상태를 해결하러 가는 길이므로 경고 대상이 아닙니다. 매번 뜨는 경고는 곧 무시당합니다.
+- **막지 않습니다.** 짧게 쓰고 다듬기만 원하는 선택도 정당하며, 이는 고장이 아니라 판단의 문제입니다. (공고 링크가 읽히지 않을 때 결제를 막기로 한 결정과는 성격이 다릅니다.) 스타일도 옆에 있던 기존 안내와 같은 무게로 맞췄습니다.
+- `analysis-preparation.test.tsx`를 새로 만들었습니다(기존 테스트 없음). Supabase·Polar를 건드리는 자식 컴포넌트 2개는 모킹했습니다.
+- Files/branch: `src/components/analysis-preparation.tsx` + `.module.css` + `.test.tsx`(신규) on `main`.
+- Validation: `npx vitest run` 367 passed(신규 4건), `npx tsc --noEmit` clean, ESLint 0건.
+- **미승인 보류**: POLISH가 원문 확장(채우기 1단계)까지 하도록 하는 변경은 사용자 확인을 받지 않아 적용하지 않았습니다.

@@ -111,6 +111,26 @@ export function AnalysisPreparation() {
         ? "내용 보완"
         : "최종 첨삭";
 
+  /*
+   * How full the answers are, per question.
+   *
+   * The numbers are already on this screen — "공백 제외 409자 / 제한 700자" sits
+   * beside every question — but nothing said what they mean. Someone heading
+   * into 최종 첨삭 at 64% gets a polished answer that is still short, and only
+   * learns it after paying, when switching mode costs another payment. This is
+   * the last screen where changing your mind is free.
+   */
+  const answeredQuestions = analysedQuestions.filter((question) => question.answer.trim());
+  const fillRatio = answeredQuestions.length > 0
+    ? answeredQuestions.reduce((total, question) => {
+        const target = question.targetLength ?? guest?.targetLength ?? 700;
+        return total + Math.min(countNonWhitespaceCharacters([question.answer]) / target, 1);
+      }, 0) / answeredQuestions.length
+    : 1;
+  // Same threshold decideWritingMode uses to route a draft to 내용 보완, so the
+  // notice and the recommendation cannot disagree.
+  const underFilledForPolish = guest?.temporaryWritingMode === "POLISH" && fillRatio < 0.78;
+
   const styleLabel = writingStyleConfig[guest?.writingStyle ?? "BALANCED"].label;
   return (
     <main className={styles.page}>
@@ -155,6 +175,14 @@ export function AnalysisPreparation() {
                   : ""}
               </small>
             </div>
+            {underFilledForPolish && (
+              // Informing, never blocking. A short answer can be a deliberate
+              // choice; a wrong mode cannot be undone after payment.
+              <p className={styles.shortNotice}>
+                문항당 목표 분량의 <b>{Math.round(fillRatio * 100)}%</b>가 작성돼 있습니다. 최종 첨삭은 이미 쓰신 내용을 다듬는 단계라 분량이 크게 늘지 않습니다. 이력서에서 소재를 더 가져와 채우려면 <b>내용 보완</b>이 맞습니다.
+                <Link href="/onboarding">유형 다시 고르기 <ArrowRight /></Link>
+              </p>
+            )}
             {product === "QUICK" && missingQuestionCount > 0 && (
               <p className={styles.missingNotice}>작성되지 않은 문항 {missingQuestionCount}개는 첨삭·생성 대상에서 제외됩니다. 빈 문항까지 보완하려면 PRO · 내용 보완으로 진행해 주세요.</p>
             )}

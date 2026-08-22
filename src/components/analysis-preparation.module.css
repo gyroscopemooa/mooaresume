@@ -8,3 +8,7 @@
 .page>header>:first-child{grid-column:2}
 .page>header>:last-child{grid-column:3;justify-self:end}
 .mode{display:inline-block;margin-left:6px;padding:3px 8px;border-radius:11px;background:#edf6f1;color:#176b4a;font-size:8px;font-style:normal;font-weight:900;vertical-align:middle}
+.shortNotice{margin:12px 0 0;padding:12px 14px;border-radius:9px;background:#fff8e8;color:#80651f;font-size:11px;line-height:1.6}
+.shortNotice b{color:#6b5417;font-weight:800}
+.shortNotice a{display:inline-flex;align-items:center;gap:4px;margin-left:6px;color:#8a6d1f;font-weight:800;text-decoration:underline}
+.shortNotice svg{width:12px}
