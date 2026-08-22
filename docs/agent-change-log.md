@@ -948,3 +948,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 채우기 분기는 손대지 않았습니다. 두 분기가 서로 다른 문구를 쓰므로, BUILD의 "짧아지면 안 됩니다"가 그대로 남아 있는지 확인하는 테스트를 함께 넣었습니다.
 - Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts` on `main`. `QUICK_PROMPT_VERSION` quick-2.7 → **quick-2.8**.
 - Validation: `npx vitest run` 360 passed(신규 5건), `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-22 — Claude: 작성 단계 판단을 문항 단위로 (POLISH가 잘못 추천되던 원인)
+
+- Agent/session: Claude. 사용자가 "폴리쉬도 빌드처럼 채우게 해도 되나? 크리에이터·빌드가 가성비 좋고 폴리쉬가 떨어지는 느낌"이라고 물었습니다. 원인을 찾다가 **첨삭이 아니라 그 앞 단계 판단**에 결함이 있었음을 확인했습니다.
+- Status: completed.
+- 원인: `decideWritingMode`가 `fillRatio = 전체 초안 길이 / 한 문항의 목표 글자 수`로 계산했습니다. 문항이 3개고 각 450자면 합계 1350자이므로 700자 목표 대비 **193%**가 되어 "충분히 작성됨 → POLISH"로 판단합니다. 실제로는 **문항당 64%**입니다. 즉 **문항이 많을수록 무조건 POLISH가 추천**되며, 각 답변이 아무리 얇아도 그렇습니다. 절대 하한(`length >= 450`)도 전체 길이 기준의 OR 조건이라 여러 문항 붙여넣기는 분량만으로 통과했습니다.
+- 결과적으로 **BUILD가 필요한 초안이 POLISH로 흘러갔고**, POLISH는 채우지 않으므로 409/700 같은 결과가 나왔습니다. 사용자가 느낀 "폴리쉬 가성비가 떨어진다"는 모드 설계 문제가 아니라 **잘못된 모드로 배정된 결과**였습니다.
+- 조치: 답변이 있는 문항 수로 나눠 **문항당 채움 비율**로 판단하도록 바꿨습니다. 절대 하한도 문항 단위로 옮겼습니다. 한 문항짜리 초안의 판단은 이전과 동일합니다(테스트로 고정).
+- 판단 유지: **POLISH가 BUILD처럼 채우게 만들지는 않았습니다.** 세 모드를 구분한 결정(`docs/create-mode-and-pricing-decision.md`)을 유지하며, 대신 애초에 POLISH로 잘못 보내지 않는 쪽을 고쳤습니다. POLISH가 원문을 지우지 않도록 하는 보호는 직전 커밋(quick-2.8)에서 이미 넣었습니다.
+- Files/branch: `src/domain/writing-mode.ts`, `writing-mode.test.ts` on `main`.
+- Validation: `npx vitest run` 363 passed(신규 3건), `npx tsc --noEmit` clean, ESLint 0건. 기존 6건 판단 테스트는 그대로 통과합니다.

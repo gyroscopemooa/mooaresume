@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { splitCoverLetterDraft } from "./cover-letter-parser";
 
 export const writingModeSchema = z.enum(["CREATE", "BUILD", "POLISH"]);
 export type WritingMode = z.infer<typeof writingModeSchema>;
@@ -47,6 +48,14 @@ function findIncompleteQuestionNumbers(draft: string): number[] {
   });
 }
 
+/**
+ * How many answered questions the pasted draft holds. Used to judge fill on a
+ * per-question basis rather than by total volume.
+ */
+function countDraftQuestions(draft: string) {
+  return splitCoverLetterDraft(draft).filter((question) => question.answer.trim()).length;
+}
+
 export function decideWritingMode(input: WritingModeInput): WritingModeDecision {
   const draft = input.draft.trim();
   const length = compactLength(draft);
@@ -77,8 +86,24 @@ export function decideWritingMode(input: WritingModeInput): WritingModeDecision 
   }
 
   const target = input.targetLength;
-  const fillRatio = target && target > 0 ? length / target : undefined;
-  const looksSubstantial = length >= 450 || (fillRatio !== undefined && fillRatio >= 0.78);
+  /*
+   * Per question, not per draft.
+   *
+   * The ratio used to divide the whole pasted draft by a single question's
+   * target, so three answers of 450 characters against a 700-character limit
+   * scored 193% and were called finished — when each one is at 64%. The more
+   * questions someone pasted, the more certain POLISH became, regardless of
+   * how thin any individual answer was. That is how a draft needing BUILD ends
+   * up polished instead, and polishing does not lengthen anything.
+   */
+  const questionCount = Math.max(countDraftQuestions(draft), 1);
+  const perQuestionLength = length / questionCount;
+  const fillRatio = target && target > 0 ? perQuestionLength / target : undefined;
+  // The absolute floor is per question too. It used to be an OR against the
+  // whole draft, which let any multi-question paste clear it on volume alone.
+  const looksSubstantial = fillRatio !== undefined
+    ? fillRatio >= 0.78
+    : perQuestionLength >= 450;
 
   if (!looksSubstantial) {
     const reason = fillRatio !== undefined

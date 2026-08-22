@@ -38,3 +38,43 @@ describe("decideWritingMode", () => {
     expect(issueTagSchema.safeParse("personality_score").success).toBe(false);
   });
 });
+
+describe("분량 판단은 문항 단위로", () => {
+  // 사용자가 PRO POLISH 결과에서 409/700, 389/700, 487/700을 받았다. 원인은
+  // 첨삭이 아니라 그 앞의 단계 판단이었다 — 전체 초안 길이를 한 문항의 목표
+  // 글자 수로 나눠서, 문항이 많을수록 무조건 "충분히 썼다"가 됐다.
+  const threeThinAnswers = [
+    "1. 지원 동기를 서술하세요.",
+    "가".repeat(450),
+    "2. 강점을 서술하세요.",
+    "나".repeat(450),
+    "3. 입사 후 포부를 서술하세요.",
+    "다".repeat(450),
+  ].join("\n");
+
+  it("문항마다 목표에 못 미치면 문항이 많아도 BUILD로 판단한다", () => {
+    const decision = decideWritingMode({ draft: threeThinAnswers, targetLength: 700, hasJobPosting: true });
+
+    // 합계는 1350자로 700자를 훌쩍 넘지만, 문항당으로 보면 목표의 3분의 2다.
+    expect(decision.mode).toBe("BUILD");
+    expect(decision.reasons[0]).toMatch(/목표 분량의 6\d%/);
+  });
+
+  it("문항마다 목표를 채웠으면 POLISH로 판단한다", () => {
+    const filled = [
+      "1. 지원 동기를 서술하세요.",
+      "가".repeat(640),
+      "2. 강점을 서술하세요.",
+      "나".repeat(640),
+    ].join("\n");
+
+    expect(decideWritingMode({ draft: filled, targetLength: 700, hasJobPosting: true }).mode).toBe("POLISH");
+  });
+
+  it("한 문항짜리 초안의 판단은 예전과 같다", () => {
+    const single = "가".repeat(600);
+
+    expect(decideWritingMode({ draft: single, targetLength: 700, hasJobPosting: true }).mode).toBe("POLISH");
+    expect(decideWritingMode({ draft: "가".repeat(300), targetLength: 700, hasJobPosting: true }).mode).toBe("BUILD");
+  });
+});
