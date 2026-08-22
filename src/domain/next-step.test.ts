@@ -37,7 +37,7 @@ describe("다음 단계 추천", () => {
     const withPosting = recommendNextStep({ ...base, product: "QUICK", hasJobPosting: true });
     const without = recommendNextStep({ ...base, product: "QUICK", hasJobPosting: false });
 
-    expect(without?.reason).toContain("채용공고와 이력서를 함께 넣으면");
+    expect(without?.reason).toContain("채용공고와 이력서를 함께 넣어");
     expect(without?.reason).not.toBe(withPosting?.reason);
   });
 
@@ -50,6 +50,27 @@ describe("다음 단계 추천", () => {
     for (const writingMode of ["CREATE", "BUILD"] as const) {
       const next = recommendNextStep({ ...base, writingMode });
       expect(next?.reason.length ?? 0).toBeGreaterThan(20);
+    }
+  });
+
+  it("모든 추천은 지금 결과가 완성이라고 먼저 말한다", () => {
+    // 이 카드가 "네가 산 건 미완성이니 하나 더 사라"로 읽히면 안 된다.
+    // 안심 문구를 별도 필드로 둔 이유이며, 비어 있으면 이 테스트가 잡는다.
+    const cases: NextStepInput[] = [
+      { ...base, writingMode: "CREATE" },
+      { ...base, writingMode: "BUILD" },
+      { ...base, product: "QUICK" },
+    ];
+
+    for (const input of cases) {
+      const next = recommendNextStep(input);
+      expect(next?.reassurance).toMatch(/제출하셔도 됩니다/);
+    }
+  });
+
+  it("이유는 조건부 제안으로 쓰여 강요처럼 읽히지 않는다", () => {
+    for (const input of [{ ...base, writingMode: "CREATE" as const }, { ...base, writingMode: "BUILD" as const }, { ...base, product: "QUICK" as const }]) {
+      expect(recommendNextStep(input)?.reason).toMatch(/다면/);
     }
   });
 });

@@ -332,11 +332,11 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           honestly nothing left to suggest. */}
       {nextStep && <section className={styles.nextStep}>
         <div>
-          <span className={styles.eyebrow}>다음 단계</span>
+          <span className={styles.eyebrow}>선택 사항</span>
           <h2>{nextStep.label}</h2>
-          <p>{nextStep.reason}</p>
+          <p><b>{nextStep.reassurance}</b> {nextStep.reason}</p>
         </div>
-        <Link href="/onboarding">이어서 진행하기 <ArrowRight/></Link>
+        <Link href="/onboarding">어떻게 달라지는지 보기 <ArrowRight/></Link>
       </section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
       {view === "final" && <FinalUpgradeCard product={result.product} />}

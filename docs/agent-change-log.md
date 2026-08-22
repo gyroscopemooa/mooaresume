@@ -824,3 +824,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 광고 배너가 되지 않도록 둔 두 가지 규칙: (1) 이미 받은 것과 같은 단계는 권하지 않는다, (2) 모든 추천에는 **지금 가진 초안으로 그 단계가 무엇을 할지**를 적는다(등급·가격을 내세우지 않음).
 - Files/branch: `src/domain/next-step.ts` + `.test.ts`(신규), `src/components/result-workspace-complete.tsx` + `.module.css` on `main`.
 - Validation: `npx vitest run` 335 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건. 로컬 `/result`(PRO·BUILD 샘플)에서 추천 카드가 "최종 첨삭으로 다듬기"로 렌더링됨을 실측. 같은 확인에서 비교 내비게이션이 사라진 것과 배지가 "완성본"으로 바뀐 것도 함께 검증했습니다.
+
+## 2026-08-22 — Claude: 다음 단계 추천 문구를 "미완성"이 아니라 "선택"으로
+
+- Agent/session: Claude. 사용자 지적: "지금 게 완성형 최종이 아닌 느낌 주고 완성시키려면 한 번 더 해야 한다, 이것보다 — 지금 잘 됐고 완성됐고 잘 만들어졌지만 욕심내려면 더 해보고 싶으면 이거 추천한다, 이런 느낌으로 나가야 할 듯."
+- Status: completed.
+- 문제: 직전 커밋의 문구가 전부 미완성을 암시했습니다. "첫 버전입니다", "이제 ~할 차례입니다", 배지 "다음 단계", 버튼 "이어서 진행하기". 방금 결제한 결과물을 **아직 덜 된 것**으로 규정하는 표현이고, 이런 카드가 반감을 사는 이유가 정확히 이것입니다.
+- 조치: `NextStep`에 `reassurance` 필드를 **별도로** 추가했습니다. 안심 문구("이대로 제출하셔도 됩니다")를 이유(`reason`)와 한 문자열로 합치지 않은 이유는, 합쳐두면 나중에 문구를 다듬다가 안심 부분만 조용히 사라질 수 있기 때문입니다. 타입에 분리해 두면 테스트로 강제할 수 있습니다.
+  - 화면: 배지 "다음 단계" → **"선택 사항"**, 버튼 "이어서 진행하기" → **"어떻게 달라지는지 보기"**, 본문은 안심 문구를 굵게 먼저 보여주고 이유를 뒤에 붙입니다.
+  - 이유 문구는 모두 **조건부**로 다시 썼습니다("더 욕심내신다면", "한 번 더 손보고 싶다면", "지원할 회사가 정해져 있다면").
+- 테스트 2건 추가: 모든 추천에 안심 문구가 있는지, 이유가 조건부 표현인지. 문구가 다시 강요조로 돌아가면 테스트가 잡습니다.
+- Files/branch: `src/domain/next-step.ts` + `.test.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` on `main`.
+- Validation: `npx vitest run` 337 passed(신규 2건), `npx tsc --noEmit` clean, ESLint 0건. 로컬 `/result`에서 렌더링 실측 — "선택 사항 │ 최종 첨삭으로 더 다듬어 보기 │ **채운 결과는 이대로 제출하셔도 됩니다.** 한 번 더 손보고 싶다면… │ 어떻게 달라지는지 보기".
