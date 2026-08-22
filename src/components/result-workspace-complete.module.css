@@ -32,12 +32,9 @@
 .revision h2{margin:7px 0 6px;font-size:17px}
 .revision>div>p{margin:0 0 14px;max-width:64ch;color:#5c6b63;font-size:11px;line-height:1.75}
 .revision>div>p b{color:#17221d;font-weight:800}
-.revision textarea{width:100%;padding:13px;border:1px solid #dfe6e2;border-radius:9px;font:inherit;font-size:11px;line-height:1.7;resize:vertical}
 .revisionFoot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:12px}
 .revisionFoot small{color:#7d8983;font-size:9px}
 .revisionFoot button{display:inline-flex;align-items:center;gap:6px;padding:12px 18px;border:0;border-radius:8px;background:#12824f;color:#fff;font-size:11px;font-weight:800;cursor:pointer}
 .revisionFoot button:disabled{background:#cbd4cf;cursor:not-allowed}
 .revisionFoot button svg{width:14px}
-.revisionMaterials{margin-top:16px;padding-top:16px;border-top:1px solid #eef2f0}
-.revisionMaterials>b{font-size:11px}
-.revisionMaterials>p{margin:5px 0 12px;color:#7d8983;font-size:10px;line-height:1.7}
+.revisionCarried{margin:0 0 10px;color:#7d8983;font-size:10px;line-height:1.7}

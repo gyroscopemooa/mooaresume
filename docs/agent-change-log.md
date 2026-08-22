@@ -908,3 +908,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/analysis-preparation.tsx`, `src/components/quick-checkout-return.tsx` on `main`.
 - Validation: `npx vitest run` 346 passed, `npx tsc --noEmit` clean, ESLint 0건.
 - 주의: 이 약속은 **배포 환경에도 같은 설정이 있어야** 유지됩니다. `private.app_config`의 `analysis_advance_url`이 로컬 주소를 가리키고 있다면 배포 후 실제 도메인으로 바꿔야 하고, Cloudflare에도 `ANALYSIS_CRON_SECRET`·`RESEND_API_KEY`·`ANALYSIS_EMAIL_FROM`이 있어야 합니다.
+
+## 2026-08-22 — Claude: 재첨삭 입력을 요청사항+첨부 통합 컴포저로
+
+- Agent/session: Claude. 사용자 제안 — "기타 추가자료 만들던 입력창에 통합해서, 입력창에도 드래그앤드롭할 수 있게".
+- Status: completed.
+- 직전 상태의 문제: 재첨삭 패널이 **요청사항 textarea**와 **자료 업로드 버튼**을 따로 두고 있었습니다. 같은 맥락의 말을 두 곳에 나눠 하게 만들고, 드래그앤드롭도 안 됐습니다.
+- 조치: `AdditionalInfoInput`을 재사용했습니다. 이 컴포넌트는 **이미** 텍스트 입력과 드래그앤드롭 첨부를 한 상자에서 처리합니다(`dragging` 상태, `onDrop`, 첨부 칩, 글자 수 표시까지). 새로 만들 것이 없었습니다.
+  - 재사용을 위해 `placeholder`·`label` 옵셔널 prop 2개를 추가했습니다. 둘 다 기존 문구를 기본값으로 둬서 기존 호출부(`pro-input-page`, `pro-create-wizard`)는 그대로 동작합니다.
+  - 첨부 타입이 `CandidateMaterialAttachment`(종류 있음)에서 `CandidateFreeformAttachment`(종류 없음)로 바뀝니다. 자유 첨부는 `OTHER` 문서로 저장되고 `begin_quick_analysis`에서 `portfolio`로 매핑되므로 **지원자료로 정상 전달됩니다.** 종류 라벨(이력서/경력기술서)이 붙지 않는 것이 유일한 손실이며, 통합 입력의 이점이 더 크다고 판단했습니다.
+  - 저장은 여전히 **병합**(`mergeFreeformAttachments`)이고, 함께 넘어온 자료 개수는 라벨 첨부와 자유 첨부를 **합산**해 셉니다.
+- Files/branch: `src/components/additional-info-input.tsx`, `src/components/result-workspace-complete.tsx` + `.module.css` on `main`.
+- Validation: `npx vitest run` 346 passed, `npx tsc --noEmit` clean, ESLint 0건. `aria-label`을 prop으로 넘겨 기존 재첨삭 테스트(`getByLabelText("재첨삭 요청사항")`)가 그대로 통과합니다.

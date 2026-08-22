@@ -10,8 +10,8 @@ import {
 import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document";
 import { recommendNextStep } from "@/domain/next-step";
 import { saveGuestDraft } from "@/lib/guest-draft";
-import { MaterialUpload } from "@/components/material-upload";
-import type { CandidateMaterialAttachment } from "@/domain/candidate-material";
+import { AdditionalInfoInput } from "@/components/additional-info-input";
+import type { CandidateFreeformAttachment } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { deriveFallbackOriginalAnnotations } from "@/domain/result-original-annotations";
 import { resolveApplicationLabel, resolveQuestionTitle, resolveResultSubject, toFilenameToken } from "@/domain/result-labels";
@@ -148,11 +148,28 @@ const MATERIAL_STORAGE_KEY = "mooa:guest-candidate-materials:v1";
 const EMPTY_MATERIAL_DRAFT = {
   schemaVersion: "1.0" as const,
   freeformNotes: "",
-  freeformAttachments: [],
+  freeformAttachments: [] as CandidateFreeformAttachment[],
   experiences: [],
   profileEntries: [],
-  materialAttachments: [] as CandidateMaterialAttachment[],
+  materialAttachments: [],
 };
+
+function readMaterialDraft(): Record<string, unknown> {
+  try {
+    const stored: unknown = JSON.parse(sessionStorage.getItem(MATERIAL_STORAGE_KEY) ?? "null");
+    if (stored && typeof stored === "object" && !Array.isArray(stored)) return { ...EMPTY_MATERIAL_DRAFT, ...stored };
+  } catch { /* a corrupt entry is replaced rather than allowed to block the re-run */ }
+  return { ...EMPTY_MATERIAL_DRAFT };
+}
+
+/** Merges rather than replaces: the first run's uploads are still the applicant's. */
+function mergeFreeformAttachments(added: CandidateFreeformAttachment[]) {
+  const draft = readMaterialDraft();
+  const existing = Array.isArray(draft.freeformAttachments) ? draft.freeformAttachments as CandidateFreeformAttachment[] : [];
+  const seen = new Set(existing.map((file) => file.filename));
+  draft.freeformAttachments = [...existing, ...added.filter((file) => !seen.has(file.filename))];
+  sessionStorage.setItem(MATERIAL_STORAGE_KEY, JSON.stringify(draft));
+}
 
 /**
  * How many materials are still riding along in this session.
@@ -166,28 +183,12 @@ const subscribeToNothing = () => () => {};
 const readNoMaterialCount = () => null;
 
 function readCarriedMaterialCount(): number {
-  try {
-    const stored: unknown = JSON.parse(sessionStorage.getItem(MATERIAL_STORAGE_KEY) ?? "null");
-    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return 0;
-    const attachments = (stored as { materialAttachments?: unknown }).materialAttachments;
-    return Array.isArray(attachments) ? attachments.length : 0;
-  } catch {
-    return 0;
-  }
+  const draft = readMaterialDraft();
+  const labelled = Array.isArray(draft.materialAttachments) ? draft.materialAttachments.length : 0;
+  const freeform = Array.isArray(draft.freeformAttachments) ? draft.freeformAttachments.length : 0;
+  return labelled + freeform;
 }
 
-function mergeMaterialAttachments(added: CandidateMaterialAttachment[]) {
-  let draft: Record<string, unknown> = { ...EMPTY_MATERIAL_DRAFT };
-  try {
-    const stored: unknown = JSON.parse(sessionStorage.getItem(MATERIAL_STORAGE_KEY) ?? "null");
-    if (stored && typeof stored === "object" && !Array.isArray(stored)) draft = { ...EMPTY_MATERIAL_DRAFT, ...stored };
-  } catch { /* a corrupt entry is replaced rather than allowed to block the re-run */ }
-
-  const existing = Array.isArray(draft.materialAttachments) ? draft.materialAttachments as CandidateMaterialAttachment[] : [];
-  const seen = new Set(existing.map((file) => `${file.kind}:${file.filename}`));
-  draft.materialAttachments = [...existing, ...added.filter((file) => !seen.has(`${file.kind}:${file.filename}`))];
-  sessionStorage.setItem(MATERIAL_STORAGE_KEY, JSON.stringify(draft));
-}
 
 export function ResultWorkspaceComplete({ result = sampleResultDocument }: { result?: ResultDocument }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
@@ -238,7 +239,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
 
   const router = useRouter();
   const [revisionRequest, setRevisionRequest] = useState("");
-  const [revisionAttachments, setRevisionAttachments] = useState<CandidateMaterialAttachment[]>([]);
+  const [revisionAttachments, setRevisionAttachments] = useState<CandidateFreeformAttachment[]>([]);
   const carriedMaterialCount = useSyncExternalStore(
     subscribeToNothing,
     readCarriedMaterialCount,
@@ -299,7 +300,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
    */
   function startRevision() {
     if (!revisionRequest.trim()) return;
-    if (revisionAttachments.length > 0) mergeMaterialAttachments(revisionAttachments);
+    if (revisionAttachments.length > 0) mergeFreeformAttachments(revisionAttachments);
     carryDraftForward("/analysis/prepare", { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
   }
 
@@ -452,26 +453,25 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           <h2>고치고 싶은 방향이 있나요?</h2>
           <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다.</p>
         </div>
-        <textarea
-          rows={3}
-          value={revisionRequest}
-          onChange={(event) => setRevisionRequest(event.target.value)}
-          placeholder="예: 에이텍 경력은 빼고 직업상담 관련 경력으로만 구성해 주세요."
-          aria-label="재첨삭 요청사항"
+        {/* One box for both: the instruction and whatever it refers to. A
+            separate uploader underneath asked the applicant to say the same
+            thing twice, and bouncing to the PRO page to attach one file cost
+            them the screen they were reading. This composer already types and
+            takes a drop. */}
+        <p className={styles.revisionCarried}>
+          {carriedMaterialCount === null ? " "
+            : carriedMaterialCount > 0
+              ? `앞서 올린 자료 ${carriedMaterialCount}개는 그대로 함께 반영됩니다. 빠진 자료가 있으면 아래에 끌어다 놓으세요.`
+              : "이번 화면에는 함께 넘어온 자료가 없습니다. 이력서·경력기술서가 있으면 아래에 끌어다 놓으세요."}
+        </p>
+        <AdditionalInfoInput
+          text={revisionRequest}
+          attachments={revisionAttachments}
+          onTextChange={setRevisionRequest}
+          onAttachmentsChange={setRevisionAttachments}
+          label="재첨삭 요청사항"
+          placeholder={"예) 에이텍 경력은 빼고 직업상담 관련 경력으로만 구성해 주세요.\n첨부한 경력기술서 내용을 반영해 주세요."}
         />
-        {/* Bouncing to the PRO input page to attach one file cost the
-            applicant the whole screen they were reading. MaterialUpload is
-            self-contained, so this is the same uploader, not a second one. */}
-        <div className={styles.revisionMaterials}>
-          <b>자료를 더 넣으시겠어요?</b>
-          <p>
-            {carriedMaterialCount === null ? " "
-              : carriedMaterialCount > 0
-                ? `앞서 올린 자료 ${carriedMaterialCount}개는 그대로 함께 반영됩니다. 빠진 자료가 있으면 여기서 추가하세요.`
-                : "이번 화면에는 함께 넘어온 자료가 없습니다. 이력서·경력기술서가 있으면 지금 올려 주세요."}
-          </p>
-          <MaterialUpload attachments={revisionAttachments} onChange={setRevisionAttachments}/>
-        </div>
         <div className={styles.revisionFoot}>
           <small>새 분석이므로 PRO 1회 결제가 필요합니다. 지금 결과는 그대로 남아 있습니다.</small>
           <button type="button" disabled={!revisionRequest.trim()} onClick={startRevision}>

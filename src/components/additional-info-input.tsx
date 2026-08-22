@@ -5,11 +5,21 @@ import { FileText, LoaderCircle, Paperclip, X } from "lucide-react";
 import type { CandidateFreeformAttachment } from "@/domain/candidate-material";
 import styles from "./additional-info-input.module.css";
 
+const EXPERIENCE_PLACEHOLDER = "예) 편의점 야간 아르바이트 8개월 동안 재고관리와 교대 인수인계를 했습니다.\n일본에서 3개월 생활했고, 학교 축제 때 부스를 운영했습니다.";
+
 type Props = {
   text: string;
   attachments: CandidateFreeformAttachment[];
   onTextChange: (value: string) => void;
   onAttachmentsChange: (value: CandidateFreeformAttachment[]) => void;
+  /**
+   * Typing and dropping files onto one box suits any "tell us more, attach
+   * what you have" moment, not only the additional-experience one this was
+   * written for. Both default to the original wording, so existing call sites
+   * are untouched.
+   */
+  placeholder?: string;
+  label?: string;
 };
 
 export function AdditionalInfoInput({
@@ -17,6 +27,8 @@ export function AdditionalInfoInput({
   attachments,
   onTextChange,
   onAttachmentsChange,
+  placeholder = EXPERIENCE_PLACEHOLDER,
+  label,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -80,7 +92,8 @@ export function AdditionalInfoInput({
         maxLength={12000}
         value={text}
         onChange={(event) => onTextChange(event.target.value)}
-        placeholder={"예) 편의점 야간 아르바이트 8개월 동안 재고관리와 교대 인수인계를 했습니다.\n일본에서 3개월 생활했고, 학교 축제 때 부스를 운영했습니다."}
+        placeholder={placeholder}
+        aria-label={label}
       />
       <footer>
         <label aria-disabled={busy}>
