@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check, CircleHelp, MessageCircleQuestion } from "lucide-react";
 import { productExamples } from "@/fixtures/product-examples";
-import type { WritingMode } from "@/domain/writing-mode";
 import styles from "./examples.module.css";
 
-const modeLabels: Record<WritingMode | "PRO", string> = { CREATE: "처음부터 작성", BUILD: "내용 보완", POLISH: "최종 첨삭", PRO: "PRO 교차분석" };
+const annotationLabels = { good: "좋은 표현", delete: "삭제 추천", vague: "모호함", revise: "수정 추천", fact: "확인 필요" } as const;
 
 export default function ExamplesPage() {
   const [selectedId, setSelectedId] = useState(productExamples[1].id);
@@ -18,14 +17,18 @@ export default function ExamplesPage() {
     <div className={styles.container}>
       <Link href="/" className={styles.back}><ArrowLeft/> 홈으로</Link>
       <section className={styles.hero}><span>직접 살펴보는 샘플 결과</span><h1>어디까지 작성했든,<br/>지금 필요한 도움부터 시작합니다.</h1><p>아래 내용은 제품을 설명하기 위한 가상 지원자의 고정 샘플입니다. 실제 사용자 분석 결과가 아닙니다.</p></section>
-      <div className={styles.tabs} role="tablist" aria-label="첨삭 예시 유형">{productExamples.map((item)=><button key={item.id} role="tab" aria-selected={selectedId===item.id} onClick={()=>setSelectedId(item.id)}>{item.tier === "PRO" ? modeLabels.PRO : modeLabels[item.mode]}<small>{item.tier}</small></button>)}</div>
+      <div className={styles.tabs} role="tablist" aria-label="첨삭 예시 유형">{productExamples.map((item)=><button key={item.id} role="tab" aria-selected={selectedId===item.id} onClick={()=>setSelectedId(item.id)}>{item.title}<small>{item.tier}</small></button>)}</div>
       <section className={styles.dashboard}>
         <div className={styles.summary}><div><span className={styles.sampleLabel}>가상 사례 · 샘플 결과</span><h2>{example.title}</h2><p>{example.context}</p></div>{example.readiness===null?<div className={styles.noScore}><CircleHelp/><b>아직 평가할 글이 없어요</b><span>경험 확인과 소재 선택을 먼저 진행합니다.</span></div>:<div className={styles.score}><small>지원서 준비도</small><strong>{example.readiness}<span>/100</span></strong><em>합격확률이 아닌 제출 준비 상태</em></div>}</div>
         <div className={styles.issueArea}><div className={styles.sectionTitle}><span>가장 먼저 확인하세요</span><h2>{example.issues.length === 1 ? "지금 필요한 첫 단계" : `핵심 개선 ${example.issues.length}가지`}</h2></div><div className={styles.issues}>{example.issues.map((issue,index)=><article key={issue.tag}><span>0{index+1}</span><div><h3>{issue.title}</h3><p>{issue.reason}</p><blockquote>“{issue.evidence}”</blockquote><div><Check/><b>다음 행동</b> {issue.nextAction}</div></div></article>)}</div></div>
       </section>
       <section className={styles.comparisonSection}><div className={styles.sectionTitle}><span>Before → After</span><h2>{example.mode === "CREATE" ? "사실 확인 후에만 작성을 시작해요." : "사실은 유지하고 전달력을 높여요."}</h2></div><div className={styles.comparison}><div><small>첨삭 전</small><p>{example.before || "작성된 내용 없음"}</p></div><ArrowRight/><div><small>첨삭 후</small><p>{example.after}</p></div></div><div className={styles.reason}><b>왜 이렇게 진행했나요?</b><p>{example.changeReason}</p></div></section>
+      {/* 제출본 주석과 면접 리스크는 이미 제품에 있지만 예시에는 없어서, 이
+          두 기능은 구매를 결정하는 화면에서 보이지 않았습니다. */}
+      {example.annotations.length>0&&<section className={styles.annotations}><div className={styles.sectionTitle}><span>제출본 위에 바로 표시</span><h2>어느 문장이 왜 걸리는지 짚어드려요.</h2></div><div className={styles.annotationList}>{example.annotations.map(annotation=><article key={annotation.phrase} data-type={annotation.type}><b>{annotationLabels[annotation.type]}</b><q>{annotation.phrase}</q><p>{annotation.comment}</p></article>)}</div></section>}
       {example.verificationQuestions.length>0&&<section className={styles.questions}><CircleHelp/><div><span>AI가 임의로 채우지 않고 물어보는 내용</span><h2>정확한 개선을 위해 확인이 필요해요.</h2><ol>{example.verificationQuestions.map(question=><li key={question}>{question}</li>)}</ol></div></section>}
       {example.interviewQuestions.length>0&&<section className={styles.interview}><MessageCircleQuestion/><div><span>면접 연결 미리보기</span><h2>제출한 문장은 면접 질문으로 이어집니다.</h2>{example.interviewQuestions.map(question=><p key={question}>“{question}”</p>)}</div></section>}
+      {example.interviewRisks.length>0&&<section className={styles.risks}><div className={styles.sectionTitle}><span>PRO · 면접 리스크 분석</span><h2>면접에서 먼저 물어볼 곳을 미리 짚어요.</h2></div><div className={styles.riskList}>{example.interviewRisks.map(risk=><article key={risk.topic}><b>{risk.topic}</b><p>{risk.risk}</p><div><Check/><span>{risk.preparation}</span></div></article>)}</div></section>}
       <section className={styles.cta}><div><span>내 지원서는 어느 단계일까요?</span><h2>작성한 만큼만 넣어도 괜찮아요.</h2></div><Link href="/start">내 작성 단계 확인하기 <ArrowRight/></Link></section>
     </div>
   </main>;

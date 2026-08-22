@@ -15,6 +15,8 @@ export const productExamples = [
     changeReason: "없는 사실을 만들지 않기 위해 소재 선택과 사실 확인을 작성보다 먼저 진행해요.",
     verificationQuestions: ["품질 문제를 발견했을 때 직접 수행한 행동은 무엇인가요?", "작업 방식이 바뀐 뒤 확인된 결과가 있나요?"],
     interviewQuestions: [],
+    annotations: [],
+    interviewRisks: [{ topic: "이력서에만 있는 경력", risk: "지원서에서 다루지 않은 기간을 면접에서 먼저 물어볼 수 있어요.", preparation: "왜 그 일을 했고 무엇을 얻었는지 한 문장으로 정리해 두세요." }],
   },
   {
     id: "build-quality",
@@ -34,6 +36,11 @@ export const productExamples = [
     changeReason: "추상적인 역량 주장을 실제 상황과 본인의 행동으로 바꿨어요. 확인되지 않은 성과 수치는 추가하지 않았습니다.",
     verificationQuestions: ["작업 순서를 바꾼 뒤 불량 건수나 검사 시간이 달라졌나요?"],
     interviewQuestions: ["검사 기준과 실제 작업의 차이를 어떻게 발견했나요?"],
+    annotations: [
+      { phrase: "책임감을 키웠습니다", type: "vague", comment: "무엇을 맡아 어떻게 했는지가 없어 어느 지원서에나 들어갈 수 있는 문장이에요." },
+      { phrase: "작업 방법을 수정했습니다", type: "revise", comment: "무엇을 어떻게 바꿨는지 한 단계만 더 쓰면 근거가 됩니다." },
+    ],
+    interviewRisks: [],
   },
   {
     id: "polish-final",
@@ -52,6 +59,11 @@ export const productExamples = [
     changeReason: "추상적인 포부를 앞서 제시한 경험 및 지원 직무와 연결했어요.",
     verificationQuestions: [],
     interviewQuestions: ["품질 개선 과정에서 본인이 내린 판단은 무엇이었나요?"],
+    annotations: [
+      { phrase: "기준과 작업의 차이를 먼저 확인하는", type: "good", comment: "본인이 실제로 한 행동이 드러나는 문장이라 그대로 두었어요." },
+      { phrase: "맡은 업무에 최선을 다하는 인재", type: "delete", comment: "앞 문장과 같은 말을 반복하면서 분량만 차지하고 있어요." },
+    ],
+    interviewRisks: [],
   },
   {
     id: "pro-cross-check",
@@ -70,5 +82,13 @@ export const productExamples = [
     changeReason: "공고의 문제 발견 및 협업 요구를 실제 경험의 행동과 연결했어요.",
     verificationQuestions: ["공정 데이터를 직접 기록하거나 비교한 경험이 있나요?"],
     interviewQuestions: ["공정 문제를 개선했다고 했는데 본인이 직접 수행한 역할은 무엇인가요?", "다른 부서와 의견이 달랐을 때 어떻게 조율했나요?"],
+    annotations: [
+      { phrase: "6개월", type: "fact", comment: "이력서에는 5개월로 적혀 있어요. 어느 쪽이 맞는지 확인이 필요합니다." },
+      { phrase: "품질 경험을 활용해", type: "vague", comment: "어떤 품질 경험인지 짚지 않아 공고의 요구와 연결되지 않아요." },
+    ],
+    interviewRisks: [
+      { topic: "기간 불일치", risk: "지원서와 이력서의 기간이 달라 면접에서 사실 확인 질문을 받을 수 있어요.", preparation: "원자료로 정확한 기간을 확인하고 한쪽으로 통일해 두세요." },
+      { topic: "데이터 경험", risk: "공고가 요구하는 데이터 기반 개선 경험을 지원서가 직접 보여주지 않아요.", preparation: "기록·비교한 경험이 있다면 무엇을 어떻게 봤는지 준비하세요." },
+    ],
   },
 ] satisfies ProductExample[];

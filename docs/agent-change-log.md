@@ -713,3 +713,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/analysis-preparation.tsx` + `.module.css`, `src/app/onboarding/page.tsx` on `main`.
 - Validation: `npx vitest run` 310 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬 dev 서버에서 sessionStorage에 PRO/CREATE 초안을 넣고 `/analysis/prepare` 확인 — 배지가 "처음부터 작성"으로 렌더링됨을 실측. 테스트용 sessionStorage 값은 확인 후 삭제했습니다.
 - 미해결(사용자 확인 대기): "크리에이트 프로가 분석이 안 됨" — 오류 코드나 로그가 없어 원인을 특정하지 못했습니다. 정적 분석으로 자료-only CREATE 경로(`begin_quick_analysis` → `splitCoverLetterDraft` → `getAnalysisQuestions`)를 따라가 봤지만 문항 2개가 정상적으로 파싱·포함되는 것으로 보입니다. 추측으로 고치지 않고 사용자에게 화면 오류 코드와 터미널 로그를 요청했습니다.
+
+## 2026-08-22 — Claude: /examples 최신화 — 제출본 주석·면접 리스크 노출, 탭 라벨 중복 수정
+
+- Agent/session: Claude. 사용자가 "/examples 한번 최신화, 지금 스타일은 마음에 든다"고 요청했습니다. 스타일은 유지하고 내용만 갱신했습니다.
+- Status: completed.
+- 누락 기능 1 — 제출본 원문 주석: `originalAnnotations`(좋은 표현·삭제 추천·모호함·수정 추천·확인 필요)는 전 요금제에 이미 제공되는 기능인데 예시에는 전혀 없었습니다. 즉 **구매를 결정하는 화면에서 이 기능이 보이지 않았습니다.** → `annotations` 필드를 예시 스키마에 추가하고 QUICK 2건·PRO 1건에 실제 사례를 넣어, 유형별 색상 구분과 함께 렌더링합니다.
+- 누락 기능 2 — 면접 리스크 분석: PRO 요금표에 명시된 기능이고 구현도 되어 있으나 예시에 없었습니다. → `interviewRisks` 필드 추가, CREATE 1건·PRO 교차분석 2건 노출.
+- 기존 버그 — 탭 라벨 중복: 탭 이름을 `item.tier === "PRO" ? "PRO 교차분석" : modeLabels[item.mode]`로 만들고 있어서, **PRO 등급 예시는 모드와 무관하게 전부 "PRO 교차분석"으로 표시**됐습니다. CREATE가 PRO 전용 모드가 되면서 4개 탭 중 2개가 같은 이름이 됐습니다. → 각 예시가 이미 갖고 있던 `title`을 라벨로 쓰도록 바꿨습니다(`modeLabels` 상수와 미사용 import 제거). 등급은 기존 `<small>` 배지가 계속 구분합니다.
+- 스키마 호환: `annotations`·`interviewRisks` 모두 `.default([])`로 추가해 기존 픽스처가 그대로 유효하며, 각 예시가 필요할 때만 채웁니다.
+- Files/branch: `src/domain/example.ts`, `src/fixtures/product-examples.ts`, `src/app/examples/page.tsx` + `.module.css` on `main`.
+- Validation: `npx vitest run` 310 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬에서 4개 탭을 모두 클릭해 실측 — 라벨이 "처음부터 작성/내용 보완/최종 첨삭/PRO 교차 분석"으로 서로 구분되고, 주석·리스크 렌더링 개수가 픽스처와 일치함을 확인했습니다.
+- 별도 보고(코드 변경 없음): 요금표(`pricing-comparison.tsx`) 41개 항목을 코드와 대조한 결과 **"경험 자동 추출"과 "문항별 개요 생성" 두 항목은 구현 근거를 찾지 못했습니다.** 요금표 행 자체가 유일한 출현 위치입니다. 판매 문구 삭제는 제품 결정이라 코드를 건드리지 않고 사용자에게 보고했습니다.
