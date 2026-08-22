@@ -851,3 +851,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `supabase/migrations/20260822020000_revision_request_document.sql`(신규), `src/application/analysis-contract.ts`, `src/application/application-case-handoff.ts`, `src/lib/guest-draft.ts`, `src/server/ai/quick/prompt.ts`, `validator.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/components/application-case-handoff.tsx`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
 - Validation: `npx vitest run` 341 passed(신규 4건), `npx tsc --noEmit` clean, ESLint 0건.
 - **남은 일(사용자)**: `20260822020000_revision_request_document.sql`을 Supabase에 적용해야 동작합니다. 적용 전에는 요청사항 저장 시 enum 값이 없어 실패합니다.
+
+## 2026-08-22 — Claude: 다음 단계 추천이 초안을 들고 이동하도록, 문구 재작성
+
+- Agent/session: Claude. 사용자 지적 두 가지 — (1) "더 욕심내신다면 / 조입니다" 같은 문구가 어색하다, (2) "어떻게 달라지는지 보기"를 누르면 그냥 온보딩이 나오는데 맞느냐, 해당 단계로 바로 가거나 최소한 선택만 하게 해야 하지 않나.
+- Status: completed.
+- 이동 문제(더 중요): 버튼이 `/onboarding`을 가리켰습니다. **눈앞에 결과를 띄워놓고 그 글을 다시 입력하라는 화면으로 보내고 있었습니다.** 사용자가 말한 "또 일해야 하나"가 정확히 이것이고, 이 카드를 안 누르게 만드는 가장 큰 이유입니다.
+  - 방금 만든 재첨삭의 핸드오프를 `carryDraftForward()`로 일반화해 두 버튼이 공유합니다. 화면에 보이는 최종 답변(직접 수정분 포함)을 그대로 다음 실행의 초안으로 넘깁니다.
+  - `NextStep`에 `href`를 추가했습니다. **같은 글을 다시 보는 단계**(CREATE·BUILD → 최종 첨삭)는 `/analysis/prepare`로 바로 가고, **새 자료가 필요한 단계**(QUICK → PRO, 공고·이력서가 있어야 의미가 있음)는 그것을 받는 `/pro/polish`로 갑니다. `ProInputPage`가 저장된 초안을 자동으로 채우므로 자소서를 다시 쓰지 않습니다.
+  - 버튼 문구도 "어떻게 달라지는지 보기" → **"지금 글 그대로 이어서 하기"** 로 바꿔, 다시 입력하지 않아도 된다는 사실을 버튼 자체가 말하게 했습니다.
+- 문구 재작성: "더 욕심내신다면" → "여유가 있다면", "표현과 흐름을 한 번 더 조입니다" → "어색한 표현과 문단 흐름을 정리합니다". BUILD 쪽은 최종 첨삭이 실제로 하는 일(지원서 전체를 놓고 말투 고름·중복 확인)을 풀어 썼습니다. QUICK 쪽에는 "지금 글은 그대로 옮겨 담기니 다시 쓰지 않으셔도 됩니다"를 명시했습니다.
+- 정리: `hasJobPosting` 입력 필드를 제거했습니다. QUICK 문구를 하나로 합치면서 아무것도 결정하지 않게 됐고, 쓰이지 않는 필드를 결정 타입에 남겨두면 나중에 이유 없이 다시 연결될 소지가 있습니다.
+- Files/branch: `src/domain/next-step.ts` + `.test.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
+- Validation: `npx vitest run` 343 passed(신규 3건), `npx tsc --noEmit` clean, ESLint 0건. 초안이 실제로 넘어가는지, 요청사항 없이 넘어가는지, 목적지가 단계별로 갈리는지 테스트로 고정했습니다.
+- 확인됨(사용자 제공): `cron.job` 조회 결과 `advance-analysis-runs` 1건, `* * * * *`, `active = true`. 스케줄은 정상입니다. `private.app_config`에 URL·비밀키가 들어갔는지는 아직 미확인이며, 비어 있으면 크론이 돌아도 아무 일도 하지 않습니다.

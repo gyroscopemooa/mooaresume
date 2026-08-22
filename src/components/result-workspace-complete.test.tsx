@@ -293,3 +293,20 @@ describe("재첨삭 요청", () => {
     expect(screen.getByText(/PRO 1회 결제가 필요합니다/)).toBeTruthy();
   });
 });
+
+describe("다음 단계로 이어가기", () => {
+  it("지금 글을 그대로 들고 다음 단계로 넘어간다", () => {
+    // /onboarding으로 보내면 눈앞에 있는 글을 다시 입력하라는 뜻이 된다.
+    // "또 일해야 하나"가 이 카드를 안 누르게 만드는 이유였다.
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    fireEvent.click(screen.getByRole("button", { name: /이어서 하기/ }));
+
+    const saved = JSON.parse(sessionStorage.getItem("mooa:guest-draft:v1") ?? "{}");
+    expect(saved.questions[0].answer).toBe(sampleResultDocument.questions[0].revisedAnswer);
+    expect(saved.temporaryWritingMode).toBe("POLISH");
+    expect(saved.revisionRequest).toBeUndefined();
+    expect(push).toHaveBeenCalledWith("/analysis/prepare");
+  });
+});

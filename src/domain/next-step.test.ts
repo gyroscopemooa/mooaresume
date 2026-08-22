@@ -5,7 +5,6 @@ const base: NextStepInput = {
   product: "PRO",
   writingMode: "POLISH",
   shortQuestionCount: 0,
-  hasJobPosting: true,
 };
 
 describe("다음 단계 추천", () => {
@@ -33,12 +32,20 @@ describe("다음 단계 추천", () => {
     expect(next?.label).toContain("PRO");
   });
 
-  it("공고를 안 넣은 QUICK에는 공고를 넣어보라고 말한다", () => {
-    const withPosting = recommendNextStep({ ...base, product: "QUICK", hasJobPosting: true });
-    const without = recommendNextStep({ ...base, product: "QUICK", hasJobPosting: false });
+  it("QUICK 추천은 지금 글을 다시 쓰지 않아도 된다고 밝힌다", () => {
+    // "또 처음부터 입력해야 하나"가 이 카드를 안 누르게 만드는 가장 큰 이유다.
+    const next = recommendNextStep({ ...base, product: "QUICK" });
 
-    expect(without?.reason).toContain("채용공고와 이력서를 함께 넣어");
-    expect(without?.reason).not.toBe(withPosting?.reason);
+    expect(next?.reason).toContain("채용공고와 이력서를 함께 넣어");
+    expect(next?.reason).toContain("다시 쓰지 않으셔도 됩니다");
+  });
+
+  it("새 자료가 필요한 추천만 입력 화면으로 보낸다", () => {
+    // 같은 글을 다시 보는 단계는 확인 화면으로 바로 가고, 공고·이력서가
+    // 있어야 하는 단계는 그것을 받는 화면으로 간다.
+    expect(recommendNextStep({ ...base, writingMode: "CREATE" })?.href).toBe("/analysis/prepare");
+    expect(recommendNextStep({ ...base, writingMode: "BUILD" })?.href).toBe("/analysis/prepare");
+    expect(recommendNextStep({ ...base, product: "QUICK" })?.href).toBe("/pro/polish");
   });
 
   it("PRO 최종 첨삭까지 마치면 권하지 않는다", () => {

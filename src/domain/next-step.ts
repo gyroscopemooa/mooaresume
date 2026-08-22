@@ -27,6 +27,13 @@ export type NextStep = {
   reassurance: string;
   /** What more ambition would add, given the draft they now have. */
   reason: string;
+  /**
+   * Where the button goes. The finished draft is carried into sessionStorage
+   * either way, so nothing is retyped — but a stage needing new material (a
+   * posting, a résumé) has to land on the input screen that collects it,
+   * while a stage working on the same text can go straight to confirmation.
+   */
+  href: string;
 };
 
 export type NextStepInput = {
@@ -34,8 +41,6 @@ export type NextStepInput = {
   writingMode: "CREATE" | "BUILD" | "POLISH";
   /** Questions whose answer is meaningfully under the length the company asked for. */
   shortQuestionCount: number;
-  /** Whether the applicant supplied a job posting for this run. */
-  hasJobPosting: boolean;
 };
 
 export function recommendNextStep(input: NextStepInput): NextStep | null {
@@ -46,9 +51,10 @@ export function recommendNextStep(input: NextStepInput): NextStep | null {
     return {
       product: "PRO",
       writingMode: "POLISH",
-      label: "최종 첨삭으로 더 다듬어 보기",
+      label: "최종 첨삭으로 한 번 더 보기",
       reassurance: "지금 초안은 이대로 제출하셔도 됩니다.",
-      reason: "더 욕심내신다면, 최종 첨삭은 같은 내용을 제출 직전 기준으로 다시 읽어 표현과 흐름을 한 번 더 조입니다.",
+      reason: "여유가 있다면, 최종 첨삭은 같은 내용을 제출 직전의 눈으로 다시 읽으며 어색한 표현과 문단 흐름을 정리합니다.",
+      href: "/analysis/prepare",
     };
   }
 
@@ -59,9 +65,10 @@ export function recommendNextStep(input: NextStepInput): NextStep | null {
     return {
       product: "PRO",
       writingMode: "POLISH",
-      label: "최종 첨삭으로 더 다듬어 보기",
+      label: "최종 첨삭으로 한 번 더 보기",
       reassurance: "채운 결과는 이대로 제출하셔도 됩니다.",
-      reason: "한 번 더 손보고 싶다면, 최종 첨삭은 문항 사이의 톤과 겹치는 이야기를 함께 봅니다.",
+      reason: "한 번 더 손보고 싶다면, 최종 첨삭은 문항 하나씩이 아니라 지원서 전체를 놓고 말투가 고른지, 같은 이야기가 겹치지는 않는지 봅니다.",
+      href: "/analysis/prepare",
     };
   }
 
@@ -72,9 +79,10 @@ export function recommendNextStep(input: NextStepInput): NextStep | null {
       writingMode: "POLISH",
       label: "PRO로 공고와 대조해 보기",
       reassurance: "이 첨삭본은 이대로 제출하셔도 됩니다.",
-      reason: input.hasJobPosting
-        ? "지원할 회사가 정해져 있다면, PRO는 같은 글을 채용공고의 요구역량·이력서와 나란히 놓고 무엇이 비는지까지 봅니다."
-        : "지원할 회사가 정해져 있다면, 채용공고와 이력서를 함께 넣어 이 글이 그 회사가 요구한 것에 답하는지까지 확인할 수 있습니다.",
+      reason: "지원할 회사가 정해져 있다면, 채용공고와 이력서를 함께 넣어 이 글이 그 회사가 요구한 것에 답하고 있는지까지 확인할 수 있습니다. 지금 글은 그대로 옮겨 담기니 다시 쓰지 않으셔도 됩니다.",
+      // Needs a posting and a résumé that this run did not have, so it lands
+      // on the screen that collects them rather than at confirmation.
+      href: "/pro/polish",
     };
   }
 

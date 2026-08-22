@@ -181,7 +181,6 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
     product: result.product,
     writingMode: result.writingMode,
     shortQuestionCount: result.questions.filter((question) => countCompactCharacters(answers[question.id] ?? question.revisedAnswer) < question.targetLength * 0.7).length,
-    hasJobPosting: result.requirementMatches.length > 0,
   }), [answers, result]);
   const finalText = useMemo(
     () => buildFinalDocumentText({ ...result, company: subject.name, role: subject.qualifier ?? applicationLabel, questions: result.questions.map((question) => ({ ...question, title: resolveQuestionTitle(question) })) }, answers),
@@ -200,8 +199,18 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
    * The request itself travels separately from the materials all the way down;
    * filed as a material, "leave 에이텍 out" reads as more material about 에이텍.
    */
-  function startRevision() {
-    if (!revisionRequest.trim()) return;
+  /**
+   * Carries the finished draft into the next run and goes where it is needed.
+   *
+   * Both buttons on this screen used to be a dead end in the same way: one
+   * pointed at /onboarding, which asks the applicant to type in a draft they
+   * are looking at. What is on screen now — hand edits included — is the
+   * version they are reacting to, so that is what travels.
+   */
+  function carryDraftForward(
+    destination: string,
+    options: { writingMode: "CREATE" | "BUILD" | "POLISH"; product: "QUICK" | "PRO"; revisionRequest?: string },
+  ) {
     const questions = [...result.questions]
       .sort((left, right) => left.order - right.order)
       .map((question, index) => ({
@@ -215,15 +224,20 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
       questionDrafts: questions.map((question) => question.answer),
       questions,
       targetLength: result.questions[0]?.targetLength ?? 700,
-      // The draft is complete by now; what is wanted is another pass over it.
-      temporaryWritingMode: "POLISH",
-      selectedProduct: "PRO",
+      temporaryWritingMode: options.writingMode,
+      selectedProduct: options.product,
       companyName: result.company,
       roleName: result.role,
       writingStyle: "BALANCED",
-      revisionRequest: revisionRequest.trim(),
+      revisionRequest: options.revisionRequest,
     });
-    router.push("/analysis/prepare");
+    router.push(destination);
+  }
+
+  function startRevision() {
+    if (!revisionRequest.trim()) return;
+    // The draft is complete by now; what is wanted is another pass over it.
+    carryDraftForward("/analysis/prepare", { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
   }
 
 
@@ -401,7 +415,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           <h2>{nextStep.label}</h2>
           <p><b>{nextStep.reassurance}</b> {nextStep.reason}</p>
         </div>
-        <Link href="/onboarding">어떻게 달라지는지 보기 <ArrowRight/></Link>
+        <button type="button" onClick={() => carryDraftForward(nextStep.href, { writingMode: nextStep.writingMode, product: nextStep.product })}>
+          지금 글 그대로 이어서 하기 <ArrowRight/>
+        </button>
       </section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
       {view === "final" && <FinalUpgradeCard product={result.product} />}
