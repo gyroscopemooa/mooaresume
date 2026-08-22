@@ -234,7 +234,14 @@ export function ProInputPage({ mode }: Props) {
           <label><span>지원 직무 <b>선택</b></span><input value={roleName} maxLength={120} onChange={(event) => setRoleName(event.target.value)} placeholder="예: 안전관리자"/></label>
         </div>
         <p className={styles.targetHint}>공고 하나에 여러 직무가 있을 때 어느 직무 기준으로 볼지 알려주시면, 그 직무의 요구사항만 대조합니다. 비워두면 공고 전체를 기준으로 봅니다.</p>
-        {mode === "CREATE" ? <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{unsplitDraft && <p className={styles.postingWarning}><b>문항 구분이 아직 안 되어 있어요.</b> 위 &lsquo;문항 구분 확인하기&rsquo;를 누르면 질문과 답변을 나누어 정리합니다. 문항이 나뉘어야 회사가 요구한 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다.</p>}</div>}
+        {mode === "CREATE" ? <>
+          <Link href="/pro/create-wizard" className={styles.wizardLink}>
+            <Sparkles/>
+            <span><b>단계별로 하나씩 안내받기</b><small>공고·자료·경험을 순서대로 물어봅니다. 처음이라면 이쪽이 편합니다.</small></span>
+            <ArrowRight/>
+          </Link>
+          <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/>
+        </> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{unsplitDraft && <p className={styles.postingWarning}><b>문항 구분이 아직 안 되어 있어요.</b> 위 &lsquo;문항 구분 확인하기&rsquo;를 누르면 질문과 답변을 나누어 정리합니다. 문항이 나뉘어야 회사가 요구한 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다.</p>}</div>}
         <section className={styles.optionalMaterials}>
           <div className={styles.sectionTitle}><div><span>선택 지원자료 <b>선택</b></span><h3>가지고 있는 자료만 올려주세요. 없는 자료는 건너뛰어도 됩니다.</h3></div><small>종류별 여러 파일 · 최대 10개</small></div>
           <MaterialUpload attachments={materialAttachments} onChange={setMaterialAttachments}/>

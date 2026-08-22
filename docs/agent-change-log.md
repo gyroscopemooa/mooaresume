@@ -577,3 +577,19 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `wrangler.jsonc` on `main`.
 - Validation: JSON 유효성과 `keep_vars` 반영을 확인했습니다. 배포 동작은 다음 배포에서 확인해야 합니다.
 - Rollback/recovery reference: `keep_vars` 한 줄을 지우면 이전 동작으로 돌아갑니다(그 경우 변수가 다시 지워집니다). `send_email` 바인딩은 이메일 발송을 Cloudflare로 되돌릴 때만 필요합니다.
+
+## 2026-08-22 — Claude: PRO 처음부터 작성 위저드 정리 + 기본 화면에서 진입 버튼
+
+- Agent/session: Claude. 사용자가 "코덱스가 만든 위저드가 안 보인다"고 해서 확인한 결과 파일은 멀쩡했고 **어디서도 링크되지 않은 상태**였습니다. 이어서 "쌩초보(자소서 없는 사회초년생·고등학생) 기준으로 적절한지, 너무 복잡해서 직접 쓰는 것과 다름없어지지 않는지" 검토와 수정을 지시받았습니다.
+- Status: completed.
+- 검토에서 나온 문제: (1) **위저드 안에 위저드**가 있었습니다. 6단계 중 4단계가 `GuidedCreateForm` 전체(10단계)를 통째로 품고 있어, 진행 표시 두 개가 서로 다른 숫자를 보여주고 "다음" 버튼도 두 개라 어느 쪽이 넘기는지 알 수 없었습니다. (2) **경험을 두 번 물었습니다** — 3단계에서 자유 메모로 "기억나는 경험", 4단계에서 구조화 질문으로 같은 경험. 자소서를 한 번도 안 써본 사람에게 같은 아르바이트를 두 번 설명하게 하는 흐름이었습니다. (3) **문항별 글자 수를 묻지 않아** 모두 700자 기본값이 적용됐습니다. 회사가 500이나 1,000을 요구해도 반영되지 않습니다. (4) 마지막 단계에서 "사실 확인 단계에서 문항을 추가하세요"라고 하면서 **거기로 가는 길이 없었습니다.** (5) `location.assign`으로 전체 새로고침.
+- Change 1: `GuidedCreateForm`에서 단계 본문을 `GuidedStepBody`로 분리해 export했습니다. 위저드가 같은 단계들을 **자기 순서 안에 펼쳐** 하나의 진행 표시로 보여줍니다. `/pro/create`의 기존 폼은 그 본문을 그대로 쓰므로 동작이 바뀌지 않습니다.
+- Change 2: 자료 업로드와 자유 메모를 **한 단계로 합쳤습니다.** 둘 다 "가진 게 뭐냐"는 같은 질문이며, 나눠 두었기 때문에 중복 질문이 생겼습니다.
+- Change 3: 문항 단계에 **글자 수 입력**을 추가했습니다(100~3000, 비우면 700). "회사가 요구한 숫자를 넣으라"는 안내를 함께 붙였습니다.
+- Change 4: 마지막 단계에서 소재가 안 정해졌으면 **"소재 고르러 가기" 버튼**으로 해당 단계로 바로 이동합니다.
+- Change 5: `location.assign` → `router.push`.
+- Change 6 (진행 표시): 총 단계가 14개라 `1 / 14`는 "시작을 못 해서 온 사람"에게 겁을 줍니다. 본문 카운터를 **`1단계 / 5단계`**로 바꾸고, 인터뷰 안에서의 위치는 `질문 3/10`으로 부제에 두었습니다. 사이드바도 인터뷰 전체를 "경험과 문항" 한 항목으로 묶었습니다.
+- Change 7 (진입 경로): `/pro/create`(기본 폼) 상단에 위저드로 가는 버튼을 넣었습니다. 그 전에는 주소를 직접 쳐야만 닿을 수 있었습니다. 두 화면 중 어느 것을 정식 경로로 삼을지는 사용자 결정 대기 중이며, 지금은 둘 다 살아 있습니다.
+- Files/branch: `src/components/guided-create-form.tsx` + `.module.css`, `src/components/pro-create-wizard.tsx` + `.module.css`, `src/components/pro-input-page.tsx` + `.module.css` on `main`.
+- Validation: 전체 `npx vitest run` 282 passed, `npx tsc --noEmit` clean, `npx eslint src` 오류·경고 0건(직전까지 남아 있던 `location.assign` 경고도 해소). 로컬에서 `/pro/create-wizard`가 `1단계 / 5단계`와 사이드바 5개 항목으로 렌더되는 것을 확인했습니다.
+- Rollback/recovery reference: 커밋 revert. `GuidedStepBody` 분리는 순수 리팩터링이라 `/pro/create` 동작에는 영향이 없습니다.

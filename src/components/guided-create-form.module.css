@@ -55,3 +55,6 @@
 .addExperience:hover{border-color:#176b4a;background:#eaf5ef}
 .addExperience svg{width:13px}
 .addExperience small{font-weight:400;color:#7d9a8b}
+.questionLength{flex:none;width:74px;padding:9px 8px;border:1px solid #dfe6e2;border-radius:7px;font-size:10px;text-align:center}
+.questionLength:focus{outline:0;border-color:#176b4a}
+.questionHint{margin:4px 0 0;color:#8a968f;font-size:9px;line-height:1.6}

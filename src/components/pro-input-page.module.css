@@ -13,3 +13,10 @@
 .targetFields input:focus{outline:0;border-color:#176b4a}
 .targetHint{margin:7px 0 0;color:#8a968f;font-size:9px;line-height:1.6}
 @media (max-width:800px){.targetFields{grid-template-columns:1fr}}
+.wizardLink{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:14px 16px;border:1px solid #cfe0d7;border-radius:11px;background:linear-gradient(90deg,#f0f8f4,#fff);color:#17221d}
+.wizardLink:hover{border-color:#176b4a}
+.wizardLink>svg:first-child{width:17px;flex:none;color:#176b4a}
+.wizardLink>svg:last-child{width:14px;margin-left:auto;flex:none;color:#176b4a}
+.wizardLink span{display:grid;gap:3px}
+.wizardLink b{font-size:11px}
+.wizardLink small{color:#68756f;font-size:9px;line-height:1.6}
