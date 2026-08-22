@@ -810,3 +810,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 조치 2: `완성본 · 통합 작업공간` 배지에서 "통합 작업공간"을 뺐습니다. 이 표현은 제품을 만들 때 쓰던 **내부 아키텍처 용어**이고, 배지가 가리키는 탭 이름은 "완성본"입니다. 지원자에게는 의미가 없는 말이라 배지 자체는 남기고 내부 용어만 덜어냈습니다.
 - Files/branch: `src/app/result/page.tsx`, `src/app/result/complete/page.tsx`, `src/components/result-workspace-complete.tsx` on `main`.
 - Validation: `npx vitest run` 328 passed, `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-22 — Claude: 결과 화면에 다음 단계 추천 추가
+
+- Agent/session: Claude. 사용자가 "아무것도 없어요 → CREATE → 빌드 추천 → 폴리쉬 추천" 흐름을 만들자고 요청("4번은 ㅇㅇ 만들고 ㄱㄱ").
+- Status: completed.
+- 문제: 결과 화면이 종착점이었습니다. 지원자는 결과를 읽고 떠나며, 제품에 다음 단계가 있다는 사실 자체를 알 방법이 없었습니다. 작성 단계에는 실제 순서(처음부터 작성 → 내용 보완 → 최종 첨삭)가 있는데 그 순서를 **유일하게 모르는 사람이 지원자**입니다.
+- 조치: `src/domain/next-step.ts`(신규) — `recommendNextStep()`. 결과 문서의 `product`·`writingMode`와 파생값(분량 부족 문항 수, 공고 대조 여부)만 받는 순수 함수로 두어 테스트 가능하게 했습니다.
+  - CREATE → PRO 최종 첨삭. 메모를 문장으로 만든 첫 버전이므로 제출 기준으로 다시 읽을 단계가 남았습니다.
+  - BUILD → PRO 최종 첨삭. **단, 채우고도 분량이 부족한 문항이 있으면 추천하지 않습니다** — 재료가 떨어진 것이지 단계가 잘못된 게 아니며, 짧은 답변을 다듬는다고 길어지지 않습니다.
+  - QUICK POLISH → PRO. 공고를 넣었는지에 따라 이유 문구가 달라집니다.
+  - **PRO POLISH → null.** 제품이 현재 제공하는 것을 다 받은 상태라 팔기 위해 이유를 지어내지 않습니다.
+- 광고 배너가 되지 않도록 둔 두 가지 규칙: (1) 이미 받은 것과 같은 단계는 권하지 않는다, (2) 모든 추천에는 **지금 가진 초안으로 그 단계가 무엇을 할지**를 적는다(등급·가격을 내세우지 않음).
+- Files/branch: `src/domain/next-step.ts` + `.test.ts`(신규), `src/components/result-workspace-complete.tsx` + `.module.css` on `main`.
+- Validation: `npx vitest run` 335 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건. 로컬 `/result`(PRO·BUILD 샘플)에서 추천 카드가 "최종 첨삭으로 다듬기"로 렌더링됨을 실측. 같은 확인에서 비교 내비게이션이 사라진 것과 배지가 "완성본"으로 바뀐 것도 함께 검증했습니다.
