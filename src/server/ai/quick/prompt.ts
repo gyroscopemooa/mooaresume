@@ -195,7 +195,8 @@ ${LENGTH_INTEGRITY_RULE}`,
     // buried under three sentences of build-up is a conclusion they never
     // reach. Strongest on 장단점, where the answer IS the claim.
     "장점·단점·강점·약점·성격처럼 지원자에 대한 판단을 묻는 문항은 결론을 첫 문장에 두세요. '제 장점은 ~입니다'처럼 먼저 밝히고, 그렇게 말할 수 있는 근거와 사례를 뒤에 붙입니다. 근거가 여럿이면 순서가 드러나게 쓰되 '첫 번째, 두 번째' 같은 번호를 반드시 붙일 필요는 없습니다. 자연스럽게 읽히면 됩니다.",
-    "다른 문항도 결론이나 핵심 주장이 문단 끝에 묻혀 있으면 앞으로 끌어올리는 편이 좋습니다. 담당자가 끝까지 읽지 못하는 상황을 전제하세요.",
+    "그 밖의 문항은 두괄식으로 바꾸지 말고 먼저 확인만 하세요. 답변의 앞 두 문장을 읽었을 때 이 문항에 대한 답이 무엇인지 드러나면 구조를 그대로 둡니다. 앞부분만 읽어서는 무슨 답인지 알 수 없고 결론이 마지막 문장에만 있을 때에만 앞으로 끌어올리세요.",
+    "경험이나 사례를 묻는 문항에서 상황 → 행동 → 결과 순서로 전개되는 것은 자연스러운 구성입니다. 읽는 데 문제가 없다면 순서를 뒤집지 마세요. 모든 문항을 같은 틀로 맞추면 지원서 전체가 기계적으로 읽힙니다.",
 
     // The polish pass rewrites nearly every sentence and the character count
     // barely moves, so the work it did is invisible. Three lines of what

@@ -1005,3 +1005,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 철학2 대조표를 실제 구현 상태로 갱신했습니다(reframe·polish·채용 유형 톤 등 ❌ → ✅).
 - Files/branch: `src/domain/edit-summary.ts` + `.test.ts`(신규), `src/server/ai/quick/prompt.ts` + `.test.ts`, `schema.ts`, `provider.ts`, `src/domain/result-document.ts`, `src/fixtures/result-document.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx`, `docs/editing-philosophy-2-consultant-field-notes.md` on `main`. `QUICK_PROMPT_VERSION` quick-2.9 → **quick-3.0**.
 - Validation: `npx vitest run` 381 passed(신규 13건), `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-22 — Claude: 두괄식 규칙이 남발되지 않도록 기본값을 '유지'로
+
+- Agent/session: Claude. 사용자 질문 — "두괄식이 꼭 장단점 아니더라도 적재적소에 넣는 건데, 굳이 넣을 필요도 남발할 필요도 없다. AI가 잘 판단되려나?"
+- Status: completed.
+- **타당한 지적이었고, 직전 커밋에서 제가 넣은 규칙이 실제로 남발을 유도합니다.** 두 줄 중 두 번째가 문제였습니다: `"다른 문항도 결론이나 핵심 주장이 문단 끝에 묻혀 있으면 앞으로 끌어올리는 편이 좋습니다."` — **정지 조건이 없습니다.** 이런 형태의 지시를 받으면 모델은 대체로 전면 적용하고, 그러면 모든 답변이 같은 문장으로 시작해 지원서 전체가 기계적으로 읽힙니다.
+- 조치(장단점 규칙은 그대로 두고 두 번째 줄만 교체):
+  - **기본값을 '그대로 두기'로** 뒤집었습니다 — "두괄식으로 바꾸지 말고 먼저 확인만 하세요."
+  - **판정 기준을 구조가 아니라 도달로** 바꿨습니다 — "앞 두 문장을 읽었을 때 답이 드러나면 그대로 둔다. 앞부분만으로 알 수 없고 결론이 마지막에만 있을 때에만 끌어올린다." 목적이 문장 배열이 아니라 읽는 사람이 답을 찾는 것이므로, 형태가 아닌 결과로 판정해야 합니다.
+  - **예외를 명시**했습니다 — 경험·사례 문항의 상황 → 행동 → 결과 전개는 자연스러운 구성이므로 뒤집지 말 것. "모든 문항을 같은 틀로 맞추면 지원서 전체가 기계적으로 읽힙니다"를 이유로 함께 적었습니다.
+- 철학2 문서 §4-1에 "남발하지 않는 것이 규칙의 절반이다" 절과 문항 유형별 기준표를 추가했습니다.
+- 한계는 남습니다: 프롬프트는 확률적이라 규칙을 좁혀도 보장은 아닙니다. 실제 출력에서 모든 문항이 같은 형태로 시작하는지 확인이 필요하며, 그때는 조건을 더 조이거나 장단점 문항으로만 한정하는 선택지가 있습니다.
+- Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts`, `docs/editing-philosophy-2-consultant-field-notes.md` on `main`.
+- Validation: `npx vitest run` 382 passed(신규 1건, 기존 1건 교체), `npx tsc --noEmit` clean, ESLint 0건.

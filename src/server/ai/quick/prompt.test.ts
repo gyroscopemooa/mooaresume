@@ -528,8 +528,20 @@ describe("두괄식과 첨삭 요약", () => {
     expect(instructions()).toContain("번호를 반드시 붙일 필요는 없습니다");
   });
 
-  it("담당자가 끝까지 읽지 못한다는 전제를 밝힌다", () => {
-    expect(instructions()).toContain("담당자가 끝까지 읽지 못하는 상황을 전제하세요");
+  it("장단점 밖에서는 기본이 '그대로 두기'다", () => {
+    // 조건 없이 "앞으로 끌어올려라"라고 하면 모든 답변이 같은 문장으로
+    // 시작한다. 기본값을 유지로 두고, 실패하는 경우만 지목한다.
+    const text = instructions();
+
+    expect(text).toContain("두괄식으로 바꾸지 말고 먼저 확인만 하세요");
+    expect(text).toContain("앞 두 문장을 읽었을 때 이 문항에 대한 답이 무엇인지 드러나면 구조를 그대로 둡니다");
+  });
+
+  it("경험 문항의 상황→행동→결과 전개는 뒤집지 못하게 한다", () => {
+    const text = instructions();
+
+    expect(text).toContain("상황 → 행동 → 결과");
+    expect(text).toContain("모든 문항을 같은 틀로 맞추면 지원서 전체가 기계적으로 읽힙니다");
   });
 
   it("editSummary에 뭉뚱그린 말을 쓰지 말라고 지시한다", () => {
