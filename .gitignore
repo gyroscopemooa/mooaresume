@@ -15,3 +15,9 @@ supabase/.temp/
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# Client documents. Real applicants' cover letters get dropped in the repo root
+# while being reviewed, and they carry the applicant's name. Ignored so a broad
+# `git add` cannot publish someone else's personal document to GitHub.
+*.hwp
+*.hwpx
