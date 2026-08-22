@@ -29,6 +29,14 @@ function isSameOrigin(request: NextRequest) {
   }
 }
 
+/** A retry the database refused, carrying why rather than the orphan path's. */
+class QuickRetryRefusedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "QuickRetryRefusedError";
+  }
+}
+
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "허용되지 않은 요청 출처입니다." }, { status: 403 });
@@ -50,7 +58,13 @@ export async function POST(request: NextRequest) {
       try { await repository.prepareRetry(body.analysisRunId); }
       catch (error) {
         if (!(error instanceof Error) || !error.message.startsWith("QUICK_ANALYSIS_RETRY_PREPARE_FAILED:")) throw error;
-        await repository.prepareOrphanRetry(body.analysisRunId);
+        // The orphan path only covers runs left stranded by a lost worker. It
+        // used to run for *every* retry refusal, and when it then found no
+        // orphaned row it threw its own "no rows" error — replacing the real
+        // reason with PGRST116 and turning a legitimate "this run cannot be
+        // retried" into an opaque 500. Keep the original refusal.
+        try { await repository.prepareOrphanRetry(body.analysisRunId); }
+        catch { throw new QuickRetryRefusedError(error.message); }
       }
     }
     const gateway = new OpenAIResponsesGateway({ apiKey, model });
@@ -128,6 +142,16 @@ export async function POST(request: NextRequest) {
         error: "분석 요청 값이 올바르지 않습니다.",
         ...(process.env.NODE_ENV !== "production" ? { issues: error.issues } : {}),
       }, { status: 400 });
+    }
+    // A run in the wrong state for a retry is not a server fault, and a 500
+    // tells the applicant nothing they can act on.
+    if (error instanceof QuickRetryRefusedError) {
+      console.error(`quick_analysis_retry_refused:${error.message}`);
+      return NextResponse.json({
+        error: "이 분석은 다시 시도할 수 없습니다. 결제는 그대로 있으니 고객센터로 문의해 주세요.",
+        code: "RETRY_NOT_ALLOWED",
+        ...(process.env.NODE_ENV !== "production" ? { detail: error.message } : {}),
+      }, { status: 409 });
     }
     const detail = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     console.error(`quick_analysis_execution_failed:${detail}`);

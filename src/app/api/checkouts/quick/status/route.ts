@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { canRetryAnalysis } from "@/domain/analysis-retry";
 import { createClient } from "@/lib/supabase/server";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
 import { createPolarCheckoutReconciliationRuntime, reconcilePolarCheckout } from "@/server/billing/polar-checkout-reconciliation";
@@ -78,7 +79,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const retryAvailable = checkout.analysisStatus === "FAILED" && checkout.entitlementStatus === "ACTIVE";
+  // prepare_quick_analysis_retry refuses anything but a validation failure with
+  // attempts left, so offering the button on every FAILED run promised a retry
+  // the database would reject — and the rejection surfaced as a 500. These
+  // three conditions mirror the function's own preconditions.
+  const retryAvailable = canRetryAnalysis({
+    analysisStatus: checkout.analysisStatus,
+    entitlementStatus: checkout.entitlementStatus,
+    failureCode: runDiagnostic?.failure_code ?? null,
+    attemptCount: runDiagnostic?.attempt_count ?? null,
+  });
   if (checkout.analysisStatus === "RUNNING") {
     try {
       const timeout = await refundTimedOutQuickAnalysis({ analysisRunId: checkout.analysisRunId, ownerUserId: authData.user.id });

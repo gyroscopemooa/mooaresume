@@ -741,3 +741,20 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 317 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건.
 - 별도 확인(코드 변경 없음): 사용자가 보고한 Hydration 오류는 깨끗한 브라우저에서 `/analysis/prepare?checkout=success`를 새로 로드해 재현되지 않았습니다. 사용자 로그에서 오류 직전에 Fast Refresh 재빌드가 반복된 점, 오류 메시지 자체가 브라우저 확장 프로그램 가능성을 언급하는 점으로 보아 제 실시간 편집 중의 Fast Refresh 아티팩트이거나 확장 프로그램일 가능성이 높습니다. 잠재 원인으로 의심한 `crypto.randomUUID()`와 `new Date()`는 각각 `useMemo`(클라이언트 전용 경로)와 이벤트 핸들러 안에 있어 SSR 불일치를 만들지 않음을 확인했습니다.
 - Rollback: `subheading` 관련 추가분을 모두 제거하면 됩니다. 저장 문서 필드가 optional이라 이미 저장된 결과는 영향받지 않습니다.
+
+## 2026-08-22 — Claude: 재시도 거절이 500으로 나오던 문제 수정 (CREATE PRO 분석 실패의 실제 원인)
+
+- Agent/session: Claude. 사용자가 로그를 제공: `quick_analysis_execution_failed:ANALYSIS_ORPHAN_RETRY_NOT_ALLOWED:PGRST116` + `POST /api/analysis-runs/quick/execute 500`.
+- Status: completed.
+- 원인 (3개가 연쇄):
+  1. **화면이 DB보다 넓게 약속했다.** `status/route.ts`의 `retryAvailable = analysisStatus === "FAILED" && entitlementStatus === "ACTIVE"`. 그러나 `prepare_quick_analysis_retry`는 `failure_code = 'AI_OUTPUT_VALIDATION_FAILED'`이고 `attempt_count < 3`일 때만 허용합니다. 다른 코드로 실패한 실행에도 "다시 시도" 버튼이 떴고, 누르면 DB가 거절했습니다.
+  2. **거절 이유가 사라졌다.** execute 라우트가 `prepareRetry` 실패 시 **무조건** `prepareOrphanRetry`로 넘어갔는데, 이 함수는 `failure_code = 'ANALYSIS_ORPHANED'`인 행만 찾습니다. 해당 행이 없으니 `.single()`이 PGRST116(행 없음)을 던졌고, **원래 거절 사유가 이 오류로 덮였습니다.** 로그에 찍힌 `ANALYSIS_ORPHAN_RETRY_NOT_ALLOWED:PGRST116`은 진짜 원인이 아니라 폴백의 실패였습니다.
+  3. **상태 문제가 서버 오류로 보고됐다.** 위 오류가 최종 catch로 떨어져 500 + "분석을 완료하지 못했습니다"가 됐습니다. 재시도할 수 없는 상태는 서버 결함이 아닙니다.
+- 조치:
+  - `src/domain/analysis-retry.ts`(신규): `canRetryAnalysis()`로 재시도 조건을 한 곳에 모았습니다. SQL 두 함수(`prepare_quick_analysis_retry`, `prepareOrphanRetry`)의 전제조건을 그대로 반영합니다 — 검증 실패 + 시도 잔여, **또는** 유실된 실행(`ANALYSIS_ORPHANED`, 이 경로는 횟수가 아니라 코드로 판단). 원래 인라인 조건이 SQL과 어긋난 것이 이번 버그의 뿌리라 별도 모듈로 분리하고 테스트를 붙였습니다.
+  - execute 라우트: 고아 재시도가 실패하면 **원래 거절 사유**를 담은 `QuickRetryRefusedError`를 던지고, 이를 **409**와 사용자가 행동할 수 있는 문구로 반환합니다.
+  - 고아 복구 경로는 그대로 유지했습니다(`retryAvailable`에서 `ANALYSIS_ORPHANED`를 함께 허용). 처음 좁힐 때 이 경로를 빠뜨렸다가 바로잡았습니다.
+- Files/branch: `src/domain/analysis-retry.ts`(신규) + `.test.ts`(신규), `src/app/api/checkouts/quick/status/route.ts`, `src/app/api/analysis-runs/quick/execute/route.ts` on `main`.
+- Validation: `npx vitest run` 324 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건.
+- 남은 확인(사용자): 이번 수정은 **재시도 경로**를 고친 것입니다. 그 실행이 애초에 왜 FAILED가 됐는지는 별개이며, 실패 코드를 알아야 합니다. 새 분석을 시도했을 때 화면의 "원인 코드"를 확인해 주세요.
+- Rollback: `canRetryAnalysis` 호출부를 이전 인라인 조건으로 되돌리고 `QuickRetryRefusedError` 분기를 제거하면 됩니다.
