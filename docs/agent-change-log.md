@@ -877,3 +877,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - `ProInputPage` 수정: 게스트 초안에서 `revisionRequest`를 복원하고, 저장 시 다시 포함하며, 화면에 "이어서 진행 중인 요청사항"으로 인용해 보여줍니다. 넘어온 요청이 보존된다는 사실이 보이지 않으면 사용자는 다시 입력하거나 사라졌다고 생각합니다.
 - Files/branch: `src/components/pro-input-page.tsx` + `.module.css`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
 - Validation: `npx vitest run` 345 passed(신규 2건), `npx tsc --noEmit` clean, ESLint 0건. 자료 경로가 요청사항을 들고 `/pro/polish`로 가는지, 두 버튼 모두 빈 요청사항에서 막히는지 테스트로 고정했습니다.
+
+## 2026-08-22 — Claude: 재첨삭에 자료 업로드 통합, 다음 단계 문구 사용자 안 채택
+
+- Agent/session: Claude. 사용자 제안 두 가지 — (1) 다음 단계 카드 문구를 "완성본 이후의 다음 단계 준비도 이어갈 수 있어요 / 현재 첨삭은 성공적으로 완료되었습니다 / … 추가로 선택할 수 있습니다 / 버튼: 더 준비하기"로, (2) 자료 추가 시 PRO 창을 새로 띄우지 말고 입력창 통합본으로.
+- Status: completed.
+- (2) 통합 채택 — 제 직전 판단이 틀렸습니다: `MaterialUpload`가 파일 파싱·중복 제거·개수 제한·오류 표시를 모두 자체 처리하는 **독립 컴포넌트**라, 재첨삭 패널에 넣는 것은 UI 복제가 아니라 **재사용**입니다. `/pro/polish`로 튕겨내던 두 번째 버튼을 없애고 패널 안에서 첨부까지 끝내도록 통합했습니다.
+- 통합하면서 **드러난 실제 위험**: 지원자료는 `sessionStorage`에만 있습니다. 새 세션에서 재첨삭을 시작하면 **이력서가 조용히 빠진 채** 분석됩니다. 패널이 먼저 알려주도록 했습니다 — 자료가 있으면 "앞서 올린 자료 N개는 그대로 함께 반영됩니다", 없으면 "이번 화면에는 함께 넘어온 자료가 없습니다".
+  - 저장은 **병합**입니다. 첫 실행에서 올린 자료도 지원자의 자료이므로 파일 하나 추가한다고 덮어써서는 안 됩니다.
+  - 이 값은 서버가 읽을 수 없어 `useSyncExternalStore`로 읽습니다(서버 스냅샷 null). 처음엔 effect에서 setState 했다가 React 린트 규칙에 걸렸고, 이 API가 "하이드레이션 불일치 없이 클라이언트 전용 값을 읽는" 정확한 용도입니다.
+- (1) 문구 채택 — 사용자 문안을 그대로 쓰되 한 가지만 조정했습니다. **"면접 준비"는 FINAL 기능이고 아직 없습니다.** PRO 추천에 넣으면 결제한 사람이 받지 못하는 것을 약속하게 되므로, PRO가 실제로 주는 것(공고 적합도 분석, 누락 역량 점검, **면접 예상질문**)으로 구체화했습니다. 없는 기능을 팔지 않는지 확인하는 테스트를 추가했습니다.
+- Files/branch: `src/domain/next-step.ts` + `.test.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx` on `main`.
+- Validation: `npx vitest run` 346 passed, `npx tsc --noEmit` clean, ESLint 0건.
+- 확인됨(사용자 제공): `private.app_config`에 `analysis_advance_url`·`analysis_cron_secret` 두 키가 모두 존재합니다. 크론 스케줄(1건, active)과 함께 **설정은 완료**입니다. 실제 실행 성공 여부는 `cron.job_run_details`로 확인이 남았고, 그것이 확인되면 결제 화면 문구를 "창을 닫아도 됩니다"로 바꿀 수 있습니다.

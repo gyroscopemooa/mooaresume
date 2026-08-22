@@ -29,15 +29,19 @@ describe("다음 단계 추천", () => {
     const next = recommendNextStep({ ...base, product: "QUICK" });
 
     expect(next?.product).toBe("PRO");
-    expect(next?.label).toContain("PRO");
   });
 
   it("QUICK 추천은 지금 글을 다시 쓰지 않아도 된다고 밝힌다", () => {
     // "또 처음부터 입력해야 하나"가 이 카드를 안 누르게 만드는 가장 큰 이유다.
+    expect(recommendNextStep({ ...base, product: "QUICK" })?.reason).toContain("다시 쓰지 않으셔도 됩니다");
+  });
+
+  it("아직 없는 FINAL 기능을 팔지 않는다", () => {
+    // 모의면접·답변 평가는 FINAL이고 구현되지 않았다. PRO 추천에 섞으면
+    // 결제한 사람이 받지 못하는 것을 약속하는 셈이다.
     const next = recommendNextStep({ ...base, product: "QUICK" });
 
-    expect(next?.reason).toContain("채용공고와 이력서를 함께 넣어");
-    expect(next?.reason).toContain("다시 쓰지 않으셔도 됩니다");
+    expect(next?.reason).not.toMatch(/모의면접|답변 평가|꼬리질문/);
   });
 
   it("새 자료가 필요한 추천만 입력 화면으로 보낸다", () => {
@@ -71,13 +75,15 @@ describe("다음 단계 추천", () => {
 
     for (const input of cases) {
       const next = recommendNextStep(input);
-      expect(next?.reassurance).toMatch(/제출하셔도 됩니다/);
+      expect(next?.reassurance).toMatch(/성공적으로 완료되었습니다/);
     }
   });
 
-  it("이유는 조건부 제안으로 쓰여 강요처럼 읽히지 않는다", () => {
+  it("이유는 할 수 있다고만 말하고 해야 한다고 하지 않는다", () => {
     for (const input of [{ ...base, writingMode: "CREATE" as const }, { ...base, writingMode: "BUILD" as const }, { ...base, product: "QUICK" as const }]) {
-      expect(recommendNextStep(input)?.reason).toMatch(/다면/);
+      const reason = recommendNextStep(input)?.reason ?? "";
+      expect(reason).toMatch(/이어갈 수 있습니다/);
+      expect(reason).not.toMatch(/해야 합니다|필요합니다|하세요/);
     }
   });
 });

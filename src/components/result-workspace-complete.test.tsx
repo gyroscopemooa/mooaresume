@@ -254,7 +254,7 @@ describe("재첨삭 요청", () => {
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
     openFinalTab();
 
-    expect(screen.getByRole("button", { name: /요청사항만 반영해 다시 첨삭받기/ }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: /요청사항 반영해 다시 첨삭받기/ }).hasAttribute("disabled")).toBe(true);
   });
 
   it("요청사항과 화면의 최종 답변을 함께 넘긴다", () => {
@@ -266,7 +266,7 @@ describe("재첨삭 요청", () => {
     fireEvent.change(screen.getByLabelText("재첨삭 요청사항"), {
       target: { value: "에이텍 경력은 빼주세요." },
     });
-    fireEvent.click(screen.getByRole("button", { name: /요청사항만 반영해 다시 첨삭받기/ }));
+    fireEvent.click(screen.getByRole("button", { name: /요청사항 반영해 다시 첨삭받기/ }));
 
     const saved = JSON.parse(sessionStorage.getItem("mooa:guest-draft:v1") ?? "{}");
     expect(saved.revisionRequest).toBe("에이텍 경력은 빼주세요.");
@@ -301,7 +301,7 @@ describe("다음 단계로 이어가기", () => {
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
     fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
 
-    fireEvent.click(screen.getByRole("button", { name: /이어서 하기/ }));
+    fireEvent.click(screen.getByRole("button", { name: /더 준비하기/ }));
 
     const saved = JSON.parse(sessionStorage.getItem("mooa:guest-draft:v1") ?? "{}");
     expect(saved.questions[0].answer).toBe(sampleResultDocument.questions[0].revisedAnswer);
@@ -311,27 +311,26 @@ describe("다음 단계로 이어가기", () => {
   });
 });
 
-describe("재첨삭에 자료를 더 넣는 경로", () => {
-  it("자료를 더 넣겠다고 하면 요청사항을 들고 입력 화면으로 간다", () => {
-    // 자료 부족으로 결과가 얇았던 경우다. 요청사항만 반영하는 경로와 달리
-    // 이력서를 올릴 화면이 필요하고, 요청사항은 거기까지 따라가야 한다.
+describe("재첨삭에 자료 추가", () => {
+  it("함께 넘어온 자료가 없으면 그렇다고 알린다", () => {
+    // 자료는 sessionStorage에만 있어서, 새 세션에서 재첨삭을 시작하면
+    // 이력서가 조용히 빠진 채 분석된다. 화면이 먼저 말해줘야 한다.
+    sessionStorage.removeItem("mooa:guest-candidate-materials:v1");
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
     fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
 
-    fireEvent.change(screen.getByLabelText("재첨삭 요청사항"), {
-      target: { value: "경력기술서 내용도 반영해 주세요." },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /자료도 더 넣고 진행/ }));
-
-    const saved = JSON.parse(sessionStorage.getItem("mooa:guest-draft:v1") ?? "{}");
-    expect(saved.revisionRequest).toBe("경력기술서 내용도 반영해 주세요.");
-    expect(push).toHaveBeenCalledWith("/pro/polish");
+    expect(screen.getByText(/함께 넘어온 자료가 없습니다/)).toBeTruthy();
   });
 
-  it("요청사항이 비어 있으면 두 버튼 모두 막는다", () => {
+  it("이미 올린 자료가 있으면 개수를 밝히고 그대로 쓴다고 말한다", () => {
+    sessionStorage.setItem("mooa:guest-candidate-materials:v1", JSON.stringify({
+      schemaVersion: "1.0",
+      materialAttachments: [{ kind: "RESUME", filename: "이력서.pdf", extension: "pdf", sizeBytes: 10, text: "내용" }],
+    }));
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
     fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
 
-    expect(screen.getByRole("button", { name: /자료도 더 넣고 진행/ }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/앞서 올린 자료 1개는 그대로 함께 반영됩니다/)).toBeTruthy();
+    sessionStorage.removeItem("mooa:guest-candidate-materials:v1");
   });
 });

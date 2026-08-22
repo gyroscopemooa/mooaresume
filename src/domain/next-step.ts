@@ -51,9 +51,9 @@ export function recommendNextStep(input: NextStepInput): NextStep | null {
     return {
       product: "PRO",
       writingMode: "POLISH",
-      label: "최종 첨삭으로 한 번 더 보기",
-      reassurance: "지금 초안은 이대로 제출하셔도 됩니다.",
-      reason: "여유가 있다면, 최종 첨삭은 같은 내용을 제출 직전의 눈으로 다시 읽으며 어색한 표현과 문단 흐름을 정리합니다.",
+      label: "완성본 이후의 다음 단계도 이어갈 수 있어요",
+      reassurance: "현재 첨삭은 성공적으로 완료되었습니다.",
+      reason: "완성된 지원서를 바탕으로 최종 점검을 이어갈 수 있습니다. 제출 직전의 눈으로 다시 읽어 어색한 표현과 문단 흐름을 정리하는 단계입니다.",
       href: "/analysis/prepare",
     };
   }
@@ -65,9 +65,9 @@ export function recommendNextStep(input: NextStepInput): NextStep | null {
     return {
       product: "PRO",
       writingMode: "POLISH",
-      label: "최종 첨삭으로 한 번 더 보기",
-      reassurance: "채운 결과는 이대로 제출하셔도 됩니다.",
-      reason: "한 번 더 손보고 싶다면, 최종 첨삭은 문항 하나씩이 아니라 지원서 전체를 놓고 말투가 고른지, 같은 이야기가 겹치지는 않는지 봅니다.",
+      label: "완성본 이후의 다음 단계도 이어갈 수 있어요",
+      reassurance: "현재 첨삭은 성공적으로 완료되었습니다.",
+      reason: "완성된 지원서를 바탕으로 최종 점검을 이어갈 수 있습니다. 문항 하나씩이 아니라 지원서 전체를 놓고 말투가 고른지, 같은 이야기가 겹치지는 않는지 보는 단계입니다.",
       href: "/analysis/prepare",
     };
   }
@@ -77,9 +77,12 @@ export function recommendNextStep(input: NextStepInput): NextStep | null {
     return {
       product: "PRO",
       writingMode: "POLISH",
-      label: "PRO로 공고와 대조해 보기",
-      reassurance: "이 첨삭본은 이대로 제출하셔도 됩니다.",
-      reason: "지원할 회사가 정해져 있다면, 채용공고와 이력서를 함께 넣어 이 글이 그 회사가 요구한 것에 답하고 있는지까지 확인할 수 있습니다. 지금 글은 그대로 옮겨 담기니 다시 쓰지 않으셔도 됩니다.",
+      label: "완성본 이후의 다음 단계도 이어갈 수 있어요",
+      reassurance: "현재 첨삭은 성공적으로 완료되었습니다.",
+      // Named individually because these are what PRO actually adds. "면접
+      // 준비" belongs to FINAL, which does not exist yet — listing it here
+      // would sell something that cannot be delivered.
+      reason: "완성된 지원서를 바탕으로 공고 적합도 분석, 누락 역량 점검, 면접 예상질문까지 이어갈 수 있습니다. 지금 글은 그대로 옮겨 담기니 다시 쓰지 않으셔도 됩니다.",
       // Needs a posting and a résumé that this run did not have, so it lands
       // on the screen that collects them rather than at confirmation.
       href: "/pro/polish",

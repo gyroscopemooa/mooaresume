@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,6 +10,8 @@ import {
 import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document";
 import { recommendNextStep } from "@/domain/next-step";
 import { saveGuestDraft } from "@/lib/guest-draft";
+import { MaterialUpload } from "@/components/material-upload";
+import type { CandidateMaterialAttachment } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { deriveFallbackOriginalAnnotations } from "@/domain/result-original-annotations";
 import { resolveApplicationLabel, resolveQuestionTitle, resolveResultSubject, toFilenameToken } from "@/domain/result-labels";
@@ -141,6 +143,52 @@ function CoverageNotice({ notes }: { notes: readonly string[] }) {
   </div></section>;
 }
 
+const MATERIAL_STORAGE_KEY = "mooa:guest-candidate-materials:v1";
+
+const EMPTY_MATERIAL_DRAFT = {
+  schemaVersion: "1.0" as const,
+  freeformNotes: "",
+  freeformAttachments: [],
+  experiences: [],
+  profileEntries: [],
+  materialAttachments: [] as CandidateMaterialAttachment[],
+};
+
+/**
+ * How many materials are still riding along in this session.
+ *
+ * They live only in sessionStorage, so a re-run started in a fresh session
+ * carries no résumé at all — and nothing on screen said so. Read through
+ * useSyncExternalStore rather than an effect: the server has no sessionStorage
+ * and must render the unknown state, and the value never changes underneath us.
+ */
+const subscribeToNothing = () => () => {};
+const readNoMaterialCount = () => null;
+
+function readCarriedMaterialCount(): number {
+  try {
+    const stored: unknown = JSON.parse(sessionStorage.getItem(MATERIAL_STORAGE_KEY) ?? "null");
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return 0;
+    const attachments = (stored as { materialAttachments?: unknown }).materialAttachments;
+    return Array.isArray(attachments) ? attachments.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function mergeMaterialAttachments(added: CandidateMaterialAttachment[]) {
+  let draft: Record<string, unknown> = { ...EMPTY_MATERIAL_DRAFT };
+  try {
+    const stored: unknown = JSON.parse(sessionStorage.getItem(MATERIAL_STORAGE_KEY) ?? "null");
+    if (stored && typeof stored === "object" && !Array.isArray(stored)) draft = { ...EMPTY_MATERIAL_DRAFT, ...stored };
+  } catch { /* a corrupt entry is replaced rather than allowed to block the re-run */ }
+
+  const existing = Array.isArray(draft.materialAttachments) ? draft.materialAttachments as CandidateMaterialAttachment[] : [];
+  const seen = new Set(existing.map((file) => `${file.kind}:${file.filename}`));
+  draft.materialAttachments = [...existing, ...added.filter((file) => !seen.has(`${file.kind}:${file.filename}`))];
+  sessionStorage.setItem(MATERIAL_STORAGE_KEY, JSON.stringify(draft));
+}
+
 export function ResultWorkspaceComplete({ result = sampleResultDocument }: { result?: ResultDocument }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
   const [view, setView] = useState<View>("overview");
@@ -190,6 +238,12 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
 
   const router = useRouter();
   const [revisionRequest, setRevisionRequest] = useState("");
+  const [revisionAttachments, setRevisionAttachments] = useState<CandidateMaterialAttachment[]>([]);
+  const carriedMaterialCount = useSyncExternalStore(
+    subscribeToNothing,
+    readCarriedMaterialCount,
+    readNoMaterialCount,
+  );
 
   /**
    * Re-runs the analysis with an instruction attached.
@@ -243,9 +297,10 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
    * work with" needs the materials screen, and the instruction rides along
    * rather than being retyped there.
    */
-  function startRevision(destination: "/analysis/prepare" | "/pro/polish") {
+  function startRevision() {
     if (!revisionRequest.trim()) return;
-    carryDraftForward(destination, { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
+    if (revisionAttachments.length > 0) mergeMaterialAttachments(revisionAttachments);
+    carryDraftForward("/analysis/prepare", { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
   }
 
 
@@ -395,7 +450,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         <div>
           <span className={styles.eyebrow}>추가 요청</span>
           <h2>고치고 싶은 방향이 있나요?</h2>
-          <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다. 넣지 못한 이력서·경력기술서가 있다면 <b>자료도 더 넣고</b> 진행할 수 있습니다.</p>
+          <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다.</p>
         </div>
         <textarea
           rows={3}
@@ -404,16 +459,24 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           placeholder="예: 에이텍 경력은 빼고 직업상담 관련 경력으로만 구성해 주세요."
           aria-label="재첨삭 요청사항"
         />
+        {/* Bouncing to the PRO input page to attach one file cost the
+            applicant the whole screen they were reading. MaterialUpload is
+            self-contained, so this is the same uploader, not a second one. */}
+        <div className={styles.revisionMaterials}>
+          <b>자료를 더 넣으시겠어요?</b>
+          <p>
+            {carriedMaterialCount === null ? " "
+              : carriedMaterialCount > 0
+                ? `앞서 올린 자료 ${carriedMaterialCount}개는 그대로 함께 반영됩니다. 빠진 자료가 있으면 여기서 추가하세요.`
+                : "이번 화면에는 함께 넘어온 자료가 없습니다. 이력서·경력기술서가 있으면 지금 올려 주세요."}
+          </p>
+          <MaterialUpload attachments={revisionAttachments} onChange={setRevisionAttachments}/>
+        </div>
         <div className={styles.revisionFoot}>
           <small>새 분석이므로 PRO 1회 결제가 필요합니다. 지금 결과는 그대로 남아 있습니다.</small>
-          <div className={styles.revisionActions}>
-            <button type="button" className={styles.revisionSecondary} disabled={!revisionRequest.trim()} onClick={() => startRevision("/pro/polish")}>
-              자료도 더 넣고 진행
-            </button>
-            <button type="button" disabled={!revisionRequest.trim()} onClick={() => startRevision("/analysis/prepare")}>
-              요청사항만 반영해 다시 첨삭받기 <ArrowRight/>
-            </button>
-          </div>
+          <button type="button" disabled={!revisionRequest.trim()} onClick={startRevision}>
+            요청사항 반영해 다시 첨삭받기 <ArrowRight/>
+          </button>
         </div>
       </section>}
 
@@ -429,7 +492,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           <p><b>{nextStep.reassurance}</b> {nextStep.reason}</p>
         </div>
         <button type="button" onClick={() => carryDraftForward(nextStep.href, { writingMode: nextStep.writingMode, product: nextStep.product })}>
-          지금 글 그대로 이어서 하기 <ArrowRight/>
+          더 준비하기 <ArrowRight/>
         </button>
       </section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
