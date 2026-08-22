@@ -113,6 +113,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
     }),
     requirementMatches: (output.requirementMatches ?? []).map((match, index) => ({ id: `requirement-${index + 1}`, ...match })),
     verificationQuestions: output.verificationQuestions,
+    editSummary: output.editSummary ?? [],
     consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })),
     interviewQuestions: (output.interviewQuestions ?? []).map((item, index) => ({ id: `interview-${index + 1}`, ...item })),
     interviewRisks: (output.interviewRisks ?? []).map((item, index) => ({ id: `interview-risk-${index + 1}`, ...item })),

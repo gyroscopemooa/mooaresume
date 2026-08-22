@@ -10,7 +10,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.9";
+export const QUICK_PROMPT_VERSION = "quick-3.0";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -190,6 +190,17 @@ ${LENGTH_INTEGRITY_RULE}`,
     // from an intern. The posting usually says which, so this needs no extra
     // input from the applicant.
     "채용공고나 직무명에서 이 채용이 인턴·신입인지 경력직인지 알 수 있으면 조언의 톤을 맞추세요. 인턴·신입 지원서에서 '제도를 개선하겠다', '체계를 바꾸겠다'처럼 권한을 전제하는 표현은 신입에게 그런 기회가 주어지는 경우가 드물어 부담스럽게 읽힐 수 있습니다. 경험 자체는 살리되 '기회가 주어진다면 이 경험을 살려 기여하고 싶습니다'처럼 여지를 두는 표현을 consultingAdvice로 제안하세요. 경력직 지원서에는 이 조언을 적용하지 마세요.",
+
+    // From the operator's notes: the reviewer may be skimming, and a conclusion
+    // buried under three sentences of build-up is a conclusion they never
+    // reach. Strongest on 장단점, where the answer IS the claim.
+    "장점·단점·강점·약점·성격처럼 지원자에 대한 판단을 묻는 문항은 결론을 첫 문장에 두세요. '제 장점은 ~입니다'처럼 먼저 밝히고, 그렇게 말할 수 있는 근거와 사례를 뒤에 붙입니다. 근거가 여럿이면 순서가 드러나게 쓰되 '첫 번째, 두 번째' 같은 번호를 반드시 붙일 필요는 없습니다. 자연스럽게 읽히면 됩니다.",
+    "다른 문항도 결론이나 핵심 주장이 문단 끝에 묻혀 있으면 앞으로 끌어올리는 편이 좋습니다. 담당자가 끝까지 읽지 못하는 상황을 전제하세요.",
+
+    // The polish pass rewrites nearly every sentence and the character count
+    // barely moves, so the work it did is invisible. Three lines of what
+    // actually changed is the difference between "뭐가 달라졌지" and seeing it.
+    "editSummary에는 이번 첨삭에서 실제로 한 일을 지원자가 알아볼 수 있게 2~3줄로 적으세요. '표현을 다듬었습니다' 같은 뭉뚱그린 말이 아니라 무엇을 어떻게 바꿨는지 구체적으로 씁니다. 예: '직무 연결이 없던 결론 3개를 안전관리 업무와 연결했습니다', '구어체 표현 5곳을 지원서 문체로 바꿨습니다'. 문장 수나 주석 개수는 화면이 따로 세어 보여주므로 여기에는 적지 마세요.",
 
     "문항이 요구하는 형식을 그대로 따르세요. 문항 질문에 '경력 위주로', '항목별로', '3가지로', '담당업무와 실적 중심으로' 같은 지시가 있으면 그 형식으로 씁니다. 예를 들어 경력사항 문항은 이야기하듯 풀어 쓰지 말고 소속·기간·고용형태·담당업무·실적을 항목으로 정리하세요.",
     "같은 경험을 여러 문항에 써야 한다면 문항마다 다른 측면을 쓰세요. 한 문항이 그 경험의 의미와 배움을 다뤘다면 다른 문항에서는 사실 정보(소속·기간·역할·담당업무)만 정리하는 식으로 나눕니다. 같은 이야기를 같은 방식으로 두 번 쓰면 지원서 전체가 소재가 하나뿐인 것처럼 읽힙니다.",

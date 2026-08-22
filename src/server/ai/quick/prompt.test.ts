@@ -511,3 +511,35 @@ describe("줄여도 되는 것과 안 되는 것", () => {
     expect(build).toContain("첨삭본이 원문보다 짧아지면 안 됩니다");
   });
 });
+
+describe("두괄식과 첨삭 요약", () => {
+  const instructions = () => buildQuickAnalysisInstructions(request);
+
+  it("장단점 문항은 결론을 첫 문장에 두라고 지시한다", () => {
+    // 답변 자체가 주장인 문항이라 결론이 문단 끝에 묻히면 도달하지 않는다.
+    const text = instructions();
+
+    expect(text).toContain("장점·단점·강점·약점·성격");
+    expect(text).toContain("결론을 첫 문장에 두세요");
+  });
+
+  it("번호 매기기를 강제하지는 않는다", () => {
+    // "첫 번째, 두 번째"를 규칙으로 만들면 모든 답변이 같은 틀로 찍힌다.
+    expect(instructions()).toContain("번호를 반드시 붙일 필요는 없습니다");
+  });
+
+  it("담당자가 끝까지 읽지 못한다는 전제를 밝힌다", () => {
+    expect(instructions()).toContain("담당자가 끝까지 읽지 못하는 상황을 전제하세요");
+  });
+
+  it("editSummary에 뭉뚱그린 말을 쓰지 말라고 지시한다", () => {
+    const text = instructions();
+
+    expect(text).toContain("editSummary에는 이번 첨삭에서 실제로 한 일을");
+    expect(text).toContain("'표현을 다듬었습니다' 같은 뭉뚱그린 말이 아니라");
+  });
+
+  it("화면이 세는 숫자를 editSummary에 중복해 적지 않게 한다", () => {
+    expect(instructions()).toContain("문장 수나 주석 개수는 화면이 따로 세어 보여주므로");
+  });
+});

@@ -51,6 +51,9 @@ const baseOutputShape = {
   revisions: z.array(quickRevisionSchema).min(1).max(20).optional(),
   revision: legacyQuickRevisionSchema,
   verificationQuestions: z.array(z.string().min(1)).max(5),
+  // Counts are computed on screen; this carries the part only the analysis
+  // knows — what it judged and changed.
+  editSummary: z.array(z.string().min(1)).max(3).optional(),
   consultingAdvice: z.array(z.object({ kind: z.enum(["add", "remove", "strengthen", "structure", "clarify", "reframe"]), title: z.string().min(1), guidance: z.string().min(1), rationale: z.string().min(1), priority: z.enum(["high", "medium", "low"]) })).min(4).max(8).optional(),
 };
 

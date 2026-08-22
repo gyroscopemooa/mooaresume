@@ -139,6 +139,7 @@ export const resultDocumentSchema = z.object({
   questions: z.array(resultQuestionSchema).min(1),
   requirementMatches: z.array(requirementMatchSchema),
   verificationQuestions: z.array(z.string().min(1)),
+  editSummary: z.array(z.string().min(1)).max(3).default([]),
   consultingAdvice: z.array(consultingAdviceSchema).max(8).default([]),
   interviewQuestions: z.array(interviewQuestionSchema),
   interviewRisks: z.array(interviewRiskSchema).default([]),

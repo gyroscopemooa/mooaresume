@@ -166,6 +166,10 @@ export const sampleResultDocument: ResultDocument = {
       recommendation: "수치를 추정하지 말고 기록, 피드백 또는 작업 방식의 실제 변화를 확인하세요.",
     },
   ],
+  editSummary: [
+    "직무 연결이 없던 결론 2개를 생산관리 업무와 연결했습니다.",
+    "구어체로 남아 있던 표현을 지원서 문체로 바꿨습니다.",
+  ],
   verificationQuestions: [
     "점검 순서를 변경한 뒤 불량 건수 또는 검사 시간이 실제로 달라졌나요?",
     "팀장이나 작업자가 변경된 방식에 대해 남긴 피드백이 있나요?",

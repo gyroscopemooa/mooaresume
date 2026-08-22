@@ -988,3 +988,20 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 기존 테스트 3건이 옛 POLISH 동작을 고정하고 있어 갱신했습니다. 의도 중 살아 있는 부분(POLISH는 BUILD의 빈 문항 채우기 지시를 받지 않는다)은 유지했고, BUILD의 "짧아지면 안 됩니다"가 그대로인지 확인하는 테스트도 남겼습니다.
 - Files/branch: `src/server/ai/quick/questions.ts`, `prompt.ts`, `prompt.test.ts`, `src/components/analysis-preparation.tsx` on `main`. `QUICK_PROMPT_VERSION` quick-2.8 → **quick-2.9**.
 - Validation: `npx vitest run` 368 passed, `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-22 — Claude: 두괄식 규칙 + "이번 첨삭에서 한 일" 요약 (quick-3.0)
+
+- Agent/session: Claude. 사용자가 (1) 두괄식이 md나 기능에 저장돼 있는지 물으며 특히 장단점 문항에 많이 추천한다고 했고, (2) 첨삭 요약을 "한 번에" 만들라고 승인했습니다.
+- Status: completed.
+- **두괄식 — 저장돼 있지 않았습니다.** 원문 노트의 "가독성을 높이기 위한 양식 점검" 항목에 소제목과 나란히 있었는데 **제가 철학2 문서를 정리할 때 빠뜨렸습니다.** 프롬프트에도 없었고, 직전 커밋에서 `LENGTH_INTEGRITY_RULE`에 "두괄식으로 만드는 게 나으면 그렇게 해라"는 **허용**만 있었지 능동적 규칙은 없었습니다.
+  - 철학2 문서에 §4-1로 보강했습니다(운영자의 리더십 90점 예시 포함).
+  - 프롬프트에 규칙 2줄 추가: **장점·단점·강점·약점·성격 문항은 결론을 첫 문장에**, 근거는 뒤에. 다른 문항도 결론이 문단 끝에 묻혀 있으면 앞으로. 전제는 "담당자가 끝까지 읽지 못한다".
+  - `첫 번째, 두 번째` 번호는 **강제하지 않습니다**("꼭 초딩처럼 이유는 안 이래도 된다"는 사용자 표현 반영). 규칙으로 만들면 모든 답변이 같은 틀로 찍힙니다.
+- **첨삭 요약** — 계산과 판단을 분리했습니다.
+  - 계산(`src/domain/edit-summary.ts` 신규): 다시 쓴 문장 수 / 전체 문장 수, 주석 유형별 개수. **이미 저장된 데이터에서 세므로 추가 API 호출이 없습니다.** 문장부호·띄어쓰기만 다른 것은 다시 쓴 것으로 세지 않습니다(쉼표 하나로 숫자가 부풀면 못 믿게 됩니다). 직접 수정한 답변이 있으면 그것을 기준으로 셉니다.
+  - 판단(`editSummary` 필드 신규): 세어서 알 수 없는 부분 — "직무 연결이 없던 결론 3개를 안전관리 업무와 연결했습니다" 같은 것 — 만 AI가 2~3줄로 적습니다. 프롬프트에 **"'표현을 다듬었습니다' 같은 뭉뚱그린 말 금지"**와 **"문장 수·주석 개수는 화면이 세므로 여기 적지 말 것"**을 명시해 중복을 막았습니다.
+  - 화면: 최종 첨삭본 탭 상단. **고친 곳이 없으면 아예 표시하지 않습니다** — 한 일이 없는데 요약을 띄우면 그 자체가 과장입니다.
+- 구현 중 실수 하나: 요약 섹션을 처음에 재첨삭 패널 안쪽에 넣어 `!result.isSample` 조건에 걸렸습니다. 테스트가 잡아 최상위 블록으로 옮겼습니다.
+- 철학2 대조표를 실제 구현 상태로 갱신했습니다(reframe·polish·채용 유형 톤 등 ❌ → ✅).
+- Files/branch: `src/domain/edit-summary.ts` + `.test.ts`(신규), `src/server/ai/quick/prompt.ts` + `.test.ts`, `schema.ts`, `provider.ts`, `src/domain/result-document.ts`, `src/fixtures/result-document.ts`, `src/components/result-workspace-complete.tsx` + `.module.css` + `.test.tsx`, `docs/editing-philosophy-2-consultant-field-notes.md` on `main`. `QUICK_PROMPT_VERSION` quick-2.9 → **quick-3.0**.
+- Validation: `npx vitest run` 381 passed(신규 13건), `npx tsc --noEmit` clean, ESLint 0건.

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document";
 import { recommendNextStep } from "@/domain/next-step";
+import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
 import { AdditionalInfoInput } from "@/components/additional-info-input";
 import type { CandidateFreeformAttachment } from "@/domain/candidate-material";
@@ -242,6 +243,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
     [answers, applicationLabel, result, subject],
   );
   const baseFilename = `MOOA_${toFilenameToken(subject.name)}_최종첨삭본`;
+  // Counted from what is stored, so the numbers move with hand edits and
+  // nothing has to be taken on trust.
+  const editCounts = useMemo(() => summarizeEdits(result, answers), [result, answers]);
 
   const router = useRouter();
   const [revisionRequest, setRevisionRequest] = useState("");
@@ -453,13 +457,29 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
       {/* Sits before the next-step card because it acts on the draft in hand
           rather than moving to another stage. Only on the final tab, and only
           on a real result — there is nothing to revise on the sample. */}
+      {view === "final" && editCounts.rewrittenSentences > 0 && <section className={styles.editSummary}>
+        {/* The polish pass rewrites most sentences and barely moves the
+            character count, so its work is invisible — 650 in, 650 out, and a
+            reasonable "what did I pay for?". These counts come from stored
+            data; the lines under them are the analysis's own account. */}
+        <span className={styles.eyebrow}>이번 첨삭에서</span>
+        <ul>
+          <li>문장 {editCounts.totalSentences}개 중 <b>{editCounts.rewrittenSentences}개</b>를 다시 썼습니다.</li>
+          {editCounts.annotations.length > 0 && <li>
+            {editCounts.annotations.map(({ type, count }) => `${ANNOTATION_LABEL[type]} ${count}곳`).join(" · ")}
+          </li>}
+          {result.editSummary.map((line) => <li key={line}>{line}</li>)}
+        </ul>
+      </section>}
+
       {view === "final" && !result.isSample && <section className={styles.revision}>
         <div>
           <span className={styles.eyebrow}>추가 요청</span>
           <h2>고치고 싶은 방향이 있나요?</h2>
           <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다.</p>
         </div>
-        {/* One box for both: the instruction and whatever it refers to. A
+
+      {/* One box for both: the instruction and whatever it refers to. A
             separate uploader underneath asked the applicant to say the same
             thing twice, and bouncing to the PRO page to attach one file cost
             them the screen they were reading. This composer already types and

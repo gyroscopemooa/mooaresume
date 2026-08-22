@@ -352,3 +352,33 @@ describe("재첨삭에 자료 추가", () => {
     sessionStorage.removeItem("mooa:guest-candidate-materials:v1");
   });
 });
+
+describe("이번 첨삭에서 한 일", () => {
+  it("다시 쓴 문장 수와 주석 개수, 분석의 설명을 함께 보여준다", () => {
+    // 다듬기는 글자 수가 거의 안 변해서 한 일이 안 보인다. 센 숫자와
+    // 분석이 직접 밝힌 내용을 같이 놓아야 "뭐가 달라졌지"가 사라진다.
+    render(<ResultWorkspaceComplete result={sampleResultDocument}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    expect(screen.getByText(/다시 썼습니다/)).toBeTruthy();
+    for (const line of sampleResultDocument.editSummary) {
+      expect(screen.getByText(line)).toBeTruthy();
+    }
+  });
+
+  it("고친 곳이 없으면 아무것도 띄우지 않는다", () => {
+    // 한 일이 없는데 요약을 띄우면 그 자체가 과장이 된다.
+    const untouched = {
+      ...sampleResultDocument,
+      editSummary: [],
+      questions: sampleResultDocument.questions.map((question) => ({
+        ...question,
+        revisedAnswer: question.originalAnswer || question.revisedAnswer,
+      })),
+    };
+    render(<ResultWorkspaceComplete result={untouched}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    expect(screen.queryByText(/다시 썼습니다/)).toBeNull();
+  });
+});
