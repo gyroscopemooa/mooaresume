@@ -1,7 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
-import { fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
+import { expandsToTargetLength, fillsBlankQuestions, getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-2.2";
+export const QUICK_PROMPT_VERSION = "quick-2.3";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -24,7 +24,7 @@ const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> =
   // In this stage the "원문" is not a draft: it is the ordered notes the
   // applicant filled in on the guided screen. Treating it as prose to polish
   // returns the notes back almost unchanged.
-  CREATE: "작성 단계: 처음부터 작성. 각 문항의 원문은 완성된 글이 아니라 지원자가 단계별로 입력한 사실 메모입니다([지원 계기], [경험 ①] 같은 머리말이 붙어 있습니다). 이 메모의 사실만 사용해 문항 질문에 답하는 완결된 자기소개서 문장을 새로 작성하세요. 메모 문장을 그대로 옮기지 말고, 메모에 없는 경험·자격·수치는 만들지 말고 확인 질문으로 남기세요.",
+  CREATE: "작성 단계: 처음부터 작성. 각 문항의 원문은 완성된 글이 아니라 지원자가 단계별로 입력한 사실 메모입니다([지원 계기], [경험 ①] 같은 머리말이 붙어 있습니다). 메모와 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험)에 있는 사실을 근거로, 문항 질문에 답하는 완결된 자기소개서 문장을 새로 작성하세요. 메모 문장을 그대로 옮기지 말고, 단어 나열이나 짧은 조각이어도 완결된 문장으로 풀어 쓰세요. 메모에도 자료에도 없는 경험·자격·수치는 만들지 말고 확인 질문으로 남기세요.",
 };
 export const QUICK_RUBRIC_VERSION = "quick-rubric-1.0";
 export const QUICK_SCHEMA_VERSION = "1.0";
@@ -58,9 +58,11 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       : request.writingStyle === "STRENGTH_FOCUSED"
         ? "작성 스타일: 강점 살리기. 같은 사실 안에서 강점과 직무 연결을 적극적으로 제안하되, 확인이 필요한 해석은 확정하지 마세요."
         : "작성 스타일: 균형 있게. 사실을 보존하면서 경험의 의미와 전달력을 자연스럽게 강화하세요.",
-    // Branching rather than editing: this line is shared with CREATE and POLISH,
-    // and rewriting it in place would change what those two modes do.
-    fillsBlankQuestions(request)
+    // Branching rather than editing: this line is shared with POLISH, and
+    // rewriting it in place would change what that mode does. CREATE writes
+    // every answer from scratch, so the company's length is its target too —
+    // it was previously told not to pad and never told to reach the length.
+    expandsToTargetLength(request)
       // The first version of this line ended with an escape hatch, and the
       // model took it: a 540-character answer came back at 503 against a 700
       // target. Shrinking is now named as the failure it is, and the way to

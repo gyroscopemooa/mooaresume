@@ -259,3 +259,42 @@ describe("사실 보존과 문항 형식", () => {
     expect(instructions).toContain("같은 이야기를 같은 방식으로 두 번 쓰면");
   });
 });
+
+describe("CREATE도 목표 분량까지 쓴다", () => {
+  // CREATE writes every answer from scratch, so the company's length is its
+  // target as much as BUILD's — but it was told not to pad and never told to
+  // reach the length, so a memo of a few words produced a few sentences.
+  const create: AnalysisRequest = {
+    ...request,
+    product: "PRO",
+    writingMode: "CREATE",
+    questions: [
+      { id: "q1", title: "지원 동기", prompt: "지원 동기를 서술하세요.", answer: "[지원 계기] 현장실습에서 안전관리를 처음 봤습니다.", targetLength: 700 },
+      { id: "q2", title: "강점", prompt: "강점을 서술하세요.", answer: "[강점] 모르는 건 바로 물어보는 편입니다.", targetLength: 500 },
+    ],
+  };
+
+  it("분량을 채우지 말라는 지시를 걸지 않는다", () => {
+    expect(buildQuickAnalysisInstructions(create)).not.toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+  });
+
+  it("지원자료를 근거로 쓸 수 있다고 알린다", () => {
+    // "메모의 사실만" ruled out the résumé, so the applicant with the least
+    // written was also barred from using what they had uploaded.
+    expect(buildQuickAnalysisInstructions(create)).toContain("메모와 함께 제출된 지원자료");
+  });
+
+  it("메모를 그대로 옮기지 말라는 규칙은 유지된다", () => {
+    expect(buildQuickAnalysisInstructions(create)).toContain("메모 문장을 그대로 옮기지 말고");
+  });
+
+  it("POLISH는 여전히 채우지 않는다", () => {
+    expect(buildQuickAnalysisInstructions({ ...create, writingMode: "POLISH" }))
+      .toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+  });
+
+  it("QUICK CREATE에는 걸지 않는다", () => {
+    expect(buildQuickAnalysisInstructions({ ...create, product: "QUICK" }))
+      .toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+  });
+});

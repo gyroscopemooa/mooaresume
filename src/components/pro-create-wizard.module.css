@@ -5,3 +5,5 @@
 .blocked button svg{width:11px}
 .layout aside em{margin-left:auto;color:#b6d0c3;font-size:8px;font-style:normal}
 .layout aside button[data-active=true] em{color:#176b4a}
+.hint{margin:0 0 18px;padding:11px 13px;border-radius:8px;background:#f2f8f4;color:#3f5b4e;font-size:10px;line-height:1.7}
+.hint b{color:#176b4a}

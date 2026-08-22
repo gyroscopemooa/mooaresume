@@ -175,6 +175,20 @@ export function ProCreateWizard() {
           />
         </>}
 
+        {/* Every help text here says "대충 적어도 괜찮습니다", which is kind but
+            leaves out the part that decides the result: the draft is built from
+            what is typed here and nothing else. Someone who writes three words
+            per step and gets a thin draft was never told why. */}
+        {guidedStep && <p className={styles.hint}>
+          문장으로 쓰지 않아도 됩니다. 떠오르는 단어만 나열해도 AI가 문장으로 만들어 줍니다.
+          다만 <b>여기 적은 내용만</b> 초안에 들어가므로, 많이 적을수록 결과가 좋아집니다.
+        </p>}
+
+        {guidedStep?.id === "assign" && questions.length > draft.experiences.length && <p className={styles.hint}>
+          문항이 {questions.length}개인데 경험은 {draft.experiences.length}개입니다.
+          이대로도 되지만, 경험을 더 넣으면 문항마다 다른 이야기를 쓸 수 있습니다.
+        </p>}
+
         {guidedStep && <GuidedStepBody
           step={guidedStep}
           draft={draft}

@@ -41,6 +41,22 @@ function hasSeparatedQuestions(request: AnalysisRequest) {
  * points out what is missing without filling it, because filling honestly needs
  * the supporting-material cross-check that only PRO collects.
  */
+/**
+ * Whether the run should write each answer up to its target length.
+ *
+ * CREATE writes every answer from scratch, so the length target applies to it
+ * just as much as to BUILD — but the shared instruction told it not to pad,
+ * and nothing told it to reach the length the company asked for. Blank
+ * questions are a separate matter: BUILD fills them from the rest of the
+ * letter, while a CREATE question with nothing assigned has no material at
+ * all, so including it would only invite invention.
+ */
+export function expandsToTargetLength(request: AnalysisRequest) {
+  return request.product === "PRO"
+    && (request.writingMode === "BUILD" || request.writingMode === "CREATE")
+    && hasSeparatedQuestions(request);
+}
+
 export function fillsBlankQuestions(request: AnalysisRequest) {
   return request.product === "PRO"
     && request.writingMode === "BUILD"

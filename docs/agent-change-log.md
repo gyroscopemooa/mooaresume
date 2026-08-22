@@ -606,3 +606,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/guided-create-form.tsx` + `.module.css`, `src/components/pro-create-wizard.tsx` + `.module.css` on `main`.
 - Validation: 전체 `npx vitest run` 282 passed, `npx tsc --noEmit` clean, ESLint 0건. 브라우저에서 실측 — 사이드바 버튼 16px → 10px, 원 크기 전 항목 균일, 체크 아이콘 14×14가 25×25 원 안에 **가로·세로 오차 0**으로 중앙 정렬됨을 확인했습니다.
 - 참고: 다른 파일의 `font:inherit`은 전체 값이 CSS 전역 키워드라 유효합니다. 이번 문제는 축약형 중간에 끼운 경우에만 해당합니다.
+
+## 2026-08-22 — Claude: CREATE가 자료를 쓰고 목표 분량까지 쓰도록 (quick-2.3)
+
+- Agent/session: Claude. 사용자가 위저드 구성을 검토하며 "유저가 작성을 대충하면 어떻게 되냐, 자료 위주냐"고 물어 실제 동작을 확인한 결과, CREATE에 두 가지 문제가 있었습니다.
+- Status: completed.
+- 문제 1: CREATE 지시문이 "이 메모의 사실만 사용해"라고 못 박아 **이력서·경력기술서·포트폴리오를 배제**했습니다. BUILD에서 "원문의 사실 범위 안에서"가 같은 벽이 됐던 것과 동일한 실수입니다. 재료가 가장 부족한 사용자가 정작 가진 자료를 못 쓰는 상태였습니다. → "메모와 함께 제출된 지원자료에 있는 사실을 근거로"로 넓혔습니다. 없는 사실을 만들지 말라는 규칙과 "메모 문장을 그대로 옮기지 말고"는 그대로 유지했습니다.
+- 문제 2: 목표 분량 지시가 `fillsBlankQuestions`(BUILD 전용)에 묶여 있어, CREATE에는 반대 지시인 "억지로 분량을 채우지 말고 확인 질문을 남기세요"가 걸렸습니다. 전부 새로 쓰는 모드인데 회사가 요구한 분량을 목표로 삼지 않았습니다. → `expandsToTargetLength`(PRO && (BUILD || CREATE))를 **새로 추가**했습니다. `fillsBlankQuestions`는 빈 문항 포함 여부를 결정하므로 BUILD 전용으로 그대로 뒀습니다. CREATE의 빈 문항은 배정된 소재가 없다는 뜻이라 포함하면 창작을 유도합니다.
+- 문제 3(UX): 단계별 안내가 모두 "대충 적어도 괜찮습니다"라고만 하고, **적게 쓰면 결과가 얇아진다는 인과**를 알려주지 않았습니다. → 위저드 인터뷰 단계에 "단어만 나열해도 됩니다. 다만 여기 적은 내용만 초안에 들어가므로 많이 적을수록 결과가 좋아집니다" 안내를 추가하고, 소재 배정 단계에서 문항 수 > 경험 수이면 경험 추가를 권하는 문구를 넣었습니다.
+- Files/branch: `src/server/ai/quick/prompt.ts`, `questions.ts`, `prompt.test.ts`, `src/components/pro-create-wizard.tsx` + `.module.css` on `main`. 프롬프트 버전 quick-2.2 → quick-2.3.
+- Validation: `npx vitest run` 287 passed(신규 5건), `npx tsc --noEmit` clean, ESLint 0건. 기존 모드 고정 테스트(POLISH·QUICK·BUILD)는 그대로 통과합니다.
+- Rollback: `expandsToTargetLength` 호출부를 `fillsBlankQuestions`로 되돌리고 CREATE 지시문을 이전 문장으로 되돌리면 됩니다.
