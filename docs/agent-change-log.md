@@ -1074,3 +1074,18 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/auth/callback/route.ts`, `src/components/application-case-handoff.tsx`, `src/domain/recipient-list.ts` + `.test.ts`(신규), `src/server/notifications/manual-email.ts`, `src/app/api/mail/send/route.ts`, `src/app/api/mail/login/route.ts`, `src/app/MAIL/page.tsx` on `main`.
 - Validation: `npx next build` 클린, `npx vitest run` 400 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건.
 - **남은 일(사용자)**: 배포 후 로그인을 다시 시도하고 Cloudflare 로그에서 `auth_callback_failed:` 줄을 확인해 주세요. 그 줄이 네 원인 중 무엇인지 알려줍니다. 함께 확인할 것 — Supabase 대시보드의 **Redirect URLs**에 `https://mooaresume.com/auth/callback` 이 등록돼 있는지, **Site URL**이 `https://mooaresume.com`인지.
+
+## 2026-08-23 — Claude: 회신 주소를 기본값으로 (수동 입력 의존 제거)
+
+- Agent/session: Claude. 사용자 질문 — 회신 주소를 `support@mooaresume.com`으로 고정해야 하는지, 입력해도 아무것도 안 보이는데 동작하는지, 아니면 본문에 직접 적는 게 나은지.
+- Status: completed.
+- 확인: **버그가 아닙니다.** `reply_to`는 정상 전송되고 있었고, 회신 주소는 원래 화면에 보이지 않습니다 — 받는 사람이 **답장 버튼을 눌러야** 적용됩니다. "아무것도 안 나온다"는 정상 동작입니다.
+- 진짜 문제는 다른 데 있었습니다: **비워두면 회신이 `noreply@`로 갑니다.** 매번 손으로 입력해야 하는 구조라, **한 번 잊은 그 메일이 답장을 잃는 메일**이 됩니다. 학교 담당자가 답장했는데 아무도 못 보는 상황입니다.
+- 조치: 사용자가 **이미 설정해 둔 `ANALYSIS_EMAIL_REPLY_TO`가 코드에서 전혀 쓰이지 않고 있었습니다.** 이제 두 발송 경로 모두 기본값으로 씁니다.
+  - `manual-email.ts`: 입력이 비어 있으면 환경변수 값을 사용. 다른 주소로 받고 싶으면 입력해서 덮어씁니다.
+  - `analysis-complete-email.ts`: **같은 구멍이 여기에도 있었습니다.** 분석 완료 메일에 회신 주소가 없어, 결과에 대해 문의하거나 실패를 알리려는 고객의 답장이 `noreply@`로 사라지고 있었습니다.
+- 화면 문구: "회신 받을 주소 **선택**" → "**비워두면 기본 회신 주소로 갑니다**". 비어 있는 것이 정상 경로가 됐으므로 그때 무슨 일이 일어나는지 적었습니다.
+- `.env.example`에 `ANALYSIS_EMAIL_REPLY_TO`를 문서화했습니다(누락돼 있었음).
+- 본문에 "회신주소: support@..."를 직접 적는 방식과 비교: 회신 주소가 낫습니다. **답장 버튼이 그대로 동작**하기 때문입니다. 본문 표기는 상대가 복사해 붙여야 하며, 답장 버튼을 누르면 여전히 noreply로 갑니다. 다만 둘을 같이 써도 손해는 없습니다.
+- Files/branch: `src/server/notifications/manual-email.ts`, `analysis-complete-email.ts`, `src/app/MAIL/page.tsx`, `.env.example` on `main`.
+- Validation: `npx vitest run` 400 passed, `npx tsc --noEmit` clean, ESLint 0건.

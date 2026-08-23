@@ -23,6 +23,10 @@ export async function sendManualEmail(input: ManualEmailInput, fetchImplementati
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = (process.env.MAIL_FROM || process.env.ANALYSIS_EMAIL_FROM)?.trim();
   if (!apiKey || !from) throw new Error("메일 발송 환경변수가 설정되지 않았습니다.");
+  // The sender is a noreply address, so without this a reply goes nowhere
+  // anyone reads. Leaving it to be typed each time means the one message
+  // someone forgets is the one that loses a reply.
+  const replyTo = input.replyTo?.trim() || process.env.ANALYSIS_EMAIL_REPLY_TO?.trim();
   const body = input.body.trim();
   const subject = input.subject.trim();
   const html = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.7">${escapeHtml(body)}</div>`;
@@ -36,7 +40,7 @@ export async function sendManualEmail(input: ManualEmailInput, fetchImplementati
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         signal: AbortSignal.timeout(15_000),
-        body: JSON.stringify({ from: `MOOA Resume <${from}>`, to: [to], subject, text: body, html, ...(input.replyTo?.trim() ? { reply_to: input.replyTo.trim() } : {}) }),
+        body: JSON.stringify({ from: `MOOA Resume <${from}>`, to: [to], subject, text: body, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
       });
       if (response.ok) sent.push(to);
       else failed.push({ to, reason: `RESEND_${response.status}` });

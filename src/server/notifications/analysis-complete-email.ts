@@ -28,6 +28,10 @@ export async function sendAnalysisCompleteEmail(
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.ANALYSIS_EMAIL_FROM?.trim();
   if (!apiKey || !from) return { disposition: "SKIPPED_NOT_CONFIGURED" };
+  // Someone whose analysis just failed, or who has a question about the
+  // result, replies to this message. Without a reply-to that reply lands on
+  // the noreply address and is never seen.
+  const replyTo = process.env.ANALYSIS_EMAIL_REPLY_TO?.trim();
 
   const response = await fetchImplementation(RESEND_ENDPOINT, {
     method: "POST",
@@ -35,6 +39,7 @@ export async function sendAnalysisCompleteEmail(
     signal: AbortSignal.timeout(15_000),
     body: JSON.stringify({
       from: `MOOA Resume <${from}>`,
+      ...(replyTo ? { reply_to: replyTo } : {}),
       to: [input.to],
       subject: "자기소개서 분석이 완료되었습니다",
       text: `자기소개서 분석이 끝났습니다.\n\n결과 확인: ${input.resultUrl}\n\n결과는 로그인한 계정에서만 열립니다.`,
