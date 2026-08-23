@@ -527,9 +527,20 @@ describe("두괄식과 첨삭 요약", () => {
     expect(text).toContain("결론을 첫 문장에 두세요");
   });
 
-  it("번호 매기기를 강제하지는 않는다", () => {
-    // "첫 번째, 두 번째"를 규칙으로 만들면 모든 답변이 같은 틀로 찍힌다.
-    expect(instructions()).toContain("번호를 반드시 붙일 필요는 없습니다");
+  it("근거가 여럿일 때의 형태를 예시로 보여준다", () => {
+    // 운영자가 실제 첨삭에서 자주 쓰는 형태다. 금지되지 않았다는 것과
+    // 좋은 선택지로 제시되는 것은 모델에게 다르게 작용한다.
+    const text = instructions();
+
+    expect(text).toContain("이유는 두 가지입니다. 첫째");
+    expect(text).toContain("결론으로 열고 근거를 세운 뒤 결론으로 닫는 구성");
+  });
+
+  it("그 형태를 규칙으로 삼지 못하게 한다", () => {
+    const text = instructions();
+
+    expect(text).toContain("이 형태를 규칙으로 삼지는 마세요");
+    expect(text).toContain("근거가 하나뿐이면 굳이 둘로 나누지 마세요");
   });
 
   it("장단점 밖에서는 기본이 '그대로 두기'다", () => {
@@ -566,5 +577,33 @@ describe("두괄식과 첨삭 요약", () => {
 
   it("화면이 세는 숫자를 editSummary에 중복해 적지 않게 한다", () => {
     expect(instructions()).toContain("문장 수나 주석 개수는 화면이 따로 세어 보여주므로");
+  });
+});
+
+describe("순서를 지어내지 않는다", () => {
+  // 실제로 났던 사고: 이력서상 재직 중 휴학·자퇴한 사람인데 첨삭본이
+  // "대학 졸업 후에는 현대자동차…"로 썼다. 수치가 아니라 연결어로 만든
+  // 순서라서 기존의 '없는 사실 금지' 규칙에 걸리지 않았다.
+  const instructions = () => buildQuickAnalysisInstructions(request);
+
+  it("확인되지 않은 순서 표현을 새로 넣지 못하게 한다", () => {
+    const text = instructions();
+
+    expect(text).toContain("순서 표현을 새로 만들어 넣지 마세요");
+    expect(text).toContain("순서를 알 수 없으면 각 경험을 따로 서술하고");
+  });
+
+  it("학업과 일의 앞뒤를 임의로 정하지 못하게 한다", () => {
+    const text = instructions();
+
+    expect(text).toContain("학업과 일의 앞뒤를 임의로 정하지 마세요");
+    expect(text).toContain("지원자가 쓰지도 않은 내용 때문에 탈락 사유가 됩니다");
+  });
+
+  it("QUICK에도 걸린다", () => {
+    // 비교할 자료가 없어도 자소서 안의 날짜와 모순될 수 있고, 무엇보다
+    // 첨삭이 지원자 이력을 바꿔 쓰는 것 자체가 문제다.
+    expect(buildQuickAnalysisInstructions({ ...request, product: "QUICK" }))
+      .toContain("순서 표현을 새로 만들어 넣지 마세요");
   });
 });

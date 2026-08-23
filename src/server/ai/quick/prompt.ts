@@ -10,7 +10,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-3.1";
+export const QUICK_PROMPT_VERSION = "quick-3.2";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -84,6 +84,8 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     // quoting one fails validation every time.
     "이 입력의 형식 표시(예: '[문항 1]', '제목:', '질문:', '답변:', '(아직 작성되지 않았습니다...)')는 지원자가 쓴 글이 아닙니다. evidenceQuote에 절대 넣지 마세요.",
     "아직 작성되지 않은 문항뿐이라 인용할 답변이 없다면, priorities의 evidenceQuote는 제출된 지원자료(이력서·경력기술서·포트폴리오)의 실제 문구에서 가져오세요.",
+    "첨삭본에 '~한 후', '~하고 나서', '이후에는', '먼저 ~하고' 같은 순서 표현을 새로 만들어 넣지 마세요. 지원자가 직접 순서를 밝혔거나 제출한 자료의 날짜로 확인되는 경우에만 쓸 수 있습니다. 순서를 알 수 없으면 각 경험을 따로 서술하고, 순서가 궁금하면 verificationQuestions에 남기세요.",
+    "특히 학업과 일의 앞뒤를 임의로 정하지 마세요. 일을 하다가 학교에 간 사람을 '졸업 후 입사'로 쓰면 지원자의 이력이 사실과 달라집니다. 이런 오류는 면접에서 곧바로 드러나고, 지원자가 쓰지도 않은 내용 때문에 탈락 사유가 됩니다.",
     "objective, qualitative, needs_verification 판단을 구분하세요.",
     "준비도 점수는 합격 확률이 아니며, 모든 점수와 수정 이유에 원문 근거를 붙이세요.",
     "수치가 없으면 정성적 행동과 확인 가능한 변화만 활용하세요. 임의의 숫자를 추가하지 마세요.",
@@ -195,7 +197,9 @@ ${LENGTH_INTEGRITY_RULE}`,
     // From the operator's notes: the reviewer may be skimming, and a conclusion
     // buried under three sentences of build-up is a conclusion they never
     // reach. Strongest on 장단점, where the answer IS the claim.
-    "장점·단점·강점·약점·성격처럼 지원자에 대한 판단을 묻는 문항은 결론을 첫 문장에 두세요. '제 장점은 ~입니다'처럼 먼저 밝히고, 그렇게 말할 수 있는 근거와 사례를 뒤에 붙입니다. 근거가 여럿이면 순서가 드러나게 쓰되 '첫 번째, 두 번째' 같은 번호를 반드시 붙일 필요는 없습니다. 자연스럽게 읽히면 됩니다.",
+    "장점·단점·강점·약점·성격처럼 지원자에 대한 판단을 묻는 문항은 결론을 첫 문장에 두세요. '제 장점은 ~입니다'처럼 먼저 밝히고, 그렇게 말할 수 있는 근거와 사례를 뒤에 붙입니다.",
+    "근거가 둘 이상이면 다음 형태가 잘 읽힙니다. '제 장점은 ~입니다. 그렇게 생각하는 이유는 두 가지입니다. 첫째, ~. 둘째, ~. 이러한 이유로 저는 ~라고 생각합니다.' 결론으로 열고 근거를 세운 뒤 결론으로 닫는 구성입니다.",
+    "다만 이 형태를 규칙으로 삼지는 마세요. '첫째, 둘째' 같은 번호 없이 자연스럽게 이어 써도 되고, 근거가 하나뿐이면 굳이 둘로 나누지 마세요. 읽는 사람이 결론과 근거를 바로 알아볼 수 있으면 충분합니다.",
     "그 밖의 문항은 두괄식으로 바꾸지 말고 먼저 확인만 하세요. 답변의 앞 두 문장을 읽었을 때 이 문항에 대한 답이 무엇인지 드러나면 구조를 그대로 둡니다. 앞부분만 읽어서는 무슨 답인지 알 수 없고 결론이 마지막 문장에만 있을 때에만 앞으로 끌어올리세요.",
     "경험이나 사례를 묻는 문항에서 상황 → 행동 → 결과 순서로 전개되는 것은 자연스러운 구성입니다. 읽는 데 문제가 없다면 순서를 뒤집지 마세요. 모든 문항을 같은 틀로 맞추면 지원서 전체가 기계적으로 읽힙니다.",
     "두괄식 재배치는 지원서 전체에서 한 문항, 많아야 두 문항에만 적용하세요. 장점·단점 문항이 있으면 그 문항을 먼저 선택합니다. 여러 문항이 모두 결론을 앞세우면 그 자체가 하나의 틀이 되어 효과가 사라집니다.",
