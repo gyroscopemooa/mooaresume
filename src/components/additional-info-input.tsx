@@ -121,7 +121,10 @@ export function AdditionalInfoInput({
           {busy ? "파일 읽는 중" : "파일 첨부"}
           <input type="file" accept={ARCHIVE_DOCUMENT_ACCEPT} multiple disabled={busy} onChange={(event) => { void addFiles(event.target.files); event.target.value = ""; }}/>
         </label>
-      <p className={styles.fileHint}>PDF · DOCX · TXT · MD 지원 · ZIP은 안에 든 문서를 꺼내서 읽습니다 · 스캔 PDF/JPG/PNG는 결제 후 문서 인식 예정<br/>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요. 파일에 따라 추출이 제한될 수 있어 중요한 내용은 직접 입력해 주세요.</p>
+      {/* The zip line promises less than the feature does on purpose: an
+          archive is the one upload where the applicant cannot see what got
+          through, so what will not make it is named before they try. */}
+      <p className={styles.fileHint}>PDF · DOCX · TXT · MD 지원 · 스캔 PDF/JPG/PNG는 결제 후 문서 인식 예정<br/>ZIP은 안에 든 PDF·DOCX·TXT·MD만 꺼내 읽습니다. 암호가 걸려 있거나 HWP·이미지가 들어 있으면 그 파일은 빠지며, 빠진 파일 이름을 알려 드립니다. 꺼낸 파일도 첨부 {MAX_ATTACHMENTS}개 제한에 포함됩니다.<br/>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요. 파일에 따라 추출이 제한될 수 있어 중요한 내용은 직접 입력해 주세요.</p>
         <span>직접 입력 {text.length.toLocaleString()}자 <small>최대 12,000자</small>{attachmentCharacters > 0 ? ` · 첨부 원문 ${attachmentCharacters.toLocaleString()}자` : ""}</span>
       </footer>
       {error && <p className={styles.error}>{error}</p>}

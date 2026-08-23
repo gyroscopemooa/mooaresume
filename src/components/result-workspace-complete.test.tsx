@@ -386,6 +386,18 @@ describe("재첨삭에 자료 추가", () => {
     expect(screen.getByText(/이력서·경력기술서·포트폴리오는 위에서 종류별로/)).toBeTruthy();
   });
 
+  it("기타 칸만 ZIP을 받고, 무엇이 빠질 수 있는지 미리 알린다", () => {
+    // 압축파일은 지원자가 무엇이 통과했는지 볼 수 없는 유일한 업로드다.
+    // 종류별 슬롯이 ZIP을 받으면 안에 든 경력기술서까지 이력서로 표시된다.
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    const accepts = [...document.querySelectorAll('input[type="file"]')].map((picker) => picker.getAttribute("accept"));
+    expect(accepts.slice(0, 3).every((accept) => !accept?.includes("zip"))).toBe(true);
+    expect(accepts[3]).toContain(".zip");
+    expect(screen.getByText(/암호가 걸려 있거나 HWP·이미지가 들어 있으면 그 파일은 빠지며/)).toBeTruthy();
+  });
+
   it("이력서는 종류와 함께, 기타 자료는 자유 첨부로 저장한다", async () => {
     sessionStorage.removeItem("mooa:guest-candidate-materials:v1");
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);

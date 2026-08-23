@@ -1218,3 +1218,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/lib/local-document.ts`, `src/lib/local-document.test.ts`(신규), `src/components/additional-info-input.tsx`, `package.json`, `vitest.config.ts` on `main`.
 - Validation: `npx vitest run` 425 passed(신규 8건 — 여러 파일 분해·폴더 경로·읽지 못한 파일 명시·찌꺼기 무시·개수 상한·빈 zip·비zip 통과·깨진 zip). `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린.
 - 부수 수정: 다른 세션의 백그라운드 에이전트가 `.claude/worktrees/`에 작업 트리를 만들면 **vitest가 전체 테스트를 두 번 돌리고 그 세션의 진행 중 실패를 이 세션 것으로 보고**했습니다(129 파일·842건으로 뜀). `vitest.config.ts` exclude에 추가했습니다.
+
+## 2026-08-23 — Claude: ZIP 적용 범위 확인 + 빠질 수 있다는 안내 명시
+
+- Agent/session: Claude. 사용자 지시 — zip을 전체적으로 적용하되 **그 입력창에만** 허용하고, **안 될 수도 있다는 안내**를 붙일 것.
+- Status: completed.
+- **적용 범위는 이미 전체였습니다.** `AdditionalInfoInput`이 공용 컴포넌트라 한 번 고치면 세 화면에 동시에 적용됩니다 — `pro-input-page`(PRO 추가 경험), `pro-create-wizard`(처음부터 작성 마법사), `result-workspace-complete`(재첨삭 기타 자료). 별도 작업 없이 확인만 했습니다.
+- **다른 업로드 자리는 그대로 zip을 받지 않습니다**(의도된 범위): `onboarding`, `coming-soon-hero-input`, `landing-entry`, `resume-intake`, `job-posting-input`, `material-upload`. 이 자리들은 파일 하나가 곧 자소서·공고·특정 종류의 자료라, 묶음이 들어오면 무엇을 그 자리에 넣을지 정할 수 없습니다.
+- 안내 문구를 구체적으로 바꿨습니다. 압축파일은 **지원자가 무엇이 통과했는지 볼 수 없는 유일한 업로드**라, 시도하기 전에 빠질 것을 먼저 말합니다:
+  > ZIP은 안에 든 PDF·DOCX·TXT·MD만 꺼내 읽습니다. 암호가 걸려 있거나 HWP·이미지가 들어 있으면 그 파일은 빠지며, 빠진 파일 이름을 알려 드립니다. 꺼낸 파일도 첨부 10개 제한에 포함됩니다.
+- "최대 20개"는 문구에서 뺐습니다 — 첨부 상한이 10개라 20개는 **실제로 도달할 수 없는 숫자**이고, 적어 두면 거짓말이 됩니다. `MAX_ZIP_ENTRIES = 20`은 라이브러리 자체 안전장치로 남습니다.
+- Files/branch: `src/components/additional-info-input.tsx`, `src/components/result-workspace-complete.test.tsx` on `main`.
+- Validation: `npx vitest run` 426 passed(신규 1건 — 종류별 슬롯 3개는 `accept`에 zip이 없고 기타 칸만 있으며, 경고 문구가 화면에 있는지 확인). `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린.
+- 보류: HWP는 사용자 판단으로 **나중에** 적용합니다.
