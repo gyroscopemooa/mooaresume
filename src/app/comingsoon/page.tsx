@@ -63,9 +63,9 @@ const faqs = [
 export const metadata: Metadata = {
   title: "AI 자소서 첨삭 · 무아레쥬메",
   description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진. 직무 적합도·문항 적합도·경험 중복까지 데이터 기반으로 진단합니다.",
-  alternates: { canonical: "/landing" },
+  alternates: { canonical: "/comingsoon" },
   openGraph: {
-    url: "/landing",
+    url: "/comingsoon",
     title: "AI 자소서 첨삭 · 무아레쥬메",
     description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진.",
   },

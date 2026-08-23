@@ -1030,18 +1030,18 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/ai/quick/prompt.ts`, `prompt.test.ts`, `docs/editing-philosophy-2-consultant-field-notes.md` on `main`.
 - Validation: `npx vitest run` 383 passed(신규 1건), `npx tsc --noEmit` clean, ESLint 0건.
 
-## 2026-08-22 — Claude: 런칭 전환 — 제품 홈을 `/`로, 랜딩을 `/landing`으로
+## 2026-08-22 — Claude: 런칭 전환 — 제품 홈을 `/`로, 랜딩을 `/comingsoon`으로
 
 - Agent/session: Claude. 사용자 승인 후 진행. 결정 근거는 직전 대화 — 랜딩을 버리지도 www로 나누지도 않고 **경로로 살려두고 나중에 데이터로 판단**한다.
 - Status: completed (배포 필요).
 - 이동:
   - `src/app/dev-home/page.tsx` → **`src/app/page.tsx`** (제품 홈이 메인). `noindex`와 "개발 홈 미리보기 (비공개)" 제목을 제거하고 canonical을 `/`로 지정했습니다. 이제 검색엔진이 색인하는 페이지입니다.
-  - 기존 `src/app/page.tsx`(랜딩) → **`src/app/landing/page.tsx`**. canonical이 `/`를 가리키고 있었는데 그대로 두면 **"이 페이지의 진짜 주소는 제품 홈"**이라고 잘못 알리게 되므로 `/landing`으로 바꿨습니다. CSS 모듈 6개도 함께 이동(`git mv`로 이력 보존).
+  - 기존 `src/app/page.tsx`(랜딩) → **`src/app/comingsoon/page.tsx`**. canonical이 `/`를 가리키고 있었는데 그대로 두면 **"이 페이지의 진짜 주소는 제품 홈"**이라고 잘못 알리게 되므로 `/comingsoon`으로 바꿨습니다(경로 이름은 사용자 지정 — 코드베이스가 이미 `coming-soon.module.css`, `ComingSoonHeroInput`, `comingSoonPlans`로 그렇게 부르고 있어 일관됩니다). CSS 모듈 6개도 함께 이동(`git mv`로 이력 보존).
   - `src/middleware.ts` **삭제**. `dev.*` 호스트를 `/dev-home`으로 rewrite하던 것인데, `/`가 곧 제품 홈이 되어 할 일이 없어졌습니다. no-op 미들웨어는 모든 요청에 비용만 얹습니다.
   - `next.config.ts`의 `privatePaths`에서 `dev-home` 제거.
 - 랜딩 문구: 출시 예정·대기자 성격을 걷어냈습니다(COMING SOON 배지, "출시 알림 받기" 버튼 3곳, FAQ 4건, 카운터 문구, 요금 주석). **이메일 폼은 유지**하되 성격을 "업데이트 소식"으로 바꿨습니다. HWP 지원 예정 안내는 사실이라 그대로 뒀습니다.
 - **랜딩 입력창의 목적지 수정(핵심)**: `ComingSoonHeroInput`이 이미 `saveGuestDraft()`로 초안을 저장하고 작성 단계까지 판정하고 있었는데, 버튼은 `#waitlist` 앵커였습니다. **저장해 놓고 버리고 있었던 셈**입니다. `/onboarding`으로 보내도록 바꿨습니다 — 온보딩이 읽는 저장소가 정확히 이 함수가 쓰는 곳이라, 사용자가 랜딩에 붙여넣은 내용이 그대로 이어집니다. 함수명도 `preserveDraftForLaunch` → `carryDraftIntoOnboarding`으로 실제 동작에 맞췄습니다.
-- `sitemap.ts`에 `/landing` 추가.
-- Files/branch: `src/app/page.tsx`, `src/app/landing/*`, `src/app/*.module.css`(5개 이동), `src/components/coming-soon-hero-input.tsx`, `src/app/sitemap.ts`, `next.config.ts`, `src/middleware.ts`(삭제) on `main`.
-- Validation: `npx next build` 클린(39 페이지 생성, `/dev-home` 사라지고 `/landing` 생성 확인), `npx vitest run` 393 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬 브라우저 실측 — `/`는 제품 홈에 `robots: index, follow`, `/landing`은 canonical `/landing`.
+- `sitemap.ts`에 `/comingsoon` 추가.
+- Files/branch: `src/app/page.tsx`, `src/app/comingsoon/*`, `src/app/*.module.css`(5개 이동), `src/components/coming-soon-hero-input.tsx`, `src/app/sitemap.ts`, `next.config.ts`, `src/middleware.ts`(삭제) on `main`.
+- Validation: `npx next build` 클린(39 페이지 생성, `/dev-home` 사라지고 `/comingsoon` 생성 확인), `npx vitest run` 393 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬 브라우저 실측 — `/`는 제품 홈에 `robots: index, follow`, `/comingsoon`은 canonical `/comingsoon`.
 - **남은 일(사용자)**: `www.mooaresume.com` → `mooaresume.com` 301 리다이렉트, `dev.mooaresume.com` DNS 삭제.
