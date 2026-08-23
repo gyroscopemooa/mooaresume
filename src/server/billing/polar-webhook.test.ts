@@ -46,6 +46,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{signed payload}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: store,
       verifyEvent: vi.fn(() => paidEvent() as never),
@@ -72,6 +73,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: store,
       verifyEvent: vi.fn(() => paidEvent({
@@ -100,6 +102,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({
@@ -116,6 +119,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => ({ ...paidEvent(), type: "order.updated" }) as never),
@@ -128,6 +132,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({ totalAmount: quote.totalPriceKrw - 1_000, discountId: "discount-1" }) as never),
@@ -140,6 +145,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({ totalAmount: 0, discountId: "discount-100" }) as never),
@@ -158,10 +164,31 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent(overrides) as never),
     })).rejects.toThrow(message);
+  });
+
+  it("샌드박스 주문임을 주문 기록에 남긴다", async () => {
+    // 샌드박스와 실결제는 저장된 뒤에는 구분할 방법이 없다 — 같은 표에
+    // 같은 모양의 id로 들어간다. 표시해 두지 않으면 테스트 결제가 매출로
+    // 잡힌다.
+    const store = repository();
+    await processPolarWebhook({
+      rawBody: "{}",
+      headers,
+      secret: "secret",
+      environment: "sandbox",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      repository: store,
+      verifyEvent: vi.fn(() => paidEvent() as never),
+    });
+
+    expect(store.grantPaidOrder).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({ polarEnvironment: "sandbox" }),
+    }));
   });
 
   it("rejects tampered entitlement metadata", async () => {
@@ -169,6 +196,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({
@@ -183,6 +211,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: store,
       verifyEvent: vi.fn(() => ({
@@ -205,6 +234,7 @@ describe("Polar webhook entitlement processing", () => {
       rawBody: "{}",
       headers,
       secret: "secret",
+      environment: "production",
       expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
       repository: store,
       verifyEvent: vi.fn(() => ({

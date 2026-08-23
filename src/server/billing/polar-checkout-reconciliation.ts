@@ -7,6 +7,7 @@ import { getPolarCheckoutConfiguration } from "@/server/billing/polar-checkout";
 import {
   validatePolarPaidOrder,
   type PolarEntitlementRepository,
+  type PolarEnvironment,
   type PolarPaidOrder,
 } from "@/server/billing/polar-webhook";
 
@@ -39,6 +40,8 @@ export async function reconcilePolarCheckout(input: {
   applicationCaseId: string;
   product: ProductTier;
   expectedProductIds: Record<ProductTier, string>;
+  /** Recorded with the order for the same reason as in the webhook path. */
+  environment: PolarEnvironment;
   gateway: PolarCheckoutReconciliationGateway;
   repository: PolarEntitlementRepository;
 }): Promise<PolarCheckoutReconciliationResult> {
@@ -85,6 +88,7 @@ export async function reconcilePolarCheckout(input: {
       includedCharacters: metadata.includedCharacters,
       extraBlocks: metadata.extraBlocks,
       allowedCharacters: metadata.allowedCharacters,
+      polarEnvironment: input.environment,
     },
   });
 
@@ -114,5 +118,6 @@ export function createPolarCheckoutReconciliationRuntime() {
   return {
     gateway,
     expectedProductIds: { QUICK: config.quickProductId, PRO: config.proProductId },
+    environment: config.server,
   } as const;
 }

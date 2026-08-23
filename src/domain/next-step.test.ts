@@ -5,6 +5,7 @@ const base: NextStepInput = {
   product: "PRO",
   writingMode: "POLISH",
   shortQuestionCount: 0,
+  shortTargetLength: null,
 };
 
 describe("다음 단계 추천", () => {
@@ -55,6 +56,40 @@ describe("다음 단계 추천", () => {
   it("PRO 최종 첨삭까지 마치면 권하지 않는다", () => {
     // 제품이 지금 제공하는 것을 다 받은 상태다. 팔기 위해 이유를 지어내지 않는다.
     expect(recommendNextStep(base)).toBeNull();
+  });
+
+  it("최종 첨삭 뒤에도 분량이 모자라면 내용 보완을 권한다", () => {
+    // 첨삭은 지원자가 쓴 말로만 늘린다 — 자소서에 없던 경험을 이력서에서
+    // 꺼내오지 않는다. 그래서 재료가 모자라면 다듬어도 짧은 채로 남고,
+    // 그걸 채우는 단계는 내용 보완뿐이다.
+    const next = recommendNextStep({ ...base, shortQuestionCount: 3, shortTargetLength: 700 });
+
+    expect(next?.writingMode).toBe("BUILD");
+    expect(next?.product).toBe("PRO");
+    // 새 자료를 받아야 하는 단계다.
+    expect(next?.href).toBe("/pro/build");
+  });
+
+  it("무엇을 기준으로 짧다고 했는지 밝힌다", () => {
+    // 목표 글자 수 기본값이 700자라, 설정을 안 건드린 사람은 이 숫자가
+    // 회사 요구인지 우리 기본값인지 알 수 없다. 기준을 적어야 판단할 수 있다.
+    const reason = recommendNextStep({ ...base, shortQuestionCount: 2, shortTargetLength: 700 })?.reason ?? "";
+
+    expect(reason).toContain("700자");
+    expect(reason).toContain("2개 문항");
+    expect(reason).toMatch(/실제 요구 분량과 다르면/);
+  });
+
+  it("문항마다 목표가 다르면 숫자를 지어내지 않는다", () => {
+    const reason = recommendNextStep({ ...base, shortQuestionCount: 2, shortTargetLength: null })?.reason ?? "";
+
+    expect(reason).toContain("목표 분량 기준으로");
+    expect(reason).not.toMatch(/\d+자 기준/);
+  });
+
+  it("QUICK 최종 첨삭도 분량이 모자라면 내용 보완을 먼저 권한다", () => {
+    // 짧은 글에 PRO 최종 첨삭을 권하면 같은 한계를 한 번 더 사게 된다.
+    expect(recommendNextStep({ ...base, product: "QUICK", shortQuestionCount: 1 })?.writingMode).toBe("BUILD");
   });
 
   it("추천이 있으면 이유가 항상 붙는다", () => {

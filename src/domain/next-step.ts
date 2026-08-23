@@ -41,7 +41,33 @@ export type NextStepInput = {
   writingMode: "CREATE" | "BUILD" | "POLISH";
   /** Questions whose answer is meaningfully under the length the company asked for. */
   shortQuestionCount: number;
+  /**
+   * The length those questions were measured against, when they all share one.
+   * Null when they differ.
+   *
+   * Named in the suggestion rather than kept behind it, because the target
+   * defaults to 700 and most applicants never change it. Someone told "3
+   * questions are short" has no way to know whether that is their company's
+   * requirement or our placeholder; told "short of 700 characters", they can
+   * see the yardstick and disagree with it.
+   */
+  shortTargetLength: number | null;
 };
+
+/** The stage that fills a thin answer, offered whenever one is still thin. */
+function fillSuggestion(input: NextStepInput): NextStep {
+  const against = input.shortTargetLength ? `목표 ${input.shortTargetLength.toLocaleString("ko-KR")}자 기준으로 ` : "목표 분량 기준으로 ";
+  return {
+    product: "PRO",
+    writingMode: "BUILD",
+    label: "아직 분량이 모자란 문항이 있어요",
+    reassurance: "현재 첨삭은 성공적으로 완료되었습니다.",
+    reason: `${against}${input.shortQuestionCount}개 문항이 짧습니다. 첨삭은 쓰신 내용을 다듬는 단계라 없는 경험을 새로 만들지 않습니다. 내용 보완은 이력서·경력기술서에서 아직 쓰지 않은 경험을 찾아 그 문항을 채웁니다. 목표 분량이 실제 요구 분량과 다르면 그대로 두셔도 됩니다.`,
+    // Needs the résumé the fill will draw from, so it lands on the screen that
+    // collects it rather than at confirmation.
+    href: "/pro/build",
+  };
+}
 
 export function recommendNextStep(input: NextStepInput): NextStep | null {
   // A draft written from notes has never been read as finished prose. Polishing
@@ -73,6 +99,13 @@ export function recommendNextStep(input: NextStepInput): NextStep | null {
   }
 
   // POLISH from here down.
+
+  // Polishing cannot lengthen an answer that ran out of material — it works
+  // from the applicant's own words and is forbidden from importing an
+  // experience the letter never mentioned. Staying silent here left someone
+  // holding a short draft with no idea which stage fixes that.
+  if (input.shortQuestionCount > 0) return fillSuggestion(input);
+
   if (input.product === "QUICK") {
     return {
       product: "PRO",

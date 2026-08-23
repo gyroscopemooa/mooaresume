@@ -241,11 +241,23 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
   const applicationLabel = resolveApplicationLabel(result);
   // The shared builder is left untouched for the other result screens; the
   // resolved subject is handed to it instead of the stored placeholders.
+  // Under 70% of what the company asked for. Computed once: the next-step card
+  // needs both the count and the length it was judged against.
+  const shortQuestions = useMemo(
+    () => result.questions.filter((question) => countCompactCharacters(answers[question.id] ?? question.revisedAnswer) < question.targetLength * 0.7),
+    [answers, result.questions],
+  );
   const nextStep = useMemo(() => recommendNextStep({
     product: result.product,
     writingMode: result.writingMode,
-    shortQuestionCount: result.questions.filter((question) => countCompactCharacters(answers[question.id] ?? question.revisedAnswer) < question.targetLength * 0.7).length,
-  }), [answers, result]);
+    shortQuestionCount: shortQuestions.length,
+    // Only quoted when every short question was measured against the same
+    // length; otherwise the number would name one question's target as if it
+    // covered them all.
+    shortTargetLength: shortQuestions.length > 0 && shortQuestions.every((question) => question.targetLength === shortQuestions[0].targetLength)
+      ? shortQuestions[0].targetLength
+      : null,
+  }), [result.product, result.writingMode, shortQuestions]);
   // One annotated question anywhere proves the run supported annotations, so a
   // question without them was judged clean rather than left unprocessed.
   const resultStoresAnnotations = result.questions.some((question) => question.originalAnnotations?.length);

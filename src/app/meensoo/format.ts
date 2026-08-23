@@ -19,7 +19,23 @@ export function shortId(id: string) {
   return id.slice(0, 8);
 }
 
+/**
+ * Which bucket a purchase falls in, as a Pill status.
+ *
+ * Order matters: a sandbox order at 12,900원 is still not money, so the
+ * environment is read before the amount.
+ */
+export function revenueKind(purchase: { environment: string; amount: number }) {
+  if (purchase.environment === "sandbox") return "SANDBOX";
+  if (purchase.environment === "unknown") return "UNMARKED";
+  return purchase.amount > 0 ? "REAL" : "FREE";
+}
+
 export const STATUS_LABEL: Record<string, string> = {
+  REAL: "실결제",
+  FREE: "무료",
+  SANDBOX: "샌드박스",
+  UNMARKED: "구분 전",
   PENDING: "대기",
   RUNNING: "진행 중",
   COMPLETED: "완료",

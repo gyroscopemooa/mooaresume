@@ -1152,3 +1152,38 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
   - 전송 버튼 조건을 `요청 문구 있음` → `요청 문구 또는 첨부 있음`으로 완화했습니다. 빠졌던 경력기술서를 첨부하는 것 자체가 하나의 요청인데, 문구를 요구하면 **파일만 올린 사람 앞에서 버튼이 죽어 있었습니다.**
 - Files/branch: `src/components/result-workspace-complete.tsx`, `src/components/additional-info-input.tsx`, `src/components/result-workspace-complete.test.tsx` on `main`.
 - Validation: `npx vitest run` 411 passed(신규 1건 — 파일 입력이 정확히 3개이고 각 라벨이 이력서·경력기술서·포트폴리오이며, 일반 "파일 첨부"가 없음을 확인), `npx tsc --noEmit` clean, ESLint 0건. 브라우저 실측은 불가 — 이 패널은 `isSample === false`일 때만 뜨고, 로그인 없이 열리는 결과 화면은 전부 샘플입니다.
+
+## 2026-08-23 — Claude: 매출에서 테스트·무료 분리 + 최종 첨삭 뒤 내용 보완 추천
+
+- Agent/session: Claude. 사용자 지적 3건 — (1) 샌드박스 결제와 0원 할인이 매출에 섞여 있다(실제로는 거의 0원일 것), (2) 폴리쉬 끝났는데 분량이 안 찼으면 빌드를 추천해야 하지 않나, (3) 목표 글자 수 기본값 700자라 설정 안 한 사람은 무조건 700자 기준이 된다.
+- Status: completed.
+
+### (1) 매출 구분 — 마이그레이션 없이
+
+- **확인: 대시보드의 408,700원은 사실상 허구였습니다.** 54건 중 실제 프로덕션 유료 결제는 0건입니다.
+- `billing_orders`에는 환경을 구분할 단서가 **하나도 없습니다** — 샌드박스와 프로덕션이 같은 표에 같은 모양의 id로 들어갑니다.
+- **컬럼을 추가하지 않았습니다.** `grant_polar_order_entitlement`가 이미 받는 `p_metadata jsonb`에 `polarEnvironment`를 넣으면 됩니다. 결제 RPC 시그니처를 건드리지 않아 **막 런칭한 결제 경로에 위험을 만들지 않습니다.**
+- 웹훅 경로와 결제-복귀 재확인 경로 **양쪽 모두** `POLAR_SERVER` 값을 실어 보냅니다. 한쪽만 하면 재확인으로 복구된 주문이 구분 없이 남습니다.
+- 화면은 네 갈래로 나눕니다 — **실매출**(프로덕션 · 0원 초과) / **무료**(100% 할인) / **샌드박스** / **구분 전**. 이유가 서로 달라 한 덩어리로 묶으면 안 됩니다.
+- **기존 54건은 `구분 전`입니다.** 행에 복구할 단서가 없어 추정하지 않았습니다 — 추정하면 가짜 돈이 매출에 들어갑니다. 사용자가 직접 표시하려면(예: 프로덕션 결제가 처음 성공한 8/23 이전을 전부 샌드박스로) Supabase에서:
+  ```sql
+  update public.billing_orders
+     set metadata = metadata || '{"polarEnvironment":"sandbox"}'::jsonb
+   where paid_at < '2026-08-23T00:00:00Z'
+     and metadata->>'polarEnvironment' is null;
+  ```
+
+### (2) 최종 첨삭 뒤 분량이 모자라면 내용 보완 추천
+
+- **확인: 지적이 맞았고 구멍이었습니다.** `recommendNextStep`은 PRO 최종 첨삭이 끝나면 무조건 `null`(추천 없음)이었습니다. 그런데 첨삭은 **지원자가 쓴 말로만** 늘립니다 — 자소서에 한 번도 안 나온 경험을 이력서에서 꺼내오지 않습니다(quick-3.1에서 정리한 경계). 그래서 재료가 모자라면 다듬어도 짧은 채로 남고, **그걸 채우는 단계는 내용 보완뿐인데 아무 안내가 없었습니다.**
+- 이제 최종 첨삭 뒤에도 짧은 문항이 있으면 **PRO 내용 보완**을 권합니다(QUICK·PRO 양쪽). 자료를 받아야 하므로 `/pro/build`로 보냅니다.
+- BUILD 뒤에 여전히 짧은 경우는 **기존대로 아무것도 권하지 않습니다** — 채우기를 이미 시도한 뒤라 재료가 떨어진 것이고, 한 번 더 파는 것은 정직하지 않습니다.
+
+### (3) 목표 글자 수 700자 기본값을 드러냄
+
+- **확인: 기본값이 조용히 두 가지를 결정하고 있었습니다** — 작성 단계 자동 판정과 "짧다"의 기준. 그런데 화면에는 그냥 `700`이 채워져 있어, 안 건드린 사람은 이 숫자가 회사 요구인지 우리 기본값인지 알 수 없었습니다.
+- 추천 문구가 **기준을 밝힙니다**: "목표 700자 기준으로 3개 문항이 짧습니다 … 목표 분량이 실제 요구 분량과 다르면 그대로 두셔도 됩니다." 문항마다 목표가 다르면 숫자를 지어내지 않고 "목표 분량 기준으로"라고만 씁니다.
+- 입력 화면(`/onboarding`, `/begin`) 라벨에 "기본 700자 · 공고에 적힌 분량으로 바꿔 주세요"를 넣었습니다.
+- Files/branch: `src/server/billing/polar-checkout.ts`, `polar-webhook.ts`, `polar-checkout-reconciliation.ts`, `src/app/api/webhooks/polar/route.ts`, `src/app/api/checkouts/quick/status/route.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/{page.tsx,format.ts,pill.tsx,purchases/page.tsx}`, `src/domain/next-step.ts`, `src/components/result-workspace-complete.tsx`, `src/app/onboarding/page.tsx`, `src/app/begin/page.tsx` + 테스트 3종 on `main`.
+- Validation: `npx vitest run` 416 passed(신규 6건), `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린. 실데이터 확인 — 실매출 **0원 · 0건**, 무료 1건, 구분 전 54건.
+- 부수 수정: `shortQuestions`를 쓰는 `useMemo`가 선언보다 위에 있어 **TDZ 오류**가 날 수 있었습니다(React Compiler 린트가 잡음). 선언을 위로 옮기고 의존성을 `result` 전체에서 실제 사용값으로 좁혔습니다.

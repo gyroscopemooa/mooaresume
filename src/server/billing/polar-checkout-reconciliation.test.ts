@@ -49,6 +49,7 @@ describe("Polar checkout return reconciliation", () => {
       applicationCaseId,
       product: "QUICK",
       expectedProductIds,
+      environment: "production",
       gateway: gateway(),
       repository: store,
     })).resolves.toEqual({ disposition: "RECOVERED", repositoryResult: "GRANTED" });
@@ -70,6 +71,7 @@ describe("Polar checkout return reconciliation", () => {
       applicationCaseId,
       product: "QUICK",
       expectedProductIds,
+      environment: "production",
       gateway: lookup,
       repository: store,
     })).resolves.toEqual({ disposition: "PENDING", checkoutStatus: "open" });
@@ -84,6 +86,7 @@ describe("Polar checkout return reconciliation", () => {
       applicationCaseId,
       product: "QUICK",
       expectedProductIds,
+      environment: "production",
       gateway: gateway({ owner: "33333333-3333-4333-8333-333333333333" }),
       repository: repository(),
     })).rejects.toThrow("POLAR_CHECKOUT_OWNER_MISMATCH");

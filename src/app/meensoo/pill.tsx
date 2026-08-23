@@ -2,6 +2,10 @@ import styles from "./admin.module.css";
 import { STATUS_LABEL } from "./format";
 
 const TONE: Record<string, string> = {
+  REAL: styles.pillOk,
+  FREE: styles.pillMuted,
+  SANDBOX: styles.pillWarn,
+  UNMARKED: styles.pillMuted,
   COMPLETED: styles.pillOk,
   PAID: styles.pillOk,
   SENT: styles.pillOk,

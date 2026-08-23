@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getSummary, listAnalyses, listPurchases } from "@/server/admin/admin-repository";
 import styles from "./admin.module.css";
-import { MODE_LABEL, krw, kst, shortId } from "./format";
+import { MODE_LABEL, krw, kst, revenueKind, shortId } from "./format";
 import { Pill } from "./pill";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +24,22 @@ export default async function AdminDashboard() {
 
       <div className={styles.cards}>
         <div className={styles.card}>
-          <span>결제 완료</span>
-          <strong>{summary.paidOrders}건</strong>
-          <small>환불 {summary.refundedOrders}건</small>
+          <span>실매출</span>
+          <strong>{krw(summary.revenueKrw)}</strong>
+          <small>실제 결제 {summary.realOrders}건 · 테스트·무료 제외</small>
         </div>
         <div className={styles.card}>
-          <span>매출 (환불 제외)</span>
-          <strong>{krw(summary.revenueKrw)}</strong>
-          <small>100% 할인 결제는 0원으로 잡힙니다</small>
+          <span>매출로 세지 않은 결제</span>
+          <strong>{summary.freeOrders + summary.sandboxOrders + summary.unknownOrders}건</strong>
+          {/* Named separately because they fail for different reasons: a free
+              order took no money, a sandbox order was never money, and an
+              unmarked one predates the marker and cannot be told apart. */}
+          <small>무료 {summary.freeOrders}건 · 샌드박스 {summary.sandboxOrders}건 · 구분 전 {summary.unknownOrders}건</small>
+        </div>
+        <div className={styles.card}>
+          <span>전체 결제 기록</span>
+          <strong>{summary.paidOrders}건</strong>
+          <small>환불 {summary.refundedOrders}건</small>
         </div>
         <div className={styles.card}>
           <span>첨삭 완료</span>
@@ -66,7 +74,7 @@ export default async function AdminDashboard() {
           <div className={styles.scroll}>
             <table className={styles.table}>
               <thead>
-                <tr><th>결제 시각</th><th>구매자</th><th>상품</th><th>금액</th><th>상태</th><th>지원서</th></tr>
+                <tr><th>결제 시각</th><th>구매자</th><th>상품</th><th>금액</th><th>구분</th><th>상태</th><th>지원서</th></tr>
               </thead>
               <tbody>
                 {purchases.map((purchase) => (
@@ -75,6 +83,7 @@ export default async function AdminDashboard() {
                     <td>{purchase.email}</td>
                     <td>{purchase.product}</td>
                     <td>{krw(purchase.amount)}</td>
+                    <td><Pill status={revenueKind(purchase)} /></td>
                     <td><Pill status={purchase.status} /></td>
                     <td>{purchase.companyName || purchase.caseTitle || "—"}</td>
                   </tr>

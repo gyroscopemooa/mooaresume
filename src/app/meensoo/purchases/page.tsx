@@ -1,6 +1,6 @@
-import { listPurchases } from "@/server/admin/admin-repository";
+import { isRealRevenue, listPurchases } from "@/server/admin/admin-repository";
 import styles from "../admin.module.css";
-import { krw, kst } from "../format";
+import { krw, kst, revenueKind } from "../format";
 import { Pill } from "../pill";
 
 export const dynamic = "force-dynamic";
@@ -8,8 +8,11 @@ export const dynamic = "force-dynamic";
 export default async function PurchasesPage() {
   const purchases = await listPurchases(200);
   const paid = purchases.filter((purchase) => purchase.status === "PAID");
-  const total = paid.reduce((sum, purchase) => sum + purchase.amount, 0);
+  const real = paid.filter(isRealRevenue);
+  const total = real.reduce((sum, purchase) => sum + purchase.amount, 0);
   const free = paid.filter((purchase) => purchase.amount === 0).length;
+  const sandbox = paid.filter((purchase) => purchase.environment === "sandbox").length;
+  const unknown = paid.filter((purchase) => purchase.environment === "unknown").length;
 
   return (
     <>
@@ -21,9 +24,18 @@ export default async function PurchasesPage() {
       </div>
 
       <div className={styles.cards}>
-        <div className={styles.card}><span>결제 완료</span><strong>{paid.length}건</strong></div>
-        <div className={styles.card}><span>매출</span><strong>{krw(total)}</strong></div>
-        <div className={styles.card}><span>무료(100% 할인)</span><strong>{free}건</strong><small>금액 0원으로 기록됩니다</small></div>
+        <div className={styles.card}><span>실매출</span><strong>{krw(total)}</strong><small>실제 결제 {real.length}건</small></div>
+        <div className={styles.card}><span>무료(100% 할인)</span><strong>{free}건</strong><small>금액 0원 · 매출 아님</small></div>
+        <div className={styles.card}><span>샌드박스 테스트</span><strong>{sandbox}건</strong><small>실제 돈이 아닙니다</small></div>
+        <div className={styles.card}>
+          <span>구분 전</span>
+          <strong>{unknown}건</strong>
+          {/* Written before the environment was recorded. The row holds nothing
+              that could tell the two apart afterwards, so they stay out of the
+              revenue figure rather than being guessed into it. */}
+          <small>기록 시작 전 결제 · 매출에서 제외</small>
+        </div>
+        <div className={styles.card}><span>전체 결제 기록</span><strong>{paid.length}건</strong></div>
       </div>
 
       <section className={styles.panel}>
@@ -38,7 +50,7 @@ export default async function PurchasesPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>결제 시각</th><th>구매자</th><th>상품</th><th>금액</th>
+                  <th>결제 시각</th><th>구매자</th><th>상품</th><th>금액</th><th>구분</th>
                   <th>상태</th><th>회사 · 직무</th><th>Polar 주문</th>
                 </tr>
               </thead>
@@ -49,6 +61,7 @@ export default async function PurchasesPage() {
                     <td>{purchase.email}</td>
                     <td>{purchase.product}</td>
                     <td>{krw(purchase.amount)}</td>
+                    <td><Pill status={revenueKind(purchase)} /></td>
                     <td>
                       <Pill status={purchase.status} />
                       {purchase.refundedAt && <div className={styles.mono}>{kst(purchase.refundedAt)}</div>}

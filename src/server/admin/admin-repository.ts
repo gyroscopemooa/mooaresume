@@ -39,6 +39,28 @@ async function emailsByUserId() {
 
 type EmbeddedCase = { title?: string; company_name?: string; role_name?: string } | null;
 
+/**
+ * Which Polar account an order came from, if it was recorded.
+ *
+ * Orders written before this was tracked have no marker, and there is nothing
+ * in the row to recover it from — sandbox and production ids look alike. They
+ * are reported as UNKNOWN rather than folded into either side, because
+ * guessing here would put fake money in the revenue figure.
+ */
+export type OrderEnvironment = "production" | "sandbox" | "unknown";
+
+function readEnvironment(metadata: unknown): OrderEnvironment {
+  const value = metadata && typeof metadata === "object"
+    ? (metadata as Record<string, unknown>).polarEnvironment
+    : undefined;
+  return value === "production" || value === "sandbox" ? value : "unknown";
+}
+
+/** Money actually taken: a real account, and an amount above zero. */
+export function isRealRevenue(purchase: { status: string; environment: OrderEnvironment; amount: number }) {
+  return purchase.status === "PAID" && purchase.environment === "production" && purchase.amount > 0;
+}
+
 export type AdminPurchase = {
   id: string;
   orderId: string;
@@ -54,13 +76,14 @@ export type AdminPurchase = {
   companyName: string | null;
   roleName: string | null;
   applicationCaseId: string;
+  environment: OrderEnvironment;
 };
 
 export async function listPurchases(limit = 100): Promise<AdminPurchase[]> {
   const [{ data, error }, emails] = await Promise.all([
     serviceClient()
       .from("billing_orders")
-      .select("id, provider_order_id, provider_checkout_id, owner_user_id, product, amount, currency, status, paid_at, refunded_at, application_case_id, application_cases(title, company_name, role_name)")
+      .select("id, provider_order_id, provider_checkout_id, owner_user_id, product, amount, currency, status, paid_at, refunded_at, application_case_id, metadata, application_cases(title, company_name, role_name)")
       .order("paid_at", { ascending: false })
       .limit(limit),
     emailsByUserId(),
@@ -83,6 +106,7 @@ export async function listPurchases(limit = 100): Promise<AdminPurchase[]> {
       companyName: applicationCase?.company_name ?? null,
       roleName: applicationCase?.role_name ?? null,
       applicationCaseId: row.application_case_id as string,
+      environment: readEnvironment(row.metadata),
     };
   });
 }
@@ -265,6 +289,10 @@ export type AdminSummary = {
   paidOrders: number;
   refundedOrders: number;
   revenueKrw: number;
+  realOrders: number;
+  freeOrders: number;
+  sandboxOrders: number;
+  unknownOrders: number;
   analysesTotal: number;
   analysesCompleted: number;
   analysesFailed: number;
@@ -281,7 +309,7 @@ export async function getSummary(): Promise<AdminSummary> {
   const countOnly = { count: "exact" as const, head: true };
 
   const [orders, analyses, waitlist, inquiries, mailSent, mailFailed] = await Promise.all([
-    client.from("billing_orders").select("amount, status"),
+    client.from("billing_orders").select("amount, status, metadata"),
     client.from("analysis_runs").select("status"),
     client.from("waitlist_signups").select("id", countOnly),
     client.from("contact_inquiries").select("id", countOnly).eq("status", "NEW"),
@@ -289,16 +317,24 @@ export async function getSummary(): Promise<AdminSummary> {
     client.from("mail_send_log").select("id", countOnly).eq("status", "FAILED").gte("sent_at", since),
   ]);
 
-  const orderRows = (orders.data ?? []) as { amount: number; status: string }[];
+  const orderRows = ((orders.data ?? []) as { amount: number; status: string; metadata: unknown }[])
+    .map((row) => ({ ...row, environment: readEnvironment(row.metadata) }));
   const runRows = (analyses.data ?? []) as { status: string }[];
   const paid = orderRows.filter((row) => row.status === "PAID");
+  const real = paid.filter(isRealRevenue);
 
   return {
     paidOrders: paid.length,
     refundedOrders: orderRows.filter((row) => row.status === "REFUNDED").length,
-    // Refunded money is not revenue, and a 100%-off launch code contributes
-    // zero — both would otherwise flatter this number.
-    revenueKrw: paid.reduce((total, row) => total + row.amount, 0),
+    // Only money that was really taken. A refund is not revenue, a 100%-off
+    // code brings in nothing, and a sandbox order is not money at all — all
+    // three would otherwise flatter this number, and at launch they are most
+    // of it.
+    revenueKrw: real.reduce((total, row) => total + row.amount, 0),
+    realOrders: real.length,
+    freeOrders: paid.filter((row) => row.amount === 0).length,
+    sandboxOrders: paid.filter((row) => row.environment === "sandbox").length,
+    unknownOrders: paid.filter((row) => row.environment === "unknown").length,
     analysesTotal: runRows.length,
     analysesCompleted: runRows.filter((row) => row.status === "COMPLETED").length,
     analysesFailed: runRows.filter((row) => row.status === "FAILED").length,

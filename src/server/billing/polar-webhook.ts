@@ -52,6 +52,8 @@ export type PolarEntitlementRepository = {
   }): Promise<string>;
 };
 
+export type PolarEnvironment = "production" | "sandbox";
+
 export type PolarWebhookProcessResult =
   | { disposition: "IGNORED"; eventType: string; reason: string }
   | { disposition: "PROCESSED"; eventType: string; repositoryResult: string };
@@ -107,6 +109,13 @@ export async function processPolarWebhook(input: {
   secret: string;
   expectedProductIds: Record<ProductTier, string>;
   repository: PolarEntitlementRepository;
+  /**
+   * Which Polar account the order came from. Stored with the order because a
+   * sandbox test and a real sale are otherwise indistinguishable once written
+   * — same table, same id shape — and counting the tests as revenue makes the
+   * number fiction.
+   */
+  environment: PolarEnvironment;
   verifyEvent?: typeof validateEvent;
 }): Promise<PolarWebhookProcessResult> {
   const verifyEvent = input.verifyEvent ?? validateEvent;
@@ -136,6 +145,7 @@ export async function processPolarWebhook(input: {
         includedCharacters: metadata.includedCharacters,
         extraBlocks: metadata.extraBlocks,
         allowedCharacters: metadata.allowedCharacters,
+        polarEnvironment: input.environment,
       },
     });
     return { disposition: "PROCESSED", eventType: event.type, repositoryResult };

@@ -112,12 +112,15 @@ export function getPolarCheckoutConfiguration() {
 }
 
 export function getPolarWebhookConfiguration() {
-  const { quickProductId, proProductId } = getPolarCheckoutConfiguration();
+  const { quickProductId, proProductId, server } = getPolarCheckoutConfiguration();
   const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
   if (!webhookSecret) {
     throw new Error("POLAR_WEBHOOK_SECRET이 필요합니다.");
   }
-  return { quickProductId, proProductId, webhookSecret };
+  // Carried through to the stored order so a sandbox test is not counted as
+  // revenue. Nothing else distinguishes the two: the ids look alike and both
+  // land in the same table.
+  return { quickProductId, proProductId, webhookSecret, server };
 }
 
 export function createPolarCheckoutGatewayFromEnv() {

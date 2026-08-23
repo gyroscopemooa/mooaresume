@@ -187,7 +187,11 @@ export default function OnboardingPage() {
                   <input type="file" accept=".pdf,.docx,.txt,.md" onChange={handleFile} disabled={busy} />
                 </label>
                 <label className={styles.length}>
-                  <span>목표 글자 수</span>
+                  {/* The number drives both the stage we detect and the length
+                      the analysis writes to, and it is prefilled — so someone
+                      who never touches it gets 700 as if they had chosen it.
+                      Saying it is a placeholder is what makes the rest honest. */}
+                  <span>목표 글자 수 <small>기본 700자 · 공고에 적힌 분량으로 바꿔 주세요</small></span>
                   <input type="number" min="100" max="3000" value={target} onChange={(event) => setTarget(Number(event.target.value) || 700)} />
                 </label>
               </div>

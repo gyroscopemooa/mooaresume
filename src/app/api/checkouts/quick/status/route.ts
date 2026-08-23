@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
         applicationCaseId: runDiagnostic.application_case_id,
         product: checkout.product,
         expectedProductIds: runtime.expectedProductIds,
+        environment: runtime.environment,
         gateway: runtime.gateway,
         repository: new SupabasePolarEntitlementRepository(),
       });

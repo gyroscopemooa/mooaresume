@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       headers: toHeaderRecord(request.headers),
       secret: config.webhookSecret,
       expectedProductIds: { QUICK: config.quickProductId, PRO: config.proProductId },
+      environment: config.server,
       repository: new SupabasePolarEntitlementRepository(),
     });
     return NextResponse.json(result, { status: 202 });
