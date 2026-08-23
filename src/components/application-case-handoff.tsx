@@ -86,7 +86,11 @@ export function ApplicationCaseHandoff({ guest }: Props) {
       const errorMessage = result && typeof result === "object" && "error" in result && typeof result.error === "string"
         ? result.error
         : "\uACB0\uC81C \uD398\uC774\uC9C0\uB85C \uC5F0\uACB0\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
-      throw new Error(errorMessage);
+      // The code is for whoever has to fix it, and showing it here saves a
+      // trip through server logs that are mostly the cron's own requests. It
+      // names a category of failure, never a value.
+      const code = result && typeof result === "object" && "code" in result && typeof result.code === "string" ? result.code : null;
+      throw new Error(code ? `${errorMessage} (\uC6D0\uC778 \uCF54\uB4DC: ${code})` : errorMessage);
     }
     window.location.assign(result.checkoutUrl);
   }
