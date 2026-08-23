@@ -1231,3 +1231,56 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/additional-info-input.tsx`, `src/components/result-workspace-complete.test.tsx` on `main`.
 - Validation: `npx vitest run` 426 passed(신규 1건 — 종류별 슬롯 3개는 `accept`에 zip이 없고 기타 칸만 있으며, 경고 문구가 화면에 있는지 확인). `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린.
 - 보류: HWP는 사용자 판단으로 **나중에** 적용합니다.
+## 2026-08-23 — Claude: 결제됐는데 시작조차 안 된 분석을 크론이 되살리도록
+
+- Agent/session: Claude. 직전 항목(`/meensoo` 신설)에서 **발견만 해 두고 고치지 않은 것**을 이번에 고칩니다: 크론 백스톱이 `RUNNING`만 집어가므로, 결제 승인이 사용자가 창을 닫은 뒤에 도착하면 분석이 영영 시작되지 않습니다. 8/23 19:34 PRO 주문이 정확히 그 상태입니다 — 주문은 `PAID`, 실행은 `PENDING`, `response_id`는 `null`. **돈은 받고 아무것도 주지 않은 상태**이며, 복구 수단은 그 체크아웃 복귀 URL로 되돌아가는 것뿐이었습니다.
+- Status: completed. **마이그레이션 없음 — 배포만 하면 적용됩니다.**
+- Protected baseline: `advance/route.ts`의 기존 `RUNNING` 처리 로직, `execute/route.ts`, `begin_quick_analysis`, `quick-checkout-return.tsx`. **어느 것도 바꾸지 않았습니다.** 되살리기는 기존 배치 뒤에 덧붙는 별도 구간입니다.
+
+### 무엇이 문제였나
+
+- `PENDING → RUNNING`으로 넘기는 것은 오직 `POST /api/analysis-runs/quick/execute` 하나뿐이고, 그것을 호출하는 것은 결제-복귀 화면(`quick-checkout-return.tsx`)의 브라우저뿐입니다.
+- Polar 웹훅이 **창을 닫은 뒤에** 이용권을 발급하면 그 호출을 할 사람이 아무도 없습니다.
+- 크론(`/api/analysis-runs/advance`)은 `.eq("status", "RUNNING")`만 조회하므로 이 실행을 쳐다보지 않습니다.
+
+### 어떻게 고쳤나
+
+- 크론이 **결제된 `PENDING` 실행**도 집어서, `execute/route.ts`가 쓰는 것과 **같은 두 단계**(`begin_quick_analysis` → `startBackground` → `saveBackgroundResponse`)로 밀어 넣습니다. 그 뒤부터는 기존 `RUNNING` 배치가 폴링·완료 메일·10분 환불까지 다 맡습니다. 구현을 새로 만들지 않았습니다 — 두 벌이 되면 갈라집니다.
+- **어떤 `PENDING`이 결제된 것인지 가리는 게 핵심입니다.** `PENDING` 대부분은 결제 없이 버려진 체크아웃입니다. 두 가지가 함께 있어야 결제된 것으로 봅니다:
+  1. 그 실행의 `checkout_intents.status = 'SUCCEEDED'` — `mark_polar_checkout_succeeded`가 이용권 발급과 **같은 저장소 호출 안에서** 실행되므로 웹훅 경로와 결제-복귀 재확인 경로 양쪽 다 남습니다.
+  2. 같은 case·owner·product에 `ACTIVE` 이용권이 있음.
+- 왜 1번이 필요한가: 이용권은 **실행이 아니라 case에 붙습니다.** 한 case에 버려진 시도와 실제로 결제한 재실행이 나란히 있을 수 있고, 잘못 고르면 **지원자가 기다리지 않는 스냅샷에 이용권을 써 버립니다.** 체크아웃 인텐트만이 "이 실행에 돈이 지불됐다"를 증명합니다.
+- **이용권 테이블에서 출발합니다**(`analysis_runs`가 아니라). 버려진 `PENDING`은 영원히 쌓이므로 그 표에 창을 걸면 언젠가 창 전체가 옛 미결제 행으로 차서 새 결제가 영영 안 보입니다. `ACTIVE` 이용권은 반대로 "받은 돈 중 아직 안 준 것"이라 정상 경로에서는 몇 초 만에 비워집니다.
+- 다만 **최종 실패·타임아웃 환불도 이용권을 `ACTIVE`로 되돌려 놓고 그대로 둡니다**(`fail_quick_analysis`, `claim_quick_analysis_timeout_refund`). 그래서 오래된 쪽에 죽은 행이 침전합니다 — 스캔을 **최신순 100건**으로 잡은 이유입니다(상한은 뒤따르는 질의의 case id 목록이 PostgREST URL에 무리 없이 들어가는 길이). 옛날부터 방치된 건은 놓칠 수 있지만(그건 `/meensoo/analyses`에서 보입니다) **방금 들어온 결제가 굶는 일은 없습니다.** 찾은 것 중에서는 **가장 오래 기다린 순**으로 처리합니다.
+
+### 중복 소비·경합을 어떻게 막는가
+
+- `begin_quick_analysis`는 **실행 행을 `for update`로 잠그고 `status = 'PENDING'`일 때만** 진행합니다. 브라우저와 크론이 동시에 들어와도 한쪽은 `ANALYSIS_RUN_NOT_STARTABLE`을 받습니다 — 이용권이 두 번 소비되지 않습니다. 이 거절은 오류가 아니라 `START_REFUSED`로 기록만 합니다(`advanceOne`의 `ALREADY_DONE` 처리와 같은 성격).
+- 이용권도 `for update skip locked limit 1`로 한 장만 집습니다.
+- 코드 쪽에서도 **이용권 장수만큼만** 실행을 배정합니다. 같은 case에 결제된 `PENDING`이 둘인데 이용권이 하나면 하나만 넘깁니다(SQL이 어차피 거절하지만 물어볼 이유가 없습니다).
+- **2분 유예**를 둡니다(이용권 발급 시각 기준). 동시 실행이 안전하긴 해도 정상 경로는 브라우저이고, 매 판매마다 크론과 경주할 이유는 없습니다.
+- 크론 컨텍스트에서 호출 가능한 이유: `begin_quick_analysis`는 `auth.uid()`가 아니라 `p_owner_user_id`를 인자로 받는 `security definer` 함수이고 `service_role`에 실행 권한이 있습니다. 이 전제를 `stranded-paid-run-recovery-migration.test.ts`가 잠급니다.
+
+### 이미 멈춰 있는 건들
+
+- **별도 SQL 작업이 필요 없습니다.** 배포하면 크론이 매분 최대 3건씩 알아서 되살립니다. 19:34 건도 여기에 해당합니다(이용권 `ACTIVE`, 인텐트 `SUCCEEDED`, 실행 `PENDING`).
+- 덤으로, **재시도 가능한 실패로 `PENDING`에 되돌아온 실행**(`fail_quick_analysis`가 `attempt_count < 2`일 때 그렇게 합니다)도 이제 자동으로 다시 시작됩니다. 시도 횟수는 SQL이 막으므로 무한 반복이 아닙니다 — 두 번째 실패에서 `FAILED`로 확정됩니다.
+- 배포 뒤 남은 사람이 있는지 보려면(인텐트가 `SUCCEEDED`가 아닌 예외적인 건):
+  ```sql
+  select ar.id, ar.product, ar.created_at, ci.status as intent_status
+    from public.analysis_runs ar
+    join public.analysis_entitlements ae
+      on ae.application_case_id = ar.application_case_id
+     and ae.owner_user_id = ar.owner_user_id
+     and ae.product = ar.product
+     and ae.status = 'ACTIVE'
+    left join public.checkout_intents ci on ci.analysis_run_id = ar.id
+   where ar.status = 'PENDING'
+     and (ci.status is distinct from 'SUCCEEDED')
+   order by ar.created_at;
+  ```
+  결과가 나오면 그건 결제-체크아웃 연결이 끊긴 건이라 개별 판단이 필요합니다(대개 `billing_orders.provider_checkout_id`가 비어 있는 경우).
+- Files/branch: `src/app/api/analysis-runs/advance/route.ts`, `src/server/analysis/stranded-paid-runs.ts`(신규), `src/server/analysis/stranded-paid-runs.test.ts`(신규), `src/server/analysis/stranded-paid-run-recovery-migration.test.ts`(신규), `src/app/api/analysis-runs/advance/route.test.ts` on `claude/youthful-hugle-058e60` (worktree `.claude/worktrees/youthful-hugle-058e60`).
+- Validation: `npx vitest run` 433 passed(신규 16건 — 고르기 로직 7, 라우트 4, SQL 전제 5), `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린. 라우트 테스트는 Supabase 클라이언트를 가짜로 바꿔 **질의 자체를 검증합니다**: 결제된 실행만 `begin`으로 가는지, 미결제 실행은 건너뛰는지, 미소비 이용권이 없으면 `PENDING` 표를 조회조차 하지 않는지, 되살리기가 터져도 기존 `RUNNING` 처리가 200으로 끝나는지.
+- Rollback/recovery reference: 되살리기 구간은 `startStrandedRuns` 호출 한 줄과 그 아래 함수들뿐입니다. 그 호출만 지우면 이전 동작(= `RUNNING`만 처리)으로 정확히 돌아갑니다. 커밋 이전 상태는 `a36749f`.
+- **남은 일(사용자)**: 커밋 + 재배포. 배포 후 첫 1~2분 안에 `advance` 응답의 `started` 배열에 `START_RECOVERED`가 찍히는지, `/meensoo/analyses`에서 `PENDING`이던 결제 건이 `RUNNING → COMPLETED`로 넘어가는지 확인해 주세요.
