@@ -1089,3 +1089,19 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 본문에 "회신주소: support@..."를 직접 적는 방식과 비교: 회신 주소가 낫습니다. **답장 버튼이 그대로 동작**하기 때문입니다. 본문 표기는 상대가 복사해 붙여야 하며, 답장 버튼을 누르면 여전히 noreply로 갑니다. 다만 둘을 같이 써도 손해는 없습니다.
 - Files/branch: `src/server/notifications/manual-email.ts`, `analysis-complete-email.ts`, `src/app/MAIL/page.tsx`, `.env.example` on `main`.
 - Validation: `npx vitest run` 400 passed, `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-23 — Claude: 로그인 실패 원인 규명 — 배포된 Supabase 키가 손상됨
+
+- Agent/session: Claude. 사용자가 Cloudflare 로그를 제공: `auth_callback_failed:exchange:Invalid API key`.
+- Status: 원인 규명 완료 / 수정은 사용자 영역(환경변수 + 재배포).
+- 원인: 배포본에 박힌 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` 값이 **손상돼 있었습니다.** 배포된 JS 번들에서 직접 읽어 확인했습니다.
+  ```
+  배포된 값: sb_puBASE_PUBLISHblishable_aI7VFl7jxkDuj3SkWnGk0g_e4qJBXFL
+  올바른 값: sb_publishable_aI7VFl7jxkDuj3SkWnGk0g_e4qJBXFL
+  ```
+  `sb_pu` 뒤에 변수명 조각 `BASE_PUBLISH`가 끼어들어 있습니다. 예전 `GOOGLE_SITE_VERIFICATION=GOOGLE_SITE_VERIFICATION=...` 사고와 같은 종류의 붙여넣기 오류이며, 이번에는 값 **중간**에 박혔습니다.
+- 코드·Supabase 대시보드·구글 OAuth 콘솔은 모두 정상이었습니다. 브라우저·서버 양쪽 다 `@supabase/ssr`의 쿠키 기반 클라이언트라 PKCE가 정상적으로 맞물립니다. 구글 콘솔의 리디렉션 URI도 Supabase 콜백으로 올바르게 지정돼 있었습니다.
+- 진단 과정에서 추가한 것: `auth_callback_failed` 사유를 `auth_reason` 쿼리 파라미터로도 노출합니다. Cloudflare 로그에서 인증 요청을 찾기 어렵고(크론의 `advance` 요청이 계속 쌓임), 로그를 한 번 확인할 때마다 로그인 시도가 한 번 더 필요했기 때문입니다. 값은 원인 분류만 담으며 토큰은 담지 않습니다(200자 제한).
+- **사용자 확인 필요**: 환경변수를 고친 뒤에도 배포본에는 여전히 옛 값이 있음을 확인했습니다. `NEXT_PUBLIC_*`은 **빌드 시 코드에 인라인되므로 재배포해야 반영**됩니다. 또한 빌드 변수와 시크릿 양쪽에 같은 이름이 있으면 빌드는 빌드 변수 쪽을 사용하므로, 양쪽 모두 확인이 필요합니다.
+- Files/branch: `src/app/auth/callback/route.ts` on `main`.
+- Validation: `npx vitest run` 400 passed, `npx tsc --noEmit` clean, ESLint 0건.

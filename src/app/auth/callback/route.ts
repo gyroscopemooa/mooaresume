@@ -6,12 +6,10 @@ function safeNextPath(value: string | null) {
 }
 
 function failure(request: NextRequest, next: string, reason: string) {
-  // The reason is logged rather than shown. Two of the three causes below are
-  // the visitor's situation, not a fault they can read a stack trace about,
-  // and the fourth is a dashboard setting only the operator can fix.
   console.error(`auth_callback_failed:${reason}`);
   const errorUrl = new URL(next, request.url);
   errorUrl.searchParams.set("auth_error", "로그인 링크를 확인하지 못했습니다. 링크를 요청한 것과 같은 브라우저에서 열어야 하며, 링크는 한 번만 사용할 수 있습니다.");
+  errorUrl.searchParams.set("auth_reason", reason.slice(0, 200));
   return NextResponse.redirect(errorUrl);
 }
 
