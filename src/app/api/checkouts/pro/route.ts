@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
-import { createPolarCheckoutGatewayFromEnv } from "@/server/billing/polar-checkout";
+import { createPolarCheckoutGatewayFromEnv, describePolarConfigShape } from "@/server/billing/polar-checkout";
 import { createQuickCheckout, QuickCheckoutError } from "@/server/billing/quick-checkout-service";
 
 export const runtime = "nodejs";
@@ -99,11 +99,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message, code: error.code }, { status });
     }
     const detail = error instanceof Error ? error.message : "UNKNOWN_ERROR";
-    console.error("polar_checkout_failed", {
-      error: detail,
-      server: process.env.POLAR_SERVER ?? "sandbox",
-      hasProductId: Boolean(process.env.POLAR_PRO_PRODUCT_ID),
-    });
+    console.error("polar_checkout_failed", JSON.stringify({ error: detail, config: describePolarConfigShape() }));
     return NextResponse.json({
       error: "결제 페이지를 만들지 못했습니다.",
       ...(process.env.NODE_ENV !== "production" ? { detail } : {}),

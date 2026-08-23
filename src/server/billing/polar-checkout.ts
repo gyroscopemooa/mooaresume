@@ -126,3 +126,30 @@ export function createPolarCheckoutGatewayFromEnv() {
   );
 }
 
+
+/**
+ * Shape of the Polar configuration, with no values in it.
+ *
+ * A publishable key reached production with a fragment of its own variable
+ * name spliced into the middle, and nothing noticed until sign-in broke. The
+ * same paste can corrupt these, and a wrong token here reads as a generic
+ * "결제 페이지를 만들지 못했습니다" — so the log says whether each value is
+ * present and the right shape without printing anything secret.
+ */
+export function describePolarConfigShape() {
+  const describe = (value: string | undefined, expectedPrefix?: string) => {
+    if (!value) return "missing";
+    const trimmed = value.trim();
+    if (trimmed.length !== value.length) return `padded(len=${value.length})`;
+    if (expectedPrefix && !trimmed.startsWith(expectedPrefix)) return `unexpected_prefix(starts=${trimmed.slice(0, 6)},len=${trimmed.length})`;
+    return `ok(len=${trimmed.length})`;
+  };
+
+  return {
+    server: process.env.POLAR_SERVER ?? "(unset → sandbox)",
+    accessToken: describe(process.env.POLAR_ACCESS_TOKEN, "polar_"),
+    quickProductId: describe(process.env.POLAR_QUICK_PRODUCT_ID),
+    proProductId: describe(process.env.POLAR_PRO_PRODUCT_ID),
+    webhookSecret: describe(process.env.POLAR_WEBHOOK_SECRET),
+  };
+}
