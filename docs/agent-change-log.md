@@ -1059,3 +1059,18 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
   - `coming-soon.module.css`는 `src/app/` 루트로 옮겨 두 페이지가 공유합니다.
 - Files/branch: `src/app/landing/page.tsx`, `src/app/comingsoon/page.tsx`(신규·복원), `src/app/coming-soon.module.css`(이동), `src/components/coming-soon-hero-input.tsx`, `waitlist-form.tsx`, `src/app/sitemap.ts` on `main`.
 - Validation: `npx next build` 클린(`/`, `/landing`, `/comingsoon` 3개 생성), `npx vitest run` 393 passed, `npx tsc --noEmit` clean, ESLint 0건. 브라우저 실측 — `/landing`은 색인 가능·출시 문구 0·히어로 `/onboarding`, `/comingsoon`은 noindex·COMING SOON 배지 있음·히어로 `#waitlist`.
+
+## 2026-08-23 — Claude: 프로덕션 로그인 실패 진단 가능하게 + 메일 다중 수신자
+
+- Agent/session: Claude. 사용자 보고 두 건 — (1) 런칭 후 프로덕션에서 로그인 불가(`/analysis/prepare?auth_error=...`), (2) 다른 에이전트가 Windows 파일 접근 오류로 `/MAIL` 수정 실패, 콤마 다중 발송 미적용.
+- Status: 로그인은 **진단 가능 상태로 개선**(근본 원인은 로그 확인 필요) / 메일 다중 발송 **완료**.
+- 로그인 문제 1 — **오류가 화면에 아예 안 보였습니다.** `auth_error` 쿼리 파라미터를 읽는 코드가 어디에도 없어, 사용자는 주소창에만 오류가 담긴 채 **평범한 로그인 화면**을 봤습니다. 링크가 거부된 줄 모르니 다시 요청하고 같은 벽에 부딪히게 됩니다. `ApplicationCaseHandoff`가 이제 이 값을 읽어 기존 메시지 자리에 표시합니다. `useSyncExternalStore`로 읽어(서버 스냅샷 null) 이펙트에서 setState 하지 않습니다.
+- 로그인 문제 2 — **콜백이 실제 원인을 버리고 있었습니다.** `exchangeCodeForSession`의 error를 무시하고 고정 문구만 반환해, 실패해도 왜인지 알 수 없었습니다. 원인이 네 가지로 갈리는데 구분이 안 됐습니다: (a) Supabase가 `error`/`error_description`을 붙여 보낸 경우, (b) `code`가 아니라 `token_hash`+`type` 형식의 이메일 링크, (c) PKCE 검증자 불일치(링크를 **다른 브라우저**에서 열었거나 이미 사용한 링크), (d) 파라미터가 아예 없음. 네 경우를 구분해 `auth_callback_failed:<이유>`로 로그를 남기고, (b)는 `verifyOtp`로 실제 처리합니다. 사용자 문구에도 "링크를 요청한 것과 같은 브라우저에서 열어야 하며, 링크는 한 번만 사용할 수 있습니다"를 추가했습니다 — (c)가 가장 흔한 원인입니다.
+- 메일 다중 수신자: `src/domain/recipient-list.ts`(신규)에서 파싱·검증을 한 곳에 모았습니다. 쉼표뿐 아니라 **세미콜론·줄바꿈**도 구분자로 처리하고(엑셀·메일 클라이언트에서 붙여넣으면 쉼표로 오지 않습니다), 대소문자 무시 **중복 제거**, 최대 50명(Resend 상한).
+  - **하나라도 형식이 틀리면 전체를 막습니다.** 부분 발송은 되돌릴 수 없기 때문입니다. 어느 주소가 잘못됐는지 이름을 지목합니다.
+  - 발송은 **한 명씩 따로** 보냅니다. `to` 배열에 여러 명을 넣으면 **모든 수신자가 서로의 주소를 보게 됩니다** — 학교·부서 단위로 보낼 때 사고가 됩니다.
+  - 일부만 실패해도 첫 실패에서 멈추지 않고 **끝까지 시도한 뒤 실패자 명단을 반환**합니다. 중간에 멈추면 누가 받았는지 알 수 없어 재발송 시 중복이 납니다. 화면에 "N명에게 보냈습니다. 실패: ..."로 표시하고, **실패가 있으면 폼을 비우지 않습니다**(명단만 줄여 재시도할 수 있게).
+  - 입력이 `type="email"`이라 **브라우저가 콤마 목록을 거부**하고 있었습니다. textarea로 바꿨습니다. 다른 에이전트가 실패한 것은 파일 접근 문제였고, 이 환경에서는 정상 수정됐습니다.
+- Files/branch: `src/app/auth/callback/route.ts`, `src/components/application-case-handoff.tsx`, `src/domain/recipient-list.ts` + `.test.ts`(신규), `src/server/notifications/manual-email.ts`, `src/app/api/mail/send/route.ts`, `src/app/api/mail/login/route.ts`, `src/app/MAIL/page.tsx` on `main`.
+- Validation: `npx next build` 클린, `npx vitest run` 400 passed(신규 7건), `npx tsc --noEmit` clean, ESLint 0건.
+- **남은 일(사용자)**: 배포 후 로그인을 다시 시도하고 Cloudflare 로그에서 `auth_callback_failed:` 줄을 확인해 주세요. 그 줄이 네 원인 중 무엇인지 알려줍니다. 함께 확인할 것 — Supabase 대시보드의 **Redirect URLs**에 `https://mooaresume.com/auth/callback` 이 등록돼 있는지, **Site URL**이 `https://mooaresume.com`인지.

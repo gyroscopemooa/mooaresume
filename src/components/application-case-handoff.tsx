@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +19,10 @@ const emptyMaterials = {
   materialAttachments: [],
 };
 
+const subscribeToNothing = () => () => {};
+const readNoAuthError = () => null;
+const readAuthError = () => new URLSearchParams(window.location.search).get("auth_error");
+
 export function ApplicationCaseHandoff({ guest }: Props) {
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -26,11 +30,17 @@ export function ApplicationCaseHandoff({ guest }: Props) {
   const [message, setMessage] = useState("");
   const [savedCaseId, setSavedCaseId] = useState<string | null>(null);
   const [savedAnalysisRunId, setSavedAnalysisRunId] = useState<string | null>(null);
+  // A failed sign-in redirects here with the reason in the query string, and
+  // nothing was reading it — the visitor saw a plain login screen with no sign
+  // their link had just been rejected, so the natural next move was to request
+  // another one and hit the same wall.
+  const authError = useSyncExternalStore(subscribeToNothing, readAuthError, readNoAuthError);
 
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => setAuthenticated(Boolean(data.user)));
   }, []);
+
 
   async function sendLoginLink() {
     if (!email.trim()) {
@@ -164,11 +174,11 @@ export function ApplicationCaseHandoff({ guest }: Props) {
       }
     }
 
-    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{busy ? "결제 페이지로 이동 중..." : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? "결제 페이지 준비 중..." : "결제하고 분석 시작"} <ArrowRight/></button>}{message && <p>{message}</p>}</div>;
+    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{busy ? "결제 페이지로 이동 중..." : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? "결제 페이지 준비 중..." : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   if (authenticated) {
-    return <div className={styles.action}><button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "\uC800\uC7A5 \uC911..." : "\uACB0\uC81C\uD558\uACE0 \uBD84\uC11D \uC2DC\uC791"} <ArrowRight/></button>{message && <p>{message}</p>}</div>;
+    return <div className={styles.action}><button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "\uC800\uC7A5 \uC911..." : "\uACB0\uC81C\uD558\uACE0 \uBD84\uC11D \uC2DC\uC791"} <ArrowRight/></button>{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   return <div className={styles.login}>
@@ -176,6 +186,6 @@ export function ApplicationCaseHandoff({ guest }: Props) {
     <div className={styles.divider}><span>{"\uB610\uB294 \uC774\uBA54\uC77C\uB85C \uB85C\uADF8\uC778"}</span></div>
     <label><Mail/><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소"/></label>
     <button type="button" disabled={busy} onClick={() => void sendLoginLink()}>{busy ? "전송 중..." : "로그인 링크 받기"} <ArrowRight/></button>
-    {message && <p>{message}</p>}
+    {(message || authError) && <p>{message || authError}</p>}
   </div>;
 }
