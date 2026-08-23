@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { ChangeEvent, useState } from "react";
 import { ArrowRight, LockKeyhole, Upload } from "lucide-react";
 import { decideWritingMode } from "@/domain/writing-mode";
@@ -45,7 +47,7 @@ export function ComingSoonHeroInput() {
   // draft in the same session-backed format used by the live intake flow.
   // At launch the CTA can switch to onboarding without losing what the user
   // pasted or extracted from their file.
-  function preserveDraftForLaunch() {
+  function carryDraftIntoOnboarding() {
     const trimmedDraft = draft.trim();
     if (!trimmedDraft) {
       saveGuestDraft({ draftText: "", targetLength: 700, temporaryWritingMode: "CREATE" });
@@ -91,11 +93,11 @@ export function ComingSoonHeroInput() {
         </div>
       </div>
       {error && <p className={styles.error}>{error}</p>}
-      <a href="#waitlist" className={styles.primary} onClick={preserveDraftForLaunch}>
+      <Link href="/onboarding" className={styles.primary} onClick={carryDraftIntoOnboarding}>
         무료 진단 시작하기 <ArrowRight />
-      </a>
+      </Link>
       <div className={styles.sub}>
-        <span><LockKeyhole /> 현재 정식 AI 진단 기능을 준비하고 있습니다 · 출시 알림을 받아보세요</span>
+        <span><LockKeyhole /> 결제 전까지 AI를 호출하지 않습니다 · 붙여넣은 내용은 그대로 이어집니다</span>
       </div>
     </div>
   );
