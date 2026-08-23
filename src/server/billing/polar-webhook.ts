@@ -87,8 +87,11 @@ export function validatePolarPaidOrder(
     throw new Error("POLAR_METADATA_QUOTE_MISMATCH");
   }
   const discounted = order.totalAmount !== quote.totalPriceKrw;
+  // A 100%-off discount code legitimately produces totalAmount === 0 — the
+  // discountId check right below already rejects a zero amount with no
+  // discount attached, so zero itself is not suspicious.
   if (
-    order.totalAmount <= 0
+    order.totalAmount < 0
     || order.totalAmount > quote.totalPriceKrw
     || (discounted && !order.discountId)
   ) {

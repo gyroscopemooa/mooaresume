@@ -1105,3 +1105,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - **사용자 확인 필요**: 환경변수를 고친 뒤에도 배포본에는 여전히 옛 값이 있음을 확인했습니다. `NEXT_PUBLIC_*`은 **빌드 시 코드에 인라인되므로 재배포해야 반영**됩니다. 또한 빌드 변수와 시크릿 양쪽에 같은 이름이 있으면 빌드는 빌드 변수 쪽을 사용하므로, 양쪽 모두 확인이 필요합니다.
 - Files/branch: `src/app/auth/callback/route.ts` on `main`.
 - Validation: `npx vitest run` 400 passed, `npx tsc --noEmit` clean, ESLint 0건.
+
+## 2026-08-23 — Claude: 프로덕션 첫 결제 후 분석이 시작되지 않음 — 웹훅 100% 할인 거부 + 폴링 실패 무시
+
+- Agent/session: Claude. 사용자 보고 — 런칭 후 실도메인에서 결제해도 "결제와 지원자료 확인" 단계에서 멈춘 느낌, 결국 "결제 확인이 지연되고 있습니다" 화면으로 끝남.
+- Status: completed.
+- 진단 과정(사용자가 Supabase SQL과 Cloudflare/Polar 대시보드를 직접 확인, Claude가 코드 대조):
+  1. `analysis_runs`가 여러 건 `PENDING`/`response_id null`로 남아있음 → OpenAI 호출 이전 단계, 즉 "결제 완료" 신호를 서버가 못 받은 상태로 확인.
+  2. Polar 웹훅 배달 로그에서 8/18 이후 새 배달이 전혀 없었음 → 웹훅 엔드포인트가 **비활성화(disabled)** 상태였음(사용자 확인). 활성화 후에도 이전 배달은 403(서명 불일치)이었는데, 등록된 URL이 `/api/webhooks/polar` 없이 루트 도메인만 있었을 가능성과 겹쳐 있었음 — 사용자가 URL을 `https://mooaresume.com/api/webhooks/polar`로 수정.
+  3. 활성화 후 첫 실배달(`order.paid`, 8/23 19:34)이 **500**으로 실패. Payload를 직접 받아 대조한 결과, 런칭 기념 **100% 할인 코드**를 사용한 주문이라 `total_amount: 0`.
+- 근본 원인: [`polar-webhook.ts`](../src/server/billing/polar-webhook.ts) `validatePolarPaidOrder`의 금액 검증이 `order.totalAmount <= 0`이면 무조건 `POLAR_ORDER_AMOUNT_MISMATCH`로 거부하고 있었음. 100% 할인은 정당하게 0원이 되므로 이 조건이 정상 결제를 위조로 오인. 바로 다음 줄의 `discounted && !order.discountId` 체크가 "할인 코드 없이 가격이 다르면 거부"를 이미 담당하므로, 0원 자체를 막을 이유가 없었음. `<=`를 `<`로 수정(음수만 차단, 0원+할인ID 있음은 통과). 웹훅과 결제-복귀 재확인(reconciliation) 양쪽이 이 함수를 공유하므로 한 곳 수정으로 둘 다 반영됨.
+- 별도로 발견해 함께 고친 버그: [`quick-checkout-return.tsx`](../src/components/quick-checkout-return.tsx)의 `RUNNING` 상태 폴링 분기가 `/api/analysis-runs/quick/execute` 응답을 확인하지 않고 있었음. 백엔드가 계속 실패해도(이번 건처럼 웹훅이 막혀 있던 동안 등) 화면은 "AI가 첨삭을 진행하고 있습니다"만 계속 보여주고, 10분 서버 타임아웃-환불이 뜰 때까지 사용자는 아무 것도 알 수 없었음. 같은 파일의 다른 분기(entitlementStatus ACTIVE)가 이미 쓰던 실패-표시 패턴을 그대로 적용.
+- Files/branch: `src/server/billing/polar-webhook.ts`, `src/server/billing/polar-webhook.test.ts`(신규 케이스 2건: 100% 할인 통과·할인 없는 0원 거부), `src/components/quick-checkout-return.tsx` on `main`.
+- Validation: `npx vitest run` 410 passed(신규 2건), `npx tsc --noEmit` clean.
+- **남은 일(사용자)**: 이 fix는 애플리케이션 코드라 커밋+재배포가 필요함(Cloudflare 환경변수와 달리 즉시 반영 안 됨). 배포 후 (1) 실패했던 그 주문(`checkout_id: f0492cbc-95e6-406b-92dc-ceb37c7fe127`, `application_case_id: b3239196-4e1d-4648-bcac-0ab9140f0c35`)이 Polar가 웹훅을 재시도해줄지 확인 — 재시도가 없으면 해당 건은 수동 복구(재확인 트리거 또는 직접 entitlement 부여) 필요. (2) 새 100% 할인 결제로 엔드투엔드 재검증.

@@ -110,7 +110,23 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
           if (!executing.current) {
             executing.current = true;
             try {
-              await fetch("/api/analysis-runs/quick/execute", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ analysisRunId: status.analysisRunId }) });
+              const advanceResponse = await fetch("/api/analysis-runs/quick/execute", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ analysisRunId: status.analysisRunId }) });
+              // Every non-202 response here used to be discarded, so a
+              // permanently broken backend (e.g. a bad OPENAI_API_KEY) polled
+              // silently every 2s for up to the 10-minute server timeout with
+              // the screen still saying "진행하고 있습니다". Surface it like
+              // the sibling branch below does.
+              if (!advanceResponse.ok && advanceResponse.status !== 202) {
+                const failure: unknown = await advanceResponse.json().catch(() => null);
+                const detail = failure && typeof failure === "object" && "detail" in failure && typeof failure.detail === "string"
+                  ? failure.detail
+                  : failure && typeof failure === "object" && "error" in failure && typeof failure.error === "string"
+                    ? failure.error
+                    : "ANALYSIS_EXECUTION_FAILED";
+                setPhase("failed");
+                setMessage(`분석을 완료하지 못했습니다. (${detail})`);
+                return;
+              }
             } finally { executing.current = false; }
           }
           timer = window.setTimeout(() => void poll(attempt + 1), 2000);

@@ -135,10 +135,23 @@ describe("Polar webhook entitlement processing", () => {
     expect(result).toMatchObject({ disposition: "PROCESSED", repositoryResult: "GRANTED" });
   });
 
+  it("accepts a fully discounted (100% off) paid order at zero amount", async () => {
+    const result = await processPolarWebhook({
+      rawBody: "{}",
+      headers,
+      secret: "secret",
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      repository: repository(),
+      verifyEvent: vi.fn(() => paidEvent({ totalAmount: 0, discountId: "discount-100" }) as never),
+    });
+    expect(result).toMatchObject({ disposition: "PROCESSED", repositoryResult: "GRANTED" });
+  });
+
   it.each([
     ["wrong product", { productId: "other-product" }, "POLAR_PRODUCT_MISMATCH"],
     ["wrong currency", { currency: "usd" }, "POLAR_CURRENCY_MISMATCH"],
     ["wrong amount", { totalAmount: 1 }, "POLAR_ORDER_AMOUNT_MISMATCH"],
+    ["zero amount with no discount", { totalAmount: 0 }, "POLAR_ORDER_AMOUNT_MISMATCH"],
     ["not paid", { paid: false }, "POLAR_ORDER_NOT_PAID"],
   ])("rejects %s", async (_name, overrides, message) => {
     await expect(processPolarWebhook({
