@@ -9,6 +9,14 @@ import { ResultWorkspaceComplete } from "./result-workspace-complete";
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
+// 첨부 경로가 종류를 지키는지 보려면 파일에서 글자를 뽑는 단계는 건너뛰어야
+// 합니다. jsdom에는 PDF·DOCX 파서가 없습니다.
+vi.mock("@/lib/local-document", () => ({
+  extractLocalDocument: (file: File) => Promise.resolve({
+    filename: file.name, extension: "pdf", sizeBytes: 1_024, text: "내용",
+  }),
+}));
+
 afterEach(cleanup);
 
 describe("ResultWorkspaceComplete 제출본 탭", () => {
@@ -358,16 +366,38 @@ describe("재첨삭에 자료 추가", () => {
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
     fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
 
-    // 종류별 입력이 정확히 셋. 종류를 고르지 않고 올리는 두 번째 경로가
-    // 남아 있으면 이 수가 늘어난다.
+    // 앞의 셋은 종류별 슬롯, 마지막 하나는 종류가 없는 기타 자료용이다.
     const pickers = [...document.querySelectorAll('input[type="file"]')];
-    expect(pickers).toHaveLength(3);
     expect(pickers.map((picker) => picker.closest("label")?.textContent)).toEqual([
       expect.stringContaining("이력서"),
       expect.stringContaining("경력기술서"),
       expect.stringContaining("포트폴리오"),
+      expect.stringContaining("파일 첨부"),
     ]);
-    expect(screen.queryByText("파일 첨부")).toBeNull();
+    // 종류를 고를 수 있는 자료를 기타 칸에 넣으면 프롬프트가
+    // "포트폴리오·추가 경험"으로 읽으므로, 어디에 무엇을 넣을지 적어 준다.
+    expect(screen.getByText(/이력서·경력기술서·포트폴리오는 위에서 종류별로/)).toBeTruthy();
+  });
+
+  it("이력서는 종류와 함께, 기타 자료는 자유 첨부로 저장한다", async () => {
+    sessionStorage.removeItem("mooa:guest-candidate-materials:v1");
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    const pickers = [...document.querySelectorAll('input[type="file"]')];
+    fireEvent.change(pickers[0], { target: { files: [new File(["x"], "이력서.pdf")] } });
+    fireEvent.change(pickers[3], { target: { files: [new File(["x"], "공고.pdf")] } });
+    // 파일 읽기가 비동기라 화면에 반영될 때까지 기다린다.
+    await screen.findByText("이력서.pdf");
+    await screen.findByText("공고.pdf");
+
+    fireEvent.click(screen.getByRole("button", { name: /요청사항 반영해 다시 첨삭받기/ }));
+
+    const saved = JSON.parse(sessionStorage.getItem("mooa:guest-candidate-materials:v1") ?? "{}");
+    expect(saved.materialAttachments).toEqual([expect.objectContaining({ kind: "RESUME", filename: "이력서.pdf" })]);
+    // 기타 칸은 종류가 없으므로 자유 첨부로 남는다 — 이력서 칸으로 새지 않는다.
+    expect(saved.freeformAttachments).toEqual([expect.objectContaining({ filename: "공고.pdf" })]);
+    sessionStorage.removeItem("mooa:guest-candidate-materials:v1");
   });
 });
 

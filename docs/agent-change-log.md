@@ -1187,3 +1187,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/billing/polar-checkout.ts`, `polar-webhook.ts`, `polar-checkout-reconciliation.ts`, `src/app/api/webhooks/polar/route.ts`, `src/app/api/checkouts/quick/status/route.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/{page.tsx,format.ts,pill.tsx,purchases/page.tsx}`, `src/domain/next-step.ts`, `src/components/result-workspace-complete.tsx`, `src/app/onboarding/page.tsx`, `src/app/begin/page.tsx` + 테스트 3종 on `main`.
 - Validation: `npx vitest run` 416 passed(신규 6건), `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린. 실데이터 확인 — 실매출 **0원 · 0건**, 무료 1건, 구분 전 54건.
 - 부수 수정: `shortQuestions`를 쓰는 `useMemo`가 선언보다 위에 있어 **TDZ 오류**가 날 수 있었습니다(React Compiler 린트가 잡음). 선언을 위로 옮기고 의존성을 `result` 전체에서 실제 사용값으로 좁혔습니다.
+
+## 2026-08-23 — Claude: 재첨삭 패널 — 종류별 슬롯 3개 유지 + 입력창을 기타 자료 자리로
+
+- Agent/session: Claude. 사용자 지시 — 이력서 UI는 유지하면서 입력창에도 드래그앤드롭 첨부를 살릴 것. 이유: 기타 자료용 버튼을 하나 더 만드는 대신 입력창에 넣고 싶고, 압축파일·여러 파일 같은 경우가 있어 버튼 4개로는 안 떨어짐.
+- Status: completed.
+- 직전 커밋(`f7413f5`)에서 종류 없는 첨부 경로를 **껐던 것을 되돌립니다.** 그때 끈 이유(종류 없이 올라간 이력서가 프롬프트에 "포트폴리오·추가 경험"으로 전달됨)는 유효하지만, **종류별 슬롯 3개가 위에 있는 지금은 입력창 첨부가 "기타" 칸으로 읽힙니다.** 실제 전달 라벨도 `portfolio: "포트폴리오·추가 경험"`이라 기타 자료용으로 쓰는 것이 동작과 일치합니다.
+- `AdditionalInfoInput`은 **손대기 전 상태로 완전히 복구**했습니다(`git diff f7413f5^` 결과 0). 직전 커밋에서 추가했던 `allowAttachments` prop은 호출부가 없어져 죽은 코드가 되므로 제거했습니다.
+- 두 경로가 각자 다른 곳에 저장됩니다 — 슬롯은 `materialAttachments`(종류 포함), 입력창은 `freeformAttachments`. `startRevision`이 둘 다 병합합니다.
+- 어디에 무엇을 넣을지 화면에 적었습니다: "그 밖의 자료(공고, 자격증, 수상 내역 등)나 파일이 여러 개라면 아래 입력창에 함께 올려 주세요. 이력서·경력기술서·포트폴리오는 위에서 종류별로 올려야 더 정확하게 반영됩니다."
+- 전송 버튼은 **요청 문구 · 종류별 첨부 · 기타 첨부 중 하나만 있어도** 열립니다.
+- 참고: 압축파일(zip)은 지원하지 않습니다(`accept=".pdf,.docx,.txt,.md"`). 여러 파일은 한 번에 선택하거나 끌어다 놓으면 됩니다(최대 10개).
+- Files/branch: `src/components/result-workspace-complete.tsx`, `src/components/additional-info-input.tsx`(복구), `src/components/result-workspace-complete.test.tsx` on `main`.
+- Validation: `npx vitest run` 417 passed. 신규 1건이 **핵심을 잠급니다** — 이력서 칸에 넣은 파일은 `materialAttachments`에 `kind: "RESUME"`로, 기타 칸에 넣은 파일은 `freeformAttachments`로 저장되는지 실제로 파일을 올려 확인합니다(파서는 목으로 대체). 기존 구조 테스트도 파일 입력 4개(슬롯 3 + 기타 1)로 갱신. `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린.

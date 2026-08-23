@@ -176,6 +176,14 @@ function readMaterialDraft(): Record<string, unknown> {
  * "포트폴리오·추가 경험" — so a résumé added while asking for a re-run was
  * described to the model as a portfolio.
  */
+function mergeFreeformAttachments(added: CandidateFreeformAttachment[]) {
+  const draft = readMaterialDraft();
+  const existing = Array.isArray(draft.freeformAttachments) ? draft.freeformAttachments as CandidateFreeformAttachment[] : [];
+  const seen = new Set(existing.map((file) => file.filename));
+  draft.freeformAttachments = [...existing, ...added.filter((file) => !seen.has(file.filename))];
+  sessionStorage.setItem(MATERIAL_STORAGE_KEY, JSON.stringify(draft));
+}
+
 function mergeMaterialAttachments(added: CandidateMaterialAttachment[]) {
   const draft = readMaterialDraft();
   const existing = Array.isArray(draft.materialAttachments) ? draft.materialAttachments as CandidateMaterialAttachment[] : [];
@@ -273,6 +281,10 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
   const router = useRouter();
   const [revisionRequest, setRevisionRequest] = useState("");
   const [revisionAttachments, setRevisionAttachments] = useState<CandidateMaterialAttachment[]>([]);
+  // Anything that is not a résumé, career document or portfolio — a posting, a
+  // certificate, several files at once. It reaches the prompt under
+  // "포트폴리오·추가 경험", which is what this box is for.
+  const [revisionExtras, setRevisionExtras] = useState<CandidateFreeformAttachment[]>([]);
   const carriedMaterialCount = useSyncExternalStore(
     subscribeToNothing,
     readCarriedMaterialCount,
@@ -335,8 +347,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
     // Either half is a request on its own: a sentence about what to change, or
     // the 경력기술서 that was missing the first time. Requiring the sentence
     // left the button dead for someone who had just attached a file.
-    if (!revisionRequest.trim() && revisionAttachments.length === 0) return;
+    if (!revisionRequest.trim() && revisionAttachments.length === 0 && revisionExtras.length === 0) return;
     if (revisionAttachments.length > 0) mergeMaterialAttachments(revisionAttachments);
+    if (revisionExtras.length > 0) mergeFreeformAttachments(revisionExtras);
     carryDraftForward("/analysis/prepare", { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
   }
 
@@ -515,18 +528,25 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
               : "이번 화면에는 함께 넘어온 자료가 없습니다. 이력서·경력기술서가 있으면 아래에서 추가하세요."}
         </p>
         <MaterialUpload attachments={revisionAttachments} onChange={setRevisionAttachments} />
+        {/* The three slots above cover the documents whose kind changes how the
+            analysis reads them. Everything else — a posting, a certificate, a
+            folder's worth of files — has no kind worth choosing, and a fourth
+            button for "기타" would just be a worse version of this box, which
+            already types and takes a drop. */}
+        <p className={styles.revisionCarried}>
+          그 밖의 자료(공고, 자격증, 수상 내역 등)나 파일이 여러 개라면 아래 입력창에 함께 올려 주세요. 이력서·경력기술서·포트폴리오는 위에서 종류별로 올려야 더 정확하게 반영됩니다.
+        </p>
         <AdditionalInfoInput
           text={revisionRequest}
-          attachments={[]}
+          attachments={revisionExtras}
           onTextChange={setRevisionRequest}
-          onAttachmentsChange={() => {}}
-          allowAttachments={false}
+          onAttachmentsChange={setRevisionExtras}
           label="재첨삭 요청사항"
           placeholder={"예) 에이텍 경력은 빼고 직업상담 관련 경력으로만 구성해 주세요.\n첨부한 경력기술서 내용을 반영해 주세요."}
         />
         <div className={styles.revisionFoot}>
           <small>새 분석이므로 PRO 1회 결제가 필요합니다. 지금 결과는 그대로 남아 있습니다.</small>
-          <button type="button" disabled={!revisionRequest.trim() && revisionAttachments.length === 0} onClick={startRevision}>
+          <button type="button" disabled={!revisionRequest.trim() && revisionAttachments.length === 0 && revisionExtras.length === 0} onClick={startRevision}>
             요청사항 반영해 다시 첨삭받기 <ArrowRight/>
           </button>
         </div>
