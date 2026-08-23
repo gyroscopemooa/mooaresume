@@ -10,7 +10,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-3.2";
+export const QUICK_PROMPT_VERSION = "quick-3.3";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -209,6 +209,9 @@ ${LENGTH_INTEGRITY_RULE}`,
     // actually changed is the difference between "뭐가 달라졌지" and seeing it.
     "editSummary에는 이번 첨삭에서 실제로 한 일을 지원자가 알아볼 수 있게 2~3줄로 적으세요. '표현을 다듬었습니다' 같은 뭉뚱그린 말이 아니라 무엇을 어떻게 바꿨는지 구체적으로 씁니다. 예: '직무 연결이 없던 결론 3개를 안전관리 업무와 연결했습니다', '구어체 표현 5곳을 지원서 문체로 바꿨습니다'. 문장 수나 주석 개수는 화면이 따로 세어 보여주므로 여기에는 적지 마세요.",
 
+    "지원자에게 직무와 이어지는 일 경험이 있는데 답변이 학점·수업·공부 방법 이야기로 채워져 있으면, 일 경험을 앞세우고 학업은 한 문단 정도로 줄이도록 consultingAdvice에 제안하세요. 기업은 학생이 아니라 실무자를 뽑습니다.",
+    "다만 무조건 경력이 우선인 것은 아닙니다. 학업 쪽이 지원 직무와 더 가까우면(전공 과목, 실습, 자격 취득 과정, 관련 동아리) 그쪽을 앞세우는 편이 낫습니다. 기준은 최신순이나 경력 여부가 아니라 이 직무와 얼마나 이어지는가입니다.",
+    "일 경험이 전혀 없는 지원자라면 학업으로 쓰는 것이 정상입니다. 그 경우에도 직무와 이어지는 전공 과목·실습·동아리·자격 과정을 고르도록 제안하고, 공부법이나 성적 관리 이야기에 머무르지 않게 하세요.",
     "문항이 요구하는 형식을 그대로 따르세요. 문항 질문에 '경력 위주로', '항목별로', '3가지로', '담당업무와 실적 중심으로' 같은 지시가 있으면 그 형식으로 씁니다. 예를 들어 경력사항 문항은 이야기하듯 풀어 쓰지 말고 소속·기간·고용형태·담당업무·실적을 항목으로 정리하세요.",
     "같은 경험을 여러 문항에 써야 한다면 문항마다 다른 측면을 쓰세요. 한 문항이 그 경험의 의미와 배움을 다뤘다면 다른 문항에서는 사실 정보(소속·기간·역할·담당업무)만 정리하는 식으로 나눕니다. 같은 이야기를 같은 방식으로 두 번 쓰면 지원서 전체가 소재가 하나뿐인 것처럼 읽힙니다.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",
@@ -235,7 +238,19 @@ ${LENGTH_INTEGRITY_RULE}`,
       : ["각 문항에서 원문 문장 중 최소 하나는 거의 그대로 유지하세요. 지원자가 쓴 문장이 하나도 남지 않은 첨삭본은 첨삭이 아니라 대필입니다. 원문 전체를 쓸 수 없다고 판단했다면 그렇게 판단한 이유를 consultingAdvice에 적으세요."]),
     "각 revision의 originalAnnotations에는 제출 원문에서 짚어줄 표현을 최대 10개까지 넣으세요. 개수를 채우기 위해 억지로 만들지 마세요.",
     "originalAnnotations.phrase는 해당 문항의 원문 답변에 실제로 한 번만 등장하는 문구를 토씨와 띄어쓰기까지 그대로 복사하세요. 낱말 하나만 잘라내지 말고, 문제나 강점이 드러나는 구절이나 문장 단위로 잡으세요.",
-    "originalAnnotations.type은 good, delete, vague, revise, fact 중 하나만 사용하세요.",
+    "originalAnnotations.type은 good, delete, vague, revise, fact, polish 중 하나만 사용하세요.",
+    // There were no criteria at all, only a list of names. The same sentence
+    // came back as 좋은 표현 on one run and 삭제 추천 on the next, because
+    // nothing said what separates them. Definitions plus a fixed tie-break
+    // are what make two runs on the same text agree.
+    `유형은 다음 기준으로 정하세요.
+good: 지원자가 실제로 한 행동이나 판단이 드러나고 직무와 이어지는 문구. 그대로 두어도 되는 곳입니다.
+delete: 같은 내용이 다른 곳에 이미 있거나, 빼도 전달되는 내용이 줄지 않는 문구.
+vague: 주장은 있는데 그것을 받쳐 줄 행동·상황·근거가 글 안에 없는 문구.
+revise: 담긴 내용은 살릴 만한데 표현이나 구성 때문에 전달이 약해지는 문구.
+fact: 제출한 글과 자료만으로는 사실인지 확인할 수 없는 주장.
+polish: 위 다섯에 해당하지 않으면서 다듬으면 깔끔해지는 사소한 부분.`,
+    "한 문구가 여러 유형에 해당하면 fact → delete → vague → revise → polish 순으로 앞선 것을 고르세요. good은 나머지 다섯 중 어디에도 해당하지 않는 문구에만 씁니다. 같은 원문을 두 번 분석해도 같은 유형이 나와야 합니다.",
     // good used to mean "not bad", so the model praised sentences it went on to
     // delete. It now means a commitment: this sentence survives.
     "good은 '나쁘지 않다'가 아니라 '고칠 필요가 없어서 최종 첨삭본에 그대로 넣을 문장'에만 주세요. 뺄 문장이라면 절대 good으로 표시하지 마세요.",

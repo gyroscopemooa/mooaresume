@@ -607,3 +607,58 @@ describe("순서를 지어내지 않는다", () => {
       .toContain("순서 표현을 새로 만들어 넣지 마세요");
   });
 });
+
+describe("주석 유형의 판단 기준", () => {
+  // 같은 문장이 실행마다 좋은 표현 ↔ 삭제 추천으로 갈리던 원인은 기준이
+  // 아예 없었기 때문이다. 이름만 나열돼 있었다.
+  const instructions = () => buildQuickAnalysisInstructions(request);
+
+  it("여섯 유형을 모두 허용한다", () => {
+    // polish를 쓰라는 지시는 있는데 허용 목록에는 없어서 서로 어긋났다.
+    expect(instructions()).toContain("good, delete, vague, revise, fact, polish 중 하나만");
+  });
+
+  it("유형마다 기준을 정의한다", () => {
+    const text = instructions();
+
+    for (const rule of [
+      "good: 지원자가 실제로 한 행동이나 판단이 드러나고",
+      "delete: 같은 내용이 다른 곳에 이미 있거나",
+      "vague: 주장은 있는데 그것을 받쳐 줄",
+      "fact: 제출한 글과 자료만으로는 사실인지 확인할 수 없는",
+    ]) {
+      expect(text).toContain(rule);
+    }
+  });
+
+  it("겹칠 때의 우선순위를 고정한다", () => {
+    // 우선순위가 없으면 겹치는 문구에서 매번 다른 답이 나온다.
+    const text = instructions();
+
+    expect(text).toContain("fact → delete → vague → revise → polish 순으로 앞선 것을");
+    expect(text).toContain("같은 원문을 두 번 분석해도 같은 유형이 나와야 합니다");
+  });
+});
+
+describe("학업과 직무의 비중", () => {
+  const instructions = () => buildQuickAnalysisInstructions(request);
+
+  it("일 경험이 있는데 학업으로 채워져 있으면 지적한다", () => {
+    expect(instructions()).toContain("일 경험을 앞세우고 학업은 한 문단 정도로 줄이도록");
+  });
+
+  it("경력이 무조건 우선은 아니라고 못 박는다", () => {
+    // 직무와 더 가까우면 학업이 앞설 수 있다. 기준은 경력 여부가 아니다.
+    const text = instructions();
+
+    expect(text).toContain("무조건 경력이 우선인 것은 아닙니다");
+    expect(text).toContain("기준은 최신순이나 경력 여부가 아니라 이 직무와 얼마나 이어지는가");
+  });
+
+  it("일 경험이 없는 지원자를 탓하지 않는다", () => {
+    const text = instructions();
+
+    expect(text).toContain("학업으로 쓰는 것이 정상입니다");
+    expect(text).toContain("공부법이나 성적 관리 이야기에 머무르지 않게");
+  });
+});
