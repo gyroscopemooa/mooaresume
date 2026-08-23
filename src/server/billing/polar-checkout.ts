@@ -159,3 +159,26 @@ export function describePolarConfigShape() {
     webhookSecret: describe(process.env.POLAR_WEBHOOK_SECRET),
   };
 }
+
+/**
+ * Turns a failed Polar call into a category the operator can act on.
+ *
+ * Checkout answers 502 with one sentence for every cause, and the detail is
+ * stripped outside development, so a wrong token, a sandbox product id and a
+ * malformed request are indistinguishable from the browser. The code says
+ * which of those it was and nothing else — no message text, no values — so it
+ * is safe to return to the caller.
+ */
+export function classifyPolarFailure(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (/POLAR_ACCESS_TOKEN|POLAR_QUICK_PRODUCT_ID|POLAR_PRO_PRODUCT_ID가 필요합니다/.test(message)) return "POLAR_CONFIG_MISSING";
+  if (/POLAR_SERVER는/.test(message)) return "POLAR_SERVER_INVALID";
+  if (/\b401\b|\b403\b|[Uu]nauthorized|[Ff]orbidden|[Ii]nvalid.*token/.test(message)) return "POLAR_AUTH_REJECTED";
+  // A production product id used against sandbox (or the reverse) reads as a
+  // missing resource, which is the most likely cause right after switching.
+  if (/\b404\b|[Nn]ot ?[Ff]ound|ResourceNotFound/.test(message)) return "POLAR_PRODUCT_NOT_FOUND";
+  if (/\b422\b|\b400\b|[Vv]alidation|[Ii]nvalid/.test(message)) return "POLAR_REQUEST_REJECTED";
+  if (/\b5\d\d\b|timeout|ECONNRESET|fetch failed/i.test(message)) return "POLAR_UNAVAILABLE";
+  return "POLAR_UNKNOWN";
+}

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCheckoutQuote, createQuickCheckoutQuote, toCheckoutMetadata, toQuickCheckoutMetadata } from "@/domain/usage-entitlement";
-import { getPolarCheckoutConfiguration, PolarSdkCheckoutGateway } from "./polar-checkout";
+import { classifyPolarFailure, getPolarCheckoutConfiguration, PolarSdkCheckoutGateway } from "./polar-checkout";
 
 describe("Polar SDK checkout gateway", () => {
   it("creates a KRW inclusive checkout with server-owned price and metadata", async () => {
@@ -127,5 +127,37 @@ describe("POLAR_SERVER 해석", () => {
   it("알 수 없는 값이면 조용히 넘어가지 않고 거절한다", () => {
     // 오타를 샌드박스로 해석하면 실수가 결제 실패로만 드러난다.
     expect(() => serverFor("prod")).toThrow(/production 또는 sandbox/);
+  });
+});
+
+describe("Polar 실패 분류", () => {
+  // 502 한 줄로는 토큰 문제인지 상품 ID 문제인지 구분이 안 된다. 분류만
+  // 돌려주면 브라우저 Network 탭에서 바로 보이고, 값은 하나도 나가지 않는다.
+  it("설정 누락을 알아본다", () => {
+    expect(classifyPolarFailure(new Error("POLAR_ACCESS_TOKEN, POLAR_QUICK_PRODUCT_ID, POLAR_PRO_PRODUCT_ID가 필요합니다.")))
+      .toBe("POLAR_CONFIG_MISSING");
+  });
+
+  it("인증 거부를 알아본다", () => {
+    for (const message of ["Request failed with status 401", "Unauthorized", "invalid access token"]) {
+      expect(classifyPolarFailure(new Error(message))).toBe("POLAR_AUTH_REJECTED");
+    }
+  });
+
+  it("상품을 찾지 못한 경우를 알아본다", () => {
+    // 샌드박스 ID를 프로덕션에 쓰면(반대도) 이 형태로 온다 — 환경을 바꾼
+    // 직후 가장 흔한 원인이다.
+    for (const message of ["status 404", "ResourceNotFound: product"]) {
+      expect(classifyPolarFailure(new Error(message))).toBe("POLAR_PRODUCT_NOT_FOUND");
+    }
+  });
+
+  it("POLAR_SERVER 오타를 따로 구분한다", () => {
+    expect(classifyPolarFailure(new Error('POLAR_SERVER는 production 또는 sandbox여야 합니다. 현재 값: "prod"')))
+      .toBe("POLAR_SERVER_INVALID");
+  });
+
+  it("모르는 오류는 뭉뚱그리되 분류는 남긴다", () => {
+    expect(classifyPolarFailure(new Error("something else entirely"))).toBe("POLAR_UNKNOWN");
   });
 });
