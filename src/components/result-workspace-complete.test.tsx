@@ -351,6 +351,24 @@ describe("재첨삭에 자료 추가", () => {
     expect(screen.getByText(/앞서 올린 자료 1개는 그대로 함께 반영됩니다/)).toBeTruthy();
     sessionStorage.removeItem("mooa:guest-candidate-materials:v1");
   });
+
+  it("이력서·경력기술서·포트폴리오를 각각 구분해서 올릴 수 있다", () => {
+    // 종류 없는 첨부로 받으면 프롬프트에 "포트폴리오·추가 경험"으로 들어가,
+    // 재첨삭하려고 올린 이력서가 포트폴리오로 설명된다.
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    // 종류별 입력이 정확히 셋. 종류를 고르지 않고 올리는 두 번째 경로가
+    // 남아 있으면 이 수가 늘어난다.
+    const pickers = [...document.querySelectorAll('input[type="file"]')];
+    expect(pickers).toHaveLength(3);
+    expect(pickers.map((picker) => picker.closest("label")?.textContent)).toEqual([
+      expect.stringContaining("이력서"),
+      expect.stringContaining("경력기술서"),
+      expect.stringContaining("포트폴리오"),
+    ]);
+    expect(screen.queryByText("파일 첨부")).toBeNull();
+  });
 });
 
 describe("이번 첨삭에서 한 일", () => {

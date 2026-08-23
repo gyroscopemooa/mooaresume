@@ -20,6 +20,13 @@ type Props = {
    */
   placeholder?: string;
   label?: string;
+  /**
+   * Off where a labelled uploader (`MaterialUpload`) sits alongside this box.
+   * A file dropped here carries no kind, and the prompt then reads a résumé as
+   * "포트폴리오·추가 경험" — so where kinds matter, files must not have a
+   * second, unlabelled way in. Defaults on; existing call sites are untouched.
+   */
+  allowAttachments?: boolean;
 };
 
 export function AdditionalInfoInput({
@@ -29,6 +36,7 @@ export function AdditionalInfoInput({
   onAttachmentsChange,
   placeholder = EXPERIENCE_PLACEHOLDER,
   label,
+  allowAttachments = true,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -70,12 +78,15 @@ export function AdditionalInfoInput({
   return (
     <div
       className={styles.composer + (dragging ? " " + styles.dragging : "")}
-      onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
-      onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }}
-      onDragLeave={(event) => { if (event.currentTarget === event.target) setDragging(false); }}
-      onDrop={(event) => { event.preventDefault(); setDragging(false); void addFiles(event.dataTransfer.files); }}
+      // Without the drop handlers a file dragged here lands as a browser
+      // navigation. With them but no uploader, it lands unlabelled. Off means
+      // off: the drop is refused so it goes to the labelled uploader instead.
+      onDragEnter={allowAttachments ? (event) => { event.preventDefault(); setDragging(true); } : undefined}
+      onDragOver={allowAttachments ? (event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; } : undefined}
+      onDragLeave={allowAttachments ? (event) => { if (event.currentTarget === event.target) setDragging(false); } : undefined}
+      onDrop={allowAttachments ? (event) => { event.preventDefault(); setDragging(false); void addFiles(event.dataTransfer.files); } : undefined}
     >
-      {attachments.length > 0 && (
+      {allowAttachments && attachments.length > 0 && (
         <div className={styles.files}>
           {attachments.map((file) => (
             <span key={file.filename}>
@@ -96,13 +107,15 @@ export function AdditionalInfoInput({
         aria-label={label}
       />
       <footer>
-        <label aria-disabled={busy}>
-          {busy ? <LoaderCircle className={styles.spin}/> : <Paperclip/>}
-          {busy ? "파일 읽는 중" : "파일 첨부"}
-          <input type="file" accept=".pdf,.docx,.txt,.md" multiple disabled={busy} onChange={(event) => { void addFiles(event.target.files); event.target.value = ""; }}/>
-        </label>
-      <p className={styles.fileHint}>PDF · DOCX · TXT · MD 지원 · 스캔 PDF/JPG/PNG는 결제 후 문서 인식 예정<br/>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요. 파일에 따라 추출이 제한될 수 있어 중요한 내용은 직접 입력해 주세요.</p>
-        <span>직접 입력 {text.length.toLocaleString()}자 <small>최대 12,000자</small>{attachmentCharacters > 0 ? ` · 첨부 원문 ${attachmentCharacters.toLocaleString()}자` : ""}</span>
+        {allowAttachments && <>
+          <label aria-disabled={busy}>
+            {busy ? <LoaderCircle className={styles.spin}/> : <Paperclip/>}
+            {busy ? "파일 읽는 중" : "파일 첨부"}
+            <input type="file" accept=".pdf,.docx,.txt,.md" multiple disabled={busy} onChange={(event) => { void addFiles(event.target.files); event.target.value = ""; }}/>
+          </label>
+          <p className={styles.fileHint}>PDF · DOCX · TXT · MD 지원 · 스캔 PDF/JPG/PNG는 결제 후 문서 인식 예정<br/>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요. 파일에 따라 추출이 제한될 수 있어 중요한 내용은 직접 입력해 주세요.</p>
+        </>}
+        <span>직접 입력 {text.length.toLocaleString()}자 <small>최대 12,000자</small>{allowAttachments && attachmentCharacters > 0 ? ` · 첨부 원문 ${attachmentCharacters.toLocaleString()}자` : ""}</span>
       </footer>
       {error && <p className={styles.error}>{error}</p>}
     </div>

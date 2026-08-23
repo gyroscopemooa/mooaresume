@@ -1138,3 +1138,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx next build` 클린(meensoo 8개 라우트 전부 dynamic), `npx vitest run` 410 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬 실측 — 비로그인 시 로그인 화면, 로그인 후 7개 라우트 전부 200, 대시보드에 실제 결제 54건·매출 408,700원 렌더 확인.
 - **남은 일(사용자)**: (1) `20260823010000_admin_console.sql`을 Supabase에 적용해야 메일 기록·문의 화면이 실제로 쌓입니다(미적용 상태에서도 빈 화면으로 안전하게 뜹니다). (2) Cloudflare에 `MAIL_ADMIN_SECRET`이 있는지 확인 — 없으면 `/meensoo`는 항상 로그인 실패합니다.
 - **발견(별건)**: `PENDING` 상태로 멈춘 분석이 다수 있습니다. 크론 백스톱(`/api/analysis-runs/advance`)은 `status = 'RUNNING'`만 집어가므로, 결제가 승인됐어도 사용자가 결제-복귀 화면을 떠난 뒤라면 분석이 **영영 시작되지 않습니다.** 19:34 결제 건이 정확히 이 상태입니다(주문은 `결제됨`, 실행은 `대기`).
+
+## 2026-08-23 — Claude: 재첨삭 패널에 이력서·경력기술서·포트폴리오 구분 업로드 복원
+
+- Agent/session: Claude. 사용자 지적 — 결과 화면 "추가 요청" 패널에 **이력서·직무기술서·포트폴리오 UI를 그대로 살린다고 했는데 안 되어 있다.**
+- Status: completed.
+- 확인: 지적이 맞았고, **UI 문제로 끝나지 않았습니다.** 이 패널은 `AdditionalInfoInput`의 일반 "파일 첨부"를 쓰고 있었는데, 그 경로로 올라간 파일은 `freeformAttachments`에 종류 없이 저장됩니다. `MaterialUpload`의 주석이 이미 적어 둔 그대로 — 종류 없는 첨부는 프롬프트에 **"포트폴리오·추가 경험"으로 들어갑니다.** 즉 재첨삭하려고 올린 **이력서가 모델에게는 포트폴리오로 설명되고** 있었습니다. 종류는 장식이 아니라 프롬프트가 각 문서를 부르는 이름입니다.
+- 조치:
+  - 패널에 PRO 입력 화면과 **같은 `MaterialUpload`**(이력서 / 경력기술서 / 포트폴리오 3개 슬롯)를 넣었습니다. 새로 만들지 않고 기존 컴포넌트를 그대로 씁니다.
+  - `mergeFreeformAttachments` → `mergeMaterialAttachments`로 바꿔 `materialAttachments`에 **선택한 종류와 함께** 저장합니다. 중복 판정 키도 `kind:filename`으로, `MaterialUpload`와 같게 맞췄습니다(같은 파일을 두 종류로 올리는 것은 정당합니다).
+  - `AdditionalInfoInput`에 `allowAttachments` prop 추가(기본 `true`, 기존 호출부 무영향). 재첨삭 패널만 `false`로 씁니다 — 종류를 고르지 않고 올릴 수 있는 **두 번째 경로가 남아 있으면 안 되기** 때문입니다. 끌어다 놓기 핸들러도 함께 끕니다(핸들러만 남기면 파일이 종류 없이 들어가고, 아예 없으면 브라우저가 페이지를 떠나 파일을 엽니다 — 껐으면 드롭을 거부해서 라벨 업로더로 가게 합니다).
+  - 안내 문구를 "끌어다 놓으세요" → "아래에서 추가하세요"로 고쳤습니다(이제 버튼입니다).
+  - 전송 버튼 조건을 `요청 문구 있음` → `요청 문구 또는 첨부 있음`으로 완화했습니다. 빠졌던 경력기술서를 첨부하는 것 자체가 하나의 요청인데, 문구를 요구하면 **파일만 올린 사람 앞에서 버튼이 죽어 있었습니다.**
+- Files/branch: `src/components/result-workspace-complete.tsx`, `src/components/additional-info-input.tsx`, `src/components/result-workspace-complete.test.tsx` on `main`.
+- Validation: `npx vitest run` 411 passed(신규 1건 — 파일 입력이 정확히 3개이고 각 라벨이 이력서·경력기술서·포트폴리오이며, 일반 "파일 첨부"가 없음을 확인), `npx tsc --noEmit` clean, ESLint 0건. 브라우저 실측은 불가 — 이 패널은 `isSample === false`일 때만 뜨고, 로그인 없이 열리는 결과 화면은 전부 샘플입니다.

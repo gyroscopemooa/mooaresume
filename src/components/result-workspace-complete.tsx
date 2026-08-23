@@ -12,7 +12,8 @@ import { recommendNextStep } from "@/domain/next-step";
 import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
 import { AdditionalInfoInput } from "@/components/additional-info-input";
-import type { CandidateFreeformAttachment } from "@/domain/candidate-material";
+import { MaterialUpload } from "@/components/material-upload";
+import type { CandidateFreeformAttachment, CandidateMaterialAttachment } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { deriveFallbackOriginalAnnotations } from "@/domain/result-original-annotations";
 import { resolveApplicationLabel, resolveQuestionTitle, resolveResultSubject, toFilenameToken } from "@/domain/result-labels";
@@ -166,12 +167,22 @@ function readMaterialDraft(): Record<string, unknown> {
   return { ...EMPTY_MATERIAL_DRAFT };
 }
 
-/** Merges rather than replaces: the first run's uploads are still the applicant's. */
-function mergeFreeformAttachments(added: CandidateFreeformAttachment[]) {
+/**
+ * Merges rather than replaces: the first run's uploads are still the
+ * applicant's.
+ *
+ * Filed under `materialAttachments` with the kind the applicant chose. These
+ * used to go in as freeform attachments, which reach the prompt as
+ * "포트폴리오·추가 경험" — so a résumé added while asking for a re-run was
+ * described to the model as a portfolio.
+ */
+function mergeMaterialAttachments(added: CandidateMaterialAttachment[]) {
   const draft = readMaterialDraft();
-  const existing = Array.isArray(draft.freeformAttachments) ? draft.freeformAttachments as CandidateFreeformAttachment[] : [];
-  const seen = new Set(existing.map((file) => file.filename));
-  draft.freeformAttachments = [...existing, ...added.filter((file) => !seen.has(file.filename))];
+  const existing = Array.isArray(draft.materialAttachments) ? draft.materialAttachments as CandidateMaterialAttachment[] : [];
+  // Keyed by kind as well as name, matching MaterialUpload: the same file can
+  // legitimately be filed as two kinds.
+  const seen = new Set(existing.map((file) => `${file.kind}:${file.filename}`));
+  draft.materialAttachments = [...existing, ...added.filter((file) => !seen.has(`${file.kind}:${file.filename}`))];
   sessionStorage.setItem(MATERIAL_STORAGE_KEY, JSON.stringify(draft));
 }
 
@@ -249,7 +260,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
 
   const router = useRouter();
   const [revisionRequest, setRevisionRequest] = useState("");
-  const [revisionAttachments, setRevisionAttachments] = useState<CandidateFreeformAttachment[]>([]);
+  const [revisionAttachments, setRevisionAttachments] = useState<CandidateMaterialAttachment[]>([]);
   const carriedMaterialCount = useSyncExternalStore(
     subscribeToNothing,
     readCarriedMaterialCount,
@@ -309,8 +320,11 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
    * rather than being retyped there.
    */
   function startRevision() {
-    if (!revisionRequest.trim()) return;
-    if (revisionAttachments.length > 0) mergeFreeformAttachments(revisionAttachments);
+    // Either half is a request on its own: a sentence about what to change, or
+    // the 경력기술서 that was missing the first time. Requiring the sentence
+    // left the button dead for someone who had just attached a file.
+    if (!revisionRequest.trim() && revisionAttachments.length === 0) return;
+    if (revisionAttachments.length > 0) mergeMaterialAttachments(revisionAttachments);
     carryDraftForward("/analysis/prepare", { writingMode: "POLISH", product: "PRO", revisionRequest: revisionRequest.trim() });
   }
 
@@ -479,28 +493,28 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           <p>지금 결과는 그대로 두고, 요청사항을 반영한 새 첨삭본을 받아 볼 수 있습니다. 문장 몇 개만 바꾸실 거라면 위에서 <b>직접 수정</b>하는 편이 빠릅니다.</p>
         </div>
 
-      {/* One box for both: the instruction and whatever it refers to. A
-            separate uploader underneath asked the applicant to say the same
-            thing twice, and bouncing to the PRO page to attach one file cost
-            them the screen they were reading. This composer already types and
-            takes a drop. */}
+        {/* The same three labelled slots as the PRO input page, not a generic
+            attach button. The kind is not decoration: the prompt names each
+            document, so a resume added here has to arrive as a resume. */}
         <p className={styles.revisionCarried}>
           {carriedMaterialCount === null ? " "
             : carriedMaterialCount > 0
-              ? `앞서 올린 자료 ${carriedMaterialCount}개는 그대로 함께 반영됩니다. 빠진 자료가 있으면 아래에 끌어다 놓으세요.`
-              : "이번 화면에는 함께 넘어온 자료가 없습니다. 이력서·경력기술서가 있으면 아래에 끌어다 놓으세요."}
+              ? `앞서 올린 자료 ${carriedMaterialCount}개는 그대로 함께 반영됩니다. 빠진 자료가 있으면 아래에서 추가하세요.`
+              : "이번 화면에는 함께 넘어온 자료가 없습니다. 이력서·경력기술서가 있으면 아래에서 추가하세요."}
         </p>
+        <MaterialUpload attachments={revisionAttachments} onChange={setRevisionAttachments} />
         <AdditionalInfoInput
           text={revisionRequest}
-          attachments={revisionAttachments}
+          attachments={[]}
           onTextChange={setRevisionRequest}
-          onAttachmentsChange={setRevisionAttachments}
+          onAttachmentsChange={() => {}}
+          allowAttachments={false}
           label="재첨삭 요청사항"
           placeholder={"예) 에이텍 경력은 빼고 직업상담 관련 경력으로만 구성해 주세요.\n첨부한 경력기술서 내용을 반영해 주세요."}
         />
         <div className={styles.revisionFoot}>
           <small>새 분석이므로 PRO 1회 결제가 필요합니다. 지금 결과는 그대로 남아 있습니다.</small>
-          <button type="button" disabled={!revisionRequest.trim()} onClick={startRevision}>
+          <button type="button" disabled={!revisionRequest.trim() && revisionAttachments.length === 0} onClick={startRevision}>
             요청사항 반영해 다시 첨삭받기 <ArrowRight/>
           </button>
         </div>
