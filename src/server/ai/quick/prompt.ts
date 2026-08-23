@@ -10,7 +10,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-3.0";
+export const QUICK_PROMPT_VERSION = "quick-3.1";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -116,7 +116,8 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
 표현을 바꾸거나 순서를 정리하는 것은 분량을 채운 것이 아닙니다. 같은 말을 반복하거나 일반론을 덧붙여 글자 수만 늘리지 마세요.`
       : expandsFromOwnContent(request)
         ? `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문이 목표에 못 미치면 지원자가 이미 쓴 내용을 더 구체적으로 풀어 목표에 가깝게 늘리세요. 무엇을 왜 했는지, 어떻게 판단했는지, 무엇이 어려웠는지, 무엇을 배웠는지를 씁니다.
-함께 제출된 지원자료(이력서·경력기술서·포트폴리오)에서 새 경험이나 새 사실을 가져오지는 마세요. 그것은 '내용 보완' 단계의 일입니다. 원문에 언급된 범위 안에서만 풀어 쓰세요.
+함께 제출된 지원자료(이력서·경력기술서·포트폴리오)는 자소서에 이미 언급된 경험을 정확하고 구체적으로 만드는 데 쓰세요. 원문이 '품질 업무를 했습니다'라고만 적었는데 이력서에 소속과 기간이 있으면 그 사실로 문장을 또렷하게 만들 수 있습니다.
+다만 자소서에 전혀 언급되지 않은 경험을 자료에서 꺼내 문항에 새로 추가하지는 마세요. 없던 소재를 들여오는 것은 '내용 보완' 단계의 일입니다.
 원문에 근거가 없어 더 풀 수 없으면 거기서 멈추세요. 같은 말을 다르게 반복하거나 '많은 것을 배웠습니다', '최선을 다하겠습니다' 같은 일반론으로 글자 수를 채우는 것은 늘린 것이 아니라 망친 것입니다. 그렇게 채우느니 짧게 두고, 무엇을 알려주면 채울 수 있는지 consultingAdvice에 적으세요.
 ${LENGTH_INTEGRITY_RULE}`
         : `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.

@@ -305,7 +305,11 @@ describe("CREATE도 목표 분량까지 쓴다", () => {
     const polish = buildQuickAnalysisInstructions({ ...create, writingMode: "POLISH" });
 
     expect(polish).toContain("지원자가 이미 쓴 내용을 더 구체적으로 풀어");
-    expect(polish).toContain("새 경험이나 새 사실을 가져오지는 마세요");
+    // 자료를 못 열게 하는 것이 아니라 없던 소재를 들여오지 못하게 하는 것이다.
+    // 앞의 자료 활용 지시("얇은 주장을 자료의 사실로 뒷받침하라")와 충돌하면
+    // 모델이 어느 쪽을 따라도 다른 쪽을 어기게 된다.
+    expect(polish).toContain("이미 언급된 경험을 정확하고 구체적으로 만드는 데 쓰세요");
+    expect(polish).toContain("전혀 언급되지 않은 경험을 자료에서 꺼내 문항에 새로 추가하지는 마세요");
   });
 
   it("QUICK CREATE에는 걸지 않는다", () => {
