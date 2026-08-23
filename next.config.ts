@@ -6,6 +6,10 @@ const privatePaths = [
   "auth",
   "begin",
   "entry",
+  // Operator-only screens. They were reachable to a crawler that guessed the
+  // path, and the console lists other people's addresses and letters.
+  "MAIL",
+  "meensoo",
   "onboarding",
   "pro",
   "quick",

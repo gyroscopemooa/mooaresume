@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendManualEmail } from "@/server/notifications/manual-email";
+import { recordMailSends } from "@/server/admin/admin-repository";
 import { MAX_RECIPIENTS, parseRecipientList } from "@/domain/recipient-list";
 
 const inputSchema = z.object({ to: z.string().trim().min(1).max(4_000), subject: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(50_000), replyTo: z.string().trim().email().max(254).optional().or(z.literal("")) });
@@ -25,6 +27,15 @@ export async function POST(request: Request) {
 
   try {
     const result = await sendManualEmail({ ...parsed.data, to: recipients.recipients });
+    // Recorded per recipient so the console can answer "who actually got it"
+    // later. Awaited but never fatal — see recordMailSends.
+    await recordMailSends({
+      batchId: randomUUID(),
+      subject: parsed.data.subject,
+      replyTo: parsed.data.replyTo || null,
+      sent: result.sent,
+      failed: result.failed.map((item) => ({ to: item.to, error: item.reason })),
+    });
     if (result.failed.length > 0) {
       console.error("manual_email_partial", JSON.stringify(result.failed));
       // Naming who did not get it is the point — the operator needs to know

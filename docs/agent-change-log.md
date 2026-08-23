@@ -1119,3 +1119,22 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/server/billing/polar-webhook.ts`, `src/server/billing/polar-webhook.test.ts`(신규 케이스 2건: 100% 할인 통과·할인 없는 0원 거부), `src/components/quick-checkout-return.tsx` on `main`.
 - Validation: `npx vitest run` 410 passed(신규 2건), `npx tsc --noEmit` clean.
 - **남은 일(사용자)**: 이 fix는 애플리케이션 코드라 커밋+재배포가 필요함(Cloudflare 환경변수와 달리 즉시 반영 안 됨). 배포 후 (1) 실패했던 그 주문(`checkout_id: f0492cbc-95e6-406b-92dc-ceb37c7fe127`, `application_case_id: b3239196-4e1d-4648-bcac-0ab9140f0c35`)이 Polar가 웹훅을 재시도해줄지 확인 — 재시도가 없으면 해당 건은 수동 복구(재확인 트리거 또는 직접 entitlement 부여) 필요. (2) 새 100% 할인 결제로 엔드투엔드 재검증.
+
+## 2026-08-23 — Claude: 관리자 콘솔 `/meensoo` 신설 (기존 `/MAIL` 보존)
+
+- Agent/session: Claude. 사용자 지시 — `/meensoo`에 admin 페이지, `/MAIL`을 여기로 옮기되 **삭제하지 말 것**, 마우스 올리면 열리는 좌측 사이드바, 구매자·첨삭 결과·메일 발송처·(추후) 문의 기록 화면, 그 외 판단해서 추가.
+- Status: completed. **마이그레이션 적용은 사용자 영역.**
+- 보존: `/MAIL`은 **손대지 않았습니다.** 로그인 라우트(`/api/mail/login`)와 발송 라우트(`/api/mail/send`)를 그대로 공유하며, `/meensoo/mail`은 같은 발송 경로로 가는 **두 번째 입구**입니다. 비밀번호 하나로 두 화면이 함께 열립니다.
+- 인증: `src/server/admin/admin-session.ts`(신규). `/MAIL`이 이미 발급하는 쿠키(`mooa_mail_admin`, path "/")를 재사용합니다. 비교는 `timingSafeEqual`로 상수 시간에 합니다. 게이트는 **레이아웃 한 곳**에 둬서, 페이지를 새로 추가하면서 게이트를 빠뜨리는 일이 구조적으로 불가능하게 했습니다.
+- 데이터: `src/server/admin/admin-repository.ts`(신규)가 **secret key**로 읽습니다. 이 화면은 계정 경계를 넘는 것이 목적이고 RLS는 정확히 그것을 막기 위해 존재하므로, 운영자 조회만이 정당한 예외입니다. 주소는 `auth.users`에 있어 PostgREST로 조인이 안 되므로 페이지당 `listUsers` 한 번으로 Map을 만들어 붙입니다(현 규모에서 1페이지).
+- 신규 테이블 `supabase/migrations/20260823010000_admin_console.sql`:
+  - `mail_send_log` — **수신자 1명당 1행.** 4명에게 가고 1명에게 실패한 발송을 주소 단위로 답할 수 있어야 하기 때문입니다. 지금까지 발송 기록이 **어디에도 남지 않아** "어디로 보냈나"를 답할 수 없었습니다.
+  - `contact_inquiries` — 문의 폼은 아직 없지만 저장할 곳과 보는 화면을 먼저 만들어 뒀습니다. 빈 화면이 버그로 읽히지 않도록 "폼을 만들면 여기 쌓입니다"라고 적었습니다.
+  - 둘 다 RLS 활성 + **정책 0개** = secret key 외 전원 거부. 남의 주소와 메시지를 담기 때문입니다.
+- 화면: `/meensoo`(대시보드), `/purchases`, `/analyses`, `/analyses/[id]`, `/mail`, `/mail/history`, `/inquiries`, `/waitlist`. 사이드바는 64px 레일 → hover/focus 시 232px로 **CSS만으로** 확장하며, `position: fixed`라 표를 밀어내지 않습니다(커서 아래에서 내용이 움직이면 못 씁니다). 문의 배지는 미답변 건수.
+- 첨삭 결과 상세는 `resultDocumentSchema`로 검증하지 않고 **느슨하게 읽습니다.** 옛 프롬프트 버전이 남긴 기록도 열려야 하며, 검증에 걸려 안 열리는 건이야말로 들여다볼 가치가 있는 건이기 때문입니다. 읽지 못한 부분은 하단 원본 JSON으로 떨어집니다.
+- 색인 차단: `next.config.ts` `privatePaths`에 `meensoo`와 **`MAIL`**을 추가했습니다. `/MAIL`은 그동안 noindex 헤더가 없어 경로를 추측한 크롤러에게 열려 있었습니다(보안 수정, 기존 동작에 헤더만 추가).
+- Files/branch: `supabase/migrations/20260823010000_admin_console.sql`, `src/server/admin/admin-session.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/**`(신규 12파일), `src/app/api/meensoo/logout/route.ts`, `src/app/api/mail/send/route.ts`(기록 추가), `next.config.ts` on `main`.
+- Validation: `npx next build` 클린(meensoo 8개 라우트 전부 dynamic), `npx vitest run` 410 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬 실측 — 비로그인 시 로그인 화면, 로그인 후 7개 라우트 전부 200, 대시보드에 실제 결제 54건·매출 408,700원 렌더 확인.
+- **남은 일(사용자)**: (1) `20260823010000_admin_console.sql`을 Supabase에 적용해야 메일 기록·문의 화면이 실제로 쌓입니다(미적용 상태에서도 빈 화면으로 안전하게 뜹니다). (2) Cloudflare에 `MAIL_ADMIN_SECRET`이 있는지 확인 — 없으면 `/meensoo`는 항상 로그인 실패합니다.
+- **발견(별건)**: `PENDING` 상태로 멈춘 분석이 다수 있습니다. 크론 백스톱(`/api/analysis-runs/advance`)은 `status = 'RUNNING'`만 집어가므로, 결제가 승인됐어도 사용자가 결제-복귀 화면을 떠난 뒤라면 분석이 **영영 시작되지 않습니다.** 19:34 결제 건이 정확히 이 상태입니다(주문은 `결제됨`, 실행은 `대기`).

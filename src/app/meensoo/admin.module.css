@@ -1,0 +1,172 @@
+/* Deliberately unlike the customer site: this console shows other people's
+   letters and addresses, and the operator should never mistake one for the
+   other at a glance. */
+.shell {
+  --admin-bg: #0f1216;
+  --admin-panel: #171b21;
+  --admin-line: #262c35;
+  --admin-text: #e6e9ee;
+  --admin-muted: #8b95a5;
+  --admin-accent: #4ade80;
+  --admin-danger: #f87171;
+  --admin-warn: #fbbf24;
+  --rail: 64px;
+  --rail-open: 232px;
+  min-height: 100vh;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
+}
+
+/* Fixed so expanding on hover overlays the page instead of shoving it
+   sideways — a menu that reflows the table under the cursor is unusable. */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--rail);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 10px;
+  background: var(--admin-panel);
+  border-right: 1px solid var(--admin-line);
+  overflow: hidden;
+  transition: width 160ms ease;
+  z-index: 20;
+}
+
+.sidebar:hover,
+.sidebar:focus-within {
+  width: var(--rail-open);
+  box-shadow: 12px 0 40px rgb(0 0 0 / 0.45);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 16px;
+  color: var(--admin-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand svg { width: 22px; height: 22px; flex: none; color: var(--admin-accent); }
+.brand b { font-size: 14px; letter-spacing: 0.02em; }
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--admin-muted);
+  text-decoration: none;
+  font-size: 13.5px;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.link svg { width: 20px; height: 20px; flex: none; }
+.link:hover { background: #1f242c; color: var(--admin-text); }
+.link[data-active="true"] { background: #1f2b23; color: var(--admin-accent); }
+
+.badge {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--admin-danger);
+  color: #1a0d0d;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.spacer { flex: 1; }
+.railFoot { border-top: 1px solid var(--admin-line); padding-top: 10px; margin-top: 6px; }
+
+/* Labels fade rather than pop: the rail is 64px wide, so an un-faded label
+   would be clipped mid-word for the whole transition. */
+.label { opacity: 0; transition: opacity 120ms ease; }
+.sidebar:hover .label,
+.sidebar:focus-within .label { opacity: 1; }
+
+.main { margin-left: var(--rail); padding: 32px clamp(16px, 3vw, 40px) 80px; }
+
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.head h1 { font-size: 22px; font-weight: 700; margin: 0; }
+.head p { margin: 6px 0 0; color: var(--admin-muted); font-size: 13.5px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.card { background: var(--admin-panel); border: 1px solid var(--admin-line); border-radius: 12px; padding: 16px 18px; }
+.card span { display: block; color: var(--admin-muted); font-size: 12.5px; margin-bottom: 8px; }
+.card strong { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+.card small { display: block; margin-top: 6px; color: var(--admin-muted); font-size: 12px; }
+
+.panel { background: var(--admin-panel); border: 1px solid var(--admin-line); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+.panelHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--admin-line); }
+.panelHead h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.panelHead small { color: var(--admin-muted); font-size: 12px; }
+
+/* Wide tables scroll inside the panel; the page body never scrolls sideways. */
+.scroll { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.table th { text-align: left; padding: 10px 14px; color: var(--admin-muted); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--admin-line); background: #13171d; position: sticky; top: 0; }
+.table td { padding: 11px 14px; border-bottom: 1px solid #1f242c; vertical-align: top; }
+.table tr:last-child td { border-bottom: none; }
+.table tbody tr:hover { background: #1b2027; }
+.table a { color: var(--admin-accent); text-decoration: none; }
+.table a:hover { text-decoration: underline; }
+
+.wrap { white-space: normal; max-width: 460px; }
+.mono { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12px; color: var(--admin-muted); }
+
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 1px solid transparent; }
+.pillOk { background: #16281c; color: var(--admin-accent); border-color: #23482f; }
+.pillBad { background: #2a1717; color: var(--admin-danger); border-color: #4a2525; }
+.pillWarn { background: #2a2312; color: var(--admin-warn); border-color: #4a3c1b; }
+.pillMuted { background: #1f242c; color: var(--admin-muted); border-color: #2c333d; }
+
+.empty { padding: 40px 18px; text-align: center; color: var(--admin-muted); font-size: 13.5px; }
+
+/* Login */
+.login { min-height: 100vh; display: grid; place-items: center; background: var(--admin-bg, #0f1216); padding: 24px; }
+.loginCard { width: min(380px, 100%); background: #171b21; border: 1px solid #262c35; border-radius: 14px; padding: 28px; color: #e6e9ee; }
+.loginCard h1 { margin: 0 0 4px; font-size: 19px; }
+.loginCard p { margin: 0 0 20px; color: #8b95a5; font-size: 13px; }
+.loginCard label { display: block; font-size: 12.5px; color: #8b95a5; margin-bottom: 8px; }
+.loginCard input { width: 100%; margin-top: 6px; padding: 11px 12px; border-radius: 8px; border: 1px solid #2c333d; background: #0f1216; color: #e6e9ee; font-size: 14px; }
+.loginCard input:focus { outline: 2px solid #4ade80; outline-offset: 1px; }
+.loginCard button { width: 100%; margin-top: 14px; padding: 11px; border-radius: 8px; border: none; background: #4ade80; color: #06210f; font-size: 14px; font-weight: 700; cursor: pointer; }
+.loginCard button:disabled { opacity: 0.6; cursor: default; }
+.loginMessage { margin-top: 14px; font-size: 13px; color: #fbbf24; }
+
+/* Mail composer */
+.form { padding: 18px; display: grid; gap: 16px; max-width: 720px; }
+.form label { display: block; font-size: 12.5px; color: var(--admin-muted); }
+.form label small { color: #6b7484; }
+.form input, .form textarea { width: 100%; margin-top: 7px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--admin-line); background: #0f1216; color: var(--admin-text); font-size: 14px; font-family: inherit; resize: vertical; }
+.form input:focus, .form textarea:focus { outline: 2px solid var(--admin-accent); outline-offset: 1px; }
+.form button { justify-self: start; padding: 11px 22px; border-radius: 8px; border: none; background: var(--admin-accent); color: #06210f; font-size: 14px; font-weight: 700; cursor: pointer; }
+.form button:disabled { opacity: 0.6; cursor: default; }
+.formMessage { margin: 0; font-size: 13px; color: var(--admin-warn); }
+
+/* Result viewer */
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; padding: 18px; }
+.meta div span { display: block; color: var(--admin-muted); font-size: 12px; margin-bottom: 4px; }
+.meta div strong { font-size: 13.5px; font-weight: 600; word-break: break-all; }
+.question { padding: 18px; border-bottom: 1px solid #1f242c; }
+.question:last-child { border-bottom: none; }
+.question h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+.question h4 { margin: 16px 0 6px; font-size: 12px; font-weight: 600; color: var(--admin-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.prose { margin: 0; font-size: 13.5px; line-height: 1.75; white-space: pre-wrap; color: #cdd3dc; }
+.raw { margin: 0; padding: 18px; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.6; color: #8b95a5; white-space: pre-wrap; word-break: break-word; max-height: 520px; overflow: auto; }
+.details summary { padding: 12px 18px; cursor: pointer; font-size: 13px; color: var(--admin-muted); border-top: 1px solid var(--admin-line); }
+.details summary:hover { color: var(--admin-text); }
+
+@media (max-width: 720px) {
+  .sidebar { width: var(--rail); }
+  .main { margin-left: var(--rail); padding: 24px 14px 60px; }
+  .wrap { max-width: 260px; }
+}
