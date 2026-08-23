@@ -1,6 +1,6 @@
 # MOOA Resume — 상품 × 작성 단계 동작 대조표
 
-> 작성일: 2026-08-22 · 기준 `QUICK_PROMPT_VERSION = quick-3.0`
+> 작성일: 2026-08-22 · 기준 `QUICK_PROMPT_VERSION = quick-3.1`
 > 출처: 코드에서 직접 확인. 마케팅 문구가 아니라 **실제 분기**를 옮긴 것이다.
 > 관련 코드: `src/server/ai/quick/questions.ts`, `prompt.ts`, `validator.ts`,
 > `src/server/analysis/supabase-quick-analysis-run-repository.ts`
