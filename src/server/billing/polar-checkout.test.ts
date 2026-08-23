@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCheckoutQuote, createQuickCheckoutQuote, toCheckoutMetadata, toQuickCheckoutMetadata } from "@/domain/usage-entitlement";
-import { PolarSdkCheckoutGateway } from "./polar-checkout";
+import { getPolarCheckoutConfiguration, PolarSdkCheckoutGateway } from "./polar-checkout";
 
 describe("Polar SDK checkout gateway", () => {
   it("creates a KRW inclusive checkout with server-owned price and metadata", async () => {
@@ -95,5 +95,37 @@ describe("Polar SDK checkout gateway", () => {
       },
       metadata: expect.objectContaining({ tier: "PRO" }),
     }), { timeoutMs: 10_000 });
+  });
+});
+
+describe("POLAR_SERVER 해석", () => {
+  const original = process.env.POLAR_SERVER;
+  afterEach(() => { process.env.POLAR_SERVER = original; });
+
+  function serverFor(value: string | undefined) {
+    if (value === undefined) delete process.env.POLAR_SERVER;
+    else process.env.POLAR_SERVER = value;
+    process.env.POLAR_ACCESS_TOKEN = "polar_test";
+    process.env.POLAR_QUICK_PRODUCT_ID = "quick";
+    process.env.POLAR_PRO_PRODUCT_ID = "pro";
+    return getPolarCheckoutConfiguration().server;
+  }
+
+  it("대소문자와 공백이 달라도 production으로 읽는다", () => {
+    // 정확히 "production"만 인정하던 비교 때문에 " Production "이 조용히
+    // 샌드박스로 떨어졌고, 프로덕션 상품 ID가 그 환경에 없어 결제 페이지
+    // 생성이 실패했다. 증상은 "결제 페이지를 만들지 못했습니다" 한 줄뿐이다.
+    for (const value of ["production", "Production", "PRODUCTION", " production "]) {
+      expect(serverFor(value)).toBe("production");
+    }
+  });
+
+  it("설정이 없으면 샌드박스로 둔다", () => {
+    expect(serverFor(undefined)).toBe("sandbox");
+  });
+
+  it("알 수 없는 값이면 조용히 넘어가지 않고 거절한다", () => {
+    // 오타를 샌드박스로 해석하면 실수가 결제 실패로만 드러난다.
+    expect(() => serverFor("prod")).toThrow(/production 또는 sandbox/);
   });
 });

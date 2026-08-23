@@ -93,7 +93,11 @@ export function getPolarCheckoutConfiguration() {
   const accessToken = process.env.POLAR_ACCESS_TOKEN;
   const quickProductId = process.env.POLAR_QUICK_PRODUCT_ID;
   const proProductId = process.env.POLAR_PRO_PRODUCT_ID;
-  const server = process.env.POLAR_SERVER === "production" ? "production" : "sandbox";
+  const rawServer = process.env.POLAR_SERVER?.trim().toLowerCase();
+  if (rawServer && rawServer !== "production" && rawServer !== "sandbox") {
+    throw new Error(`POLAR_SERVER는 production 또는 sandbox여야 합니다. 현재 값: "${process.env.POLAR_SERVER}"`);
+  }
+  const server = rawServer === "production" ? "production" : "sandbox";
   const defaultPresentmentCurrency = (process.env.POLAR_DEFAULT_PRESENTMENT_CURRENCY ?? "krw").trim().toLowerCase();
   const defaultPriceRaw = process.env.POLAR_DEFAULT_PRESENTMENT_PRICE_AMOUNT?.trim();
   const defaultPresentmentPriceAmount = defaultPriceRaw ? Number(defaultPriceRaw) : undefined;
@@ -146,7 +150,9 @@ export function describePolarConfigShape() {
   };
 
   return {
-    server: process.env.POLAR_SERVER ?? "(unset → sandbox)",
+    server: process.env.POLAR_SERVER === undefined
+      ? "(unset → sandbox)"
+      : `raw=${JSON.stringify(process.env.POLAR_SERVER)} → ${process.env.POLAR_SERVER.trim().toLowerCase() === "production" ? "production" : "sandbox"}`,
     accessToken: describe(process.env.POLAR_ACCESS_TOKEN, "polar_"),
     quickProductId: describe(process.env.POLAR_QUICK_PRODUCT_ID),
     proProductId: describe(process.env.POLAR_PRO_PRODUCT_ID),
