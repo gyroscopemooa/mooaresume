@@ -1200,3 +1200,21 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 참고: 압축파일(zip)은 지원하지 않습니다(`accept=".pdf,.docx,.txt,.md"`). 여러 파일은 한 번에 선택하거나 끌어다 놓으면 됩니다(최대 10개).
 - Files/branch: `src/components/result-workspace-complete.tsx`, `src/components/additional-info-input.tsx`(복구), `src/components/result-workspace-complete.test.tsx` on `main`.
 - Validation: `npx vitest run` 417 passed. 신규 1건이 **핵심을 잠급니다** — 이력서 칸에 넣은 파일은 `materialAttachments`에 `kind: "RESUME"`로, 기타 칸에 넣은 파일은 `freeformAttachments`로 저장되는지 실제로 파일을 올려 확인합니다(파서는 목으로 대체). 기존 구조 테스트도 파일 입력 4개(슬롯 3 + 기타 1)로 갱신. `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린.
+
+## 2026-08-23 — Claude: 압축파일(ZIP) 지원 — 기타 자료 칸 한정
+
+- Agent/session: Claude. 사용자 질문 — "zip도 되나?"
+- Status: completed.
+- **`jszip`을 직접 의존성으로 추가했습니다.** 이미 `node_modules`에 있었지만 `mammoth`의 전이 의존성이라(DOCX가 zip입니다) mammoth가 바꾸면 조용히 사라집니다. 다운로드는 새로 없고 선언만 명시적으로 바뀝니다. 무거운 파서(mammoth·pdfjs·jszip)는 전부 함수 안에서 `await import`이라 zip을 올리기 전까지 번들에 실리지 않습니다.
+- **기타 자료 칸에서만 받습니다.** 이력서 슬롯에 zip을 넣으면 안에 든 경력기술서까지 전부 `RESUME`로 표시돼 종류가 어긋납니다. zip은 애초에 "종류를 하나로 못 고르는 묶음"이므로 기타 칸이 제자리입니다. 종류별 슬롯 3개의 `accept`는 그대로 뒀습니다.
+- **한 파일로 합치지 않고 안에 든 문서마다 첨부 하나씩으로 풉니다.** 합쳐 버리면 나중에 한 개만 빼는 것이 불가능해집니다. 폴더 안에 있어도 파일 이름만 남깁니다.
+- 처리 규칙:
+  - 읽을 수 있는 것은 PDF·DOCX·TXT·MD. **읽지 못한 파일은 이름을 화면에 남깁니다** — zip이 조용히 경력기술서를 잃어버리면 지원자는 결제 전에 알아챌 방법이 없습니다.
+  - `__MACOSX/`, `.`으로 시작하는 파일, `Thumbs.db`는 **빠졌다고 하지 않습니다.** 압축 프로그램이 넣은 것이지 지원자가 넣은 것이 아니고, 목록에 섞이면 진짜 빠진 파일이 묻힙니다.
+  - 최대 20개까지만 엽니다(`MAX_ZIP_ENTRIES`). 파일 하나하나가 지원자가 돈을 내는 프롬프트 입력이 되므로, 통째로 올린 취업 폴더에 요금을 쓰지 않기 위한 거절입니다. 넘친 것도 이름을 밝힙니다.
+  - 암호가 걸렸거나 깨진 zip은 "암호가 걸려 있다면 압축을 풀어서 올려 주세요"로 안내합니다.
+  - 안에 읽을 문서가 하나도 없으면 무엇을 읽을 수 있는지 말하고 거절합니다.
+- **첨부 10개 상한을 추출 이후로 옮겼습니다.** 기존 검사는 zip을 1개로 세서, 20개가 든 zip 하나가 상한을 그냥 통과했습니다.
+- Files/branch: `src/lib/local-document.ts`, `src/lib/local-document.test.ts`(신규), `src/components/additional-info-input.tsx`, `package.json`, `vitest.config.ts` on `main`.
+- Validation: `npx vitest run` 425 passed(신규 8건 — 여러 파일 분해·폴더 경로·읽지 못한 파일 명시·찌꺼기 무시·개수 상한·빈 zip·비zip 통과·깨진 zip). `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린.
+- 부수 수정: 다른 세션의 백그라운드 에이전트가 `.claude/worktrees/`에 작업 트리를 만들면 **vitest가 전체 테스트를 두 번 돌리고 그 세션의 진행 중 실패를 이 세션 것으로 보고**했습니다(129 파일·842건으로 뜀). `vitest.config.ts` exclude에 추가했습니다.

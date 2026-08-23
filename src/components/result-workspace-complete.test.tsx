@@ -11,11 +11,18 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 // 첨부 경로가 종류를 지키는지 보려면 파일에서 글자를 뽑는 단계는 건너뛰어야
 // 합니다. jsdom에는 PDF·DOCX 파서가 없습니다.
-vi.mock("@/lib/local-document", () => ({
-  extractLocalDocument: (file: File) => Promise.resolve({
+vi.mock("@/lib/local-document", () => {
+  const extractLocalDocument = (file: File) => Promise.resolve({
     filename: file.name, extension: "pdf", sizeBytes: 1_024, text: "내용",
-  }),
-}));
+  });
+  return {
+    extractLocalDocument,
+    extractLocalDocuments: async (file: File) => ({ documents: [await extractLocalDocument(file)], skipped: [] }),
+    ARCHIVE_DOCUMENT_ACCEPT: ".pdf,.docx,.txt,.md,.zip",
+    LOCAL_DOCUMENT_ACCEPT: ".pdf,.docx,.txt,.md",
+    MAX_ZIP_ENTRIES: 20,
+  };
+});
 
 afterEach(cleanup);
 
