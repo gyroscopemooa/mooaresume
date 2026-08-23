@@ -51,35 +51,31 @@ const roadmapFeatures = [
 ];
 
 const faqs = [
-  { q: "AI 자소서 첨삭은 어떻게 진행되나요?", a: "채용공고와 자소서를 함께 분석해 문항 적합도, 구체성, 경험 중복 등을 점검하고 고칠 이유와 함께 개선 방향을 제시하는 방식으로 준비하고 있습니다. 정식 출시 전까지 세부 기준을 다듬는 중입니다." },
-  { q: "채용공고도 함께 분석하나요?", a: "네. 무아레쥬메는 자소서 문장만 보지 않고 채용공고의 요구역량과 함께 분석하는 것을 핵심 방향으로 준비하고 있습니다." },
-  { q: "작성하지 않은 자소서도 도움받을 수 있나요?", a: "아직 아무것도 작성하지 않은 상태부터 경험을 정리하고 초안을 만드는 흐름도 함께 준비하고 있습니다. 출시 시 상태에 맞는 방식으로 안내해드릴 예정입니다." },
+  { q: "AI 자소서 첨삭은 어떻게 진행되나요?", a: "채용공고와 자소서를 함께 분석해 문항 적합도, 구체성, 경험 중복 등을 점검하고, 고칠 이유와 함께 최종 첨삭본을 드립니다." },
+  { q: "채용공고도 함께 분석하나요?", a: "네. 무아레쥬메는 자소서 문장만 보지 않고 채용공고의 요구역량과 함께 분석합니다." },
+  { q: "작성하지 않은 자소서도 도움받을 수 있나요?", a: "네. 아무것도 쓰지 않은 상태라면 경험을 하나씩 여쭤보며 초안까지 만들어 드립니다. 어디까지 쓰셨는지에 맞춰 진행 방식이 달라집니다." },
   { q: "HWP나 PDF 파일도 사용할 수 있나요?", a: "현재 PDF·DOCX·TXT·MD 형식은 지원하며, HWP는 향후 지원을 준비하고 있습니다." },
-  { q: "일반 ChatGPT와 무엇이 다른가요?", a: "범용 대화형 AI와 달리 채용공고 요구역량, 직무 적합도, 문항별 근거처럼 자소서 첨삭에 필요한 항목을 기준으로 분석하는 전용 엔진을 만들고 있습니다." },
-  { q: "면접 준비도 할 수 있나요?", a: "제출한 지원서를 기준으로 한 예상 면접 질문과 모의면접 기능을 준비하고 있습니다. 출시 시점에 순차적으로 제공될 예정입니다." },
-  { q: "언제 정식 출시되나요?", a: "현재 정식 AI 진단 기능을 준비하고 있습니다. 아래에서 출시 알림을 신청하시면 정식 오픈 소식을 가장 먼저 알려드립니다." },
+  { q: "일반 ChatGPT와 무엇이 다른가요?", a: "범용 대화형 AI와 달리 채용공고 요구역량, 직무 적합도, 문항별 근거처럼 자소서 첨삭에 필요한 항목을 기준으로 분석하는 전용 엔진입니다." },
+  { q: "면접 준비도 할 수 있나요?", a: "PRO에서는 제출한 지원서를 기준으로 예상 면접 질문과 답변 준비 사항, 면접에서 걸릴 수 있는 지점을 함께 드립니다. 대화형 모의면접은 준비 중입니다." },
+  { q: "지금 바로 쓸 수 있나요?", a: "네. 자기소개서를 붙여넣고 바로 분석을 시작할 수 있습니다. 결제 전까지는 AI를 호출하지 않으므로 입력만 해보고 그만두셔도 비용이 들지 않습니다." },
 ];
 
 export const metadata: Metadata = {
-  title: "AI 자소서 첨삭 · 무아레쥬메 (출시 예정)",
-  description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진, 무아레쥬메가 출시를 준비하고 있습니다. 직무 적합도·문항 적합도·경험 중복까지 데이터 기반으로 진단합니다.",
-  alternates: { canonical: "/comingsoon" },
-  // Kept out of search on purpose. It is the pre-launch copy of the same page
-  // that now lives at /landing, so indexing both would put two near-identical
-  // pages in front of the same query and split them against each other.
-  robots: { index: false, follow: true },
+  title: "AI 자소서 첨삭 · 무아레쥬메",
+  description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진. 직무 적합도·문항 적합도·경험 중복까지 데이터 기반으로 진단합니다.",
+  alternates: { canonical: "/landing" },
   openGraph: {
-    url: "/comingsoon",
-    title: "AI 자소서 첨삭 · 무아레쥬메 (출시 예정)",
-    description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진. 출시 알림을 신청하세요.",
+    url: "/landing",
+    title: "AI 자소서 첨삭 · 무아레쥬메",
+    description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진.",
   },
   twitter: {
-    title: "AI 자소서 첨삭 · 무아레쥬메 (출시 예정)",
-    description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진. 출시 알림을 신청하세요.",
+    title: "AI 자소서 첨삭 · 무아레쥬메",
+    description: "채용공고와 자소서를 함께 분석하는 자소서 전용 AI 분석 엔진.",
   },
 };
 
-export default async function ComingSoonArchive() {
+export default async function Home() {
   const siteUrl = getSiteUrl();
   const waitlistCount = await getWaitlistCount();
   const structuredData = {
@@ -111,7 +107,7 @@ export default async function ComingSoonArchive() {
           <Link href="#process">분석 과정</Link>
           <Link href="#pricing">요금</Link>
           <Link href="#faq">FAQ</Link>
-          <Link href="#waitlist" className="button button-small">출시 알림 받기</Link>
+          <Link href="/onboarding" className="button button-small">첨삭 시작하기</Link>
         </nav>
       </header>
 
@@ -119,12 +115,11 @@ export default async function ComingSoonArchive() {
         <div className={styles.heroTop}>
           <span className="eyebrow">자소서 전용 AI 분석 엔진</span>
           {waitlistCount !== null && waitlistCount > 0 && (
-            <span className={styles.counterBadge}><Users /> <b>{waitlistCount.toLocaleString()}명</b>이 출시를 기다리고 있어요</span>
+            <span className={styles.counterBadge}><Users /> <b>{waitlistCount.toLocaleString()}명</b>이 소식을 받아보고 있어요</span>
           )}
         </div>
-        <div className={styles.comingSoonMark}>COMING SOON</div>
         <h1 className={styles.subHeadline}>자소서, 감으로 고치지 마세요.<br /><em>지원하는 직무 기준</em>으로 분석하세요.</h1>
-        <ComingSoonHeroInput href="#waitlist" />
+        <ComingSoonHeroInput />
       </section>
 
       <section className="proof container" aria-label="분석 결과 예시">
@@ -146,7 +141,7 @@ export default async function ComingSoonArchive() {
 
       <section className="section container" id="features">
         <div className="section-label">자소서 전용 분석 엔진</div>
-        <h2>일반 AI 챗봇이 아니라,<br />자소서 전용 분석 엔진을 만들고 있습니다.</h2>
+        <h2>일반 AI 챗봇이 아니라,<br />자소서 전용 분석 엔진입니다.</h2>
         <div className="feature-grid">
           {engineFeatures.map(({ icon: Icon, title, body }) => (
             <article key={title}><div className="icon-box"><Icon /></div><h3>{title}</h3><p>{body}</p></article>
@@ -167,8 +162,8 @@ export default async function ComingSoonArchive() {
       </section>
 
       <section className="section container">
-        <div className="section-label">출시 예정 기능</div>
-        <h2>정밀 분석부터 면접 준비까지,<br />단계적으로 출시할 예정입니다.</h2>
+        <div className="section-label">제공 기능</div>
+        <h2>정밀 분석부터 면접 준비까지,<br />한 번에 이어집니다.</h2>
         <div className={styles.roadmapGrid}>
           {roadmapFeatures.map((feature) => (
             <div key={feature} className={styles.roadmapItem}><Check /><span>{feature}</span></div>
@@ -178,7 +173,7 @@ export default async function ComingSoonArchive() {
 
       <section className="section container" id="pricing">
         <div className="section-label">가격 미리보기</div>
-        <h2>지금 필요한 범위만 선택할 수 있도록<br />준비하고 있습니다.</h2>
+        <h2>지금 필요한 범위만<br />선택하실 수 있습니다.</h2>
         <div className={styles.pricingGrid}>
           {comingSoonPlans.map((plan) => (
             <article key={plan.id} className={styles.pricingCard}>
@@ -186,16 +181,16 @@ export default async function ComingSoonArchive() {
               <strong>{plan.price}</strong>
               <h3>{plan.title}</h3>
               <p>{plan.description}</p>
-              <Link href="#waitlist">출시 알림 받기 <ArrowRight /></Link>
+              <Link href="/onboarding">시작하기 <ArrowRight /></Link>
             </article>
           ))}
         </div>
-        <p className={styles.pricingNote}>정식 출시 예정 가격이며 출시 전까지 변경될 수 있습니다.</p>
+        <p className={styles.pricingNote}>기업 지원서 1건 기준 가격입니다.</p>
       </section>
 
       <section className="section container" id="faq">
         <div className="section-label">자주 묻는 질문</div>
-        <h2>출시 전, 미리 궁금하실 내용을<br />정리했습니다.</h2>
+        <h2>자주 묻는 내용을<br />정리했습니다.</h2>
         <div className={styles.faqList}>
           {faqs.map(({ q, a }) => (
             <details key={q} className={styles.faqItem}>
@@ -208,10 +203,10 @@ export default async function ComingSoonArchive() {
 
       <section className={styles.waitlistSection} id="waitlist">
         <div className="container">
-          <div className="section-label">출시 알림 신청</div>
-          <h2>정식 출시 소식을,<br />가장 먼저 알려드릴게요.</h2>
-          <p>이메일을 남겨주시면 정식 오픈과 함께 가장 먼저 안내해드립니다. 스팸 없이 출시 소식만 보내드려요.</p>
-          <WaitlistForm />
+          <div className="section-label">업데이트 소식</div>
+          <h2>새로 추가되는 기능을,<br />가장 먼저 알려드릴게요.</h2>
+          <p>이메일을 남겨주시면 새 기능과 개선 소식을 보내드립니다. 스팸 없이 제품 소식만 보내드려요.</p>
+          <WaitlistForm submitLabel="소식 받아보기" />
         </div>
       </section>
 

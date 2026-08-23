@@ -1045,3 +1045,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/page.tsx`, `src/app/comingsoon/*`, `src/app/*.module.css`(5개 이동), `src/components/coming-soon-hero-input.tsx`, `src/app/sitemap.ts`, `next.config.ts`, `src/middleware.ts`(삭제) on `main`.
 - Validation: `npx next build` 클린(39 페이지 생성, `/dev-home` 사라지고 `/comingsoon` 생성 확인), `npx vitest run` 393 passed, `npx tsc --noEmit` clean, ESLint 0건. 로컬 브라우저 실측 — `/`는 제품 홈에 `robots: index, follow`, `/comingsoon`은 canonical `/comingsoon`.
 - **남은 일(사용자)**: `www.mooaresume.com` → `mooaresume.com` 301 리다이렉트, `dev.mooaresume.com` DNS 삭제.
+
+## 2026-08-22 — Claude: 랜딩 두 버전 보존 — `/landing`(정리본)과 `/comingsoon`(출시 전 원본)
+
+- Agent/session: Claude. 사용자 지시 — 커밍순 문구를 지운 버전과 남아 있는 버전을 **둘 다** 유지.
+- Status: completed.
+- `/landing` — 커밍순 문구를 걷어낸 현재 버전. canonical `/landing`, **색인 대상**, 히어로 버튼은 `/onboarding`(입력 내용이 그대로 이어짐), 이메일 폼 제출 버튼은 "소식 받아보기".
+- `/comingsoon` — 출시 전 원본을 `git show e26b0a5:src/app/page.tsx`로 복원했습니다. COMING SOON 배지, "출시 알림 받기", 미래형 FAQ가 그대로 있고 히어로 버튼도 원래대로 `#waitlist`입니다.
+- **중복 콘텐츠 처리**: 두 페이지는 문구만 다른 거의 같은 페이지입니다. 둘 다 색인되면 같은 검색어에 서로를 밀어내므로 `/comingsoon`에 `robots: { index: false, follow: true }`를 넣고 사이트맵에서도 뺐습니다. 링크는 따라가되 검색 결과에는 하나만 나옵니다.
+- 공유 부품에 선택지를 열어 분기했습니다(복제하지 않음):
+  - `ComingSoonHeroInput`에 `href` prop 추가(기본 `/onboarding`). 보관본만 `#waitlist`를 넘깁니다. 버튼 아래 안내 문구도 목적지에 따라 갈립니다.
+  - `WaitlistForm`에 `submitLabel` prop 추가(기본 "출시 알림 받기"). 정리본만 "소식 받아보기"를 넘겨, 보관본은 손대지 않고도 원래 문구를 유지합니다.
+  - `coming-soon.module.css`는 `src/app/` 루트로 옮겨 두 페이지가 공유합니다.
+- Files/branch: `src/app/landing/page.tsx`, `src/app/comingsoon/page.tsx`(신규·복원), `src/app/coming-soon.module.css`(이동), `src/components/coming-soon-hero-input.tsx`, `waitlist-form.tsx`, `src/app/sitemap.ts` on `main`.
+- Validation: `npx next build` 클린(`/`, `/landing`, `/comingsoon` 3개 생성), `npx vitest run` 393 passed, `npx tsc --noEmit` clean, ESLint 0건. 브라우저 실측 — `/landing`은 색인 가능·출시 문구 0·히어로 `/onboarding`, `/comingsoon`은 noindex·COMING SOON 배지 있음·히어로 `#waitlist`.

@@ -15,7 +15,13 @@ type AttachedFile = {
   sizeBytes: number;
 };
 
-export function ComingSoonHeroInput() {
+/**
+ * @param href where the button goes. Defaults to onboarding, which is the live
+ * behaviour — the draft this saves is exactly what onboarding reads back, so
+ * nothing is retyped. The archived pre-launch page at /comingsoon passes the
+ * waitlist anchor instead, keeping that snapshot behaving as it did.
+ */
+export function ComingSoonHeroInput({ href = "/onboarding" }: { href?: string } = {}) {
   const [draft, setDraft] = useState("");
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null);
   const [busy, setBusy] = useState(false);
@@ -93,11 +99,11 @@ export function ComingSoonHeroInput() {
         </div>
       </div>
       {error && <p className={styles.error}>{error}</p>}
-      <Link href="/onboarding" className={styles.primary} onClick={carryDraftIntoOnboarding}>
+      <Link href={href} className={styles.primary} onClick={carryDraftIntoOnboarding}>
         무료 진단 시작하기 <ArrowRight />
       </Link>
       <div className={styles.sub}>
-        <span><LockKeyhole /> 결제 전까지 AI를 호출하지 않습니다 · 붙여넣은 내용은 그대로 이어집니다</span>
+        <span><LockKeyhole /> {href === "/onboarding" ? "결제 전까지 AI를 호출하지 않습니다 · 붙여넣은 내용은 그대로 이어집니다" : "현재 정식 AI 진단 기능을 준비하고 있습니다 · 출시 알림을 받아보세요"}</span>
       </div>
     </div>
   );

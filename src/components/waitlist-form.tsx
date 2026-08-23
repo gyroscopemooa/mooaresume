@@ -6,7 +6,7 @@ import styles from "./waitlist-form.module.css";
 
 type Status = "idle" | "submitting" | "done" | "error";
 
-export function WaitlistForm() {
+export function WaitlistForm({ submitLabel = "출시 알림 받기" }: { submitLabel?: string } = {}) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
@@ -58,7 +58,7 @@ export function WaitlistForm() {
         />
       </label>
       <button type="submit" disabled={status === "submitting"}>
-        {status === "submitting" ? "신청 중..." : "출시 알림 받기"} <ArrowRight />
+        {status === "submitting" ? "신청 중..." : submitLabel} <ArrowRight />
       </button>
       {error && <p className={styles.error}>{error}</p>}
     </form>
