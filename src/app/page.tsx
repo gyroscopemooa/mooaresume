@@ -71,7 +71,23 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
-        <nav aria-label="주요 메뉴"><Link href="/guide">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
+        <nav aria-label="주요 메뉴">
+          {/* Hover and focus both open it, so it works without a mouse. No
+              JavaScript: a menu that needs a hydrated bundle to reveal two
+              links is a menu that is missing for the first second of every
+              visit. */}
+          <div className="nav-menu">
+            <Link href="/guide">이용 방법</Link>
+            <div className="nav-drop">
+              <Link href="/guide"><b>이용 방법 · 자주 묻는 질문</b><small>순서, 요금, 자주 막히는 것</small></Link>
+              <Link href="/new"><b>팁과 노하우</b><small>넣는 법과 상담에서 하는 조언</small></Link>
+            </div>
+          </div>
+          {/* Absolute so it still lands on the pricing table when the header is
+              on a page that has none. */}
+          <Link href="/#plans">요금</Link>
+          <Link href="/analyze" className="button button-small">무료로 진단하기</Link>
+        </nav>
       </header>
 
       <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>

@@ -1983,3 +1983,32 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/refer/page.tsx`·`refer.module.css`(신규), `src/components/referral-panel.tsx`, `src/app/page.tsx` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린(`/refer` 정적 생성). dev 서버에서 로그아웃 상태의 로그인 안내와 4단계 안내 렌더, 콘솔 오류 없음 확인.
 - Rollback/recovery reference: `src/app/refer/` 폴더와 하단 링크 한 줄입니다. 커밋 이전 상태는 `3262c1d`.
+
+## 2026-08-24 — Claude: 헤더 드롭다운, 요금 앵커, 추천코드 입력칸 정리
+
+- Agent/session: Claude. 사용자 지적: `/new`를 헤더에 어떻게 넣을지 / 요금 링크 / 추천코드 입력칸 UI가 작고 흩어져 있음.
+- Status: completed. **마이그레이션 없음.**
+
+### 헤더 · 이용 방법 드롭다운
+
+- 두 안내 페이지(`/guide`, `/new`)가 성격이 달라 한 링크로는 담기지 않았습니다. `이용 방법`에 마우스를 올리면 둘이 나옵니다:
+  - **이용 방법 · 자주 묻는 질문** → 순서, 요금, 자주 막히는 것
+  - **팁과 노하우** → 넣는 법과 상담에서 하는 조언
+- **JavaScript를 쓰지 않았습니다.** 링크 두 개를 드러내려고 번들이 붙기를 기다리는 메뉴는 **매 방문의 첫 1초 동안 없는 메뉴**입니다. `:hover`와 `:focus-within` 둘 다 열리므로 키보드로도 됩니다.
+- 트리거와 패널 사이 간격에서 마우스가 빠지지 않게 **투명한 다리**를 뒀습니다(`:before`). 좁은 화면에서는 드롭다운을 숨기고 링크 하나로 둡니다.
+- 트리거 자체도 `/guide`로 이동합니다 — 드롭다운을 못 여는 환경에서도 갈 곳이 있어야 합니다.
+
+### 요금 링크
+
+- `#plans`(현재 페이지 기준)에서 **`/#plans`**로 바꿨습니다. 헤더가 요금표 없는 페이지에 있을 때도 요금표에 도착합니다.
+- 하단 `이용방법 · 자주 묻는 질문`은 **원래부터 `/guide`**였고 그대로 뒀습니다.
+
+### 추천코드 입력칸
+
+- 라벨과 얇은 입력칸과 버튼이 **각자 떨어져** 있었습니다. 세 개가 우연히 근처에 놓인 것처럼 보였습니다.
+- **테두리 있는 카드 하나**로 묶고, 입력칸과 버튼을 **같은 줄·같은 높이(46px)**로 맞췄습니다. 하나의 컨트롤로 읽힙니다.
+- 코드가 실제로 보이게 글자를 키웠고(15px, 자간 넓힘), 적용되면 카드 전체가 초록으로 바뀝니다. **Enter로도 적용**됩니다 — 코드를 붙여넣고 바로 치는 것이 자연스럽습니다.
+- 좁은 화면에서는 버튼이 아래로 내려가 전체 너비를 씁니다.
+- Files/branch: `src/app/page.tsx`, `src/app/globals.css`, `src/components/application-case-handoff.tsx`, `src/components/application-case-handoff.module.css` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 드롭다운이 기본 `hidden`이고 트리거에 포커스하면 `visible`이 되는 것, 헤더/하단 링크 목적지, 뷰포트 안에 들어오는 것 확인.
+- Rollback/recovery reference: 헤더의 `.nav-menu` 블록과 `globals.css`의 `/* Header dropdown */` 규칙, 추천 카드 CSS입니다. 커밋 이전 상태는 `63bce2f`.

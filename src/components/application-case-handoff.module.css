@@ -2,16 +2,24 @@
 
 .login button:not(:disabled){background:#176b4a}.login button:disabled{background:#cbd4cf}.oauthButton{border:1px solid #d6e0da!important;background:#fff!important;color:#26352d!important}.oauthButton:hover{background:#f5f8f6!important}.oauthButton svg{width:14px}.divider{display:flex;align-items:center;gap:8px;color:#89958e;font-size:8px}.divider:before,.divider:after{content:"";height:1px;flex:1;background:#e5ebe7}.divider span{white-space:nowrap}
 .creditNotice{display:flex;align-items:flex-start;gap:9px;margin:0 0 12px;padding:14px 16px;border:1px solid #bcdccb;border-radius:11px;background:#f4faf6;color:#3f6b55;font-size:13px;line-height:1.75}.creditNotice svg{width:17px;flex:none;color:#176b4a;margin-top:1px}.creditNotice b{color:#0d5237}
-.referral{margin:0 0 14px}
-.referral label>span{display:flex;align-items:center;gap:7px;margin-bottom:8px;color:#41514a;font-size:13px;font-weight:700}
-.referral label>span svg{width:15px;color:#176b4a}
-.referral label>span small{color:#8b968f;font-size:11px;font-weight:600}
-.referral label>div{display:flex;gap:8px}
-.referral input{flex:1;min-width:0;padding:12px 13px;border:1px solid #dbe3df;border-radius:10px;font-size:14px;font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;letter-spacing:.06em;text-transform:uppercase;outline:0}
-.referral input:focus{border-color:#176b4a;box-shadow:0 0 0 3px rgba(23,107,74,.08)}
-.referral input:disabled{background:#f4f7f5;color:#7d8a84}
-.referral button{padding:12px 18px;border:1px solid #dbe3df;border-radius:10px;background:#fff;color:#41514a;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}
-.referral button:hover:not(:disabled){border-color:#176b4a;color:#176b4a}
-.referral button:disabled{opacity:.6;cursor:default}
-.referral small{display:block;margin-top:8px;font-size:12px;line-height:1.7;color:#a14f4f}
-.referral small[data-ok="true"]{color:#176b4a}
+/* One bordered card instead of a loose label, a thin input and a button
+   drifting apart. The field and its button share a row and the same height, so
+   they read as one control rather than three things that happened to land near
+   each other. */
+.referral{margin:0 0 14px;padding:16px 18px;border:1px solid #dbe3df;border-radius:13px;background:#fafcfb;transition:border-color 140ms ease,background 140ms ease}
+.referral[data-applied="true"]{border-color:#bcdccb;background:#f4faf6}
+.referralHead{display:flex;align-items:flex-start;gap:9px;margin-bottom:11px}
+.referralHead svg{width:16px;flex:none;color:#176b4a;margin-top:2px}
+.referralHead span{font-size:13.5px;font-weight:700;color:#2c4438;line-height:1.5}
+.referralHead small{display:block;margin-top:3px;color:#8b968f;font-size:11.5px;font-weight:500;line-height:1.6}
+.referralRow{display:flex;gap:8px}
+.referralRow input{flex:1;min-width:0;height:46px;padding:0 14px;border:1px solid #dbe3df;border-radius:10px;background:#fff;font-size:15px;font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-weight:700;letter-spacing:.1em;text-transform:uppercase;outline:0}
+.referralRow input::placeholder{color:#b9c4be;font-weight:500;letter-spacing:.06em}
+.referralRow input:focus{border-color:#176b4a;box-shadow:0 0 0 3px rgba(23,107,74,.09)}
+.referralRow input:disabled{background:#f1f5f3;color:#6f7d76;border-color:#e2e9e5}
+.referralRow button{height:46px;padding:0 20px;border:0;border-radius:10px;background:#176b4a;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;white-space:nowrap;transition:background 140ms ease}
+.referralRow button:hover:not(:disabled){background:#0d5237}
+.referralRow button:disabled{background:#cfdcd6;color:#f7faf8;cursor:default}
+.referralMessage{margin:10px 0 0;font-size:12.5px;line-height:1.7;color:#a14f4f}
+.referralMessage[data-ok="true"]{color:#176b4a}
+@media(max-width:520px){.referralRow{flex-direction:column}.referralRow button{width:100%}}

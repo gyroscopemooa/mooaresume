@@ -313,23 +313,26 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
           referrer is paid from a real order, so showing the field here would
           collect a code that can never convert. */}
       {!availableCredit && (
-        <div className={styles.referral}>
-          <label>
-            <span><Users/> 추천코드 <small>선택</small></span>
-            <div>
-              <input
-                value={referralCode}
-                onChange={(event) => setReferralCode(event.target.value)}
-                placeholder="예: MOOA7KQ2XZ"
-                disabled={referralBusy || referralApplied}
-                maxLength={20}
-              />
-              <button type="button" onClick={() => void applyReferral()} disabled={referralBusy || referralApplied}>
-                {referralApplied ? "적용됨" : referralBusy ? "확인 중..." : "적용"}
-              </button>
-            </div>
-          </label>
-          {referralMessage && <small data-ok={referralApplied}>{referralMessage}</small>}
+        <div className={styles.referral} data-applied={referralApplied}>
+          <div className={styles.referralHead}>
+            <Users/>
+            <span>추천코드가 있으신가요?<small>선택 · 친구가 코드를 주셨다면 넣어 주세요</small></span>
+          </div>
+          <div className={styles.referralRow}>
+            <input
+              value={referralCode}
+              onChange={(event) => setReferralCode(event.target.value)}
+              placeholder="MOOA7KQ2XZ"
+              disabled={referralBusy || referralApplied}
+              maxLength={20}
+              aria-label="추천코드"
+              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void applyReferral(); } }}
+            />
+            <button type="button" onClick={() => void applyReferral()} disabled={referralBusy || referralApplied}>
+              {referralApplied ? "적용 완료" : referralBusy ? "확인 중..." : "적용하기"}
+            </button>
+          </div>
+          {referralMessage && <p className={styles.referralMessage} data-ok={referralApplied}>{referralMessage}</p>}
         </div>
       )}
       <button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
