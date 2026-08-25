@@ -1834,3 +1834,24 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/redeem/page.tsx`(신규), `src/app/page.tsx`, `src/app/robots.ts`, `src/app/sitemap.ts`, `src/app/globals.css` on `main`.
 - Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 `/redeem` 안내 렌더, 구조화 데이터에 `Organization/WebSite/Service/FAQPage` 4개와 offers 2건(`InStock`), 히어로 그라데이션 적용, 가로 스크롤·콘솔 오류 없음 확인.
 - Rollback/recovery reference: `/redeem/page.tsx` 한 파일, 구조화 데이터 블록, robots·sitemap 각 한 줄, `globals.css`의 `.hero:before/:after`입니다. 커밋 이전 상태는 `ae6397d`.
+
+## 2026-08-24 — Claude: 무료 이용권 분석에도 진행 화면 붙이기
+
+- Agent/session: Claude. 사용자 보고: "무료 이용권으로 분석을 시작했습니다 — 이 문장만 나오고 로딩 화면이 안 나온다."
+- Status: completed. **마이그레이션 없음.**
+
+### 무엇이 문제였나
+
+- 유료 실행은 Polar에서 돌아오며 `?checkout=success`를 달고 오고, 그 파라미터가 진행 화면(`QuickCheckoutReturn`)을 깨웁니다. **이용권 실행은 Polar를 아예 안 거치므로 그 파라미터가 없습니다.**
+- 그래서 이용권으로 시작한 사람은 **"분석을 시작했습니다"라는 문장 한 줄 위에 그대로 남았습니다.** 진행 표시도, 경과 시간도, 완료 시 이동도 없었습니다. 시작은 됐는데 아무것도 안 움직이는 것처럼 보인 이유입니다.
+
+### 어떻게 고쳤나
+
+- 진행 화면에 **두 번째 입구**를 뒀습니다: `?credit=started&analysisRunId=...`. 이용권 결제가 끝나면 그 주소로 보냅니다.
+- **기존 결제 폴링 안에 분기를 넣지 않았습니다.** 그 루프가 답하는 질문은 "결제가 확인됐나"인데 이용권 경로에는 그런 질문이 없고, 한 루프에 두 의미를 꿰면 **공짜 경로 때문에 유료 경로가 위험해집니다.** 별도 effect로 두었습니다.
+- 새 루프가 하는 일은 하나입니다: `execute` 호출 → `resultUrl`이 오면 결과로 이동, `202`(진행 중)면 3초 뒤 다시. 화면·문구·경과 시간 표시는 **유료 경로가 쓰던 것을 그대로** 씁니다.
+- **끊긴 연결을 실패로 보지 않습니다.** 서버에서는 이미 `RUNNING`이라 계속 물어보면 됩니다. 다만 실제 실패 응답은 그대로 화면에 띄웁니다 — 조용히 계속 도는 것이 지난번 유료 경로에서 고쳤던 바로 그 문제입니다.
+- 폴링 한도를 넘기면 **"창을 닫아도 서버에서 계속 진행되며 결과 링크를 메일로 보내드립니다"**로 끝냅니다. 실패가 아니라 오래 걸리는 것이고, 실제로 그렇게 동작합니다.
+- Files/branch: `src/components/quick-checkout-return.tsx`, `src/components/application-case-handoff.tsx` on `main`.
+- Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: `quick-checkout-return.tsx`의 `credit=started` effect 하나와 이동 한 줄입니다. 커밋 이전 상태는 `881ccfe`.

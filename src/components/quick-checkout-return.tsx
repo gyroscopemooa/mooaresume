@@ -189,6 +189,76 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
     };
   }, [onProductConfirmed]);
 
+  /**
+   * The same screen, entered without a checkout.
+   *
+   * A run paid for with a reward credit never goes to Polar, so it never comes
+   * back with `checkout=success` — and the applicant was left on a line of text
+   * saying the analysis had started, with no progress and no result. This runs
+   * the one loop that matters for them: ask the server to advance the run, and
+   * keep asking while it is still working.
+   *
+   * Deliberately its own effect rather than a branch inside the checkout poll.
+   * That loop is about reconciling a payment, which is not a question this path
+   * has, and threading a second meaning through it would put the paid flow at
+   * risk for the sake of the free one.
+   */
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("credit") !== "started") return;
+    const analysisRunId = url.searchParams.get("analysisRunId");
+    if (!analysisRunId) return;
+
+    startedAt.current = Date.now();
+    let cancelled = false;
+    let timer: number | undefined;
+
+    async function run(attempt: number) {
+      if (cancelled) return;
+      setPhase("analyzing");
+      setMessage("무료 이용권으로 분석을 시작했습니다. 창을 닫으셔도 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
+      try {
+        const response = await fetch("/api/analysis-runs/quick/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ analysisRunId }),
+        });
+        const payload: unknown = await response.json().catch(() => null);
+        if (response.ok && payload && typeof payload === "object" && "resultUrl" in payload && typeof payload.resultUrl === "string") {
+          window.location.replace(payload.resultUrl);
+          return;
+        }
+        // 202 is "still working", which is the normal answer for most of the
+        // run's life. Anything else is a real failure and has to be said.
+        if (response.status !== 202 && !response.ok) {
+          const detail = payload && typeof payload === "object" && "detail" in payload && typeof payload.detail === "string"
+            ? payload.detail
+            : payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+              ? payload.error
+              : "ANALYSIS_EXECUTION_FAILED";
+          setPhase("failed");
+          setMessage(`분석을 완료하지 못했습니다. (${detail})`);
+          return;
+        }
+      } catch {
+        // A dropped connection does not mean the analysis failed — the run is
+        // already RUNNING server-side. Keep asking.
+      }
+      if (attempt < MAX_POLLS) {
+        timer = window.setTimeout(() => void run(attempt + 1), 3000);
+        return;
+      }
+      setPhase("failed");
+      setMessage("분석이 예상보다 오래 걸리고 있습니다. 창을 닫으셔도 서버에서 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
+    }
+
+    void run(0);
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
   useEffect(() => {
     if (phase === "idle" || phase === "failed" || startedAt.current === null) return;
     const updateElapsed = () => setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAt.current!) / 1000)));

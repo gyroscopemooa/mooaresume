@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
@@ -24,6 +25,7 @@ const readNoAuthError = () => null;
 const readAuthError = () => new URLSearchParams(window.location.search).get("auth_error");
 
 export function ApplicationCaseHandoff({ guest }: Props) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -95,7 +97,11 @@ export function ApplicationCaseHandoff({ guest }: Props) {
       window.location.replace(payload.resultUrl);
       return;
     }
-    setMessage("무료 이용권으로 분석을 시작했습니다. 완료되면 결과 링크를 이메일로 보내드립니다.");
+    // 202 means it is running in the background. Sending them to the
+    // preparation screen with the run id hands them the same progress view the
+    // paid flow gets — leaving them on this line of text was the whole
+    // complaint: it said the analysis started and then nothing moved.
+    router.push(`/analysis/prepare?credit=started&analysisRunId=${encodeURIComponent(analysisRunId)}`);
   }
 
 
