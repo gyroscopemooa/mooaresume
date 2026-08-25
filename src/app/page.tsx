@@ -32,7 +32,38 @@ export default function HomePage() {
     "@graph": [
       { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "MOOA Resume", alternateName: "무아레쥬메", url: siteUrl, description: "채용공고와 지원자의 경험을 연결하는 AI 자소서 첨삭 서비스" },
       { "@type": "WebSite", "@id": `${siteUrl}/#website`, url: siteUrl, name: "MOOA Resume", alternateName: "무아레쥬메", inLanguage: "ko-KR", publisher: { "@id": `${siteUrl}/#organization` } },
-      { "@type": "Service", "@id": `${siteUrl}/#service`, name: "MOOA Resume AI 자소서 첨삭", serviceType: "AI 자기소개서 첨삭 및 취업 지원서 분석", provider: { "@id": `${siteUrl}/#organization` }, areaServed: "KR", availableLanguage: "ko" },
+      // Launched, and the markup has to say so. A Service node with no offers
+      // reads to a crawler as "a thing this company does", not "a thing you can
+      // buy right now" — and rich results for price and availability only
+      // appear when both are stated. FINAL is deliberately absent: it has no
+      // checkout yet, and listing a price for it would be an offer we cannot
+      // honour.
+      {
+        "@type": "Service",
+        "@id": `${siteUrl}/#service`,
+        name: "MOOA Resume AI 자소서 첨삭",
+        serviceType: "AI 자기소개서 첨삭 및 취업 지원서 분석",
+        provider: { "@id": `${siteUrl}/#organization` },
+        areaServed: "KR",
+        availableLanguage: "ko",
+        offers: [
+          { "@type": "Offer", name: "QUICK", description: "이미 쓴 자기소개서를 문장·논리·구체성 기준으로 첨삭합니다.", price: "5900", priceCurrency: "KRW", availability: "https://schema.org/InStock", url: `${siteUrl}/quick` },
+          { "@type": "Offer", name: "PRO", description: "채용공고와 이력서를 함께 읽어 무엇을 쓸지부터 최종검수까지 진행합니다.", price: "12900", priceCurrency: "KRW", availability: "https://schema.org/InStock", url: `${siteUrl}/pro/polish` },
+        ],
+      },
+      // Answers the questions people actually type into search, in the markup
+      // rather than only in prose. Every answer here is one the site already
+      // gives on a page a visitor can read.
+      {
+        "@type": "FAQPage",
+        "@id": `${siteUrl}/#faq`,
+        mainEntity: [
+          { "@type": "Question", name: "AI 자소서 첨삭은 어떻게 진행되나요?", acceptedAnswer: { "@type": "Answer", text: "자기소개서를 문항별로 넣고 회사가 정한 글자 수를 적으면, 채용공고와 이력서를 함께 읽어 고칠 곳과 그 이유를 근거와 함께 알려드립니다. 결과에는 문항별 Before → After와 복사해서 제출할 최종 첨삭본이 포함됩니다." } },
+          { "@type": "Question", name: "없는 경험을 지어내지는 않나요?", acceptedAnswer: { "@type": "Answer", text: "지어내지 않습니다. 근거가 모자라면 임의로 채우는 대신 확인이 필요한 질문으로 돌려드립니다. 직접 올리신 이력서에 적힌 사실은 지원자가 밝힌 내용이므로 문장에 쓰일 수 있습니다." } },
+          { "@type": "Question", name: "결제 전에 AI가 실행되나요?", acceptedAnswer: { "@type": "Answer", text: "아닙니다. 결제가 끝난 뒤에 분석이 시작됩니다. 그 전 화면은 무엇을 몇 자 분석할지 정리해 보여드리는 단계입니다." } },
+          { "@type": "Question", name: "합격 확률을 알려주나요?", acceptedAnswer: { "@type": "Answer", text: "알려주지 않습니다. 합격에는 스펙·경쟁률·채용 규모처럼 글과 무관한 요소가 섞여 있어 확률로 말할 수 없습니다. 대신 지금 지원서에서 먼저 고칠 곳을 근거와 함께 보여드립니다." } },
+        ],
+      },
     ],
   };
   return (
@@ -143,8 +174,8 @@ export default function HomePage() {
           <article>
             <span>CASES</span>
             <h3>사례 데이터베이스</h3>
-            <p>실제 지원서와 서류전형 결과, 첨삭 전후의 변화, 면접에서 나온 질문을 익명으로 모아 기준을 검증합니다.</p>
-            <small>동의 절차 구축 중</small>
+            <p>동의한 지원서와 서류전형 결과, 첨삭 전후의 변화를 개인정보를 지운 사본으로 모아 기준을 검증합니다.</p>
+            <small>동의 기반 수집 중</small>
           </article>
         </div>
 
@@ -165,7 +196,7 @@ export default function HomePage() {
 
         <div className={fieldStyles.loopNote}>
           <ShieldCheck/>
-          <p><b>실제 지원 결과는 이용자 동의를 받아 익명으로만 반영할 예정입니다.</b> 동의 절차와 비식별 처리를 갖춘 뒤에 시작합니다. 그리고 표본이 충분히 쌓이기 전까지 &ldquo;이 문장은 합격률을 몇 % 높입니다&rdquo; 같은 수치는 쓰지 않습니다. 저희가 말할 수 있는 것은 <b>반복해서 발견되는 패턴</b>까지입니다.</p>
+          <p><b>실제 지원 결과는 이용자가 동의한 경우에만, 개인정보를 지운 사본으로 반영합니다.</b> 동의는 결과 화면에서 언제든 켜고 끌 수 있고, 철회하시면 보관 중이던 사본까지 그 자리에서 지웁니다. 그리고 표본이 충분히 쌓이기 전까지 &ldquo;이 문장은 합격률을 몇 % 높입니다&rdquo; 같은 수치는 쓰지 않습니다. 저희가 말할 수 있는 것은 <b>반복해서 발견되는 패턴</b>까지입니다.</p>
         </div>
 
         <p className={fieldStyles.loopClose}>실제 경험이 기준이 되고,<br/><em>실제 결과가 다시 기준을 발전시킵니다.</em></p>

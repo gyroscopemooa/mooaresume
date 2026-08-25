@@ -1801,3 +1801,36 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 `/redeem`의 새 배경·카드·그림자와 가로 스크롤 없음, 콘솔 오류 없음 확인.
 - Rollback/recovery reference: 결제 화면의 `availableCredit` 분기와 `startWithCredit`, 관리자 표의 `수령 링크` 칸, CSS 파일 하나입니다. 커밋 이전 상태는 `ae6397d`.
 - **남은 일(사용자)**: 이용권이 남아 있는 계정으로 `/quick` 또는 `/pro/polish`를 끝까지 진행해 **결제창 대신 바로 분석이 시작되는지** 확인해 주세요.
+
+## 2026-08-24 — Claude: /redeem 안내 페이지, 랜딩 문구 현재형, 런칭 SEO, 히어로 톤
+
+- Agent/session: Claude. 사용자 요청: `/redeem` 주소가 안 나온다 / 랜딩 문구 현재형 / 히어로 톤 맞추기 / 런칭에 맞는 SEO(기존 것은 두고 "출시 예정"에 해당하는 것만).
+- Status: completed. **마이그레이션 없음.**
+
+### /redeem 이 404였습니다
+
+- 라우트가 `/redeem/{token}`이라 **토큰 없는 `/redeem`은 404**였습니다. 주소를 외워서 치는 사람, 메일 클라이언트가 링크를 잘라 버린 사람이 정확히 여기에 도착합니다.
+- **404는 "이용권이 사라졌다"고 말합니다.** 사라지지 않았는데요. 안내 페이지를 두어 `메일에 담긴 링크 전체`가 필요하다는 것과, **이미 등록한 이용권은 결제 화면에서 자동 적용되므로 이 페이지에 다시 올 필요가 없다**는 것을 알려줍니다.
+
+### 랜딩 문구를 현재형으로
+
+- 수집 경로가 실제로 도니 이제 사실입니다. `반영할 예정입니다` → **`이용자가 동의한 경우에만, 개인정보를 지운 사본으로 반영합니다`**. 배지 `동의 절차 구축 중` → **`동의 기반 수집 중`**.
+- 여기에 **철회 시 보관분까지 지운다**는 사실을 문구에 추가했습니다. 실제로 그렇게 동작하고, 그게 이 약속에서 가장 무거운 부분입니다.
+- `합격률 몇 %` 같은 수치를 쓰지 않는다는 문장은 **그대로 뒀습니다.** 표본은 아직 그대로입니다.
+
+### 런칭 SEO — 기존 설정은 건드리지 않았습니다
+
+- 이미 `index: true`에 사이트맵도 있어 **바꿀 것이 별로 없었습니다.** 런칭에서 빠져 있던 것만 채웠습니다.
+- **`Offer` 구조화 데이터 추가.** offers 없는 `Service` 노드는 크롤러에게 "이 회사가 하는 일"로 읽힙니다. "지금 살 수 있는 것"이 되려면 가격과 재고 상태를 함께 말해야 하고, 가격·판매중 리치 결과도 그때만 나옵니다. QUICK 5,900 / PRO 12,900 · `InStock`.
+- **FINAL은 일부러 뺐습니다.** 체크아웃이 없는데 가격을 적으면 **지킬 수 없는 판매 제안**이 됩니다. 요금표의 `FINAL 준비 중`도 사실이라 그대로 뒀습니다.
+- **`FAQPage` 추가** — 사람들이 실제로 검색창에 치는 네 가지(어떻게 진행되나 / 지어내지 않나 / 결제 전에 AI가 도나 / 합격 확률을 알려주나). 모든 답은 **사이트가 이미 페이지에서 하고 있는 말**입니다.
+- **`robots.ts`에 disallow 세 개.** `/redeem/`은 **주소에 수령 토큰이 들어 있어 색인되면 그 자체가 유출**입니다. `/meensoo/`는 운영 콘솔, `/comingsoon`은 런칭 전 페이지라 브랜드명 검색에서 진짜 첫 화면과 경쟁합니다.
+- 사이트맵 `lastModified`를 런칭일로 맞췄습니다. 제품이 열린 날보다 앞선 날짜는 **"그때 이후로 바뀐 게 없다"**는 뜻이고, 런칭이 하고 싶은 말의 반대입니다.
+
+### 히어로
+
+- `/redeem`과 같은 **뒤에서 비추는 빛 한 겹**을 히어로에도 넣었습니다. 다만 흰 배경 위라 훨씬 옅게(초록 .16/.09 수준) 깔고, 아래를 흰색으로 페이드해 **글자 뒤에 머물게** 했습니다.
+- `isolation: isolate` + `z-index:-1`이라 기존 요소 위로 올라오지 않고, 이미지가 없어 로딩도 없습니다.
+- Files/branch: `src/app/redeem/page.tsx`(신규), `src/app/page.tsx`, `src/app/robots.ts`, `src/app/sitemap.ts`, `src/app/globals.css` on `main`.
+- Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 `/redeem` 안내 렌더, 구조화 데이터에 `Organization/WebSite/Service/FAQPage` 4개와 offers 2건(`InStock`), 히어로 그라데이션 적용, 가로 스크롤·콘솔 오류 없음 확인.
+- Rollback/recovery reference: `/redeem/page.tsx` 한 파일, 구조화 데이터 블록, robots·sitemap 각 한 줄, `globals.css`의 `.hero:before/:after`입니다. 커밋 이전 상태는 `ae6397d`.
