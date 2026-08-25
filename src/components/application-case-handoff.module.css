@@ -2,5 +2,3 @@
 
 .login button:not(:disabled){background:#176b4a}.login button:disabled{background:#cbd4cf}.oauthButton{border:1px solid #d6e0da!important;background:#fff!important;color:#26352d!important}.oauthButton:hover{background:#f5f8f6!important}.oauthButton svg{width:14px}.divider{display:flex;align-items:center;gap:8px;color:#89958e;font-size:8px}.divider:before,.divider:after{content:"";height:1px;flex:1;background:#e5ebe7}.divider span{white-space:nowrap}
 .creditNotice{display:flex;align-items:flex-start;gap:9px;margin:0 0 12px;padding:14px 16px;border:1px solid #bcdccb;border-radius:11px;background:#f4faf6;color:#3f6b55;font-size:13px;line-height:1.75}.creditNotice svg{width:17px;flex:none;color:#176b4a;margin-top:1px}.creditNotice b{color:#0d5237}
-/* The shared entry component brings its own card; this only spaces it. */
-.referralSlot{margin:0 0 14px}

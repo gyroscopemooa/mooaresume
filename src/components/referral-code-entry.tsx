@@ -98,28 +98,57 @@ export function ReferralCodeEntry({
 
   const needsSignIn = requireSignIn && signedIn === false;
 
+  // Compact is one line: a label, the field, the button. On the checkout screen
+  // this is a footnote beside "분석에는 5~10분", and a two-line card with its own
+  // heading read as a step in the flow.
+  if (compact) {
+    return (
+      <div className={styles.compact} data-applied={applied}>
+        <div className={styles.compactRow}>
+          <span className={styles.compactLabel}><Users/> 추천코드<em>선택</em></span>
+          {needsSignIn ? (
+            // A sign-in button already sits a few lines below. Two is two
+            // decisions about the same thing.
+            <small className={styles.compactHint}>로그인하시면 입력칸이 열립니다</small>
+          ) : (
+            <>
+              <input
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                placeholder="MOOA7KQ2XZ"
+                disabled={busy || applied}
+                maxLength={20}
+                aria-label="추천코드"
+                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
+              />
+              <button type="button" onClick={() => void apply()} disabled={busy || applied}>
+                {applied ? "완료" : busy ? "확인 중" : "적용"}
+              </button>
+            </>
+          )}
+        </div>
+        {message && <p className={styles.compactMessage} data-ok={applied}>{message}</p>}
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.card} data-applied={applied} data-compact={compact}>
+    <div className={styles.card} data-applied={applied}>
       <div className={styles.head}>
         <Users/>
         <span>
           받은 추천코드가 있으신가요?
           <small>
             {needsSignIn
-              ? (compact ? "선택 · 아래에서 로그인하시면 코드를 넣는 칸이 열립니다" : "코드는 로그인한 계정에 적용됩니다. 먼저 로그인해 주세요.")
+              ? "코드는 로그인한 계정에 적용됩니다. 먼저 로그인해 주세요."
               : "선택 · 친구가 코드를 주셨다면 넣어 주세요"}
           </small>
         </span>
       </div>
       {needsSignIn ? (
-        // Compact lives on the checkout screen, where a sign-in button already
-        // sits a few lines below. A second one there is a second decision about
-        // the same thing.
-        compact ? null : (
-          <button type="button" className={styles.signIn} onClick={() => void signIn()} disabled={busy}>
-            {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={15}/>
-          </button>
-        )
+        <button type="button" className={styles.signIn} onClick={() => void signIn()} disabled={busy}>
+          {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={15}/>
+        </button>
       ) : (
         <div className={styles.row}>
           <input

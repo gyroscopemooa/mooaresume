@@ -2100,3 +2100,27 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/referral-code-entry.tsx`·`.module.css`, `src/components/referral-panel.tsx`, `src/components/analysis-preparation.tsx`·`.module.css`, `src/components/application-case-handoff.tsx` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - Rollback/recovery reference: `compact` 분기와 `.referralNote` 한 줄입니다. 커밋 이전 상태는 `d07740f`.
+
+## 2026-08-24 — Claude: 헤더 로그인/로그아웃, 추천코드 칸을 한 줄로
+
+- Agent/session: Claude. 사용자 요청: 추천코드 칸을 더 작게 한 줄로 / 로그인·로그아웃 버튼.
+- Status: completed. **마이그레이션 없음.**
+
+### 사이트에 로그인 입구가 없었습니다
+
+- 계정에 닿는 길이 **분석 시작·이용권 링크·`/refer`** 셋뿐이었습니다. 지난주에 결제한 사람이 이용권을 보러 돌아오면 **갈 데가 없고**, 추천코드를 받은 사람은 **자소서부터 써야** 입력칸을 만났습니다.
+- 헤더에 `로그인`을 두고, 로그인 상태에서는 `내 계정` 메뉴(이메일 · 추천코드/이용권 · 새 분석 · **로그아웃**)가 열립니다.
+- **세션을 알기 전까지는 아무것도 그리지 않습니다.** 잠깐 `로그인`을 보였다가 계정 메뉴로 바뀌면, 돌아온 사람에게 **매번 로그아웃됐다고 말하는 셈**입니다.
+- 로그인 후에는 **보고 있던 페이지로 돌아옵니다.** 요청한 적 없는 대시보드로 데려가지 않습니다.
+- 드롭다운은 `/`, `/refer`, `/new` 헤더에 같이 붙였습니다. 여기서도 JavaScript 없이 `:hover`/`:focus-within`으로 엽니다.
+
+### 추천코드 칸
+
+- 결제 화면의 카드는 여전히 **제목 한 줄 + 설명 한 줄 + 입력**이라 흐름의 한 단계처럼 보였습니다. 실제로는 **코드를 붙여넣는 자리**일 뿐입니다.
+- **한 줄**로 줄였습니다: `👥 추천코드 [선택] [입력칸] [적용]`. 높이 34px, 글자 12.5px — 옆의 안내들보다 작습니다.
+- 로그아웃 상태면 입력칸 대신 `로그인하시면 입력칸이 열립니다` 한 마디만 둡니다.
+- `/refer`의 큰 카드는 그대로입니다. 거기서는 그것이 페이지의 본론입니다.
+- 결제 화면에 남아 있던 옛 카드의 죽은 CSS(`.referralSlot`)도 지웠습니다.
+- Files/branch: `src/components/header-account.tsx`·`.module.css`(신규), `src/components/referral-code-entry.tsx`·`.module.css`, `src/components/application-case-handoff.module.css`, `src/app/page.tsx`, `src/app/refer/page.tsx`, `src/app/new/page.tsx` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 헤더가 `이용 방법 ▾ · 요금 · 로그인 · 무료로 진단하기` 순으로 렌더되는 것 확인.
+- Rollback/recovery reference: `<HeaderAccount />` 세 줄과 컴포넌트 하나, compact 분기입니다. 커밋 이전 상태는 `4ba3a06`.

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { HeaderAccount } from "@/components/header-account";
 import { ReferralPanel } from "@/components/referral-panel";
 import { ReferralCodeEntry } from "@/components/referral-code-entry";
 import styles from "./refer.module.css";
@@ -23,7 +24,7 @@ export default function ReferPage() {
     <main className="home-page">
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
-        <nav aria-label="주요 메뉴"><Link href="/guide">이용 방법</Link><Link href="/analyze" className="button button-small">시작하기</Link></nav>
+        <nav aria-label="주요 메뉴"><Link href="/guide">이용 방법</Link><HeaderAccount /><Link href="/analyze" className="button button-small">시작하기</Link></nav>
       </header>
 
       <div className={"container " + styles.page}>

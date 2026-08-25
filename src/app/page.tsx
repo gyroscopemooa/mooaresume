@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
+import { HeaderAccount } from "@/components/header-account";
 import { LandingEntry } from "@/components/landing-entry";
 import { PricingComparison } from "@/components/pricing-comparison";
 import landingStyles from "./landing-sections.module.css";
@@ -86,6 +87,7 @@ export default function HomePage() {
           {/* Absolute so it still lands on the pricing table when the header is
               on a page that has none. */}
           <Link href="/#plans">요금</Link>
+          <HeaderAccount />
           <Link href="/analyze" className="button button-small">무료로 진단하기</Link>
         </nav>
       </header>
