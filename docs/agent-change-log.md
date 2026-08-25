@@ -1855,3 +1855,28 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/quick-checkout-return.tsx`, `src/components/application-case-handoff.tsx` on `main`.
 - Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - Rollback/recovery reference: `quick-checkout-return.tsx`의 `credit=started` effect 하나와 이동 한 줄입니다. 커밋 이전 상태는 `881ccfe`.
+
+## 2026-08-24 — Claude: 이용권 진행 화면이 뜨지 않던 진짜 이유
+
+- Agent/session: Claude. 사용자 보고: 직전 수정 뒤에도 `입력 내용을 비공개로 저장하고 결제 페이지로 이동합니다`에서 멈춘다.
+- Status: completed. **마이그레이션 없음.**
+
+### 직전 수정이 왜 안 먹었나
+
+- 진행 화면(`QuickCheckoutReturn`)과 결제 버튼(`ApplicationCaseHandoff`)은 **같은 페이지(`/analysis/prepare`)에 나란히 있는 형제**입니다.
+- 그래서 `router.push("/analysis/prepare?credit=started&...")`는 **같은 라우트로의 이동이라 아무것도 다시 마운트하지 않습니다.** URL만 바뀌고, 주소를 읽는 `[]` 의존 effect는 **영영 실행되지 않습니다.**
+- 이용권은 실제로 차감됐고 분석도 시작됐는데 화면만 가만히 있었던 이유가 이것입니다. 주소를 통해 형제에게 말을 거는 방식 자체가 틀렸습니다.
+
+### 어떻게 고쳤나
+
+- 실행 id를 **부모(`AnalysisPreparation`)가 들고** 있습니다. 결제 버튼은 `onCreditRunStarted(runId)`로 올려 보내고, 진행 화면은 `creditRunId` prop으로 받습니다. React가 실제로 다시 그리므로 effect가 확실히 돕니다.
+- 주소·Suspense·`useSearchParams` 같은 것을 하나도 쓰지 않습니다. 두 컴포넌트가 같은 트리에 있는데 브라우저 주소를 우편함처럼 쓸 이유가 없습니다.
+
+### 문구도 틀려 있었습니다
+
+- 저장 직후 메시지가 분기와 무관하게 **`결제 페이지로 이동합니다`** 하나였습니다. 무료로 도는 사람 앞에서 이 문장은 **틀렸을 뿐 아니라 놀랍게 만듭니다.**
+- 이용권이 있으면 `무료 이용권으로 분석을 시작합니다`로 나갑니다.
+- Files/branch: `src/components/analysis-preparation.tsx`, `src/components/application-case-handoff.tsx`, `src/components/quick-checkout-return.tsx` on `main`.
+- Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: prop 세 곳(`creditRunId`, `onCreditRunStarted`, 부모 state)입니다. 커밋 이전 상태는 `cfbf3fa`.
+- **남은 일(사용자)**: 이용권이 **남아 있는** 계정으로 확인해 주세요. 직전 테스트에서 한 장을 이미 썼다면 `/meensoo/rewards`에서 한 장 더 발급하셔야 합니다 — 이용권이 없으면 정상적으로 결제 화면으로 갑니다.

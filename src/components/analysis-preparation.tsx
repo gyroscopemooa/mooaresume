@@ -58,6 +58,10 @@ export function AnalysisPreparation() {
   const [materialSummary, setMaterialSummary] = useState<string[]>([]);
   const [confirmedProduct, setConfirmedProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [hasResumeMaterial, setHasResumeMaterial] = useState(true);
+  // Lifted here because the checkout button and the progress screen are
+  // siblings on this one page. A URL parameter would not remount either of
+  // them, so the progress screen would never learn the run had started.
+  const [creditRunId, setCreditRunId] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -157,7 +161,7 @@ export function AnalysisPreparation() {
           <ShieldCheck /> 결제 전 AI 호출 없음
         </span>
       </header>
-      <QuickCheckoutReturn onProductConfirmed={setConfirmedProduct} />
+      <QuickCheckoutReturn onProductConfirmed={setConfirmedProduct} creditRunId={creditRunId} />
       <div className={styles.container}>
         <Link href="/onboarding" className={styles.back}>
           <ArrowLeft /> 상품 선택으로
@@ -316,7 +320,7 @@ export function AnalysisPreparation() {
                 </li>
               ))}
             </ul>
-            <ApplicationCaseHandoff guest={guest}/>
+            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId}/>
             <Link href="/result">
               결제 후 결과 화면 샘플 보기 <ArrowRight />
             </Link>

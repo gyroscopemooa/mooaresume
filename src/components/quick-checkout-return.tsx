@@ -33,9 +33,13 @@ const formatElapsed = (seconds: number) => {
   return `${minutes}:${remainder}`;
 };
 
-type Props = { onProductConfirmed?: (product: "QUICK" | "PRO") => void };
+type Props = {
+  onProductConfirmed?: (product: "QUICK" | "PRO") => void;
+  /** Set when a run was paid for with a reward credit instead of a checkout. */
+  creditRunId?: string | null;
+};
 
-export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
+export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null }: Props = {}) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [product, setProduct] = useState<"QUICK" | "PRO" | null>(null);
   const [message, setMessage] = useState("");
@@ -202,12 +206,16 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
    * That loop is about reconciling a payment, which is not a question this path
    * has, and threading a second meaning through it would put the paid flow at
    * risk for the sake of the free one.
+   *
+   * Driven by a prop rather than a query parameter, because this component and
+   * the checkout button live on the same page: navigating to the same route
+   * with a different query does not remount anything, so an effect keyed on the
+   * URL never fires. That is exactly what happened — the credit was spent and
+   * the screen sat still.
    */
   useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("credit") !== "started") return;
-    const analysisRunId = url.searchParams.get("analysisRunId");
-    if (!analysisRunId) return;
+    if (!creditRunId) return;
+    const analysisRunId = creditRunId;
 
     startedAt.current = Date.now();
     let cancelled = false;
@@ -257,7 +265,7 @@ export function QuickCheckoutReturn({ onProductConfirmed }: Props = {}) {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
     };
-  }, []);
+  }, [creditRunId]);
 
   useEffect(() => {
     if (phase === "idle" || phase === "failed" || startedAt.current === null) return;

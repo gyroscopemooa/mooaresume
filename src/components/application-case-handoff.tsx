@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
@@ -9,7 +8,11 @@ import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import styles from "./application-case-handoff.module.css";
 
-type Props = { guest: GuestDraft | null };
+type Props = {
+  guest: GuestDraft | null;
+  /** Called once a reward credit has been spent and the run is under way. */
+  onCreditRunStarted?: (analysisRunId: string) => void;
+};
 
 const emptyMaterials = {
   schemaVersion: "1.0" as const,
@@ -24,8 +27,7 @@ const subscribeToNothing = () => () => {};
 const readNoAuthError = () => null;
 const readAuthError = () => new URLSearchParams(window.location.search).get("auth_error");
 
-export function ApplicationCaseHandoff({ guest }: Props) {
-  const router = useRouter();
+export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -97,11 +99,10 @@ export function ApplicationCaseHandoff({ guest }: Props) {
       window.location.replace(payload.resultUrl);
       return;
     }
-    // 202 means it is running in the background. Sending them to the
-    // preparation screen with the run id hands them the same progress view the
-    // paid flow gets — leaving them on this line of text was the whole
-    // complaint: it said the analysis started and then nothing moved.
-    router.push(`/analysis/prepare?credit=started&analysisRunId=${encodeURIComponent(analysisRunId)}`);
+    // Handed up rather than navigated to. Both screens are on this page, so a
+    // route push with a new query remounts nothing and the progress view never
+    // starts — which is exactly what left the applicant on a still screen.
+    onCreditRunStarted?.(analysisRunId);
   }
 
 
@@ -219,7 +220,12 @@ export function ApplicationCaseHandoff({ guest }: Props) {
         setSavedCaseId(result.applicationCaseId);
         const analysisRunId = "analysisRunId" in result && typeof result.analysisRunId === "string" ? result.analysisRunId : null;
         if (analysisRunId) setSavedAnalysisRunId(analysisRunId);
-        setMessage("\uC785\uB825 \uB0B4\uC6A9\uC744 \uBE44\uACF5\uAC1C\uB85C \uC800\uC7A5\uD558\uACE0 \uACB0\uC81C \uD398\uC774\uC9C0\uB85C \uC774\uB3D9\uD569\uB2C8\uB2E4.");
+        // Says which of the two things is about to happen. "결제 페이지로
+        // 이동합니다" in front of someone whose run is free is both wrong and
+        // alarming.
+        setMessage(availableCredit
+          ? "입력 내용을 비공개로 저장하고 무료 이용권으로 분석을 시작합니다."
+          : "입력 내용을 비공개로 저장하고 결제 페이지로 이동합니다.");
         if (analysisRunId) {
           try {
             // A credit is spent instead of opening a checkout. Falling through
