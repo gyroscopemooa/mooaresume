@@ -15,7 +15,7 @@ import styles from "./refer.module.css";
  */
 export const metadata: Metadata = {
   title: "친구 추천",
-  description: "친구가 무아레쥬메로 첫 결제를 마치면 무료 이용권을 받습니다.",
+  description: "친구가 무아레쥬메로 첫 결제를 마치면 PRO 무료 이용권을 받습니다.",
 };
 
 export default function ReferPage() {
@@ -29,8 +29,8 @@ export default function ReferPage() {
       <div className={"container " + styles.page}>
         <div className={styles.head}>
           <span>REFER A FRIEND</span>
-          <h1>먼저 써 본 사람의 말이<br/>가장 잘 전해집니다.</h1>
-          <p>친구가 회원님의 코드를 넣고 첫 결제를 마치면, <b>QUICK 무료 이용권 1장</b>이 계정에 바로 들어옵니다. 쿠폰번호를 주고받을 필요 없이 코드 하나면 됩니다.</p>
+          <h1>친구에게 추천하고,<br/>PRO 무료 이용권을 받아보세요.</h1>
+          <p>친구가 회원님의 코드를 넣고 첫 결제를 마치면, <b>PRO 무료 이용권 1장</b>이 계정에 바로 들어옵니다. 쿠폰번호를 주고받을 필요 없이 코드 하나면 됩니다.</p>
         </div>
 
         <ReferralPanel standalone />

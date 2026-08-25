@@ -58,7 +58,10 @@ export function parseReferralCode(input: string): ReferralCheck {
   return parsed.success ? { ok: true, code: parsed.data } : { ok: false, reason: "malformed" };
 }
 
-export const REFERRAL_REWARD_PRODUCT = "QUICK" as const;
+// PRO, not QUICK. A referral costs the friend a real purchase, so the cheaper
+// tier was the weaker half of the trade — and PRO is the tier where the product
+// is worth talking about, which is what a referral programme is buying.
+export const REFERRAL_REWARD_PRODUCT = "PRO" as const;
 
 /**
  * What the referrer gets, and when.

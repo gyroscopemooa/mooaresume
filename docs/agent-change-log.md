@@ -2051,3 +2051,27 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/referral-code-entry.tsx`·`referral-code-entry.module.css`(신규), `src/components/application-case-handoff.tsx`·`.module.css`, `src/app/refer/page.tsx`·`refer.module.css` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 로그아웃 상태의 `/refer`가 **코드를 보여주지 않고** 두 카드 모두 로그인 안내를 띄우는 것, 콘솔 오류 없음 확인.
 - Rollback/recovery reference: 새 컴포넌트 하나와 두 사용처입니다. 커밋 이전 상태는 `54a18a1`.
+
+## 2026-08-24 — Claude: 추천 보상을 PRO로, 문구와 입력칸 정리
+
+- Agent/session: Claude. 사용자 요청: 헤드라인 교체 / 보상이 약하니 PRO로 / 입력칸 가로 늘려 버튼과 오와열 맞추기.
+- Status: completed. **마이그레이션 하나 추가**(`20260824090000_referral_reward_pro.sql`).
+
+### 보상을 PRO로
+
+- 추천은 **친구가 실제 결제를 해야** 성립합니다. 그 대가로 더 싼 등급을 주는 것은 거래의 약한 쪽이었습니다. PRO는 추천인이 어차피 샀을 등급이고, **제품을 남에게 말할 만하다고 느끼는 등급**이기도 합니다 — 추천 프로그램이 사려는 것이 정확히 그것입니다.
+- 함수 한 곳에서 `'QUICK'` → `'PRO'` 한 단어만 바뀝니다. 나머지 본문은 그대로입니다.
+- **이미 발급된 QUICK 이용권은 건드리지 않았습니다.** 그때 화면에 적혀 있던 조건으로 지급된 것들입니다.
+- 화면 문구도 전부 PRO로 맞췄습니다(`QUICK 무료 이용권` 표기 0건 확인).
+
+### 헤드라인
+
+- `먼저 써 본 사람의 말이 가장 잘 전해집니다` → **`친구에게 추천하고, PRO 무료 이용권을 받아보세요.`** 앞의 것은 추천을 설명하고, 뒤의 것은 **무엇을 받는지** 말합니다.
+
+### 입력칸
+
+- 입력칸과 버튼이 한 줄에서 폭을 다투다 보니 **입력칸이 자기가 담을 코드보다 좁아졌고**, 두 모서리도 끝내 안 맞았습니다.
+- **한 열에 위아래로 쌓고 둘 다 전체 폭**으로 뒀습니다. 폭이 하나뿐이라 눈으로 맞출 것이 없습니다. 입력칸은 50px 높이에 17px 글자·가운데 정렬이라 **코드가 코드처럼 보입니다.**
+- Files/branch: `supabase/migrations/20260824090000_referral_reward_pro.sql`(신규), `src/domain/referral.ts`, `src/components/referral-panel.tsx`, `src/components/referral-code-entry.module.css`, `src/app/refer/page.tsx` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버(1280px)에서 헤드라인 교체, `PRO 무료 이용권` 5회·`QUICK 무료 이용권` 0회, 카드 1160px에 버튼이 그 안쪽 폭을 꽉 채우는 것, 가로 스크롤 없음 확인.
+- Rollback/recovery reference: 마이그레이션은 함수 재정의뿐이라 `20260824080000`의 함수를 다시 실행하면 QUICK으로 돌아갑니다. 커밋 이전 상태는 `c9c8f03`.

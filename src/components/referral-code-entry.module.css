@@ -8,16 +8,20 @@
 .head svg{width:16px;flex:none;color:#176b4a;margin-top:2px}
 .head span{font-size:13.5px;font-weight:700;color:#2c4438;line-height:1.5}
 .head small{display:block;margin-top:3px;color:#8b968f;font-size:11.5px;font-weight:500;line-height:1.6}
-.row{display:flex;gap:8px}
-.row input{flex:1;min-width:0;height:46px;padding:0 14px;border:1px solid #dbe3df;border-radius:10px;background:#fff;font-size:15px;font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-weight:700;letter-spacing:.1em;text-transform:uppercase;outline:0}
+/* Stacked, both full width. Side by side, the field and the button fought for
+   the same row and the input ended up narrower than the code it holds — and
+   the two edges never lined up. One column, one width, nothing to align by
+   eye. */
+.row{display:grid;gap:8px}
+.row input{width:100%;min-width:0;height:50px;padding:0 16px;border:1px solid #dbe3df;border-radius:10px;background:#fff;font-size:17px;font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-weight:700;letter-spacing:.14em;text-transform:uppercase;text-align:center;outline:0}
 .row input::placeholder{color:#b9c4be;font-weight:500;letter-spacing:.06em}
 .row input:focus{border-color:#176b4a;box-shadow:0 0 0 3px rgba(23,107,74,.09)}
 .row input:disabled{background:#f1f5f3;color:#6f7d76;border-color:#e2e9e5}
-.row button{height:46px;padding:0 20px;border:0;border-radius:10px;background:#176b4a;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;white-space:nowrap;transition:background 140ms ease}
+.row button{width:100%;height:46px;padding:0 20px;border:0;border-radius:10px;background:#176b4a;color:#fff;font-size:13.5px;font-weight:800;cursor:pointer;white-space:nowrap;transition:background 140ms ease}
 .row button:hover:not(:disabled){background:#0d5237}
 .row button:disabled{background:#cfdcd6;color:#f7faf8;cursor:default}
 .message{margin:10px 0 0;font-size:12.5px;line-height:1.7;color:#a14f4f}
 .message[data-ok="true"]{color:#176b4a}
-.signIn{display:inline-flex;align-items:center;gap:7px;height:46px;padding:0 18px;border:1px solid #dbe3df;border-radius:10px;background:#fff;color:#41514a;font-size:13.5px;font-weight:800;cursor:pointer}
+.signIn{display:flex;width:100%;align-items:center;justify-content:center;gap:7px;height:46px;padding:0 18px;border:1px solid #dbe3df;border-radius:10px;background:#fff;color:#41514a;font-size:13.5px;font-weight:800;cursor:pointer}
 .signIn:hover{border-color:#176b4a;color:#176b4a}
-@media(max-width:520px){.row{flex-direction:column}.row button{width:100%}}
+

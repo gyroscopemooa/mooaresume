@@ -99,8 +99,8 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
       <div className={styles.head}>
         <Users/>
         <div>
-          <h3>친구에게 추천하고 무료 이용권 받기</h3>
-          <p>친구가 이 코드를 넣고 첫 결제를 마치면, <b>QUICK 무료 이용권 1장</b>이 회원님 계정에 바로 들어옵니다.</p>
+          <h3>친구에게 추천하고, PRO 무료 이용권을 받아보세요</h3>
+          <p>친구가 이 코드를 넣고 첫 결제를 마치면, <b>PRO 무료 이용권 1장</b>이 회원님 계정에 바로 들어옵니다.</p>
         </div>
       </div>
 
