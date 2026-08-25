@@ -2012,3 +2012,18 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/page.tsx`, `src/app/globals.css`, `src/components/application-case-handoff.tsx`, `src/components/application-case-handoff.module.css` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 드롭다운이 기본 `hidden`이고 트리거에 포커스하면 `visible`이 되는 것, 헤더/하단 링크 목적지, 뷰포트 안에 들어오는 것 확인.
 - Rollback/recovery reference: 헤더의 `.nav-menu` 블록과 `globals.css`의 `/* Header dropdown */` 규칙, 추천 카드 CSS입니다. 커밋 이전 상태는 `63bce2f`.
+
+## 2026-08-24 — Claude: /refer 안내 목록이 세로로 뭉개지던 것
+
+- Agent/session: Claude. 사용자 보고: `/refer`의 `어떻게 진행되나요` 목록이 글자가 깨져 세로로 보인다.
+- Status: completed. **마이그레이션 없음.**
+
+### 원인 — 그리드 칸이 두 개인데 넣은 것이 세 개
+
+- `li`가 `grid-template-columns: 30px 1fr`(번호 칸 + 본문 칸)인데, 그 안에 **`::before`(번호) + `<b>`(제목) + `<span>`(설명)** 세 개를 넣었습니다.
+- 그리드는 셋째 항목을 **다음 줄 첫 칸**, 즉 **30px짜리 번호 칸**에 넣습니다. 설명 문장이 30px 폭에 갇혀 **한 줄에 한 글자씩** 세로로 흘렀습니다.
+- 제목과 설명을 `<div>` 하나로 묶어 **그리드 항목을 둘로** 만들었습니다. 이제 둘이 같은 열을 씁니다.
+- 같은 실수를 다른 곳에서도 했는지 확인했습니다. `/new`의 단계 목록, FINAL 검증의 체크리스트·타임라인은 모두 이미 `아이콘 + div` 두 항목 구조라 문제가 없습니다.
+- 첫 단계 문구도 `아래 코드를` → `위 코드를`로 고쳤습니다. 코드 카드가 이 목록보다 위에 있습니다.
+- Files/branch: `src/app/refer/page.tsx`, `src/app/refer/refer.module.css` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 네 항목 모두 제목과 설명이 **같은 열**(`sameColumn: true`)에 있고 설명이 한 줄로 들어가는 것, 375px에서 설명 폭 260px에 가로 스크롤 없는 것 확인.

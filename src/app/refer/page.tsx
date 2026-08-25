@@ -36,11 +36,15 @@ export default function ReferPage() {
 
         <div className={styles.how}>
           <h2>어떻게 진행되나요</h2>
+          {/* The text is wrapped in its own element on purpose: the row is a
+              two-column grid, and leaving <b> and <span> as separate children
+              made three grid items — the second line dropped into the narrow
+              number column and folded one character per line. */}
           <ol>
-            <li><b>코드를 공유합니다.</b><span>아래 코드를 복사해 친구에게 보내세요.</span></li>
-            <li><b>친구가 결제 화면에서 코드를 넣습니다.</b><span>자소서를 넣고 결제로 넘어가는 화면에 추천코드 칸이 있습니다.</span></li>
-            <li><b>친구가 첫 결제를 마칩니다.</b><span>여기까지 와야 지급됩니다. 코드 입력만으로는 지급되지 않습니다.</span></li>
-            <li><b>이용권이 들어옵니다.</b><span>다음 분석에서 결제 없이 바로 시작하실 수 있습니다.</span></li>
+            <li><div><b>코드를 공유합니다.</b><span>위 코드를 복사해 친구에게 보내세요.</span></div></li>
+            <li><div><b>친구가 결제 화면에서 코드를 넣습니다.</b><span>자소서를 넣고 결제로 넘어가는 화면에 추천코드 칸이 있습니다.</span></div></li>
+            <li><div><b>친구가 첫 결제를 마칩니다.</b><span>여기까지 와야 지급됩니다. 코드 입력만으로는 지급되지 않습니다.</span></div></li>
+            <li><div><b>이용권이 들어옵니다.</b><span>다음 분석에서 결제 없이 바로 시작하실 수 있습니다.</span></div></li>
           </ol>
         </div>
       </div>

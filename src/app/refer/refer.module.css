@@ -8,7 +8,8 @@
 .how h2{margin:0 0 18px;font-size:17px;letter-spacing:-.02em}
 .how ol{margin:0;padding:0;list-style:none;counter-reset:step;display:grid;gap:12px}
 .how li{counter-increment:step;display:grid;grid-template-columns:30px 1fr;gap:13px;align-items:start}
+.how li>div{min-width:0}
 .how li:before{content:"0" counter(step);color:var(--green,#176b4a);font:900 12px Georgia,serif;padding-top:2px}
 .how b{display:block;font-size:14px;margin-bottom:3px}
-.how span{color:var(--muted,#68756f);font-size:12.5px;line-height:1.8}
+.how span{display:block;color:var(--muted,#68756f);font-size:12.5px;line-height:1.8}
 @media(max-width:600px){.how{padding:22px 20px}}
