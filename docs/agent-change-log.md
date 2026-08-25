@@ -1912,3 +1912,22 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 645 passed(신규 16건 — 코드 생성·정규화·거절 문구 7, 마이그레이션 불변식 9). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - Rollback/recovery reference: 새 테이블 둘·함수 셋·화면 둘, 그리고 웹훅의 `settleReferral` 호출 한 줄입니다. 커밋 이전 상태는 `9f0df32`.
 - **남은 일(사용자)**: 마이그레이션 적용. 그다음 계정 두 개로 확인 — A의 결과 화면에서 코드 확인 → B가 결제 화면에 입력 → B가 실제 결제 → A에게 이용권이 생기는지.
+
+## 2026-08-24 — Claude: 메인 히어로 아우라 움직이기 (롤백 표시 포함)
+
+- Agent/session: Claude. 사용자 요청: 히어로 뒤 아우라를 움직이게, 다만 이상할 수 있으니 롤백 준비.
+- Status: completed. **마이그레이션 없음.**
+
+### 어떻게 움직이게 했나
+
+- 아우라를 **두 겹으로 나눴습니다.** 가운데 번지는 원(radial)은 그대로 두고, **부채꼴 빛(conic)만 돕니다.** 한 덩어리로 돌리면 번짐까지 같이 돌아 어지럽습니다.
+- 돌리는 것은 **`transform: rotate` 하나뿐**입니다. GPU가 합성만 하면 되므로 페이지를 다시 그리지 않습니다. 그라데이션 자체를 애니메이션하면 **1180px짜리 blur 상자를 매 프레임 다시 칠하게** 됩니다.
+- **72초에 한 바퀴.** 보고 있으면 도는 줄 모르고, 다시 봤을 때 달라져 있는 정도입니다. 히어로는 광고판이지 장난감이 아닙니다.
+- `prefers-reduced-motion`을 존중합니다. 움직임을 끄고 쓰는 사용자에게는 정지된 아우라만 남습니다.
+
+### 롤백
+
+- `globals.css`의 `── ROLLBACK ──` 주석으로 감싼 블록 하나를 지우면 **움직임만 멈추고 아우라는 그대로** 남습니다. 다른 것이 그 블록에 의존하지 않습니다.
+- 아우라 자체를 아예 빼려면 `page.tsx`의 `<div className="hero-aura" .../>` 한 줄과 `.hero-aura` 규칙을 지우면 됩니다.
+- Files/branch: `src/app/globals.css`, `src/app/page.tsx` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 애니메이션이 `hero-aura-turn 72s`로 붙고, 재생 시간을 18초(1/4 지점)로 옮기면 정확히 90° 회전(`matrix(0,1,-1,0,…)`)하는 것을 확인했습니다. 헤드리스 탭은 백그라운드라 시계가 멈춰 있어 시간 경과 대신 직접 확인했습니다. 가로 스크롤 없음, h1 정상.

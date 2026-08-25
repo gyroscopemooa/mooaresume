@@ -77,6 +77,11 @@ export default function HomePage() {
       <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
 
       <section className="hero container">
+        {/* The moving half of the aura. A separate element rather than a
+            pseudo-element because the still glow and the turning fan have to
+            be able to move independently — and because deleting one line here
+            is a cleaner rollback than editing a gradient. */}
+        <div className="hero-aura" aria-hidden="true"/>
         <div className="eyebrow">AI 취업 지원서 코치</div>
         <h1>좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
         <p>채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
