@@ -4,7 +4,6 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
-import { ReferralCodeEntry } from "./referral-code-entry";
 import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import styles from "./application-case-handoff.module.css";
@@ -274,11 +273,6 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
-      {/* Only offered on a paid run. A free run has nothing to attribute — the
-          referrer is paid from a real order, so showing the field here would
-          collect a code that can never convert. Already signed in at this
-          point, so it never has to ask. */}
-      {!availableCredit && <div className={styles.referralSlot}><ReferralCodeEntry /></div>}
       <button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
       {(message || authError) && <p>{message || authError}</p>}
     </div>;

@@ -75,7 +75,23 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
   // visitor — there is nothing to show and they did not come for this. On its
   // own page that would be a blank screen, so it offers the sign-in instead.
   if (!code) {
-    if (!standalone || signedIn !== false) return null;
+    if (!standalone) return null;
+    if (signedIn === null) return null;
+    if (signedIn) {
+      // Signed in and the code did not come back. Saying so beats a blank
+      // space, which reads as "this account has no referral code".
+      return (
+        <section className={styles.panel}>
+          <div className={styles.head}>
+            <Users/>
+            <div>
+              <h3>추천코드를 불러오지 못했어요</h3>
+              <p>잠시 후 새로고침해 주세요. 계속 안 되면 문의해 주시면 확인해 드리겠습니다.</p>
+            </div>
+          </div>
+        </section>
+      );
+    }
     return (
       <section className={styles.panel}>
         <div className={styles.head}>

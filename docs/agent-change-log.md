@@ -2075,3 +2075,28 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `supabase/migrations/20260824090000_referral_reward_pro.sql`(신규), `src/domain/referral.ts`, `src/components/referral-panel.tsx`, `src/components/referral-code-entry.module.css`, `src/app/refer/page.tsx` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버(1280px)에서 헤드라인 교체, `PRO 무료 이용권` 5회·`QUICK 무료 이용권` 0회, 카드 1160px에 버튼이 그 안쪽 폭을 꽉 채우는 것, 가로 스크롤 없음 확인.
 - Rollback/recovery reference: 마이그레이션은 함수 재정의뿐이라 `20260824080000`의 함수를 다시 실행하면 QUICK으로 돌아갑니다. 커밋 이전 상태는 `c9c8f03`.
+
+## 2026-08-24 — Claude: 결제 화면의 추천코드 칸을 안내 크기로, 빈 화면 없애기
+
+- Agent/session: Claude. 사용자 요청: 결제 화면의 추천코드 카드를 `로그인 후 비공개로 저장합니다` 안내 아래로, 그 정도 크기로. 그리고 `Google로 계속하기`가 안 보인다.
+- Status: completed. **마이그레이션 없음.**
+
+### 크기와 자리
+
+- 결제 화면에서 추천코드는 **결정해야 할 것이 아니라 곁에 있는 선택지**입니다. 대부분은 코드가 없습니다. 그런데 카드가 `분석에는 5~10분` 같은 안내보다 크게 자리를 차지하고 있었습니다.
+- `compact` 변형을 두어 그 안내들과 **같은 무게**로 맞췄습니다(패딩 13px, 제목 12.5px, 입력 38px). 자리도 개인정보 안내 **바로 아래**로 옮겼습니다.
+- 좁아진 만큼 입력칸과 버튼은 **다시 한 줄**로 돌아갑니다. `/refer`의 큰 카드는 위아래로 쌓인 그대로입니다 — 거기서는 그것이 그 페이지의 본론입니다.
+- 결제 화면에서 로그아웃 상태면 **버튼을 그리지 않고 한 줄만** 남깁니다(`아래에서 로그인하시면 코드를 넣는 칸이 열립니다`). 몇 줄 아래에 이미 로그인 버튼이 있고, 하나 더 두는 것은 **같은 일에 대한 두 번째 결정**입니다.
+
+### 빈 화면이 나올 수 있었습니다
+
+- `/refer`에서 **로그인은 되어 있는데 코드 조회가 실패**하면 패널이 아무것도 그리지 않았습니다. 로그아웃과 구분이 안 되고, 화면만 보면 **이 계정에는 추천코드가 없다**로 읽힙니다.
+- 그 경우 `추천코드를 불러오지 못했어요`를 띄웁니다. 안내가 없는 빈칸보다 낫습니다.
+
+### `Google로 계속하기`가 안 보인 이유
+
+- **이미 로그인되어 있기 때문입니다.** 로그아웃 상태에서만 나옵니다. 로그인 상태에서는 그 자리에 코드가 나오고, 결제 화면에서는 입력칸이 바로 열립니다.
+- 다만 **헤더에 로그인 입구가 없다**는 지적은 그대로 유효합니다. 지금 로그인이 가능한 곳은 결제 화면·이용권 링크·`/refer` 세 군데뿐입니다.
+- Files/branch: `src/components/referral-code-entry.tsx`·`.module.css`, `src/components/referral-panel.tsx`, `src/components/analysis-preparation.tsx`·`.module.css`, `src/components/application-case-handoff.tsx` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: `compact` 분기와 `.referralNote` 한 줄입니다. 커밋 이전 상태는 `d07740f`.

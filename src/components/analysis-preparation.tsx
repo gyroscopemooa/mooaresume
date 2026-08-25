@@ -21,6 +21,7 @@ import { writingStyleConfig } from "@/domain/writing-style";
 import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import { ApplicationCaseHandoff } from "@/components/application-case-handoff";
+import { ReferralCodeEntry } from "@/components/referral-code-entry";
 import { QuickCheckoutReturn } from "@/components/quick-checkout-return";
 import styles from "./analysis-preparation.module.css";
 
@@ -303,6 +304,9 @@ export function AnalysisPreparation() {
                 </small>
               </span>
             </div>
+            {/* Sits with the other notes rather than in the middle of the
+                decision. It is optional, and most people do not have a code. */}
+            <div className={styles.referralNote}><ReferralCodeEntry compact requireSignIn returnTo="/analysis/prepare" /></div>
           </section>
           <section className={styles.scope}>
             <small>{product} 제공 범위</small>
