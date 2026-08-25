@@ -5,24 +5,39 @@
    uses. Pure CSS: nothing to load, nothing to go stale, and it costs no layout.
    Kept far paler than the dark screens — this one sits on white and has to
    stay behind the type rather than compete with it. */
-/* Two layers so the light can move without the glow moving with it: the conic
-   fan turns, the radial pool underneath stays put. Rotating one composited
-   element is a transform, which the GPU handles without repainting the page —
-   animating the gradient itself would repaint a 1180px blurred box every
-   frame. */
-.hero:before{content:"";position:absolute;left:50%;top:-140px;z-index:-1;width:min(1180px,160vw);aspect-ratio:1/1;transform:translateX(-50%);pointer-events:none;background:
-  radial-gradient(closest-side,rgba(45,214,138,.16),transparent 68%);
-  filter:blur(4px)}
-.hero-aura{position:absolute;left:50%;top:-140px;z-index:-1;width:min(1180px,160vw);aspect-ratio:1/1;pointer-events:none;filter:blur(4px);
-  background:conic-gradient(from 202deg at 50% 44%,transparent 0deg,rgba(23,107,74,.09) 26deg,transparent 62deg,rgba(45,214,138,.08) 98deg,transparent 134deg,rgba(94,226,166,.07) 168deg,transparent 212deg);
-  transform:translateX(-50%)}
-/* ── ROLLBACK: delete this block to stop the movement. Nothing else depends
-   on it; the aura simply sits still. ───────────────────────────────────── */
+/* The light behind the headline.
+   A single rotating conic gradient was the first attempt and it read as a
+   turning box: a conic has hard sector edges, and sweeping them past the eye
+   is the one thing that makes the shape obvious. Three soft blobs drifting on
+   different clocks never line up, so nothing has an edge to notice — which is
+   what "flowing" actually is. */
+.hero:before{content:"";position:absolute;left:50%;top:-140px;z-index:-1;width:min(1180px,160vw);aspect-ratio:1/1;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(closest-side,rgba(45,214,138,.13),transparent 70%);filter:blur(6px)}
+.hero-aura{position:absolute;left:0;right:0;top:-160px;height:620px;z-index:-1;pointer-events:none;overflow:hidden}
+.hero-aura i{position:absolute;display:block;border-radius:50%;filter:blur(60px);opacity:.55}
+.hero-aura i:nth-child(1){left:8%;top:6%;width:46%;height:70%;background:radial-gradient(circle,rgba(45,214,138,.34),transparent 68%)}
+.hero-aura i:nth-child(2){left:44%;top:-6%;width:40%;height:62%;background:radial-gradient(circle,rgba(23,107,74,.26),transparent 66%)}
+.hero-aura i:nth-child(3){left:26%;top:24%;width:52%;height:58%;background:radial-gradient(circle,rgba(120,231,183,.30),transparent 70%)}
+/* ── ROLLBACK: delete this block to stop the movement. The three blobs stay
+   exactly where they are and nothing else depends on it. ────────────────── */
 @media(prefers-reduced-motion:no-preference){
-  .hero-aura{will-change:transform;animation:hero-aura-turn 72s linear infinite}
-  @keyframes hero-aura-turn{
-    from{transform:translateX(-50%) rotate(0deg)}
-    to{transform:translateX(-50%) rotate(360deg)}
+  .hero-aura i{will-change:transform}
+  /* Durations are deliberately co-prime-ish so the three never return to the
+     same arrangement — a shared period is what makes a loop visible. */
+  .hero-aura i:nth-child(1){animation:aura-drift-a 29s ease-in-out infinite alternate}
+  .hero-aura i:nth-child(2){animation:aura-drift-b 37s ease-in-out infinite alternate}
+  .hero-aura i:nth-child(3){animation:aura-drift-c 43s ease-in-out infinite alternate}
+  @keyframes aura-drift-a{
+    from{transform:translate3d(0,0,0) scale(1)}
+    to{transform:translate3d(9%,6%,0) scale(1.16)}
+  }
+  @keyframes aura-drift-b{
+    from{transform:translate3d(0,0,0) scale(1.1)}
+    to{transform:translate3d(-11%,8%,0) scale(.92)}
+  }
+  @keyframes aura-drift-c{
+    from{transform:translate3d(0,0,0) scale(.95)}
+    to{transform:translate3d(6%,-9%,0) scale(1.2)}
   }
 }
 /* ── end rollback block ──────────────────────────────────────────────────*/

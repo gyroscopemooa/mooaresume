@@ -24,6 +24,7 @@ const sections = [
   ["materials", "공고와 이력서"],
   ["plans", "어떤 걸 고를까"],
   ["stance", "첨삭 방향"],
+  ["tips", "현장에서 하는 조언"],
   ["result", "결과 읽는 법"],
   ["faq", "자주 막히는 것"],
 ] as const;
@@ -151,6 +152,44 @@ export default function GuidePage() {
               <b>어떤 방향을 골라도 바뀌지 않는 것</b>
               <p>없는 경험·역할·기간·자격·수치는 만들지 않습니다. 다듬는 것은 <b>표현</b>이고, 실제로 하신 일은 그대로 둡니다. 방향은 위험을 얼마나 감수할지에 대한 선택이지, 사실을 바꾸는 스위치가 아닙니다.</p>
             </div>
+          </div>
+        </section>
+
+        <section id="tips" className={styles.block}>
+          <span>FIELD NOTES</span>
+          <h2>상담하면서 가장 많이 하는 말</h2>
+          <p>도구 사용법이 아니라, <b>수많은 자기소개서를 마주하며 반복해서 하게 된 이야기</b>입니다. 이것만 지켜도 첨삭이 훨씬 수월해집니다.</p>
+          <div className={styles.tips}>
+            <article>
+              <div className={styles.tipHead}><span>01</span><h3>회사가 안 물어본 것부터 쓰지 마세요</h3></div>
+              <p>많은 분이 어릴 적 이야기나 성격 소개로 시작합니다. 읽는 사람이 알고 싶은 것은 <b>이 사람이 이 자리에서 무엇을 할 수 있는가</b> 하나입니다. 문항이 묻는 것에 <b>첫 문장부터</b> 답하세요.</p>
+              <em>&ldquo;저는 어릴 때부터…&rdquo; 대신 &ldquo;○○ 공정에서 불량을 줄인 경험이 있습니다.&rdquo;</em>
+            </article>
+            <article>
+              <div className={styles.tipHead}><span>02</span><h3>&lsquo;우리&rsquo;가 아니라 &lsquo;제가&rsquo;</h3></div>
+              <p>팀 성과를 쓰다 보면 문장이 전부 &lsquo;우리 팀은&rsquo;으로 끝납니다. 면접에서 가장 먼저 들어오는 질문이 <b>&ldquo;그중 본인은 무엇을 하셨나요&rdquo;</b>입니다.</p>
+              <p>팀 성과는 그대로 두되, <b>내가 판단하고 내가 움직인 문장</b>을 한 줄이라도 넣어 두세요.</p>
+            </article>
+            <article>
+              <div className={styles.tipHead}><span>03</span><h3>지원동기에 회사 이름이 없다면</h3></div>
+              <p>회사 이름만 바꿔서 다른 회사에 그대로 낼 수 있는 지원동기는, 읽는 사람도 그렇게 읽습니다. <b>공고에 적힌 표현</b>이나 그 회사가 실제로 하는 일 하나를 근거로 잡으세요.</p>
+              <em>성장·비전·열정만으로 채운 문단은 어느 회사에나 맞고, 그래서 어디에도 안 맞습니다.</em>
+            </article>
+            <article>
+              <div className={styles.tipHead}><span>04</span><h3>수치가 없어도 괜찮습니다</h3></div>
+              <p>숫자를 만들어 넣는 것이 가장 위험합니다. 면접에서 한 번만 물어보면 드러나고, 그때는 문장 하나가 아니라 <b>사람이 의심받습니다.</b></p>
+              <p>수치가 없으면 <b>무엇이 어떻게 달라졌는지</b>를 쓰세요. &ldquo;재작업 요청이 눈에 띄게 줄었습니다&rdquo;도 충분한 근거입니다.</p>
+            </article>
+            <article>
+              <div className={styles.tipHead}><span>05</span><h3>짧은 재직기간은 숨기지 말고 설명하세요</h3></div>
+              <p>이력서에 있는 것을 자기소개서에서 빼면 <b>더 눈에 띕니다.</b> 면접관은 두 서류를 나란히 놓고 봅니다.</p>
+              <p>기간이 짧았다면 그 안에서 <b>무엇을 맡았고 무엇을 배웠는지</b>를 한 줄로 정리해 두세요. 먼저 말하는 쪽이 언제나 유리합니다.</p>
+            </article>
+            <article>
+              <div className={styles.tipHead}><span>06</span><h3>제출 전에 소리 내어 한 번 읽어 보세요</h3></div>
+              <p>눈으로 읽으면 넘어가는 문장이 입으로 읽으면 걸립니다. <b>숨이 차는 문장은 너무 길고</b>, 읽다가 무슨 말인지 모르겠는 문장은 읽는 사람도 모릅니다.</p>
+              <p>가장 빠르고 확실한 마지막 점검입니다.</p>
+            </article>
           </div>
         </section>
 

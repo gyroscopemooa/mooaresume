@@ -71,22 +71,21 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
-        <nav aria-label="주요 메뉴"><Link href="#how">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
+        <nav aria-label="주요 메뉴"><Link href="/guide">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
       </header>
 
       <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
 
       <section className="hero container">
-        {/* The moving half of the aura. A separate element rather than a
-            pseudo-element because the still glow and the turning fan have to
-            be able to move independently — and because deleting one line here
-            is a cleaner rollback than editing a gradient. */}
-        <div className="hero-aura" aria-hidden="true"/>
+        {/* Three drifting blobs rather than one rotating fan. A conic gradient
+            has hard sector edges, and sweeping them past the eye is exactly
+            what made the first version read as a turning box. */}
+        <div className="hero-aura" aria-hidden="true"><i/><i/><i/></div>
         <div className="eyebrow">AI 취업 지원서 코치</div>
         <h1>좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
         <p>채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
         <LandingEntry />
-        <div className="trust-row"><span><Check/> 없는 경험 생성 금지</span><span><Check/> 내 말투와 사실 보존</span><span><Check/> 합격 확률 표시 없음</span></div>
+        <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
       </section>
 
       <section className="proof container" aria-label="분석 결과 예시">
