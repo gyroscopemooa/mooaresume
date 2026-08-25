@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { ArrowRight, CheckCircle2, Gift, Mail, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
-import { describeReferralError, parseReferralCode } from "@/domain/referral";
+import { ReferralCodeEntry } from "./referral-code-entry";
 import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import styles from "./application-case-handoff.module.css";
@@ -39,10 +39,6 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
   // a QUICK credit does not pay for a PRO run, and offering it would end in a
   // refusal after the case is already saved.
   const [availableCredit, setAvailableCredit] = useState(false);
-  const [referralCode, setReferralCode] = useState("");
-  const [referralApplied, setReferralApplied] = useState(false);
-  const [referralMessage, setReferralMessage] = useState("");
-  const [referralBusy, setReferralBusy] = useState(false);
   // A failed sign-in redirects here with the reason in the query string, and
   // nothing was reading it — the visitor saw a plain login screen with no sign
   // their link had just been rejected, so the natural next move was to request
@@ -75,37 +71,6 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
     })();
     return () => { cancelled = true; };
   }, [wantedProduct]);
-
-  /**
-   * Records that this account arrived through someone's code.
-   *
-   * Pays nobody. The referrer is credited from the paid-order path, because a
-   * reward on entry is a reward for typing — and the first person to notice
-   * writes a loop that types their own code on a hundred throwaway accounts.
-   */
-  async function applyReferral() {
-    const parsed = parseReferralCode(referralCode);
-    if (!parsed.ok) {
-      setReferralMessage(parsed.reason === "empty" ? "코드를 입력해 주세요." : "코드 형식을 확인해 주세요. 예: MOOA7KQ2XZ");
-      return;
-    }
-    setReferralBusy(true);
-    setReferralMessage("");
-    try {
-      const supabase = createClient();
-      const { error } = await supabase.rpc("apply_referral_code", { p_code: parsed.code });
-      if (error) {
-        setReferralMessage(describeReferralError(error.message));
-        return;
-      }
-      setReferralApplied(true);
-      setReferralMessage("추천코드가 적용되었습니다. 결제가 끝나면 추천해 주신 분께 이용권이 지급됩니다.");
-    } catch {
-      setReferralMessage("추천코드를 적용하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setReferralBusy(false);
-    }
-  }
 
   /**
    * Spends a credit instead of opening a checkout.
@@ -311,30 +276,9 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
       {/* Only offered on a paid run. A free run has nothing to attribute — the
           referrer is paid from a real order, so showing the field here would
-          collect a code that can never convert. */}
-      {!availableCredit && (
-        <div className={styles.referral} data-applied={referralApplied}>
-          <div className={styles.referralHead}>
-            <Users/>
-            <span>추천코드가 있으신가요?<small>선택 · 친구가 코드를 주셨다면 넣어 주세요</small></span>
-          </div>
-          <div className={styles.referralRow}>
-            <input
-              value={referralCode}
-              onChange={(event) => setReferralCode(event.target.value)}
-              placeholder="MOOA7KQ2XZ"
-              disabled={referralBusy || referralApplied}
-              maxLength={20}
-              aria-label="추천코드"
-              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void applyReferral(); } }}
-            />
-            <button type="button" onClick={() => void applyReferral()} disabled={referralBusy || referralApplied}>
-              {referralApplied ? "적용 완료" : referralBusy ? "확인 중..." : "적용하기"}
-            </button>
-          </div>
-          {referralMessage && <p className={styles.referralMessage} data-ok={referralApplied}>{referralMessage}</p>}
-        </div>
-      )}
+          collect a code that can never convert. Already signed in at this
+          point, so it never has to ask. */}
+      {!availableCredit && <div className={styles.referralSlot}><ReferralCodeEntry /></div>}
       <button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
       {(message || authError) && <p>{message || authError}</p>}
     </div>;

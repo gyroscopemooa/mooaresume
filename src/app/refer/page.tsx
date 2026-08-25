@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ReferralPanel } from "@/components/referral-panel";
+import { ReferralCodeEntry } from "@/components/referral-code-entry";
 import styles from "./refer.module.css";
 
 /**
@@ -33,6 +34,14 @@ export default function ReferPage() {
         </div>
 
         <ReferralPanel standalone />
+
+        {/* The other direction. Someone who was handed a code will come here
+            looking for where to put it, and the only field for it used to be
+            buried in the checkout flow. Asking them to sign in first is also
+            the answer to "whose account does this apply to". */}
+        <div className={styles.entry}>
+          <ReferralCodeEntry requireSignIn returnTo="/refer" />
+        </div>
 
         <div className={styles.how}>
           <h2>어떻게 진행되나요</h2>

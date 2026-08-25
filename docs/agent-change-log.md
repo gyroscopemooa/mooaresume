@@ -2027,3 +2027,27 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 첫 단계 문구도 `아래 코드를` → `위 코드를`로 고쳤습니다. 코드 카드가 이 목록보다 위에 있습니다.
 - Files/branch: `src/app/refer/page.tsx`, `src/app/refer/refer.module.css` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 네 항목 모두 제목과 설명이 **같은 열**(`sameColumn: true`)에 있고 설명이 한 줄로 들어가는 것, 375px에서 설명 폭 260px에 가로 스크롤 없는 것 확인.
+
+## 2026-08-24 — Claude: 받은 코드를 넣을 자리, 그리고 "어느 계정에 적용되나"
+
+- Agent/session: Claude. 사용자 질문: 비로그인인데 코드가 보이면 그 코드를 넣었을 때 **어느 계정에** 주는 것인가.
+- Status: completed. **마이그레이션 없음.**
+
+### 답: 넣는 사람이 로그인한 계정입니다
+
+- 코드는 **보상받을 사람(추천인)**을 가리키고, 코드를 **넣는 계정**이 추천받은 사람입니다. `apply_referral_code`는 `referred_user_id = auth.uid()`로 기록하므로 **세션 없이는 절반이 비어 성립하지 않습니다.**
+- 확인 결과 비로그인 상태에서 `/refer`는 코드를 보여주지 않고 로그인 안내만 띄웁니다. 결제 화면의 입력칸도 `if (authenticated)` 안에 있어 로그아웃 상태에서는 그려지지 않습니다.
+- 다만 **질문이 나온 것 자체가 화면의 문제**였습니다. 그 관계가 어디에도 쓰여 있지 않았습니다.
+
+### 진짜 빠져 있던 것 — 받은 코드를 넣을 자리
+
+- `/refer`는 **내 코드만** 보여줬습니다. 코드를 **받은** 사람이 그 페이지에 오면 넣을 곳이 없고, 유일한 입력칸은 결제 흐름 깊숙이 묻혀 있었습니다. 페이지 이름이 `친구 추천`이니 받은 사람도 당연히 여기로 옵니다.
+- `/refer`에 **`받은 추천코드가 있으신가요?`** 카드를 더했습니다. 로그아웃이면 **`코드는 로그인한 계정에 적용됩니다`**라고 적고 로그인을 권합니다 — 질문에 대한 답을 화면이 직접 합니다.
+
+### 입력칸을 한 곳으로 모았습니다
+
+- 결제 화면과 `/refer`가 각자 입력칸을 갖고 있으면 **규칙이 갈라집니다.** `ReferralCodeEntry` 하나로 합치고 두 곳에서 씁니다.
+- 차이는 로그아웃 처리 한 가지뿐입니다: 결제 화면은 이미 로그인한 뒤라 물을 일이 없고, `/refer`는 물어야 합니다(`requireSignIn`).
+- Files/branch: `src/components/referral-code-entry.tsx`·`referral-code-entry.module.css`(신규), `src/components/application-case-handoff.tsx`·`.module.css`, `src/app/refer/page.tsx`·`refer.module.css` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 로그아웃 상태의 `/refer`가 **코드를 보여주지 않고** 두 카드 모두 로그인 안내를 띄우는 것, 콘솔 오류 없음 확인.
+- Rollback/recovery reference: 새 컴포넌트 하나와 두 사용처입니다. 커밋 이전 상태는 `54a18a1`.
