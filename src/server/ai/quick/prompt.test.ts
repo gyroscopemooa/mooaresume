@@ -62,7 +62,7 @@ describe("공고와 지원자료를 첨삭에 반영", () => {
   });
 
   it("자료 파일 이름을 함께 표시한다", () => {
-    expect(buildQuickAnalysisInput(withResume)).toContain("[이력서 · 이력서.pdf]");
+    expect(buildQuickAnalysisInput(withResume)).toContain("[이력서(입사지원서) · 이력서.pdf]");
   });
 
   // A real case: the applicant's own answer said "대학을 졸업하고 현대자동차에서

@@ -44,6 +44,73 @@ const interviewRiskOutputSchema = z.object({
   preparation: z.string().min(1),
 });
 
+// FINAL's own fields. PRO reads the cover letter against the posting; FINAL
+// reads the cover letter against the résumé, which is what the interviewer
+// actually does. Kept separate from proOutputShape so a PRO run is never asked
+// for a timeline it has no résumé to build.
+const careerTimelineEntryOutputSchema = z.object({
+  period: z.string().min(1),
+  title: z.string().min(1),
+  category: z.enum(["education", "career", "project", "certification", "training", "gap", "other"]),
+  source: z.enum(["resume", "cover_letter", "both"]),
+  note: z.string().min(1),
+});
+const documentConflictOutputSchema = z.object({
+  field: z.enum(["company", "period", "education", "certification", "project", "role", "achievement", "order", "gap"]),
+  resumeStatement: z.string().min(1),
+  coverLetterQuote: z.string().min(1),
+  conflict: z.string().min(1),
+  severity: z.enum(["high", "medium", "low"]),
+  resolution: z.string().min(1),
+});
+const interviewerFlagOutputSchema = z.object({
+  headline: z.string().min(1),
+  observation: z.string().min(1),
+  evidenceQuote: z.string().min(1),
+  resumeReference: z.string().nullable(),
+  likelyQuestion: z.string().min(1),
+  followUps: z.array(z.string().min(1)).max(3),
+  preparation: z.string().min(1),
+  likelihood: z.enum(["high", "medium", "low"]),
+});
+const finalChecklistItemOutputSchema = z.object({ item: z.string().min(1), why: z.string().min(1) });
+const rejectionRiskOutputSchema = z.object({
+  headline: z.string().min(1),
+  reason: z.string().min(1),
+  evidenceQuote: z.string().min(1),
+  severity: z.enum(["high", "medium", "low"]),
+  fix: z.string().min(1),
+  handling: z.enum(["removed", "softened", "kept_by_choice", "needs_applicant"]),
+});
+const reviewerNoteOutputSchema = z.object({
+  lens: z.enum(["hr", "field_lead", "domain_expert", "editor"]),
+  finding: z.string().min(1),
+  evidenceQuote: z.string().min(1),
+  recommendation: z.string().min(1),
+});
+const claimEvidenceOutputSchema = z.object({
+  claim: z.string().min(1),
+  evidenceQuote: z.string().nullable(),
+  verdict: z.enum(["supported", "weak", "unsupported"]),
+  note: z.string().min(1),
+});
+const firstImpressionOutputSchema = z.object({
+  remembered: z.array(z.string().min(1)).max(5),
+  missing: z.array(z.string().min(1)).max(5),
+  openingIssue: z.string().nullable(),
+  advice: z.string().min(1),
+});
+// Lists of quoted sentences, never counts. Counting is arithmetic and belongs
+// to code; classifying a sentence is judgement and belongs here.
+const answerStructureOutputSchema = z.object({
+  questionOrder: z.number().int().positive(),
+  situation: z.array(z.string().min(1)).max(12),
+  action: z.array(z.string().min(1)).max(12),
+  result: z.array(z.string().min(1)).max(12),
+  jobLink: z.array(z.string().min(1)).max(12),
+  reading: z.string().min(1),
+});
+
 const baseOutputShape = {
   schemaVersion: z.literal("1.0"),
   readiness: z.object({ score: z.number().int().min(0).max(100), label: z.string().min(1), summary: z.string().min(1), reasons: z.array(z.string().min(1)).min(1).max(5) }),
@@ -68,16 +135,45 @@ const proOutputShape = {
   interviewRisks: z.array(interviewRiskOutputSchema).max(5),
 };
 
-// Parsing stays permissive: QUICK responses simply omit the PRO fields.
+// Same reasoning as the PRO fields above: no minimum anywhere. An application
+// whose two documents agree has no conflicts, and forcing one out of the model
+// means inventing a contradiction that will send the applicant to fix a
+// sentence that was already correct.
+const finalOutputShape = {
+  careerTimeline: z.array(careerTimelineEntryOutputSchema).max(20),
+  documentConflicts: z.array(documentConflictOutputSchema).max(10),
+  interviewerFlags: z.array(interviewerFlagOutputSchema).max(8),
+  finalChecklist: z.array(finalChecklistItemOutputSchema).max(8),
+  rejectionRisks: z.array(rejectionRiskOutputSchema).max(5),
+  reviewerNotes: z.array(reviewerNoteOutputSchema).max(8),
+  claimEvidence: z.array(claimEvidenceOutputSchema).max(8),
+  firstImpression: firstImpressionOutputSchema,
+  answerStructures: z.array(answerStructureOutputSchema).max(10),
+};
+
+// Parsing stays permissive: QUICK responses simply omit the PRO fields, and
+// QUICK/PRO responses omit the FINAL ones.
 export const quickAnalysisOutputSchema = z.object({
   ...baseOutputShape,
   requirementMatches: proOutputShape.requirementMatches.optional(),
   interviewQuestions: proOutputShape.interviewQuestions.optional(),
   interviewRisks: proOutputShape.interviewRisks.optional(),
+  careerTimeline: finalOutputShape.careerTimeline.optional(),
+  documentConflicts: finalOutputShape.documentConflicts.optional(),
+  interviewerFlags: finalOutputShape.interviewerFlags.optional(),
+  finalChecklist: finalOutputShape.finalChecklist.optional(),
+  rejectionRisks: finalOutputShape.rejectionRisks.optional(),
+  reviewerNotes: finalOutputShape.reviewerNotes.optional(),
+  claimEvidence: finalOutputShape.claimEvidence.optional(),
+  firstImpression: finalOutputShape.firstImpression.optional(),
+  answerStructures: finalOutputShape.answerStructures.optional(),
 });
 
 const quickRequestSchema = z.object(baseOutputShape);
 const proRequestSchema = z.object({ ...baseOutputShape, ...proOutputShape });
+// FINAL is PRO plus its own fields, never PRO minus anything: everything the
+// pricing table already promises at 9,900원 has to still be in the 14,900원 run.
+const finalRequestSchema = z.object({ ...baseOutputShape, ...proOutputShape, ...finalOutputShape });
 
 export type QuickAnalysisOutput = z.infer<typeof quickAnalysisOutputSchema>;
 
@@ -126,6 +222,7 @@ export function parseQuickAnalysisOutput(input: unknown): QuickAnalysisOutput {
  * required, so the PRO-only fields must be absent from the QUICK schema rather
  * than merely optional — otherwise QUICK would be forced to invent them.
  */
-export function getQuickAnalysisJsonSchema(product: "QUICK" | "PRO" = "QUICK") {
+export function getQuickAnalysisJsonSchema(product: "QUICK" | "PRO" | "FINAL" = "QUICK") {
+  if (product === "FINAL") return z.toJSONSchema(finalRequestSchema);
   return z.toJSONSchema(product === "PRO" ? proRequestSchema : quickRequestSchema);
 }

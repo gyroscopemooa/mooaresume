@@ -46,6 +46,19 @@ function hasSeparatedQuestions(request: AnalysisRequest) {
 }
 
 /**
+ * The tier that may open the supporting materials.
+ *
+ * Every rule below asked `product === "PRO"` directly, which silently made
+ * FINAL behave like QUICK the moment it was added — no length target, no
+ * filling blank questions, no writing from the résumé. FINAL is PRO plus its
+ * own cross-checks, never PRO minus anything, so the question is "may this run
+ * use the materials", not "is this run PRO".
+ */
+export function hasProCapabilities(request: AnalysisRequest) {
+  return request.product === "PRO" || request.product === "FINAL";
+}
+
+/**
  * PRO BUILD is the only mode that writes missing content. QUICK BUILD still
  * points out what is missing without filling it, because filling honestly needs
  * the supporting-material cross-check that only PRO collects.
@@ -61,7 +74,7 @@ function hasSeparatedQuestions(request: AnalysisRequest) {
  * all, so including it would only invite invention.
  */
 export function expandsToTargetLength(request: AnalysisRequest) {
-  return request.product === "PRO"
+  return hasProCapabilities(request)
     && (request.writingMode === "BUILD" || request.writingMode === "CREATE")
     && hasSeparatedQuestions(request);
 }
@@ -80,13 +93,13 @@ export function expandsToTargetLength(request: AnalysisRequest) {
  * up.
  */
 export function expandsFromOwnContent(request: AnalysisRequest) {
-  return request.product === "PRO"
+  return hasProCapabilities(request)
     && request.writingMode === "POLISH"
     && hasSeparatedQuestions(request);
 }
 
 export function fillsBlankQuestions(request: AnalysisRequest) {
-  return request.product === "PRO"
+  return hasProCapabilities(request)
     && request.writingMode === "BUILD"
     && hasSeparatedQuestions(request);
 }
@@ -100,7 +113,7 @@ export function fillsBlankQuestions(request: AnalysisRequest) {
  * no material really has nothing, and writing it would only invent.
  */
 export function fillsQuestionsFromMaterials(request: AnalysisRequest) {
-  return request.product === "PRO"
+  return hasProCapabilities(request)
     && request.writingMode === "CREATE"
     && hasSeparatedQuestions(request)
     && hasSupportingMaterials(request);

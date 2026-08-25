@@ -5,8 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ClipboardList,
   CreditCard,
+  Database,
   ExternalLink,
   FileText,
+  Gift,
   History,
   LayoutDashboard,
   LogOut,
@@ -22,6 +24,8 @@ const NAV = [
   { href: "/meensoo/analyses", label: "첨삭 결과", Icon: FileText },
   { href: "/meensoo/mail", label: "메일 보내기", Icon: Send, exact: true },
   { href: "/meensoo/mail/history", label: "메일 발송 기록", Icon: History },
+  { href: "/meensoo/rewards", label: "무료 이용권", Icon: Gift },
+  { href: "/meensoo/research", label: "축적 데이터", Icon: Database },
   { href: "/meensoo/inquiries", label: "문의", Icon: MessageSquare, badgeKey: "inquiries" as const },
   { href: "/meensoo/waitlist", label: "사전 신청", Icon: Users },
 ];

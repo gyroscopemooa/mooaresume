@@ -117,6 +117,18 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
     consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })),
     interviewQuestions: (output.interviewQuestions ?? []).map((item, index) => ({ id: `interview-${index + 1}`, ...item })),
     interviewRisks: (output.interviewRisks ?? []).map((item, index) => ({ id: `interview-risk-${index + 1}`, ...item })),
+    careerTimeline: (output.careerTimeline ?? []).map((item, index) => ({ id: `timeline-${index + 1}`, ...item })),
+    documentConflicts: (output.documentConflicts ?? []).map((item, index) => ({ id: `conflict-${index + 1}`, ...item })),
+    interviewerFlags: (output.interviewerFlags ?? []).map((item, index) => ({ id: `interviewer-flag-${index + 1}`, ...item })),
+    finalChecklist: (output.finalChecklist ?? []).map((item, index) => ({ id: `final-check-${index + 1}`, ...item })),
+    suppliedResume: request.documents.some((document) => document.kind === "resume" || document.kind === "career_description"),
+    rejectionRisks: (output.rejectionRisks ?? []).map((item, index) => ({ id: `rejection-${index + 1}`, ...item })),
+    reviewerNotes: (output.reviewerNotes ?? []).map((item, index) => ({ id: `reviewer-${index + 1}`, ...item })),
+    claimEvidence: (output.claimEvidence ?? []).map((item, index) => ({ id: `claim-${index + 1}`, ...item })),
+    firstImpression: output.firstImpression ?? null,
+    // Stored as the model classified them; every count on screen is derived
+    // from these lists by countAnswerStructure, never by the model.
+    answerStructures: output.answerStructures ?? [],
     coverageNotes,
   });
 }
@@ -124,7 +136,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
 export class QuickAnalysisProvider implements ResumeAnalysisProvider {
   constructor(private readonly gateway: QuickAnalysisGateway, private readonly maxAttempts = 2) {}
   async analyze(request: AnalysisRequest): Promise<ResultDocument> {
-    if (request.product !== "QUICK" && request.product !== "PRO") throw new Error("UNSUPPORTED_ANALYSIS_PRODUCT");
+    if (request.product !== "QUICK" && request.product !== "PRO" && request.product !== "FINAL") throw new Error("UNSUPPORTED_ANALYSIS_PRODUCT");
     const questions = getQuestions(request); if (!questions.length) throw new Error("QUICK_QUESTION_REQUIRED");
     let feedback: string[] = []; let lastIssues: ReturnType<typeof validateQuickAnalysis> = [];
     for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) { const gatewayResult = await this.gateway.analyze(request, feedback); const issues = validateQuickAnalysis(request, gatewayResult.output); lastIssues = issues; if (!issues.length) return createQuickAnalysisResult(request, gatewayResult); feedback = issues.map((issue) => issue.message); }

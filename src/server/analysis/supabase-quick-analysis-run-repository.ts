@@ -3,7 +3,8 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { validateAnalysisRequest } from "@/application/analysis-contract";
-import { resultDocumentSchema } from "@/domain/result-document";
+import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
+import { RESEARCH_CONSENT_VERSION, buildResearchSnapshot } from "./research-capture";
 import type { QuickAnalysisRunRepository } from "./quick-analysis-orchestrator";
 
 const envSchema = z.object({
@@ -84,7 +85,10 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     const requestDocuments = (versions ?? [])
       .filter((version) => version.normalized_text?.trim())
       .map((version) => ({ kind: documentKind(version.document_id), text: version.normalized_text, filename: version.original_filename ?? undefined }))
-      .filter((document) => run.product === "PRO" || !supportingKinds.has(document.kind));
+      // FINAL, not just PRO. Left as `=== "PRO"` this drops the résumé from
+      // every resumed FINAL run, which is the one document FINAL exists to
+      // cross-check against.
+      .filter((document) => run.product !== "QUICK" || !supportingKinds.has(document.kind));
     const { data: applicationCase } = await client().from("application_cases").select("company_name, role_name").eq("id", run.application_case_id).maybeSingle();
     return { analysisRunId: run.id, responseId: run.response_id, request: validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments }) };
   }
@@ -97,6 +101,39 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       p_result: validated,
     });
     if (error) throw new Error(`QUICK_ANALYSIS_COMPLETE_FAILED:${error.code}`);
+    await this.captureForResearch(analysisRunId, validated);
+  }
+
+  /**
+   * Keeps a de-identified copy when the applicant has said yes.
+   *
+   * Runs after the result is safely stored and never throws: the analysis is
+   * finished and paid for, and nothing about improving our own rules is worth
+   * turning a delivered result into a failed one. The consent check itself
+   * lives in SQL, so a mistake here cannot start collecting.
+   */
+  private async captureForResearch(analysisRunId: string, result: ResultDocument) {
+    try {
+      const payload = buildResearchSnapshot(result);
+      const { error } = await client().rpc("capture_research_snapshot", {
+        p_analysis_run_id: analysisRunId,
+        p_owner_user_id: this.ownerUserId,
+        p_consent_version: RESEARCH_CONSENT_VERSION,
+        p_product: payload.product,
+        p_writing_mode: payload.writingMode,
+        p_editing_stance: payload.editingStance,
+        p_redacted_original: payload.redactedOriginal,
+        p_redacted_revised: payload.redactedRevised,
+        p_redaction_summary: payload.redactionSummary,
+        p_readiness_score: payload.readinessScore,
+        p_findings: payload.findings,
+        p_target_company: payload.targetCompany,
+        p_target_role: payload.targetRole,
+      });
+      if (error) console.error("research_snapshot_failed", error.message);
+    } catch (caught) {
+      console.error("research_snapshot_failed", caught instanceof Error ? caught.message : "UNKNOWN_ERROR");
+    }
   }
 
   async fail(analysisRunId: string, failureCode: string, retryable: boolean) {

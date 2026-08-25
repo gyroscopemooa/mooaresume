@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { coverLetterQuestionSchema } from "@/domain/cover-letter-question";
 import { writingStyleSchema } from "@/domain/writing-style";
+import { editingStanceSchema } from "@/domain/editing-stance";
 
 const STORAGE_KEY = "mooa:guest-draft:v1";
 
@@ -14,7 +15,9 @@ export const guestDraftSchema = z.object({
   sourceFileSizeBytes: z.number().int().nonnegative().optional(),
   temporaryWritingMode: z.enum(["CREATE", "BUILD", "POLISH"]).optional(),
   writingStyle: writingStyleSchema.default("BALANCED"),
-  selectedProduct: z.enum(["QUICK", "PRO"]).optional(),
+  // Defaulted so drafts saved before the stance existed still parse.
+  editingStance: editingStanceSchema.default("BALANCED"),
+  selectedProduct: z.enum(["QUICK", "PRO", "FINAL"]).optional(),
   // Collected at input so a posting listing several positions can say which
   // one the applicant is going for. Optional: drafts saved before these
   // existed still parse.

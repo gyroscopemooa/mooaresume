@@ -1,4 +1,5 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
+import { EDITING_STANCE_INSTRUCTION, RED_TEAM_HANDLING_INSTRUCTION, resolveEditingStance } from "@/domain/editing-stance";
 import {
   expandsFromOwnContent,
   expandsToTargetLength,
@@ -17,7 +18,7 @@ export const QUICK_PROMPT_VERSION = "quick-3.3";
 // so every PRO promise that depends on them — 자료 간 충돌 검사, 근거 보완,
 // 더 적합한 경험 추천 — was impossible to deliver.
 const SUPPORTING_LABEL: Record<(typeof SUPPORTING_KINDS)[number], string> = {
-  resume: "이력서",
+  resume: "이력서(입사지원서)",
   career_description: "경력기술서",
   portfolio: "포트폴리오·추가 경험",
 };
@@ -66,10 +67,67 @@ const revisionRequestText = (request: AnalysisRequest) =>
 const hasJobPosting = (request: AnalysisRequest) =>
   request.documents.some((document) => document.kind === "job_posting" && document.text.trim().length > 0);
 
+/**
+ * What FINAL is for.
+ *
+ * PRO already reads the résumé — it is one of the supporting materials — but it
+ * reads it as extra evidence for the cover letter. FINAL reads the two against
+ * each other, which is the thing an interviewer actually does: résumé open on
+ * the left, cover letter on the right, finger on the date that does not line up.
+ *
+ * These rules are additive on top of the PRO block. FINAL is never PRO minus
+ * anything — everything sold at the lower tier still has to come back.
+ */
+const FINAL_INSTRUCTIONS = [
+  "careerTimeline: 이력서와 자기소개서에 나타난 학력·경력·프로젝트·자격증·교육·공백을 시간 순서대로 정리하세요. period는 자료에 적힌 표기를 그대로 옮기고(예: '2023.03~2024.07'), 없는 날짜를 추정해 채우지 마세요. source에는 그 항목이 이력서에서 나왔는지, 자기소개서에서 나왔는지, 양쪽 모두인지 표시하세요.",
+  // A row that appears in only one document is the whole point of the field.
+  // An experience the applicant spends a paragraph on but never listed, or a
+  // job on the résumé the cover letter never mentions, is what the interviewer
+  // asks about first.
+  "한쪽 자료에만 있는 항목을 빠뜨리지 마세요. 자기소개서에서 길게 설명한 경험이 이력서에 없거나, 이력서에 적힌 경력이 자기소개서에 한 번도 나오지 않는 것은 면접관이 가장 먼저 묻는 지점입니다.",
+  "날짜를 알 수 없는 항목은 목록에서 빼지 말고, period에 자료에 적힌 그대로(또는 '기간 미기재')를 넣고 note에 무엇이 확인되지 않는지 적으세요.",
+  "documentConflicts: 이력서와 자기소개서가 어긋나는 지점을 찾으세요. 회사명, 재직기간, 학력·교육기간, 자격증 취득 시점, 프로젝트 기간, 직무 이동, 입퇴사 시점, 공백기간, 직책과 담당업무, 성과 수치가 대상입니다. resumeStatement에는 이력서 쪽 기재를, coverLetterQuote에는 자기소개서 원문을 그대로 옮기고, conflict에는 무엇이 어떻게 어긋나는지, resolution에는 어느 쪽을 어떻게 맞춰야 하는지 적으세요.",
+  // The failure mode this guards against is the expensive one: telling an
+  // applicant their correct sentence is wrong sends them to "fix" a true fact.
+  "두 자료가 실제로 어긋날 때만 넣으세요. 표현이 다를 뿐 같은 사실을 말하는 것은 충돌이 아닙니다. 어긋나지 않으면 documentConflicts를 빈 배열로 두세요. 맞는 문장을 틀렸다고 하면 지원자는 사실인 내용을 고치러 갑니다.",
+  "날짜 비교에서 멈추지 말고 지원자의 전체 커리어 흐름을 하나로 세운 뒤, 시간 순서상 말이 안 되는 곳(기간 겹침, 졸업일보다 앞선 입사일, 설명되지 않는 공백, 자기소개서의 사건 순서와 이력서 날짜의 불일치)을 찾으세요.",
+  "interviewerFlags: 이 지원서를 실제 면접관이 이력서와 함께 펼쳐 놓고 볼 때 확인하려 들 지점을 찾으세요. headline은 화면에 그대로 보이는 한 줄 요약이고, observation에는 무엇이 눈에 걸리는지, evidenceQuote에는 그 판단의 근거가 되는 지원자 원문을 그대로, resumeReference에는 대조한 이력서 기재를(없으면 null), likelyQuestion에는 면접관이 실제로 던질 질문 한 문장을, followUps에는 그 답변에 이어질 꼬리질문을, preparation에는 면접 전에 준비해 둘 것을 적으세요.",
+  "interviewerFlags는 문제 지적이 아니라 준비 안내입니다. 왜 그 질문이 나오는지 설명하고, 답변에서 무엇을 구분해서 말해야 하는지까지 적으세요(예: 프로젝트 전체 성과와 본인의 직접 기여를 나눠서 답하기).",
+  "다음은 특히 자주 질문이 되는 지점입니다: 짧은 재직기간, 긴 공백기간, 설명이 부족한 경력 이동, 지원 직무와 연결이 약한 경험, 과장으로 읽힐 수 있는 표현, 근거가 불분명한 수치, 담당 범위가 모호한 프로젝트, 지원동기와 실제 경력의 연결이 약한 부분.",
+  "interviewerFlags는 PRO의 interviewRisks·interviewQuestions와 같은 내용을 반복하지 마세요. interviewRisks는 자기소개서 안의 약한 고리이고, interviewerFlags는 이력서와 대조했을 때 드러나는 지점입니다.",
+  "finalChecklist: 면접 전에 지원자가 직접 확인·준비해야 할 것을 최대 8개로 정리하세요. item은 바로 실행 가능한 행동으로, why에는 그것이 왜 필요한지 이 지원서의 근거를 들어 적으세요.",
+  // Same rule as every other FINAL field, said once more because this is the
+  // one most easily padded with generic interview advice.
+  "'복장을 단정히 하세요' 같은 일반적인 면접 조언은 넣지 마세요. 이 지원서에서만 나올 수 있는 준비 항목만 적으세요.",
+  // Pointed the other way from everything else in this prompt. Asked to help,
+  // a model volunteers strengths; asked to reject, it surfaces the sentence a
+  // reviewer would actually stop on.
+  "rejectionRisks: 이 지원자를 탈락시켜야 한다면 어떤 이유를 들 수 있는지 찾으세요. 최대 5개입니다. headline에는 한 줄 요약, reason에는 왜 탈락 사유가 될 수 있는지, evidenceQuote에는 그 판단의 근거가 되는 지원자 원문을 그대로, fix에는 어떻게 없앨 수 있는지를 적으세요.",
+  "자주 나오는 탈락 사유는 다음과 같습니다: 회사명만 바꾸면 어디에나 낼 수 있는 지원동기, 본인 기여가 보이지 않는 성과 수치, 문항 간 같은 경험 반복, 직무와 연결이 없는 경험, 기간·역할이 모호한 프로젝트.",
+  "handling에는 이번 첨삭본에서 실제로 어떻게 처리했는지를 적으세요: removed(없앱), softened(완화), kept_by_choice(선택한 첨삭 방향에 따라 일부러 남김), needs_applicant(지원자 확인 없이는 고칠 수 없음).",
+  "reviewerNotes: 같은 지원서를 네 가지 관점으로 나누어 점검하세요. hr(인사담당자: 지원동기·조직 적응·이직 사유), field_lead(현업 팀장: 실제로 무엇을 했는지·담당 범위), domain_expert(직무 전문가: 직무 용어·기술의 정확성과 깊이), editor(첨삭 전문가: 구성·가독성·문장). 관점마다 서로 다른 지적을 내놓으세요.",
+  "같은 지적을 네 관점에 나눠 적지 마세요. 한 관점에서 볼 것이 없으면 그 관점은 비워 두세요.",
+  "claimEvidence: 자소서에서 '~능력이 있습니다', '~을 주도했습니다', '~을 개선했습니다' 같은 강한 주장을 최대 8개 뽑고, 각각 근거가 있는지 판정하세요. supported(원문에 구체적 근거 있음), weak(언급은 있으나 행동·결과가 모호), unsupported(근거 없음).",
+  "unsupported일 때 evidenceQuote는 null입니다. 억지로 뭐라도 인용하지 마세요 — 근거가 없다는 것 자체가 이 항목의 결과입니다.",
+  "firstImpression: 제출본을 처음 한 번 읽었을 때 남는 것을 적으세요. remembered에는 기억에 남는 내용, missing에는 남아야 하는데 남지 않는 것, openingIssue에는 첫 두 문단의 문제(없으면 null), advice에는 첫 문장·문단 순서를 어떻게 바꾸면 될지를 적으세요.",
+  "firstImpression에 '몇 초 안에' 같은 시간을 쓰지 마세요. 측정한 적 없는 숫자입니다.",
+  "answerStructures: 문항마다 첨삭본의 문장을 역할별로 나누어 그대로 인용하세요. situation(상황·배경), action(본인이 한 행동), result(결과·변화), jobLink(직무·기업과의 연결). 문장은 첨삭본에 있는 그대로 옮기고, 어느 것에도 해당하지 않으면 넣지 마세요.",
+  // The one place a model would happily produce numbers, and the one place it
+  // must not: percentages it feels its way to look measured and are not.
+  "answerStructures에 개수나 비율을 적지 마세요. 세는 것은 화면이 합니다. reading에는 숫자 없이 '상황 설명에 비해 본인 행동이 적습니다' 같은 판단만 적으세요.",
+];
+
 export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
   const questions = getAnalysisQuestions(request);
   return [
     "당신은 한국어 자기소개서 첨삭 엔진입니다.",
+    // FINAL's persona is added rather than swapped in: the line above is what
+    // QUICK and PRO are, and rewriting it would change those two products.
+    // What FINAL adds is the second reader — the person who will hold this
+    // application open in an interview room and ask about it.
+    ...(request.product === "FINAL"
+      ? ["FINAL 단계에서 당신은 첨삭가인 동시에 해당 직무의 실무 전문가이자, 이 지원서를 손에 들고 면접을 진행하는 인사담당자·면접관입니다. 자기소개서만 보는 것이 아니라 이력서와 자기소개서를 나란히 펼쳐 놓고 지원서 전체를 검증한 뒤, 실제 면접에서 나올 질문까지 연결하는 것이 이 단계의 일입니다."]
+      : []),
     "지원자가 제공하지 않은 경험, 사건, 역할, 회사, 직책, 기간, 자격, 수치 또는 성과를 절대 만들지 마세요.",
     "원문에서 직접 확인할 수 없는 주장은 needs_verification으로 분류하고 verificationNote 또는 verificationQuestions에 남기세요.",
     // Every evidenceQuote is checked against the applicant's own documents, and
@@ -90,6 +148,10 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     "준비도 점수는 합격 확률이 아니며, 모든 점수와 수정 이유에 원문 근거를 붙이세요.",
     "수치가 없으면 정성적 행동과 확인 가능한 변화만 활용하세요. 임의의 숫자를 추가하지 마세요.",
     "사용자가 선택한 작성 스타일은 사실 허용 범위를 바꾸지 않습니다.",
+    // Placed next to the style line because the same caveat governs both: the
+    // applicant may choose how they come across, never what is true.
+    EDITING_STANCE_INSTRUCTION[resolveEditingStance(request.product, request.editingStance)],
+    "첨삭 방향 역시 사실 허용 범위를 바꾸지 않습니다. 어떤 방향을 골라도 없는 경험·역할·기간·수치는 만들지 않습니다.",
     request.writingStyle === "CONCISE"
       ? "작성 스타일: 담백하게. 사실 중심으로 간결하게 구성하고 해석을 최소화하세요."
       : request.writingStyle === "STRENGTH_FOCUSED"
@@ -296,7 +358,7 @@ polish: 위 다섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
     ...(getUnansweredQuestions(request).length > 0
       ? ["아직 작성되지 않은 문항은 revisions에 넣지 마세요. 다만 지원서 전체 구성을 판단할 때 참고하고, 필요하면 verificationQuestions나 consultingAdvice에서 언급하세요."]
       : []),
-    ...(request.product === "PRO"
+    ...(request.product === "PRO" || request.product === "FINAL"
       ? [
           "requirementMatches: 채용공고의 핵심 요구사항마다 지원서·지원자료에서 근거를 찾아 matched/partial/missing으로 판정하고, evidence에는 실제 원문 근거를, recommendation에는 다음 행동을 적으세요. 근거가 없으면 missing으로 두고 지어내지 마세요.",
           "interviewQuestions: 지원서에 실제로 적힌 내용에서 이어질 면접 질문을 만들고, reason에는 왜 그 질문이 나오는지, answerGuide에는 답변에 포함해야 할 사실을 적으세요.",
@@ -307,6 +369,9 @@ polish: 위 다섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
           "채용공고가 비어 있거나 요구사항을 읽어낼 수 없을 만큼 짧으면 requirementMatches를 빈 배열로 두세요. 공고에 없는 요구사항을 지어내지 마세요.",
           "지원서에 근거가 없어 물어볼 것이 없으면 interviewQuestions와 interviewRisks도 빈 배열로 두세요. 개수를 채우기 위해 만들지 마세요.",
         ]
+      : []),
+    ...(request.product === "FINAL"
+      ? [...FINAL_INSTRUCTIONS, RED_TEAM_HANDLING_INSTRUCTION[resolveEditingStance(request.product, request.editingStance)]]
       : []),
     "출력은 지정된 JSON Schema를 정확히 따르세요.",
   ].join("\n");

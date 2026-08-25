@@ -14,7 +14,7 @@ import { MaterialUpload } from "@/components/material-upload";
 import { GuidedCreateForm } from "@/components/guided-create-form";
 import { createGuidedCreateDraft, type GuidedCreateDraft } from "@/domain/guided-create";
 import { isLinkOnlyPosting } from "@/domain/job-posting-source";
-import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
+import { createCoverLetterQuestion, resolveDraftTargetLength, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import {
   candidateMaterialDraftSchema,
@@ -28,10 +28,14 @@ import {
   type ProfileEntryCategory,
 } from "@/domain/candidate-material";
 import { writingStyleConfig, type WritingStyle } from "@/domain/writing-style";
+import { editingStanceConfig, type EditingStance } from "@/domain/editing-stance";
 import styles from "./pro-input-page.module.css";
 import actionStyles from "./blocked-action.module.css";
 
-type Props = { mode: "CREATE" | "BUILD" | "POLISH" };
+// `product` decides which tier the saved draft is for. It defaults to PRO
+// because every route that existed before FINAL is a PRO route, and a default
+// keeps those pages untouched.
+type Props = { mode: "CREATE" | "BUILD" | "POLISH"; product?: "PRO" | "FINAL" };
 
 const modeContent = {
   CREATE: {
@@ -86,9 +90,11 @@ const profileCategories: Array<[ProfileEntryCategory, string]> = [
   ["LANGUAGE", "어학성적"], ["TRAINING", "교육·수료"], ["AWARD", "수상"], ["OTHER", "기타 스펙"],
 ];
 const writingStyles: WritingStyle[] = ["CONCISE", "BALANCED", "STRENGTH_FOCUSED"];
+// Ordered safest to riskiest so the row reads as one dial, not three options.
+const editingStances: EditingStance[] = ["SAFE", "BALANCED", "CONVICTION"];
 const profileCategoryLabels = Object.fromEntries(profileCategories) as Record<ProfileEntryCategory, string>;
 
-export function ProInputPage({ mode }: Props) {
+export function ProInputPage({ mode, product = "PRO" }: Props) {
   const router = useRouter();
   const content = modeContent[mode];
   const Icon = mode === "POLISH" ? FileCheck2 : mode === "BUILD" ? FilePenLine : Sparkles;
@@ -113,6 +119,7 @@ export function ProInputPage({ mode }: Props) {
   const [roleName, setRoleName] = useState("");
   const [guidedDraft, setGuidedDraft] = useState<GuidedCreateDraft>(createGuidedCreateDraft);
   const [writingStyle, setWritingStyle] = useState<WritingStyle>("BALANCED");
+  const [editingStance, setEditingStance] = useState<EditingStance>("BALANCED");
   const [resetKey, setResetKey] = useState(0);
 
   function resetDraft() {
@@ -142,7 +149,7 @@ export function ProInputPage({ mode }: Props) {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const guest = loadGuestDraft();
-      if (guest) { setQuestions(guest.questions ?? (guest.questionDrafts ?? [guest.draftText]).map((answer, index) => createCoverLetterQuestion(answer, index))); setWritingStyle(guest.writingStyle); setCarriedRequest(guest.revisionRequest ?? ""); }
+      if (guest) { setQuestions(guest.questions ?? (guest.questionDrafts ?? [guest.draftText]).map((answer, index) => createCoverLetterQuestion(answer, index))); setWritingStyle(guest.writingStyle); setEditingStance(guest.editingStance ?? "BALANCED"); setCarriedRequest(guest.revisionRequest ?? ""); }
       try {
         const parsed = candidateMaterialDraftSchema.safeParse(JSON.parse(sessionStorage.getItem(materialStorageKey) ?? "null"));
         if (parsed.success) {
@@ -165,12 +172,15 @@ export function ProInputPage({ mode }: Props) {
       draftText,
       questionDrafts: questions.map((question) => question.answer),
       questions,
-      targetLength: 700,
+      // Derived from what the applicant typed per question; 700 is only the
+      // floor for a draft that states no limit anywhere.
+      targetLength: resolveDraftTargetLength(questions, 700),
       temporaryWritingMode: mode,
-      selectedProduct: "PRO",
+      selectedProduct: product,
       companyName: companyName.trim() || undefined,
       roleName: roleName.trim() || undefined,
       writingStyle,
+      editingStance,
       sourceFilename: resumeFile?.filename,
       sourceFileExtension: resumeFile?.extension,
       sourceFileSizeBytes: resumeFile?.sizeBytes,
@@ -309,6 +319,20 @@ export function ProInputPage({ mode }: Props) {
           </button>; })}</div>
           <p className={styles.styleSafety}><LockKeyhole/> 어떤 스타일을 선택해도 없는 경험·역할·사건·성과·수치는 만들지 않습니다.</p>
           {mode === "POLISH" && writingStyle === "STRENGTH_FOCUSED" && <p className={styles.polishConstraint}>강점을 적극적으로 찾되, 최종 첨삭 단계에서는 기존 말투와 좋은 문장을 우선 보존합니다.</p>}
+        </section>
+
+        {/* A separate axis from 작성 스타일 above: that one is how it sounds,
+            this one is how much it is willing to be marked down for. */}
+        <section className={styles.styleSection}>
+          <div className={styles.sectionTitle}><div><span>첨삭 방향</span><h3>둥글게 갈까요, 소신 있게 갈까요?</h3></div><small>PRO부터 선택 가능</small></div>
+          <p className={styles.stanceIntro}>자기소개서에는 정답이 없습니다. 평가하는 것은 결국 사람이라, 같은 문장을 어떤 담당자는 좋아하고 어떤 담당자는 걸고 넘어집니다. 그래서 <b>정답을 맞히는 대신 방향을 고르시면 됩니다.</b></p>
+          <div className={styles.styleGrid}>{editingStances.map((stance) => { const option = editingStanceConfig[stance]; return <button type="button" key={stance} className={editingStance === stance ? styles.styleSelected : ""} onClick={() => setEditingStance(stance)}>
+            <span className={styles.styleRadio} aria-hidden="true"/>
+            <b>{option.icon} {option.label}{stance === "BALANCED" && <em>추천</em>}</b>
+            <p>{option.description}</p>
+            <ul className={styles.stancePoints}>{option.points.map((point) => <li key={point}>{point}</li>)}</ul>
+          </button>; })}</div>
+          <p className={styles.styleSafety}><LockKeyhole/> 어떤 방향을 골라도 사실은 바뀌지 않습니다. 다듬는 것은 표현이고, 지원자가 실제로 한 일은 그대로 둡니다.</p>
         </section>
         <div className={styles.notice}><LockKeyhole/><span><b>아직 서버로 전송하지 않습니다.</b><small>다음 화면에서 범위를 확인한 뒤 로그인·결제 경계로 이동합니다.</small></span></div>
         {blockedReason && <p className={actionStyles.message}><b>아직 {content.cta}을 진행할 수 없어요.</b><br/>{blockedReason}</p>}

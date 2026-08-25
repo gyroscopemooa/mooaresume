@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ResultDocument } from "@/domain/result-document";
 import { writingStyleSchema } from "@/domain/writing-style";
+import { editingStanceSchema } from "@/domain/editing-stance";
 
 export const analysisDocumentInputSchema = z.object({
   kind: z.enum(["cover_letter", "job_posting", "resume", "career_description", "portfolio", "revision_request"]),
@@ -21,9 +22,12 @@ export const analysisQuestionInputSchema = z.object({
 
 export const analysisRequestSchema = z.object({
   requestId: z.string().min(1),
-  product: z.enum(["QUICK", "PRO"]),
+  product: z.enum(["QUICK", "PRO", "FINAL"]),
   writingMode: z.enum(["CREATE", "BUILD", "POLISH"]),
   writingStyle: writingStyleSchema,
+  // Optional so every caller written before the stance existed still validates;
+  // absent means the default, which is what those runs already behaved like.
+  editingStance: editingStanceSchema.optional(),
   targetLength: z.number().int().min(100).max(3000),
   // A posting can list several positions. Saying which one the applicant is
   // going for is the difference between matching their requirements and

@@ -215,12 +215,15 @@ export type AdminMailEntry = {
   status: string;
   errorMessage: string | null;
   sentAt: string;
+  /** What was actually written. Null on rows saved before the body was kept. */
+  body: string | null;
+  attachmentNames: string[];
 };
 
 export async function listMailLog(limit = 200): Promise<AdminMailEntry[]> {
   const { data, error } = await serviceClient()
     .from("mail_send_log")
-    .select("id, batch_id, recipient, subject, reply_to, status, error_message, sent_at")
+    .select("id, batch_id, recipient, subject, reply_to, status, error_message, sent_at, body, attachment_names")
     .order("sent_at", { ascending: false })
     .limit(limit);
   if (error || !data) return [];
@@ -233,6 +236,8 @@ export async function listMailLog(limit = 200): Promise<AdminMailEntry[]> {
     status: row.status as string,
     errorMessage: (row.error_message as string | null) ?? null,
     sentAt: row.sent_at as string,
+    body: (row.body as string | null) ?? null,
+    attachmentNames: (row.attachment_names as string[] | null) ?? [],
   }));
 }
 
@@ -352,14 +357,150 @@ export async function recordMailSends(input: {
   replyTo: string | null;
   sent: string[];
   failed: { to: string; error: string }[];
+  /** Trimmed to the column's ceiling so an oversized body cannot fail the whole insert. */
+  body?: string;
+  attachmentNames?: string[];
 }) {
+  const shared = {
+    batch_id: input.batchId,
+    subject: input.subject,
+    reply_to: input.replyTo,
+    body: input.body?.slice(0, 50_000) ?? null,
+    attachment_names: input.attachmentNames?.length ? input.attachmentNames : null,
+  };
   const rows = [
-    ...input.sent.map((recipient) => ({ batch_id: input.batchId, recipient, subject: input.subject, reply_to: input.replyTo, status: "SENT", error_message: null })),
-    ...input.failed.map((item) => ({ batch_id: input.batchId, recipient: item.to, subject: input.subject, reply_to: input.replyTo, status: "FAILED", error_message: item.error.slice(0, 500) })),
+    ...input.sent.map((recipient) => ({ ...shared, recipient, status: "SENT", error_message: null })),
+    ...input.failed.map((item) => ({ ...shared, recipient: item.to, status: "FAILED", error_message: item.error.slice(0, 500) })),
   ];
   if (rows.length === 0) return;
   const { error } = await serviceClient().from("mail_send_log").insert(rows);
   // The mail already went out; a failed log write must not read as a failed
   // send. Record it and move on.
   if (error) console.error("mail_send_log_insert_failed", error.message);
+}
+
+export type AdminRewardCredit = {
+  id: string;
+  product: string;
+  reason: string;
+  note: string | null;
+  recipientEmail: string;
+  status: string;
+  claimToken: string;
+  expiresAt: string | null;
+  createdAt: string;
+  claimedAt: string | null;
+  consumedAt: string | null;
+};
+
+export async function listRewardCredits(limit = 200): Promise<AdminRewardCredit[]> {
+  const { data, error } = await serviceClient()
+    .from("reward_credits")
+    .select("id, product, reason, note, recipient_email, status, claim_token, expires_at, created_at, claimed_at, consumed_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id as string,
+    product: row.product as string,
+    reason: row.reason as string,
+    note: (row.note as string | null) ?? null,
+    recipientEmail: row.recipient_email as string,
+    status: row.status as string,
+    claimToken: row.claim_token as string,
+    expiresAt: (row.expires_at as string | null) ?? null,
+    createdAt: row.created_at as string,
+    claimedAt: (row.claimed_at as string | null) ?? null,
+    consumedAt: (row.consumed_at as string | null) ?? null,
+  }));
+}
+
+/**
+ * Issues credits for a list of addresses.
+ *
+ * Inserted in one statement so a partial issue cannot happen: with twenty
+ * addresses and a failure at the twelfth, an operator has no way to tell who
+ * already has one, and re-running would double up on the first eleven.
+ */
+export async function issueRewardCredits(input: {
+  emails: string[];
+  product: string;
+  reason: string;
+  note: string | null;
+  allowedCharacters: number;
+  expiresAt: string | null;
+  tokens: string[];
+}): Promise<{ issued: AdminRewardCredit[]; error: string | null }> {
+  const rows = input.emails.map((email, index) => ({
+    product: input.product,
+    reason: input.reason,
+    note: input.note,
+    recipient_email: email,
+    claim_token: input.tokens[index],
+    allowed_characters: input.allowedCharacters,
+    expires_at: input.expiresAt,
+  }));
+  const { data, error } = await serviceClient()
+    .from("reward_credits")
+    .insert(rows)
+    .select("id, product, reason, note, recipient_email, status, claim_token, expires_at, created_at, claimed_at, consumed_at");
+  if (error || !data) return { issued: [], error: error?.message ?? "UNKNOWN_ERROR" };
+  return {
+    issued: data.map((row) => ({
+      id: row.id as string,
+      product: row.product as string,
+      reason: row.reason as string,
+      note: (row.note as string | null) ?? null,
+      recipientEmail: row.recipient_email as string,
+      status: row.status as string,
+      claimToken: row.claim_token as string,
+      expiresAt: (row.expires_at as string | null) ?? null,
+      createdAt: row.created_at as string,
+      claimedAt: (row.claimed_at as string | null) ?? null,
+      consumedAt: (row.consumed_at as string | null) ?? null,
+    })),
+    error: null,
+  };
+}
+
+export type ResearchCorpusRow = {
+  id: string;
+  product: string;
+  writingMode: string;
+  editingStance: string;
+  targetCompany: string | null;
+  targetRole: string | null;
+  readinessScore: number | null;
+  findings: Array<{ kind: string; category?: string; severity?: string; note: string }>;
+  outcomeStatus: string | null;
+  createdAt: string;
+};
+
+/**
+ * Everything kept for research, with the outcome joined on.
+ *
+ * Read whole rather than aggregated in SQL: the corpus is small for a long
+ * while yet, and every grouping question is still changing shape weekly. When
+ * it stops changing — and stops fitting in memory — the counting moves into a
+ * view. Not before.
+ */
+export async function listResearchCorpus(limit = 1000): Promise<ResearchCorpusRow[]> {
+  const { data, error } = await serviceClient()
+    .from("research_corpus")
+    .select("id, product, writing_mode, editing_stance, target_company, target_role, readiness_score, findings, outcome_status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id as string,
+    product: row.product as string,
+    writingMode: row.writing_mode as string,
+    editingStance: row.editing_stance as string,
+    targetCompany: (row.target_company as string | null) ?? null,
+    targetRole: (row.target_role as string | null) ?? null,
+    readinessScore: (row.readiness_score as number | null) ?? null,
+    findings: (row.findings as ResearchCorpusRow["findings"] | null) ?? [],
+    outcomeStatus: (row.outcome_status as string | null) ?? null,
+    createdAt: row.created_at as string,
+  }));
 }

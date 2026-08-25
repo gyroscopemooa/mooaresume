@@ -1284,3 +1284,520 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 433 passed(신규 16건 — 고르기 로직 7, 라우트 4, SQL 전제 5), `npx tsc --noEmit` clean, ESLint 0건, `npx next build` 클린. 라우트 테스트는 Supabase 클라이언트를 가짜로 바꿔 **질의 자체를 검증합니다**: 결제된 실행만 `begin`으로 가는지, 미결제 실행은 건너뛰는지, 미소비 이용권이 없으면 `PENDING` 표를 조회조차 하지 않는지, 되살리기가 터져도 기존 `RUNNING` 처리가 200으로 끝나는지.
 - Rollback/recovery reference: 되살리기 구간은 `startStrandedRuns` 호출 한 줄과 그 아래 함수들뿐입니다. 그 호출만 지우면 이전 동작(= `RUNNING`만 처리)으로 정확히 돌아갑니다. 커밋 이전 상태는 `a36749f`.
 - **남은 일(사용자)**: 커밋 + 재배포. 배포 후 첫 1~2분 안에 `advance` 응답의 `started` 배열에 `START_RECOVERED`가 찍히는지, `/meensoo/analyses`에서 `PENDING`이던 결제 건이 `RUNNING → COMPLETED`로 넘어가는지 확인해 주세요.
+
+## 2026-08-24 — Claude: 관리자 메일에 사진·첨부파일 붙이기
+
+- Agent/session: Claude. 사용자 요청: `/meensoo/mail`(관리자 콘솔 메일 보내기)에서 첨부파일과 사진도 보낼 수 있게.
+- Status: completed. **마이그레이션 없음 — 배포만 하면 적용됩니다.**
+- Protected baseline: `/MAIL` 화면(`src/app/MAIL/page.tsx`)은 **한 글자도 바꾸지 않았습니다.** 예전처럼 JSON을 그대로 POST하고, 그대로 동작합니다. `sendManualEmail`의 기존 동작(수신자당 1통, 실패 수집, 본문 이스케이프)도 그대로입니다 — 첨부는 그 위에 덧붙는 선택 항목입니다.
+
+### 무엇이 문제였나
+
+- 콘솔 메일은 **글자만** 보낼 수 있었습니다. 행사 포스터, 한 장짜리 안내문, "여기를 누르세요" 스크린샷처럼 그림이 들어가는 것은 개인 메일 클라이언트로 보내야 했고, 그러면 **발송 기록도 남지 않고 인증된 발신 도메인도 타지 않습니다.**
+
+### 어떻게 고쳤나
+
+- **한도는 `src/domain/mail-attachments.ts` 한 곳에** 둡니다(신규). 화면과 라우트가 같은 규칙을 봅니다: 최대 5개, 하나당 5MB, 합쳐서 10MB. 화면에서 먼저 막는 이유는 **6MB 파일을 다 올린 뒤에 거절당하면 그 기다린 시간이 통째로 버려지기 때문**입니다. 라우트에서도 다시 검사합니다(화면을 거치지 않는 요청이 있을 수 있으므로).
+- **라우트는 두 가지 요청 모양을 읽습니다.** `multipart/form-data`면 파일까지, 아니면 예전처럼 JSON. 파일을 JSON에 실으려면 브라우저에서 먼저 base64로 부풀려야 해서(+33%) multipart를 씁니다. `/MAIL`을 새 모양으로 이사시키지 않기 위한 선택이기도 합니다.
+- **검사 순서가 중요합니다**: 로그인 → 필수 항목 → **첨부 검사** → 받는 사람 검사 → 발송. 받는 사람 검사를 먼저 통과시켜 놓고 첨부에서 터지면 이미 늦습니다 — 기존 코드가 "한 명이라도 보내기 전에 전부 검사한다"는 원칙을 갖고 있어서 그대로 따랐습니다.
+- **사진은 본문 안에 보이게, 나머지는 첨부로만.** PNG·JPG·GIF·WEBP는 `content_id`를 받아 본문 아래에 `<img src="cid:...">`로 불립니다. `https://` 이미지는 파일을 어딘가 공개 호스팅해야 하고 `data:` URI는 Gmail이 지워 버려서, 메일과 함께 다니는 `cid:`가 유일하게 맞는 방법입니다. **참조를 못 알아듣는 클라이언트에서도 같은 사진이 첨부 줄에 그대로 보이므로 사라지지 않습니다.**
+- **base64 인코딩은 수신자마다가 아니라 한 번만** 합니다. 50명 × 5MB면 인코딩 50번과 1번의 차이입니다. `Buffer` 대신 `btoa`를 쓰는 이유는 Cloudflare 런타임에서도 돌기 때문이고, 0x8000 바이트씩 끊는 이유는 `String.fromCharCode`에 수백만 개를 한 번에 펼치면 인자 목록이 넘치기 때문입니다.
+- **첨부가 있으면 한 통 대기시간을 15초 → 60초**로 늘립니다. 5MB를 느린 회선에서 올리는 데 15초는 모자랍니다.
+- 파일 이름은 `safeAttachmentName`으로 경로·따옴표·제어문자를 떼어냅니다. 이름은 메일 헤더에 들어간 뒤 **받는 사람 컴퓨터에 그대로 저장되는 값**이라, `../../etc/passwd` 같은 것이 통과하면 안 됩니다.
+- 화면에서는 고른 파일을 이름·크기와 함께 목록으로 보여 주고, 사진에는 `· 본문에 표시`를 붙입니다. 두 번째로 고른 파일이 첫 번째를 지우지 않도록 **합칩니다**(같은 이름·같은 크기는 중복으로 봅니다). 보내기가 **완전히** 성공했을 때만 목록을 비웁니다 — 실패한 주소가 있으면 다시 보내야 하므로 첨부가 그대로 남아 있어야 합니다.
+- Files/branch: `src/domain/mail-attachments.ts`(신규), `src/domain/mail-attachments.test.ts`(신규), `src/server/notifications/manual-email.ts`, `src/server/notifications/manual-email.test.ts`(신규), `src/app/api/mail/send/route.ts`, `src/app/api/mail/send/route.test.ts`(신규), `src/app/meensoo/mail/mail-composer.tsx`, `src/app/meensoo/mail/mail-composer.test.tsx`(신규), `src/app/meensoo/mail/page.tsx`, `src/app/meensoo/admin.module.css` on `main`.
+- Validation: `npx vitest run` 475 passed(신규 42건 — 한도·이름 정리 11, Resend 요청 모양 7, 라우트 두 요청 모양 7, 화면 8, 기존 회귀 포함). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: 되돌리려면 (1) 라우트의 `readRequest`/첨부 검사 구간, (2) `manual-email.ts`의 `files`·`inlineImages`·`toBase64`, (3) 화면의 첨부 UI를 지우면 됩니다. 세 곳 다 기존 코드 **위에 덧붙은 구간**이라 잘라내면 정확히 이전 동작으로 돌아갑니다. 커밋 이전 상태는 `ae6397d`.
+- **알려진 빈칸**: `mail_send_log`에는 첨부 정보를 남기지 않습니다(컬럼이 없습니다). 그래서 `/meensoo/mail/history`는 "무엇이 함께 갔는지"를 답하지 못합니다. 컬럼 추가는 마이그레이션이 필요하므로 사용자 판단으로 **별건**으로 둡니다.
+- **남은 일(사용자)**: 커밋 + 재배포 후 `/meensoo/mail`에서 사진 1장 + PDF 1개를 자기 주소로 보내 확인해 주세요. 확인할 것 두 가지 — 본문 아래에 사진이 보이는지, 첨부 줄에 두 파일이 다 있는지.
+
+## 2026-08-24 — Claude: FINAL 1단계 — 분석 두뇌와 현장 신뢰 섹션
+
+- Agent/session: Claude. 사용자 요청: FINAL 플랜 구현 시작 + 메인 브랜드 홍보 블록 추가. 참고 대화(ChatGPT 공유 링크)의 FINAL 설계안을 기준으로 삼았습니다.
+- Status: **부분 완료(1단계).** FINAL은 아직 **구매·실행할 수 없습니다.** 이번에 만든 것은 "FINAL이 무엇을 내놓는가"를 정의하는 분석 계층뿐입니다. 남은 단계는 아래 **다음 단계** 항목에 적었습니다.
+- Protected baseline: QUICK·PRO의 프롬프트 문장, 출력 스키마, 결과 문서 스키마를 **한 줄도 바꾸지 않았습니다.** FINAL 관련은 전부 기존 코드 위에 덧붙는 분기·필드입니다. `next-step.ts`의 추천 로직, `final-upgrade-card.tsx`의 QUICK·PRO 카드도 그대로입니다.
+
+### FINAL을 무엇으로 정의했나
+
+- 참고 대화의 결론을 그대로 따랐습니다: FINAL은 **"자소서 첨삭의 상위버전"이 아니라 실제 면접관이 보는 지원서 전체를 검증하고 면접까지 연결하는 단계"**입니다.
+- 이 구분이 중요한 이유는 **PRO가 이미 면접 예상질문·면접 리스크·자료 간 교차검증을 팔고 있기 때문**입니다. FINAL이 "그걸 더 많이"라면 차이가 흐려집니다. 그래서 경계를 이렇게 그었습니다:
+  - **PRO** = 자소서를 **채용공고**와 대조. 이력서는 근거를 보태는 참고자료.
+  - **FINAL** = 자소서를 **이력서**와 대조. 면접관이 실제로 하는 일(이력서 왼쪽, 자소서 오른쪽, 안 맞는 날짜에 손가락)이 그대로 제품이 됩니다.
+- 그래서 FINAL 전용 출력은 네 가지입니다.
+  - `careerTimeline` — 두 자료에서 읽어낸 학력·경력·프로젝트·자격증·교육·공백을 시간순으로. **한쪽에만 있는 항목**이 핵심입니다.
+  - `documentConflicts` — 이력서 기재와 자소서 원문을 **양쪽 다 인용해** 무엇이 어긋나는지.
+  - `interviewerFlags` — "면접관이라면 여기서 묻습니다". 예상질문 + **꼬리질문** + 답변 준비 포인트.
+  - `finalChecklist` — 면접 전 최종 점검.
+- FINAL은 **PRO 플러스이지 PRO 마이너스가 아닙니다.** `finalRequestSchema`는 PRO의 세 필드를 그대로 포함하고, 프롬프트도 PRO 블록을 그대로 받은 뒤 FINAL 블록을 덧붙입니다. 테스트가 이것을 잠급니다(`PRO 지시 한 줄도 잃지 않는다`).
+
+### 이번에 잡힌 실제 버그
+
+- `questions.ts`의 네 개 판정 함수가 `product === "PRO"`를 직접 물었습니다. FINAL을 추가하는 순간 **FINAL이 조용히 QUICK처럼 동작**합니다 — 목표 분량 없음, 빈 문항 안 채움, 이력서로 쓰지 않음. 즉 **14,900원짜리가 12,900원짜리보다 못한 결과**를 냅니다.
+- `hasProCapabilities(request)` 하나로 묶었습니다. 질문이 "이 실행이 PRO인가"가 아니라 **"이 실행이 지원자료를 열어도 되는가"**이기 때문입니다. 위의 "PRO 지시를 하나도 잃지 않는다" 테스트가 이 버그를 잡아냈습니다.
+
+### 지어내지 않게 막은 것
+
+- 모든 FINAL 배열에 **최소 개수가 없습니다.** 두 자료가 실제로 맞는 지원자에게 충돌을 하나 만들어 내면 **지원자는 사실인 문장을 고치러 갑니다.** 이건 이 제품이 가장 하면 안 되는 일이라 프롬프트에도 따로 못을 박았습니다("어긋나지 않으면 documentConflicts를 빈 배열로 두세요").
+- `period`는 자료에 적힌 표기를 **그대로** 옮기게 했습니다. 날짜를 정규화하면 없는 정밀도가 생깁니다. 날짜를 모르는 항목은 빼지 않고 '기간 미기재'로 남깁니다.
+- `finalChecklist`에 일반 면접 조언('복장을 단정히')을 넣지 못하게 막았습니다. 이 지원서에서만 나올 수 있는 항목만 허용합니다.
+
+### 메인 랜딩 · 현장 신뢰 섹션
+
+- `왜 MOOA인가요?` 바로 뒤에 새 섹션을 넣었습니다. 짧은 선언("현장에서 검증된 취업 컨설팅을 기술로.") + 세 가지 근거 + 마무리 문장 구성입니다.
+- **원문보다 보수적인 표현을 골랐습니다.** "실제 대기업 취업 보낸 사람들이 모여"는 쓰지 않았습니다 — 학원 광고처럼 읽히고, 무엇보다 **구성원 경력으로 뒷받침되지 않으면 나중에 문제가 되는 종류의 주장**입니다. 지금 문구는 "대학·취업전문기관·재단 등 실제 취업지원 현장에서 직업상담사와 취업지원 실무자들이 쌓아온 경험"까지만 말합니다.
+- 더 강한 문장("실제 대기업 취업 성공까지 함께한 전문가들의 노하우")은 **구성원 경력이 문서로 뒷받침될 때** 한 줄 교체로 쓸 수 있습니다. 사용자 판단 사항입니다.
+- Files/branch: `src/application/analysis-contract.ts`, `src/domain/result-document.ts`, `src/domain/next-step.ts`, `src/server/ai/quick/schema.ts`, `src/server/ai/quick/prompt.ts`, `src/server/ai/quick/questions.ts`, `src/server/ai/quick/provider.ts`, `src/server/ai/quick/final-analysis.test.ts`(신규), `src/fixtures/result-document.ts`, `src/components/final-upgrade-card.tsx`, `src/app/page.tsx`, `src/app/field-credibility.module.css`(신규) on `main`.
+- Validation: `npx vitest run` 485 passed(신규 10건 — 페르소나 1, PRO 지시 승계 1, FINAL 전용 지시 격리 1, 빈 배열 허용 2, JSON 스키마 2, 파싱 3). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 랜딩 섹션은 실행 중인 dev 서버(localhost:3000)에서 DOM으로 확인 — 데스크톱 3열, 모바일 1열, 가로 스크롤 없음, 콘솔 오류 없음.
+- Rollback/recovery reference: FINAL은 전부 `product === "FINAL"` 분기와 기본값 `[]`인 새 필드뿐이라, 되돌리려면 그 분기와 필드를 지우면 됩니다. 랜딩 섹션은 `src/app/page.tsx`의 `fieldStyles.section` 블록 하나와 CSS 파일 하나입니다. 커밋 이전 상태는 `ae6397d`.
+
+### 다음 단계(아직 안 한 것)
+
+1. **DB 마이그레이션** — `analysis_runs`, `billing_orders`, `analysis_entitlements`의 `check (product in ('QUICK','PRO'))`와 `begin_quick_analysis` 등 SQL 함수 6곳에 `'FINAL'` 추가. 이게 없으면 FINAL 실행은 시작 자체가 거절됩니다.
+2. **결제** — Polar FINAL 상품·가격 등록과 `src/server/config` 환경변수. 가격표상 19,900원.
+3. **입력 플로우** — **이력서 또는 이에 준하는 지원서류 필수**(이력서/경력기술서/기업 입사지원서). 없는 사용자를 위한 학력·경력·자격증·프로젝트 **구조화 입력 폼**. 신입은 별도 이력서 없이 기업 입사지원서만 쓰는 경우가 많습니다.
+4. **결과 화면** — 타임라인, 교차검증, `면접관이라면 여기서 묻습니다` 영역. 지금은 데이터만 있고 보여주는 화면이 없습니다.
+5. **가격표 정합성** — 현재 가격표는 FINAL에 **인터랙티브 AI 모의면접·답변 평가·동적 꼬리질문·재훈련**을 약속합니다. 이번 설계에는 그게 없습니다. **파는 것과 주는 것이 달라지므로** 둘 중 하나를 골라야 합니다: (a) 1차 FINAL을 '서류 검증 + 면접 연결'로 정직하게 다시 적고 모의면접을 후속 단계로 분리, (b) 모의면접까지 만들고 출시. **(a)를 권합니다** — 모의면접은 턴 주고받기·답변 평가·재훈련이 필요한 사실상 별개 제품입니다.
+6. **`next-step.ts` QUICK 추천 문구** — "면접 예상질문까지 이어갈 수 있습니다" 옆 주석이 "FINAL은 아직 없다"고 적혀 있습니다. FINAL 출시 때 함께 손봐야 합니다.
+7. (참고 대화의 다른 주제) **추천코드 → 보상 이용권 구조**(쿠폰번호 대신 계정 이용권, Polar 100% 할인 자동 적용, 1회용 수령 링크). 이번 작업과 무관한 별개 기능으로 남아 있습니다.
+
+## 2026-08-24 — Claude: FINAL 2단계 — DB에서 FINAL을 받아들이게
+
+- Agent/session: Claude. 사용자 요청: "일단 db 할게 뭐하면되노" + 이력서 칸 이름을 `이력서(입사지원서)`로.
+- Status: 마이그레이션 **작성 완료, 아직 적용 안 됨.** 적용은 사용자가 `npm run db:remote:push`로 합니다.
+- Protected baseline: 기존 마이그레이션 파일은 **하나도 수정하지 않았습니다.** 새 파일 하나를 얹어 `create or replace`로 함수를 다시 정의합니다.
+
+### 무엇을 바꾸나 — `supabase/migrations/20260824010000_enable_final_product.sql`
+
+- 표 세 곳의 product 제약에 `'FINAL'` 추가: `analysis_runs`, `billing_orders`, `analysis_entitlements`.
+- 관문 네 곳의 함수를 다시 정의: `prepare_quick_checkout`, `register_quick_checkout`, `grant_polar_order_entitlement`, `begin_quick_analysis`. **넷 다 각자 다른 오류를 던지므로 하나라도 빠지면 결제된 FINAL이 다른 지점에서 막힙니다.**
+- `analysis_runs`의 기존 제약은 **이름 없이 컬럼에 붙은 것**이라 이름으로 지울 수 없습니다. 이름을 찍어서 틀리면 **아무것도 안 지워지고 새 제약만 추가되어, 마이그레이션은 성공했다고 하는데 FINAL은 계속 거절됩니다.** 그래서 `pg_constraint`에서 정의에 `QUICK`이 들어간 체크를 찾아 지웁니다.
+- **가장 위험한 한 줄**: `begin_quick_analysis`의 문서 필터가 `or target_run.product = 'PRO'`였습니다. 이걸 그대로 두면 **결제된 FINAL 실행이 자소서와 공고만 들고 도착합니다** — 대조할 이력서가 없으니 FINAL의 존재 이유가 통째로 빈 결과가 됩니다. 오류도 안 납니다. `in ('PRO', 'FINAL')`로 바꿨고 테스트가 이것을 잠급니다.
+- 함수를 다시 만드는 것은 **전체 교체**라 빠뜨린 조건은 조용히 사라집니다. 그래서 테스트가 PRO 마이그레이션과 직전 `begin_quick_analysis`의 안전장치(시도 횟수 3회 제한, `PRIMARY_DOCUMENT_REQUIRED`, `for update skip locked`, `search_path = ''`, 웹훅 중복 방지 등)가 새 파일에도 그대로 있는지 하나씩 확인합니다.
+
+### 이력서 칸 이름
+
+- `이력서` → `이력서(입사지원서)`. 신입은 별도 이력서 없이 **기업 입사지원서만** 쓰는 경우가 많고, `이력서`만 적혀 있으면 "나는 이게 없다"로 읽힙니다.
+- 두 곳을 바꿨습니다: 화면 라벨(`CANDIDATE_MATERIAL_LABEL.RESUME`, 업로드 칸·목록·저장되는 문서 제목에 함께 쓰임)과 프롬프트 라벨(`SUPPORTING_LABEL.resume`). 프롬프트 쪽도 바꾼 이유는 **입사지원서를 올렸을 때 모델이 그것을 이력서로 취급해야** 하기 때문입니다. PRO에도 적용되는 변경입니다.
+- Files/branch: `supabase/migrations/20260824010000_enable_final_product.sql`(신규), `src/server/analysis/final-product-migration.test.ts`(신규), `src/domain/candidate-material.ts`, `src/server/ai/quick/prompt.ts`, `src/application/application-case-handoff.test.ts`, `src/server/ai/quick/prompt.test.ts` on `main`.
+- Validation: `npx vitest run` 492 passed(신규 7건 — 제약 3표, 이름 아닌 정의로 삭제, 관문 4곳, 자료 필터, PRO 조건 승계, 직전 안전장치 승계, 단일 트랜잭션). `npx tsc --noEmit` clean, `npx eslint .` 0건.
+- Rollback/recovery reference: 이 마이그레이션은 **덧붙이기만** 합니다(제약 확대 + 함수 재정의). 되돌리려면 `20260822020000`의 `begin_quick_analysis`와 `20260820010000`의 나머지 세 함수·제약을 다시 실행하면 정확히 이전 상태입니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: `npm run db:remote:plan`으로 먼저 확인 → `npm run db:remote:push`. 적용 뒤에도 FINAL은 **Polar 상품이 없어서 결제가 안 됩니다**(다음 단계).
+
+## 2026-08-24 — Claude: PDF에서 문항이 안 나뉘던 원인, 메일 본문 보관, 과다분량 경고
+
+- Agent/session: Claude. 사용자 보고: PDF로 올린 자소서가 한 문항 8,251자로 읽히고 최종 첨삭본이 518자로 나옴("완성본 이상한데 제대로 바꾸던 없애던 하자") + 메일 본문 보기 기능 승인.
+- Status: completed. **메일 본문 컬럼은 마이그레이션 적용 필요**(`20260824020000_mail_log_body.sql`).
+- Protected baseline: `splitCoverLetterDraft`, 결과 화면(`최종 첨삭본`), 프롬프트의 분량 규칙은 **하나도 바꾸지 않았습니다.** 셋 다 정상이었고, 잘못된 입력을 받고 있었을 뿐입니다.
+
+### 진짜 원인 — PDF 텍스트 추출 한 줄
+
+- `local-document.ts`가 pdf.js가 돌려준 조각들을 `items.map(...).join(" ")`으로 이었습니다. **한 번에 두 방향으로 틀린 코드**입니다.
+  1. 조각마다 공백을 넣으므로 한 단어가 잘립니다 — 화면에 보이던 `지원동기 AI 와 창업 경험 ,`가 그것입니다.
+  2. **줄바꿈이 하나도 안 들어갑니다.** 한 페이지가 통째로 한 줄이 됩니다.
+- 비싼 쪽은 2번입니다. `splitCoverLetterDraft`는 **줄 맨 앞의 `1.` `2.` `3.`**을 찾아 문항을 나눕니다. 페이지 전체가 한 줄이면 하나도 못 찾습니다. 그래서 3문항짜리 자소서가 **한 문항 8,251자**가 되고, 목표 700자에 맞추라는 지시를 받은 분석은 **요약할 수밖에 없어** 518자를 돌려줍니다. 지원자가 쓴 글의 94%가 결제한 결과에서 사라진 겁니다.
+- `joinPdfTextItems`(신규, 순수 함수)로 바꿨습니다. 조각의 좌표를 보고 **가로 간격이 글자 높이의 22%를 넘을 때만** 공백을 넣고, `hasEOL`이나 **세로 위치가 내려가면** 줄을 바꿉니다. `hasEOL`을 아예 안 붙이는 생성기가 많아서 세로 좌표 판정이 꼭 필요합니다. 비율로 판단하므로 글자 크기가 달라도 같은 기준입니다.
+- 브라우저 전용 파일에서 분리해 별도 모듈로 둔 이유는 **테스트가 가능해야 하기 때문**입니다(신규 11건 — 붙은 조각 잇기, 떨어진 조각 공백, 이미 있는 공백 중복 방지, `hasEOL` 줄바꿈, `hasEOL` 없을 때 y 낙차 줄바꿈, 문항 번호가 줄 맨 앞에 오는지, 빈 조각 처리, 글자 크기 무관).
+- **PDF를 막는 대신 고쳤습니다.** 막으면 지원자 대부분이 PDF로 자소서를 갖고 있으므로 유입이 끊깁니다.
+
+### 그래도 남는 위험 — 과다분량 경고
+
+- PDF가 고쳐져도 **한 칸에 8,000자를 직접 붙여넣는 경우**는 그대로입니다. 목표 700자면 결과는 똑같이 요약됩니다.
+- 그래서 입력 화면에서 **답변이 목표의 1.6배를 넘으면** 그 자리에서 말합니다: "목표의 약 11.8배입니다. 이대로 분석하면 대부분이 요약되어 사라집니다. 여러 문항이 한 칸에 들어가 있지는 않은지 확인해 주세요."
+- **막지는 않습니다.** 분량을 줄이려고 첨삭받는 사람도 있고, 1.6배 정도는 정상입니다. 사라질 것을 **결제 전에** 말해 주는 것이 목적입니다.
+
+### 메일 본문 보관
+
+- `mail_send_log`에 `body`(5만자 제한)와 `attachment_names` 추가. 발송 기록에서 `본문 보기`를 펼치면 실제로 보낸 글과 첨부 파일 이름이 나옵니다.
+- 배치별 표가 아니라 **행마다** 저장합니다. 한눈에 읽는 것이 목적인 화면에 조인을 하나 더 걸 이유가 없고, 한 배치는 최대 50행입니다.
+- 첨부는 **이름만** 남깁니다. 파일 자체는 이미 받는 사람 메일함에 있고, DB에 수 MB를 넣을 이유가 없습니다.
+- Files/branch: `src/lib/pdf-text-layout.ts`(신규), `src/lib/pdf-text-layout.test.ts`(신규), `src/lib/local-document.ts`, `src/domain/cover-letter-question.ts`, `src/domain/cover-letter-question-length.test.ts`(신규), `src/components/question-editor.tsx`, `src/components/question-editor.module.css`, `supabase/migrations/20260824020000_mail_log_body.sql`(신규), `src/server/admin/admin-repository.ts`, `src/app/api/mail/send/route.ts`, `src/app/meensoo/mail/history/page.tsx`, `src/app/meensoo/admin.module.css` on `main`.
+- Validation: `npx vitest run` 507 passed(신규 15건). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: PDF 추출은 `joinPdfTextItems(...)` 한 줄을 예전 `join(" ")`으로 되돌리면 끝입니다(권하지 않습니다). 경고는 `describeOverLongAnswer` 호출 하나. 메일 본문은 컬럼 추가라 되돌릴 필요가 없습니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: `npm run db:remote:push`(FINAL 마이그레이션과 메일 본문 마이그레이션 두 개가 대기 중). 그다음 문제의 PDF를 다시 올려서 **문항이 3개로 나뉘는지** 확인해 주세요.
+
+## 2026-08-24 — Claude: 첨삭 방향(소신/균형/안정) 선택과 /new 사용 방법 페이지
+
+- Agent/session: Claude. 사용자 요청: "결국 사람이 뽑으니 정답은 없다. 어디든 합격을 원하면 모서리를 둥글게 깎는 작업이 필요하다"는 철학을 제품 스위치로. PRO부터 활성화. 그리고 `/new` 사용 방법 페이지.
+- Status: 코드 완료. **마이그레이션 적용 필요**(`20260824030000_editing_stance.sql`). 사용자가 Supabase에서 직접 실행합니다.
+- Protected baseline: 기존 `writingStyle`(담백/균형/강점)은 **손대지 않았습니다.** 첨삭 방향은 그 옆에 붙는 **다른 축**입니다 — 스타일은 "어떤 말투로", 방향은 "얼마나 깎일 각오를 하고".
+
+### 왜 별도 축인가
+
+- `writingStyle`은 어조입니다. 새 `editingStance`는 **감점 위험 허용도**입니다. 같은 경험을 두고 "불합리한 지시는 따르지 않습니다"를 완화할지 유지할지는 어조 문제가 아닙니다.
+- 세 단계: `SAFE`(합격 안정형) / `BALANCED`(균형형, 기본값) / `CONVICTION`(소신 강조형).
+- **BALANCED도 지시가 비어 있지 않습니다.** 아무 말도 안 하면 모델은 알아서 평균적인 "좋은 자소서"로 수렴합니다 — 지원자 100명이 전부 협업·성장·도전하는 사람이 되는 것이 이 설정이 존재하는 이유이므로, 중간값도 "모범답안으로 수렴시키지 마세요"라고 명시합니다.
+- **QUICK은 못 고릅니다.** 공고도 자료도 없어 무엇을 남겨도 안전한지 판단할 근거가 없습니다. 연결되지 않은 레버를 주는 셈이라 `resolveEditingStance`가 QUICK을 언제나 BALANCED로 되돌립니다.
+- **소신형에도 선을 그었습니다**: 사실이 아닌 내용, 타인·회사를 깎아내리는 표현, 확인되지 않은 수치는 소신이 아니라 위험입니다. 방향과 무관하게 고칩니다. 어떤 방향이든 **사실 허용 범위는 그대로**라는 문장도 프롬프트에 따로 넣었습니다.
+
+### 실행에 저장하는 이유
+
+- 실행 행은 **결제 전에 만들어지고 결제 후에 읽힙니다.** 브라우저에만 있으면 결제 리디렉션 순간 사라집니다. 그래서 `analysis_runs.editing_stance` 컬럼을 두고, `create_application_case_from_plan`이 쓰고 `begin_quick_analysis`가 요청에 실어 돌려줍니다.
+- **둘 다 옮겨 적었습니다**(전체 교체이므로). 테스트가 원본의 조건(`AUTHENTICATION_REQUIRED`, `DOCUMENT_REQUIRED`, `security invoker`, FINAL 분기, 시도 횟수 제한 등)이 새 파일에도 남아 있는지 확인합니다.
+- 파일명이 `20260824030000`인 이유는 **FINAL 마이그레이션(`...010000`) 뒤에 실행되어야** 하기 때문입니다. 먼저 실행되면 FINAL 변경을 되돌립니다. 테스트가 순서까지 잠급니다.
+- 기본값 `'BALANCED'`에 `coalesce`까지 둔 이유: 이 설정 이전에 저장된 초안과 QUICK은 값이 없고, 그 둘은 지금까지 정확히 균형형처럼 동작해 왔습니다.
+
+### /new 사용 방법 페이지
+
+- **검색에서 뺐습니다**(`robots: index false`). 문구가 아직 확정 전인 작업 문서이고, 덜 된 안내가 제품 페이지보다 먼저 노출되면 안 됩니다.
+- 담은 것: 진행 4단계 / **문항별로 나눠 넣기를 권하는 이유** / 파일이 이상하게 읽혔을 때 대처 / 글자 수 제한이 필요한 이유와 훨씬 길 때 생기는 일 / 공고·이력서가 **기능을 켜는 스위치**라는 설명 / QUICK·PRO·FINAL 고르는 법 / 첨삭 방향 / 결과 화면 읽는 법 / FAQ 5개.
+- 요금표 단어를 그대로 씁니다(`공고 ↔ 경험 매칭`, `자료 간 충돌 검사`, `기간·수치 확인 필요 탐지` 등). 화면에서 본 말과 안내에서 읽은 말이 달라지면 안내가 아니라 혼란입니다.
+- **내부 동작은 쓰지 않았습니다.** 모델·프롬프트·엔진 이야기 없이, 사용자가 조작할 수 있는 것만 설명합니다.
+- Files/branch: `src/domain/editing-stance.ts`(신규), `src/domain/editing-stance.test.ts`(신규), `src/application/analysis-contract.ts`, `src/application/application-case-handoff.ts`, `src/lib/guest-draft.ts`, `src/server/ai/quick/prompt.ts`, `src/server/ai/quick/editing-stance-prompt.test.ts`(신규), `src/components/pro-input-page.tsx`, `src/components/pro-input-page.module.css`, `src/components/application-case-handoff.tsx`, `supabase/migrations/20260824030000_editing_stance.sql`(신규), `src/server/analysis/editing-stance-migration.test.ts`(신규), `src/app/new/page.tsx`(신규), `src/app/new/guide.module.css`(신규) on `main`.
+- Validation: `npx vitest run` 524 passed(신규 17건). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 화면은 실행 중인 dev 서버에서 확인 — `/new` 8개 절과 목차 링크 8개, `/pro/polish`의 방향 3버튼 기본 선택이 균형형이고 클릭 시 전환되며 기존 작성 스타일 선택과 독립. 가로 스크롤·콘솔 오류 없음.
+- Rollback/recovery reference: 프롬프트에서 `EDITING_STANCE_INSTRUCTION` 두 줄, 입력 화면에서 두 번째 `styleSection` 블록, 나머지는 기본값이 있는 선택 필드뿐이라 지워도 이전 동작 그대로입니다. `/new`는 폴더 하나. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 마이그레이션 3개를 순서대로 — `20260824010000`(FINAL) → `20260824020000`(메일 본문) → `20260824030000`(첨삭 방향). **순서가 중요합니다.**
+
+## 2026-08-24 — Claude: 문항별 글자 수 제한이 분석에 닿지 않던 버그
+
+- Agent/session: Claude. 사용자 보고: "퀵 글자수 1500자 해도 무조건 결과가 700자 이하로 나온다."
+- Status: completed. **마이그레이션 없음 — 배포만 하면 적용됩니다.**
+- Protected baseline: `splitCoverLetterDraft`의 문항 인식 규칙, 프롬프트의 분량 규칙, `question-editor`의 입력 폼은 그대로입니다. 값이 중간에서 사라지고 있었을 뿐입니다.
+
+### 확인 결과 — 사용자 잘못이 아니라 버그입니다
+
+- 입력 화면은 **문항마다** 글자 수 제한을 받습니다(`필수` 표시까지 있습니다). 그런데 그 값이 분석까지 가는 길이 없었습니다.
+  1. `/quick`과 PRO 입력 화면이 초안을 저장할 때 **`targetLength: 700`을 하드코딩**하고 있었습니다.
+  2. 그 하나의 숫자만 `create_application_case_from_plan`으로 넘어가고, **문항별 값은 어디에도 저장되지 않습니다.**
+  3. 분석 쪽에서는 `begin_quick_analysis`가 돌려준 자소서 본문을 `splitCoverLetterDraft`로 다시 나누는데, 이때 만들어지는 문항의 `targetLength`는 언제나 `null`입니다.
+  4. `getAnalysisQuestions`의 `question.targetLength ?? request.targetLength`가 **전부 700으로 떨어집니다.**
+- 즉 1,500자를 적어도 프롬프트는 700자를 목표로 받았습니다. **결제한 사람이 요구 분량보다 800자 짧은 첨삭본을 받은 것**입니다.
+
+### 어떻게 고쳤나
+
+- **요청 단위 숫자를 유추가 아니라 실제 입력에서 뽑습니다.** `resolveDraftTargetLength(questions, fallback)`가 답변이 있는 문항들이 적어 낸 제한 중 **가장 큰 값**을 씁니다. 가장 큰 값인 이유는 이것이 *자기 제한이 없는 문항이 기대는 상한*이라서입니다 — 작은 쪽을 고르면 긴 문항이 잘립니다. 아직 안 쓴 문항의 제한 때문에 쓴 문항이 밀리지도 않습니다.
+- **문항별 값은 자소서 본문 안에 실어 보냅니다.** 계획을 만들 때만 제목 끝에 `[1500자]`를 붙이고(`includeTargetLength`), `splitCoverLetterDraft`가 그것을 읽어 `targetLength`로 복원하고 제목에서는 떼어냅니다. 문항별 제한이 왕복에서 살아남을 곳이 여기 말고 없습니다(요청은 숫자를 하나만 나릅니다).
+- **화면에 보이는 초안에는 표시가 붙지 않습니다.** 그 글은 이후 화면에서 지원자에게 그대로 다시 보여지고, 자기가 치지 않은 표시가 붙어 있으면 제품이 글을 건드린 것으로 읽힙니다. 계획을 만드는 자리에서만 붙습니다.
+- 700은 **어디에서도 제한을 적지 않은 초안**의 바닥값으로만 남습니다.
+- Files/branch: `src/domain/cover-letter-question.ts`, `src/domain/cover-letter-parser.ts`, `src/application/application-case-handoff.ts`, `src/app/quick/page.tsx`, `src/components/pro-input-page.tsx`, `src/domain/target-length-roundtrip.test.ts`(신규) on `main`.
+- Validation: `npx vitest run` 531 passed(신규 7건 — 적은 제한이 쓰이는지, 기본값은 아무도 안 적었을 때만인지, 문항마다 다를 때 상한, 빈 문항의 제한이 끼어들지 않는지, 직렬화 왕복, 표시용에는 표시가 없는지, 실제 계획에 실리는지). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: `resolveDraftTargetLength` 호출 세 곳과 `includeTargetLength` 옵션만 지우면 이전 동작(= 전부 700)으로 돌아갑니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 배포 후 `/quick`에서 제한을 1500으로 적고 돌려서 결과 하단이 `... / 1500자`로 나오는지 확인해 주세요.
+
+## 2026-08-24 — Claude: FINAL 3단계 — 자소서 쪽 여섯 기능
+
+- Agent/session: Claude. 사용자 요청: FINAL 1차 기능 구현("1번 ㄱㄱ"). GPT 검토 의견에서 채택하기로 한 표현·측정 수정을 함께 반영했습니다.
+- Status: 분석 계층 완료. **결과 화면은 아직 없습니다**(데이터만 생성됩니다). 마이그레이션 없음.
+- Protected baseline: QUICK·PRO의 출력, 프롬프트, 결과 스키마는 그대로입니다. FINAL 전용 필드 5개와 계산 모듈 1개가 덧붙었을 뿐입니다.
+
+### 무엇을 넣었나
+
+1. **FINAL 판정** — AI에게 묻지 않고 **코드가 셉니다**(`computeFinalVerdict`). 문서 충돌·Red Team·면접관 지적·근거 없는 주장에서 심각도 높은 것만 모아 개수를 냅니다. 고치고 다시 돌리면 숫자가 줄어드는 것이 FINAL의 제품 경험입니다.
+2. **Red Team**(`rejectionRisks`) — "이 지원자를 탈락시켜야 한다면?" 방향을 반대로 물으면, 도우라고 할 때는 절대 안 나오는 것들이 나옵니다(회사명만 바꾸면 되는 지원동기, 본인 기여가 안 보이는 수치).
+3. **네 가지 관점 점검**(`reviewerNotes`) — hr / field_lead / domain_expert / editor. **호출은 한 번**입니다.
+4. **주장 ↔ 근거 추적**(`claimEvidence`) — 강한 주장을 뽑아 supported / weak / unsupported로 판정.
+5. **첫인상 점검**(`firstImpression`) — 처음 읽었을 때 남는 것과 남지 않는 것.
+6. **X-Ray**(`answerStructures`) — 문장을 상황/행동/결과/직무연결로 분류.
+
+### 표현에서 조심한 것
+
+- **"네 명이 검토했습니다"라고 말하지 않습니다.** 한 번의 호출에서 나온 네 관점은 독립된 네 사람이 아닙니다. 화면 문구는 반드시 "네 가지 관점에서 점검했습니다"여야 합니다. 스키마 주석에 못 박아 두었습니다.
+- **"15초 심사"를 쓰지 않습니다.** 아무도 측정한 적 없는 숫자입니다. 기능은 그대로 두고 이름만 **첫인상 점검**으로 바꿨고, 프롬프트에도 "'몇 초 안에' 같은 시간을 쓰지 마세요"를 넣었습니다.
+- **X-Ray는 세는 주체를 옮겼습니다.** 모델은 **분류만** 하고(문장을 그대로 인용), 개수·글자수·균형 판정은 `countAnswerStructure`가 합니다. 모델에게 "상황 15%"를 물으면 측정한 것처럼 보이는 지어낸 숫자가 나옵니다. 지금은 화면의 모든 숫자가 **지원자가 눈으로 확인할 수 있는 인용 문장에서 코드로 계산된 값**입니다.
+- **판정 문구는 "FINAL에서 확인된 주요 서류 위험요소 N곳"**입니다. "서류에서 걸릴 지점"은 우리가 모든 탈락 사유를 안다는 주장이 됩니다. 점수도 만들지 않습니다(테스트가 `\d+점|/100|%`가 없음을 확인합니다).
+
+### 첨삭 방향과 Red Team을 묶은 것
+
+- 이걸 안 묶으면 **두 기능이 서로 싸웁니다.** Red Team은 모든 모서리를 찾으라고 하고, 소신 강조형을 고른 지원자는 그 모서리를 어차피 깎여 버립니다 — 설정이 거짓말이 됩니다.
+- 그래서 `RED_TEAM_HANDLING_INSTRUCTION`을 방향별로 둡니다. 안정형은 적극 제거, 균형형은 high만 완화, **소신형은 `kept_by_choice`로 표시하고 남깁니다.**
+- 다만 **어느 방향이든 위험은 반드시 알립니다.** 알고 남기는 것은 선택이고, 모르고 남는 것은 사고입니다.
+- `computeFinalVerdict`가 `kept_by_choice`를 **세지 않는 이유**도 같습니다. 이미 내린 결정을 화면이 계속 재촉하면 안 됩니다.
+
+### 비용
+
+- 새 항목은 전부 **같은 한 번의 호출** 안에 들어갑니다. 응답이 길어지는 만큼만 늘어나고, 호출 수는 그대로 1회입니다.
+- Files/branch: `src/domain/result-document.ts`, `src/domain/final-verdict.ts`(신규), `src/domain/final-verdict.test.ts`(신규), `src/domain/editing-stance.ts`, `src/server/ai/quick/schema.ts`, `src/server/ai/quick/prompt.ts`, `src/server/ai/quick/provider.ts`, `src/server/ai/quick/final-features.test.ts`(신규), `src/fixtures/result-document.ts` on `main`.
+- Validation: `npx vitest run` 556 passed(신규 25건 — 판정 계산 9, X-Ray 계산 4, 스키마 격리 2, Red Team 4, 관점 2, 첫인상 1, X-Ray 지시 1, 주장 1, 파싱 2 등). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: 전부 `product === "FINAL"` 분기와 기본값이 있는 새 필드입니다. `finalOutputShape`의 다섯 줄과 `FINAL_INSTRUCTIONS` 끝부분을 지우면 이전 상태입니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 없습니다. 다음은 **FINAL 결과 화면**입니다 — 지금은 데이터만 만들어지고 보여줄 곳이 없습니다.
+
+## 2026-08-24 — Claude: FINAL 결과 화면, 이력서 미첨부 경고, 축적 철학 섹션
+
+- Agent/session: Claude. 사용자 요청: FINAL 결과 화면 / 이력서는 필수 아님, 다만 경고 / "AI는 같을 수 있어도 판단 기준은 다릅니다" 홍보 문구 추가.
+- Status: completed. 마이그레이션 없음.
+- Protected baseline: `result-workspace-complete.tsx`의 기존 여섯 탭과 그 내용은 그대로입니다. FINAL 검증은 **별도 컴포넌트**(`final-verification.tsx`)로 만들어 탭 하나만 추가했습니다 — 이 파일을 고쳐도 QUICK·PRO 화면에 닿지 않습니다.
+
+### 또 같은 종류의 버그를 하나 잡았습니다
+
+- 탭 필터가 `result.product === "PRO"`였습니다. **FINAL이면 `공고·경험 분석`과 `면접 준비` 탭이 통째로 사라집니다** — PRO보다 비싼 등급에서 PRO 탭이 안 보이는 것입니다. `showsProTabs`로 묶었습니다. `questions.ts`와 `begin_quick_analysis`에 이어 세 번째로 나온 같은 패턴입니다.
+
+### FINAL 검증 화면
+
+- 판정 → Red Team → 네 관점 → 주장·근거 → 첫인상 → X-Ray → 타임라인 → 이력서 대조 → 면접관 지적 → 체크리스트 순서입니다.
+- **화면의 모든 숫자는 이 화면이 직접 계산합니다.** X-Ray 막대의 비율도 인용된 문장의 글자 수에서 나옵니다. 모델이 준 숫자는 하나도 쓰지 않습니다.
+- **"네 명이 검토했습니다"라고 쓰지 않았습니다.** 화면 문구는 `네 가지 관점에서 점검했습니다`이고, 테스트가 `네 명이 검토`가 화면에 없음을 확인합니다. `몇 초` 표기가 없는 것도 테스트로 잠갔습니다.
+- **빈 섹션이 왜 비었는지 말합니다.** 이력서를 안 올렸으면 "찾지 못했습니다"가 아니라 **"대조하지 못했습니다"**입니다. 둘은 다른 답이고 하나만 참입니다.
+  - 이걸 결과 데이터로 추론할 수 없어서 `suppliedResume` 필드를 새로 뒀습니다. **이력서를 넣었는데 충돌이 없는 실행과, 이력서가 없어서 못 본 실행은 배열 모양이 똑같습니다.**
+- `kept_by_choice`(소신 방향에 따라 일부러 남긴 위험)는 **판정 숫자에서 빠지지만 목록에는 남습니다.** 이미 내린 결정을 재촉하지 않되, 숨기지도 않습니다.
+
+### 이력서 미첨부 경고
+
+- **막지 않습니다.** 신입은 별도 이력서 없이 기업 입사지원서만 쓰는 경우가 많고, 거절하면 분석 자체를 못 받습니다.
+- 대신 **결제 전 확인 화면에서** 무엇이 빈칸으로 나올지 이름을 대며 말합니다(`자료 간 충돌 검사`, `이력서 사실로 빈 내용 채우기`, `기간·수치 확인 필요 탐지` — 요금표에 있는 그 단어들). 결제하고 나서 빈 화면을 보는 것이 미리 듣는 것보다 나쁩니다.
+- 대안도 함께 안내합니다: 입사지원서·경력기술서도 됨, 그것도 없으면 `자격·스펙 직접 추가`. 그리고 **추가 자료를 더 넣어도 결제 금액이 오르지 않는다**는 사실을 명시했습니다(요금은 자소서 글자 수 기준이고, 지원자료는 `SUPPORTING_CHARACTER_BUDGET = 30,000자`로 상한이 걸려 있습니다).
+
+### 랜딩 · 축적 철학 섹션
+
+- `현장에서 검증된 컨설팅` 섹션 뒤에 붙였습니다. `AI는 같을 수 있어도, 판단 기준은 다릅니다.` + `실제 경험 → 기준화 → 기술 적용 → 실제 결과 → 다시 개선` 순환.
+- **시제를 조심했습니다.** 실제 지원 결과 데이터 활용은 동의 절차와 비식별 처리가 있어야 하는 주장이라, **"반영할 예정입니다 / 갖춘 뒤에 시작합니다"**로 적었습니다. 동의·익명화가 실제로 구축되면 그 문장만 현재형으로 바꾸면 됩니다(`src/app/page.tsx`의 `fieldStyles.loopNote` 블록).
+- 표본이 쌓이기 전에는 `이 문장은 합격률을 몇 % 높입니다` 같은 수치를 쓰지 않는다는 것도 **화면에 직접 적었습니다.** 안 쓰겠다고 적어 두는 편이 나중에 쓰고 싶어질 때 막아 줍니다.
+- 합격 사례만 모으면 안 되는 이유(스펙·경쟁률·채용 규모가 섞임)도 카드 하나로 넣었습니다.
+- Files/branch: `src/components/final-verification.tsx`(신규), `src/components/final-verification.module.css`(신규), `src/components/final-verification.test.tsx`(신규), `src/components/result-workspace-complete.tsx`, `src/components/analysis-preparation.tsx`, `src/components/analysis-preparation.module.css`, `src/domain/result-document.ts`, `src/server/ai/quick/provider.ts`, `src/fixtures/result-document.ts`, `src/app/page.tsx`, `src/app/field-credibility.module.css` on `main`.
+- Validation: `npx vitest run` 565 passed(신규 9건 — 0곳 표시와 점수 부재, 이력서 유무에 따른 두 문구, 위험요소 집계, 근거 없는 주장 표시, 선택 유지 항목, 네 관점 문구, X-Ray 자체 계산, 초 단위 표기 부재). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 랜딩 섹션은 dev 서버에서 DOM 확인(카드 4개, 순환 5단계, 가로 스크롤·콘솔 오류 없음).
+- Rollback/recovery reference: FINAL 탭은 `result.product === "FINAL"` 분기 두 줄과 컴포넌트 파일 하나입니다. 경고는 `hasResumeMaterial` 블록 하나. 랜딩 섹션은 `fieldStyles.loop` 블록 하나. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: FINAL을 실제로 볼 수 있으려면 **Polar FINAL 상품 등록**이 필요합니다. 그 전까지 이 화면은 코드에만 있습니다.
+
+## 2026-08-24 — Claude: 랜딩 두 섹션 보강(전문가 네트워크·축적 자산), 색 분리, 이력서 경고 문구
+
+- Agent/session: Claude. 사용자 요청: 전문가 구성(취업컨설턴트·인사담당자·직무전문가·현직자 등)을 문구에 넣을 것, 제목 한 줄, 축적되는 데이터 어필, "모델" 단어 삭제, "AI는 같을 수 있어도" → "같은 AI라도", 초록 일색인 디자인 분리.
+- Status: completed. 마이그레이션 없음.
+- Protected baseline: 두 섹션 모두 이번 세션에서 제가 만든 것이라 기존 다른 사람 작업과 겹치지 않습니다.
+
+### 색을 나눈 이유
+
+- `현장에서 검증된 컨설팅`(연초록)과 `축적되는 기준`(진초록)이 **연달아 붙어 있어 한 덩어리로 읽혔습니다.** 뒤 섹션을 **따뜻한 종이색**(`#f6f2e7`)에 잉크 제목 + 브론즈 강조로 바꿨습니다. 눈에 띄되 초록 두 장이 겹치지 않습니다. 마무리 문장만 진한 잉크 카드로 남겨 시선이 끝에서 멈추게 했습니다.
+- 제목도 한 줄로 바꿨습니다(`현장에서 검증된 컨설팅을, 기술로.`). `clamp()`와 `white-space: nowrap`이라 화면이 좁아져도 줄이 깨지지 않고 글자만 작아집니다.
+
+### 전문가 네트워크
+
+- 직군 칩 6개(취업컨설턴트·직업상담사·첨삭 멘토·인사담당자·직무 전문가·현직자·재직자)에 **각 직군이 무엇을 잡아내는지**를 한 문장으로 붙였습니다. 직함만 늘어놓으면 장식으로 읽힙니다.
+- **회사 이름과 "대기업" 표현은 넣지 않았습니다.** 개인 경력으로 뒷받침되는 범위까지만 적습니다.
+
+### 축적 자산을 셋으로 나눈 것
+
+- 사람·노하우·사례를 한 단어로 뭉치면 "데이터"가 되어 버리는데, 셋은 성격이 다릅니다.
+  - **전문가 네트워크**(사람) — `운영 중`
+  - **컨설팅 지식베이스**(판단 기준) — `계속 확장 중`
+  - **사례 데이터베이스**(실제 지원 결과) — **`동의 절차 구축 중`**
+- 세 번째 카드에 상태 배지를 단 이유는 **아직 하지 않는 일을 하고 있다고 적으면 안 되기 때문**입니다. 동의·비식별이 실제로 갖춰지면 그 배지와 아래 주의 문단만 바꾸면 됩니다.
+
+### 문구 수정
+
+- `모델`이라는 단어를 뺐습니다(내부 구현 이야기입니다). `같은 AI를 쓰더라도`로 바꿨습니다.
+- 제목: `AI는 같을 수 있어도` → **`같은 AI라도, 판단 기준은 다릅니다.`**
+- 리드 문장 추가: **`같은 AI 컨설팅이더라도 담긴 경험이 다릅니다. 오랜 경력의 취업 전문가와 커리어팀, 컨설턴트들의 경험과 기술이 이 안에 들어 있습니다.`**
+- `그 기준은 지금도 쌓이고 있고, 앞으로 계속 정밀해집니다`로 지속 발전을 명시했습니다.
+
+### 이력서 경고 문구 톤
+
+- 사용자가 제안한 "회사에 지원하실 때도 자소서만 내실 건가요?"는 **수사적 질문이라 밀어붙이는 느낌**이 납니다. 대신 **사실을 앞에 놓았습니다**: `면접장에서 면접관은 이력서와 자기소개서를 함께 펼쳐 놓고 봅니다.`
+- 사실이 더 설득력이 있고, 이건 사용자의 실제 현장 경험이라 근거도 있습니다. 뒤에 이어지는 "그래서 이력서가 없으면 이 기능들이 빈칸" 설명이 그 사실의 결과로 자연스럽게 읽힙니다.
+- Files/branch: `src/app/page.tsx`, `src/app/field-credibility.module.css`, `src/components/analysis-preparation.tsx` on `main`.
+- Validation: `npx vitest run` 565 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 DOM 확인 — 제목 1줄, 칩 6개(flex·radius 20px 적용), 자산 카드 3개, `모델` 단어 없음, 가로 스크롤·콘솔 오류 없음.
+- Rollback/recovery reference: 두 섹션 모두 `src/app/page.tsx`의 블록 하나씩과 CSS 파일 하나입니다. 커밋 이전 상태는 `ae6397d`.
+
+## 2026-08-24 — Claude: 보상 이용권(쿠폰번호 없는 무료 이용권) 1단계
+
+- Agent/session: Claude. 사용자 요청: 추천코드/보상 구조 착수 + 이력서 안내 문구 한 줄로 축소.
+- Status: **1단계 완료.** `reward_credits` 발급·수령·소비까지 동작합니다. **추천코드(누가 누구를 데려왔는지) 정산은 아직 없습니다** — 그건 2단계입니다.
+- Protected baseline: 기존 Polar 결제 경로는 **한 줄도 바꾸지 않았습니다.** `billing_orders.provider` 제약만 넓혔고, 무료 지급은 별도 provider 값으로 들어갑니다.
+
+### 왜 쿠폰번호가 아니라 이용권인가
+
+- 쿠폰번호는 **유출됩니다.** 한 명에게 간 코드는 한 시간 뒤 커뮤니티에 있고, 그 뒤에는 누구에게 무엇을 줬는지도 썼는지도 알 수 없습니다.
+- 계정에 붙은 이용권은 전달이 안 되고, 세 질문(누구에게 / 왜 / 썼는지)에 전부 답이 있습니다.
+- 메일에 나가는 것은 **번호가 아니라 1회용 링크**입니다. 링크를 연 사람이 **어느 계정에 붙일지 직접 고릅니다.** 이벤트 신청은 `abc@naver.com`으로 오는데 로그인은 구글 `abc@gmail.com`인 경우가 흔하고, 주소로만 매칭하면 **그 사람들이 통째로 막힙니다.**
+
+### 결제 장부를 더럽히지 않은 방법
+
+- `analysis_entitlements`는 **반드시 `billing_orders` 한 줄을 가리켜야** 합니다. 무료 지급을 `POLAR` 주문으로 적으면 실제 주문 옆에 **지어낸 주문번호**가 섞입니다.
+- 그래서 `provider`에 `MOOA_CREDIT`을 추가했습니다. 금액 0원, `provider_order_id`는 `credit:{uuid}`. **장부는 하나로 유지하되 유료와 무료가 언제나 구분됩니다.**
+- 무료 실행도 **유료와 같은 `allowed_characters` 상한**을 받습니다. 없으면 무료가 유료보다 더 많이 분석합니다.
+
+### 두 번 쓰지 못하게 막은 것들
+
+- `reward_credits.billing_order_id`가 **unique**입니다. 한 이용권은 최대 한 개의 주문만 만듭니다.
+- `consume_reward_credit`은 같은 case·product에 **이미 `ACTIVE` 이용권이 있으면 거절**합니다.
+- 이용권 선택은 `for update skip locked limit 1` — 탭 두 개로 동시에 눌러도 하나만 나갑니다.
+- **상태 조합을 DB가 강제합니다.** `UNCLAIMED`는 주인이 없고, `AVAILABLE`은 주인이 있고 쓴 게 없고, `CONSUMED`는 주문이 정확히 하나 붙어 있어야 통과합니다.
+- 테이블 RLS는 **읽기 전용, 본인 것만**입니다. 상태 변경 경로는 `security definer` 함수 둘뿐입니다.
+
+### 같은 링크를 두 번 열어도 오류가 아닙니다
+
+- 메일 클라이언트는 링크를 미리 긁고, 사람은 탭을 다시 엽니다. 그걸 오류로 처리하면 **멀쩡한 이용권을 없어졌다고 말하는 셈**입니다.
+- 같은 계정이 다시 열면 `alreadyClaimed: true`로 성공 화면을, **다른 계정**이 열면 "다른 계정이 이미 받아 갔어요 — 그 계정으로 로그인하세요"를 보여줍니다. 원인이 대개 계정 착각이라 그대로 말해야 스스로 고칩니다.
+
+### 만든 화면
+
+- `/redeem/{token}` — 로그인한 사람은 **버튼 없이 바로** 등록됩니다(누를 이유가 없는 버튼이라). 로그인 전이면 구글 로그인 후 **같은 페이지로 돌아와** 그 자리에서 등록됩니다. `noindex` — 주소에 토큰이 들어 있어 크롤링되면 그 자체가 유출입니다.
+- `/meensoo/rewards` — 발급 화면과 발급 내역. **메일은 여기서 보내지 않습니다.** 옆 화면(메일 보내기)이 이미 잘 하고, 붙여 놓으면 *돈을 주면서 동시에 50명에게 보내는 버튼* 하나가 됩니다. 발급 후 `주소<TAB>링크` 목록을 주니 그대로 메일에 붙이면 됩니다.
+- 토큰은 **서버에서만** 만듭니다(32바이트 base64url). 이 토큰이 이용권을 가져갈 수 있는 유일한 권한이라 id가 아니라 비밀번호처럼 다룹니다.
+
+### 이력서 안내 문구
+
+- 결제 직전 화면의 경고를 **`이력서(입사지원서) 없이 진행합니다.` 한 줄로 줄였습니다.** 무엇이 빠지는지 설명하는 문단은 뺐습니다 — 결제 바로 앞에서 "지금 이걸 놓치고 있다"를 길게 적으면 **압박으로 읽힙니다.** 자세한 설명은 입력 화면과 `/new` 안내에 이미 있습니다.
+- Files/branch: `supabase/migrations/20260824040000_reward_credits.sql`(신규), `src/domain/reward-credit.ts`(신규), `src/domain/reward-credit.test.ts`(신규), `src/server/analysis/reward-credit-migration.test.ts`(신규), `src/app/redeem/[token]/page.tsx`·`redeem-client.tsx`·`redeem.module.css`(신규), `src/app/api/meensoo/rewards/route.ts`(신규), `src/app/meensoo/rewards/page.tsx`·`reward-issuer.tsx`(신규), `src/server/admin/admin-repository.ts`, `src/app/meensoo/admin-shell.tsx`, `src/app/meensoo/admin.module.css`, `src/components/analysis-preparation.tsx` on `main`.
+- Validation: `npx vitest run` 582 passed(신규 17건 — 토큰 형식·길이·URL 7, 마이그레이션 불변식 10). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 `/redeem/{긴 토큰}`은 로그인 안내, `/redeem/short`는 "이용권을 찾지 못했어요" 확인.
+- Rollback/recovery reference: 새 테이블·새 함수·새 라우트뿐이라 마이그레이션을 되돌리면 됩니다. 기존 결제 경로는 `provider` 제약이 넓어진 것 외에 변화가 없습니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 마이그레이션 `20260824040000_reward_credits.sql` 적용. 그다음 `/meensoo/rewards`에서 본인 주소로 한 장 발급 → 링크 열어 등록되는지 확인.
+- **다음 단계(2단계)**: 추천코드 자체 — `referral_codes`(사용자별 코드), 결제 전 코드 입력 → `PENDING` 저장, Polar `order.paid` 웹훅에서 `CONVERTED` 처리하며 추천인에게 `reason='REFERRAL'` 이용권 자동 발급. **입력만으로는 절대 지급하지 않습니다**(자기 코드 무한 입력 방지). 그리고 결제 화면의 `무료 이용권 사용하기` 버튼(= `consume_reward_credit` 호출)도 아직 없습니다.
+
+## 2026-08-24 — Claude: 연구 활용 동의와 비식별 처리
+
+- Agent/session: Claude. 사용자 요청: "4번(동의·익명화 구조) 설명 후 진행".
+- Status: **동의를 받을 준비와 지울 것을 지우는 도구까지 완료.** **실제 수집은 아직 켜지 않았습니다** — 그건 별도의, 다시 검토받을 변경입니다.
+- Protected baseline: 분석·결제 경로 전부 그대로입니다. 결과 화면에는 `최종 첨삭본` 탭 맨 아래에 블록 하나가 추가됐을 뿐입니다.
+
+### 왜 이 순서인가
+
+- 랜딩에 `실제 지원 결과는 이용자 동의를 받아 익명으로만 반영할 예정`이라고 적어 두었습니다. **그 문장을 현재형으로 바꾸려면 두 가지가 먼저 있어야 합니다**: 기록된 동의와, 실제로 지우는 함수. 둘 중 하나라도 없으면 그 문장은 거짓입니다.
+- 그래서 이번에 그 둘을 만들었고, **수집을 켜는 것은 일부러 다음 작업으로 남겼습니다.** 지우는 품질을 눈으로 확인한 뒤에 트는 것이 맞습니다.
+
+### 비식별 처리 — 두 방향으로 틀릴 수 있습니다
+
+- **덜 지우면**: 저장된 문서에 전화번호가 남습니다. 아무도 모르다가 문제가 될 때 압니다.
+- **더 지우면**: 연구할 것이 사라집니다. 기간·직무·회사명·성과 수치는 **자료를 보관하는 이유 그 자체**라, `2023.03~2024.07`이나 `불량률 12% 감소`를 먹어 버리는 지우개는 아무것도 답할 수 없는 자료 더미를 남깁니다.
+- 그래서 규칙을 **좁게, 각각 날짜나 수치가 될 수 없는 것에 고정**했습니다.
+  - 주민번호는 `6자리-7자리` 모양이라 단독으로 잡습니다.
+  - 휴대폰은 **`01x` 접두사에 고정**합니다. 일반적인 `\d{2,4}-\d{4}` 규칙은 `2023-2024`를 통째로 삼킵니다.
+  - 유선번호는 실제 지역번호가 있을 때만.
+  - 주소는 **`로/길` + 건물번호**가 함께 있을 때만. `울산광역시`만 있으면 남깁니다 — 어느 지역에서 일했는지는 분석에 쓸모 있고 아무도 특정하지 않습니다.
+  - **이름은 우리가 이미 아는 이름만** 지웁니다. 두세 글자 한국어 단어는 대부분 이름처럼 생겨서 모양으로는 찾을 수 없고, 추측하면 본문을 망칩니다.
+- 테스트가 **양쪽 다** 확인합니다: 지워야 할 6종이 지워지는지, 그리고 기간 4종·성과 수치·회사/학교/직무·지명이 **그대로 남는지**.
+- **못 지우는 것을 화면에 적었습니다**(`REDACTION_LIMITS`). 문장 안에만 나오는 타인의 이름, 아주 특정한 소속. 지우개는 바닥이지 보증이 아니고, 그렇게 말하는 것이 정직합니다.
+
+### 동의 자체
+
+- **옵트인입니다.** 기본 행이 없고, 없으면 동의하지 않은 것입니다. 기본값 `true`는 어디에도 없습니다.
+- **철회가 동의만큼 쉽습니다.** 같은 체크박스, 같은 함수. 주는 건 버튼이고 무르는 건 문의 접수인 제품은 선택지를 준 것이 아닙니다.
+- **문구 버전을 함께 저장합니다.** 동의한 문장은 동의 내용의 일부라, 문구가 바뀌면 예전 동의가 조용히 상속되면 안 됩니다. `has_research_consent`는 저장된 버전을 읽는 게 아니라 **현재 버전을 인자로 받아** 비교하므로, 문구를 고치면 **닫히는 쪽으로** 실패합니다.
+- 쓰기는 `security definer` 함수뿐이고 RLS는 **본인 것 읽기만** 허용합니다.
+
+### 왜 결제 전이 아니라 결과 화면에서 묻는가
+
+- 결제 전이라면 이 체크박스는 **원하는 것 앞을 막고 선 것**이고, 거기서 받은 "예"는 값이 별로 없습니다.
+- 결과를 이미 손에 든 자리에서는 답에 걸린 것이 없습니다. **"아니오"가 아무 대가도 치르지 않는 유일한 위치**입니다.
+- 그래서 문구에도 `동의하지 않아도 결과와 기능은 완전히 같습니다`를 넣었습니다. 샘플 결과 화면에는 뜨지 않습니다(동의할 실제 지원서가 없습니다).
+- Supabase 클라이언트가 없거나 요청이 막히면 **블록 자체가 안 뜹니다.** 지원자가 받으러 온 결과는 이미 화면에 있고, 그 사람 잘못이 아닙니다.
+- Files/branch: `src/domain/deidentify.ts`(신규), `src/domain/deidentify.test.ts`(신규), `supabase/migrations/20260824050000_research_consent.sql`(신규), `src/server/analysis/research-consent-migration.test.ts`(신규), `src/components/research-consent.tsx`·`research-consent.module.css`(신규), `src/components/result-workspace-complete.tsx` on `main`.
+- Validation: `npx vitest run` 601 passed(신규 19건 — 비식별 12, 마이그레이션 불변식 7). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: 새 테이블·새 함수·새 컴포넌트뿐입니다. 결과 화면에서 `<ResearchConsent />` 한 줄만 지우면 이전 상태입니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 마이그레이션 `20260824050000_research_consent.sql` 적용.
+- **다음 단계**: (1) 동의한 실행의 비식별 사본을 실제로 보관하는 구간 — 지우개 품질을 눈으로 확인한 뒤에. (2) 그때 랜딩의 `반영할 예정입니다`를 현재형으로, `사례 데이터베이스` 배지를 `동의 절차 구축 중` → `운영 중`으로 바꾸면 됩니다. **코드가 먼저, 문구가 나중입니다.**
+
+## 2026-08-24 — Claude: FINAL을 로컬에서만 열기, 재첨삭 안내 정정
+
+- Agent/session: Claude. 사용자 지적: `/new`의 "결과가 마음에 안 들면요" 항목이 없는 기능처럼 읽힌다. 그리고 로컬에서는 FINAL이 열려야 한다.
+- Status: completed. **마이그레이션 없음.** 열려면 환경변수 하나가 필요합니다(아래).
+
+### 재첨삭 안내는 틀린 게 아니라 절반이었습니다
+
+- 확인 결과 **기능은 있고 막혀 있지도 않습니다.** 결과 화면 아래 `추가 요청` 패널에서 요청사항을 적어 다시 받을 수 있고, PRO 전용도 FINAL 전용도 아닙니다.
+- 문제는 **`/new`의 안내가 값을 안 적었다**는 것입니다. 그 화면은 이미 `새 분석이므로 PRO 1회 결제가 필요합니다`라고 말하는데, 안내에는 그 말이 없어 **공짜처럼 읽혔습니다.** 안내가 제품보다 후하게 약속하면 그건 안내가 아니라 불만의 원인입니다.
+- 두 가지를 나눠 적었습니다: **문항별 첨삭에서 직접 고치기(추가 비용 없음)**가 먼저고, **방향을 바꾸는 재첨삭(PRO 1회 결제)**이 그다음입니다. 대부분은 앞의 것으로 끝납니다.
+
+### FINAL 입구를 환경변수로
+
+- FINAL은 분석 계층·결과 화면·DB가 다 있는데 **Polar 상품이 없어 결제가 안 됩니다.** 입구를 그냥 열면 **만들 수 없는 체크아웃 앞으로 손님을 보내는 것**이라, 아예 안 파는 것보다 나쁩니다.
+- `NEXT_PUBLIC_ENABLE_FINAL`이 `1`이나 `true`일 때만 `/final/polish`·`/final/build`·`/final/create`가 열립니다. 그 외 값(빈 값, `0`, 오타)은 **전부 닫힘** — 미완성 결제 경로를 노출하는 스위치는 애매하면 닫히는 쪽으로 실패해야 합니다. 테스트가 이걸 확인합니다.
+- 값이 없으면 세 경로는 **404**입니다. 배포에는 변수를 넣지 않으므로 지금처럼 요금표에 `준비 중`으로만 남습니다.
+- `NEXT_PUBLIC_`인 이유: 요금표와 입력 화면이 클라이언트 컴포넌트라, 서버 전용 플래그면 **화면과 라우트가 서로 다른 말을 하게** 됩니다.
+- **입구만 여는 스위치입니다.** DB는 플래그와 무관하게 결제된 이용권 없는 FINAL 실행을 계속 거절합니다.
+
+### 새 화면을 만들지 않았습니다
+
+- FINAL 입력 화면은 **PRO와 입력 항목이 같습니다.** 그래서 `ProInputPage`에 `product` 속성을 하나 더했을 뿐입니다(기본값 `"PRO"`라 기존 라우트는 그대로). 화면을 복사했으면 두 벌이 갈라집니다.
+- 결제 단계에서 FINAL이면 **`FINAL은 아직 결제를 열지 않았습니다. 입력하신 내용은 저장되어 있습니다.`**로 분명히 멈춥니다. `/api/checkouts/final`이 404를 내고 그게 "오류가 발생했습니다"로 뭉개지면, **저장은 됐는지 결제는 됐는지** 알 수 없습니다.
+- 준비 화면(`analysis-preparation`)에 FINAL 제공 범위를 넣고, PRO에만 보이던 **이력서 미첨부 경고와 자료 목록을 FINAL에도** 보이게 했습니다. `product === "PRO"`로 좁혀 둔 자리를 또 하나 찾은 셈입니다(네 번째).
+- Files/branch: `src/domain/final-availability.ts`(신규), `src/domain/final-availability.test.ts`(신규), `src/app/final/polish|build|create/page.tsx`(신규), `src/components/pro-input-page.tsx`, `src/components/analysis-preparation.tsx`, `src/components/application-case-handoff.tsx`, `src/lib/guest-draft.ts`, `src/app/new/page.tsx` on `main`.
+- Validation: `npx vitest run` 603 passed(신규 2건 — 켜는 값과 닫히는 값). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 변수 없이 `/final/polish`가 404인 것 확인.
+- Rollback/recovery reference: `src/app/final/` 폴더를 지우면 됩니다. `product` 속성은 기본값이 있어 지워도 PRO 동작 그대로입니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: `.env.local`에 `NEXT_PUBLIC_ENABLE_FINAL=1`을 넣고 dev 서버를 다시 시작하면 `/final/polish`가 열립니다. **Cloudflare에는 넣지 마세요** — 넣는 순간 결제가 안 되는 상품이 손님에게 보입니다.
+
+## 2026-08-24 — Claude: 동의한 실행의 비식별 사본을 실제로 보관
+
+- Agent/session: Claude. 사용자 요청: 앞 항목 3번("동의한 실행의 비식별 사본 실제 보관") 진행.
+- Status: completed. **마이그레이션 하나 추가**(`20260824060000_research_snapshots.sql`).
+- Protected baseline: 분석 완료 경로(`complete_quick_analysis` 호출)는 그대로이고, 성공한 **뒤에** 한 줄이 덧붙습니다.
+
+### 또 같은 종류의 버그 — 다섯 번째
+
+- `supabase-quick-analysis-run-repository.ts`의 재개 경로가 `run.product === "PRO"`로 지원자료를 걸렀습니다. **FINAL 실행이 크론으로 재개되면 이력서가 통째로 빠집니다** — FINAL이 존재하는 이유인 그 문서가요. `product !== "QUICK"`으로 고쳤습니다.
+- 지금까지 같은 자리를 다섯 곳에서 찾았습니다: `questions.ts`, `begin_quick_analysis`, 결과 화면 탭, 준비 화면 안내, 그리고 여기. **"PRO만"이라고 쓴 자리는 전부 FINAL을 떨어뜨립니다.**
+
+### 무엇을 보관하나
+
+- 지원자 글은 **가려서**, 지적 내용은 **그대로**. 후자가 실제로 배우는 부분입니다 — `본인 기여가 드러나지 않습니다` 같은 지적이 수백 건에서 반복되면 그것이 규칙으로 적을 값어치가 있는 것이고, 그 문장 자체에는 개인정보가 없습니다.
+- **일부러 담지 않은 것**: 회사명·직무명·파일명·caseId를 별도 항목으로 두지 않습니다. 회사 이름이 타임라인 옆에 컬럼으로 있으면 사람이 예상보다 빨리 좁혀집니다. 다만 **지원자가 직접 쓴 문장 안의 회사명은 남습니다** — 그걸 지우면 지원동기를 연구할 수 없고, 지원한 회사를 아는 것이 지원자를 특정하지도 않습니다.
+- 한 실행에 사본 하나(`analysis_run_id` unique). 재시도해도 덮어쓰므로 같은 지원서를 두 번 세지 않습니다.
+
+### 소유자 id를 남긴 것은 실수가 아니라 거래입니다
+
+- 내용은 가리지만 **연결은 남깁니다.** 남기지 않으면 `철회하면 지웁니다`가 **지킬 방법이 없는 약속**이 됩니다 — 어느 행이 그 사람 것인지 모르니까요.
+- 그래서 연결을 남긴 값을 실제로 씁니다: **철회하면 그 자리에서 삭제합니다.** `이후로는 활용하지 않습니다`는 약한 약속이고, 그때까지 모은 것이 그대로 남아 있다면 권한을 되찾은 것이 아닙니다. 화면 문구도 `이미 보관 중인 사본도 그 자리에서 지웁니다`로 바꿨습니다.
+
+### 잘못될 수 없게 만든 것
+
+- **동의 확인은 SQL 안에 있습니다.** 호출하는 코드는 틀릴 수 있습니다. 수집 문은 하나이고 잠금장치는 문 안쪽에 답니다.
+- **브라우저에서는 아무도 못 읽습니다.** RLS를 켜고 정책을 하나도 만들지 않았습니다 — 본인도 못 읽습니다. `service_role`만 접근합니다.
+- **분석을 절대 망치지 않습니다.** 완료가 저장된 뒤에 돌고, 어떤 예외도 삼킵니다. 이미 값을 치른 결과를, 우리 규칙을 다듬자고 실패로 만들 이유가 없습니다.
+- Files/branch: `supabase/migrations/20260824060000_research_snapshots.sql`(신규), `src/server/analysis/research-capture.ts`(신규), `src/server/analysis/research-capture.test.ts`(신규), `src/server/analysis/research-snapshot-migration.test.ts`(신규), `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/domain/deidentify.ts`, `src/components/research-consent.tsx` on `main`.
+- Validation: `npx vitest run` 616 passed(신규 13건 — 사본 생성 7, 마이그레이션 불변식 6). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: `captureForResearch` 호출 한 줄을 지우면 수집이 멈춥니다. 테이블을 지우면 보관분도 사라집니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 마이그레이션 적용. 그 뒤 분석을 한 번 돌리고 결과 화면에서 동의 → `research_snapshots`에 행이 생기는지, 철회 → 그 행이 사라지는지 확인.
+- **이제 랜딩 문구를 바꿀 수 있습니다**: `사례 데이터베이스` 배지 `동의 절차 구축 중` → `운영 중`, 그리고 `반영할 예정입니다` → 현재형. **다만 수집이 실제로 도는 것을 눈으로 본 뒤에** 바꾸는 것이 순서입니다.
+
+## 2026-08-24 — Claude: 회사·직무 축 복구, 합/불 실제 저장, 축적 데이터 화면
+
+- Agent/session: Claude. 사용자 지적: "회사명 직무명 저장 안 하면 데이터 쌓는 이유가 있나? 그리고 어디서 한눈에 보노?"
+- Status: completed. **마이그레이션 하나 추가**(`20260824070000_outcome_and_research_axes.sql`).
+
+### 제 판단이 틀렸습니다 — 회사·직무는 저장해야 맞습니다
+
+- 직전 작업에서 `research_snapshots`에 지원 회사·직무를 **일부러 뺐습니다.** 근거는 "회사명이 타임라인 옆에 있으면 사람이 좁혀진다"였는데, **틀린 걱정에 옳은 필드를 희생한 것**입니다.
+- **지원하는 회사는 그 사람의 회사가 아닙니다.** 한 회사에 수천 명이 지원하므로 아무도 특정하지 않습니다. 반대로 사람을 좁히는 것은 **재직 회사 + 재직 기간 + 학교 + 이름**이고, 그건 본문에 있어 지우개와 명시된 한계가 적용됩니다.
+- 그리고 이 두 필드가 **모든 질문이 달리는 축**입니다. 없으면 남는 것은 묶을 것이 없는 익명 산문 더미입니다. 복구했습니다.
+
+### 합/불이 아예 저장되고 있지 않았습니다
+
+- `ApplicationTrackerCard`의 `서류 합격` / `서류 불합격` / `최종 합격` 버튼은 **`sessionStorage`에만** 썼습니다. 탭을 닫으면 사라집니다.
+- 즉 **이 제품이 배울 수 있는 가장 값진 한 번의 클릭이 지금까지 전부 버려지고 있었습니다.** 그게 없으면 "합격한 지원서의 공통점" 같은 것은 영원히 불가능합니다.
+- `application_outcomes` 테이블과 `record_application_outcome`를 만들고, 카드가 **기존 로컬 저장은 그대로 둔 채** 서버에도 보내게 했습니다. 실패해도 조용히 넘어갑니다 — 이 카드는 **지원자 자신의 기록이 먼저이고 우리 데이터가 나중**입니다.
+- `confidence`는 `SELF_REPORTED` 고정입니다. 안 받은 합격을 받았다고 하는 사람은 실제로 있고, 그걸 모른 척하는 자료는 **자신 있게 틀린 결론**을 냅니다.
+
+### 무엇을 뽑아낼 수 있게 했나 — `src/domain/research-insight.ts`
+
+- **반복되는 지적**: 한 지원서 안에서 같은 지적이 세 번 나와도 **1건**입니다. 한 번의 분석이 세 문항에서 같은 말을 한 것은 여전히 그 문제를 가진 지원서 하나입니다.
+- **회사별·직무별 묶기**: `MIN_GROUP_SIZE = 5` 미만은 **표에 내지 않습니다.** 한 회사에 3건은 그 회사에 대한 경향이 아니라 세 사람이고, 거기서 만든 규칙은 프롬프트에 들어가 **전원에게** 갑니다.
+- **빠진 건수를 숨기지 않습니다.** "15건 있는데 표에는 2개뿐"은 그 자체로 알아야 할 사실이라 `제외 N건, 미기재 N건`을 함께 적습니다.
+- **모르는 것을 실패로 세지 않습니다.** 결과 미확인은 별도 칸입니다. 실패로 접으면 모든 숫자가 실제보다 나빠 보이고, 조용히 버리면 좋아 보입니다.
+- **표본이 적으면 비율을 내지 않습니다**(`documentPassRate`가 `null`). 결과 2건에서 나온 퍼센트는 지식처럼 보이는 숫자일 뿐이고, 정확히 그런 숫자가 나중에 마케팅 페이지에 올라갑니다.
+- `describeConfidence`가 각 묶음 옆에 **얼마나 믿을 수 있는지**를 문장으로 답니다. 다음 달에 이 숫자를 읽는 사람은 그것을 더 단단하게 말하고 싶어질 것이고, 그걸 막는 문장이 필요합니다.
+
+### 화면
+
+- `/meensoo/research` — 보관 건수 / 결과 확인 / 서류 통과율, 반복되는 지적 표(전체·통과 쪽·탈락 쪽), 회사별·직무별 표.
+- 맨 아래에 **이 숫자로 할 수 있는 것과 하지 말아야 할 것**을 적었습니다. 뽑히는 것은 "이 지적이 이 회사·직무에서 유독 자주 나온다"까지이고, 그것만으로도 프롬프트 규칙이 됩니다.
+- `research_corpus` 뷰로 사본과 결과를 조인합니다. 결과는 사본보다 몇 주 뒤에 오므로 컬럼으로 복사하면 **뒤처지는 두 번째 쓰기 경로**가 생깁니다.
+- Files/branch: `supabase/migrations/20260824070000_outcome_and_research_axes.sql`(신규), `src/domain/research-insight.ts`(신규), `src/domain/research-insight.test.ts`(신규), `src/app/meensoo/research/page.tsx`(신규), `src/server/analysis/research-capture.ts`, `src/server/analysis/research-capture.test.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/components/application-tracker-card.tsx`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/admin-shell.tsx` on `main`.
+- Validation: `npx vitest run` 629 passed(신규 13건 — 집계 규칙 12, 사본 축 1). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: 새 테이블·뷰·화면과 기존 카드의 `void (async ...)` 한 구간입니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 마이그레이션 적용.
+- **다음**: 뽑힌 규칙을 **실제로 프롬프트에 먹이는 경로**는 아직 없습니다(사람이 읽고 손으로 넣어야 합니다). 표본이 쌓인 뒤에 만드는 것이 맞습니다 — 지금 자동화하면 노이즈를 자동으로 학습합니다.
+
+## 2026-08-24 — Claude: 이용권이 결제창을 대체하도록, 발급 링크 다시 보기, /redeem 다시 그리기
+
+- Agent/session: Claude. 사용자 보고: "이용권 등록됐다고 뜨는데 결제 누르면 그냥 일반 결제창 뜬다."
+- Status: completed. **마이그레이션 없음.**
+
+### 이용권이 실제로 쓰이지 않고 있었습니다
+
+- `consume_reward_credit` 함수는 있었지만 **누를 곳이 없었습니다.** 그래서 이용권을 받은 사람도 결제 화면에서 그대로 Polar로 갔습니다. 등록은 됐는데 아무 일도 안 일어난 것처럼 보인 이유입니다.
+- 결제 화면이 이제 로그인 직후 **그 상품의 미사용 이용권**이 있는지 봅니다. `QUICK` 이용권은 `PRO` 실행을 결제하지 못하므로 **상품까지 맞춰서** 조회합니다 — 안 그러면 지원서를 저장한 뒤에야 거절당합니다.
+- 있으면 **버튼 글자부터 바뀝니다**: `무료 이용권으로 분석 시작 · 0원`. 그리고 그 위에 `{상품} 무료 이용권이 있습니다. 이번 분석은 결제 없이 진행됩니다.`를 **누르기 전에** 띄웁니다. 저장한 뒤에야 드러나는 무료 티켓은 적용이 안 된 것처럼 읽힙니다.
+- 누르면 저장 → `consume_reward_credit` → `/api/analysis-runs/quick/execute` → 결과로 이동. **유료 경로가 Polar에서 돌아와 하는 일과 똑같은 두 단계**입니다. 202(백그라운드 진행)도 유료 경로와 동일하게 성공으로 봅니다.
+- 재시도 버튼(저장은 됐는데 결제로 못 넘어간 경우)도 같은 분기를 탑니다.
+
+### 발급 내역에서 링크를 다시 볼 수 있게
+
+- 발급 직후 화면을 닫으면 **링크의 유일한 사본이 사라집니다.** 토큰은 이미 발급된 이용권에 대해 다시 만들 수 없습니다.
+- 목록의 `수령 링크` 칸에 그대로 두고, 클릭하면 전체 선택됩니다. **이미 수령된 것은 링크 대신 `이미 수령됨`**을 보여줍니다 — 쓸 수 없는 링크를 복사할 이유가 없습니다.
+
+### /redeem 다시 그리기
+
+- 흰 카드에 초록 아이콘이었습니다. 맞긴 한데 **기억에 안 남습니다.** 이 화면은 무언가를 공짜로 받은 직후 처음 보는 장면이라 무게를 줄 만합니다.
+- 어두운 바탕(`#080b0a`)에 **뒤에서 비추는 빛 한 겹**(radial + conic 그라데이션), 유리질 카드, 올라오며 나타나는 진입. **이미지는 한 장도 안 씁니다** — 순수 CSS라 로딩도 없고 낡지도 않습니다.
+- `prefers-reduced-motion`을 존중해 움직임을 원하지 않는 사용자에게는 애니메이션이 없습니다.
+- Files/branch: `src/components/application-case-handoff.tsx`, `src/components/application-case-handoff.module.css`, `src/app/meensoo/rewards/page.tsx`, `src/app/meensoo/admin.module.css`, `src/app/redeem/[token]/redeem.module.css` on `main`.
+- Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 `/redeem`의 새 배경·카드·그림자와 가로 스크롤 없음, 콘솔 오류 없음 확인.
+- Rollback/recovery reference: 결제 화면의 `availableCredit` 분기와 `startWithCredit`, 관리자 표의 `수령 링크` 칸, CSS 파일 하나입니다. 커밋 이전 상태는 `ae6397d`.
+- **남은 일(사용자)**: 이용권이 남아 있는 계정으로 `/quick` 또는 `/pro/polish`를 끝까지 진행해 **결제창 대신 바로 분석이 시작되는지** 확인해 주세요.

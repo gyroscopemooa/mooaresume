@@ -12,3 +12,4 @@
 .shortNotice b{color:#6b5417;font-weight:800}
 .shortNotice a{display:inline-flex;align-items:center;gap:4px;margin-left:6px;color:#8a6d1f;font-weight:800;text-decoration:underline}
 .shortNotice svg{width:12px}
+.resumeNotice{display:flex;gap:9px;margin-top:12px;padding:14px 16px;border:1px solid #eddfb6;border-radius:10px;background:#fffdf5}.resumeNotice svg{width:16px;flex:none;color:#a3761d;margin-top:2px}.resumeNotice span{display:flex;flex-direction:column;gap:5px}.resumeNotice b{font-size:13px;color:#7a5f16}.resumeNotice small{color:#82704a;font-size:11.5px;line-height:1.8}.resumeNotice small b{font-size:inherit;color:#5f4a0f}

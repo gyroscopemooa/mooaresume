@@ -2,7 +2,10 @@ import Link from "next/link";
 import { ArrowRight, MessageCircleMore, Sparkles } from "lucide-react";
 import styles from "./final-upgrade-card.module.css";
 
-export function FinalUpgradeCard({ product }: { product: "QUICK" | "PRO" }) {
+export function FinalUpgradeCard({ product }: { product: "QUICK" | "PRO" | "FINAL" }) {
+  // Nothing above FINAL to point at. An upsell card on the top tier reads as a
+  // charge for something the applicant already bought.
+  if (product === "FINAL") return null;
   if (product === "QUICK") {
     return <section className={styles.card}>
       <div className={styles.icon}><MessageCircleMore /></div>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud } from "lucide-react";
+import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { LandingEntry } from "@/components/landing-entry";
 import { PricingComparison } from "@/components/pricing-comparison";
 import landingStyles from "./landing-sections.module.css";
@@ -8,6 +8,7 @@ import outcomeStyles from "./outcome-learning.module.css";
 import positioningStyles from "./landing-positioning.module.css";
 import enterpriseStyles from "./enterprise-promo.module.css";
 import oneClickStyles from "./one-click.module.css";
+import fieldStyles from "./field-credibility.module.css";
 import { getSiteUrl } from "@/lib/site-url";
 
 const differences = [
@@ -75,6 +76,100 @@ export default function HomePage() {
       </section>
 
       <section className="section container" id="how"><div className="section-label">왜 MOOA인가요?</div><h2>AI 답변이 아니라<br/>지원 과정 전체를 정리해요.</h2><div className="feature-grid">{differences.map(({icon: Icon,title,body})=><article key={title}><div className="icon-box"><Icon/></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+
+      {/* Says who is behind the judgement, which is the one thing an AI editing
+          tool cannot claim by default. Every sentence here is a statement about
+          real people and has to stay literally true — see the change log entry
+          for the wording that was deliberately not used. */}
+      <section className={"container " + fieldStyles.section}>
+        <div className={fieldStyles.head}>
+          <span>FIELD-PROVEN CONSULTING</span>
+          <h2>현장에서 검증된 컨설팅을, 기술로.</h2>
+          <p className={fieldStyles.lead}>AI만으로 만든 첨삭이 아닙니다.</p>
+          <p className={fieldStyles.body}>무아레쥬메는 <b>대학·취업전문기관·재단 등 실제 취업지원 현장</b>에서 쌓아온 상담 경험과 첨삭 기준, 직무 분석 방법을 그대로 서비스에 담았습니다. 한 사람의 감이 아니라 <b>여러 직군의 전문가가 각자의 자리에서 보는 것</b>을 모아 기준으로 만듭니다.</p>
+          <div className={fieldStyles.network}>
+            <span className={fieldStyles.networkLabel}>WHO SETS THE STANDARD</span>
+            <div className={fieldStyles.chips}>
+              <span>취업컨설턴트</span>
+              <span>직업상담사</span>
+              <span>첨삭 멘토</span>
+              <span>인사담당자</span>
+              <span>직무 전문가</span>
+              <span>현직자·재직자</span>
+            </div>
+            {/* Says what each group contributes rather than only listing them —
+                a list of job titles with nothing attached reads as decoration. */}
+            <p className={fieldStyles.networkNote}>오랜 경력의 취업컨설턴트가 쌓은 첨삭 기술과 노하우, 인사담당자가 서류를 볼 때 쓰는 시선과 평가 기준, 현직자·재직자가 겪은 실제 업무와 사례. 이 셋이 각각 다른 것을 잡아냅니다.</p>
+          </div>
+        </div>
+        <div className={fieldStyles.points}>
+          <article><span><Users/></span><h3>상담 현장의 첨삭 기준</h3><p>수많은 구직자를 마주하며 정리된 기준으로 봅니다. 무엇을 남기고 무엇을 덜어낼지가 취향이 아니라 근거로 정해집니다.</p></article>
+          <article><span><Briefcase/></span><h3>직무를 읽는 방법</h3><p>채용공고를 문장으로 읽지 않고 요구역량으로 분해합니다. 지원자의 경험 중 무엇이 그 자리에 닿는지부터 찾습니다.</p></article>
+          <article><span><UserRoundSearch/></span><h3>인사담당자의 시선</h3><p>읽는 사람은 결국 사람입니다. 왜 이 지원자를 뽑아야 하는지가 전달되는지를 마지막에 확인합니다.</p></article>
+        </div>
+        <div className={fieldStyles.closing}>
+          <p>단순히 문장을 예쁘게 바꾸는 것에 그치지 않습니다. 지원자의 경험을 이해하고, 채용공고와 직무를 분석하며, 인사담당자와 면접관의 시선에서 전달되도록 돕는 것. 그것이 무아레쥬메가 생각하는 자기소개서 첨삭입니다.</p>
+          <strong>현장의 경험을 기술로.<br/>첨삭을 넘어, 실제 취업에 가까워지는 지원서로.</strong>
+          <small>MOOA RESUME · 무아레쥬메</small>
+        </div>
+      </section>
+
+      {/* Why the price can be higher than a plain AI editor: the tool is
+          replaceable, the judgement is not. Every claim here is written in the
+          tense it can actually be defended in — the case database is described
+          as being built, not as already in use, because that claim needs
+          consent and de-identification behind it first. */}
+      <section className={"container " + fieldStyles.loop}>
+        <div className={fieldStyles.loopHead}>
+          <span>STANDARDS THAT KEEP LEARNING</span>
+          <h2>같은 AI라도,<br/><em>판단 기준은 다릅니다.</em></h2>
+          <p className={fieldStyles.loopLead}>같은 AI 컨설팅이더라도 담긴 경험이 다릅니다. 오랜 경력의 취업 전문가와 커리어팀, 컨설턴트들의 경험과 기술이 이 안에 들어 있습니다.</p>
+          <p>무아레쥬메는 완성된 서비스가 아니라 <b>계속 경험을 쌓는 취업 컨설팅 시스템</b>을 지향합니다. 같은 AI를 쓰더라도 무엇을 문제로 볼지, 무엇을 남기고 무엇을 덜어낼지를 정하는 기준은 저희가 만듭니다. 그 기준은 지금도 쌓이고 있고, 앞으로 계속 정밀해집니다.</p>
+        </div>
+
+        <div className={fieldStyles.assets}>
+          <article>
+            <span>PEOPLE</span>
+            <h3>전문가 네트워크</h3>
+            <p>취업컨설턴트·직업상담사·인사담당자·직무 전문가·현직자가 각자의 자리에서 보는 것을 모읍니다.</p>
+            <small>운영 중</small>
+          </article>
+          <article>
+            <span>KNOW-HOW</span>
+            <h3>컨설팅 지식베이스</h3>
+            <p>상담과 첨삭에서 반복해 만난 문제와 그 판단 기준을 규칙으로 옮겨 쌓습니다. 서비스가 실제로 무엇을 지적할지가 여기서 정해집니다.</p>
+            <small>계속 확장 중</small>
+          </article>
+          <article>
+            <span>CASES</span>
+            <h3>사례 데이터베이스</h3>
+            <p>실제 지원서와 서류전형 결과, 첨삭 전후의 변화, 면접에서 나온 질문을 익명으로 모아 기준을 검증합니다.</p>
+            <small>동의 절차 구축 중</small>
+          </article>
+        </div>
+
+        <div className={fieldStyles.cycle}>
+          <span>실제 경험</span><i>→</i>
+          <span>기준화</span><i>→</i>
+          <span>기술 적용</span><i>→</i>
+          <span>실제 결과</span><i>→</i>
+          <span>다시 개선</span>
+        </div>
+
+        <div className={fieldStyles.loopGrid}>
+          <article><h3>상담에서 반복되는 문제를 기준으로</h3><p>경험은 좋은데 표현을 못 하는 경우, 본인 기여가 드러나지 않는 경우, 지원동기를 억지로 잇는 경우. 현장에서 반복해서 만나는 문제들을 판단 규칙으로 옮깁니다.</p></article>
+          <article><h3>직무마다 다르게 봅니다</h3><p>생산·품질·안전·개발·마케팅은 중요하게 보는 지점이 각각 다릅니다. 하나의 좋은 자소서 형태를 모든 직무에 적용하지 않습니다.</p></article>
+          <article><h3>&ldquo;잘 썼나&rdquo;가 아니라 &ldquo;걸릴 데가 있나&rdquo;</h3><p>채용 담당자가 의심할 것은 없는지, 굳이 떨어뜨릴 이유는 없는지, 면접에서 무엇을 확인할지를 함께 점검합니다.</p></article>
+          <article><h3>합격 사례만 보지 않습니다</h3><p>합격에는 스펙·경쟁률·채용 규모처럼 글과 무관한 요소도 섞입니다. 합격한 글만 모으면 &ldquo;이렇게 쓰면 붙는다&rdquo;는 틀린 결론에 이릅니다.</p></article>
+        </div>
+
+        <div className={fieldStyles.loopNote}>
+          <ShieldCheck/>
+          <p><b>실제 지원 결과는 이용자 동의를 받아 익명으로만 반영할 예정입니다.</b> 동의 절차와 비식별 처리를 갖춘 뒤에 시작합니다. 그리고 표본이 충분히 쌓이기 전까지 &ldquo;이 문장은 합격률을 몇 % 높입니다&rdquo; 같은 수치는 쓰지 않습니다. 저희가 말할 수 있는 것은 <b>반복해서 발견되는 패턴</b>까지입니다.</p>
+        </div>
+
+        <p className={fieldStyles.loopClose}>실제 경험이 기준이 되고,<br/><em>실제 결과가 다시 기준을 발전시킵니다.</em></p>
+      </section>
 
       <section className={"container " + landingStyles.narrative}>
         <div className={landingStyles.narrativeIntro}>

@@ -8,7 +8,7 @@ import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake"
 import { clearGuestDraft, loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import type { WritingMode } from "@/domain/writing-mode";
 import { countNonWhitespaceCharacters, createQuickCheckoutQuote, QUICK_SOFT_LIMIT_CHARS } from "@/domain/usage-entitlement";
-import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
+import { createCoverLetterQuestion, resolveDraftTargetLength, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import styles from "./quick.module.css";
 
 export default function QuickPage() {
@@ -66,7 +66,9 @@ export default function QuickPage() {
       draftText: combinedDraft,
       questionDrafts: answers,
       questions,
-      targetLength: 700,
+      // Derived from what the applicant typed per question; 700 is only the
+      // floor for a draft that states no limit anywhere.
+      targetLength: resolveDraftTargetLength(questions, 700),
       sourceFilename: file?.filename,
       sourceFileExtension: file?.extension,
       sourceFileSizeBytes: file?.sizeBytes,

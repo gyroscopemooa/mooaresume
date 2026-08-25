@@ -10,7 +10,7 @@ export default function AdminMailPage() {
       <div className={styles.head}>
         <div>
           <h1>메일 보내기</h1>
-          <p>Resend에 등록한 발신 주소로 보냅니다. 받는 사람에게는 서로의 주소가 보이지 않습니다.</p>
+          <p>Resend에 등록한 발신 주소로 보냅니다. 받는 사람에게는 서로의 주소가 보이지 않습니다. 사진·첨부파일도 함께 보낼 수 있습니다.</p>
         </div>
         <Link href="/meensoo/mail/history" className={styles.mono}>발송 기록 →</Link>
       </div>

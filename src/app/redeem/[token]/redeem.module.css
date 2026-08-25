@@ -1,0 +1,46 @@
+/* Dark, quiet, and lit from behind.
+   The first version was a white card with a green icon — correct and
+   forgettable. This screen is the first thing someone sees after being handed
+   something for free, and it is worth the extra weight. */
+.page{position:relative;min-height:100vh;display:grid;place-items:center;padding:40px 20px;background:#080b0a;overflow:hidden}
+/* One wide fan of light behind the card, the way a stage wash sits behind a
+   subject. Pure CSS — no image to load and nothing to go stale. */
+.page:before{content:"";position:absolute;left:50%;top:-10%;width:min(1100px,150vw);aspect-ratio:1/1;transform:translateX(-50%);background:
+  radial-gradient(closest-side,rgba(45,214,138,.20),transparent 70%),
+  conic-gradient(from 200deg at 50% 45%,transparent 0deg,rgba(38,166,110,.16) 25deg,transparent 60deg,rgba(23,107,74,.14) 95deg,transparent 130deg,rgba(94,226,166,.10) 165deg,transparent 210deg);
+  filter:blur(6px);pointer-events:none}
+.page:after{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 0%,transparent 30%,#080b0a 78%);pointer-events:none}
+.card{position:relative;z-index:1;width:min(500px,100%);padding:48px 42px 40px;border:1px solid rgba(255,255,255,.09);border-radius:22px;
+  background:linear-gradient(165deg,rgba(23,32,28,.92),rgba(11,15,13,.94));
+  box-shadow:0 40px 90px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter:blur(14px);text-align:center;color:#e8efeb}
+.gift{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 22px;border-radius:18px;
+  background:linear-gradient(150deg,rgba(74,222,128,.20),rgba(23,107,74,.10));
+  border:1px solid rgba(122,231,175,.28);color:#7ee0b0;box-shadow:0 0 34px rgba(45,214,138,.18)}
+.gift svg{width:26px;height:26px}
+.eyebrow{display:block;color:#6fd3a4;font-size:10.5px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+.card h1{margin:14px 0 14px;font-size:27px;line-height:1.35;letter-spacing:-.04em;color:#fff;font-weight:800}
+.card>p{margin:0;color:#93a79d;font-size:13.5px;line-height:1.9}
+.card>p b{color:#d7e5dd}
+.product{display:inline-flex;align-items:baseline;gap:9px;margin:24px 0 4px;padding:15px 24px;border-radius:14px;
+  border:1px solid rgba(122,231,175,.24);background:linear-gradient(160deg,rgba(45,214,138,.13),rgba(45,214,138,.04))}
+.product b{color:#fff;font-size:19px;font-weight:900;letter-spacing:-.02em}
+.product span{color:#7ee0b0;font-size:13px;font-weight:800}
+.actions{display:grid;gap:9px;margin-top:28px}
+.primary{display:flex;align-items:center;justify-content:center;gap:8px;padding:15px;border:0;border-radius:12px;
+  background:linear-gradient(180deg,#37c98c,#1c8f60);color:#04150d;font-size:14.5px;font-weight:900;cursor:pointer;
+  box-shadow:0 10px 26px rgba(28,143,96,.35);transition:transform 120ms ease,box-shadow 120ms ease}
+.primary:hover{transform:translateY(-1px);box-shadow:0 14px 32px rgba(28,143,96,.45)}
+.primary:disabled{opacity:.55;cursor:default;transform:none;box-shadow:none}
+.secondary{padding:13px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:transparent;color:#b6c9c0;font-size:13.5px;font-weight:700;cursor:pointer}
+.secondary:hover{border-color:rgba(255,255,255,.22);color:#e8efeb}
+.note{margin:24px 0 0;padding-top:20px;border-top:1px solid rgba(255,255,255,.07);color:#7d8f86;font-size:11.5px;line-height:1.9}
+.note b{color:#b6c9c0}
+.bad .gift{background:linear-gradient(150deg,rgba(248,113,113,.16),rgba(120,40,40,.08));border-color:rgba(248,113,113,.3);color:#f0a3a3;box-shadow:0 0 34px rgba(200,70,70,.15)}
+.bad .eyebrow{color:#e0a0a0}
+.message{margin:18px 0 0;color:#f0a3a3;font-size:13px;line-height:1.75}
+@media(prefers-reduced-motion:no-preference){
+  .card{animation:rise 420ms cubic-bezier(.2,.7,.3,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+}
+@media(max-width:600px){.card{padding:34px 24px 30px}.card h1{font-size:22px}}

@@ -1,7 +1,7 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
-import { createCoverLetterQuestion, type CoverLetterQuestion } from "@/domain/cover-letter-question";
+import { AlertTriangle, Plus, Trash2 } from "lucide-react";
+import { createCoverLetterQuestion, describeOverLongAnswer, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import { countNonWhitespaceCharacters } from "@/domain/usage-entitlement";
 import styles from "./question-editor.module.css";
 
@@ -24,7 +24,7 @@ export function QuestionEditor({ questions, onChange, compact = false }: Props) 
         <label><span>글자 수 제한 <small>필수</small></span><input type="number" min="100" max="3000" required value={question.targetLength ?? ""} placeholder="예: 700" onChange={(event) => update(question.id, "targetLength", event.target.value ? Number(event.target.value) : null)}/><small className={styles.hint}>문항별 첨삭을 위해 목표 글자 수를 입력</small></label>
         <label className={styles.full}><span>실제 자기소개서 질문 <small>선택</small></span><input value={question.prompt} onChange={(event) => update(question.id, "prompt", event.target.value)} placeholder="예: 지원동기 및 입사 후 포부를 작성해 주세요."/></label>
       </div>
-      <label className={styles.answer}><span>작성한 답변</span><textarea rows={compact ? 8 : 11} value={question.answer} onChange={(event) => update(question.id, "answer", event.target.value)} placeholder="이 문항에 작성한 답변을 붙여넣어 주세요."/><small>공백 제외 {countNonWhitespaceCharacters([question.answer]).toLocaleString()}자{question.targetLength ? ` / 제한 ${question.targetLength.toLocaleString()}자` : ""}</small></label>
+      <label className={styles.answer}><span>작성한 답변</span><textarea rows={compact ? 8 : 11} value={question.answer} onChange={(event) => update(question.id, "answer", event.target.value)} placeholder="이 문항에 작성한 답변을 붙여넣어 주세요."/><small>공백 제외 {countNonWhitespaceCharacters([question.answer]).toLocaleString()}자{question.targetLength ? ` / 제한 ${question.targetLength.toLocaleString()}자` : ""}</small>{describeOverLongAnswer(question) && <small className={styles.overLong}><AlertTriangle/>{describeOverLongAnswer(question)}</small>}</label>
     </article>)}
     <button type="button" className={styles.add} onClick={() => onChange([...questions, createCoverLetterQuestion("", questions.length)])}><Plus/> 빠진 문항 추가</button>
   </div>;

@@ -59,7 +59,10 @@ export const candidateMaterialAttachmentSchema = candidateFreeformAttachmentSche
 export type CandidateMaterialAttachment = z.infer<typeof candidateMaterialAttachmentSchema>;
 
 export const CANDIDATE_MATERIAL_LABEL: Record<CandidateMaterialKind, string> = {
-  RESUME: "이력서",
+  // "입사지원서" is named alongside it because that is what most Korean
+  // employers actually hand a new graduate — there is no separate résumé to
+  // upload, and a slot labelled only "이력서" reads as "I do not have this".
+  RESUME: "이력서(입사지원서)",
   CAREER_DOCUMENT: "경력기술서",
   PORTFOLIO: "포트폴리오",
 };

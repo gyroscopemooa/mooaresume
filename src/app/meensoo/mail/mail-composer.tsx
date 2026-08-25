@@ -1,31 +1,85 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import styles from "../admin.module.css";
+import {
+  MAX_ATTACHMENTS,
+  MAX_ATTACHMENT_BYTES,
+  MAX_ATTACHMENTS_TOTAL_BYTES,
+  attachmentCheckMessage,
+  checkAttachments,
+  formatBytes,
+  isInlineImage,
+} from "@/domain/mail-attachments";
 
 /**
  * The same send flow as `/MAIL`, on the console's own gate and styling.
  *
  * `/MAIL` is left in place and still works; this is a second entrance to the
- * one `/api/mail/send` route, not a replacement for it.
+ * one `/api/mail/send` route, not a replacement for it. Files are picked here
+ * only — `/MAIL` keeps posting the plain JSON it always posted.
  */
 export function MailComposer() {
   const [to, setTo] = useState("");
   const [replyTo, setReplyTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const filePicker = useRef<HTMLInputElement>(null);
+
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+
+  function clearPicker() {
+    // Without this the same file cannot be picked again after removing it:
+    // the input's value never changed, so no change event fires.
+    if (filePicker.current) filePicker.current.value = "";
+  }
+
+  function addFiles(event: ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(event.target.files ?? []);
+    clearPicker();
+    if (picked.length === 0) return;
+
+    // Added to what is already there rather than replacing it, so a second
+    // trip to the file dialog does not quietly drop the first pick.
+    const next = [...files];
+    for (const file of picked) {
+      if (!next.some((existing) => existing.name === file.name && existing.size === file.size)) next.push(file);
+    }
+
+    const check = checkAttachments(next.map((file) => ({ name: file.name, type: file.type, size: file.size })));
+    if (!check.ok) {
+      // Refused here rather than after the upload: a 5MB file rejected by the
+      // server has already cost the operator the wait.
+      setMessage(attachmentCheckMessage(check));
+      return;
+    }
+    setMessage("");
+    setFiles(next);
+  }
+
+  function removeFile(target: File) {
+    setFiles(files.filter((file) => file !== target));
+    clearPicker();
+  }
 
   async function send(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
-    const response = await fetch("/api/mail/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to, replyTo, subject, body }),
-    });
+
+    // multipart rather than JSON: base64-ing the files in the browser first
+    // would grow every attachment by a third before it even leaves the machine.
+    const form = new FormData();
+    form.set("to", to);
+    form.set("replyTo", replyTo);
+    form.set("subject", subject);
+    form.set("body", body);
+    for (const file of files) form.append("attachments", file);
+
+    const response = await fetch("/api/mail/send", { method: "POST", body: form });
     const result = await response.json().catch(() => ({}));
     setBusy(false);
 
@@ -43,6 +97,8 @@ export function MailComposer() {
     setTo("");
     setSubject("");
     setBody("");
+    setFiles([]);
+    clearPicker();
   }
 
   return (
@@ -63,7 +119,32 @@ export function MailComposer() {
         본문
         <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={14} placeholder="안녕하세요..." required />
       </label>
+
+      <div className={styles.field}>
+        <span className={styles.fieldLabel}>
+          첨부파일 <small>최대 {MAX_ATTACHMENTS}개, 하나당 {formatBytes(MAX_ATTACHMENT_BYTES)}, 합쳐서 {formatBytes(MAX_ATTACHMENTS_TOTAL_BYTES)}까지</small>
+        </span>
+        <input ref={filePicker} className={styles.fileInput} type="file" multiple onChange={addFiles} disabled={busy} />
+        <p className={styles.hint}>PNG·JPG·GIF·WEBP 사진은 본문 아래에 바로 보이게 넣고, 첨부파일로도 함께 갑니다. 그 밖의 파일은 첨부파일로만 갑니다.</p>
+        {files.length > 0 && (
+          <ul className={styles.fileList}>
+            {files.map((file) => (
+              <li key={`${file.name}-${file.size}`}>
+                <span className={styles.wrap}>{file.name}</span>
+                <small>{formatBytes(file.size)}{isInlineImage(file.type) ? " · 본문에 표시" : ""}</small>
+                <button type="button" onClick={() => removeFile(file)} disabled={busy}>빼기</button>
+              </li>
+            ))}
+            <li className={styles.fileTotal}>
+              <span>합계 {files.length}개</span>
+              <small>{formatBytes(totalBytes)}</small>
+            </li>
+          </ul>
+        )}
+      </div>
+
       <button disabled={busy}>{busy ? "보내는 중..." : "메일 보내기"}</button>
+      {files.length > 0 && <p className={styles.hint}>첨부파일은 받는 사람 한 명당 한 번씩 올라갑니다. 인원이 많으면 발송이 오래 걸릴 수 있으니 창을 닫지 마세요.</p>}
       {message && <p className={styles.formMessage}>{message}</p>}
     </form>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import "client-only";
+import { joinPdfTextItems, type PdfTextItem } from "./pdf-text-layout";
 
 const MAX_LOCAL_FILE_BYTES = 10 * 1024 * 1024;
 
@@ -124,7 +125,9 @@ export async function extractLocalDocument(file: File): Promise<LocalDocumentRes
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
-      pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+      // Positioned glyph runs, not text — see joinPdfTextItems for why the
+      // old join(" ") both split words and lost every line break.
+      pages.push(joinPdfTextItems(content.items as PdfTextItem[]));
     }
     text = pages.join("\n");
   } else {

@@ -8,6 +8,7 @@ import {
   type ApplicationTracker,
   type ApplicationTrackerStatus,
 } from "@/domain/application-tracker";
+import { createClient } from "@/lib/supabase/client";
 import styles from "./application-tracker-card.module.css";
 
 type Props = {
@@ -62,8 +63,31 @@ export function ApplicationTrackerCard(props: Props) {
     if (ready) sessionStorage.setItem(storageKey, JSON.stringify(tracker));
   }, [ready, storageKey, tracker]);
 
+  /**
+   * Also sends the outcome to the server.
+   *
+   * This card has always written its state to sessionStorage and nowhere else,
+   * so every "서류 합격" anyone ever clicked was lost when the tab closed —
+   * and that click is the single most valuable thing this product could learn
+   * from. The local write stays exactly as it was; the server call is added
+   * beside it and is not allowed to fail loudly, because the card is the
+   * applicant's own tracker first and our data second.
+   */
   function transition(status: ApplicationTrackerStatus) {
     setTracker((current) => appendTrackerEvent(current, status));
+    if (props.isSample) return;
+    void (async () => {
+      try {
+        const supabase = createClient();
+        await supabase.rpc("record_application_outcome", {
+          p_application_case_id: props.caseId,
+          p_status: status,
+        });
+      } catch {
+        // The applicant's own record is already updated on screen. Nothing here
+        // is worth interrupting them for.
+      }
+    })();
   }
 
   function confirmSubmission() {

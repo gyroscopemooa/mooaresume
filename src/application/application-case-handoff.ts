@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
-import { coverLetterQuestionSchema, serializeQuestionAnswers } from "@/domain/cover-letter-question";
+import { coverLetterQuestionSchema, resolveDraftTargetLength, serializeQuestionAnswers } from "@/domain/cover-letter-question";
 import { writingModeSchema } from "@/domain/writing-mode";
 import { writingStyleSchema } from "@/domain/writing-style";
+import { editingStanceSchema, type EditingStance } from "@/domain/editing-stance";
 
 export const guestApplicationHandoffSchema = z.object({
   title: z.string().trim().min(1).max(120).default("새 지원서"),
@@ -11,6 +12,9 @@ export const guestApplicationHandoffSchema = z.object({
   product: z.enum(["QUICK", "PRO"]),
   writingMode: writingModeSchema,
   writingStyle: writingStyleSchema,
+  // Defaulted rather than required so drafts saved before the stance existed
+  // still parse out of sessionStorage.
+  editingStance: editingStanceSchema.default("BALANCED"),
   // Set only when the applicant asked for a re-run from a finished result.
   revisionRequest: z.string().max(2_000).optional(),
   targetLength: z.number().int().min(100).max(3000),
@@ -59,6 +63,7 @@ export type ApplicationCasePlan = {
   product: "QUICK" | "PRO";
   writingMode: "CREATE" | "BUILD" | "POLISH";
   writingStyle: "CONCISE" | "BALANCED" | "STRENGTH_FOCUSED";
+  editingStance: EditingStance;
   targetLength: number;
   documents: PlannedDocument[];
 };
@@ -123,7 +128,7 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
       // very thing PRO BUILD is sold to fill in ("빈 문항까지 보완하려면 PRO ·
       // 내용 보완으로"), and dropping them here deleted the prompt before the
       // analysis ever saw it.
-      normalizedText: serializeQuestionAnswers(input.questions, { includeEmptyAnswers: true }),
+      normalizedText: serializeQuestionAnswers(input.questions, { includeEmptyAnswers: true, includeTargetLength: true }),
       originalFilename: input.sourceFilename,
       purpose: "PRIMARY",
     });
@@ -195,7 +200,10 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
     product: input.product,
     writingMode: input.writingMode,
     writingStyle: input.writingStyle,
-    targetLength: input.targetLength,
+    editingStance: input.editingStance,
+    // Derived, never taken at face value: the entry screens pass a placeholder
+    // here while the real limits sit on the questions.
+    targetLength: resolveDraftTargetLength(input.questions, input.targetLength),
     documents,
   };
 }

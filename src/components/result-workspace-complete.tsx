@@ -24,8 +24,10 @@ import { FinalUpgradeCard } from "@/components/final-upgrade-card";
 import { ApplicationTrackerCard } from "@/components/application-tracker-card";
 import { CandidateProfileCard } from "@/components/candidate-profile-card";
 import styles from "./result-workspace-complete.module.css";
+import { FinalVerification } from "./final-verification";
+import { ResearchConsent } from "./research-consent";
 
-type View = "overview" | "submission" | "revision" | "fit" | "interview" | "final";
+type View = "overview" | "submission" | "revision" | "verification" | "fit" | "interview" | "final";
 
 const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
   good: "좋은 표현",
@@ -398,6 +400,10 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
     ["interview", "면접 준비", true],
     ["final", "최종 첨삭본", false],
   ];
+  // FINAL keeps every PRO tab and adds its own. The filter below asked for
+  // `product === "PRO"` exactly, which would have hidden 공고·경험 분석 and
+  // 면접 준비 from the tier that costs more than PRO.
+  const showsProTabs = result.product === "PRO" || result.product === "FINAL";
 
   return <main className={styles.page}>
     <header className={styles.header}>
@@ -412,7 +418,14 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         <button onClick={() => setView("final")}>최종 첨삭본 보기 <ArrowRight/></button>
       </section>
 
-      <nav className={styles.tabs}>{tabs.filter((tab) => !tab[2] || result.product === "PRO").map(([id,label,pro]) => <button key={id} onClick={() => setView(id)} className={view === id ? styles.active : ""}>{label}{pro && <small>PRO</small>}</button>)}</nav>
+      <nav className={styles.tabs}>
+        {tabs.filter((tab) => !tab[2] || showsProTabs).map(([id,label,pro]) => <button key={id} onClick={() => setView(id)} className={view === id ? styles.active : ""}>{label}{pro && <small>PRO</small>}</button>)}
+        {result.product === "FINAL" && <button onClick={() => setView("verification")} className={view === "verification" ? styles.active : ""}>FINAL 검증<small>FINAL</small></button>}
+      </nav>
+
+      {view === "verification" && result.product === "FINAL" && (
+        <FinalVerification result={result} hasResume={result.suppliedResume} />
+      )}
 
       {view === "overview" && <section className={styles.overview}>
         <div className={styles.score}><div><small>지원서 준비도 · 샘플</small><strong>{result.readiness.score}<span>/100</span></strong><em>{result.readiness.label}</em></div><p>{result.readiness.summary}</p></div>
@@ -569,6 +582,11 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
       </section>}
       {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
       {view === "final" && <FinalUpgradeCard product={result.product} />}
+      {/* Asked here rather than before payment: with the result already in
+          hand, nothing is riding on the answer, which is the only position
+          from which "아니오" costs the applicant nothing. Hidden on the sample
+          page, where there is no real application to consent about. */}
+      {view === "final" && !result.isSample && <ResearchConsent />}
     </div>
   </main>;
 }

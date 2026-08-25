@@ -37,7 +37,10 @@ export type NextStep = {
 };
 
 export type NextStepInput = {
-  product: "QUICK" | "PRO";
+  // Wider than NextStep["product"] on purpose: a FINAL result can arrive here
+  // and falls through to the honest "suggest nothing" ending, but there is no
+  // FINAL destination to send anyone to yet.
+  product: "QUICK" | "PRO" | "FINAL";
   writingMode: "CREATE" | "BUILD" | "POLISH";
   /** Questions whose answer is meaningfully under the length the company asked for. */
   shortQuestionCount: number;

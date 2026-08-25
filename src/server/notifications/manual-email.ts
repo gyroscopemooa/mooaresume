@@ -2,10 +2,34 @@ import "server-only";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-export type ManualEmailInput = { to: string[]; subject: string; body: string; replyTo?: string };
+export type ManualEmailAttachment = {
+  filename: string;
+  contentType: string;
+  content: Uint8Array;
+  /** Image shown inside the body instead of only sitting at the bottom as a file. */
+  inline?: boolean;
+};
+
+export type ManualEmailInput = { to: string[]; subject: string; body: string; replyTo?: string; attachments?: ManualEmailAttachment[] };
 
 function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
+
+/**
+ * Resend takes attachment bytes as base64 in the JSON body.
+ *
+ * `btoa` rather than `Buffer` because this also runs on the Cloudflare
+ * runtime, and the string is built in chunks because spreading a few million
+ * bytes into `String.fromCharCode` at once overflows the argument list.
+ */
+function toBase64(bytes: Uint8Array): string {
+  const CHUNK = 0x8000;
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + CHUNK));
+  }
+  return btoa(binary);
 }
 
 /**
@@ -29,7 +53,24 @@ export async function sendManualEmail(input: ManualEmailInput, fetchImplementati
   const replyTo = input.replyTo?.trim() || process.env.ANALYSIS_EMAIL_REPLY_TO?.trim();
   const body = input.body.trim();
   const subject = input.subject.trim();
-  const html = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.7">${escapeHtml(body)}</div>`;
+
+  // Encoded once, not once per recipient: with 50 addresses and a 5MB poster
+  // that is the difference between one base64 pass and fifty.
+  const files = (input.attachments ?? []).map((file, index) => ({
+    filename: file.filename,
+    content: toBase64(file.content),
+    content_type: file.contentType,
+    ...(file.inline ? { content_id: `mooa-inline-${index + 1}` } : {}),
+  }));
+  // `cid:` is how a mail client finds a picture that travels with the message;
+  // an <img src="https://..."> would need the file hosted somewhere public, and
+  // a data: URI is stripped by Gmail. Clients that ignore the reference still
+  // show the same picture in the attachment row, so nothing is lost either way.
+  const inlineImages = files
+    .filter((file) => file.content_id)
+    .map((file) => `<div style="margin-top:16px"><img src="cid:${file.content_id}" alt="${escapeHtml(file.filename)}" style="max-width:100%;height:auto;border-radius:6px" /></div>`)
+    .join("");
+  const html = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.7">${escapeHtml(body)}</div>${inlineImages}`;
 
   const sent: string[] = [];
   const failed: Array<{ to: string; reason: string }> = [];
@@ -39,8 +80,9 @@ export async function sendManualEmail(input: ManualEmailInput, fetchImplementati
       const response = await fetchImplementation(RESEND_ENDPOINT, {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        signal: AbortSignal.timeout(15_000),
-        body: JSON.stringify({ from: `MOOA Resume <${from}>`, to: [to], subject, text: body, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
+        // A 5MB attachment on a slow line needs longer than a text-only send.
+        signal: AbortSignal.timeout(files.length > 0 ? 60_000 : 15_000),
+        body: JSON.stringify({ from: `MOOA Resume <${from}>`, to: [to], subject, text: body, html, ...(replyTo ? { reply_to: replyTo } : {}), ...(files.length > 0 ? { attachments: files } : {}) }),
       });
       if (response.ok) sent.push(to);
       else failed.push({ to, reason: `RESEND_${response.status}` });

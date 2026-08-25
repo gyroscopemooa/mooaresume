@@ -10,6 +10,7 @@ import {
   FileText,
   LockKeyhole,
   ShieldCheck,
+  TriangleAlert,
 } from "lucide-react";
 import { loadGuestDraft, type GuestDraft } from "@/lib/guest-draft";
 import {
@@ -42,13 +43,21 @@ const scope = {
     "경험 근거·문항 배치",
     "면접 예상질문과 면접 리스크",
   ],
+  FINAL: [
+    "PRO가 하는 것 전부",
+    "이력서 × 자소서 교차검증과 커리어 타임라인",
+    "탈락요인 점검과 네 가지 관점 검토",
+    "주장마다 근거가 있는지 확인",
+    "면접관이 물어볼 지점과 꼬리질문",
+  ],
 } as const;
 
 export function AnalysisPreparation() {
   const [guest, setGuest] = useState<GuestDraft | null>(null);
   const [postingLength, setPostingLength] = useState(0);
   const [materialSummary, setMaterialSummary] = useState<string[]>([]);
-  const [confirmedProduct, setConfirmedProduct] = useState<"QUICK" | "PRO" | null>(null);
+  const [confirmedProduct, setConfirmedProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
+  const [hasResumeMaterial, setHasResumeMaterial] = useState(true);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -65,6 +74,12 @@ export function AnalysisPreparation() {
       const materials = candidateMaterialDraftSchema.safeParse(
         JSON.parse(sessionStorage.getItem("mooa:guest-candidate-materials:v1") ?? "null"),
       );
+      // A résumé, a career document, or a company application form — any of the
+      // three stands in for one. Tracked separately from the summary list
+      // because the warning below has to fire on absence, and an absence cannot
+      // be read off a list of what is present without knowing what to look for.
+      setHasResumeMaterial(materials.success
+        && materials.data.materialAttachments.some((file) => file.kind === "RESUME" || file.kind === "CAREER_DOCUMENT"));
       setMaterialSummary(materials.success
         ? [
             ...materials.data.materialAttachments.map((file) => `${CANDIDATE_MATERIAL_LABEL[file.kind]} · ${file.filename}`),
@@ -233,7 +248,7 @@ export function AnalysisPreparation() {
                   <Check />
                 </article>
               )}
-              {product === "PRO" && (
+              {product !== "QUICK" && (
                 <article>
                   <FileText />
                   <span>
@@ -243,7 +258,7 @@ export function AnalysisPreparation() {
                   {postingLength > 0 && <Check />}
                 </article>
               )}
-              {product === "PRO" && materialSummary.map((item) => (
+              {product !== "QUICK" && materialSummary.map((item) => (
                 <article key={item}>
                   <FileText />
                   <span><strong>{item.split(" · ")[0]}</strong><small>{item.split(" · ")[1] ?? "직접 입력"}</small></span>
@@ -251,6 +266,22 @@ export function AnalysisPreparation() {
                 </article>
               ))}
             </div>
+            {product !== "QUICK" && !hasResumeMaterial && (
+              // Not a blocker. Some applicants genuinely have no résumé — a new
+              // graduate often has only the employer's own application form —
+              // and refusing to run would cost them the analysis entirely.
+              //
+              // One line, no argument. The list of what will come back empty
+              // was here and was cut: this notice sits on the last screen
+              // before payment, and a paragraph explaining what they are about
+              // to miss reads as pressure at exactly the wrong moment. Someone
+              // who wants the detail has it on the input screen and in the
+              // guide; what they need here is to know, and to move on.
+              <div className={styles.resumeNotice}>
+                <TriangleAlert />
+                <span><b>이력서(입사지원서) 없이 진행합니다.</b></span>
+              </div>
+            )}
             <div className={styles.runtimeNotice}>
               <Clock />
               <span>
@@ -272,9 +303,11 @@ export function AnalysisPreparation() {
           <section className={styles.scope}>
             <small>{product} 제공 범위</small>
             <h2>
-              {product === "PRO"
-                ? "공고와 지원자료 전체를 함께 봅니다."
-                : "작성한 글을 빠르게 정밀 첨삭합니다."}
+              {product === "FINAL"
+                ? "제출 직전 지원서 전체를 검증하고 면접까지 잇습니다."
+                : product === "PRO"
+                  ? "공고와 지원자료 전체를 함께 봅니다."
+                  : "작성한 글을 빠르게 정밀 첨삭합니다."}
             </h2>
             <ul>
               {scope[product].map((item) => (

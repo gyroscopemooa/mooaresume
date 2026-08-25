@@ -168,7 +168,9 @@ describe("지원자료 종류별 업로드", () => {
     const career = plan.documents.find((document) => document.kind === "CAREER_DOCUMENT");
 
     expect(resume?.originalFilename).toBe("이력서.pdf");
-    expect(resume?.title).toBe("이력서");
+    // Named for both because a new graduate usually has only the employer's
+    // own application form, not a separate résumé.
+    expect(resume?.title).toBe("이력서(입사지원서)");
     expect(resume?.purpose).toBe("REFERENCE");
     expect(career?.title).toBe("경력기술서");
     expect(career?.normalizedText).toContain("품질검사 공정 개선");
