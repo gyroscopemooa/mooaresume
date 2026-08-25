@@ -1961,3 +1961,25 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/globals.css`, `src/app/page.tsx`, `src/app/new/page.tsx`, `src/app/new/guide.module.css` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 덩어리 3개가 각각 29/37/43초 애니메이션을 갖는 것, 헤더 링크가 `/guide`인 것, 신뢰 문구 3개, `/new` 팁 6개와 목차 항목 추가, 가로 스크롤·콘솔 오류 없음 확인.
 - Rollback/recovery reference: `globals.css`의 `── ROLLBACK ──` 블록(움직임만), `page.tsx`의 `<div className="hero-aura">` 한 줄(아우라 전체). 커밋 이전 상태는 `1885353`.
+
+## 2026-08-24 — Claude: 추천코드를 찾을 수 있는 곳에 두기 (`/refer`)
+
+- Agent/session: Claude. 사용자 보고: 마이그레이션 재실행 오류(이미 적용됨) + "추천이 어디 있는지 모르겠음".
+- Status: completed. **마이그레이션 없음.**
+
+### 못 찾은 게 당연했습니다
+
+- 추천 패널을 **완료된 분석의 결과 화면 맨 아래**에만 뒀습니다. 그 자리는 **보기에는 맞는 순간**이지만 **다시 찾아가기에는 틀린 장소**입니다 — 이 제품에는 아직 `내 계정` 같은 곳이 어디에도 없어서, 결과 화면을 떠나면 코드로 돌아갈 길이 없습니다.
+- 주소 하나로 해결했습니다. **`/refer`** — 타이핑할 수 있고, 북마크할 수 있고, 남에게 보낼 수 있습니다. 하단 링크에도 `친구 추천`을 걸었습니다.
+
+### 로그인 진입점 문제도 같이 풀립니다
+
+- 이 제품에는 **로그인 페이지가 없습니다.** 로그인은 결제 화면과 이용권 수령 링크에서만 일어나므로, "이미 회원인데 그냥 로그인하고 싶다"가 갈 곳이 없었습니다.
+- `/refer`는 로그아웃 상태면 **`Google로 계속하기`**를 보여줍니다. 결과 화면의 같은 패널은 로그아웃 상태에서 **아무것도 그리지 않습니다** — 거기서는 보여줄 것도 없고 그걸 보러 온 것도 아니지만, 전용 페이지에서 같은 처리를 하면 빈 화면이 됩니다.
+
+### 어떻게 진행되는지 네 단계로 적었습니다
+
+- 특히 **3번(친구가 첫 결제를 마칩니다)** 옆에 `코드 입력만으로는 지급되지 않습니다`를 붙였습니다. 이 조건을 나중에 알게 되는 것이 추천 프로그램에서 가장 흔한 불만입니다.
+- Files/branch: `src/app/refer/page.tsx`·`refer.module.css`(신규), `src/components/referral-panel.tsx`, `src/app/page.tsx` on `main`.
+- Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린(`/refer` 정적 생성). dev 서버에서 로그아웃 상태의 로그인 안내와 4단계 안내 렌더, 콘솔 오류 없음 확인.
+- Rollback/recovery reference: `src/app/refer/` 폴더와 하단 링크 한 줄입니다. 커밋 이전 상태는 `3262c1d`.

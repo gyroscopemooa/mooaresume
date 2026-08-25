@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import { ArrowRight, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { REFERRAL_TERMS } from "@/domain/referral";
 import styles from "./referral-panel.module.css";
@@ -14,8 +14,10 @@ import styles from "./referral-panel.module.css";
  * is inclined to tell a friend. A referral panel on the landing page is asking
  * a stranger to vouch for a product they have not used.
  */
-export function ReferralPanel() {
+export function ReferralPanel({ standalone = false }: { standalone?: boolean } = {}) {
   const [code, setCode] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState(0);
   const [converted, setConverted] = useState(0);
   const [status, setStatus] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
@@ -26,7 +28,9 @@ export function ReferralPanel() {
       try {
         const supabase = createClient();
         const { data: auth } = await supabase.auth.getUser();
-        if (cancelled || !auth.user) return;
+        if (cancelled) return;
+        setSignedIn(Boolean(auth.user));
+        if (!auth.user) return;
         // Created on first view rather than at sign-up: an account that never
         // reaches a result never needs one.
         const { data: issued } = await supabase.rpc("get_or_create_referral_code");
@@ -53,7 +57,42 @@ export function ReferralPanel() {
     }
   }
 
-  if (!code) return null;
+  async function signIn() {
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/refer` },
+      });
+      if (error) setBusy(false);
+    } catch {
+      setBusy(false);
+    }
+  }
+
+  // On the result screen the panel simply does not appear for a signed-out
+  // visitor — there is nothing to show and they did not come for this. On its
+  // own page that would be a blank screen, so it offers the sign-in instead.
+  if (!code) {
+    if (!standalone || signedIn !== false) return null;
+    return (
+      <section className={styles.panel}>
+        <div className={styles.head}>
+          <Users/>
+          <div>
+            <h3>추천코드를 보려면 로그인해 주세요</h3>
+            <p>코드는 계정마다 하나씩 발급됩니다. 로그인하시면 바로 확인하실 수 있어요.</p>
+          </div>
+        </div>
+        <div className={styles.codeRow}>
+          <button type="button" className={styles.copy} onClick={() => void signIn()} disabled={busy}>
+            {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={15}/>
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.panel}>
