@@ -1880,3 +1880,35 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - Rollback/recovery reference: prop 세 곳(`creditRunId`, `onCreditRunStarted`, 부모 state)입니다. 커밋 이전 상태는 `cfbf3fa`.
 - **남은 일(사용자)**: 이용권이 **남아 있는** 계정으로 확인해 주세요. 직전 테스트에서 한 장을 이미 썼다면 `/meensoo/rewards`에서 한 장 더 발급하셔야 합니다 — 이용권이 없으면 정상적으로 결제 화면으로 갑니다.
+
+## 2026-08-24 — Claude: 추천코드, 그리고 이용권 진행 화면이 화면 밖에 있던 문제
+
+- Agent/session: Claude. 사용자 요청: 추천코드 개발 + "메일은 왔는데 브라우저에 로딩이 안 나온다".
+- Status: completed. **마이그레이션 하나 추가**(`20260824080000_referrals.sql`).
+
+### 로딩이 안 보인 이유 — 화면 밖에 있었습니다
+
+- 진행 화면(`QuickCheckoutReturn`)은 페이지 **헤더 바로 아래**에 그려지고, 이용권으로 시작하는 버튼은 **페이지 한참 아래**에 있습니다.
+- 그래서 진행 표시는 실제로 떴는데 **전부 화면 위쪽 바깥**이었고, 버튼을 보고 있던 사람 눈에는 아무것도 안 움직였습니다. 메일이 온 것은 분석이 정상적으로 끝났다는 뜻입니다.
+- 시작할 때 **그 블록으로 스크롤**합니다. 그리고 버튼 자리에도 한 줄 남깁니다 — 답을 찾으러 다니게 하면 안 됩니다.
+
+### 추천코드 — 규칙 하나가 설계를 정합니다
+
+- **코드 입력은 아무 값도 없고, 결제 완료만 값이 있습니다.** 입력에 보상하면 처음 눈치챈 사람이 **버려도 되는 계정 백 개에 자기 코드를 넣는 루프**를 짭니다. `order.paid`에 보상하면 그 공격이 상금보다 비싸집니다.
+- `apply_referral_code`는 **의도만 기록**합니다(`PENDING`). 이용권을 만드는 곳은 `settle_referral_for_order` 하나뿐이고, 그건 결제된 주문을 요구합니다. 테스트가 **apply 함수 본문에 `insert into reward_credits`가 없다**는 것을 직접 확인합니다.
+- **무료 실행은 전환이 아닙니다.** `amount <= 0`이거나 provider가 `POLAR`가 아니면 거절합니다 — 이용권으로 0원 결제하고 추천인에게 티켓을 주는 것은 같은 구멍을 옷만 갈아입힌 것입니다.
+- **한 사람은 평생 한 번**: `referred_user_id`가 기본키입니다. 규칙이 곧 스키마입니다.
+- **첫 결제에만**: 이미 `PAID` 주문이 있으면 입력 단계에서 거절합니다. 지켜질 수 없는 의도를 기록해 두지 않습니다.
+- **본인 코드 금지**: 함수와 테이블 제약 양쪽에.
+- **웹훅이 두 번 와도 한 장**: `reward_credit_id`가 unique이고, `PENDING`만 집어 `for update`로 잠급니다. 그리고 `GRANTED`(첫 지급)일 때만 정산을 부릅니다.
+- 코드는 **서버가 만듭니다.** 브라우저가 준 코드는 브라우저가 고른 코드이고, 누군가는 친구 것을 고릅니다. 알파벳에서 `0/O/1/I/L`을 뺐습니다 — 코드는 마주 앉아 불러주고 폰으로 다시 칩니다.
+- **정산이 결제를 되돌리지 않습니다.** 추천 처리는 예외를 삼키고 기록만 남깁니다. 이미 끝난 결제를 실패한 웹훅으로 만들면 Polar가 재시도합니다.
+
+### 화면
+
+- 결과 화면(최종 첨삭본 탭)에 **내 코드 + 복사 + 결제대기/지급완료 집계**. 동의 블록과 같은 자리인 이유도 같습니다 — **방금 받은 것이 실제로 쓸모 있었던 그 순간**이 사람이 친구에게 말할 마음이 드는 유일한 때입니다. 랜딩에 두는 것은 써 보지도 않은 사람에게 보증을 부탁하는 일입니다.
+- 결제 화면에 **추천코드 입력칸**. **무료 이용권으로 도는 경우에는 안 보입니다** — 귀속시킬 결제가 없어 절대 전환될 수 없는 코드를 받게 됩니다.
+- Files/branch: `supabase/migrations/20260824080000_referrals.sql`(신규), `src/domain/referral.ts`(신규), `src/domain/referral.test.ts`(신규), `src/server/analysis/referral-migration.test.ts`(신규), `src/components/referral-panel.tsx`·`referral-panel.module.css`(신규), `src/components/application-case-handoff.tsx`·`.module.css`, `src/components/result-workspace-complete.tsx`, `src/components/quick-checkout-return.tsx`, `src/server/billing/supabase-polar-entitlement-repository.ts` on `main`.
+- Validation: `npx vitest run` 645 passed(신규 16건 — 코드 생성·정규화·거절 문구 7, 마이그레이션 불변식 9). `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: 새 테이블 둘·함수 셋·화면 둘, 그리고 웹훅의 `settleReferral` 호출 한 줄입니다. 커밋 이전 상태는 `9f0df32`.
+- **남은 일(사용자)**: 마이그레이션 적용. 그다음 계정 두 개로 확인 — A의 결과 화면에서 코드 확인 → B가 결제 화면에 입력 → B가 실제 결제 → A에게 이용권이 생기는지.

@@ -26,6 +26,7 @@ import { CandidateProfileCard } from "@/components/candidate-profile-card";
 import styles from "./result-workspace-complete.module.css";
 import { FinalVerification } from "./final-verification";
 import { ResearchConsent } from "./research-consent";
+import { ReferralPanel } from "./referral-panel";
 
 type View = "overview" | "submission" | "revision" | "verification" | "fit" | "interview" | "final";
 
@@ -587,6 +588,10 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
           from which "아니오" costs the applicant nothing. Hidden on the sample
           page, where there is no real application to consent about. */}
       {view === "final" && !result.isSample && <ResearchConsent />}
+      {/* Same placement logic as the consent block: this is the one moment
+          anyone is inclined to tell a friend, because the thing they were
+          handed just worked. */}
+      {view === "final" && !result.isSample && <ReferralPanel />}
     </div>
   </main>;
 }

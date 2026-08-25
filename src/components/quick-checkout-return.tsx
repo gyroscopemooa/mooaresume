@@ -48,6 +48,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null }: 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const startedAt = useRef<number | null>(null);
   const executing = useRef(false);
+  const rootRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -218,6 +219,11 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null }: 
     const analysisRunId = creditRunId;
 
     startedAt.current = Date.now();
+    // This block sits directly under the page header while the button that
+    // starts a credit run is far down the page. Without this the progress
+    // appears entirely above the fold and the applicant, still looking at the
+    // button, sees nothing move — which is exactly what was reported.
+    queueMicrotask(() => rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
     let cancelled = false;
     let timer: number | undefined;
 
@@ -324,7 +330,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null }: 
 
   return (
     <>
-    <section className={styles.status} data-phase={phase}>
+    <section ref={rootRef} className={styles.status} data-phase={phase}>
       {phase === "failed" ? <TriangleAlert /> : phase === "waiting" ? <LoaderCircle className={styles.spin} /> : <CheckCircle2 />}
       <div>
         <b>{product ? `${product} · ` : ""}{phase === "failed" ? "확인이 필요합니다" : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>

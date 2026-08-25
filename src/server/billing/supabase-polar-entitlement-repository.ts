@@ -46,7 +46,37 @@ export class SupabasePolarEntitlementRepository implements PolarEntitlementRepos
     if (checkoutError) {
       throw new Error(`POLAR_CHECKOUT_INTENT_UPDATE_FAILED:${checkoutError.code}`);
     }
-    return z.string().parse(data);
+    const outcome = z.string().parse(data);
+    // Only a first, real grant settles a referral. A duplicate webhook must not
+    // mint a second credit, and the unique reward_credit_id on the attribution
+    // is the second lock behind this one.
+    if (outcome === "GRANTED") await this.settleReferral(input.providerOrderId);
+    return outcome;
+  }
+
+  /**
+   * Pays the referrer, if this buyer arrived through someone's code.
+   *
+   * Never throws. The order is paid and the entitlement is already granted; a
+   * referral problem must not turn a completed purchase into a failed webhook
+   * that Polar then retries. It is logged and left for the operator.
+   */
+  private async settleReferral(providerOrderId: string) {
+    try {
+      const client = createServiceRoleClient();
+      const { data: order } = await client
+        .from("billing_orders")
+        .select("id")
+        .eq("provider_order_id", providerOrderId)
+        .maybeSingle();
+      const orderId = order?.id as string | undefined;
+      if (!orderId) return;
+      const { data: settled, error } = await client.rpc("settle_referral_for_order", { p_billing_order_id: orderId });
+      if (error) console.error("referral_settle_failed", error.message);
+      else if (settled === "CONVERTED") console.info("referral_converted", orderId);
+    } catch (caught) {
+      console.error("referral_settle_failed", caught instanceof Error ? caught.message : "UNKNOWN_ERROR");
+    }
   }
 
   async refundOrder(input: Parameters<PolarEntitlementRepository["refundOrder"]>[0]) {
