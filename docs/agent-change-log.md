@@ -2145,3 +2145,20 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: pending after preservation commits.
 - Rollback/recovery reference: branch commits created in this worktree; `1/` remains untracked and untouched.
 - User decision: pending integration-plan review.
+## 2026-08-26 — Career and header-style completion on integration variant
+
+- Agent/session: Codex delegation.
+- Status: variant; not merged, deployed, or remotely migrated.
+- Protected baseline: latest `main` landing page and its `HeaderAccount` login/account/logout markup.
+- Change and reason: cherry-picked the isolated career feature commit. Added only the mobile no-wrap and startup visual CSS files from the protected landing variant; the latest `src/app/page.tsx` body remains authoritative and imports those styles without changing the existing header structure.
+- Files/branch: `codex/integrate-launch-price-banner`; additive `src/app/career/**`, career domain/components/docs/migration/Recharts, two header CSS modules, and minimal home imports.
+- Validation: pending final local install, lint, typecheck, and build.
+- Rollback/recovery reference: `f730972` for career and `9c67404` for the banner; delete only the two style imports/files to withdraw the header styling.
+- User decision: final merge to `main` remains pending review.
+
+## 2026-08-26 — Integration validation result
+
+- Agent/session: Codex delegation.
+- Status: variant; ready for review, not merged or deployed.
+- Validation: career domain tests passed (4 files, 5 tests); full ESLint passed with 0 warnings after removing one unused import; TypeScript passed. `next build` was invoked but a prior local Next build process retained the build lock and did not produce `.next/BUILD_ID`; this is an unresolved local build-environment condition, not a reported source compile error.
+- User decision: pending merge review; no remote Supabase migration was applied.

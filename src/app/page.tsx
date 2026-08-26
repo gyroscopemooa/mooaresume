@@ -11,6 +11,8 @@ import positioningStyles from "./landing-positioning.module.css";
 import enterpriseStyles from "./enterprise-promo.module.css";
 import oneClickStyles from "./one-click.module.css";
 import fieldStyles from "./field-credibility.module.css";
+import "./home-mobile-header.module.css";
+import "./home-startup-header.module.css";
 import { getSiteUrl } from "@/lib/site-url";
 
 const differences = [
