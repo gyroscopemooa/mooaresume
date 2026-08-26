@@ -2162,3 +2162,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Status: variant; ready for review, not merged or deployed.
 - Validation: career domain tests passed (4 files, 5 tests); full ESLint passed with 0 warnings after removing one unused import; TypeScript passed. `next build` was invoked but a prior local Next build process retained the build lock and did not produce `.next/BUILD_ID`; this is an unresolved local build-environment condition, not a reported source compile error.
 - User decision: pending merge review; no remote Supabase migration was applied.
+
+## 2026-08-26 — Launch banner visual refresh
+
+- Agent/session: Codex delegation.
+- Status: variant; not merged or deployed.
+- Change and reason: refreshed the launch-price banner itself as a compact startup-style promotion: lime gradient surface, dark price CTA chip, compact icon treatment, and mobile-first content reduction. No header markup or account behavior changed.
+- Files/branch: `codex/integrate-launch-price-banner`; `src/components/launch-price-banner.module.css`.
+- Validation: targeted ESLint passed; diff check passed.
+- Rollback/recovery reference: restore the previous CSS file from commit `9c67404`.
+- User decision: pending merge review.
