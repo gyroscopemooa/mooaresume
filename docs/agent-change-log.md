@@ -2182,3 +2182,12 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: targeted ESLint passed; diff check passed.
 - Rollback/recovery reference: restore the previous CSS file from commit `9c67404`.
 - User decision: pending merge review.
+## 2026-08-26 — Launch banner contrast refinement
+
+- Agent/session: Codex.
+- Status: active local change pending push.
+- Change and reason: the first visual refresh was live locally but remained too close to the original lime bar. Increased the visual distinction with a textured lime ribbon, dark launch badge, and stronger CTA contrast; header/account behavior remains unchanged.
+- Files/branch: `main`; `src/components/launch-price-banner.module.css`.
+- Validation: targeted ESLint passed; `git diff --check` passed.
+- Rollback/recovery reference: restore the CSS from `e3785ae`.
+- User decision: user requested the launch bar itself to look newer.
