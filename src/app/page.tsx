@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { HeaderAccount } from "@/components/header-account";
+import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { LandingEntry } from "@/components/landing-entry";
 import { PricingComparison } from "@/components/pricing-comparison";
 import landingStyles from "./landing-sections.module.css";
@@ -68,7 +69,7 @@ export default function HomePage() {
     ],
   };
   return (
-    <main className="home-page">
+    <><LaunchPriceBanner /><main className="home-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
@@ -273,6 +274,6 @@ export default function HomePage() {
       </section>
       <section className="cta-section"><div className="container"><div><span>첫 분석은 가볍게 시작하세요</span><h2>내 지원서에서 놓친 근거를<br/>지금 확인해 보세요.</h2></div><Link href="/analyze" className="button button-light">무료 진단 시작 <ArrowRight size={18}/></Link></div></section>
       <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a><span>© 2026 MOOA Resume</span></footer>
-    </main>
+    </main></>
   );
 }

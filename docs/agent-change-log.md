@@ -2124,3 +2124,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/header-account.tsx`·`.module.css`(신규), `src/components/referral-code-entry.tsx`·`.module.css`, `src/components/application-case-handoff.module.css`, `src/app/page.tsx`, `src/app/refer/page.tsx`, `src/app/new/page.tsx` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 헤더가 `이용 방법 ▾ · 요금 · 로그인 · 무료로 진단하기` 순으로 렌더되는 것 확인.
 - Rollback/recovery reference: `<HeaderAccount />` 세 줄과 컴포넌트 하나, compact 분기입니다. 커밋 이전 상태는 `4ba3a06`.
+
+## 2026-08-26 — Launch price banner integration variant
+
+- Agent/session: Codex delegation.
+- Status: variant; not merged, deployed, or remotely migrated.
+- Protected baseline: current `main` landing and its `HeaderAccount` login/account/logout header flow.
+- Change and reason: copied only the launch-price-banner component/styles from `feature/codex-plan` and rendered it immediately before the existing home `<main>`. The current landing body, header markup, and startup-header/mobile-header CSS variant remain untouched.
+- Files/branch: `codex/integrate-launch-price-banner`; `src/components/launch-price-banner.*`, additive `src/app/page.tsx` import/render.
+- Validation: pending.
+- Rollback/recovery reference: remove the component import and `<LaunchPriceBanner />`, then remove the two new component files.
+- User decision: explicitly requested this isolated integration; final merge to `main` remains pending review.
