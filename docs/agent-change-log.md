@@ -2135,3 +2135,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: pending.
 - Rollback/recovery reference: remove the component import and `<LaunchPriceBanner />`, then remove the two new component files.
 - User decision: explicitly requested this isolated integration; final merge to `main` remains pending review.
+## 2026-08-26 — Codex-plan worktree preservation before integration review
+
+- Agent/session: Codex delegation from the main-worktree integration request.
+- Status: variant; proposed integration only.
+- Protected baseline: current `main` at `a1dd59d` plus its uncommitted `next-env.d.ts` and referral migration changes; the untracked `1/` screenshots in `C:\mooaresume-codex` are user files and excluded from every stage/commit operation.
+- Change and reason: preserve the pre-main career-assessment, launch-bar, and mobile-header work as isolated feature commits before assessing a selective integration onto latest `main`. No merge, deployment, or remote migration will occur before user approval.
+- Files/branch: `feature/codex-plan`; planned commits separated into career assessment and landing/mobile variant.
+- Validation: pending after preservation commits.
+- Rollback/recovery reference: branch commits created in this worktree; `1/` remains untracked and untouched.
+- User decision: pending integration-plan review.
