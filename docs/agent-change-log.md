@@ -1801,3 +1801,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: `npx vitest run` 629 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 `/redeem`의 새 배경·카드·그림자와 가로 스크롤 없음, 콘솔 오류 없음 확인.
 - Rollback/recovery reference: 결제 화면의 `availableCredit` 분기와 `startWithCredit`, 관리자 표의 `수령 링크` 칸, CSS 파일 하나입니다. 커밋 이전 상태는 `ae6397d`.
 - **남은 일(사용자)**: 이용권이 남아 있는 계정으로 `/quick` 또는 `/pro/polish`를 끝까지 진행해 **결제창 대신 바로 분석이 시작되는지** 확인해 주세요.
+
+## 2026-08-26 — Codex-plan worktree preservation before integration review
+
+- Agent/session: Codex delegation from the main-worktree integration request.
+- Status: variant; proposed integration only.
+- Protected baseline: current `main` at `a1dd59d` plus its uncommitted `next-env.d.ts` and referral migration changes; the untracked `1/` screenshots in `C:\mooaresume-codex` are user files and excluded from every stage/commit operation.
+- Change and reason: preserve the pre-main career-assessment, launch-bar, and mobile-header work as isolated feature commits before assessing a selective integration onto latest `main`. No merge, deployment, or remote migration will occur before user approval.
+- Files/branch: `feature/codex-plan`; planned commits separated into career assessment and landing/mobile variant.
+- Validation: pending after preservation commits.
+- Rollback/recovery reference: branch commits created in this worktree; `1/` remains untracked and untouched.
+- User decision: pending integration-plan review.
