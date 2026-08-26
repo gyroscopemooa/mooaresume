@@ -2135,3 +2135,50 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: migration reviewed; `git diff --check` passed. Remote migration intentionally not applied.
 - Rollback/recovery reference: restore the preceding `apply_referral_code` definition from the prior migration if this policy is rejected.
 - User decision: user requested a Git commit; push/deploy pending separately.
+## 2026-08-26 — Launch price banner integration variant
+
+- Agent/session: Codex delegation.
+- Status: variant; not merged, deployed, or remotely migrated.
+- Protected baseline: current `main` landing and its `HeaderAccount` login/account/logout header flow.
+- Change and reason: copied only the launch-price-banner component/styles from `feature/codex-plan` and rendered it immediately before the existing home `<main>`. The current landing body, header markup, and startup-header/mobile-header CSS variant remain untouched.
+- Files/branch: `codex/integrate-launch-price-banner`; `src/components/launch-price-banner.*`, additive `src/app/page.tsx` import/render.
+- Validation: pending.
+- Rollback/recovery reference: remove the component import and `<LaunchPriceBanner />`, then remove the two new component files.
+- User decision: explicitly requested this isolated integration; final merge to `main` remains pending review.
+## 2026-08-26 — Codex-plan worktree preservation before integration review
+
+- Agent/session: Codex delegation from the main-worktree integration request.
+- Status: variant; proposed integration only.
+- Protected baseline: current `main` at `a1dd59d` plus its uncommitted `next-env.d.ts` and referral migration changes; the untracked `1/` screenshots in `C:\mooaresume-codex` are user files and excluded from every stage/commit operation.
+- Change and reason: preserve the pre-main career-assessment, launch-bar, and mobile-header work as isolated feature commits before assessing a selective integration onto latest `main`. No merge, deployment, or remote migration will occur before user approval.
+- Files/branch: `feature/codex-plan`; planned commits separated into career assessment and landing/mobile variant.
+- Validation: pending after preservation commits.
+- Rollback/recovery reference: branch commits created in this worktree; `1/` remains untracked and untouched.
+- User decision: pending integration-plan review.
+## 2026-08-26 — Career and header-style completion on integration variant
+
+- Agent/session: Codex delegation.
+- Status: variant; not merged, deployed, or remotely migrated.
+- Protected baseline: latest `main` landing page and its `HeaderAccount` login/account/logout markup.
+- Change and reason: cherry-picked the isolated career feature commit. Added only the mobile no-wrap and startup visual CSS files from the protected landing variant; the latest `src/app/page.tsx` body remains authoritative and imports those styles without changing the existing header structure.
+- Files/branch: `codex/integrate-launch-price-banner`; additive `src/app/career/**`, career domain/components/docs/migration/Recharts, two header CSS modules, and minimal home imports.
+- Validation: pending final local install, lint, typecheck, and build.
+- Rollback/recovery reference: `f730972` for career and `9c67404` for the banner; delete only the two style imports/files to withdraw the header styling.
+- User decision: final merge to `main` remains pending review.
+
+## 2026-08-26 — Integration validation result
+
+- Agent/session: Codex delegation.
+- Status: variant; ready for review, not merged or deployed.
+- Validation: career domain tests passed (4 files, 5 tests); full ESLint passed with 0 warnings after removing one unused import; TypeScript passed. `next build` was invoked but a prior local Next build process retained the build lock and did not produce `.next/BUILD_ID`; this is an unresolved local build-environment condition, not a reported source compile error.
+- User decision: pending merge review; no remote Supabase migration was applied.
+
+## 2026-08-26 — Launch banner visual refresh
+
+- Agent/session: Codex delegation.
+- Status: variant; not merged or deployed.
+- Change and reason: refreshed the launch-price banner itself as a compact startup-style promotion: lime gradient surface, dark price CTA chip, compact icon treatment, and mobile-first content reduction. No header markup or account behavior changed.
+- Files/branch: `codex/integrate-launch-price-banner`; `src/components/launch-price-banner.module.css`.
+- Validation: targeted ESLint passed; diff check passed.
+- Rollback/recovery reference: restore the previous CSS file from commit `9c67404`.
+- User decision: pending merge review.
