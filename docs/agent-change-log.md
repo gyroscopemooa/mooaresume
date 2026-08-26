@@ -2124,3 +2124,14 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/components/header-account.tsx`·`.module.css`(신규), `src/components/referral-code-entry.tsx`·`.module.css`, `src/components/application-case-handoff.module.css`, `src/app/page.tsx`, `src/app/refer/page.tsx`, `src/app/new/page.tsx` on `main`.
 - Validation: `npx vitest run` 645 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. dev 서버에서 헤더가 `이용 방법 ▾ · 요금 · 로그인 · 무료로 진단하기` 순으로 렌더되는 것 확인.
 - Rollback/recovery reference: `<HeaderAccount />` 세 줄과 컴포넌트 하나, compact 분기입니다. 커밋 이전 상태는 `4ba3a06`.
+
+## 2026-08-26 — Referral eligibility after any prior purchase
+
+- Agent/session: Codex, user-requested main checkpoint commit.
+- Status: active local commit; remote migration not applied.
+- Protected baseline: current referral-attribution uniqueness rule (one referral per referred account) and all existing reward issuance logic.
+- Change and reason: adds migration `20260824100000_referral_any_purchase.sql`, which removes the unnecessary first-purchase restriction while retaining the primary-key one-referral-ever guard. Generated `next-env.d.ts` development route-type reference update is committed alongside it.
+- Files/branch: `main`; `supabase/migrations/20260824100000_referral_any_purchase.sql`, `next-env.d.ts`.
+- Validation: migration reviewed; `git diff --check` passed. Remote migration intentionally not applied.
+- Rollback/recovery reference: restore the preceding `apply_referral_code` definition from the prior migration if this policy is rejected.
+- User decision: user requested a Git commit; push/deploy pending separately.
