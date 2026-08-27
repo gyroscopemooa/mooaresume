@@ -1,4 +1,6 @@
-# 커리어 검사 디자인 V2 — Assessment Lab 시안 명세
+# [워크트리 초안 · feature/codex-plan] 커리어 검사 디자인 V2 — Assessment Lab 시안 명세
+
+상태: **독립 디자인 시안 — main 미통합**. 구현 경로 `/career/lab`은 기존 `/career`를 교체하지 않으며, 사용자 선택 뒤에만 최신 main에 통합한다.
 
 ## 디자인 원칙
 
