@@ -31,7 +31,7 @@ alter table public.research_snapshots
 create index if not exists research_snapshots_company_idx on public.research_snapshots(target_company, created_at desc);
 create index if not exists research_snapshots_role_idx on public.research_snapshots(target_role, created_at desc);
 
-create table public.application_outcomes (
+create table if not exists public.application_outcomes (
   application_case_id uuid primary key references public.application_cases(id) on delete cascade,
   owner_user_id uuid not null references auth.users(id) on delete cascade,
   status text not null check (status in (
@@ -50,10 +50,11 @@ create table public.application_outcomes (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
-create index application_outcomes_status_idx on public.application_outcomes(status, updated_at desc);
+create index if not exists application_outcomes_status_idx on public.application_outcomes(status, updated_at desc);
 
 alter table public.application_outcomes enable row level security;
 
+drop policy if exists "application outcome owner read" on public.application_outcomes;
 create policy "application outcome owner read" on public.application_outcomes for select to authenticated
   using ((select auth.uid()) = owner_user_id);
 

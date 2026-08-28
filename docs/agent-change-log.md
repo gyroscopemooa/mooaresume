@@ -2442,3 +2442,27 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - `supabase db push`가 `20260821030000_include_supporting_materials_for_pro.sql`를 순서 밖 미적용으로 보고합니다.
 - **`--include-all`을 쓰면 안 됩니다.** 그 파일은 `begin_quick_analysis`를 통째로 재정의하는데, 그 뒤 `20260822020000`(REVISION_REQUEST), `20260824010000`·`20260824030000`(FINAL)이 같은 함수를 더 새로 정의했습니다. 지금 실행하면 옛 정의가 덮어써 FINAL이 자료를 못 받습니다.
 - 내용은 이미 최신 정의에 포함돼 있으므로 실행 없이 표시만 합니다: `npx supabase migration repair --status applied 20260821030000` 후 `npm run db:remote:push`.
+
+## 2026-08-24 — Claude: 밀린 마이그레이션 8건을 다시 실행 가능하게
+
+- Agent/session: Claude. 계기: `supabase db push`가 `20260823010000_admin_console.sql`에서 `relation "mail_send_log" already exists`로 중단, 뒤의 13건이 전부 막힘.
+- Status: completed (파일 수정). 적용은 사용자가 실행.
+
+### 왜 막혔나
+
+- `mail_send_log`가 **원격에 손으로 먼저 만들어져** 있었습니다. 마이그레이션 기록에는 없으니 push가 다시 만들려 하고, `create table`은 이미 있으면 실패합니다. 한 문장이 실패하면 **그 뒤 전부** 멈춥니다.
+
+### 무엇을 바꿨나 — 스키마는 그대로, 재실행만 가능하게
+
+- `create table` → `create table if not exists`, `create index` → `if not exists`, `add column` → `add column if not exists`.
+- `create type`은 `if not exists`가 없어서 `do $$ ... exception when duplicate_object then null; end $$;`로 감쌌습니다.
+- 정책과 트리거는 교체가 안 되므로 앞에 `drop policy/trigger if exists`를 붙였습니다.
+- `20260824120000`의 제약 교체는 `drop constraint if exists`로 바꿨습니다.
+- **정의는 한 글자도 바꾸지 않았습니다.** 새로 만드는 DB에서는 결과가 완전히 같고, 이미 있는 DB에서는 멈추지 않을 뿐입니다.
+- Files/branch: `supabase/migrations/20260823010000_admin_console.sql`, `20260824040000_reward_credits.sql`, `20260824050000_research_consent.sql`, `20260824060000_research_snapshots.sql`, `20260824070000_outcome_and_research_axes.sql`, `20260824080000_referrals.sql`, `20260824120000_outcome_report_reward.sql`, `20260826010000_career_assessment_profiles.sql` on `main`.
+- Validation: `npx vitest run` 667 passed. 마이그레이션 내용 검증 테스트(추천·결과보상)가 모두 통과하므로 문자열 정의는 보존됐습니다.
+- Rollback: `git revert`. 원격에 이미 적용된 뒤라도 정의가 동일해 되돌릴 이유가 없습니다.
+
+### 참고 — 20260821030000
+
+- 사용자가 `migration repair --status applied 20260821030000`로 표시만 했습니다. 그 파일의 `begin_quick_analysis` 정의는 이후 세 번 갱신돼 이미 최신 정의에 포함돼 있습니다.

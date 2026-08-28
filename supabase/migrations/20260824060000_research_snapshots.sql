@@ -13,7 +13,7 @@
 
 begin;
 
-create table public.research_snapshots (
+create table if not exists public.research_snapshots (
   id uuid primary key default gen_random_uuid(),
   -- One row per run. A retried analysis overwrites rather than accumulating,
   -- so the corpus never counts one application twice.
@@ -42,8 +42,8 @@ create table public.research_snapshots (
   created_at timestamptz not null default timezone('utc', now())
 );
 
-create index research_snapshots_owner_idx on public.research_snapshots(owner_user_id);
-create index research_snapshots_product_idx on public.research_snapshots(product, created_at desc);
+create index if not exists research_snapshots_owner_idx on public.research_snapshots(owner_user_id);
+create index if not exists research_snapshots_product_idx on public.research_snapshots(product, created_at desc);
 
 alter table public.research_snapshots enable row level security;
 -- No policy at all: not even the owner reads this from a browser. The only

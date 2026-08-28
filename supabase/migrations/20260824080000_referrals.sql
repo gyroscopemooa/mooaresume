@@ -13,13 +13,13 @@
 
 begin;
 
-create table public.referral_codes (
+create table if not exists public.referral_codes (
   owner_user_id uuid primary key references auth.users(id) on delete cascade,
   code text not null unique check (code ~ '^MOOA[A-Z2-9]{6}$'),
   created_at timestamptz not null default timezone('utc', now())
 );
 
-create table public.referral_attributions (
+create table if not exists public.referral_attributions (
   -- One row per referred account, forever. The primary key is the rule.
   referred_user_id uuid primary key references auth.users(id) on delete cascade,
   referrer_user_id uuid not null references auth.users(id) on delete cascade,
@@ -40,7 +40,7 @@ create table public.referral_attributions (
   )
 );
 
-create index referral_attributions_referrer_idx on public.referral_attributions(referrer_user_id, status, created_at desc);
+create index if not exists referral_attributions_referrer_idx on public.referral_attributions(referrer_user_id, status, created_at desc);
 
 alter table public.referral_codes enable row level security;
 alter table public.referral_attributions enable row level security;
@@ -48,8 +48,10 @@ alter table public.referral_attributions enable row level security;
 -- Your own code, and the referrals you made. Never anyone else's, and never
 -- the reverse direction: who referred *you* is not something the referrer gets
 -- to browse.
+drop policy if exists "referral code owner read" on public.referral_codes;
 create policy "referral code owner read" on public.referral_codes for select to authenticated
   using ((select auth.uid()) = owner_user_id);
+drop policy if exists "referral attribution referrer read" on public.referral_attributions;
 create policy "referral attribution referrer read" on public.referral_attributions for select to authenticated
   using ((select auth.uid()) = referrer_user_id);
 

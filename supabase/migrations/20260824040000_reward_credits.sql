@@ -26,9 +26,12 @@ alter table public.billing_orders drop constraint if exists billing_orders_provi
 alter table public.billing_orders
   add constraint billing_orders_provider_check check (provider in ('POLAR', 'MOOA_CREDIT'));
 
-create type public.reward_credit_status as enum ('UNCLAIMED', 'AVAILABLE', 'CONSUMED', 'EXPIRED', 'REVOKED');
+do $$ begin
+  create type public.reward_credit_status as enum ('UNCLAIMED', 'AVAILABLE', 'CONSUMED', 'EXPIRED', 'REVOKED');
+exception when duplicate_object then null;
+end $$;
 
-create table public.reward_credits (
+create table if not exists public.reward_credits (
   id uuid primary key default gen_random_uuid(),
   product text not null check (product in ('QUICK', 'PRO', 'FINAL')),
   -- Why it was given. Every future source — 친구 추천, SNS 인증, CS 보상,
@@ -70,13 +73,14 @@ create table public.reward_credits (
   )
 );
 
-create index reward_credits_owner_idx on public.reward_credits(owner_user_id, status, created_at desc);
-create index reward_credits_email_idx on public.reward_credits(recipient_email, created_at desc);
+create index if not exists reward_credits_owner_idx on public.reward_credits(owner_user_id, status, created_at desc);
+create index if not exists reward_credits_email_idx on public.reward_credits(recipient_email, created_at desc);
 
 alter table public.reward_credits enable row level security;
 
 -- Read-only, and only your own. Every state change goes through the two
 -- functions below so the checks above cannot be sidestepped from a browser.
+drop policy if exists "reward credit owner read" on public.reward_credits;
 create policy "reward credit owner read" on public.reward_credits for select to authenticated
   using ((select auth.uid()) = owner_user_id);
 

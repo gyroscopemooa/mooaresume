@@ -19,7 +19,7 @@ begin;
 
 -- A new reason rather than a new table. Same argument as the original: every
 -- future source is a value here.
-alter table public.reward_credits drop constraint reward_credits_reason_check;
+alter table public.reward_credits drop constraint if exists reward_credits_reason_check;
 alter table public.reward_credits add constraint reward_credits_reason_check
   check (reason in ('LAUNCH_EVENT', 'REFERRAL', 'SNS', 'CS', 'MANUAL', 'OUTCOME_REPORT'));
 
@@ -27,7 +27,7 @@ alter table public.reward_credits add constraint reward_credits_reason_check
 -- screen. Someone will press the button twice, and someone else will press it
 -- from a script.
 alter table public.application_outcomes
-  add column reward_credit_id uuid unique references public.reward_credits(id) on delete set null;
+  add column if not exists reward_credit_id uuid unique references public.reward_credits(id) on delete set null;
 
 /*
  * Records an outcome and, the first time that application reaches a settled

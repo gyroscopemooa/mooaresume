@@ -19,7 +19,7 @@
 
 begin;
 
-create table public.research_consents (
+create table if not exists public.research_consents (
   owner_user_id uuid primary key references auth.users(id) on delete cascade,
   -- Which wording was agreed to. Bumping this in the app makes every older
   -- agreement read as "not agreed to the current terms" without deleting the
@@ -37,6 +37,7 @@ create table public.research_consents (
 
 alter table public.research_consents enable row level security;
 
+drop policy if exists "research consent owner read" on public.research_consents;
 create policy "research consent owner read" on public.research_consents for select to authenticated
   using ((select auth.uid()) = owner_user_id);
 
