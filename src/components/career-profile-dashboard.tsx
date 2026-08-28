@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { BarChart3, CheckCircle2, Compass, FileText, LockKeyhole, Sparkles } from "lucide-react";
+import { BarChart3, CheckCircle2, Compass, FileText, LockKeyhole } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { scoreWorkStyle, type WorkStyleAnswer } from "@/domain/career-assessment";
