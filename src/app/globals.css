@@ -125,6 +125,15 @@ body{zoom:var(--app-scale)}
   /* A chip rather than a second line of heading: it reads as the thing you are
      about to do, and it keeps the subtitle from competing with the title. */
   .hero-mobile-sub{display:inline-flex;align-items:center;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--mint,#eaf5ef);color:var(--green-dark,#0f4b33);font-size:15px;font-weight:800;letter-spacing:-.02em}
-  .hero-sample{order:-1;font-size:16px;padding:17px;margin:0}
+  /* Above the input it has to stop outranking the thing it sits above. Solid
+     navy first and solid green last reads as "the blue one is the button and
+     the green one is the alternative" — exactly backwards. Tinted rather than
+     outlined so it still reads as pressable. */
+  .hero-sample{order:-1;font-size:15px;padding:15px;margin:0;background:#eef3fa;border:1px solid #d5e2f1;color:#1f4f8b;box-shadow:none}
+  .hero-sample:hover{background:#e3ecf7;transform:none}
+  /* The aura is a fixed 620px box with overflow hidden. On a phone that bottom
+     edge lands mid-hero and the blur ends in a straight line across the page;
+     the mask lets it fall off instead of stopping. */
+  .hero-aura{height:520px;-webkit-mask-image:linear-gradient(180deg,#000 52%,transparent 100%);mask-image:linear-gradient(180deg,#000 52%,transparent 100%)}
   .trust-row{margin-top:22px;flex-direction:column;align-items:center;gap:9px;font-size:12.5px}
 }
