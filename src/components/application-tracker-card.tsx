@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, Gift, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
 import {
   appendTrackerEvent,
   applicationTrackerSchema,
   type ApplicationTracker,
   type ApplicationTrackerStatus,
 } from "@/domain/application-tracker";
+import { OUTCOME_REWARD_PROMISE, describeOutcomeReward, parseOutcomeReward } from "@/domain/outcome-reward";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./application-tracker-card.module.css";
 
@@ -44,6 +45,7 @@ export function ApplicationTrackerCard(props: Props) {
   const storageKey = "mooa:application-tracker:" + props.caseId + ":v1";
   const [tracker, setTracker] = useState(() => initialTracker(props.caseId, props.company, props.role));
   const [ready, setReady] = useState(false);
+  const [rewardNotice, setRewardNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -79,10 +81,14 @@ export function ApplicationTrackerCard(props: Props) {
     void (async () => {
       try {
         const supabase = createClient();
-        await supabase.rpc("record_application_outcome", {
+        const { data } = await supabase.rpc("record_application_outcome", {
           p_application_case_id: props.caseId,
           p_status: status,
         });
+        // Null means say nothing: the credit is a thank-you, and a notice
+        // explaining why one did *not* arrive reads as a refusal for having
+        // pressed the wrong button.
+        setRewardNotice(describeOutcomeReward(parseOutcomeReward(data)));
       } catch {
         // The applicant's own record is already updated on screen. Nothing here
         // is worth interrupting them for.
@@ -140,6 +146,11 @@ export function ApplicationTrackerCard(props: Props) {
         {status === "INTERVIEW_1_PASS" && <><b>다음 단계가 최종 면접인가요?</b><div><button onClick={() => transition("FINAL_INTERVIEW_PENDING")}>최종 면접 진행</button><button onClick={() => transition("FINAL_PASS")}>최종 합격</button></div></>}
         {status === "FINAL_INTERVIEW_PENDING" && <><b>최종 결과를 업데이트하세요.</b><div><button onClick={() => transition("FINAL_PASS")}>최종 합격</button><button onClick={() => transition("FINAL_FAIL")}>최종 불합격</button></div></>}
         {["INTERVIEW_1_FAIL","FINAL_PASS","FINAL_FAIL","WITHDRAWN"].includes(status) && <b>이 지원 건의 현재 기록을 저장했어요.</b>}
+        {/* Before the buttons, not after. Someone who reads "합격하면 이용권"
+            after clicking 불합격 learns that honesty costs money here. */}
+        {!props.isSample && ["RESULT_PENDING","INTERVIEW_1_PENDING","FINAL_INTERVIEW_PENDING"].includes(status)
+          && <small className={styles.rewardPromise}><Gift /> {OUTCOME_REWARD_PROMISE}</small>}
+        {rewardNotice && <p className={styles.rewardNotice}><Gift /> {rewardNotice}</p>}
       </div>
       <ol>{tracker.events.map((event) => <li key={event.id}><span/><div><b>{labels[event.status]}</b><small>{new Date(event.occurredAt).toLocaleString("ko-KR")} · 자발적 입력 · 미인증</small></div></li>)}</ol>
     </div>}

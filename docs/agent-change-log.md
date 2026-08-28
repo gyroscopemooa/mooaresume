@@ -2410,3 +2410,35 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 제목에서 `자소서 첨삭`이 빠졌지만 **문서에서 빠진 건 아닙니다.** 같은 `h1` 안 숨김 span에 `자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭`이 그대로 있습니다. 크롤러는 읽고, 화면은 안 씁니다.
 - Files/branch: `src/app/page.tsx`, `src/app/globals.css` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 375px에서 예시(266) → 제목(342~443) → 시작하기(729~783) 전부 첫 화면 안, 가로 넘침 없음. 1280px에서 모바일 제목·칩 숨김, 기존 제목/눈썹 그대로.
+
+## 2026-08-24 — Claude: 결과 보고 보상 (합격 인증 → 무료 이용권)
+
+- Agent/session: Claude. 사용자 요청: 후기가 없는 카테고리라 결과 데이터로 신뢰를 만들자 → 합격 인증 시 이용권 지급.
+- Status: completed (코드/테스트). **마이그레이션 미적용** — 사용자가 `npm run db:remote:push` 실행 필요.
+
+### 이 기능의 유일한 규칙
+
+- **지급은 "합격"이 아니라 "보고"에 대한 대가입니다.** 탈락 보고도 합격 보고와 **똑같이** 한 장입니다.
+- 합격에만 주면 일주일 안에 통과율이 90%가 됩니다. 그건 없는 것보다 나쁩니다 — 그 숫자를 랜딩에 쓰고, 그 신호로 첨삭 규칙을 학습시키게 되니까요.
+- 약속 문구는 **버튼 위**에 놓았습니다. `합격이든 불합격이든 똑같이 드립니다.` 누른 **뒤에** 알게 되면 정직에 비용이 붙는다는 걸 배웁니다.
+
+### 막아둔 구멍
+
+- **한 지원 건에 한 장** — `application_outcomes.reward_credit_id uuid unique` + `for update`. 화면이 아니라 DB가 막습니다.
+- **분석 안 한 지원 건은 제외** — `analysis_runs.status = 'COMPLETED'` 필요. 없으면 빈 지원 건 만들고 두 번 클릭이 무한 이용권입니다.
+- **결과 대기는 제외** — `결과 대기`는 보고가 아니라 나중에 보고하겠다는 약속입니다.
+- 본인 확인은 `security definer` 함수 안에서 (`case_owner_id <> current_user_id`).
+
+### 지급 내용
+
+- **QUICK 한 장** (20,000자). 결제 등급을 따라가면 FINAL 구매자가 버튼 한 번에 FINAL을 또 받습니다. 이건 환불이 아니라 **다음 지원서로 돌아올 이유**입니다.
+- 로그인 상태에서 누르므로 메일 링크 없이 `AVAILABLE` + `claimed_at`으로 바로 들어갑니다 (추천 보상과 같은 패턴).
+- Files/branch: `supabase/migrations/20260824120000_outcome_report_reward.sql`, `src/domain/outcome-reward.ts`(+test), `src/server/analysis/outcome-reward-migration.test.ts`, `src/components/application-tracker-card.tsx`, `src/components/application-tracker-card.module.css` on `main`.
+- Validation: `npx vitest run` 667 passed (+16), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback: 마이그레이션 미적용 상태이므로 파일 삭제로 되돌릴 수 있습니다. 적용 후에는 `record_application_outcome`을 `20260824070000` 버전으로 `create or replace` 하고 `application_outcomes.reward_credit_id`를 drop 하면 됩니다.
+
+### 배포 전 주의 — 밀린 마이그레이션
+
+- `supabase db push`가 `20260821030000_include_supporting_materials_for_pro.sql`를 순서 밖 미적용으로 보고합니다.
+- **`--include-all`을 쓰면 안 됩니다.** 그 파일은 `begin_quick_analysis`를 통째로 재정의하는데, 그 뒤 `20260822020000`(REVISION_REQUEST), `20260824010000`·`20260824030000`(FINAL)이 같은 함수를 더 새로 정의했습니다. 지금 실행하면 옛 정의가 덮어써 FINAL이 자료를 못 받습니다.
+- 내용은 이미 최신 정의에 포함돼 있으므로 실행 없이 표시만 합니다: `npx supabase migration repair --status applied 20260821030000` 후 `npm run db:remote:push`.
