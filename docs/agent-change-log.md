@@ -2466,3 +2466,28 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 ### 참고 — 20260821030000
 
 - 사용자가 `migration repair --status applied 20260821030000`로 표시만 했습니다. 그 파일의 `begin_quick_analysis` 정의는 이후 세 번 갱신돼 이미 최신 정의에 포함돼 있습니다.
+
+## 2026-08-24 — Claude: 관리자 콘솔 시각 정리
+
+- Agent/session: Claude. 사용자 요청: `/meensoo/research` 화면이 투박하니 요즘 스타일로.
+- Status: completed. 마이그레이션 없음. **클래스 이름·구조·문구는 그대로**, 시각 속성만 바꿨습니다(공용 파일이라 다른 관리자 화면도 같이 좋아집니다).
+
+### 왜 투박해 보였나
+
+가장 큰 원인은 색이 아니라 **빈 화면 세 개**였습니다. 100px짜리 회색 공백이 세로로 쌓이면 "대기 중"이 아니라 **고장 난 화면**으로 읽힙니다.
+
+- 데이터가 0건이면 표 세 개 대신 **`수집 대기` 블록 하나**를 보여줍니다. 무엇이 들어오는지(동의 → 비식별 → 결과) 3단계로 적고, 왜 5건부터 보여주는지도 함께 씁니다. **빈 콘솔도 뭔가는 알려줘야 합니다.**
+
+### 나머지
+
+- 숫자 카드: 평면 채움 → 미세 그라데이션 + 안쪽 하이라이트, 라벨 위 짧은 강조선, 30px `tabular-nums`. 단위(`건`, `%`)는 작고 흐리게 — 같은 크기로 두면 `0건`이 두 자리 수처럼 읽힙니다.
+- 패널: 반경 14px, 헤더를 본문보다 살짝 밝게 해서 굵은 구분선 없이 헤더로 읽히게.
+- 표: 헤더 대문자 소문자간격, 셀 `tabular-nums`.
+- 설명 문단: 인라인 `style`과 `<br/><br/>` 대신 `.prose` — 최대 폭 860px, 문단 사이 얇은 구분선.
+- 대기 표시 점은 `prefers-reduced-motion`에서 멈춥니다.
+- Files/branch: `src/app/meensoo/admin.module.css`, `src/app/meensoo/research/page.tsx` on `main`.
+- Validation: `npx vitest run` 667 passed, `npx tsc --noEmit` clean, `npx eslint src/app/meensoo` 0건, `npx next build` 클린.
+
+### 확인된 사실 — 배지는 그대로 둡니다
+
+- 보관 사본 **0건**. 연구 관련 마이그레이션이 방금까지 원격에 적용돼 있지 않았으므로 당연한 결과입니다. `db push` 후 동의 상태로 분석을 한 번 돌려 1건 이상을 확인하기 전에는 랜딩 배지를 `운영 중`으로 바꾸지 않습니다.

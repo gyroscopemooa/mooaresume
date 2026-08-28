@@ -94,28 +94,50 @@
 
 .main { margin-left: var(--rail); padding: 32px clamp(16px, 3vw, 40px) 80px; }
 
-.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
-.head h1 { font-size: 22px; font-weight: 700; margin: 0; }
-.head p { margin: 6px 0 0; color: var(--admin-muted); font-size: 13.5px; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+.head h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.025em; margin: 0; }
+.head p { margin: 8px 0 0; max-width: 780px; color: var(--admin-muted); font-size: 13.5px; line-height: 1.75; }
 
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 28px; }
-.card { background: var(--admin-panel); border: 1px solid var(--admin-line); border-radius: 12px; padding: 16px 18px; }
-.card span { display: block; color: var(--admin-muted); font-size: 12.5px; margin-bottom: 8px; }
-.card strong { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
-.card small { display: block; margin-top: 6px; color: var(--admin-muted); font-size: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 26px; }
 
-.panel { background: var(--admin-panel); border: 1px solid var(--admin-line); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
-.panelHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--admin-line); }
-.panelHead h2 { margin: 0; font-size: 14px; font-weight: 600; }
-.panelHead small { color: var(--admin-muted); font-size: 12px; }
+/* A flat fill on a flat background gives a number nothing to sit on. The
+   gradient and the hairline highlight do the work a shadow would do on a light
+   page — enough to read as a surface, not enough to look like a button. */
+.card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(163deg, #1b2028 0%, #14181e 100%);
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  padding: 17px 19px 18px;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 10px 24px -18px rgb(0 0 0 / 0.9);
+}
+/* A short accent above the label instead of a full rule: it marks the card as
+   a measurement without drawing a box around it. */
+.card::before { content: ""; position: absolute; left: 19px; top: 0; width: 26px; height: 2px; background: var(--admin-accent); opacity: 0.55; border-radius: 0 0 2px 2px; }
+.card span { display: block; color: var(--admin-muted); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 9px; }
+/* tabular-nums so a column of figures does not shift as it updates. */
+.card strong { display: flex; align-items: baseline; gap: 3px; font-size: 30px; font-weight: 750; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+/* The unit is not the measurement. Same colour would make 0건 read as two
+   digits. */
+.card strong i { font-style: normal; font-size: 14px; font-weight: 600; color: var(--admin-muted); letter-spacing: 0; }
+.card small { display: block; margin-top: 8px; color: var(--admin-muted); font-size: 11.5px; line-height: 1.6; }
+
+.panel { background: var(--admin-panel); border: 1px solid var(--admin-line); border-radius: 14px; overflow: hidden; margin-bottom: 18px; box-shadow: 0 10px 30px -24px rgb(0 0 0 / 0.9); }
+/* Slightly lighter than the body so the header reads as a header without a
+   heavy divider under it. */
+.panelHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 19px; background: linear-gradient(180deg, #1c212a 0%, #191d24 100%); border-bottom: 1px solid var(--admin-line); }
+.panelHead h2 { margin: 0; font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+.panelHead small { color: var(--admin-muted); font-size: 11.5px; }
 
 /* Wide tables scroll inside the panel; the page body never scrolls sideways. */
 .scroll { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
-.table th { text-align: left; padding: 10px 14px; color: var(--admin-muted); font-weight: 500; font-size: 12px; border-bottom: 1px solid var(--admin-line); background: #13171d; position: sticky; top: 0; }
-.table td { padding: 11px 14px; border-bottom: 1px solid #1f242c; vertical-align: top; }
+.table th { text-align: left; padding: 11px 15px; color: var(--admin-muted); font-weight: 600; font-size: 11.5px; letter-spacing: 0.03em; text-transform: uppercase; border-bottom: 1px solid var(--admin-line); background: #13171d; position: sticky; top: 0; }
+.table td { padding: 12px 15px; border-bottom: 1px solid #1f242c; vertical-align: top; font-variant-numeric: tabular-nums; }
 .table tr:last-child td { border-bottom: none; }
 .table tbody tr:hover { background: #1b2027; }
+.table tbody tr { transition: background 110ms ease; }
 .table a { color: var(--admin-accent); text-decoration: none; }
 .table a:hover { text-decoration: underline; }
 
@@ -128,7 +150,32 @@
 .pillWarn { background: #2a2312; color: var(--admin-warn); border-color: #4a3c1b; }
 .pillMuted { background: #1f242c; color: var(--admin-muted); border-color: #2c333d; }
 
-.empty { padding: 40px 18px; text-align: center; color: var(--admin-muted); font-size: 13.5px; }
+.empty { padding: 26px 18px; text-align: center; color: var(--admin-muted); font-size: 13px; }
+
+/* Waiting, not broken.
+   Three 100px-tall grey voids stacked down a page read as a failure. This is
+   one compact block that says what will appear here and what makes it appear,
+   so an empty console still tells the operator something. */
+.waiting { display: grid; gap: 14px; padding: 30px 24px 32px; }
+.waitingTop { display: flex; align-items: center; gap: 12px; }
+.waitingDot { position: relative; width: 9px; height: 9px; border-radius: 50%; background: var(--admin-accent); flex: none; }
+.waitingDot::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid var(--admin-accent); opacity: 0.3; animation: waitingPulse 2.4s ease-out infinite; }
+@keyframes waitingPulse { 0% { transform: scale(0.6); opacity: 0.45; } 70% { transform: scale(1.25); opacity: 0; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .waitingDot::after { animation: none; } }
+.waitingTop b { font-size: 14.5px; font-weight: 650; color: var(--admin-text); }
+.waitingList { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.waitingList li { display: grid; grid-template-columns: 18px 1fr; gap: 11px; color: var(--admin-muted); font-size: 12.5px; line-height: 1.7; }
+.waitingList li em { font-style: normal; color: #5d6a7c; font-variant-numeric: tabular-nums; font-size: 11.5px; padding-top: 1px; }
+.waitingList li b { color: var(--admin-text); font-weight: 600; }
+.waitingNote { margin: 2px 0 0; padding: 12px 14px; border: 1px solid var(--admin-line); border-radius: 10px; background: #13171d; color: var(--admin-muted); font-size: 12px; line-height: 1.75; }
+
+/* Prose inside a panel — the "what these numbers mean" block. A wall of muted
+   text at table density is unreadable; this gives it a measure and a rhythm. */
+.prose { padding: 20px 22px 22px; color: var(--admin-muted); font-size: 13px; line-height: 1.9; }
+.prose > * { max-width: 860px; }
+.prose p { margin: 0; }
+.prose p + p { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--admin-line); }
+.prose b { color: var(--admin-text); font-weight: 650; }
 
 /* Login */
 .login { min-height: 100vh; display: grid; place-items: center; background: var(--admin-bg, #0f1216); padding: 24px; }

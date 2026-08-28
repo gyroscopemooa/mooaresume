@@ -29,17 +29,36 @@ export default async function AdminResearchPage() {
       </div>
 
       <div className={styles.cards}>
-        <div className={styles.card}><span>보관 사본</span><strong>{corpus.length}건</strong><small>동의한 분석만</small></div>
-        <div className={styles.card}><span>결과 확인</span><strong>{overall.passed + overall.failed}건</strong><small>미확인 {overall.unknown}건</small></div>
+        <div className={styles.card}><span>보관 사본</span><strong>{corpus.length}<i>건</i></strong><small>동의한 분석만</small></div>
+        <div className={styles.card}><span>결과 확인</span><strong>{overall.passed + overall.failed}<i>건</i></strong><small>미확인 {overall.unknown}건</small></div>
         <div className={styles.card}>
           <span>서류 통과</span>
-          <strong>{overallRate === null ? "—" : `${overallRate}%`}</strong>
+          <strong>{overallRate === null ? "—" : <>{overallRate}<i>%</i></>}</strong>
           {/* A percentage from two known results looks like knowledge and is
               not. Below the floor the number is simply not shown. */}
           <small>{overallRate === null ? `결과 확인 ${MIN_GROUP_SIZE}건 미만이라 비율을 내지 않습니다` : "자발적 응답 · 미검증"}</small>
         </div>
       </div>
 
+      {/* Three empty tables stacked down a page read as a broken console. Until
+          anything has been collected there is one block that says what will
+          appear and what makes it appear. */}
+      {corpus.length === 0 ? (
+        <section className={styles.panel}>
+          <div className={styles.panelHead}><h2>수집 대기</h2><small>동의한 분석이 들어오면 자동으로 채워집니다</small></div>
+          <div className={styles.waiting}>
+            <div className={styles.waitingTop}><span className={styles.waitingDot} /><b>아직 보관된 사본이 없습니다.</b></div>
+            <ol className={styles.waitingList}>
+              <li><em>01</em><span><b>동의</b> — 분석 시작 화면에서 연구 활용에 동의한 건만 들어옵니다.</span></li>
+              <li><em>02</em><span><b>비식별</b> — 이름·연락처·주소를 지운 사본이 회사·직무와 함께 보관됩니다.</span></li>
+              <li><em>03</em><span><b>결과</b> — 지원자가 서류 합격/불합격을 알려주면 지적별로 갈라 셉니다.</span></li>
+            </ol>
+            <p className={styles.waitingNote}>
+              묶음별 통계는 {MIN_GROUP_SIZE}건부터 표시됩니다. 그 아래에서는 한 사람의 지원서가 곧 그 회사의 통계가 되어, 숫자가 아니라 개인의 기록이 됩니다.
+            </p>
+          </div>
+        </section>
+      ) : (<>
       <section className={styles.panel}>
         <div className={styles.panelHead}>
           <h2>반복되는 지적</h2>
@@ -100,14 +119,17 @@ export default async function AdminResearchPage() {
         </section>
       ))}
 
+      </>)}
+
       <section className={styles.panel}>
         <div className={styles.panelHead}><h2>이 숫자로 무엇을 할 수 있나</h2></div>
-        <div className={styles.form}>
-          <p className={styles.formMessage} style={{ color: "var(--admin-muted)", lineHeight: 1.9 }}>
+        <div className={styles.prose}>
+          <p>
             여기서 나오는 것은 <b>&ldquo;이 지적이 이 회사·직무에서 유독 자주 나온다&rdquo;</b>까지입니다.
             그것만으로도 프롬프트에 넣을 규칙이 됩니다 — 예를 들어 특정 직무에서 <b>본인 기여 불명확</b>이 계속 잡히면
             그 직무에는 그 항목을 먼저 보라고 지시할 수 있습니다.
-            <br/><br/>
+          </p>
+          <p>
             <b>하지 말아야 할 것:</b> 결과 데이터는 지원자가 스스로 알려준 것이고 검증되지 않았습니다.
             합격에는 스펙·경쟁률·채용 규모가 섞여 있어 <b>&ldquo;이 문장이 합격률을 몇 % 높인다&rdquo;는 말은 표본이 훨씬 커지고
             통계적으로 확인되기 전까지 쓰지 않습니다.</b>
