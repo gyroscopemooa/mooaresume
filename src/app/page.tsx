@@ -107,9 +107,16 @@ export default function HomePage() {
             what made the first version read as a turning box. */}
         <div className="hero-aura" aria-hidden="true"><i/><i/><i/></div>
         <div className="eyebrow">AI 취업 지원서 코치</div>
-        <h1>좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
-        <p>채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
+        {/* The mobile heading is the search term itself. On a phone the hero is
+            the whole first screen, and three lines of positioning above the
+            input push the one thing a visitor came to do below the fold. */}
+        <h1 className="hero-desktop">좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
+        <h1 className="hero-mobile">자소서 첨삭<br/><em>자기소개서 첨삭</em></h1>
+        <p className="hero-desktop">채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
         <LandingEntry />
+        {/* Above the fold on purpose. "무엇을 받는지"에 답하는 가장 빠른 방법은
+            설명이 아니라 그 화면이고, 결정은 여기서 납니다. */}
+        <Link href="/result/sample" className="hero-sample">첨삭 완성본 샘플 예시 보기 <ArrowRight size={16}/></Link>
         <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
       </section>
 

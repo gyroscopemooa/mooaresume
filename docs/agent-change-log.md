@@ -2328,3 +2328,26 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 같은 현대모비스 생산관리 지원서에 맞춰 네 개를 채웠습니다(결과 보완 / 지원동기 기업 연결 / 팀 성과와 본인 몫 분리 / 문항 간 경험 중복).
 - Files/branch: `src/app/result/sample/page.tsx`(신규), `src/fixtures/result-document.ts`, `src/components/analysis-preparation.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/app/sitemap.ts` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린(`/result/sample` 정적 생성).
+
+## 2026-08-24 — Claude: 히어로에 샘플 링크, 모바일 첫 화면 정리
+
+- Agent/session: Claude. 사용자 요청: 샘플 보기를 상단에 크게 / 모바일이 너무 길고 장황하니 `입력칸 + 시작하기`로 단순하게, 제목은 `자소서 첨삭` 크게.
+- Status: completed. 마이그레이션 없음.
+
+### 먼저 확인 — 이제 `샘플 보기`는 누구에게나 샘플입니다
+
+- 예전 `/result`가 id 없이 열리면 **그 사람의 최근 분석**을 가져왔습니다. 지금은 `/result/sample`이라 **조회 자체를 하지 않습니다.** 로그인 여부와 무관하게 같은 샘플입니다.
+- `이전 기록 보기`는 **별개의 기능**입니다(내 분석 목록). 지금은 없고, 필요하면 따로 만들어야 합니다.
+
+### 히어로
+
+- 샘플 링크를 **입력칸 바로 아래, 신뢰 문구 위**로 올렸습니다. 결정이 나는 자리가 거기입니다.
+
+### 모바일
+
+- 휴대폰에서는 히어로가 **첫 화면 전부**입니다. 그런데 포지셔닝 문장 + 설명 문단 + 220px 입력칸이 겹쳐 **`시작하기` 버튼이 첫 화면 밖으로 밀려나** 있었습니다.
+- 제목을 **검색어 그 자체**로 바꿨습니다: `자소서 첨삭 / 자기소개서 첨삭`. 설명 문단은 모바일에서 숨깁니다. 데스크톱 문구는 **한 글자도 바꾸지 않았습니다** — 두 개를 따로 두고 화면 폭으로 고릅니다.
+- 입력칸을 220px → 132px로 줄였습니다. 그 결과 `시작하기`와 샘플 링크가 **첫 화면 안**으로 들어옵니다.
+- 신뢰 문구 세 개는 모바일에서 세로로 쌓습니다(가로로는 줄바꿈이 지저분했습니다).
+- Files/branch: `src/app/page.tsx`, `src/app/globals.css`, `src/components/landing-entry.module.css` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 375px에서 제목이 모바일용으로 바뀌고 `시작하기`가 첫 화면 안에 들어오는 것, 1280px에서 기존 제목·문단이 그대로인 것 확인.

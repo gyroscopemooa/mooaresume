@@ -94,3 +94,18 @@ body{zoom:var(--app-scale)}
 .cta-secondary{display:inline-flex;align-items:center;gap:7px;color:#a9d4c1;font-size:13.5px;font-weight:700;text-decoration:underline;text-underline-offset:4px}
 .cta-secondary:hover{color:#fff}
 @media(max-width:760px){.cta-actions{align-items:flex-start}}
+/* Hero: sample link and the phone-sized heading */
+.hero-sample{display:inline-flex;align-items:center;gap:7px;margin-top:18px;color:var(--green,#176b4a);font-size:14px;font-weight:800;text-decoration:underline;text-underline-offset:4px}
+.hero-sample:hover{color:var(--green-dark,#0d5237)}
+.hero-mobile{display:none}
+@media(max-width:760px){
+  /* Everything above the input is competing with the input. On a phone the
+     positioning line, the sub-paragraph and the three trust chips together
+     pushed 시작하기 off the first screen. */
+  .hero{padding:44px 0 32px}
+  .hero-desktop{display:none}
+  .hero-mobile{display:block;font-size:clamp(34px,10vw,46px);line-height:1.16;margin:10px 0 22px}
+  .hero .eyebrow{font-size:11px}
+  .hero-sample{margin-top:16px;font-size:13.5px}
+  .trust-row{margin-top:22px;flex-direction:column;align-items:center;gap:9px;font-size:12.5px}
+}
