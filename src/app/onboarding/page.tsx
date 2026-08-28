@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, FileCheck2, FilePenLine, LockKeyhole, Sparkles, Upload } from "lucide-react";
 import { decideWritingMode, type WritingMode } from "@/domain/writing-mode";
+import { isFinalEnabled } from "@/domain/final-availability";
 import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import { AttachmentCard } from "@/components/attachment-card";
 import styles from "./onboarding.module.css";
@@ -51,6 +52,13 @@ export default function OnboardingPage() {
   const quickEnabled = activeMode !== null && activeMode !== "CREATE";
   const proHref =
     activeMode === "BUILD" ? "/pro/build" : activeMode === "POLISH" ? "/pro/polish" : "/pro/create";
+  // The FINAL routes are already behind this flag; without the same check here
+  // the card stayed COMING SOON even where the routes were open, so FINAL could
+  // not be walked end to end anywhere — including locally, which is the one
+  // place the flag exists for.
+  const finalOpen = isFinalEnabled();
+  const finalHref =
+    activeMode === "BUILD" ? "/final/build" : activeMode === "POLISH" ? "/final/polish" : "/final/create";
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -238,13 +246,22 @@ export default function OnboardingPage() {
                 <p>소재 선정부터 공고 교차검수까지 한 지원 건을 함께 진행해요.</p>
                 <span>PRO 시작 <ArrowRight /></span>
               </Link>
-              <div className={styles.disabled}>
-                <em>COMING SOON</em>
-                <small>FINAL · 19,900원</small>
-                <b>PRO 전체 + AI 모의면접</b>
-                <p>{activeMode === "CREATE" ? "처음 작성부터 지원서를 완성한 뒤" : "지원서 분석과 첨삭을 완료한 뒤"} 실제 답변 평가, 동적 꼬리질문과 면접 최종 리포트까지 이어집니다.</p>
-                <span>처음부터 FINAL 19,900원</span>
-              </div>
+              {finalOpen ? (
+                <Link href={finalHref}>
+                  <small>FINAL · 19,900원</small>
+                  <b>PRO 전체 + AI 모의면접</b>
+                  <p>{activeMode === "CREATE" ? "처음 작성부터 지원서를 완성한 뒤" : "지원서 분석과 첨삭을 완료한 뒤"} 실제 답변 평가, 동적 꼬리질문과 면접 최종 리포트까지 이어집니다.</p>
+                  <span>FINAL 시작 <ArrowRight /></span>
+                </Link>
+              ) : (
+                <div className={styles.disabled}>
+                  <em>COMING SOON</em>
+                  <small>FINAL · 19,900원</small>
+                  <b>PRO 전체 + AI 모의면접</b>
+                  <p>{activeMode === "CREATE" ? "처음 작성부터 지원서를 완성한 뒤" : "지원서 분석과 첨삭을 완료한 뒤"} 실제 답변 평가, 동적 꼬리질문과 면접 최종 리포트까지 이어집니다.</p>
+                  <span>처음부터 FINAL 19,900원</span>
+                </div>
+              )}
             </div>
             <p style={{ margin: "14px 2px 0", color: "#68756f", fontSize: 11, lineHeight: 1.6 }}>FINAL은 처음부터 19,900원에 선택하거나, PRO 이용 후 결과 화면에서 차액 7,000원으로 업그레이드할 수 있어요. 두 경로의 FINAL 이용 범위는 같습니다.</p>
           </section>

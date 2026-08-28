@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, Minus, X } from "lucide-react";
+import { isFinalEnabled } from "@/domain/final-availability";
 import styles from "./pricing-comparison.module.css";
 
 type Plan = "QUICK" | "PRO" | "FINAL";
@@ -12,7 +13,10 @@ type Feature = { name: string; quick: Value; pro: Value; final: Value };
 const plans = [
   { id: "QUICK" as const, price: "5,900원", title: "이미 쓴 것을 빠르게 고쳐요", body: "현재 작성본의 문장·논리·구체성과 최종 수정본에 집중합니다.", href: "/onboarding", cta: "무료로 시작하기" },
   { id: "PRO" as const, price: "12,900원", title: "쓸 것부터 찾아 완성해요", body: "공고와 전체 지원자료를 연결해 처음 작성부터 최종검수까지 진행합니다.", href: "/onboarding", cta: "무료로 시작하기", recommended: true },
-  { id: "FINAL" as const, price: "19,900원", title: "지원서에서 면접 연습까지", body: "PRO 전체에 답변 평가, 동적 꼬리질문과 면접 리포트를 더합니다.", href: "/onboarding", cta: "FINAL 준비 중", pending: true },
+  // Reads the same flag as the FINAL routes and the onboarding card. A table
+  // that says 준비 중 next to an entry point that works is the kind of
+  // disagreement nobody notices until a customer does.
+  { id: "FINAL" as const, price: "19,900원", title: "지원서에서 면접 연습까지", body: "PRO 전체에 답변 평가, 동적 꼬리질문과 면접 리포트를 더합니다.", href: "/onboarding", cta: isFinalEnabled() ? "무료로 시작하기" : "FINAL 준비 중", pending: !isFinalEnabled() },
 ];
 
 const features: Feature[] = [

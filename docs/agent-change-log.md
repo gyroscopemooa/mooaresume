@@ -2521,3 +2521,22 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 흰 글씨 대비 4.6:1로 본문 기준을 넘깁니다(직전 남색은 대비는 높았지만 초록보다 어두워 위계가 뒤집혔습니다).
 - Files/branch: `src/app/globals.css` on `main`.
 - Validation: `npx vitest run` 667 passed, `npx tsc --noEmit` clean, `npx next build` 클린. 375px에서 `rgb(30,123,184)`/흰 글씨, 예시(266~322)·시작(727~781) 모두 첫 화면 안, 가로 넘침 없음.
+
+## 2026-08-24 — Claude: FINAL 입구가 플래그를 읽게
+
+- Agent/session: Claude. 계기: 사용자가 로컬에서 FINAL을 테스트하려는데 온보딩 FINAL 카드가 `COMING SOON`으로 비활성.
+- Status: completed. 마이그레이션 없음.
+
+### 원인 — 플래그가 절반만 걸려 있었습니다
+
+- `NEXT_PUBLIC_ENABLE_FINAL=1`은 `.env.local`에 이미 있었고, `/final/build|polish|create` 라우트는 그 플래그를 읽습니다.
+- 그런데 **온보딩 카드는 `<div className={styles.disabled}>`로 하드코딩**돼 있었습니다. 라우트는 열려 있는데 **들어갈 문이 없어서**, 플래그가 존재하는 유일한 이유인 로컬 전 구간 테스트가 불가능했습니다.
+- 가격표(`pricing-comparison.tsx`)도 `pending: true` 하드코딩이었습니다.
+
+### 고친 것
+
+- 온보딩 카드: `isFinalEnabled()`가 참이면 작성 모드에 맞춰 `/final/build|polish|create`로 가는 링크, 거짓이면 **기존 `COMING SOON` 블록을 그대로** 유지합니다(문구·마크업 보존).
+- 가격표: `pending: !isFinalEnabled()`, CTA도 함께. **표는 준비 중이라는데 입구는 열려 있는 불일치**는 손님이 먼저 발견합니다.
+- 라이브 사이트는 플래그가 없으므로 **보이는 것이 전과 완전히 같습니다.**
+- Files/branch: `src/app/onboarding/page.tsx`, `src/components/pricing-comparison.tsx`, `src/domain/final-availability.entry.test.ts` on `main`.
+- Validation: `npx vitest run` 670 passed (+3), `npx tsc --noEmit` clean, `npx eslint` 0건, `npx next build` 클린. 로컬에서 온보딩 FINAL 카드가 `/final/build` 링크로 바뀌고 `COMING SOON` 블록 0개, `/final/build`가 404 아닌 실제 화면으로 열리는 것 확인.
