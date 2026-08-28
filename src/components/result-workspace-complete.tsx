@@ -312,7 +312,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
    */
   function carryDraftForward(
     destination: string,
-    options: { writingMode: "CREATE" | "BUILD" | "POLISH"; product: "QUICK" | "PRO"; revisionRequest?: string },
+    options: { writingMode: "CREATE" | "BUILD" | "POLISH"; product: "QUICK" | "PRO" | "FINAL"; revisionRequest?: string },
   ) {
     const questions = [...result.questions]
       .sort((left, right) => left.order - right.order)

@@ -3,6 +3,10 @@ import { z } from "zod";
 export const QUICK_BASE_PRICE_KRW = 5_900;
 export const PRO_BASE_PRICE_KRW = 12_900;
 export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
+// FINAL is PRO's scope plus its own verification pass, so it buys the same
+// character budget at its own price. A separate limit would mean a customer who
+// upgraded mid-application could suddenly fit less than they already had.
+export const FINAL_BASE_PRICE_KRW = 19_900;
 export const QUICK_SOFT_LIMIT_CHARS = 7_000;
 // A Korean cover letter runs 4-7 questions of 500-1,000 characters, so the
 // realistic ceiling is about 6,000 once the question headings are counted.
@@ -13,7 +17,7 @@ export const QUICK_SOFT_LIMIT_CHARS = 7_000;
 export const QUICK_INCLUDED_LIMIT_CHARS = 8_000;
 export const QUICK_EXTRA_BLOCK_CHARS = 7_000;
 export const QUICK_EXTRA_BLOCK_PRICE_KRW = 2_900;
-export const productTierSchema = z.enum(["QUICK", "PRO"]);
+export const productTierSchema = z.enum(["QUICK", "PRO", "FINAL"]);
 export type ProductTier = z.infer<typeof productTierSchema>;
 
 export const checkoutQuoteSchema = z.object({
@@ -88,7 +92,25 @@ export function createProCheckoutQuote(totalCharacters: number): CheckoutQuote {
     needsScopeReview: normalizedTotal > PRO_INCLUDED_LIMIT_CHARS,
   });
 }
+export function createFinalCheckoutQuote(totalCharacters: number): CheckoutQuote {
+  const normalizedTotal = Math.max(0, Math.floor(totalCharacters));
+  return checkoutQuoteSchema.parse({
+    productTier: "FINAL",
+    totalCharacters: normalizedTotal,
+    baseCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    includedCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    extraBlocks: 0,
+    extraCharacters: 0,
+    allowedCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    basePriceKrw: FINAL_BASE_PRICE_KRW,
+    extraPriceKrw: 0,
+    totalPriceKrw: FINAL_BASE_PRICE_KRW,
+    needsScopeReview: normalizedTotal > PRO_INCLUDED_LIMIT_CHARS,
+  });
+}
+
 export function createCheckoutQuote(product: ProductTier, totalCharacters: number): CheckoutQuote {
+  if (product === "FINAL") return createFinalCheckoutQuote(totalCharacters);
   return product === "PRO"
     ? createProCheckoutQuote(totalCharacters)
     : createQuickCheckoutQuote(totalCharacters);

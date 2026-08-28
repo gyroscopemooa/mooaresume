@@ -28,3 +28,36 @@ describe("FINAL 입구", () => {
     expect(pricing).toContain("pending: !isFinalEnabled()");
   });
 });
+
+const handoff = readFileSync("src/application/application-case-handoff.ts", "utf8");
+const entitlement = readFileSync("src/domain/usage-entitlement.ts", "utf8");
+const polar = readFileSync("src/server/billing/polar-checkout.ts", "utf8");
+
+describe("FINAL 결제 경로", () => {
+  it("지원 건 저장이 FINAL을 받는다", () => {
+    // Rejected here, the entry screen answered "저장할 입력 내용을 다시 확인해
+    // 주세요" — a validation message for a product the schema simply did not
+    // list.
+    expect(handoff).toContain('z.enum(["QUICK", "PRO", "FINAL"])');
+    expect(handoff).toContain('input.product === "PRO" || input.product === "FINAL"');
+  });
+
+  it("FINAL 견적이 PRO와 같은 분량에 자기 가격을 붙인다", () => {
+    // A smaller budget would mean someone upgrading mid-application suddenly
+    // fits less than they already had.
+    expect(entitlement).toContain("FINAL_BASE_PRICE_KRW = 19_900");
+    expect(entitlement).toContain("createFinalCheckoutQuote");
+    expect(entitlement).toContain("allowedCharacters: PRO_INCLUDED_LIMIT_CHARS");
+    expect(entitlement).toContain('z.enum(["QUICK", "PRO", "FINAL"])');
+  });
+
+  it("FINAL 상품 id는 선택이고, 없으면 이름을 대고 실패한다", () => {
+    // Requiring it would take QUICK and PRO checkout down on a site that has no
+    // FINAL product yet.
+    expect(polar).toContain('process.env.POLAR_FINAL_PRODUCT_ID ?? ""');
+    expect(polar).toContain("if (!this.productIds[input.metadata.tier])");
+    expect(polar).toContain("_PRODUCT_ID가 필요합니다.");
+    // The hard requirement still covers only the two that are live.
+    expect(polar).toContain("if (!accessToken || !quickProductId || !proProductId)");
+  });
+});

@@ -45,7 +45,7 @@ type QuickQuestion = CoverLetterQuestion & { order: number; targetLength: number
 const NON_EVIDENCE_KINDS: ReadonlySet<string> = new Set(["job_posting", "revision_request"]);
 
 function candidateEvidenceSource(request: AnalysisRequest) {
-  const permittedDocuments = request.product === "PRO"
+  const permittedDocuments = request.product === "PRO" || request.product === "FINAL"
     ? request.documents.filter((document) => !NON_EVIDENCE_KINDS.has(document.kind))
     : request.documents.filter((document) => document.kind === "cover_letter");
   return permittedDocuments.map((document) => document.text).join("\n");

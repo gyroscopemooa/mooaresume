@@ -2540,3 +2540,31 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 라이브 사이트는 플래그가 없으므로 **보이는 것이 전과 완전히 같습니다.**
 - Files/branch: `src/app/onboarding/page.tsx`, `src/components/pricing-comparison.tsx`, `src/domain/final-availability.entry.test.ts` on `main`.
 - Validation: `npx vitest run` 670 passed (+3), `npx tsc --noEmit` clean, `npx eslint` 0건, `npx next build` 클린. 로컬에서 온보딩 FINAL 카드가 `/final/build` 링크로 바뀌고 `COMING SOON` 블록 0개, `/final/build`가 404 아닌 실제 화면으로 열리는 것 확인.
+
+## 2026-08-24 — Claude: FINAL 결제 경로 전 구간 개통
+
+- Agent/session: Claude. 계기: 로컬에서 FINAL 시작 시 `저장할 입력 내용을 다시 확인해 주세요.` — 사용자가 Polar FINAL 상품 id를 넣어도 동일.
+- Status: completed. 마이그레이션 없음.
+
+### 원인 — Polar가 아니었습니다
+
+`src/application/application-case-handoff.ts`의 `product: z.enum(["QUICK", "PRO"])`. **FINAL이 목록에 없어서** Zod가 거부했고, `/api/application-cases`가 그 문구로 400을 냈습니다. 결제까지 가지도 못한 겁니다.
+
+**PRO만 좁게 본 여섯 번째 사례**입니다(앞선 다섯 건은 `questions.ts`, `begin_quick_analysis`, 결과 탭 필터, 분석 준비 안내, 크론 재개 경로).
+
+### 같이 열어둔 나머지 — 하나만 고치면 다음 화면에서 또 막힙니다
+
+- `usage-entitlement.ts`: `productTierSchema`에 FINAL 추가, `createFinalCheckoutQuote` 신설. **분량은 PRO와 같은 30,000자, 가격만 19,900원.** 분량을 줄이면 진행 중에 업그레이드한 사람이 갑자기 기존보다 적게 들어가게 됩니다.
+- `quick-checkout-service.ts`, `checkouts/quick/status/route.ts`, `quick-checkout-return.tsx`: 상품 enum 확장.
+- `validator.ts`: 근거로 인정하는 문서 범위를 FINAL도 PRO와 동일하게.
+- `result-workspace-complete.tsx`: 재첨삭 옵션 타입 확장.
+
+### Polar FINAL 상품 id
+
+- `POLAR_FINAL_PRODUCT_ID`는 **선택**입니다. 필수로 만들면 FINAL 상품이 없는 라이브 사이트에서 **QUICK·PRO 결제까지 같이 죽습니다.**
+- 비어 있는 상태로 FINAL 결제를 시도하면 `POLAR_FINAL_PRODUCT_ID가 필요합니다.`로 **이름을 대고** 실패합니다. 빈 id를 그대로 보내면 Polar가 다른 설정 실수와 구분되지 않는 422를 돌려줍니다.
+- 웹훅·정산의 `expectedProductIds`에도 FINAL을 넣어 결제 후 이용권 지급이 이어지게 했습니다.
+- `.env.example`에 항목과 설명을 추가했습니다.
+- Files/branch: `src/application/application-case-handoff.ts`, `src/domain/usage-entitlement.ts`, `src/server/billing/polar-checkout.ts`, `src/server/billing/polar-checkout-reconciliation.ts`, `src/app/api/webhooks/polar/route.ts`, `src/app/api/checkouts/quick/status/route.ts`, `src/server/billing/quick-checkout-service.ts`, `src/components/quick-checkout-return.tsx`, `src/components/result-workspace-complete.tsx`, `src/server/ai/quick/validator.ts`, 관련 테스트 픽스처 3건, `.env.example`, `src/domain/final-availability.entry.test.ts` on `main`.
+- Validation: `npx vitest run` 673 passed (+3), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- 보존: `result-workspace-{v2,claude-restored,codex-restored}.tsx`의 `=== "PRO"` 필터는 **의도적으로 그대로 뒀습니다.** 보관용 변형이라 현재 흐름에 쓰이지 않습니다.

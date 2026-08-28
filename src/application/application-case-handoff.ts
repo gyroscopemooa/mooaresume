@@ -9,7 +9,7 @@ export const guestApplicationHandoffSchema = z.object({
   title: z.string().trim().min(1).max(120).default("새 지원서"),
   companyName: z.string().trim().max(120).optional(),
   roleName: z.string().trim().max(120).optional(),
-  product: z.enum(["QUICK", "PRO"]),
+  product: z.enum(["QUICK", "PRO", "FINAL"]),
   writingMode: writingModeSchema,
   writingStyle: writingStyleSchema,
   // Defaulted rather than required so drafts saved before the stance existed
@@ -60,7 +60,7 @@ export type ApplicationCasePlan = {
   title: string;
   companyName: string | null;
   roleName: string | null;
-  product: "QUICK" | "PRO";
+  product: "QUICK" | "PRO" | "FINAL";
   writingMode: "CREATE" | "BUILD" | "POLISH";
   writingStyle: "CONCISE" | "BALANCED" | "STRENGTH_FOCUSED";
   editingStance: EditingStance;
@@ -114,7 +114,11 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
   // PRIMARY_DOCUMENT_REQUIRED before the analysis it was designed for could
   // even start.
   const hasQuestionPrompts = input.questions.some((question) => question.title.trim() || question.prompt.trim());
-  const createsFromMaterialsOnly = input.product === "PRO"
+  // FINAL is PRO plus its own verification pass, so every PRO capability check
+  // has to name it too. This is the sixth place a bare `=== "PRO"` quietly
+  // excluded FINAL; here it meant a materials-only FINAL run saved no PRIMARY
+  // document and was rejected before it started.
+  const createsFromMaterialsOnly = (input.product === "PRO" || input.product === "FINAL")
     && input.writingMode === "CREATE"
     && hasQuestionPrompts
     && input.candidateMaterials.materialAttachments.length > 0;

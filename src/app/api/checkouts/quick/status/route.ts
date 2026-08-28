@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     checkoutStatus: z.enum(["OPEN", "SUCCEEDED", "EXPIRED"]),
     analysisRunId: z.string().uuid(),
     analysisStatus: z.enum(["PENDING", "RUNNING", "COMPLETED", "FAILED"]),
-    product: z.enum(["QUICK", "PRO"]),
+    product: z.enum(["QUICK", "PRO", "FINAL"]),
     entitlementStatus: z.enum(["ACTIVE", "CONSUMED", "REVOKED"]).nullable(),
   }).passthrough();
   let checkout = checkoutSchema.parse(data);

@@ -9,7 +9,7 @@ export const createQuickCheckoutRequestSchema = z.object({
 const quickCheckoutContextSchema = z.object({
   analysisRunId: z.string().uuid(),
   applicationCaseId: z.string().uuid(),
-  product: z.enum(["QUICK", "PRO"]),
+  product: z.enum(["QUICK", "PRO", "FINAL"]),
   totalCharacters: z.number().int().positive(),
   openCheckout: z.object({
     checkoutId: z.string().min(1),

@@ -11,7 +11,7 @@ const statusSchema = z.object({
   checkoutStatus: z.enum(["OPEN", "SUCCEEDED", "EXPIRED"]),
   analysisRunId: z.string().uuid(),
   analysisStatus: z.enum(["PENDING", "RUNNING", "COMPLETED", "FAILED"]),
-  product: z.enum(["QUICK", "PRO"]).optional(),
+  product: z.enum(["QUICK", "PRO", "FINAL"]).optional(),
   entitlementStatus: z.enum(["ACTIVE", "CONSUMED", "REVOKED"]).nullable(),
   hasResult: z.boolean(),
   timeoutRefunded: z.boolean().optional(),
@@ -34,14 +34,14 @@ const formatElapsed = (seconds: number) => {
 };
 
 type Props = {
-  onProductConfirmed?: (product: "QUICK" | "PRO") => void;
+  onProductConfirmed?: (product: "QUICK" | "PRO" | "FINAL") => void;
   /** Set when a run was paid for with a reward credit instead of a checkout. */
   creditRunId?: string | null;
 };
 
 export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null }: Props = {}) {
   const [phase, setPhase] = useState<Phase>("idle");
-  const [product, setProduct] = useState<"QUICK" | "PRO" | null>(null);
+  const [product, setProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [message, setMessage] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
   const [retryRunId, setRetryRunId] = useState<string | null>(null);

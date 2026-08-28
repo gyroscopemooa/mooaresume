@@ -47,7 +47,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: store,
       verifyEvent: vi.fn(() => paidEvent() as never),
     });
@@ -74,7 +74,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: store,
       verifyEvent: vi.fn(() => paidEvent({
         productId: "product-pro",
@@ -103,7 +103,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({
         productId: "product-quick",
@@ -120,7 +120,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: repository(),
       verifyEvent: vi.fn(() => ({ ...paidEvent(), type: "order.updated" }) as never),
     });
@@ -133,7 +133,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({ totalAmount: quote.totalPriceKrw - 1_000, discountId: "discount-1" }) as never),
     });
@@ -146,7 +146,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({ totalAmount: 0, discountId: "discount-100" }) as never),
     });
@@ -165,7 +165,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent(overrides) as never),
     })).rejects.toThrow(message);
@@ -181,7 +181,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "sandbox",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: store,
       verifyEvent: vi.fn(() => paidEvent() as never),
     });
@@ -197,7 +197,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: repository(),
       verifyEvent: vi.fn(() => paidEvent({
         metadata: { ...metadata, allowedCharacters: 999_999 },
@@ -212,7 +212,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: store,
       verifyEvent: vi.fn(() => ({
         type: "order.refunded",
@@ -235,7 +235,7 @@ describe("Polar webhook entitlement processing", () => {
       headers,
       secret: "secret",
       environment: "production",
-      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro" },
+      expectedProductIds: { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
       repository: store,
       verifyEvent: vi.fn(() => ({
         type: "order.refunded",

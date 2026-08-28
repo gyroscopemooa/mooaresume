@@ -1,7 +1,7 @@
 import "server-only";
 
 import { Polar } from "@polar-sh/sdk";
-import type { CheckoutQuote, CheckoutMetadata } from "@/domain/usage-entitlement";
+import type { CheckoutQuote, CheckoutMetadata, ProductTier } from "@/domain/usage-entitlement";
 import { PresentmentCurrency, type PresentmentCurrency as PresentmentCurrencyType } from "@polar-sh/sdk/models/components/presentmentcurrency.js";
 
 export type CreatePolarCheckoutInput = {
@@ -29,12 +29,17 @@ type PolarCheckoutClient = {
 export class PolarSdkCheckoutGateway implements PolarCheckoutGateway {
   constructor(
     private readonly client: PolarCheckoutClient,
-    private readonly productIds: { QUICK: string; PRO: string },
+    private readonly productIds: Record<ProductTier, string>,
     private readonly defaultPresentmentCurrency: PresentmentCurrencyType = "krw",
     private readonly defaultPresentmentPriceAmount: number | undefined = undefined,
   ) {}
 
   async createCheckout(input: CreatePolarCheckoutInput): Promise<PolarCheckoutSession> {
+    // Named rather than sent as an empty product id, which Polar answers with a
+    // generic 422 that looks like every other configuration mistake.
+    if (!this.productIds[input.metadata.tier]) {
+      throw new Error(`POLAR_${input.metadata.tier}_PRODUCT_ID가 필요합니다.`);
+    }
     const checkout = await this.client.checkouts.create({
       products: [this.productIds[input.metadata.tier]],
       prices: {
@@ -93,6 +98,10 @@ export function getPolarCheckoutConfiguration() {
   const accessToken = process.env.POLAR_ACCESS_TOKEN;
   const quickProductId = process.env.POLAR_QUICK_PRODUCT_ID;
   const proProductId = process.env.POLAR_PRO_PRODUCT_ID;
+  // Optional on purpose. FINAL has no Polar product on the live site yet, and
+  // requiring one here would take QUICK and PRO checkout down with it. A FINAL
+  // checkout attempted without it fails by name instead — see createCheckout.
+  const finalProductId = process.env.POLAR_FINAL_PRODUCT_ID ?? "";
   const rawServer = process.env.POLAR_SERVER?.trim().toLowerCase();
   if (rawServer && rawServer !== "production" && rawServer !== "sandbox") {
     throw new Error(`POLAR_SERVER는 production 또는 sandbox여야 합니다. 현재 값: "${process.env.POLAR_SERVER}"`);
@@ -108,11 +117,11 @@ export function getPolarCheckoutConfiguration() {
   if (!accessToken || !quickProductId || !proProductId) {
     throw new Error("POLAR_ACCESS_TOKEN, POLAR_QUICK_PRODUCT_ID, POLAR_PRO_PRODUCT_ID가 필요합니다.");
   }
-  return { accessToken, quickProductId, proProductId, server, defaultPresentmentCurrency: defaultPresentmentCurrency as PresentmentCurrencyType, defaultPresentmentPriceAmount } as const;
+  return { accessToken, quickProductId, proProductId, finalProductId, server, defaultPresentmentCurrency: defaultPresentmentCurrency as PresentmentCurrencyType, defaultPresentmentPriceAmount } as const;
 }
 
 export function getPolarWebhookConfiguration() {
-  const { quickProductId, proProductId, server } = getPolarCheckoutConfiguration();
+  const { quickProductId, proProductId, finalProductId, server } = getPolarCheckoutConfiguration();
   const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
   if (!webhookSecret) {
     throw new Error("POLAR_WEBHOOK_SECRET이 필요합니다.");
@@ -120,14 +129,14 @@ export function getPolarWebhookConfiguration() {
   // Carried through to the stored order so a sandbox test is not counted as
   // revenue. Nothing else distinguishes the two: the ids look alike and both
   // land in the same table.
-  return { quickProductId, proProductId, webhookSecret, server };
+  return { quickProductId, proProductId, finalProductId, webhookSecret, server };
 }
 
 export function createPolarCheckoutGatewayFromEnv() {
   const config = getPolarCheckoutConfiguration();
   return new PolarSdkCheckoutGateway(
     new Polar({ accessToken: config.accessToken, server: config.server }),
-    { QUICK: config.quickProductId, PRO: config.proProductId },
+    { QUICK: config.quickProductId, PRO: config.proProductId, FINAL: config.finalProductId },
     config.defaultPresentmentCurrency,
     config.defaultPresentmentPriceAmount,
   );
@@ -159,6 +168,7 @@ export function describePolarConfigShape() {
     accessToken: describe(process.env.POLAR_ACCESS_TOKEN, "polar_"),
     quickProductId: describe(process.env.POLAR_QUICK_PRODUCT_ID),
     proProductId: describe(process.env.POLAR_PRO_PRODUCT_ID),
+    finalProductId: describe(process.env.POLAR_FINAL_PRODUCT_ID),
     webhookSecret: describe(process.env.POLAR_WEBHOOK_SECRET),
   };
 }

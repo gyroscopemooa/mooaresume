@@ -7,7 +7,7 @@ const ownerUserId = "11111111-1111-4111-8111-111111111111";
 const applicationCaseId = "22222222-2222-4222-8222-222222222222";
 const quote = createQuickCheckoutQuote(8_000);
 const metadata = toQuickCheckoutMetadata(quote, applicationCaseId);
-const expectedProductIds = { QUICK: "product-quick", PRO: "product-pro" } as const;
+const expectedProductIds = { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" } as const;
 
 function repository(): PolarEntitlementRepository {
   return {

@@ -117,7 +117,7 @@ export function createPolarCheckoutReconciliationRuntime() {
 
   return {
     gateway,
-    expectedProductIds: { QUICK: config.quickProductId, PRO: config.proProductId },
+    expectedProductIds: { QUICK: config.quickProductId, PRO: config.proProductId, FINAL: config.finalProductId },
     environment: config.server,
   } as const;
 }

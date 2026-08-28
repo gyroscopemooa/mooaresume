@@ -16,7 +16,7 @@ describe("Polar SDK checkout gateway", () => {
     );
     const gateway = new PolarSdkCheckoutGateway(
       { checkouts: { create } } as never,
-      { QUICK: "product-quick", PRO: "product-pro" },
+      { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
     );
 
     const result = await gateway.createCheckout({
@@ -69,7 +69,7 @@ describe("Polar SDK checkout gateway", () => {
     );
     const gateway = new PolarSdkCheckoutGateway(
       { checkouts: { create } } as never,
-      { QUICK: "product-quick", PRO: "product-pro" },
+      { QUICK: "product-quick", PRO: "product-pro", FINAL: "product-final" },
     );
 
     await gateway.createCheckout({
