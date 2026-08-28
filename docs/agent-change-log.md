@@ -2305,3 +2305,26 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - **같은 탭에서 이동했습니다.** 결제 버튼 바로 아래에서 링크를 따라가면 그대로 결제 이탈입니다. 새 탭으로 열게 했습니다.
 - Files/branch: `src/components/analysis-preparation.tsx` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+
+## 2026-08-24 — Claude: 언제나 샘플인 결과 화면 (`/result/sample`)
+
+- Agent/session: Claude. 사용자 제안: 없애기보다 메인 홈에 `첨삭 완성본 샘플 예시 보기` 버튼을 두자. 그리고 샘플도 최신 상태로.
+- Status: completed. 마이그레이션 없음.
+
+### 라벨이 참이 되게
+
+- `/result`는 id가 없으면 **그 사람의 가장 최근 분석**을 가져옵니다. 그래서 `샘플`이라고 적힌 링크가 로그인한 사람에게는 **자기 예전 결과**를 보여줬습니다.
+- `/result/sample`을 새로 뒀습니다. **id를 받지 않고 아무것도 조회하지 않으므로** 누구에게나 샘플입니다.
+- 요약 페이지(`/sample`)가 아니라 **실제 결과 대시보드**를 그립니다. 탭, 문항별 Before → After, 내보내기 버튼까지 그대로 — 결제를 고민하는 사람이 보고 싶은 것은 설명이 아니라 그 화면 자체입니다.
+
+### 두 자리에 걸었습니다
+
+- **메인 홈 CTA 아래** — `무료 진단 시작` 밑에 `첨삭 완성본 샘플 예시 보기`. 결제 전 링크도 여기로 바꿨습니다(새 탭 유지).
+- **사이트맵에 추가**(priority 0.8). `AI 자소서 첨삭 결과가 어떻게 나오나요` 같은 검색에 사이트의 어떤 산문보다 잘 답하고, **초안·로그인·결제 없이 열리는 유일한 제품 화면**이라 색인해도 안전합니다. 자체 title·description·canonical도 줬습니다.
+
+### 샘플이 비어 있던 곳
+
+- `consultingAdvice`가 **빈 배열**이라, PRO가 무엇인지 보여주는 바로 그 화면에서 상담 제안 패널이 **비어서** 그려지고 있었습니다.
+- 같은 현대모비스 생산관리 지원서에 맞춰 네 개를 채웠습니다(결과 보완 / 지원동기 기업 연결 / 팀 성과와 본인 몫 분리 / 문항 간 경험 중복).
+- Files/branch: `src/app/result/sample/page.tsx`(신규), `src/fixtures/result-document.ts`, `src/components/analysis-preparation.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/app/sitemap.ts` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린(`/result/sample` 정적 생성).

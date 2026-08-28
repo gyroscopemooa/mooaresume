@@ -278,7 +278,12 @@ export default function HomePage() {
         <div className={positioningStyles.manifestoCopy}><span>MOOA RESUME · OUR GOAL</span><h2>무아레쥬메의 자소서 첨삭은<br/>1차 서류 합격이 목표가 아닙니다.</h2><strong>최종 합격 후 입사가 목표입니다.</strong><p>단순히 1차 합격을 위해 첨삭하시나요? 저희는 서류 합격, 면접 합격, 입사를 목표로 첨삭을 진행합니다.</p></div>
         <div className={positioningStyles.manifestoGoal}><small>OUR FINAL GOAL</small><b>우리의 목표는<br/>최종 합격입니다.</b><Link href="/onboarding">지원 준비 시작하기 <ArrowRight/></Link></div>
       </section>
-      <section className="cta-section"><div className="container"><div><span>첫 분석은 가볍게 시작하세요</span><h2>내 지원서에서 놓친 근거를<br/>지금 확인해 보세요.</h2></div><Link href="/analyze" className="button button-light">무료 진단 시작 <ArrowRight size={18}/></Link></div></section>
+      <section className="cta-section"><div className="container"><div><span>첫 분석은 가볍게 시작하세요</span><h2>내 지원서에서 놓친 근거를<br/>지금 확인해 보세요.</h2></div><div className="cta-actions">
+        <Link href="/analyze" className="button button-light">무료 진단 시작 <ArrowRight size={18}/></Link>
+        {/* The dashboard itself, with sample data. "무엇을 받는지"에 답하는 가장
+            빠른 방법은 설명이 아니라 그 화면입니다. */}
+        <Link href="/result/sample" className="cta-secondary">첨삭 완성본 샘플 예시 보기 <ArrowRight size={16}/></Link>
+      </div></div></section>
       <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a><span>© 2026 MOOA Resume</span></footer>
     </main></>
   );

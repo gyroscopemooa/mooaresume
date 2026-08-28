@@ -325,12 +325,12 @@ export function AnalysisPreparation() {
               ))}
             </ul>
             <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId}/>
-            {/* /sample rather than /result: with no id, /result falls back to
-                the visitor's most recent analysis, so a returning customer
-                pressing "샘플 보기" was shown their own past result. And in a new
-                tab, because this sits directly under the pay button — the one
-                place a link away is a checkout abandoned. */}
-            <a href="/sample" target="_blank" rel="noopener noreferrer">
+            {/* /result/sample rather than /result: with no id, /result falls
+                back to the visitor's most recent analysis, so a returning
+                customer pressing "샘플 보기" was shown their own past result. And
+                in a new tab, because this sits directly under the pay button —
+                the one place a link away is a checkout abandoned. */}
+            <a href="/result/sample" target="_blank" rel="noopener noreferrer">
               결제 후 결과 화면 샘플 보기 <ArrowRight />
             </a>
             <p>

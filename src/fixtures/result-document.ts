@@ -186,7 +186,43 @@ export const sampleResultDocument: ResultDocument = {
     "점검 순서를 변경한 뒤 불량 건수 또는 검사 시간이 실제로 달라졌나요?",
     "팀장이나 작업자가 변경된 방식에 대해 남긴 피드백이 있나요?",
   ],
-  consultingAdvice: [],
+  // Was empty, so the PRO advice panel rendered blank on the one screen used
+  // to show what PRO is. Written to match the rest of this sample — the same
+  // 현대모비스 생산관리 application, the same quality-inspection experience.
+  consultingAdvice: [
+    {
+      id: "sample-advice-1",
+      kind: "strengthen",
+      title: "개선 활동의 결과를 확인 가능한 범위에서 덧붙이세요",
+      guidance: "작업 순서를 바꾼 뒤 재작업 요청이나 검사 시간이 어떻게 달라졌는지 한 문장을 더하세요. 정확한 수치가 없으면 '반복 지적이 줄었다'처럼 확인 가능한 변화로 써도 됩니다.",
+      rationale: "행동은 구체적인데 결과가 비어 있어, 읽는 사람이 이 개선이 실제로 통했는지 판단할 수 없습니다.",
+      priority: "high",
+    },
+    {
+      id: "sample-advice-2",
+      kind: "reframe",
+      title: "지원동기를 회사가 실제로 하는 일에 걸어 주세요",
+      guidance: "공고에 적힌 '데이터 기반 공정 개선'을 그대로 근거로 삼아, 본인이 검사 기준과 실제 작업을 대조했던 경험과 이어 붙이세요.",
+      rationale: "지금 지원동기는 회사 이름만 바꾸면 동종업계 어디에나 낼 수 있습니다.",
+      priority: "high",
+    },
+    {
+      id: "sample-advice-3",
+      kind: "clarify",
+      title: "팀 성과와 본인 몫을 한 문장으로 나누세요",
+      guidance: "'팀에서 개선했다'와 '내가 무엇을 판단하고 무엇을 실행했다'를 분리해 쓰세요. 팀 성과는 그대로 두고 본인 행동만 한 줄 더하면 됩니다.",
+      rationale: "면접에서 가장 먼저 들어오는 질문이 '그중 본인은 무엇을 하셨나요'입니다.",
+      priority: "medium",
+    },
+    {
+      id: "sample-advice-4",
+      kind: "structure",
+      title: "2번과 3번 문항의 경험을 나누세요",
+      guidance: "품질 개선 경험은 2번에서만 자세히 쓰고, 3번은 협업이나 갈등 조정처럼 다른 면이 드러나는 경험으로 바꾸세요.",
+      rationale: "같은 경험이 두 문항에 걸쳐 있으면 지원자가 가진 경험의 폭이 실제보다 좁아 보입니다.",
+      priority: "medium",
+    },
+  ],
   interviewQuestions: [
     {
       id: "interview-1",

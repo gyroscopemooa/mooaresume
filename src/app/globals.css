@@ -90,3 +90,7 @@ body{zoom:var(--app-scale)}
    down; this bridges it without moving anything. */
 .nav-drop:before{content:"";position:absolute;left:0;right:0;top:-10px;height:10px}
 @media(max-width:760px){.nav-drop{display:none}}
+.cta-actions{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.cta-secondary{display:inline-flex;align-items:center;gap:7px;color:#a9d4c1;font-size:13.5px;font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.cta-secondary:hover{color:#fff}
+@media(max-width:760px){.cta-actions{align-items:flex-start}}
