@@ -2295,3 +2295,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/app/analyze/page.tsx`, `docs/removed-analyze-mock.tsx.txt`(신규) on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - Rollback/recovery reference: 보존 파일의 내용을 `page.tsx`로 되돌리면 원상복구됩니다.
+
+## 2026-08-24 — Claude: 결제 직전 `샘플 보기`가 샘플이 아니었던 것
+
+- Agent/session: Claude. 사용자 질문: `/analysis/prepare`의 `결제 후 결과 화면 샘플 보기` 버튼을 남기는 게 나은지.
+- Status: completed. 마이그레이션 없음.
+- **남기는 것이 맞습니다.** 결제 직전에 `내가 받을 게 뭔데?`가 가장 큰 망설임이고, 그것을 보여주는 것은 정직한 설득입니다. 다만 두 가지가 어긋나 있었습니다.
+- **`/result`는 샘플이 아닐 수 있습니다.** id가 없으면 그 사람의 **가장 최근 분석**을 가져오는 구조라, 이미 분석해 본 사람이 `샘플 보기`를 누르면 자기 예전 결과가 나왔습니다. 항상 샘플인 `/sample`로 바꿨습니다.
+- **같은 탭에서 이동했습니다.** 결제 버튼 바로 아래에서 링크를 따라가면 그대로 결제 이탈입니다. 새 탭으로 열게 했습니다.
+- Files/branch: `src/components/analysis-preparation.tsx` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
