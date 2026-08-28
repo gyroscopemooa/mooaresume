@@ -2239,3 +2239,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `supabase/migrations/20260824110000_referral_reward_matches_purchase.sql`(신규), `src/domain/referral.ts`, `src/domain/referral.test.ts`, `src/server/analysis/referral-migration.test.ts`, `src/components/referral-panel.tsx`, `src/app/refer/page.tsx` on `main`.
 - Validation: `npx vitest run` 651 passed(신규 1건 + 문구 검증 2건), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - Rollback/recovery reference: `20260824090000`의 함수를 다시 실행하면 고정 PRO로 돌아갑니다. 커밋 이전 상태는 `80d3482`.
+
+## 2026-08-24 — Claude: 받은 이용권을 볼 수 있는 곳 (`/refer` 지갑)
+
+- Agent/session: Claude. 사용자 질문: 지급은 됐는데 **어떻게 쓰는지, 몇 장 있는지** 볼 데가 없다.
+- Status: completed. 마이그레이션 없음.
+- 이용권은 **쓰이는 순간에만** 보였습니다 — 결제 화면이 그 상품의 것을 하나 찾아보고, 없으면 아무 말도 하지 않았습니다. `지급되었습니다`를 듣고도 확인할 곳이 없었습니다.
+- `/refer`에 **상품별 보유 수**를 넣었습니다(QUICK·PRO·FINAL 각각). 합쳐서 `이용권 2장`으로 적으면 **숫자가 없느니만 못합니다** — 둘은 서로 바꿔 쓸 수 없기 때문입니다.
+- 가장 많이 오해하는 지점을 함께 적었습니다: **QUICK 이용권으로 PRO 분석을 시작할 수 없습니다.** 결제 화면에서 알게 되는 것보다 여기서 아는 편이 낫습니다.
+- Files/branch: `src/components/credit-wallet.tsx`·`.module.css`(신규), `src/app/refer/page.tsx` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.

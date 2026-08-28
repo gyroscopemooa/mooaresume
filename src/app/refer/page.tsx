@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HeaderAccount } from "@/components/header-account";
 import { ReferralPanel } from "@/components/referral-panel";
 import { ReferralCodeEntry } from "@/components/referral-code-entry";
+import { CreditWallet } from "@/components/credit-wallet";
 import styles from "./refer.module.css";
 
 /**
@@ -35,6 +36,10 @@ export default function ReferPage() {
         </div>
 
         <ReferralPanel standalone />
+
+        {/* Where a granted credit becomes visible. Until now it appeared only
+            at the moment it was spent. */}
+        <CreditWallet />
 
         {/* The other direction. Someone who was handed a code will come here
             looking for where to put it, and the only field for it used to be
