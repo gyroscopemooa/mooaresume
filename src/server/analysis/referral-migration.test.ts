@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync("supabase/migrations/20260824080000_referrals.sql", "utf8");
+const anyPurchase = readFileSync("supabase/migrations/20260824100000_referral_any_purchase.sql", "utf8");
 
 describe("추천 마이그레이션", () => {
   it("입력만으로는 아무것도 지급하지 않는다", () => {
@@ -29,9 +30,16 @@ describe("추천 마이그레이션", () => {
     expect(migration).toContain("REFERRAL_ALREADY_USED");
   });
 
-  it("첫 결제에만 적용된다", () => {
+  it("이전에 결제한 적이 있어도 추천을 받을 수 있다", () => {
+    // The original refused a code from anyone who had already paid, which
+    // punished the referrer for the friend having been a customer already.
+    // One-referral-per-account is still enforced by the primary key above.
     expect(migration).toContain("REFERRAL_NOT_FIRST_PURCHASE");
-    expect(migration).toContain("from public.billing_orders where owner_user_id = current_user_id and status = 'PAID'");
+    expect(anyPurchase).not.toContain("REFERRAL_NOT_FIRST_PURCHASE");
+    expect(anyPurchase).toContain("create or replace function public.apply_referral_code");
+    expect(anyPurchase).toContain("on conflict (referred_user_id) do nothing");
+    expect(anyPurchase).toContain("REFERRAL_ALREADY_USED");
+    expect(anyPurchase).toContain("REFERRAL_SELF");
   });
 
   it("웹훅이 두 번 와도 이용권은 한 장이다", () => {

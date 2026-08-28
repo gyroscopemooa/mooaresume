@@ -60,5 +60,10 @@ describe("약속한 조건", () => {
     expect(REFERRAL_TERMS.join(" ")).toContain("코드 입력만으로는 지급되지 않습니다");
     expect(REFERRAL_TERMS.join(" ")).toContain("실제로 결제");
     expect(REFERRAL_TERMS.join(" ")).toContain("본인 코드");
+    // The limit is one referral per person, not one per lifetime of never
+    // having bought before. Saying "첫 결제" would promise a rule the function
+    // no longer enforces.
+    expect(REFERRAL_TERMS.join(" ")).toContain("이전에 결제한 적이 있어도 괜찮습니다");
+    expect(REFERRAL_TERMS.join(" ")).not.toContain("첫 결제");
   });
 });

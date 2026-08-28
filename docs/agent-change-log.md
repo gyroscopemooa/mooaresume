@@ -2191,3 +2191,30 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: targeted ESLint passed; `git diff --check` passed.
 - Rollback/recovery reference: restore the CSS from `e3785ae`.
 - User decision: user requested the launch bar itself to look newer.
+
+## 2026-08-24 — Claude: 추천을 첫 결제로 제한하던 조건 제거
+
+- Agent/session: Claude. 사용자 지적: 1·2번 결제한 사람도 추천코드를 넣고 결제했으면 추천인에게 줘야 하는 것 아닌가. 막아야 할 것은 **한 사람이 추천 보상을 만드는 횟수**이지 첫 결제 여부가 아니다.
+- Status: completed. **마이그레이션 하나 추가**(`20260824100000_referral_any_purchase.sql`).
+
+### 지적이 맞습니다 — 두 규칙을 섞어 놨습니다
+
+- 원래 함수는 **이미 결제한 적 있는 계정의 코드 입력을 거절**했습니다. 여기에 서로 다른 두 가지가 섞여 있었습니다.
+  - **한 계정은 평생 한 번만 추천받는다** — 이게 진짜 방어선이고, 그건 `referral_attributions.referred_user_id` **기본키**가 이미 강제합니다.
+  - **추천받는 사람이 이전에 결제한 적 없어야 한다** — 이건 **아무것도 지키지 못하면서**, 친구가 기존 고객이었다는 이유로 **추천인이 받아야 할 보상을 뺏습니다.**
+- 3월에 QUICK을 산 사람이 8월에 친구 권유로 PRO를 사는 것은 **추천 프로그램이 존재하는 바로 그 경우**입니다. 조건을 뺐습니다.
+
+### 빼도 구멍이 생기지 않습니다
+
+- `referred_user_id`가 여전히 기본키이므로 **한 계정은 평생 한 번, 한 사람에게만** 추천받습니다.
+- 새로 생기는 경우는 **친구 둘이 서로를 추천하고 각자 실제로 결제하는 것**뿐인데, 그건 판매 두 건입니다.
+- 나머지 방어는 그대로입니다: 본인 코드 금지, 0원 주문 거절, `reward_credit_id` unique(웹훅 중복 방지).
+
+### 화면 문구도 맞췄습니다
+
+- `한 사람이 처음 결제할 때 한 번만 인정됩니다` → **`한 사람당 한 번만 인정됩니다. 이전에 결제한 적이 있어도 괜찮습니다.`**
+- 테스트가 `첫 결제`라는 표현이 문구에 **없는지** 확인합니다. 함수가 더는 강제하지 않는 규칙을 화면이 약속하면 안 됩니다.
+- `REFERRAL_NOT_FIRST_PURCHASE` 안내 문장은 남겨 뒀습니다. 옛 함수가 아직 도는 배포에서 일반 문장으로 흘러가지 않게 하기 위해서입니다.
+- Files/branch: `supabase/migrations/20260824100000_referral_any_purchase.sql`(신규), `src/domain/referral.ts`, `src/domain/referral.test.ts`, `src/server/analysis/referral-migration.test.ts` on `main`.
+- Validation: `npx vitest run` 650 passed(신규 5건), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: `20260824080000`의 `apply_referral_code`를 다시 실행하면 이전 규칙으로 돌아갑니다. 커밋 이전 상태는 `a1dd59d`.
