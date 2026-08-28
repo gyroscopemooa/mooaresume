@@ -1,0 +1,35 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { BarChart3, CheckCircle2, Compass, FileText, LockKeyhole, Sparkles } from "lucide-react";
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
+import { createClient } from "@/lib/supabase/client";
+import { scoreWorkStyle, type WorkStyleAnswer } from "@/domain/career-assessment";
+import { scoreCareerInterest, type InterestAnswer } from "@/domain/career-interest";
+import { scoreWorkValues, type WorkValueAnswer } from "@/domain/career-work-values";
+import styles from "./career-profile-dashboard.module.css";
+
+const subscribe = () => () => undefined;
+const keys = { workStyle: "mooa-work-style-answers-v1", interest: "mooa-career-interest-answers-v1", values: "mooa-career-work-values-v1" } as const;
+type AuthState = "loading" | "guest" | "signed-in";
+function parse<T, R>(raw: string | null, score: (answers: T) => R) { try { return raw ? score(JSON.parse(raw) as T) : null; } catch { return null; } }
+
+export function CareerProfileDashboard() {
+  const [auth, setAuth] = useState<AuthState>("loading");
+  useEffect(() => { const timer = window.setTimeout(() => { void (async () => { try { const { data } = await createClient().auth.getUser(); setAuth(data.user ? "signed-in" : "guest"); } catch { setAuth("guest"); } })(); }, 0); return () => window.clearTimeout(timer); }, []);
+  const workRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem(keys.workStyle), () => null);
+  const interestRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem(keys.interest), () => null);
+  const valuesRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem(keys.values), () => null);
+  const workStyle = useMemo(() => parse<Record<string, WorkStyleAnswer>, ReturnType<typeof scoreWorkStyle>>(workRaw, scoreWorkStyle), [workRaw]);
+  const interest = useMemo(() => parse<Record<string, InterestAnswer>, ReturnType<typeof scoreCareerInterest>>(interestRaw, scoreCareerInterest), [interestRaw]);
+  const values = useMemo(() => parse<Record<string, WorkValueAnswer>, ReturnType<typeof scoreWorkValues>>(valuesRaw, scoreWorkValues), [valuesRaw]);
+  if (auth === "loading") return <main className={styles.loading}>내 커리어 프로필을 확인하고 있어요.</main>;
+  if (auth === "guest") return <main className={styles.guest}><LockKeyhole /><p>CAREER PROFILE</p><h1>내 결과를 계속 보려면<br />로그인해 주세요.</h1><span>검사는 로그인 없이 시작할 수 있어요. 로그인하면 이 기기에서 완료한 결과를 종합 프로필에 모아 볼 수 있습니다.</span><div><Link href="/entry">로그인하기</Link><Link href="/career">검사 홈으로</Link></div></main>;
+  const completed = [workStyle, interest, values].filter(Boolean).length;
+  if (!completed) return <DashboardShell><section className={styles.empty}><Compass /><p>CAREER PROFILE / EMPTY</p><h1>아직 모인 탐색 결과가 없어요.</h1><span>하나의 검사부터 시작하면, 이곳에 실제 응답 그래프와 다음 행동이 차례로 쌓입니다.</span><Link href="/career/interest">직업흥미 탐색 시작</Link></section></DashboardShell>;
+  const charts = [workStyle && { label: "업무성향", method: "IPIP BIG FIVE", data: workStyle.map((item) => ({ label: item.label, score: item.score })), href: "/career/work-style/result" }, interest && { label: "직업흥미", method: "RIASEC · BETA", data: interest.map((item) => ({ label: item.label, score: item.score })), href: "/career/interest/result" }, values && { label: "직업가치", method: "WORK VALUES · BETA", data: values.map((item) => ({ label: item.label, score: item.score })), href: "/career/values" }].filter(Boolean) as { label: string; method: string; data: { label: string; score: number }[]; href: string }[];
+  return <DashboardShell><div className={styles.dashTop}><div><p>CAREER PROFILE / PRIVATE</p><h1>나의 커리어 탐색</h1></div><span>{completed} / 3 COMPLETE</span></div><section className={styles.summary}><article><strong>{completed}</strong><span>완료한 탐색</span></article><article><strong>{charts.reduce((sum, chart) => sum + chart.data.length, 0)}</strong><span>그래프로 보는<br />응답 축</span></article><article><strong>01</strong><span>다음 단계<br />실제 경험 연결</span></article></section><section className={styles.chartGrid}>{charts.map((chart) => <article key={chart.label}><div><small>{chart.method}</small><h2>{chart.label}</h2></div><div className={styles.chart}><ResponsiveContainer width="100%" height="100%"><RadarChart data={chart.data}><PolarGrid stroke="#334039" /><PolarAngleAxis dataKey="label" tick={{ fill: "#b8c5bc", fontSize: 9 }} /><Radar dataKey="score" stroke="#4edea3" fill="#10b981" fillOpacity={0.25} /></RadarChart></ResponsiveContainer></div><Link href={chart.href}>자세히 보기</Link></article>)}</section><section className={styles.apply}><div><small>NEXT STEP</small><h2>그래프는 결론이 아니라<br />경험을 고르는 단서입니다.</h2><p>내가 몰입했던 업무환경, 해 본 활동, 지원 공고에서 확인할 조건을 실제 경험과 함께 정리해 보세요.</p></div><Link href="/onboarding"><FileText />자소서 경험과 연결하기</Link></section><p className={styles.note}>이 그래프는 현재 브라우저에서 완료한 검사 응답을 계산한 결과입니다. 계정 저장과 다른 기기 동기화는 데이터베이스 연결 후 제공됩니다.</p></DashboardShell>;
+}
+
+function DashboardShell({ children }: { children: React.ReactNode }) { return <main className={styles.shell}><aside className={styles.sidebar}><Link href="/" className={styles.brand}>MOOA<span>.</span></Link><p>CAREER<br />INTELLIGENCE</p><nav><span className={styles.active}><BarChart3 />내 커리어 프로필</span><Link href="/career"><Compass />검사 시작하기</Link><Link href="/career/saved"><CheckCircle2 />저장된 결과</Link><Link href="/onboarding"><FileText />지원서 연결</Link></nav><small>PRIVATE PROFILE<br />LOGGED-IN VIEW</small></aside><section className={styles.content}>{children}</section></main>; }

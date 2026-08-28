@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CareerHomeDashboard } from "@/components/career-home-dashboard";
+import { CareerPublicHome } from "@/components/career-public-home";
 
 export const metadata: Metadata = {
   title: "무료 커리어 검사 | 업무성향·직업흥미·직업가치",
@@ -7,4 +7,4 @@ export const metadata: Metadata = {
   alternates: { canonical: "/career" },
 };
 
-export default function CareerPage() { return <CareerHomeDashboard />; }
+export default function CareerPage() { return <CareerPublicHome />; }
