@@ -84,6 +84,22 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
 })(window, document, "clarity", "script", "y66zftrtdb");`}
         </Script>
+        {/* Google Ads (gtag.js), AW-18415179469. Google's snippet asks for the
+            <head>; afterInteractive puts it at the end of <body> instead, which
+            is what the two tags above do and what keeps a third-party library
+            off the critical path. Conversion tracking is unaffected — the tag
+            only has to run, not to run first. */}
+        <Script id="google-ads-lib" strategy="afterInteractive" src="https://www.googletagmanager.com/gtag/js?id=AW-18415179469" />
+        <Script id="google-ads-config" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+// Google's snippet leaves gtag as a bare function declaration, which is global
+// only because the tag is a classic script. Assigning it as well means a
+// conversion call from a component finds it either way.
+window.gtag = gtag;
+gtag('js', new Date());
+gtag('config', 'AW-18415179469');`}
+        </Script>
       </body>
     </html>
   );

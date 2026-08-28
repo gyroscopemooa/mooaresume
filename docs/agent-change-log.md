@@ -2568,3 +2568,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `src/application/application-case-handoff.ts`, `src/domain/usage-entitlement.ts`, `src/server/billing/polar-checkout.ts`, `src/server/billing/polar-checkout-reconciliation.ts`, `src/app/api/webhooks/polar/route.ts`, `src/app/api/checkouts/quick/status/route.ts`, `src/server/billing/quick-checkout-service.ts`, `src/components/quick-checkout-return.tsx`, `src/components/result-workspace-complete.tsx`, `src/server/ai/quick/validator.ts`, 관련 테스트 픽스처 3건, `.env.example`, `src/domain/final-availability.entry.test.ts` on `main`.
 - Validation: `npx vitest run` 673 passed (+3), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - 보존: `result-workspace-{v2,claude-restored,codex-restored}.tsx`의 `=== "PRO"` 필터는 **의도적으로 그대로 뒀습니다.** 보관용 변형이라 현재 흐름에 쓰이지 않습니다.
+
+## 2026-08-24 — Claude: Google Ads 태그 설치 (AW-18415179469)
+
+- Agent/session: Claude. 사용자가 Google Ads 전환 측정 태그 스니펫을 전달.
+- Status: completed. 마이그레이션 없음.
+
+- `src/app/layout.tsx`에 `next/script`로 추가했습니다. **네이버·Clarity 태그와 같은 방식**(`afterInteractive`)입니다.
+- Google 안내는 `<head>` 바로 다음을 요구하지만 `</body>` 끝에 넣었습니다. **전환 측정은 태그가 실행되기만 하면 되지 먼저 실행될 필요는 없고**, 서드파티 라이브러리를 첫 렌더 경로에서 빼는 편이 낫습니다. 기존 두 태그도 같은 자리입니다.
+- `window.gtag = gtag;`를 한 줄 더했습니다. Google 스니펫의 `function gtag(){}`는 클래식 스크립트라서 전역이 되는 것뿐이라, 컴포넌트에서 전환 이벤트를 부를 때 확실히 찾히도록 명시했습니다.
+- 로컬 확인: `typeof window.gtag === "function"`, `dataLayer` 4건, `gtag/js?id=AW-...` 스크립트 태그 존재.
+- **아직 안 한 것:** 전환 이벤트(`gtag('event','conversion',...)`) 연결. 지금은 페이지뷰·리마케팅만 잡힙니다. 결제 완료 지점에 붙이려면 Google Ads에서 전환 라벨을 발급받아야 합니다.
+- **EEA 동의 모드**는 넣지 않았습니다. 현재 대상이 국내이고, 동의 모드는 동의 배너와 함께 설계해야 의미가 있습니다.
+- Files/branch: `src/app/layout.tsx` on `main`.
+- Validation: `npx vitest run` 673 passed, `npx tsc --noEmit` clean, `npx eslint src/app/layout.tsx` 0건, `npx next build` 클린.
