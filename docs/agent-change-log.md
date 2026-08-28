@@ -2351,3 +2351,22 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 신뢰 문구 세 개는 모바일에서 세로로 쌓습니다(가로로는 줄바꿈이 지저분했습니다).
 - Files/branch: `src/app/page.tsx`, `src/app/globals.css`, `src/components/landing-entry.module.css` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 375px에서 제목이 모바일용으로 바뀌고 `시작하기`가 첫 화면 안에 들어오는 것, 1280px에서 기존 제목·문단이 그대로인 것 확인.
+
+## 2026-08-24 — Claude: 샘플을 링크에서 버튼으로
+
+- Agent/session: Claude. 사용자 요청: 모바일에서 `자소서 첨삭` 문구 지우고 예시 버튼 크게, 데스크톱에서도 `무료로 시작하기`와 같은 크기의 버튼으로 색만 다르게.
+- Status: completed. 마이그레이션 없음.
+
+### 밑줄 링크 → 버튼
+
+- 샘플은 **두 번째 문**이지 각주가 아닙니다. `무료로 시작하기`와 **같은 폭·같은 높이**(1160×53 vs 1160×54)로 맞추고 **색만** 다르게 했습니다.
+- 색은 잉크빛 파랑 `#1f4f8b`. 초록을 하나 더 쓰면 두 버튼이 **하나의 컨트롤을 반으로 자른 것**처럼 보이고, 이 파랑은 제목과 다투지 않을 만큼 어둡습니다.
+- 문구도 줄였습니다: `첨삭 완성본 샘플 예시 보기` → `첨삭 예시 보기`. 버튼 안에서는 짧은 쪽이 읽힙니다.
+
+### 모바일 제목: 지우되 없애지는 않음
+
+- 요청대로 화면에서 **보이지 않게** 했지만 **DOM에서는 지우지 않았습니다.** `h1`이 하나도 없는 문서는 검색엔진이 요약할 수 없고, 그 페이지가 노리는 검색어가 `자소서 첨삭`입니다.
+- `.visually-hidden`으로 처리해 크롤러와 스크린리더는 읽고 화면 자리는 차지하지 않습니다. 모바일 첫 화면은 이제 **입력칸 + 시작하기 + 첨삭 예시 보기** 셋뿐입니다.
+- 375×812에서 두 버튼 모두 첫 화면 안(시작하기 669, 예시 776)입니다.
+- Files/branch: `src/app/page.tsx`, `src/app/globals.css` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 1280px에서 버튼 폭 일치, 375px에서 제목 높이 1px·가로 넘침 없음 확인.
