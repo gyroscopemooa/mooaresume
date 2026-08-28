@@ -2509,3 +2509,15 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 높이를 520px로 줄이고 아래쪽에 마스크 그라데이션을 넣어 **끊기지 않고 사라지게** 했습니다. 데스크톱은 그대로(620px, 마스크 없음).
 - Files/branch: `src/app/globals.css` on `main`.
 - Validation: `npx vitest run` 667 passed, `npx tsc --noEmit` clean, `npx eslint src/app` 0건, `npx next build` 클린. 375px에서 예시 `#eef3fa`/남색 글씨, 시작 `#176b4a`/흰 글씨, 마스크 적용 확인. 1280px에서 예시 꽉 찬 남색·흰 글씨, 마스크 `none` 확인.
+
+## 2026-08-24 — Claude: 예시 버튼을 하늘색 채움으로
+
+- Agent/session: Claude. 사용자 피드백: 옅게 뺀 버전은 별로, 파랑이 맞고 하늘색으로 톤 맞출 것.
+- Status: completed. 마이그레이션 없음.
+
+- 남색 `#1f4f8b` → 하늘색 `#1e7bb8`, 모바일·데스크톱 **둘 다 꽉 찬 채움**으로 통일했습니다.
+- 직전 커밋의 옅은 배경(`#eef3fa`)은 되돌렸습니다. **화면 위쪽의 물 빠진 버튼은 비활성처럼 보입니다.**
+- 위계는 색을 빼서가 아니라 **브랜드 초록보다 밝다**는 것으로 만듭니다. 밝은 파랑이 먼저 오고 짙은 초록이 뒤에 오면 초록이 여전히 무겁게 읽힙니다.
+- 흰 글씨 대비 4.6:1로 본문 기준을 넘깁니다(직전 남색은 대비는 높았지만 초록보다 어두워 위계가 뒤집혔습니다).
+- Files/branch: `src/app/globals.css` on `main`.
+- Validation: `npx vitest run` 667 passed, `npx tsc --noEmit` clean, `npx next build` 클린. 375px에서 `rgb(30,123,184)`/흰 글씨, 예시(266~322)·시작(727~781) 모두 첫 화면 안, 가로 넘침 없음.

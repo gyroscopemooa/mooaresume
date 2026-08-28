@@ -96,11 +96,12 @@ body{zoom:var(--app-scale)}
 @media(max-width:760px){.cta-actions{align-items:flex-start}}
 /* Hero: the sample button and the phone-sized heading.
    The sample is a second door, not a footnote, so it matches the start button
-   in size and differs only in colour. Ink-blue rather than another green: two
-   greens side by side read as one control split in half, and the blue is dark
-   enough to sit under the same headline without competing with it. */
-.hero-sample{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:12px 0 0;padding:15px;border-radius:10px;background:#1f4f8b;color:#fff;font-weight:800;font-size:15px;box-shadow:0 7px 20px rgba(31,79,139,.18);transition:background 140ms ease,transform 120ms ease}
-.hero-sample:hover{background:#173d6c;transform:translateY(-1px)}
+   in size and differs only in colour. A sky blue rather than another green —
+   two greens side by side read as one control split in half — and lighter than
+   the brand green rather than darker, which is what keeps it the second choice
+   even when it sits first on a phone. Dark enough for white text at 4.6:1. */
+.hero-sample{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:12px 0 0;padding:15px;border-radius:10px;background:#1e7bb8;color:#fff;font-weight:800;font-size:15px;box-shadow:0 7px 20px rgba(30,123,184,.22);transition:background 140ms ease,transform 120ms ease}
+.hero-sample:hover{background:#1a6ba0;transform:translateY(-1px)}
 /* In the DOM for crawlers and screen readers, out of the way on screen. */
 .visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
 .hero-mobile{display:none}
@@ -125,12 +126,10 @@ body{zoom:var(--app-scale)}
   /* A chip rather than a second line of heading: it reads as the thing you are
      about to do, and it keeps the subtitle from competing with the title. */
   .hero-mobile-sub{display:inline-flex;align-items:center;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--mint,#eaf5ef);color:var(--green-dark,#0f4b33);font-size:15px;font-weight:800;letter-spacing:-.02em}
-  /* Above the input it has to stop outranking the thing it sits above. Solid
-     navy first and solid green last reads as "the blue one is the button and
-     the green one is the alternative" — exactly backwards. Tinted rather than
-     outlined so it still reads as pressable. */
-  .hero-sample{order:-1;font-size:15px;padding:15px;margin:0;background:#eef3fa;border:1px solid #d5e2f1;color:#1f4f8b;box-shadow:none}
-  .hero-sample:hover{background:#e3ecf7;transform:none}
+  /* Stays a filled button up here. The hierarchy is carried by the colour
+     being lighter than the green, not by draining it — a washed-out slab at
+     the top of the screen just looks disabled. */
+  .hero-sample{order:-1;font-size:16px;padding:16px;margin:0}
   /* The aura is a fixed 620px box with overflow hidden. On a phone that bottom
      edge lands mid-hero and the blur ends in a straight line across the page;
      the mask lets it fall off instead of stopping. */
