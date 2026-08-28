@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, CircleHelp, FileText, ShieldCheck } from "lucide-react";
 import styles from "./page.module.css";
@@ -10,6 +11,21 @@ const questions = [
   ["AI가 없는 경험을 만들어 내나요?", "만들지 않습니다. 확인되지 않은 역할·성과·수치는 사용하지 않고, 필요한 경우 확인 질문으로 남깁니다."],
   ["작성 스타일은 언제 고르나요?", "자료를 먼저 넣은 뒤 마지막에 담백하게·균형 있게·강점 살리기 중 하나를 선택합니다."],
 ];
+
+/**
+ * Its own title and description, because it is in the sitemap and was
+ * inheriting the site-wide ones — so the page that actually answers "자소서
+ * 첨삭 어떻게 하나요" looked, to a crawler, like a second copy of the home page.
+ */
+export const metadata: Metadata = {
+  title: "AI 자소서 첨삭 이용 방법과 자주 묻는 질문",
+  description: "자기소개서 첨삭을 받는 순서, 채용공고·이력서를 넣는 방법, 요금과 환불, 자주 막히는 부분을 한 곳에 정리했습니다.",
+  alternates: { canonical: "/guide" },
+  openGraph: {
+    title: "AI 자소서 첨삭 이용 방법 | MOOA Resume",
+    description: "자소서 첨삭 순서, 공고·이력서 활용법, 요금과 자주 묻는 질문.",
+  },
+};
 
 export default function GuidePage() {
   return <main className={styles.page}>

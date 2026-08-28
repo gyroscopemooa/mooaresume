@@ -2249,3 +2249,29 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 가장 많이 오해하는 지점을 함께 적었습니다: **QUICK 이용권으로 PRO 분석을 시작할 수 없습니다.** 결제 화면에서 알게 되는 것보다 여기서 아는 편이 낫습니다.
 - Files/branch: `src/components/credit-wallet.tsx`·`.module.css`(신규), `src/app/refer/page.tsx` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+
+## 2026-08-24 — Claude: 유료 진행 선택지, 샘플 표기 오류, 검색 노출 보강
+
+- Agent/session: Claude. 사용자 요청 세 가지.
+- Status: completed. 마이그레이션 없음.
+
+### QUICK 결제인데 PRO 이용권이 나온 것
+
+- 맞습니다 — `20260824110000_referral_reward_matches_purchase.sql`을 적용하기 **전에** 테스트하셨기 때문입니다. 적용하면 산 등급과 같은 이용권이 나갑니다.
+
+### 이용권이 있어도 결제할 수 있게
+
+- 이용권이 있으면 **선택지가 하나뿐**이었습니다. 다른 지원서에 아껴 두고 싶거나, 무료 실행이 같은 실행인지 못 믿는 사람에게 **길이 없었습니다.**
+- 버튼 아래에 `이용권을 아끼고 결제해서 진행할래요` 토글을 뒀습니다. 눈에 띄지 않는 크기로 — 기본은 여전히 이용권 사용입니다.
+
+### 결과 화면이 유료 결과에도 `샘플`이라고 적고 있었습니다
+
+- 준비도 카드가 `지원서 준비도 · 샘플`로 **고정**되어 있었습니다. 화면이 목업이던 시절의 잔재인데, **방금 돈을 낸 사람에게 그 점수가 가짜라고 말하고** 있었습니다. `isSample`일 때만 붙게 고쳤습니다.
+
+### 검색 노출 (문구·디자인은 그대로, 추가만)
+
+- 키워드를 **롱테일 중심으로** 넓혔습니다. `자소서 첨삭` 단독으로 치는 사람은 거의 없고 `무료 자소서 첨삭 사이트`, `자소서 첨삭 추천`처럼 칩니다.
+- FAQ 구조화 데이터에 네 개를 더했습니다: **비용 / 무료로 받는 법 / 사람 첨삭과의 차이 / 이력서도 보는지.** 모두 사이트가 이미 화면에서 하고 있는 답입니다.
+- `/guide`에 **자기 title·description·canonical**을 줬습니다. 사이트맵에는 있는데 사이트 공통 제목을 물려받아, 크롤러 눈에는 **홈페이지의 사본**으로 보였습니다.
+- Files/branch: `src/components/application-case-handoff.tsx`·`.module.css`, `src/components/result-workspace-complete.tsx`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/guide/page.tsx` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.

@@ -429,7 +429,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
       )}
 
       {view === "overview" && <section className={styles.overview}>
-        <div className={styles.score}><div><small>지원서 준비도 · 샘플</small><strong>{result.readiness.score}<span>/100</span></strong><em>{result.readiness.label}</em></div><p>{result.readiness.summary}</p></div>
+        <div className={styles.score}><div>{/* Said "· 샘플" on every result, paid ones included — telling a customer
+              the score they just bought was a mock. */}
+          <small>지원서 준비도{result.isSample ? " · 샘플" : ""}</small><strong>{result.readiness.score}<span>/100</span></strong><em>{result.readiness.label}</em></div><p>{result.readiness.summary}</p></div>
         <div className={styles.overviewGrid}>
           <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>핵심 개선점 3가지</h2>{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 수정 내용 확인 <ArrowRight/></button></section>
           <aside>

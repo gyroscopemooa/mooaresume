@@ -16,7 +16,19 @@ export const metadata: Metadata = {
   creator: "MOOA Resume",
   publisher: "MOOA Resume",
   category: "employment",
-  keywords: ["무아레쥬메", "무아 레쥬메", "MOOA Resume", "mooaresume", "자소서 첨삭", "자기소개서 첨삭", "AI 자소서", "AI 자기소개서", "자소서 첨삭 사이트", "자소서 AI 첨삭", "취업 준비", "대기업 자소서", "생산직 자소서", "채용공고 분석"],
+  // Long-tail terms alongside the head ones. Nobody types "자소서 첨삭" alone —
+  // they type "무료 자소서 첨삭 사이트" or "자소서 첨삭 어디서 받나요".
+  keywords: [
+    "무아레쥬메", "무아 레쥬메", "MOOA Resume", "mooaresume",
+    "자소서 첨삭", "자기소개서 첨삭", "자소서 첨삭 사이트", "자소서 첨삭 추천",
+    "무료 자소서 첨삭", "자소서 무료 첨삭", "자기소개서 무료 첨삭",
+    "AI 자소서", "AI 자기소개서", "AI 자소서 첨삭", "자소서 AI 첨삭", "AI 자기소개서 첨삭",
+    "자소서 첨삭 후기", "자소서 첨삭 잘하는곳", "자소서 대필 아닌 첨삭",
+    "자기소개서 작성법", "자소서 쓰는 법", "지원동기 쓰는 법", "자소서 첨삭 받는 법",
+    "취업 준비", "신입 자소서", "경력직 자소서", "대기업 자소서", "공기업 자소서",
+    "생산직 자소서", "현대자동차 생산직 자소서", "반도체 자소서",
+    "채용공고 분석", "이력서 자소서 교차검증", "면접 예상질문",
+  ],
   formatDetection: { email: false, address: false, telephone: false },
   icons: { icon: "/icon.svg", shortcut: "/icon.svg" },
   openGraph: {

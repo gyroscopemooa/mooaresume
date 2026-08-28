@@ -38,6 +38,9 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
   // a QUICK credit does not pay for a PRO run, and offering it would end in a
   // refusal after the case is already saved.
   const [availableCredit, setAvailableCredit] = useState(false);
+  // Lets someone with a credit pay anyway. They might be saving it for a
+  // different application, or simply not trust that a free run is the same run.
+  const [spendCredit, setSpendCredit] = useState(true);
   // A failed sign-in redirects here with the reason in the query string, and
   // nothing was reading it — the visitor saw a plain login screen with no sign
   // their link had just been rejected, so the natural next move was to request
@@ -227,7 +230,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
         // Says which of the two things is about to happen. "결제 페이지로
         // 이동합니다" in front of someone whose run is free is both wrong and
         // alarming.
-        setMessage(availableCredit
+        setMessage(availableCredit && spendCredit
           ? "입력 내용을 비공개로 저장하고 무료 이용권으로 분석을 시작합니다."
           : "입력 내용을 비공개로 저장하고 결제 페이지로 이동합니다.");
         if (analysisRunId) {
@@ -236,7 +239,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
             // to Polar when one exists is what made the free ticket look like
             // it did nothing: it was registered, and the next screen still
             // asked for money.
-            if (availableCredit) await startWithCredit(result.applicationCaseId, analysisRunId);
+            if (availableCredit && spendCredit) await startWithCredit(result.applicationCaseId, analysisRunId);
             else await beginCheckout(analysisRunId, wantedProduct);
           } catch (checkoutError) {
             setMessage(checkoutError instanceof Error ? checkoutError.message : "결제 페이지로 연결하는 중 오류가 발생했습니다.");
@@ -256,7 +259,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
       setBusy(true);
       setMessage("");
       try {
-        if (availableCredit && savedCaseId) await startWithCredit(savedCaseId, savedAnalysisRunId);
+        if (availableCredit && spendCredit && savedCaseId) await startWithCredit(savedCaseId, savedAnalysisRunId);
         else await beginCheckout(savedAnalysisRunId, wantedProduct);
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "결제 페이지로 연결하는 중 오류가 발생했습니다.");
@@ -273,7 +276,12 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
-      <button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
+      <button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
+      {availableCredit && (
+        <button type="button" className={styles.payInstead} onClick={() => setSpendCredit(!spendCredit)} disabled={busy}>
+          {spendCredit ? "이용권을 아끼고 결제해서 진행할래요" : "무료 이용권을 사용할래요"}
+        </button>
+      )}
       {(message || authError) && <p>{message || authError}</p>}
     </div>;
   }
