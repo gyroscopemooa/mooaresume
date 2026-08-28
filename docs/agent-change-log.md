@@ -2393,3 +2393,20 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 이 파일의 기존 700px가 아니라 **760px**에 넣었습니다 — 히어로와 같은 폭에서 같이 바뀌어야 700~760 구간에서 배너만 데스크톱 모양으로 남는 일이 없습니다.
 - Files/branch: `src/app/page.tsx`, `src/app/globals.css`, `src/app/one-click.module.css` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 375px에서 예시(266~324) → 제목(342~390) → 시작하기(676~730) 모두 첫 화면 안, 가로 넘침 없음. 1280px에서 눈썹·제목·문단·버튼 순서 전부 이전 그대로.
+
+## 2026-08-24 — Claude: 모바일 제목을 `나만의 취업 코치`로
+
+- Agent/session: Claude. 사용자 요청: `자기소개서 첨삭`이 투박하니 주제목 `나만의 취업 코치` + 부제목 `자기소개서 컨설팅 받기`, 크고 굵고 귀엽게.
+- Status: completed. 마이그레이션 없음.
+
+### 무엇이 바뀌었나
+
+- 모바일 `h1`이 **이름표에서 말 거는 문장**이 됐습니다: `나만의 취업 코치`. `취업 코치` 두 글자에 초록 그라데이션을 넣어 시선이 **누구를 위한 것인지**에 먼저 닿게 했습니다.
+- 부제목 `자기소개서 컨설팅 받기`는 **알약 모양 칩**입니다. 두 번째 제목 줄로 두면 주제목과 크기를 다투는데, 칩은 **지금 할 일**처럼 읽힙니다.
+- 42px / weight 900 / 자간 -.05em. 팔 길이에서 한 눈에 읽히는 무게입니다.
+
+### 검색어는 어디로 갔나
+
+- 제목에서 `자소서 첨삭`이 빠졌지만 **문서에서 빠진 건 아닙니다.** 같은 `h1` 안 숨김 span에 `자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭`이 그대로 있습니다. 크롤러는 읽고, 화면은 안 씁니다.
+- Files/branch: `src/app/page.tsx`, `src/app/globals.css` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 375px에서 예시(266) → 제목(342~443) → 시작하기(729~783) 전부 첫 화면 안, 가로 넘침 없음. 1280px에서 모바일 제목·칩 숨김, 기존 제목/눈썹 그대로.
