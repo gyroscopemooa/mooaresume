@@ -30,7 +30,10 @@ const lightWorkspaceCss = `
 .${styles.overview} p{color:#686962!important}.${styles.status}{color:#71726a!important}
 .${styles.dashboard}>article,.${styles.assessmentPanel},.${styles.profilePanel},.${styles.bottomGrid} article{background:#fff!important;border-color:#deded8!important}
 .${styles.panelHead} h2,.${styles.assessmentList} b,.${styles.bottomGrid} h2{color:#252622!important}.${styles.panelHead} small,.${styles.bottomGrid} small{color:#73756d!important}
-.${styles.radarPanel}>p,.${styles.assessmentList} small,.${styles.assessmentList} span,.${styles.bottomGrid} p{color:#666860!important}
+.${styles.radarPanel}>p,.${styles.bottomGrid} p{color:#666860!important}
+.${styles.assessmentList} small{color:#5f6861!important;font-family:var(--font-sans),sans-serif!important;font-size:9px!important;font-weight:750!important;letter-spacing:-.01em}
+.${styles.assessmentList} span{color:#4e5b52!important;font-family:var(--font-sans),sans-serif!important;font-size:10px!important;font-weight:650!important;letter-spacing:-.015em}
+.${styles.assessmentList} em{color:#465248!important;font-family:var(--font-sans),sans-serif!important;font-size:10px!important;font-weight:750!important;letter-spacing:-.01em}
 .${styles.radarPlaceholder} i{border-color:#cdd6cf!important}.${styles.radarPlaceholder} i:nth-child(4),.${styles.radarPlaceholder} i:nth-child(5){background:#cdd6cf!important}.${styles.radarPlaceholder} b{color:#7d887f!important}
 .${styles.recordList}{border-color:#e3e3de!important}.${styles.recordList}>div{border-color:#e3e3de!important}.${styles.recordList} i,.${styles.recordList} b{color:#787d77!important}.${styles.recordList} .${styles.done}{color:#16724d!important}
 .${styles.assessmentList}>a{border-color:#e3e3de!important}.${styles.assessmentList}>a:hover{background:#f3f7f3!important}
