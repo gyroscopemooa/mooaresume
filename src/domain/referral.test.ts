@@ -65,5 +65,9 @@ describe("약속한 조건", () => {
     // no longer enforces.
     expect(REFERRAL_TERMS.join(" ")).toContain("이전에 결제한 적이 있어도 괜찮습니다");
     expect(REFERRAL_TERMS.join(" ")).not.toContain("첫 결제");
+    // The tier is the friend's purchase, not a fixed one. Naming PRO on the
+    // page would promise more than a QUICK referral pays.
+    expect(REFERRAL_TERMS.join(" ")).toContain("친구가 결제한 것과 같은 상품");
+    expect(REFERRAL_TERMS.join(" ")).not.toContain("PRO 무료 이용권");
   });
 });

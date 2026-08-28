@@ -2218,3 +2218,24 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files/branch: `supabase/migrations/20260824100000_referral_any_purchase.sql`(신규), `src/domain/referral.ts`, `src/domain/referral.test.ts`, `src/server/analysis/referral-migration.test.ts` on `main`.
 - Validation: `npx vitest run` 650 passed(신규 5건), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 - Rollback/recovery reference: `20260824080000`의 `apply_referral_code`를 다시 실행하면 이전 규칙으로 돌아갑니다. 커밋 이전 상태는 `a1dd59d`.
+
+## 2026-08-24 — Claude: 추천 보상을 친구가 산 등급에 맞춤
+
+- Agent/session: Claude. 사용자 질문에서 나온 결정: 친구가 QUICK을 사도 PRO를 주는지 확인 → 산 것과 같은 등급으로.
+- Status: completed. **마이그레이션 하나 추가**(`20260824110000_referral_reward_matches_purchase.sql`).
+
+### 무엇이 문제였나
+
+- 정산 함수가 **상품을 보지 않고** 언제나 `'PRO'`를 발급했습니다. 조건은 `amount > 0`과 `provider = 'POLAR'` 둘뿐이었습니다.
+- 그래서 **5,900원짜리 QUICK 결제가 12,900원어치 PRO를 만들어 냈습니다.**
+- 현금이 마이너스가 되지는 않습니다 — 이용권의 원가는 정가가 아니라 **API 호출 한 번**입니다. 진짜 문제는 **유인이 반대로 걸린다**는 것입니다: 눈치챈 사람이 친구에게 하는 말이 *"제일 싼 거 사, 나 PRO 받게"*가 됩니다.
+- `paid_order.product`를 그대로 씁니다. 화면에 적기도 가장 쉬운 문장입니다: **친구가 결제한 것과 같은 상품의 이용권을 드립니다.**
+
+### 문구
+
+- 헤드라인에서 `PRO`를 뺐습니다(`친구에게 추천하고, 무료 이용권을 받아보세요`). QUICK 추천이 PRO를 주지 않는데 제목이 PRO를 약속하면 안 됩니다.
+- 약관에 한 줄 추가했고, 테스트가 **화면에 `PRO 무료 이용권`이라는 표현이 없는지** 확인합니다.
+- `/refer` 안내의 `첫 결제` 표현도 `결제`로 고쳤습니다 — 첫 결제 제한은 이미 없앴는데 안내에만 남아 있었습니다.
+- Files/branch: `supabase/migrations/20260824110000_referral_reward_matches_purchase.sql`(신규), `src/domain/referral.ts`, `src/domain/referral.test.ts`, `src/server/analysis/referral-migration.test.ts`, `src/components/referral-panel.tsx`, `src/app/refer/page.tsx` on `main`.
+- Validation: `npx vitest run` 651 passed(신규 1건 + 문구 검증 2건), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: `20260824090000`의 함수를 다시 실행하면 고정 PRO로 돌아갑니다. 커밋 이전 상태는 `80d3482`.

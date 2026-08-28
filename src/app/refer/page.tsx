@@ -16,7 +16,7 @@ import styles from "./refer.module.css";
  */
 export const metadata: Metadata = {
   title: "친구 추천",
-  description: "친구가 무아레쥬메로 첫 결제를 마치면 PRO 무료 이용권을 받습니다.",
+  description: "친구가 무아레쥬메로 결제를 마치면 같은 상품의 무료 이용권을 받습니다.",
 };
 
 export default function ReferPage() {
@@ -30,8 +30,8 @@ export default function ReferPage() {
       <div className={"container " + styles.page}>
         <div className={styles.head}>
           <span>REFER A FRIEND</span>
-          <h1>친구에게 추천하고,<br/>PRO 무료 이용권을 받아보세요.</h1>
-          <p>친구가 회원님의 코드를 넣고 첫 결제를 마치면, <b>PRO 무료 이용권 1장</b>이 계정에 바로 들어옵니다. 쿠폰번호를 주고받을 필요 없이 코드 하나면 됩니다.</p>
+          <h1>친구에게 추천하고,<br/>무료 이용권을 받아보세요.</h1>
+          <p>친구가 회원님의 코드를 넣고 결제를 마치면, <b>친구가 결제한 것과 같은 상품의 무료 이용권 1장</b>이 계정에 바로 들어옵니다. 쿠폰번호를 주고받을 필요 없이 코드 하나면 됩니다.</p>
         </div>
 
         <ReferralPanel standalone />
@@ -53,7 +53,7 @@ export default function ReferPage() {
           <ol>
             <li><div><b>코드를 공유합니다.</b><span>위 코드를 복사해 친구에게 보내세요.</span></div></li>
             <li><div><b>친구가 결제 화면에서 코드를 넣습니다.</b><span>자소서를 넣고 결제로 넘어가는 화면에 추천코드 칸이 있습니다.</span></div></li>
-            <li><div><b>친구가 첫 결제를 마칩니다.</b><span>여기까지 와야 지급됩니다. 코드 입력만으로는 지급되지 않습니다.</span></div></li>
+            <li><div><b>친구가 결제를 마칩니다.</b><span>여기까지 와야 지급됩니다. 코드 입력만으로는 지급되지 않습니다.</span></div></li>
             <li><div><b>이용권이 들어옵니다.</b><span>다음 분석에서 결제 없이 바로 시작하실 수 있습니다.</span></div></li>
           </ol>
         </div>

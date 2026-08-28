@@ -58,10 +58,17 @@ export function parseReferralCode(input: string): ReferralCheck {
   return parsed.success ? { ok: true, code: parsed.data } : { ok: false, reason: "malformed" };
 }
 
-// PRO, not QUICK. A referral costs the friend a real purchase, so the cheaper
-// tier was the weaker half of the trade — and PRO is the tier where the product
-// is worth talking about, which is what a referral programme is buying.
-export const REFERRAL_REWARD_PRODUCT = "PRO" as const;
+/**
+ * The reward is whatever tier the friend bought.
+ *
+ * A flat PRO reward paid 12,900 of value for a 5,900 purchase. The cash never
+ * went negative — a credit costs an API call, not its sticker price — but the
+ * incentive pointed the wrong way: once anyone noticed, the advice to a friend
+ * becomes "just buy the cheapest one so I get PRO".
+ *
+ * Matching the purchase is also the sentence that needs no footnote.
+ */
+export const REFERRAL_REWARD_RULE = "SAME_AS_PURCHASE" as const;
 
 /**
  * What the referrer gets, and when.
@@ -72,6 +79,7 @@ export const REFERRAL_REWARD_PRODUCT = "PRO" as const;
  */
 export const REFERRAL_TERMS = [
   "친구가 코드를 입력하고 실제로 결제해야 지급됩니다.",
+  "친구가 결제한 것과 같은 상품의 이용권을 드립니다.",
   "코드 입력만으로는 지급되지 않습니다.",
   "한 사람당 한 번만 인정됩니다. 이전에 결제한 적이 있어도 괜찮습니다.",
   "본인 코드는 본인이 쓸 수 없습니다.",

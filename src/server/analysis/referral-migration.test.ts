@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const migration = readFileSync("supabase/migrations/20260824080000_referrals.sql", "utf8");
 const anyPurchase = readFileSync("supabase/migrations/20260824100000_referral_any_purchase.sql", "utf8");
+const matchesPurchase = readFileSync("supabase/migrations/20260824110000_referral_reward_matches_purchase.sql", "utf8");
 
 describe("추천 마이그레이션", () => {
   it("입력만으로는 아무것도 지급하지 않는다", () => {
@@ -65,5 +66,16 @@ describe("추천 마이그레이션", () => {
   it("남이 추천한 내역을 훔쳐볼 수 없다", () => {
     expect(migration).toContain('using ((select auth.uid()) = referrer_user_id)');
     expect(migration).not.toContain("= referred_user_id)");
+  });
+
+  it("보상은 친구가 산 등급을 따라간다", () => {
+    // A flat PRO reward paid 12,900 of value for a 5,900 purchase, which tells
+    // everyone to recommend the cheapest product.
+    expect(matchesPurchase).toContain("paid_order.product, 'REFERRAL'");
+    expect(matchesPurchase).not.toContain("'PRO', 'REFERRAL'");
+    // Everything the earlier version guarded still guards.
+    for (const invariant of ["paid_order.amount <= 0", "status = 'PENDING'", "for update", "NO_PENDING_REFERRAL"]) {
+      expect(matchesPurchase).toContain(invariant);
+    }
   });
 });
