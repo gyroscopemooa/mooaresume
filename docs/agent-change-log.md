@@ -2275,3 +2275,23 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - `/guide`에 **자기 title·description·canonical**을 줬습니다. 사이트맵에는 있는데 사이트 공통 제목을 물려받아, 크롤러 눈에는 **홈페이지의 사본**으로 보였습니다.
 - Files/branch: `src/components/application-case-handoff.tsx`·`.module.css`, `src/components/result-workspace-complete.tsx`, `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/guide/page.tsx` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+
+## 2026-08-24 — Claude: `/analyze` 목업이 런칭된 사이트의 메인 CTA였습니다
+
+- Agent/session: Claude. 사용자 질문: 결과화면 샘플로 가는 버튼이 런칭 때 없어져야 하는 것인가.
+- Status: completed. 마이그레이션 없음. **`/analyze`를 리다이렉트로 교체**했습니다.
+- Protected baseline: 원본 마크업을 `docs/removed-analyze-mock.tsx.txt`에 **텍스트로 보존**했습니다(`.tsx`가 아니라 `.txt`라 실수로 빌드·임포트되지 않습니다).
+
+### 무엇이었나
+
+- `/analyze`는 **완전한 껍데기**였습니다. 채용공고 입력칸에는 상태가 아예 없고, 자소서 텍스트는 어디에도 저장되지 않으며, `파일로 올리기`는 아무 동작도 하지 않고, `분석 시작하기`는 **`/result`(id 없음)** 로 갑니다 — 내장 샘플이 그려지는 주소입니다.
+- 즉 지원서를 통째로 타이핑한 사람이 **한 글자도 남기지 못하고 남의 현대모비스 샘플을 보게 됩니다.**
+- 그리고 이게 구석에 있는 페이지가 아닙니다. **사이트에서 `/analyze`로 가는 링크가 9개**이고 그중 하나가 헤더의 **`무료로 진단하기`** — 런칭된 제품의 가장 큰 행동 유도 버튼입니다.
+
+### 어떻게 했나
+
+- 지우지 않고 **`/onboarding?from=analyze`로 리다이렉트**합니다. 링크 9개가 전부 그대로 살아 있고, 도착하는 곳이 **같은 첫 질문을 진짜로 하는 화면**입니다.
+- `/analyze`는 사이트맵에 없어 검색 노출에는 영향이 없습니다.
+- Files/branch: `src/app/analyze/page.tsx`, `docs/removed-analyze-mock.tsx.txt`(신규) on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+- Rollback/recovery reference: 보존 파일의 내용을 `page.tsx`로 되돌리면 원상복구됩니다.
