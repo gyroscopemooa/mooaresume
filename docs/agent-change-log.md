@@ -2370,3 +2370,26 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 375×812에서 두 버튼 모두 첫 화면 안(시작하기 669, 예시 776)입니다.
 - Files/branch: `src/app/page.tsx`, `src/app/globals.css` on `main`.
 - Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 1280px에서 버튼 폭 일치, 375px에서 제목 높이 1px·가로 넘침 없음 확인.
+
+## 2026-08-24 — Claude: 모바일 첫 화면을 세 덩어리로
+
+- Agent/session: Claude. 사용자 요청: 모바일 제목을 `자기소개서 첨삭`으로 크게, 예시 버튼을 제목 **위**로, 배너의 `입력은 간단하게 ~ 한곳에서 이어집니다` 문단 삭제.
+- Status: completed. 마이그레이션 없음.
+
+### 제목: 숨김 → 다시 보이게, 대신 짧게
+
+- 직전 커밋에서 모바일 `h1`을 통째로 숨겼는데, 요청대로 **보이게 되돌리고 문구만 `자기소개서 첨삭`으로 줄였습니다.**
+- 나머지 검색어(`자소서 첨삭`, `AI 첨삭`)는 `h1` 안의 숨김 `span`에 실어 보냅니다. 크롤러에게는 세 개 다 보이고, 화면은 한 줄만 씁니다.
+- 모바일에서 `AI 취업 지원서 코치` 눈썹 문구는 숨깁니다. 제목이 그 역할을 대신하고, 둘 다 두면 같은 자리를 두 번 씁니다.
+
+### 순서: 예시 버튼이 제목 위로
+
+- `.hero`를 모바일에서만 flex column으로 만들고 `.hero-sample{order:-1}` **한 줄**로 올렸습니다. **마크업은 그대로**라 데스크톱 배치도, 제목의 읽기 순서도 건드리지 않습니다.
+- 확신 없이 들어온 사람은 초안을 붙여넣기 **전에** 결과물을 먼저 보고 싶어 합니다.
+
+### 배너 문단
+
+- `한 방에 올리고, 원클릭으로 시작하세요.`가 이미 같은 말을 합니다. 밑의 두 줄은 모바일에서 숨깁니다.
+- 이 파일의 기존 700px가 아니라 **760px**에 넣었습니다 — 히어로와 같은 폭에서 같이 바뀌어야 700~760 구간에서 배너만 데스크톱 모양으로 남는 일이 없습니다.
+- Files/branch: `src/app/page.tsx`, `src/app/globals.css`, `src/app/one-click.module.css` on `main`.
+- Validation: `npx vitest run` 651 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. 375px에서 예시(266~324) → 제목(342~390) → 시작하기(676~730) 모두 첫 화면 안, 가로 넘침 없음. 1280px에서 눈썹·제목·문단·버튼 순서 전부 이전 그대로.

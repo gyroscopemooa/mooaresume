@@ -107,13 +107,12 @@ export default function HomePage() {
             what made the first version read as a turning box. */}
         <div className="hero-aura" aria-hidden="true"><i/><i/><i/></div>
         <div className="eyebrow">AI 취업 지원서 코치</div>
-        {/* Two headings chosen by width. On a phone the visible one is hidden
-            rather than removed: the hero is the whole first screen there and
-            the space belongs to the input, but a page with no h1 at all is a
-            page search engines cannot summarise. It stays in the DOM, readable
-            by crawlers and screen readers, and carries the search terms. */}
+        {/* Two headings chosen by width. On a phone the heading is the search
+            term and nothing else; the rest of the terms ride along in a hidden
+            span so the h1 still tells a crawler what this page is for without
+            spending first-screen space on it. */}
         <h1 className="hero-desktop">좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
-        <h1 className="hero-mobile visually-hidden">자소서 첨삭 · 자기소개서 첨삭 — AI가 고칠 곳을 근거와 함께 알려드립니다</h1>
+        <h1 className="hero-mobile">자기소개서 첨삭<span className="visually-hidden"> · 자소서 첨삭 · AI 첨삭</span></h1>
         <p className="hero-desktop">채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
         <LandingEntry />
         {/* Above the fold on purpose. "무엇을 받는지"에 답하는 가장 빠른 방법은

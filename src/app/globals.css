@@ -107,11 +107,16 @@ body{zoom:var(--app-scale)}
 @media(max-width:760px){
   /* Everything above the input competes with the input. On a phone the
      positioning line, the sub-paragraph and the three trust chips together
-     pushed 시작하기 off the first screen. */
-  .hero{padding:36px 0 30px}
+     pushed 시작하기 off the first screen.
+
+     The order is deliberate: the sample runs above the heading. Someone who
+     arrived unsure wants to see the thing before being asked to paste a draft,
+     and the one order-swap does it without moving the markup, which keeps the
+     desktop layout and the reading order for the heading intact. */
+  .hero{display:flex;flex-direction:column;padding:30px 0 30px}
   .hero-desktop{display:none}
-  .hero-mobile{display:block}
-  .hero .eyebrow{font-size:11px;margin-bottom:14px}
-  .hero-sample{font-size:16px;padding:17px;margin-top:14px}
+  .hero .eyebrow{display:none}
+  .hero-mobile{display:block;font-size:clamp(30px,8.6vw,40px);line-height:1.2;letter-spacing:-.04em;margin:14px 0 18px}
+  .hero-sample{order:-1;font-size:16px;padding:17px;margin:0}
   .trust-row{margin-top:22px;flex-direction:column;align-items:center;gap:9px;font-size:12.5px}
 }
