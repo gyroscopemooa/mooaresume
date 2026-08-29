@@ -2674,3 +2674,33 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - `afterInteractive` → `beforeInteractive`. 태그는 **어느 쪽이든 서빙되는 HTML에 들어 있었고**(`curl`로 확인) 그래서 동작에는 문제가 없었지만, 배치 때문에 광고 계정이 제한되면 **실제 돈**이 나갑니다. 스크립트가 `async`라 확실히 해두는 비용은 거의 0입니다.
 - 네이버·Clarity 태그는 그대로 둡니다. 그쪽은 검사하는 곳이 없습니다.
 - Files: `src/app/layout.tsx`.
+
+## 2026-08-29 — Claude: 결과 메일 링크가 결제 화면으로 보내던 문제
+
+- Agent/session: Claude. 사용자 보고: 결과 메일 링크 → `로그인하러 가기` → 결제 전 화면 → 로그인해도 시작 버튼이 회색으로 멈춤.
+- Status: completed. 마이그레이션 없음.
+
+### 원인
+
+- `/result?analysisRunId=…`에 비로그인으로 들어오면 `<Link href="/analysis/prepare">로그인하러 가기</Link>`를 보여줬습니다. **거기는 로그인 화면이 아니라 결제 전 화면**입니다.
+- 메일 앱이 여는 브라우저에는 그 탭의 `sessionStorage`가 없으므로 초안이 비어 있고, 그래서 결제 버튼이 회색입니다.
+- 게다가 이동하면서 **`analysisRunId`가 사라져** 원래 보려던 결과로 돌아갈 길도 없습니다.
+
+### 고침
+
+- `ResultSignIn` 신설. Google 로그인 후 **`/result?analysisRunId=…` 바로 그 주소로** 돌아옵니다(`auth/callback?next=`).
+- 결과가 안 보이는 경우 문구도 고쳤습니다. 진행 중일 수도 있지만, **결제한 계정과 다른 구글 계정으로 로그인한 경우**가 실제로 더 흔합니다. 둘 다 말하고 `다시 확인하기`를 같은 주소로 겁니다.
+- Files: 신규 `src/components/result-sign-in.tsx`, `.module.css`; 수정 `src/app/result/page.tsx`.
+
+## 2026-08-29 — Claude: 간편 입력 2차 (좌우 스위치·드래그·한도·말풍선)
+
+- 사용자 피드백 5건 반영.
+- **좌우 스위치** — 버튼 두 개 → 트랙 위를 미끄러지는 knob. 버튼 두 개는 *어느 쪽이 켜져 있나*를 읽게 만들고, knob은 그냥 보입니다. `role="switch"`, 모션 감소 설정 존중.
+- **드래그 앤 드롭** — 박스 전체가 드롭 영역입니다. 끌어오는 동안 덮개가 뜹니다. **어디에 놓을지 모르는 드래그는 거절당한 것처럼 보입니다.**
+- **한도 (`src/domain/upload-limits.ts`)** — 최대 **20개 · 총 50MB**를 보여주고, 한 파일 **10MB**는 숨깁니다. 그건 우리가 고른 값이 아니라 `extractLocalDocument`가 그보다 크면 읽지 못하기 때문입니다. 더 크게 약속하면 던지는 읽기를 약속하는 셈입니다.
+  - **일괄 거절하지 않습니다.** 25개를 끌어다 놓으면 20개를 받고 못 받은 5개의 **이름과 이유**를 말합니다.
+  - 파일 **개수만 세는 건 방어가 안 됩니다.** 자소서를 80쪽 PDF 하나로 합치는 건 정당한 사용이라 막으면 안 되고, 진짜 상한은 **쪽수·글자 수**입니다. 그건 Pre-check 단계 몫이라 아직입니다.
+- **말풍선** — 형식·개수·용량·ZIP 처리 방식을 `?` 툴팁에 넣었습니다. 본문에 다 적으면 입력 박스가 **경고문**처럼 읽힙니다. 모바일에서는 왼쪽 기준으로 붙여 화면 밖으로 나가지 않게 했습니다.
+- **디자인** — QUICK의 담백한 입력과 구분되도록 이중 방사형 그라데이션 + `한 번에 넣기` 배지 + 그림자. 이 화면은 **폼처럼 보이면 안 됩니다.**
+- Files: 신규 `src/domain/upload-limits.ts`(+test); 수정 `src/components/simple-intake.tsx`, `.module.css`, `src/components/pro-input-page.tsx`, `.module.css`.
+- Validation: `npx vitest run` 698 passed (+7), `npx tsc --noEmit` clean, `npx eslint` 0건, `npx next build` 클린.

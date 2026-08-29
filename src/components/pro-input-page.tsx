@@ -285,9 +285,21 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         {/* Both panes stay mounted. Switching back and forth is a comparison,
             not a reset — losing what was typed on the way over would make the
             switch something nobody presses twice. Only the payload branches. */}
-        <div className={styles.modeSwitch} role="radiogroup" aria-label="입력 방식">
-          <button type="button" role="radio" aria-checked={inputMode === "SIMPLE"} className={inputMode === "SIMPLE" ? styles.modeOn : ""} onClick={() => setInputMode("SIMPLE")}>간편 입력</button>
-          <button type="button" role="radio" aria-checked={inputMode === "DETAILED"} className={inputMode === "DETAILED" ? styles.modeOn : ""} onClick={() => setInputMode("DETAILED")}>상세 입력</button>
+        <div className={styles.modeSwitch}>
+          {/* A real left-right toggle rather than two buttons. Two buttons ask
+              which one is currently on; a track with a knob shows it. */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={inputMode === "DETAILED"}
+            aria-label="입력 방식: 간편 입력과 상세 입력"
+            className={`${styles.modeTrack} ${inputMode === "DETAILED" ? styles.modeTrackRight : ""}`}
+            onClick={() => setInputMode(inputMode === "SIMPLE" ? "DETAILED" : "SIMPLE")}
+          >
+            <span className={styles.modeKnob} aria-hidden="true"/>
+            <span className={inputMode === "SIMPLE" ? styles.modeOn : ""}>간편 입력</span>
+            <span className={inputMode === "DETAILED" ? styles.modeOn : ""}>상세 입력</span>
+          </button>
           <small>입력 방식만 다르고 첨삭·분석 수준은 동일합니다. 간편 입력에서는 자료를 한 번에 넣으면 자동으로 분류합니다.</small>
         </div>
 
