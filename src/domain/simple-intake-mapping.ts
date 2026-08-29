@@ -1,5 +1,5 @@
 import { splitCoverLetterDraft } from "./cover-letter-parser";
-import { createCoverLetterQuestion, type CoverLetterQuestion } from "./cover-letter-question";
+import { applyDefaultTargetLength, createCoverLetterQuestion, type CoverLetterQuestion } from "./cover-letter-question";
 import type { ClassifiedKind } from "./document-classify";
 
 /**
@@ -48,7 +48,7 @@ const MAX_ATTACHMENT_CHARACTERS = 50_000;
 
 const MATERIAL_KINDS: ReadonlySet<ClassifiedKind> = new Set(["RESUME", "CAREER_DOCUMENT", "PORTFOLIO"]);
 
-export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSource[]): SimpleIntakeMapping {
+export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSource[], defaultTargetLength: number | null = null): SimpleIntakeMapping {
   const byKind = (kind: ClassifiedKind) => files.filter((file) => file.kind === kind);
   const dropped: string[] = [];
 
@@ -69,7 +69,13 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
   // copy means the pasted one; taking the file instead would silently analyse
   // the wrong draft.
   const letterText = draft.trim() || letterFiles.map((file) => file.text).join("\n\n").trim();
-  const questions = letterText ? splitCoverLetterDraft(letterText) : [createCoverLetterQuestion()];
+  // A limit printed beside the question wins over the one box at the bottom:
+  // the applicant typed one number for the whole form, the employer printed the
+  // real one next to each question.
+  const questions = applyDefaultTargetLength(
+    letterText ? splitCoverLetterDraft(letterText) : [createCoverLetterQuestion()],
+    defaultTargetLength,
+  );
 
   const postingFiles = byKind("JOB_POSTING");
 

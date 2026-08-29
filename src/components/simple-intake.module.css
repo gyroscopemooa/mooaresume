@@ -48,8 +48,6 @@
 @keyframes simpleSpin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 
-.note { margin: 11px 0 0; padding: 10px 12px; border: 1px solid #e7d8af; border-radius: 9px; background: #fffdf5; color: #756c57; font-size: 11.5px; line-height: 1.7; }
-
 /* Shown only while something is over the box, so the drop target is never in
    doubt — a drag that lands nowhere looks like the file was rejected. */
 .dropVeil { position: absolute; inset: 0; z-index: 4; display: grid; place-content: center; justify-items: center; gap: 10px; border-radius: 18px; background: rgba(240, 251, 246, 0.94); color: #176b4a; pointer-events: none; }
@@ -95,4 +93,25 @@
   .fileList li > div { grid-column: 2 / -1; }
   .fileList select { grid-column: 2; font-size: 12px; }
   .fileList button { grid-column: 3; }
+}
+
+/* Optional, so it sits after the box rather than above it. A required-looking
+   field here would stop the people who genuinely have no limit. */
+.limit { display: grid; gap: 6px; margin-top: 13px; padding: 13px 15px; border: 1px solid #e2eae6; border-radius: 11px; background: #fbfdfc; }
+.limit > span { font-size: 12px; font-weight: 800; }
+.limit > span em { margin-left: 5px; padding: 2px 6px; border-radius: 8px; background: #eef2f0; color: #8a9690; font-style: normal; font-size: 10px; font-weight: 700; }
+.limit input { width: 130px; padding: 9px 11px; border: 1px solid #dbe6e0; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; outline: 0; }
+.limit input:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.08); }
+.limit small { color: #87928c; font-size: 11px; line-height: 1.75; }
+.limit small b { color: #41514a; }
+
+.note { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 11px 0 0; padding: 11px 13px; border: 1px solid #e7d8af; border-radius: 10px; background: #fffdf5; }
+.note p { margin: 0; color: #756c57; font-size: 11.5px; line-height: 1.75; }
+.note p b { color: #6a5d3a; }
+.note button { flex: none; padding: 5px 10px; border: 1px solid #e0d3ab; border-radius: 7px; background: #fff; color: #7c7150; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.note button:hover { background: #fdf7e6; }
+
+@media (max-width: 640px) {
+  .limit input { width: 100%; font-size: 16px; }
+  .note { flex-direction: column; align-items: stretch; gap: 9px; }
 }

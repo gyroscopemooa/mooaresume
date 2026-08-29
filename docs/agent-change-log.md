@@ -2704,3 +2704,23 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - **디자인** — QUICK의 담백한 입력과 구분되도록 이중 방사형 그라데이션 + `한 번에 넣기` 배지 + 그림자. 이 화면은 **폼처럼 보이면 안 됩니다.**
 - Files: 신규 `src/domain/upload-limits.ts`(+test); 수정 `src/components/simple-intake.tsx`, `.module.css`, `src/components/pro-input-page.tsx`, `.module.css`.
 - Validation: `npx vitest run` 698 passed (+7), `npx tsc --noEmit` clean, `npx eslint` 0건, `npx next build` 클린.
+
+## 2026-08-29 — Claude: 간편 입력 3차 (거절 누적·글자 수)
+
+- Agent/session: Claude. 사용자 피드백 2건.
+- Status: completed. 마이그레이션 없음.
+
+### 못 넣은 파일이 쌓입니다
+
+- 전에는 새로 넣을 때마다 안내가 **교체**됐습니다. 1번 파일이 거절된 뒤 2번을 넣어 2번도 거절되면 **1번은 해결된 것처럼** 보였습니다.
+- 이제 목록에 **더해집니다.** 같은 파일·같은 사유는 한 번만 셉니다. `지우기`로 비웁니다.
+
+### 글자 수
+
+- **필수로 하지 않았습니다.** 글자 수 제한이 없는 공고도 많고, 필수로 만들면 그 사람들이 막힙니다.
+- 박스 아래 **선택 입력 한 칸**. 한 번 적으면 **글자 수를 밝히지 않은 모든 문항**에 채워집니다. 대부분의 지원서는 문항마다 다르지 않고 하나입니다.
+- **문항마다 다른 경우**: 제목 뒤에 `(800자)`처럼 적으면 **그 문항은 적힌 값을 씁니다.** 한 칸에 적은 숫자가 회사가 실제로 문항 옆에 인쇄한 값을 덮어쓰면 안 됩니다.
+- 이걸 되게 하려고 `readTargetLengthMarker`를 넓혔습니다. 전에는 우리가 쓰는 `[500자]`만 읽었는데, 한국 공고는 `(500자)`·`500자 이내`·`[500자]`를 비슷한 빈도로 씁니다. **제목에 버젓이 적힌 제한이 안 적힌 것으로 취급되고 있었습니다.** 쓰는 형식은 그대로입니다.
+- 100 미만은 무시합니다. 저장 스키마가 거절하는 값이라, `50` 오타가 두 화면 뒤에서 터지면 안 됩니다.
+- Files: `src/domain/cover-letter-question.ts`(+test), `src/domain/simple-intake-mapping.ts`(+test), `src/components/simple-intake.tsx`, `.module.css`, `src/components/pro-input-page.tsx`.
+- Validation: `npx vitest run` 704 passed (+6), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coverLetterQuestionSchema, serializeQuestionAnswers } from "./cover-letter-question";
+import { applyDefaultTargetLength, coverLetterQuestionSchema, readTargetLengthMarker, serializeQuestionAnswers } from "./cover-letter-question";
 
 describe("cover letter questions", () => {
   it("serializes separate questions without losing prompts", () => {
@@ -38,5 +38,31 @@ describe("cover letter questions", () => {
 
   it("validates a question contract", () => {
     expect(coverLetterQuestionSchema.safeParse({ id: "q1", title: "", prompt: "", targetLength: 700, answer: "초안" }).success).toBe(true);
+  });
+});
+
+describe("공고에 적힌 글자 수 읽기", () => {
+  it("괄호와 이내까지 읽는다", () => {
+    // Korean postings write it as (500자), 500자 이내 or [500자] about equally.
+    // Reading only our own bracket form left a stated limit sitting in plain
+    // sight and still treated as unstated.
+    for (const heading of ["지원 동기 [500자]", "지원 동기 (500자)", "지원 동기 500자 이내", "성장과정(500자)"]) {
+      expect(readTargetLengthMarker(heading).targetLength, heading).toBe(500);
+      expect(readTargetLengthMarker(heading).heading, heading).not.toContain("500");
+    }
+  });
+
+  it("없으면 없다고 한다", () => {
+    expect(readTargetLengthMarker("지원 동기").targetLength).toBeNull();
+    expect(readTargetLengthMarker("지원 동기").heading).toBe("지원 동기");
+  });
+
+  it("한 번 적은 값이 스스로 밝힌 값을 덮지 않는다", () => {
+    const filled = applyDefaultTargetLength(
+      [{ id: "a", title: "", prompt: "", targetLength: 800, answer: "가" }, { id: "b", title: "", prompt: "", targetLength: null, answer: "나" }],
+      600,
+    );
+    expect(filled.map((question) => question.targetLength)).toEqual([800, 600]);
+    expect(applyDefaultTargetLength(filled, null).map((question) => question.targetLength)).toEqual([800, 600]);
   });
 });

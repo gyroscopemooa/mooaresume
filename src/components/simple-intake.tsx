@@ -51,15 +51,17 @@ export type SimpleIntakeFile = {
 type Props = {
   draft: string;
   onDraftChange: (value: string) => void;
+  targetLength: string;
+  onTargetLengthChange: (value: string) => void;
   files: SimpleIntakeFile[];
   onFilesChange: (files: SimpleIntakeFile[]) => void;
   onError?: (message: string) => void;
 };
 
-export function SimpleIntake({ draft, onDraftChange, files, onFilesChange, onError }: Props) {
+export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, files, onFilesChange, onError }: Props) {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [note, setNote] = useState("");
+  const [rejections, setRejections] = useState<Array<{ name: string; reason: string }>>([]);
   // A counter rather than Date.now(): ids only have to be unique within this
   // list, and a clock read is not something a component should be doing.
   const nextId = useRef(0);
@@ -75,7 +77,14 @@ export function SimpleIntake({ draft, onDraftChange, files, onFilesChange, onErr
     // Rejected by name, not as a batch: a folder of twenty-five files should
     // add the twenty it can and say which five it could not.
     const { accepted, rejected } = checkUploads(selected, { count: files.length, bytes: usedBytes });
-    setNote(rejected.length ? `넣지 못한 파일: ${describeRejections(rejected)}` : "");
+    // Appended, not replaced. Someone fixes one rejected file, adds it, and a
+    // second one fails — replacing the list would make the first look solved.
+    if (rejected.length) {
+      setRejections((current) => {
+        const seen = new Set(current.map((item) => `${item.name}:${item.reason}`));
+        return [...current, ...rejected.filter((item) => !seen.has(`${item.name}:${item.reason}`))];
+      });
+    }
     try {
       const { extractLocalDocuments } = await import("@/lib/local-document");
       const added: SimpleIntakeFile[] = [];
@@ -160,6 +169,22 @@ export function SimpleIntake({ draft, onDraftChange, files, onFilesChange, onErr
         placeholder={"자기소개서 전체를 그대로 붙여넣어 주세요.\n\n1. 지원 동기\n작성한 답변...\n\n2. 직무 역량\n작성한 답변..."}
       />
 
+      {/* Optional, and one number for the whole form, because that is what most
+          application forms actually say. A question that prints its own limit
+          keeps it — see applyDefaultTargetLength. Making this required would
+          stop people who genuinely have no limit. */}
+      <label className={styles.limit}>
+        <span>문항별 글자 수 <em>선택</em></span>
+        <input
+          inputMode="numeric"
+          value={targetLength}
+          maxLength={4}
+          onChange={(event) => onTargetLengthChange(event.target.value.replace(/[^0-9]/g, ""))}
+          placeholder="예: 500"
+        />
+        <small>문항마다 다르면 제목 뒤에 <b>(800자)</b>처럼 적어 주세요. 그 문항은 적힌 값을 씁니다. 비워두면 길이는 건드리지 않고 내용만 봅니다.</small>
+      </label>
+
       <div className={styles.boxFoot}>
         <span>공백 제외 {draftCharacters.toLocaleString()}자{files.length > 0 && ` · 파일 ${files.length}개 ${formatBytes(usedBytes)}`}</span>
         <label className={styles.attach}>
@@ -169,7 +194,10 @@ export function SimpleIntake({ draft, onDraftChange, files, onFilesChange, onErr
         </label>
       </div>
 
-      {note && <p className={styles.note}>{note}</p>}
+      {rejections.length > 0 && <div className={styles.note}>
+        <p><b>넣지 못한 파일 {rejections.length}개</b> — {describeRejections(rejections)}</p>
+        <button type="button" onClick={() => setRejections([])}>지우기</button>
+      </div>}
 
       {dragging && <div className={styles.dropVeil} aria-hidden="true"><UploadCloud/><b>여기에 놓으면 자동으로 분류합니다</b></div>}
     </div>

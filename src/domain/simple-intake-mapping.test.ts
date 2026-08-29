@@ -64,3 +64,23 @@ describe("간편 입력 매핑", () => {
     expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", [file("공고.pdf", "JOB_POSTING", "자격 요건")]))).toBe("");
   });
 });
+
+describe("간편 입력 글자 수", () => {
+  it("한 번 적은 글자 수를 모든 문항에 채운다", () => {
+    const mapped = mapSimpleIntake("1. 지원 동기\n답변\n\n2. 직무 역량\n답변", [], 600);
+    expect(mapped.questions.every((question) => question.targetLength === 600)).toBe(true);
+  });
+
+  it("문항이 스스로 밝힌 글자 수를 덮어쓰지 않는다", () => {
+    // The applicant typed one number for the whole form; the employer printed
+    // the real one next to the question.
+    const mapped = mapSimpleIntake("1. 지원 동기 (800자)\n답변\n\n2. 직무 역량\n답변", [], 600);
+    expect(mapped.questions[0].targetLength).toBe(800);
+    expect(mapped.questions[1].targetLength).toBe(600);
+  });
+
+  it("비워두면 아무것도 채우지 않는다", () => {
+    const mapped = mapSimpleIntake("1. 지원 동기\n답변", [], null);
+    expect(mapped.questions[0].targetLength).toBeNull();
+  });
+});

@@ -131,6 +131,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   const [simpleDraft, setSimpleDraft] = useState("");
   const [simpleFiles, setSimpleFiles] = useState<SimpleIntakeFile[]>([]);
   const [simpleError, setSimpleError] = useState("");
+  const [simpleTargetLength, setSimpleTargetLength] = useState("");
 
   function resetDraft() {
     if (!window.confirm("입력한 지원서와 추가 자료를 모두 지우고 새로 시작할까요?")) return;
@@ -157,6 +158,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     setSimpleDraft("");
     setSimpleFiles([]);
     setSimpleError("");
+    setSimpleTargetLength("");
     setResetKey((key) => key + 1);
   }
 
@@ -185,7 +187,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     // downstream — checkout, analysis, the server — keeps receiving the same
     // shape, so there is one pipeline to keep correct rather than two.
     const effective = inputMode === "SIMPLE"
-      ? mapSimpleIntake(simpleDraft, simpleFiles)
+      ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue)
       : {
           questions,
           posting,
@@ -247,7 +249,10 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   // the split result and it really is one question.
   const blocksOnUnsplitDraft = unsplitDraft && !splitConfirmed;
   const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
-  const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles) : null;
+  // Below 100 the saved question schema rejects it, and a typo of "50" should
+  // not fail on save two screens later.
+  const simpleTargetLengthValue = Number(simpleTargetLength) >= 100 ? Number(simpleTargetLength) : null;
+  const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue) : null;
   const blockedReason = simpleMapping
     ? describeSimpleIntakeGap(simpleMapping)
     : !hasPostingSource
@@ -304,7 +309,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         </div>
 
         {inputMode === "SIMPLE" && <>
-          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
+          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
         </>}

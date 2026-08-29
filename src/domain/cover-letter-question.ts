@@ -66,14 +66,39 @@ export function resolveDraftTargetLength(
   return Math.max(...stated);
 }
 
-/** How a per-question limit rides inside the serialized draft. */
-const TARGET_LENGTH_MARKER = /\s*\[(\d{3,4})자\]\s*$/;
+/**
+ * What a stated per-question limit looks like.
+ *
+ * Serialization writes the `[500자]` form; this also accepts what a person
+ * pastes off their application form. Korean postings write it as `(500자)`,
+ * `500자 이내`, or `[500자]` about equally, and accepting only our own bracket
+ * form left a limit sitting in the heading, in plain sight, still treated as
+ * unstated.
+ */
+const TARGET_LENGTH_READ = /\s*[[(]?\s*(\d{3,4})\s*자\s*(?:이내|이하|내외|안팎)?\s*[\])]?\s*$/;
 
 /** Reads the marker back off a heading, returning the heading without it. */
 export function readTargetLengthMarker(heading: string): { heading: string; targetLength: number | null } {
-  const match = heading.match(TARGET_LENGTH_MARKER);
+  const match = heading.match(TARGET_LENGTH_READ);
   if (!match) return { heading, targetLength: null };
-  return { heading: heading.replace(TARGET_LENGTH_MARKER, "").trim(), targetLength: Number(match[1]) };
+  return { heading: heading.replace(TARGET_LENGTH_READ, "").trim(), targetLength: Number(match[1]) };
+}
+
+/**
+ * Fills in a single limit the applicant typed once, for every question that
+ * does not state one of its own.
+ *
+ * The simple box has no per-question fields to put a number in, and most
+ * applicants have one limit for the whole form anyway. A question that states
+ * its own limit keeps it — a number typed in a box should never overwrite one
+ * the employer actually printed next to the question.
+ */
+export function applyDefaultTargetLength(
+  questions: readonly CoverLetterQuestion[],
+  targetLength: number | null,
+): CoverLetterQuestion[] {
+  if (!targetLength) return [...questions];
+  return questions.map((question) => question.targetLength ? question : { ...question, targetLength });
 }
 
 export function serializeQuestionAnswers(
