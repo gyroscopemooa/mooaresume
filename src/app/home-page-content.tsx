@@ -9,6 +9,7 @@ import positioningStyles from "./landing-positioning.module.css";
 import enterpriseStyles from "./enterprise-promo.module.css";
 import oneClickStyles from "./one-click.module.css";
 import fieldStyles from "./field-credibility.module.css";
+import careerCtaStyles from "./career-home-cta.module.css";
 import { getSiteUrl } from "@/lib/site-url";
 
 const differences = [
@@ -40,7 +41,7 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
-        <nav aria-label="주요 메뉴"><Link href="#how">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
+        <nav aria-label="주요 메뉴"><Link href="/career">커리어 검사</Link><Link href="#how">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
       </header>
 
       <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
@@ -61,6 +62,11 @@ export default function HomePage() {
             <div className="issues"><small>가장 먼저 고칠 3가지</small><ol><li><b>지원동기의 기업 연결이 약해요</b><span>공고의 ‘공정 개선’ 요구와 경험을 연결해 보세요.</span></li><li><b>성과의 근거가 부족해요</b><span>결과를 확인할 수 있는 기준이나 변화를 추가하세요.</span></li><li><b>2·3번 문항의 경험이 겹쳐요</b><span>3번에는 협업 경험을 배치하는 편이 좋아요.</span></li></ol></div>
           </div>
         </div>
+      </section>
+
+      <section className={"container " + careerCtaStyles.card}>
+        <div className={careerCtaStyles.copy}><small>FREE CAREER EXPLORATION</small><h2>지원하기 전에, 나의 기준부터 정리하세요.</h2><p>직업흥미·업무성향·직업가치를 통해 하고 싶은 활동, 일하는 방식, 중요하게 보는 조건을 무료로 살펴볼 수 있어요.</p></div>
+        <Link href="/career" className={careerCtaStyles.cta}>무료 커리어 검사 <ArrowRight /></Link>
       </section>
 
       <PricingComparison />
