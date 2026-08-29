@@ -121,6 +121,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   const [writingStyle, setWritingStyle] = useState<WritingStyle>("BALANCED");
   const [editingStance, setEditingStance] = useState<EditingStance>("BALANCED");
   const [resetKey, setResetKey] = useState(0);
+  const [splitConfirmed, setSplitConfirmed] = useState(false);
 
   function resetDraft() {
     if (!window.confirm("입력한 지원서와 추가 자료를 모두 지우고 새로 시작할까요?")) return;
@@ -143,6 +144,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     setRoleName("");
     setGuidedDraft(createGuidedCreateDraft());
     setWritingStyle("BALANCED");
+    setSplitConfirmed(false);
     setResetKey((key) => key + 1);
   }
 
@@ -209,6 +211,15 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     ? questions[0].answer
     : "";
   const unsplitDraft = Boolean(bulkAnswer.trim()) && splitCoverLetterDraft(bulkAnswer).length <= 1;
+  // Blocking on this was a dead end. A letter that splits into one question is
+  // sometimes exactly right — plenty of companies ask a single 자유기술 문항 —
+  // and pressing 문항 구분 확인하기 could not clear the block, because the
+  // splitter returned one question again. So the applicant was told to press a
+  // button that changed nothing, forever.
+  //
+  // The notice stays; it only stops being a wall once they have actually seen
+  // the split result and it really is one question.
+  const blocksOnUnsplitDraft = unsplitDraft && !splitConfirmed;
   const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
   const blockedReason = !hasPostingSource
     ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."
@@ -217,7 +228,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     // long letter is measured against 700 characters, nothing can be filled
     // because there is no short question to find, and the per-question review
     // collapses into one block. One button press fixes all three.
-    : unsplitDraft
+    : blocksOnUnsplitDraft
       ? "자기소개서 문항 구분을 먼저 확인해 주세요. 문항이 나뉘어 있어야 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다."
     : !hasCoverLetterAnswer
       ? mode === "CREATE"
@@ -257,7 +268,9 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
             <ArrowRight/>
           </Link>
           <GuidedCreateForm draft={guidedDraft} onDraftChange={setGuidedDraft} questions={questions} onQuestionsChange={setQuestions}/>
-        </> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{unsplitDraft && <p className={styles.postingWarning}><b>문항 구분이 아직 안 되어 있어요.</b> 위 &lsquo;문항 구분 확인하기&rsquo;를 누르면 질문과 답변을 나누어 정리합니다. 문항이 나뉘어야 회사가 요구한 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다.</p>}</div>}
+        </> : <div className={styles.questionSection}><ResumeIntake key={resetKey} questions={questions} onChange={setQuestions} attachment={resumeFile} onAttachmentChange={setResumeFile} onError={setResumeError} onSplitConfirmed={setSplitConfirmed} compact onReset={resetDraft} showReset={Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0)}/>{resumeError && <p className={styles.inputError}>{resumeError}</p>}{unsplitDraft && <p className={styles.postingWarning}>{splitConfirmed
+        ? <><b>한 문항으로 진행합니다.</b> 문항이 하나뿐인 자기소개서라면 이대로 괜찮아요. 여러 문항을 붙여넣으셨다면 문항 사이에 <b>1. 지원 동기</b>처럼 번호와 제목을 넣어 주시면 나누어 정리합니다.</>
+        : <><b>문항 구분이 아직 안 되어 있어요.</b> 위 &lsquo;문항 구분 확인하기&rsquo;를 누르면 질문과 답변을 나누어 정리합니다. 문항이 나뉘어야 회사가 요구한 문항별 글자 수를 맞추고, 부족한 문항을 채워 드릴 수 있습니다.</>}</p>}</div>}
         {carriedRequest.trim() && <section className={styles.carriedRequest}>
           <span>이어서 진행 중인 요청사항</span>
           <q>{carriedRequest.trim()}</q>

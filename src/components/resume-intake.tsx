@@ -10,7 +10,7 @@ import { countNonWhitespaceCharacters } from "@/domain/usage-entitlement";
 import styles from "./resume-intake.module.css";
 
 export type ResumeAttachment = { filename: string; extension: string; sizeBytes: number };
-type Props = { questions: CoverLetterQuestion[]; onChange: (questions: CoverLetterQuestion[]) => void; attachment?: ResumeAttachment | null; onAttachmentChange?: (attachment: ResumeAttachment | null) => void; compact?: boolean; onError?: (message: string) => void; onReset?: () => void; showReset?: boolean };
+type Props = { questions: CoverLetterQuestion[]; onChange: (questions: CoverLetterQuestion[]) => void; attachment?: ResumeAttachment | null; onAttachmentChange?: (attachment: ResumeAttachment | null) => void; compact?: boolean; onError?: (message: string) => void; onReset?: () => void; showReset?: boolean; onSplitConfirmed?: (confirmed: boolean) => void };
 
 // Collapsing the question list back into one bulk draft has to drop the old
 // question's title and prompt. The bulk text already carries that heading, so
@@ -21,7 +21,7 @@ function toBulkQuestion(base: CoverLetterQuestion, answer: string): CoverLetterQ
   return { ...base, title: "", prompt: "", answer };
 }
 
-export function ResumeIntake({ questions, onChange, attachment, onAttachmentChange, compact, onError, onReset, showReset }: Props) {
+export function ResumeIntake({ questions, onChange, attachment, onAttachmentChange, compact, onError, onReset, showReset, onSplitConfirmed }: Props) {
   const [view, setView] = useState<"bulk" | "questions">(questions.length > 1 ? "questions" : "bulk");
   const [bulk, setBulk] = useState(() => questions.length > 1 ? serializeQuestionAnswers(questions, { includeEmptyAnswers: true }) : questions[0]?.answer ?? "");
   const [busy, setBusy] = useState(false);
@@ -40,12 +40,19 @@ export function ResumeIntake({ questions, onChange, attachment, onAttachmentChan
     setBulk(value);
     onChange([toBulkQuestion(questions[0] ?? createCoverLetterQuestion(), value)]);
     onError?.("");
+    // Edited again, so whatever they confirmed no longer describes this text.
+    onSplitConfirmed?.(false);
   }
 
   function confirmQuestions() {
     const parsed = splitCoverLetterDraft(bulk);
     onChange(parsed);
     setView("questions");
+    // Tells the page the applicant has seen the split result. A letter with one
+    // question is a real letter — 자유기술 1문항 companies exist — and before
+    // this the page had no way to tell that apart from "hasn't pressed the
+    // button yet", so it blocked both forever.
+    onSplitConfirmed?.(true);
   }
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -57,6 +64,7 @@ export function ResumeIntake({ questions, onChange, attachment, onAttachmentChan
       const extracted = await extractLocalDocument(selected);
       setBulk(extracted.text);
       onChange(splitCoverLetterDraft(extracted.text));
+      onSplitConfirmed?.(true);
       onAttachmentChange?.({ filename: extracted.filename, extension: extracted.extension, sizeBytes: extracted.sizeBytes });
       setView("questions");
     } catch (reason) {

@@ -2619,3 +2619,30 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
   2. **경험은행 콜드 스타트.** 첫 사용자에게는 값이 0입니다. 1회차부터 이득이 나려면 첫 분석에서 경험을 **자동 추출**해 넣어야 합니다. 폼을 채우게 하면 안 됩니다.
   3. **넷 중 기술적으로 방어되는 것은 없습니다.** 복제되지 않는 유일한 자산은 **결과 데이터**이고, 수집 구조는 이미 있습니다.
 - 순서 1순위는 **제출 준비도 화면**입니다. `readiness`가 이미 있어 가장 적은 작업으로 인상이 가장 크게 바뀝니다. 문구·포지셔닝 교체는 **하나라도 실물이 선 뒤**에 — 없는 것을 말로 먼저 약속하지 않습니다.
+
+## 2026-08-29 — Claude: 한 문항짜리 자소서가 막다른 길이던 문제
+
+- Agent/session: Claude. 사용자 보고: PRO·FINAL에서 자소서에 `11`만 쳐도 진행이 안 되고, `문항 구분 확인하기`를 눌러도 계속 같은 안내가 나옴.
+- Status: completed. 마이그레이션 없음.
+
+### 무엇이 잘못됐나
+
+- `pro-input-page.tsx`가 `splitCoverLetterDraft(bulkAnswer).length <= 1`이면 제출을 **막았습니다.**
+- 그런데 `문항 구분 확인하기`를 눌러도 그 함수는 **똑같이 1개를 돌려줍니다.** 즉 **누르면 풀린다고 안내하면서 절대 풀리지 않는 버튼**이었습니다.
+- `11`만의 문제가 아닙니다. **자유기술 1문항짜리 자기소개서는 실제로 존재하고, 그런 지원자는 결제 화면에 영영 도달할 수 없었습니다.**
+
+### 고친 방식
+
+- 안내는 **그대로 둡니다.** 벽이 아니게만 바꿨습니다.
+- `ResumeIntake`가 `onSplitConfirmed`로 **"사용자가 구분 결과를 실제로 봤다"**를 페이지에 알립니다. 확인을 눌렀고 결과가 정말 1문항이면 그건 답이지 미완료가 아닙니다.
+- 확인 후 문구가 바뀝니다: `한 문항으로 진행합니다. … 여러 문항을 붙여넣으셨다면 문항 사이에 1. 지원 동기처럼 번호와 제목을 넣어 주세요.`
+- 본문을 다시 고치면 확인이 **풀립니다.** 안 그러면 1문항으로 확인해 둔 상태가, 그 뒤 4문항을 통짜로 붙여넣은 글까지 보증하게 됩니다.
+- 파일 업로드로 들어온 경우도 확인된 것으로 봅니다(구분 결과 화면이 바로 열립니다).
+- Files/branch: `src/components/pro-input-page.tsx`, `src/components/resume-intake.tsx`, 신규 `src/components/pro-input-split-gate.test.ts` on `main`.
+- Validation: `npx vitest run` 677 passed (+4), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+
+### 확인한 사실 — Google Ads
+
+- 프로덕션에 `AW-18415179469` 태그가 **실제로 실려 있습니다**(`curl https://mooaresume.com`로 확인). `태그를 찾을 수 없음` 메일은 배포 이전에 발송된 것입니다.
+- `404 도착 페이지`는 PRO 화면 문제가 아닙니다. `/`, `/pro/polish`, `/onboarding`, `/quick`, `/guide`, `/new`는 전부 **200**입니다.
+- 없는 주소로 확인된 것: `/final`, `/pricing`, `/price`, `/about`, `/contact`, `/faq`, `/login`, `/signup`, `/pro`, `/final/build`(플래그 off라 정상), `/home`, `/index.html`. 광고 최종 URL이 이 중 하나일 가능성이 큽니다.
