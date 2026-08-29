@@ -117,6 +117,12 @@ export default function HomePage() {
           <span className="hero-mobile-sub">자기소개서 컨설팅 받기</span>
           <span className="visually-hidden">자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭</span>
         </h1>
+        {/* Outside the h1 on purpose: an aside about which device to use has no
+            business in the one line that tells a crawler what this page is.
+            Said before they paste a draft on a phone rather than after — the
+            files are on their computer anyway, and the result screen is a
+            working document with tabs, diffs and a DOCX download. */}
+        <p className="hero-mobile-hint">(자료를 올리고 결과를 보기에는 PC를 추천합니다)</p>
         <p className="hero-desktop">채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
         <LandingEntry />
         {/* Above the fold on purpose. "무엇을 받는지"에 답하는 가장 빠른 방법은

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ResultWorkspaceComplete } from "@/components/result-workspace-complete";
 import { ResultSignIn } from "@/components/result-sign-in";
 import { resultDocumentSchema } from "@/domain/result-document";
@@ -35,16 +34,9 @@ export default async function ResultPage({
   const parsed = resultDocumentSchema.safeParse(data?.result_data);
   if (!parsed.success) {
     if (!analysisRunId) return <ResultWorkspaceComplete/>;
-    // Either it is still running, or this account is not the one that paid for
-    // it. Both are worth saying, because the second is the one people hit after
-    // signing in with a different Google account than they bought with.
-    return <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, background: "#f7f9f7" }}>
-      <div style={{ width: "min(460px, 100%)", padding: "32px 30px", border: "1px solid #dfe6e2", borderRadius: 16, background: "#fff", textAlign: "center" }}>
-        <h1 style={{ margin: "0 0 10px", fontSize: 19, letterSpacing: "-0.03em" }}>이 계정에서는 아직 결과가 보이지 않습니다.</h1>
-        <p style={{ margin: "0 0 20px", color: "#68756f", fontSize: 13, lineHeight: 1.85 }}>분석이 아직 진행 중이거나, <b>결제하신 계정과 다른 계정</b>으로 로그인하셨을 수 있습니다. 잠시 뒤 새로고침해 보시고, 그래도 보이지 않으면 결제하신 메일 주소로 다시 로그인해 주세요.</p>
-        <Link href={`/result?analysisRunId=${encodeURIComponent(analysisRunId)}`} style={{ display: "inline-block", padding: "12px 20px", borderRadius: 10, background: "#176b4a", color: "#fff", fontSize: 14, fontWeight: 800 }}>다시 확인하기</Link>
-      </div>
-    </main>;
+    // They paid, so this screen owes them a way out rather than a description
+    // of the problem: switch Google account, retry, or reach a person.
+    return <ResultSignIn nextPath={`/result?analysisRunId=${encodeURIComponent(analysisRunId)}`} variant="missing"/>;
   }
 
   return <ResultWorkspaceComplete result={parsed.data}/>;

@@ -7,3 +7,31 @@
 .page>header{display:grid;grid-template-columns:1fr auto 1fr}
 .page>header>:first-child{grid-column:2}
 .page>header>:last-child{grid-column:3;justify-self:end}
+
+/* Phones.
+   The 938px rule stacks everything one per row, which is right for the inputs
+   and wrong for the choices: three cards a screen tall each turn one decision
+   into three scrolls, and the descriptions are read once and never again.
+   Three across, label only — the short label is what people actually pick by. */
+@media(max-width:640px){
+  .hero{padding:30px 0 22px}
+  .options{grid-template-columns:repeat(3,1fr);gap:8px}
+  .options>button{min-height:auto;padding:15px 8px 14px;text-align:center;border-radius:12px}
+  .options button>svg{width:20px;margin:0 auto 9px}
+  .options small{font-size:12px;line-height:1.45}
+  /* The full sentence and its description live on the desktop card. Here the
+     label carries it: 처음부터 작성 / 내용 보완 / 완성본 검수. */
+  .options b,.options p{display:none}
+  .radio{right:7px;top:7px;width:13px;height:13px}
+  .radio svg{width:8px!important}
+
+  .products{margin-top:22px;padding-top:22px}
+  .productGrid{grid-template-columns:repeat(3,1fr);gap:8px}
+  .productGrid>a,.productGrid>div{min-height:auto;padding:15px 10px;border-radius:12px;text-align:center}
+  .productGrid small{font-size:11px;line-height:1.45}
+  .productGrid b{font-size:11.5px;margin:8px 0 0;line-height:1.4}
+  .productGrid p{display:none}
+  .productGrid em{right:6px;top:6px;padding:2px 6px;font-size:9px}
+  .productGrid span{justify-content:center;margin-top:10px;font-size:11px}
+  .productGrid span svg{display:none}
+}

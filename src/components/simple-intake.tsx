@@ -53,12 +53,13 @@ type Props = {
   onDraftChange: (value: string) => void;
   targetLength: string;
   onTargetLengthChange: (value: string) => void;
+  resolvedLengths: string;
   files: SimpleIntakeFile[];
   onFilesChange: (files: SimpleIntakeFile[]) => void;
   onError?: (message: string) => void;
 };
 
-export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, files, onFilesChange, onError }: Props) {
+export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, files, onFilesChange, onError }: Props) {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [rejections, setRejections] = useState<Array<{ name: string; reason: string }>>([]);
@@ -174,7 +175,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           keeps it — see applyDefaultTargetLength. Making this required would
           stop people who genuinely have no limit. */}
       <label className={styles.limit}>
-        <span>문항별 글자 수 <em>선택</em></span>
+        <span>문항별 글자 수</span>
         <input
           inputMode="numeric"
           value={targetLength}
@@ -182,7 +183,11 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           onChange={(event) => onTargetLengthChange(event.target.value.replace(/[^0-9]/g, ""))}
           placeholder="예: 500"
         />
-        <small>문항마다 다르면 제목 뒤에 <b>(800자)</b>처럼 적어 주세요. 그 문항은 적힌 값을 씁니다. 비워두면 길이는 건드리지 않고 내용만 봅니다.</small>
+        <small>문항마다 다르면 제목 뒤에 <b>(800자)</b>처럼 적어 주세요. 그 문항은 적힌 값을 씁니다. 공고에 제한이 없다면 기본값 그대로 두셔도 됩니다.</small>
+        {/* Shown back, because this number decides how much gets written. A
+            wrong one here is the difference between a trim and a thousand
+            characters of invented filler. */}
+        {resolvedLengths && <b className={styles.resolved}>{resolvedLengths}</b>}
       </label>
 
       <div className={styles.boxFoot}>

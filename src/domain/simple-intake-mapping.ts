@@ -105,10 +105,41 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
  * looking at one box and cannot tell which half of it is short.
  */
 export function describeSimpleIntakeGap(mapping: SimpleIntakeMapping): string {
-  const hasLetter = mapping.questions.some((question) => question.answer.trim());
-  if (!hasLetter) return "자기소개서 내용을 붙여넣거나 자소서 파일을 넣어 주세요.";
+  const answered = mapping.questions.filter((question) => question.answer.trim());
+  if (answered.length === 0) return "자기소개서 내용을 붙여넣거나 자소서 파일을 넣어 주세요.";
   if (!mapping.posting.trim() && mapping.postingFilenames.length === 0) {
     return "채용공고를 함께 넣어 주세요. 공고가 있어야 요구 역량과 경험을 맞춰볼 수 있습니다.";
   }
+  // Never let a run start with no length to write to.
+  //
+  // Without a stated limit the target fell back to whatever the draft happened
+  // to be — 8,000 characters of pasted application form became an 8,000
+  // character goal, and a PRO BUILD run then tried to *fill* it. The number is
+  // prefilled with a safe default on screen, so reaching this sentence means
+  // they deliberately cleared it.
+  if (answered.some((question) => !question.targetLength)) {
+    return "문항별 글자 수를 적어 주세요. 공고에 제한이 없다면 그대로 두셔도 됩니다.";
+  }
   return "";
+}
+
+/**
+ * The length used when neither the posting nor the applicant states one.
+ *
+ * A Korean cover-letter question is 500-1,000 characters; 700 sits in the
+ * middle and is short enough that being wrong costs a trim rather than a
+ * thousand characters of invented filler.
+ */
+export const DEFAULT_TARGET_LENGTH = 700;
+
+/** What each answered question will actually be measured against. */
+export function describeResolvedLengths(mapping: SimpleIntakeMapping): string {
+  const lengths = mapping.questions
+    .filter((question) => question.answer.trim())
+    .map((question) => question.targetLength);
+  if (lengths.length === 0 || lengths.some((length) => !length)) return "";
+  const unique = Array.from(new Set(lengths));
+  return unique.length === 1
+    ? `모든 문항 ${unique[0]}자 기준으로 봅니다.`
+    : `문항별로 ${lengths.join(" · ")}자 기준으로 봅니다.`;
 }

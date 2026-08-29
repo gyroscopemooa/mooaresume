@@ -2724,3 +2724,36 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 100 미만은 무시합니다. 저장 스키마가 거절하는 값이라, `50` 오타가 두 화면 뒤에서 터지면 안 됩니다.
 - Files: `src/domain/cover-letter-question.ts`(+test), `src/domain/simple-intake-mapping.ts`(+test), `src/components/simple-intake.tsx`, `.module.css`, `src/components/pro-input-page.tsx`.
 - Validation: `npx vitest run` 704 passed (+6), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+
+## 2026-08-29 — Claude: 모바일 밀도, 결과 막다른 길, 글자 수 안전장치
+
+- Agent/session: Claude. 사용자 피드백 4건.
+- Status: completed. 마이그레이션 없음.
+
+### 1. 글자 수 안전장치 — 이게 제일 중요합니다
+
+- 지금까지 글자 수를 안 적으면 목표 길이가 **초안 자체의 길이**로 떨어졌습니다. 8,000자를 붙여넣으면 **8,000자가 목표**가 되고, PRO BUILD는 그 8,000자를 **채우려고** 합니다. 그대로 두면 요금이 터집니다.
+- 이제 **기본 700자가 미리 채워져 있습니다.** 한국 자소서 문항은 500~1,000자이고, 700이면 틀려도 **다듬는 정도로 끝나지 없는 내용 1,000자를 지어내지 않습니다.**
+- 그리고 **글자 수 없이는 진행이 막힙니다.** 미리 채워져 있으므로 이 문구를 보는 건 **일부러 지운 경우**뿐입니다.
+- 자소서 문항에 `(500자)`가 적혀 있으면 **그걸 먼저 씁니다.** 사장님 말씀대로 보통 자소서에 이미 적혀 있습니다.
+- 어떤 기준이 적용되는지 화면에 되돌려 보여줍니다: `모든 문항 700자 기준으로 봅니다.` / `문항별로 500 · 700자 기준으로 봅니다.`
+
+### 2. 결과가 안 보일 때 — 돈 낸 사람에게 막다른 길을 주면 안 됩니다
+
+- 설명만 있고 **할 수 있는 게 없었습니다.** 이제 세 가지를 줍니다:
+  - **다른 계정으로 로그인하기** — 실제로 가장 흔한 원인입니다. `prompt=select_account`로 구글 계정 선택창을 강제하고, 먼저 로그아웃합니다. 안 그러면 구글이 같은 세션을 그대로 돌려줘서 **버튼이 아무것도 안 하는 것처럼** 보입니다.
+  - **다시 확인하기**
+  - **`support@mooaresume.com`로 결제하신 메일 주소를 알려주세요.** 마지막 줄은 사과가 아니라 사람이어야 합니다.
+
+### 3. 모바일 밀도
+
+- 온보딩 유형 선택: 세로 3줄 → **가로 3칸.** 카드 하나가 한 화면이면 결정 하나가 스크롤 세 번이 됩니다. 긴 제목과 설명은 숨기고 **짧은 라벨**(`처음부터 작성`/`내용 보완`/`완성본 검수`)만 남깁니다 — 어차피 사람들이 그걸로 고릅니다.
+- QUICK·PRO·FINAL 카드도 **가로 3칸**, 설명 숨김.
+- PRO `이 유형 진행 순서` 4칸: 세로 1줄 → **2×2.** 순서를 한눈에 보라고 있는 건데 네 번 스크롤하면 의미가 없습니다.
+
+### 4. 메인 모바일에 PC 권장
+
+- `자기소개서 컨설팅 받기` 아래 작게 `(자료를 올리고 결과를 보기에는 PC를 추천합니다)`.
+- **`h1` 바깥**에 뒀습니다. 어느 기기를 쓰라는 참고 문구가 크롤러에게 이 페이지를 설명하는 한 줄에 들어가면 안 됩니다.
+- Files: `src/domain/simple-intake-mapping.ts`(+test), `src/components/simple-intake.tsx`, `.module.css`, `src/components/pro-input-page.tsx`, `.module.css`, `src/components/result-sign-in.tsx`, `.module.css`, `src/app/result/page.tsx`, `src/app/onboarding/onboarding.module.css`, `src/app/page.tsx`, `src/app/globals.css`.
+- Validation: `npx vitest run` 708 passed (+4), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. **화면 확인 미완** — dev 서버가 내려가 있습니다.

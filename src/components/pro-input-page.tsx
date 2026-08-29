@@ -30,7 +30,7 @@ import {
 import { writingStyleConfig, type WritingStyle } from "@/domain/writing-style";
 import { editingStanceConfig, type EditingStance } from "@/domain/editing-stance";
 import { SimpleIntake, type SimpleIntakeFile } from "./simple-intake";
-import { describeSimpleIntakeGap, mapSimpleIntake } from "@/domain/simple-intake-mapping";
+import { DEFAULT_TARGET_LENGTH, describeResolvedLengths, describeSimpleIntakeGap, mapSimpleIntake } from "@/domain/simple-intake-mapping";
 import styles from "./pro-input-page.module.css";
 import actionStyles from "./blocked-action.module.css";
 
@@ -131,7 +131,10 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   const [simpleDraft, setSimpleDraft] = useState("");
   const [simpleFiles, setSimpleFiles] = useState<SimpleIntakeFile[]>([]);
   const [simpleError, setSimpleError] = useState("");
-  const [simpleTargetLength, setSimpleTargetLength] = useState("");
+  // Prefilled rather than blank. An empty length let the target fall back to
+  // the draft's own size: 8,000 pasted characters became an 8,000 character
+  // goal, and a BUILD run then tried to fill it.
+  const [simpleTargetLength, setSimpleTargetLength] = useState(String(DEFAULT_TARGET_LENGTH));
 
   function resetDraft() {
     if (!window.confirm("입력한 지원서와 추가 자료를 모두 지우고 새로 시작할까요?")) return;
@@ -158,7 +161,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     setSimpleDraft("");
     setSimpleFiles([]);
     setSimpleError("");
-    setSimpleTargetLength("");
+    setSimpleTargetLength(String(DEFAULT_TARGET_LENGTH));
     setResetKey((key) => key + 1);
   }
 
@@ -309,7 +312,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         </div>
 
         {inputMode === "SIMPLE" && <>
-          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
+          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
         </>}

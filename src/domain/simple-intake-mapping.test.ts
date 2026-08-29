@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeSimpleIntakeGap, mapSimpleIntake, type SimpleIntakeSource } from "./simple-intake-mapping";
+import { DEFAULT_TARGET_LENGTH, describeResolvedLengths, describeSimpleIntakeGap, mapSimpleIntake, type SimpleIntakeSource } from "./simple-intake-mapping";
 
 function file(filename: string, kind: SimpleIntakeSource["kind"], text = "내용"): SimpleIntakeSource {
   return { filename, extension: filename.split(".").pop() ?? "pdf", sizeBytes: 1024, text, kind };
@@ -61,7 +61,9 @@ describe("간편 입력 매핑", () => {
     // One box, so "필수 항목을 확인하세요" leaves them nothing to act on.
     expect(describeSimpleIntakeGap(mapSimpleIntake("", []))).toContain("자기소개서");
     expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", []))).toContain("채용공고");
-    expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", [file("공고.pdf", "JOB_POSTING", "자격 요건")]))).toBe("");
+    // The length gate is checked last, so a draft with everything but a stated
+    // limit lands on that sentence rather than on a blank pass.
+    expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", [file("공고.pdf", "JOB_POSTING", "자격 요건")], 700))).toBe("");
   });
 });
 
@@ -82,5 +84,31 @@ describe("간편 입력 글자 수", () => {
   it("비워두면 아무것도 채우지 않는다", () => {
     const mapped = mapSimpleIntake("1. 지원 동기\n답변", [], null);
     expect(mapped.questions[0].targetLength).toBeNull();
+  });
+});
+
+describe("글자 수 안전장치", () => {
+  it("글자 수가 없으면 진행을 막는다", () => {
+    // Without a stated limit the target fell back to the draft's own length:
+    // 8,000 characters pasted became an 8,000 character goal, and PRO BUILD
+    // then tried to fill it.
+    const mapped = mapSimpleIntake("1. 지원 동기\n답변", [file("공고.pdf", "JOB_POSTING", "자격 요건")], null);
+    expect(describeSimpleIntakeGap(mapped)).toContain("글자 수");
+  });
+
+  it("자소서에 적힌 글자 수만으로도 통과한다", () => {
+    const mapped = mapSimpleIntake("1. 지원 동기 (500자)\n답변", [file("공고.pdf", "JOB_POSTING", "자격 요건")], null);
+    expect(describeSimpleIntakeGap(mapped)).toBe("");
+  });
+
+  it("기준 길이를 사람이 읽게 적어준다", () => {
+    const same = mapSimpleIntake("1. 지원 동기\n답변\n\n2. 역량\n답변", [], 700);
+    expect(describeResolvedLengths(same)).toContain("모든 문항 700자");
+    const mixed = mapSimpleIntake("1. 지원 동기 (500자)\n답변\n\n2. 역량\n답변", [], 700);
+    expect(describeResolvedLengths(mixed)).toContain("500 · 700");
+  });
+
+  it("기본값은 한국 자소서 문항 길이 한가운데다", () => {
+    expect(DEFAULT_TARGET_LENGTH).toBe(700);
   });
 });
