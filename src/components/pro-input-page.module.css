@@ -25,3 +25,77 @@
 .carriedRequest q{color:#17221d;font-size:12px;font-weight:700;quotes:"C" "D"}
 .carriedRequest small{color:#5c6b63;font-size:9px}
 .stanceIntro{margin:0 0 14px;color:#68756f;font-size:12.5px;line-height:1.8}.stanceIntro b{color:#17221d}.stancePoints{margin:10px 0 0;padding:0 0 0 14px;display:grid;gap:3px}.stancePoints li{color:#7d8a84;font-size:11.5px;line-height:1.6}
+
+/* Phones.
+   Everything above is sized for a 900px desktop column: 8-11px type that reads
+   as merely small on a monitor is unreadable at arm's length, which is what
+   "모바일에서 안 보인다" meant. Only sizes and padding are raised here — the
+   desktop scale above is untouched, and no rule is rewritten.
+
+   The 16px on fields is not a style choice. iOS Safari zooms the page in when a
+   control smaller than 16px takes focus and does not zoom back out, so every
+   tap on an input left the form cut off past the right edge and the page stuck
+   that way. */
+@media (max-width: 640px) {
+  .page > header { height: 58px; padding: 0 16px; }
+  .container { width: calc(100% - 28px); padding: 20px 0 72px; }
+  .back { font-size: 12px; }
+  .reset { font-size: 11px; }
+
+  .heading { gap: 11px; padding: 26px 0 18px; }
+  .heading > svg { width: 20px; }
+  .heading small { font-size: 10px; }
+  .heading h1 { font-size: 21px; line-height: 1.35; }
+  .heading p { font-size: 13px; line-height: 1.8; }
+
+  .flow { padding: 18px; }
+  .flow > div small { font-size: 10px; }
+  .flow h2 { font-size: 16px; margin-bottom: 13px; }
+  .flow li { padding: 11px 13px; }
+  .flow li > span { font-size: 10px; }
+  .flow b { font-size: 12px; margin-top: 5px; }
+  .flow p { font-size: 11px; }
+
+  .form { padding: 18px; }
+  .form > label { margin-bottom: 18px; }
+  .form label > span { font-size: 13px; }
+  .form label > span b { font-size: 10px; }
+  .form label > small { font-size: 11px; }
+  /* 16px: see the note above. */
+  .form textarea { padding: 12px; font-size: 16px; }
+
+  .files button { padding: 13px; font-size: 12px; }
+  .included { padding: 13px; }
+  .included > b { font-size: 11px; }
+  .included span { font-size: 11px; padding: 6px 9px; }
+  .included svg { width: 12px; }
+
+  .notice { padding: 13px; }
+  .notice b { font-size: 12px; }
+  .notice small { font-size: 11px; }
+  .submit { padding: 15px; font-size: 15px; }
+
+  .sectionTitle > div > span { font-size: 10px; }
+  .sectionTitle h3 { font-size: 15px; }
+  .sectionTitle > small { font-size: 11px; }
+  .categoryGrid button { padding: 10px 12px; font-size: 12px; }
+  .categoryGrid svg { width: 13px; }
+  .emptyExperience { font-size: 11px; padding: 14px; }
+
+  .experienceList > article { padding: 15px; }
+  .experienceList article > header span { font-size: 10px; }
+  .experienceList article > header b { font-size: 13px; }
+  .experienceGrid label > span { font-size: 11px; }
+  .experienceGrid label > span b { font-size: 10px; }
+  /* 16px: see the note above. */
+  .experienceGrid input, .experienceGrid textarea { padding: 11px; font-size: 16px; }
+  .experienceDetails summary { font-size: 11px; }
+  .bankNotice b { font-size: 12px; }
+  .bankNotice small { font-size: 11px; }
+
+  .styleGrid > button { padding: 14px; }
+  .styleGrid b { font-size: 13px; }
+  .styleGrid b em { font-size: 9px; }
+  .styleGrid p { font-size: 11px; }
+  .styleSafety, .polishConstraint { font-size: 11px; }
+}

@@ -2582,3 +2582,27 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - **EEA 동의 모드**는 넣지 않았습니다. 현재 대상이 국내이고, 동의 모드는 동의 배너와 함께 설계해야 의미가 있습니다.
 - Files/branch: `src/app/layout.tsx` on `main`.
 - Validation: `npx vitest run` 673 passed, `npx tsc --noEmit` clean, `npx eslint src/app/layout.tsx` 0건, `npx next build` 클린.
+
+## 2026-08-29 — Claude: PRO 입력 화면 모바일 가독성 + 간편 입력 스위치 설계 메모
+
+- Agent/session: Claude. 사용자 요청: (1) PRO 화면이 모바일에서 안 보임, (2) 간편/상세 입력 스위치 구상을 MD로 저장하고 할 일에 추가.
+- Status: (1) completed, (2) 문서만 작성 — **구현 미착수.** 마이그레이션 없음.
+
+### (1) PRO 화면 모바일
+
+- 원인은 레이아웃이 아니라 **글자 크기**였습니다. `pro-input-page.module.css`가 900px 데스크톱 칼럼 기준이라 **8~11px**이 전면에 깔려 있습니다. 모니터에서 작게 보이는 크기가 팔 길이에서는 안 읽힙니다.
+- 더 큰 문제: **입력칸이 9~12px**이었습니다. **iOS Safari는 16px 미만 컨트롤에 포커스가 가면 페이지를 확대하고 되돌리지 않습니다.** 필드를 한 번 누를 때마다 화면이 확대돼 오른쪽이 잘린 채 고정됩니다. 이게 "안 보인다"의 실체로 보입니다.
+- 640px 이하 미디어 쿼리를 **파일 끝에 덧붙였습니다.** 기존 규칙은 한 줄도 고치지 않았고 크기·여백만 올립니다. **모든 입력칸은 16px** — 취향이 아니라 확대를 막기 위한 값입니다.
+- 데스크톱은 완전히 그대로입니다.
+- Files/branch: `src/components/pro-input-page.module.css` on `main`.
+- Validation: `npx vitest run` 673 passed, `npx eslint .` 0건, `npx next build` 클린. **화면 확인은 못 했습니다** — dev 서버가 내려가 있어 `localhost:3001`이 응답하지 않았습니다. 사용자 확인 필요.
+
+### (2) 간편 입력 스위치
+
+- `docs/simple-input-switch-plan.md` 신규. 사용자 대화 원문을 그대로 붙이지 않고 **중복을 걷어내 설계 메모로 정리**했습니다.
+- 핵심: 입력은 큰 박스 하나, 분류는 무아가. 스위치는 `간편 ● ── ○ 상세`, 기본값 간편. **들어오는 데이터는 양쪽 동일**하고 분류 주체만 다릅니다.
+- 비용 방어를 문서의 절반으로 뒀습니다. **개수 제한만으로는 부족합니다** — 자소서를 PDF 하나로 합쳐 올리는 사람을 막으면 안 되므로 파일 수가 아니라 실제 내용량(페이지·글자 수)을 봐야 합니다.
+- 결제 전에는 **외부 API 비용 0원인 검사만**(파일명·크기·ZIP 목록·중복 hash·페이지 수·텍스트 추출), OCR과 HWP 변환은 결제 후.
+- HWP는 OpenAI API 공식 지원 목록에 없으므로 Upstage 라우팅. 모든 파일에 비싼 Parse를 쓰지 않도록 확장자별 분기를 적어 뒀습니다.
+- `알집` 표기는 `.alz`/`.egg`를 실제로 처리하기 전까지 쓰지 않습니다.
+- 구현 순서 6단계와 미결정 3건을 문서 끝에 정리했습니다. **1순위는 서버 한도 + Pre-check** — 없으면 나머지는 비용 사고입니다.
