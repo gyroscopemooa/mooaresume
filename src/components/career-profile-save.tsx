@@ -50,6 +50,6 @@ export function CareerProfileSave() {
     <section className={styles.card}><div className={styles.cardHeader}><span>저장 대상</span><b>{completed.length} / 3개 완료</b></div><ul className={styles.list}>{assessments.map((assessment) => { const done = completed.some((item) => item.code === assessment.code); return <li key={assessment.code} className={done ? styles.complete : ""}><span>{done ? <CheckCircle2 /> : "—"}</span><div><b>{assessment.label}</b><small>{done ? "현재 기기에 완료 결과가 있습니다." : "아직 완료하지 않았습니다."}</small></div></li>; })}</ul></section>
     <section className={styles.notice}><ShieldCheck /><p><b>저장 전 안내</b> 검사지 응답과 계산된 점수만 내 계정에 저장합니다. 이 결과는 진단·채용 예측·직업 적합 판정이 아니며, AI 해설은 별도의 자료 선택과 실행 없이는 호출되지 않습니다.</p></section>
     <div className={styles.actions}><Link href="/career/profile" className={styles.secondary}>종합 프로필로 돌아가기</Link><button type="button" className={styles.primary} onClick={save} disabled={state === "saving" || completed.length === 0}>{state === "saving" ? <LoaderCircle className={styles.spin} /> : state === "needs-login" ? <LogIn /> : <CloudUpload />}{state === "saving" ? "저장 중" : state === "needs-login" ? "로그인 필요" : "내 계정에 저장"}</button></div>
-    <p className={styles.message} aria-live="polite">{message}</p>{state === "needs-login" && <Link className={styles.inline} href="/entry">로그인 화면으로 이동</Link>}
+    <p className={styles.message} aria-live="polite">{message}</p>{state === "needs-login" && <Link className={styles.inline} href="/career/login?next=/career/profile">로그인 화면으로 이동</Link>}
   </main>;
 }

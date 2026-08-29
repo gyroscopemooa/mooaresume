@@ -8,7 +8,7 @@ export default function CareerLayout({ children }: Readonly<{ children: React.Re
       <Link href="/" className={styles.brand}><span>M</span> MOOA <b>Resume</b></Link>
       <nav style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <Link href="/career" style={{ color: "#65746a", fontSize: 11 }}>커리어 검사 홈</Link>
-        <Link href="/entry" style={{ display: "flex", alignItems: "center", gap: 4, color: "#65746a", fontSize: 11 }}><UserRound size={14} />로그인 · 내 프로필</Link>
+        <Link href="/career/login?next=/career/profile" style={{ display: "flex", alignItems: "center", gap: 4, color: "#65746a", fontSize: 11 }}><UserRound size={14} />로그인 · 내 프로필</Link>
         <Link href="/" className={styles.back}><ArrowLeft /> 자소서 첨삭</Link>
       </nav>
     </header>
