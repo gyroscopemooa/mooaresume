@@ -99,3 +99,20 @@
   .styleGrid p { font-size: 11px; }
   .styleSafety, .polishConstraint { font-size: 11px; }
 }
+
+/* The 간편/상세 switch. Small on purpose: it is a preference, not a decision
+   the applicant has to make before they can start. */
+.modeSwitch { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.modeSwitch button { padding: 7px 14px; border: 1px solid #dce5e0; border-radius: 999px; background: #fff; color: #77837c; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.modeSwitch button:hover { border-color: #78aa91; color: #176b4a; }
+.modeOn { border-color: #176b4a !important; background: #edf7f2 !important; color: #176b4a !important; box-shadow: 0 0 0 1px #176b4a; }
+.modeSwitch small { flex-basis: 100%; margin-top: 8px; color: #87928c; font-size: 11px; line-height: 1.7; }
+
+/* Kept in the tree, out of the way. Losing what was typed on the way to the
+   other pane would make the switch something nobody presses twice. */
+.hiddenPane { display: none; }
+
+@media (max-width: 640px) {
+  .modeSwitch button { flex: 1; padding: 11px; font-size: 13px; }
+  .modeSwitch small { font-size: 11.5px; }
+}

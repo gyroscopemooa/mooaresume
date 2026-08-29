@@ -84,13 +84,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
 })(window, document, "clarity", "script", "y66zftrtdb");`}
         </Script>
-        {/* Google Ads (gtag.js), AW-18415179469. Google's snippet asks for the
-            <head>; afterInteractive puts it at the end of <body> instead, which
-            is what the two tags above do and what keeps a third-party library
-            off the critical path. Conversion tracking is unaffected — the tag
-            only has to run, not to run first. */}
-        <Script id="google-ads-lib" strategy="afterInteractive" src="https://www.googletagmanager.com/gtag/js?id=AW-18415179469" />
-        <Script id="google-ads-config" strategy="afterInteractive">
+        {/* Google Ads (gtag.js), AW-18415179469.
+
+            beforeInteractive, which puts both tags in <head> where Google's
+            instructions and its automated "tag not found" check expect them.
+            afterInteractive worked — the tag was in the served HTML either way,
+            verified with curl — but an ad account flagged over placement costs
+            real money, and the script is async, so the cost of being certain is
+            close to nothing. The Naver and Clarity tags below stay where they
+            are; nobody audits those. */}
+        <Script id="google-ads-lib" strategy="beforeInteractive" src="https://www.googletagmanager.com/gtag/js?id=AW-18415179469" />
+        <Script id="google-ads-config" strategy="beforeInteractive">
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 // Google's snippet leaves gtag as a bare function declaration, which is global

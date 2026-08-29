@@ -29,6 +29,8 @@ import {
 } from "@/domain/candidate-material";
 import { writingStyleConfig, type WritingStyle } from "@/domain/writing-style";
 import { editingStanceConfig, type EditingStance } from "@/domain/editing-stance";
+import { SimpleIntake, type SimpleIntakeFile } from "./simple-intake";
+import { describeSimpleIntakeGap, mapSimpleIntake } from "@/domain/simple-intake-mapping";
 import styles from "./pro-input-page.module.css";
 import actionStyles from "./blocked-action.module.css";
 
@@ -122,6 +124,13 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   const [editingStance, setEditingStance] = useState<EditingStance>("BALANCED");
   const [resetKey, setResetKey] = useState(0);
   const [splitConfirmed, setSplitConfirmed] = useState(false);
+  // 간편 by default. The detailed screen asks the applicant to file each
+  // document into the right slot before it will do anything, which is work the
+  // product should be doing — they already know what their files are.
+  const [inputMode, setInputMode] = useState<"SIMPLE" | "DETAILED">("SIMPLE");
+  const [simpleDraft, setSimpleDraft] = useState("");
+  const [simpleFiles, setSimpleFiles] = useState<SimpleIntakeFile[]>([]);
+  const [simpleError, setSimpleError] = useState("");
 
   function resetDraft() {
     if (!window.confirm("입력한 지원서와 추가 자료를 모두 지우고 새로 시작할까요?")) return;
@@ -145,6 +154,9 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     setGuidedDraft(createGuidedCreateDraft());
     setWritingStyle("BALANCED");
     setSplitConfirmed(false);
+    setSimpleDraft("");
+    setSimpleFiles([]);
+    setSimpleError("");
     setResetKey((key) => key + 1);
   }
 
@@ -169,28 +181,42 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   }, []);
 
   function continueFlow() {
-    const draftText = serializeQuestionAnswers(questions);
+    // The simple box saves exactly what the detailed screen saves. Everything
+    // downstream — checkout, analysis, the server — keeps receiving the same
+    // shape, so there is one pipeline to keep correct rather than two.
+    const effective = inputMode === "SIMPLE"
+      ? mapSimpleIntake(simpleDraft, simpleFiles)
+      : {
+          questions,
+          posting,
+          postingFilenames,
+          materialAttachments,
+          freeformAttachments,
+          sourceFile: resumeFile,
+          droppedFilenames: [] as string[],
+        };
+    const draftText = serializeQuestionAnswers(effective.questions);
     saveGuestDraft({
       draftText,
-      questionDrafts: questions.map((question) => question.answer),
-      questions,
+      questionDrafts: effective.questions.map((question) => question.answer),
+      questions: effective.questions,
       // Derived from what the applicant typed per question; 700 is only the
       // floor for a draft that states no limit anywhere.
-      targetLength: resolveDraftTargetLength(questions, 700),
+      targetLength: resolveDraftTargetLength(effective.questions, 700),
       temporaryWritingMode: mode,
       selectedProduct: product,
       companyName: companyName.trim() || undefined,
       roleName: roleName.trim() || undefined,
       writingStyle,
       editingStance,
-      sourceFilename: resumeFile?.filename,
-      sourceFileExtension: resumeFile?.extension,
-      sourceFileSizeBytes: resumeFile?.sizeBytes,
+      sourceFilename: effective.sourceFile?.filename,
+      sourceFileExtension: effective.sourceFile?.extension,
+      sourceFileSizeBytes: effective.sourceFile?.sizeBytes,
       revisionRequest: carriedRequest.trim() || undefined,
     });
-    sessionStorage.setItem("mooa:guest-job-posting:v1", posting);
-    sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: postingUrl, text: posting, filenames: postingFilenames }));
-    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes, freeformAttachments, experiences, profileEntries, materialAttachments }));
+    sessionStorage.setItem("mooa:guest-job-posting:v1", effective.posting);
+    sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: inputMode === "SIMPLE" ? "" : postingUrl, text: effective.posting, filenames: effective.postingFilenames }));
+    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes: inputMode === "SIMPLE" ? "" : freeformNotes, freeformAttachments: effective.freeformAttachments, experiences: inputMode === "SIMPLE" ? [] : experiences, profileEntries: inputMode === "SIMPLE" ? [] : profileEntries, materialAttachments: effective.materialAttachments }));
     router.push("/analysis/prepare");
   }
 
@@ -221,7 +247,10 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   // the split result and it really is one question.
   const blocksOnUnsplitDraft = unsplitDraft && !splitConfirmed;
   const hasCoverLetterAnswer = questions.some((question) => question.answer.trim());
-  const blockedReason = !hasPostingSource
+  const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles) : null;
+  const blockedReason = simpleMapping
+    ? describeSimpleIntakeGap(simpleMapping)
+    : !hasPostingSource
     ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."
     // A warning was not enough. With one question the whole letter is analysed
     // as a single item: the per-question target falls back to a default, so a
@@ -253,7 +282,22 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
       </section>
 
       <section className={styles.form}>
+        {/* Both panes stay mounted. Switching back and forth is a comparison,
+            not a reset — losing what was typed on the way over would make the
+            switch something nobody presses twice. Only the payload branches. */}
+        <div className={styles.modeSwitch} role="radiogroup" aria-label="입력 방식">
+          <button type="button" role="radio" aria-checked={inputMode === "SIMPLE"} className={inputMode === "SIMPLE" ? styles.modeOn : ""} onClick={() => setInputMode("SIMPLE")}>간편 입력</button>
+          <button type="button" role="radio" aria-checked={inputMode === "DETAILED"} className={inputMode === "DETAILED" ? styles.modeOn : ""} onClick={() => setInputMode("DETAILED")}>상세 입력</button>
+          <small>입력 방식만 다르고 첨삭·분석 수준은 동일합니다. 간편 입력에서는 자료를 한 번에 넣으면 자동으로 분류합니다.</small>
+        </div>
 
+        {inputMode === "SIMPLE" && <>
+          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
+          {simpleError && <p className={styles.inputError}>{simpleError}</p>}
+          {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
+        </>}
+
+        <div className={inputMode === "SIMPLE" ? styles.hiddenPane : undefined}>
         <JobPostingInput url={postingUrl} text={posting} filenames={postingFilenames} onUrlChange={setPostingUrl} onTextChange={setPosting} onFilenamesChange={setPostingFilenames}/>
         {linkOnlyPosting && <p className={styles.postingWarning}><b>링크만으로는 공고 내용을 읽을 수 없어요.</b> 이 서비스는 링크를 열지 않고 입력된 글자만 분석합니다. 지금 진행하면 공고 요구사항 대조는 제공되지 않습니다. 위 &lsquo;링크 내용 불러오기&rsquo;를 누르거나, 공고 상세 내용을 복사해 붙여넣어 주세요.</p>}
         <div className={styles.targetFields}>
@@ -347,6 +391,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
           </button>; })}</div>
           <p className={styles.styleSafety}><LockKeyhole/> 어떤 방향을 골라도 사실은 바뀌지 않습니다. 다듬는 것은 표현이고, 지원자가 실제로 한 일은 그대로 둡니다.</p>
         </section>
+        </div>
         <div className={styles.notice}><LockKeyhole/><span><b>아직 서버로 전송하지 않습니다.</b><small>다음 화면에서 범위를 확인한 뒤 로그인·결제 경계로 이동합니다.</small></span></div>
         {blockedReason && <p className={actionStyles.message}><b>아직 {content.cta}을 진행할 수 없어요.</b><br/>{blockedReason}</p>}
         <div className={actionStyles.wrap} onMouseEnter={() => blockedReason && setShowBlockedTip(true)} onMouseLeave={() => setShowBlockedTip(false)} onFocus={() => blockedReason && setShowBlockedTip(true)} onBlur={() => setShowBlockedTip(false)}>

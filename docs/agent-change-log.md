@@ -2646,3 +2646,31 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 프로덕션에 `AW-18415179469` 태그가 **실제로 실려 있습니다**(`curl https://mooaresume.com`로 확인). `태그를 찾을 수 없음` 메일은 배포 이전에 발송된 것입니다.
 - `404 도착 페이지`는 PRO 화면 문제가 아닙니다. `/`, `/pro/polish`, `/onboarding`, `/quick`, `/guide`, `/new`는 전부 **200**입니다.
 - 없는 주소로 확인된 것: `/final`, `/pricing`, `/price`, `/about`, `/contact`, `/faq`, `/login`, `/signup`, `/pro`, `/final/build`(플래그 off라 정상), `/home`, `/index.html`. 광고 최종 URL이 이 중 하나일 가능성이 큽니다.
+
+## 2026-08-29 — Claude: 간편/상세 입력 스위치 (1차)
+
+- Agent/session: Claude. 사용자 요청: 비교해보려면 스위치부터 만드는 게 맞겠다. 설계는 `docs/simple-input-switch-plan.md`.
+- Status: completed (UI + 분류 + 매핑). **파일 한도·Pre-check·HWP는 아직입니다.**  마이그레이션 없음.
+
+### 만든 것
+
+- **`src/domain/document-classify.ts`** — 파일명 먼저, 그다음 본문 첫 1,500자. **모델을 부르지 않습니다.** 분류는 결제 전에 돌기 때문에, 여기서 유료 호출을 하면 결제하지 않을 사람에게 돈을 씁니다.
+  - 힌트 순서가 중요합니다. `경력기술서`에는 `경력`이, `자기소개서`는 `자소서`로 줄어들어, 느슨한 규칙을 앞에 두면 둘 다 삼킵니다.
+  - 파일명이 `문서1.pdf`처럼 쓸모없으면 `자격 요건`·`지원 동기`·`경력 사항` 같은 제목 패턴으로 판단합니다.
+  - 붙여넣은 글(파일명 없음)은 자기소개서로 봅니다. 기타로 두면 정작 중요한 문서를 놓칩니다.
+- **`src/components/simple-intake.tsx`** — 큰 박스 하나 + 파일 추가(다중, ZIP 포함) + **분류 결과 목록**. 행마다 종류를 바꿀 수 있습니다. **고칠 수 없는 추측은 추측 안 하느니만 못합니다** — 이 확인 단계가 채팅창과 제품을 가르는 부분입니다.
+- **`src/domain/simple-intake-mapping.ts`** — 간편 입력을 **기존 저장 형태 그대로** 변환합니다. 결제·분석·서버는 지금과 똑같은 걸 받습니다. 파이프라인을 둘로 만들면 FINAL을 빠뜨릴 곳도 둘이 됩니다.
+  - 붙여넣은 글이 첨부된 자소서 파일보다 **우선**합니다. 둘 다 넣은 사람은 붙여넣은 쪽을 뜻합니다.
+  - 첨부 상한(목록당 10개, 5만 자)을 여기서 지키고 **잘린 파일 이름을 돌려줍니다.** 저장 시점에 던지면 화면을 다 채운 뒤라 손쓸 수 없습니다.
+- **스위치** — `간편 · 상세`, **기본값 간편**. 두 화면은 **둘 다 mount 상태로 둡니다.** 오가는 것은 비교지 초기화가 아니라서, 넘어갈 때 입력이 사라지면 아무도 두 번 누르지 않습니다. 갈라지는 것은 **저장되는 payload뿐**입니다.
+- 진행 불가 사유도 이름을 댑니다: `자기소개서 내용을 붙여넣거나…` / `채용공고를 함께 넣어 주세요…`. 박스가 하나라 `필수 항목을 확인하세요`로는 무엇이 모자란지 알 수 없습니다.
+- Files/branch: 신규 `src/domain/document-classify.ts`(+test), `src/domain/simple-intake-mapping.ts`(+test), `src/components/simple-intake.tsx`, `.module.css`; 수정 `src/components/pro-input-page.tsx`, `.module.css` on `main`.
+- Validation: `npx vitest run` 691 passed (+14), `npx tsc --noEmit` clean, `npx eslint` 0건, `npx next build` 클린. **화면 확인 미완** — dev 서버가 내려가 있습니다.
+- 보존: 상세 입력은 **한 줄도 지우지 않았습니다.** 기존 `/pro/*` 화면 전체가 그대로 상세 모드로 남습니다.
+
+## 2026-08-29 — Claude: Google 태그를 head로 이동
+
+- 사용자 문의: Google 안내대로 `</head>` 앞에 넣어야 하는 것 아닌가.
+- `afterInteractive` → `beforeInteractive`. 태그는 **어느 쪽이든 서빙되는 HTML에 들어 있었고**(`curl`로 확인) 그래서 동작에는 문제가 없었지만, 배치 때문에 광고 계정이 제한되면 **실제 돈**이 나갑니다. 스크립트가 `async`라 확실히 해두는 비용은 거의 0입니다.
+- 네이버·Clarity 태그는 그대로 둡니다. 그쪽은 검사하는 곳이 없습니다.
+- Files: `src/app/layout.tsx`.

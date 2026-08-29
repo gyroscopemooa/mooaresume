@@ -1,0 +1,59 @@
+.intake { display: grid; gap: 14px; }
+
+.box { padding: 24px; border: 1px solid #dfe6e2; border-radius: 14px; background: #fff; }
+.boxHead h3 { margin: 0 0 6px; font-size: 17px; letter-spacing: -0.02em; }
+.boxHead p { margin: 0 0 14px; color: #68756f; font-size: 12.5px; line-height: 1.75; }
+.box textarea { width: 100%; padding: 14px; border: 1px solid #dfe6e2; border-radius: 10px; background: #fbfdfc; font: inherit; font-size: 14px; line-height: 1.7; resize: vertical; outline: 0; }
+.box textarea:focus { border-color: #176b4a; background: #fff; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.08); }
+
+.boxFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.boxFoot > span { color: #87928c; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+.attach { display: inline-flex; align-items: center; gap: 7px; padding: 10px 15px; border: 1px dashed #c6d2cc; border-radius: 9px; background: #fafcfb; color: #41514a; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.attach:hover { border-color: #176b4a; background: #f2f9f5; color: #176b4a; }
+.attach svg { width: 15px; height: 15px; }
+.attach input { display: none; }
+.spin { animation: simpleSpin 900ms linear infinite; }
+@keyframes simpleSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+.formats { display: block; margin-top: 9px; color: #8a9690; font-size: 11px; line-height: 1.6; }
+
+/* The sorting result. This is the half that makes the single box a product
+   rather than a chat window: a guess nobody can see or fix is worse than no
+   guess at all. */
+.sorted { padding: 20px 22px; border: 1px solid #cfe4d8; border-radius: 14px; background: #f5fbf8; }
+.sortedHead { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.sortedHead b { display: flex; align-items: center; gap: 7px; font-size: 14px; color: #0f4b33; }
+.sortedHead b svg { width: 15px; height: 15px; }
+.sortedHead > span { color: #4c6459; font-size: 12px; }
+
+.fileList { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fileList li { display: grid; grid-template-columns: 18px 1fr auto auto; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid #dfe9e4; border-radius: 10px; background: #fff; }
+.fileList li > svg { width: 16px; height: 16px; color: #8a9690; }
+.fileList b { display: block; font-size: 12.5px; word-break: break-all; }
+.fileList small { display: block; margin-top: 3px; color: #87928c; font-size: 11px; }
+.fileList select { padding: 7px 9px; border: 1px solid #d9e3de; border-radius: 8px; background: #fff; color: #2f4038; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.fileList select:focus { outline: 2px solid #176b4a; outline-offset: 1px; }
+.fileList button { display: grid; place-items: center; padding: 6px; border: 0; border-radius: 7px; background: transparent; color: #96a29b; cursor: pointer; }
+.fileList button:hover { background: #fbeeee; color: #a34848; }
+.fileList button svg { width: 15px; height: 15px; }
+
+.sortedNote { margin: 12px 0 0; color: #4c6459; font-size: 11.5px; line-height: 1.7; }
+
+@media (max-width: 640px) {
+  .box { padding: 18px; }
+  .boxHead h3 { font-size: 16px; }
+  .boxHead p { font-size: 12.5px; }
+  /* 16px so iOS Safari does not zoom the page in on focus and leave it there. */
+  .box textarea { font-size: 16px; padding: 12px; }
+  .boxFoot { flex-direction: column; align-items: stretch; gap: 9px; }
+  .attach { justify-content: center; padding: 13px; font-size: 13px; }
+  .sorted { padding: 16px; }
+  /* Four columns do not fit a phone; the name gets its own row above the
+     controls rather than being truncated to nothing. */
+  .fileList li { grid-template-columns: 18px 1fr auto; }
+  .fileList li > div { grid-column: 2 / -1; }
+  .fileList select { grid-column: 2; font-size: 12px; }
+  .fileList button { grid-column: 3; }
+}
