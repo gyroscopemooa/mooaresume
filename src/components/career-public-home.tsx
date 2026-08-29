@@ -11,9 +11,9 @@ import { scoreWorkValues, type WorkValueAnswer } from "@/domain/career-work-valu
 import styles from "./career-public-home.module.css";
 
 const assessments = [
-  { id: "01", name: "직업흥미 탐색", method: "RIASEC · BETA", meta: "30문항 · 약 5분", description: "선호하는 활동과 문제 해결 방식", href: "/career/interest", icon: Compass },
-  { id: "02", name: "업무성향 분석", method: "IPIP BIG FIVE", meta: "50문항 · 약 7분", description: "업무 방식과 선호 환경", href: "/career/work-style", icon: BarChart3 },
-  { id: "03", name: "직업가치 탐색", method: "WORK VALUES · BETA", meta: "18문항 · 약 4분", description: "일에서 중요하게 보는 조건", href: "/career/values", icon: Sparkles },
+  { id: "01", name: "직업흥미 탐색", method: "RIASEC · BETA", meta: "30문항 · 약 5분", description: "무엇을 해 보고 싶은가", href: "/career/interest", icon: Compass },
+  { id: "02", name: "업무성향 분석", method: "IPIP BIG FIVE", meta: "50문항 · 약 7분", description: "어떻게 일하는가", href: "/career/work-style", icon: BarChart3 },
+  { id: "03", name: "직업가치 탐색", method: "WORK VALUES · BETA", meta: "18문항 · 약 4분", description: "어떤 조건을 중요하게 보는가", href: "/career/values", icon: Sparkles },
 ] as const;
 const storageKeys = { workStyle: "mooa-work-style-answers-v1", interest: "mooa-career-interest-answers-v1", values: "mooa-career-work-values-v1" } as const;
 const subscribe = () => () => undefined;
