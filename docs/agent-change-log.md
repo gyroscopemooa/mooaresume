@@ -3337,3 +3337,26 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 390px: 세로로 쌓임, 제목 38px, 검색어 22px, 가로 스크롤 0.
 - Files: `src/components/career-assessment-catalog.tsx`, `.module.css`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-29 — Claude: 샘플 결과 화면 정리, 간편 입력에서 공고를 선택으로
+
+- Agent/session: Claude. 사용자 요청 3건.
+- Status: completed. 마이그레이션 없음.
+
+### 샘플 결과 화면
+
+- 상단 `완성본` 배지 삭제(문구와 배경 둘 다). 헤더에는 저장 버튼 셋만 남았습니다.
+- 샘플에서 `전체 복사`·`DOCX 저장`·`TXT 저장`을 누르면 **안내가 뜨고 `내 자소서로 시작하기`(온보딩) 버튼**이 붙습니다.
+- **버튼을 비활성으로 만들지 않았습니다.** 회색 버튼은 "이 기능이 고장났다"로 읽히고, 지금 필요한 말은 "이 화면이 데모다"입니다. 누르면 그렇게 말합니다.
+- 안내는 헤더 바로 아래에 나옵니다. 방금 누른 버튼 옆이어야지, 스크롤해서 떠나온 페이지 맨 위면 안 됩니다.
+- PRO 내용은 가리지 않습니다. 샘플의 목적이 **무엇을 받는지 보여주는 것**이라 모자이크는 목적과 반대입니다.
+
+### 간편 입력 — 공고가 필수가 아니게
+
+- 채용공고가 없으면 **진행 자체가 막혀** 있었습니다. 초안은 있는데 공고가 없는 사람에게는, 대조 없이 돌려주는 편이 아예 못 돌리는 것보다 낫습니다.
+- 막는 대신 **무엇이 빠지는지 이름을 대고** 알립니다:
+  - `채용공고가 없어 요구 역량과 경험을 맞춰보는 대조는 빠집니다.`
+  - `이력서·경력기술서가 없어 자기소개서에 적힌 내용의 근거 확인은 빠집니다.`
+- 자기소개서와 글자 수는 **여전히 필수**입니다. 그 둘이 없으면 분석할 대상 자체가 없습니다.
+- Files: `src/components/result-workspace-complete.tsx`, `.module.css`, `src/domain/simple-intake-mapping.ts`(+test), `src/components/pro-input-page.tsx`, `.module.css`.
+- Validation: 716 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. 샘플에서 `전체 복사` → 안내 표시, 링크 `/onboarding` 확인.

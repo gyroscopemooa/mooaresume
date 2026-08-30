@@ -107,9 +107,10 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
 export function describeSimpleIntakeGap(mapping: SimpleIntakeMapping): string {
   const answered = mapping.questions.filter((question) => question.answer.trim());
   if (answered.length === 0) return "자기소개서 내용을 붙여넣거나 자소서 파일을 넣어 주세요.";
-  if (!mapping.posting.trim() && mapping.postingFilenames.length === 0) {
-    return "채용공고를 함께 넣어 주세요. 공고가 있어야 요구 역량과 경험을 맞춰볼 수 있습니다.";
-  }
+  // The posting is no longer required. It was blocking people who have a draft
+  // and no posting to hand — and refusing to run at all is worse for them than
+  // running without the posting-to-experience comparison. What it costs is said
+  // out loud instead, on the screen, before they continue.
   // Never let a run start with no length to write to.
   //
   // Without a stated limit the target fell back to whatever the draft happened
@@ -133,6 +134,25 @@ export function describeSimpleIntakeGap(mapping: SimpleIntakeMapping): string {
 export const DEFAULT_TARGET_LENGTH = 700;
 
 /** What each answered question will actually be measured against. */
+/**
+ * What the run will not be able to do, given what is missing. Empty when
+ * nothing is missing.
+ *
+ * A warning, not a block: they are told what they lose and continue if they
+ * want to. Naming the specific loss is the difference between a notice someone
+ * reads and one they click past.
+ */
+export function describeSimpleIntakeGaps(mapping: SimpleIntakeMapping): string[] {
+  const gaps: string[] = [];
+  if (!mapping.posting.trim() && mapping.postingFilenames.length === 0) {
+    gaps.push("채용공고가 없어 요구 역량과 경험을 맞춰보는 대조는 빠집니다.");
+  }
+  if (mapping.materialAttachments.length === 0) {
+    gaps.push("이력서·경력기술서가 없어 자기소개서에 적힌 내용의 근거 확인은 빠집니다.");
+  }
+  return gaps;
+}
+
 export function describeResolvedLengths(mapping: SimpleIntakeMapping): string {
   const lengths = mapping.questions
     .filter((question) => question.answer.trim())

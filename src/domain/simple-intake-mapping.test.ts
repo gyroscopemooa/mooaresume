@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TARGET_LENGTH, describeResolvedLengths, describeSimpleIntakeGap, mapSimpleIntake, type SimpleIntakeSource } from "./simple-intake-mapping";
+import { DEFAULT_TARGET_LENGTH, describeResolvedLengths, describeSimpleIntakeGap, describeSimpleIntakeGaps, mapSimpleIntake, type SimpleIntakeSource } from "./simple-intake-mapping";
 
 function file(filename: string, kind: SimpleIntakeSource["kind"], text = "내용"): SimpleIntakeSource {
   return { filename, extension: filename.split(".").pop() ?? "pdf", sizeBytes: 1024, text, kind };
@@ -60,7 +60,8 @@ describe("간편 입력 매핑", () => {
   it("모자란 것을 이름 대고 말한다", () => {
     // One box, so "필수 항목을 확인하세요" leaves them nothing to act on.
     expect(describeSimpleIntakeGap(mapSimpleIntake("", []))).toContain("자기소개서");
-    expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", []))).toContain("채용공고");
+    // The posting is a warning now, not a block — see 자료 없이도 진행 below.
+    expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", [], 700))).toBe("");
     // The length gate is checked last, so a draft with everything but a stated
     // limit lands on that sentence rather than on a blank pass.
     expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", [file("공고.pdf", "JOB_POSTING", "자격 요건")], 700))).toBe("");
@@ -110,5 +111,33 @@ describe("글자 수 안전장치", () => {
 
   it("기본값은 한국 자소서 문항 길이 한가운데다", () => {
     expect(DEFAULT_TARGET_LENGTH).toBe(700);
+  });
+});
+
+describe("자료 없이도 진행", () => {
+  it("공고가 없어도 막지 않는다", () => {
+    // Refusing to run at all is worse for someone with a draft and no posting
+    // than running without the comparison.
+    const mapped = mapSimpleIntake("1. 지원 동기\n답변입니다", [], 700);
+    expect(describeSimpleIntakeGap(mapped)).toBe("");
+  });
+
+  it("자기소개서는 여전히 필요하다", () => {
+    expect(describeSimpleIntakeGap(mapSimpleIntake("", [], 700))).toContain("자기소개서");
+  });
+
+  it("빠진 것을 이름 대고 알린다", () => {
+    const bare = mapSimpleIntake("1. 지원 동기\n답변입니다", [], 700);
+    const gaps = describeSimpleIntakeGaps(bare);
+    expect(gaps.some((g) => g.includes("채용공고"))).toBe(true);
+    expect(gaps.some((g) => g.includes("이력서"))).toBe(true);
+  });
+
+  it("다 갖추면 아무 말도 하지 않는다", () => {
+    const full = mapSimpleIntake("1. 지원 동기\n답변입니다", [
+      file("공고.pdf", "JOB_POSTING", "자격 요건"),
+      file("이력서.pdf", "RESUME"),
+    ], 700);
+    expect(describeSimpleIntakeGaps(full)).toEqual([]);
   });
 });

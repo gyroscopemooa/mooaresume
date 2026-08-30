@@ -30,7 +30,7 @@ import {
 import { writingStyleConfig, type WritingStyle } from "@/domain/writing-style";
 import { editingStanceConfig, type EditingStance } from "@/domain/editing-stance";
 import { SimpleIntake, type SimpleIntakeFile } from "./simple-intake";
-import { DEFAULT_TARGET_LENGTH, describeResolvedLengths, describeSimpleIntakeGap, mapSimpleIntake } from "@/domain/simple-intake-mapping";
+import { DEFAULT_TARGET_LENGTH, describeResolvedLengths, describeSimpleIntakeGap, describeSimpleIntakeGaps, mapSimpleIntake } from "@/domain/simple-intake-mapping";
 import styles from "./pro-input-page.module.css";
 import actionStyles from "./blocked-action.module.css";
 
@@ -256,6 +256,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   // not fail on save two screens later.
   const simpleTargetLengthValue = Number(simpleTargetLength) >= 100 ? Number(simpleTargetLength) : null;
   const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue) : null;
+  const simpleGaps = simpleMapping ? describeSimpleIntakeGaps(simpleMapping) : [];
   const blockedReason = simpleMapping
     ? describeSimpleIntakeGap(simpleMapping)
     : !hasPostingSource
@@ -315,6 +316,13 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
           <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
+          {/* A warning, not a wall. Someone with a draft and no posting was
+              being refused outright, which helped them less than running
+              without the comparison would have. */}
+          {simpleMapping && simpleGaps.length > 0 && <p className={styles.postingWarning}>
+            <b>이대로도 진행할 수 있습니다.</b> 다만 없는 자료만큼 빠지는 것이 있습니다:
+            {simpleGaps.map((gap) => <span key={gap} className={styles.gapLine}>· {gap}</span>)}
+          </p>}
         </>}
 
         <div className={inputMode === "SIMPLE" ? styles.hiddenPane : undefined}>

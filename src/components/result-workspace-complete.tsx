@@ -405,12 +405,34 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
   // `product === "PRO"` exactly, which would have hidden 공고·경험 분석 and
   // 면접 준비 from the tier that costs more than PRO.
   const showsProTabs = result.product === "PRO" || result.product === "FINAL";
+  const [sampleNotice, setSampleNotice] = useState(false);
+
+  /**
+   * Saving from the sample.
+   *
+   * The buttons stay — greying them out would say the feature is broken rather
+   * than that this page is a demo. Pressing one says so and offers the door to
+   * a real run, which is the only thing that would make it work.
+   */
+  function sampleBlocked() {
+    if (!result.isSample) return false;
+    setSampleNotice(true);
+    return true;
+  }
 
   return <main className={styles.page}>
     <header className={styles.header}>
       <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
-      <div><em className={styles.completeBadge}>완성본</em><button onClick={() => copy("all", finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={downloadDocx}><Download/> DOCX 저장</button><button onClick={download}><Download/> TXT 저장</button></div>
+      <div><button onClick={() => sampleBlocked() || copy("all", finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={() => sampleBlocked() || downloadDocx()}><Download/> DOCX 저장</button><button onClick={() => sampleBlocked() || download()}><Download/> TXT 저장</button></div>
     </header>
+
+    {sampleNotice && <div className={styles.sampleNotice}>
+      <p><b>이 화면은 샘플입니다.</b> 가상의 지원서로 만든 예시라 복사·저장은 동작하지 않습니다. 내 자기소개서를 넣으면 같은 화면을 받고, 거기서는 전부 저장됩니다.</p>
+      <div>
+        <Link href="/onboarding">내 자소서로 시작하기 <ArrowRight/></Link>
+        <button type="button" onClick={() => setSampleNotice(false)}>닫기</button>
+      </div>
+    </div>}
 
     <div className={styles.container}>
       <Link href="/onboarding" className={styles.back}><ArrowLeft/> 작성 단계로 돌아가기</Link>
@@ -508,7 +530,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         </section>}
       </section>}
 
-      {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={downloadDocx}><Download/> DOCX 저장</button><button onClick={download}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>{question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}<p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}{isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>비어 있던 부분을 채운 제안이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer></section>}
+      {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => sampleBlocked() || copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={() => sampleBlocked() || downloadDocx()}><Download/> DOCX 저장</button><button onClick={() => sampleBlocked() || download()}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>{question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}<p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}{isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>비어 있던 부분을 채운 제안이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer></section>}
       {/* Sits before the next-step card because it acts on the draft in hand
           rather than moving to another stage. Only on the final tab, and only
           on a real result — there is nothing to revise on the sample. */}
