@@ -151,6 +151,21 @@ npx next build
 
 ## 코덱스에게 요청할 것
 
-> `feature/codex-plan` 워크트리의 미커밋 72개를 커밋해 주세요. 특히 **`src/components/career-assessment-drawer.tsx`와 `.module.css`가 아직 untracked**입니다 — 이 사이드바를 `main` 홈에 가져가기로 했는데, 커밋이 없어 지금은 병합할 수 없습니다. `CareerAssessmentCatalog`도 함께 확인 부탁드립니다.
+### 미커밋 72개의 정체 (전체 커밋을 요청하기 전에)
+
+| 종류 | 개수 | 커밋해야 하나 |
+|---|---|---|
+| `.previous-*` · `.cancelled-*` 백업 사본 | **40** | **아니오.** 코덱스의 로컬 변형 보관 방식입니다. 저장소에 들어가면 영구히 남습니다 |
+| `1/` 디렉터리 | 1 | **아니오.** 이름이 `1`인 디렉터리 — 리다이렉션 사고로 보입니다 |
+| 실제 새 파일 | 약 20 | **예** — 드로어, 카탈로그, `mobile-site-menu`, `career-ai-preparation`, `career-values-result`, 새 라우트들 |
+| 수정된 파일 | 11 | **예** |
+
+그래서 "전체 커밋"이 아니라 **"백업 사본과 `1/`만 빼고 커밋"**을 요청해야 합니다.
+
+**⚠️ 겹치는 것 하나 더:** 코덱스가 `src/components/mobile-site-menu.tsx`를 만들고 있습니다. `main`에는 제가 만든 `SiteNav`(드롭다운 메뉴)가 있습니다. **같은 자리를 두 구현이 노립니다** — 병합 때 어느 쪽을 쓸지 정해야 합니다.
+
+---
+
+> `feature/codex-plan` 워크트리의 미커밋 파일을 커밋해 주세요. 특히 **`src/components/career-assessment-drawer.tsx`와 `.module.css`가 아직 untracked**입니다 — 이 사이드바를 `main` 홈에 가져가기로 했는데, 커밋이 없어 지금은 병합할 수 없습니다. `CareerAssessmentCatalog`도 함께 확인 부탁드립니다.
 >
 > 그 뒤 `main`으로 병합합니다. `career/*`는 코덱스 버전을 채택하고, `src/app/page.tsx`는 `main` 버전을 유지합니다(홈 히어로·헤더가 그 사이 많이 바뀌었습니다). 드로어는 `main`의 `page.tsx`에 한 줄로 넣습니다.
