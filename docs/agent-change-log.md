@@ -3284,3 +3284,30 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - **레이아웃은 건드리지 않았습니다.** `variant`가 문서 구조만 정하도록 분리했고, `.drawer` 레이아웃 블록은 계속 꺼둡니다 — 사용자가 코덱스의 3열 정사각 카드를 선택했고, 이 prop이 그걸 몰래 뒤집을 자리는 아닙니다. 확인: 패널 720px, 카드 `min-height:264px` 유지.
 - Files: `src/components/career-assessment-catalog.tsx`, `.module.css`, `src/components/career-assessment-drawer.tsx`, `src/app/career/assessments/page.tsx`, `src/app/career/page.tsx`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-29 — Claude: 로그아웃이 안 되던 진짜 원인, 커리어 히어로 재배치
+
+- Agent/session: Claude. 사용자: 아직도 모바일에서 프로필 아이콘 눌러도 로그아웃 안 뜸. 그리고 SEO 문단을 맨 아래로, 검색어를 제목 옆에 같은 크기로, 앞에 `종합 커리어검사` 크게.
+- Status: completed. 마이그레이션 없음.
+
+### 로그아웃 — 앞서 짚은 두 가지는 원인이 아니었습니다
+
+- CSS에 이 줄이 있었습니다: **`@media(max-width:760px){.drop{display:none}}`**. **모바일에서 계정 드롭다운을 아예 숨기고 있었습니다.**
+- 그러니 hover→클릭으로 바꾸든, `z-index`를 올리든 보일 수가 없었습니다. **두 번 헛짚었고, 원인은 이 한 줄입니다.**
+- 왜 있었는지는 짐작이 갑니다: 예전엔 hover로만 열렸으니 터치에서는 죽은 아이콘이었고, 숨기는 편이 나아 보였을 겁니다. **지금은 클릭 토글이라 숨길 이유가 없습니다.** 규칙을 지우고 왜 있었는지 주석으로 남겼습니다.
+
+### 커리어 히어로
+
+- `종합 커리어검사`를 30px로 제일 앞에.
+- 제목과 검색어를 **2열**로: 왼쪽 `무엇을 탐색하는지부터 명확하게 고릅니다.`(46px), 오른쪽 `직업심리검사 / 진로검사 / 직업적성검사`(**44.6px — 같은 크기**). 900px 아래에서는 세로로 쌓고 작아집니다.
+- **제목 규칙을 `h1` 태그에서 `.heroTitle` 클래스로 옮겼습니다.** 드로어에서는 같은 제목이 `h2`로 나가는데(홈의 `h1`을 하나로 유지하려고), 태그 선택자면 거기서 기본 `h2` 크기로 **작아집니다.** 사용자가 "글자 작아졌다"고 한 것이 이것입니다.
+- SEO 3문단은 **맨 아래로** 옮겼습니다(`.seoLead`, 위에 구분선). 읽을 값어치는 있지만, **찾아온 도구 목록보다 먼저 나올 내용은 아닙니다.**
+- 드로어는 `.inPanel`로 별도 처리합니다. 창이 넓어도 패널은 720px이라 미디어 쿼리가 도와주지 못합니다. **코덱스의 `.drawer` 레이아웃 블록은 계속 꺼둡니다** — 3열 정사각 카드는 사용자가 고른 것입니다.
+
+### 확인
+
+- 1440px: `종합 커리어검사` 30px, 제목 46px, 검색어 44.6px, **좌우 배치**, SEO 블록이 제목 아래, 검색어 **31/31**.
+- 390px: 세로로 쌓임, 제목 38px, 검색어 19px, `scrollTo(9999,0)` 후 `scrollX 0`.
+- 홈: `main` 1개, `h1`은 히어로 둘뿐, 가로 스크롤 없음.
+- Files: `src/components/header-account.module.css`, `src/components/career-assessment-catalog.tsx`, `.module.css`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.

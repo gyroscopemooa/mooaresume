@@ -12,7 +12,10 @@
 .drop a:hover,.drop button:hover,.drop a:focus-visible,.drop button:focus-visible{background:var(--mint,#eaf5ef)}
 .email{padding:8px 12px 10px;border-bottom:1px solid #eef2f0;margin-bottom:4px;color:#8b968f;font-size:11.5px;word-break:break-all}
 .signOut{color:#a14f4f !important}
-@media(max-width:760px){.drop{display:none}}
+/* This used to be `@media(max-width:760px){.drop{display:none}}` — the menu was
+   hidden outright on phones, presumably because it only opened on hover and a
+   hidden menu looked better than a dead icon. It is a click toggle now, so
+   hiding it is what left a signed-in visitor with no way to sign out. */
 
 /* The label goes, the icon stays. At 390px the header ran brand + menu +
    내 계정 + CTA to about 412px, which is why the page could be dragged
