@@ -3068,3 +3068,37 @@ git checkout bc5f549 -- career-assessment-drawer.tsx
 - 패널 **720px = 51%**, 그리드 **3열**(229·235·217), 카드 `min-height:264px` **정사각형 유지**.
 - 남는 사실 하나: 3열 합이 내용 상자보다 약 45px 넓어 오른쪽 카드가 몇 px 잘릴 수 있습니다. **원본 그대로이므로 그대로 둡니다.**
 - Validation: 713 tests passed, `tsc` clean, `next build` 클린.
+
+## 2026-08-29 — Claude: 드로어를 `.home-page` 안으로 (코덱스 진단대로)
+
+- Agent/session: Claude. 코덱스가 원인을 정확히 짚었고, 그 지시대로 적용했습니다.
+- Status: completed. 마이그레이션 없음.
+
+### 원인 — 폭이 아니라 **DOM 위치**였습니다
+
+```css
+body{zoom:var(--app-scale)}   /* 1.25 */
+.home-page{zoom:calc(1 / 1.25)}  /* 홈 본문에서 다시 0.8배로 상쇄 */
+```
+
+- 코덱스 워크트리: 드로어가 `.home-page` **안** → `50vw × 1.25 × 0.8 = 화면의 50%`
+- 병합된 main: 드로어가 `<main className="home-page">` **바깥** → 0.8배 상쇄를 못 받고 `50vw × 1.25 = 화면의 62.5%`
+
+**드로어 CSS는 아무 문제가 없었습니다. 어디에 걸려 있느냐만 달랐습니다.**
+
+### 제가 놓친 지점 (기록)
+
+- `getBoundingClientRect`가 900, `getComputedStyle().width`가 720으로 나왔을 때 그 **1.25배를 브라우저 창 스케일링 아티팩트로 넘겼습니다.** 그게 바로 `body{zoom:1.25}`였습니다.
+- 그 잘못된 가정 때문에 엉뚱한 두 가지를 손댔습니다: 폭을 `44vw`로 줄인 것, 카탈로그 그리드를 고친 것. **둘 다 이미 되돌렸고**, 지금은 코덱스 원본과 바이트 단위로 같습니다.
+- **숫자가 두 개 안 맞으면 둘 중 하나가 틀린 게 아니라 설명이 없는 것**입니다. 그때 멈추고 이유를 찾았어야 했습니다.
+
+### 고침
+
+- `<CareerAssessmentDrawer />`를 `<main className="home-page">`의 **첫 자식**으로 옮겼습니다. 그 한 줄이 전부입니다.
+- 전역 `body`/`.home-page` zoom, 드로어 CSS, 홈 폰트·비율은 **하나도 건드리지 않았습니다.**
+
+### 확인 (1905px 뷰포트)
+
+- `cssWidth 960px` = `renderedWidth 960px` → **1.25배 부풀림 사라짐**
+- 화면 대비 **정확히 50%**, `.home-page` 안에 있음 확인.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.

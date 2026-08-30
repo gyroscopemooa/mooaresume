@@ -77,7 +77,13 @@ export default function HomePage() {
     ],
   };
   return (
-    <><CareerAssessmentDrawer /><LaunchPriceBanner /><main className="home-page">
+    <><LaunchPriceBanner /><main className="home-page">
+      {/* Inside .home-page, not beside it.
+          body carries zoom:1.25 and .home-page cancels it with calc(1/1.25).
+          Placed outside, the drawer took the 1.25 without the 0.8 back, so a
+          50vw panel rendered at 62.5% of the screen. Nothing about its own CSS
+          was wrong — only where it hung. */}
+      <CareerAssessmentDrawer />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
