@@ -2971,3 +2971,13 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 코덱스의 홈 본문 222줄이 함께 들어왔는데 **아무도 import 하지 않습니다.** Next는 `page.tsx`만 라우팅하므로 화면에는 영향이 없습니다.
 - `mobile-site-menu.tsx`도 이 파일에서만 쓰이므로 같이 고아입니다. **`SiteNav`와 중복 걱정은 없습니다** — 라이브 홈에는 `SiteNav`만 있습니다.
 - **지우지 않았습니다.** 코덱스 구현이라 사용자 확인이 필요합니다. 두면 홈이 둘로 갈라져 나중에 어긋납니다.
+
+## 2026-08-29 — Claude: 드로어를 코덱스 원래대로 (기본 열림) 되돌림
+
+- Agent/session: Claude. 사용자 지시: 사이드바는 **코덱스가 만든 것 그대로**, 시작할 때 나오는 걸로.
+- Status: completed. 마이그레이션 없음.
+
+- `useState(false)` → `useState(true)`. **사용자가 확인한 결정이므로 그대로 따릅니다.**
+- 한 번만 기록해 둡니다: 1265px에서 패널은 `x=0..800`을 덮고 히어로의 붙여넣기 상자는 `x≈52`에서 시작하므로, **닫기 전까지는 카탈로그가 입력칸 위에 있습니다.** 가장자리 토글과 `Escape`로 닫힙니다. 커리어 홈이 이미 같은 동작으로 나가 있었습니다.
+- Files: `src/components/career-assessment-drawer.tsx`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
