@@ -3145,3 +3145,33 @@ body{zoom:var(--app-scale)}   /* 1.25 */
 - 360px: 헤더 오른쪽 끝 360, 가로 스크롤 불가, 넘침 0.
 - Files: `src/components/header-account.tsx`, `.module.css`, `src/components/site-nav.tsx`, `.module.css`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-29 — Claude: 가로 스크롤의 진짜 원인, 헤더 순서, 메뉴 패널 위치
+
+- Agent/session: Claude. 사용자 지적 4건.
+- Status: completed. 마이그레이션 없음.
+
+### 가로로 밀리던 원인 — 런칭 바가 아니라 **히어로의 장식용 빛무리**였습니다
+
+- 요소를 하나씩 지워가며 좁혀 들어갔더니, 자식이 아니라 **`.hero` 자신**이 범인이었습니다. `.hero::before` — `aspect-ratio:1/1`짜리 초록 그라데이션 원입니다.
+- 676px 뷰포트에서 이 원이 **1081×1081px**로 잡히고, `translateX(-50%)`로 가운데 정렬되어 좌우로 **각각 221px씩** 삐져나옵니다. 오른쪽 삐침이 곧 가로 스크롤입니다.
+- 화면에 안 보였던 이유: `z-index:-1`, `pointer-events:none`, 흐릿한 라디얼이라 **눈에는 배경으로만 보입니다.** 큰 카드를 찾아도 나올 리가 없었습니다.
+- `.hero{overflow-x:clip}`. **`hidden`이 아니라 `clip`인 이유**: `hidden`은 스크롤 컨테이너를 만들어 히어로 위로 일부러 올라가는 `.hero-aura`를 잘라버립니다. 축 하나만 자르면 세로 번짐은 그대로 남습니다.
+- 확인: 676px에서 `scrollWidth - clientWidth`가 **204 → 0**.
+
+### 헤더 순서
+
+- `커리어 검사 · 무료로 진단하기 · 로그인 · 메뉴`. **메뉴가 맨 오른쪽, 그 왼쪽이 로그인**입니다. 모바일에서는 CTA가 숨겨져 `커리어 검사 · 로그인 · 메뉴`로 읽힙니다.
+
+### 메뉴 패널이 런칭 바에 가려지던 문제
+
+- 패널이 모바일에서 `position:fixed; top:66px`이었습니다. **런칭 바가 헤더를 아래로 밀면 그 66px은 배너 뒤**가 됩니다.
+- 버튼 기준 `position:absolute; top:calc(100% + 8px)`로 바꿨습니다. 헤더가 어디로 밀리든 따라갑니다. 폭은 `min(320px, 100vw - 24px)`.
+
+### 계정 드롭다운 방어
+
+- `z-index` 6 → **20**(내비 패널과 동일). 헤더 아래에 묻히면 **눌러도 아무 일이 없는 것처럼 보이는데**, 이 메뉴가 이미 한 번 그 버그를 겪었습니다.
+- 모바일에서 `right:-6px`, `max-width:calc(100vw - 24px)`로 화면 밖으로 나가지 않게.
+- **로그아웃이 여전히 안 되면 강력 새로고침(Ctrl+Shift+R) 후 다시 확인이 필요합니다.** 클릭 토글 자체는 어제 커밋에 들어가 있습니다.
+- Files: `src/app/globals.css`, `src/components/site-nav.tsx`, `.module.css`, `src/components/header-account.module.css`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. 676·390·1440px 전부 `canScrollX: 0`.

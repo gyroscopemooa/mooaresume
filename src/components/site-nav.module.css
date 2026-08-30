@@ -47,9 +47,11 @@
   .trigger { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 9px; }
   .trigger > span, .chevron { display: none; }
   .mobileIcon { display: block; }
-  /* Anchored to the header rather than the button, so a 320px panel does not
-     hang off a 360px screen. */
-  .panel { position: fixed; left: 10px; right: 10px; top: 66px; width: auto; }
+  /* Absolute under the trigger, not fixed at a guessed 66px. The launch banner
+     pushes the header down, and a fixed offset put the panel — and its close
+     button — behind that banner. Absolute follows wherever the header actually
+     sits. */
+  .panel { position: absolute; left: auto; right: -8px; top: calc(100% + 8px); width: min(320px, calc(100vw - 24px)); }
   .section b { font-size: 14px; }
   .section span { font-size: 12px; }
   /* The bar has no room for the price on a phone, so the panel ends with it. */
