@@ -2807,3 +2807,29 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 1280px: 안내 문구 `none`, 모바일 제목 `none`, 데스크톱 제목 그대로, 샘플 버튼 하늘색 유지.
 - Files: `src/app/globals.css`.
 - Validation: `npx vitest run` 708 passed, `npx next build` 클린, 브라우저 실측 위와 같음.
+
+## 2026-08-29 — Claude: 헤더를 드롭다운 메뉴로
+
+- Agent/session: Claude. 사용자 요청: 커리어 검사도 생기고 기존 헤더에 요금도 안 보이니 드롭다운이 낫지 않나.
+- Status: completed (홈만 적용). 마이그레이션 없음.
+
+### 왜 요금이 안 보였나
+
+- `home-mobile-header.module.css`의 `:global(.site-header nav>a:not(.button)){display:none}` — **680px 이하에서 버튼이 아닌 링크를 전부 숨깁니다.** 그래서 `요금`이 **방문자 대다수가 쓰는 기기에서 아예 없었습니다.**
+- 게다가 들어갈 곳은 계속 늘고 있습니다: 커리어 검사, 첨삭 예시, 친구 추천, 팁과 노하우. **넣을 수 없는 것을 숨기는 줄은 확장되지 않습니다.**
+
+### 만든 것 — `SiteNav`
+
+- 패널 하나에 두 묶음:
+  - **서비스** — 요금 안내(`/#plans`), 첨삭 예시 보기(`/result/sample`), 무료 커리어 검사(`/career`)
+  - **이용 안내** — 이용 방법(`/guide`), 팁과 노하우(`/new`), 친구 추천(`/refer`)
+- 바에는 자리값을 하는 것만 남깁니다: **요금 · 계정 · CTA.**
+- 모바일에서는 `메뉴` 글자와 화살표가 빠지고 **아이콘만** 남습니다. 바에 두 글자가 더 있으면 브랜드가 두 글자를 잃습니다.
+- 패널은 모바일에서 **헤더 기준 고정**입니다. 버튼 기준 320px 패널은 360px 화면에서 밖으로 나갑니다.
+- **요금을 패널 맨 아래에 한 번 더** 넣었습니다. 바에서 빠지는 건 그 링크뿐이고, 돈 이야기는 찾아 헤매게 두면 안 됩니다.
+- 바깥 클릭(`mousedown`)과 `Escape`로 닫힙니다. 닫히지 않는 메뉴는 새로고침으로 닫는 메뉴입니다.
+- Files: 신규 `src/components/site-nav.tsx`, `.module.css`; 수정 `src/app/page.tsx`.
+- Validation: `npx vitest run` 708 passed, `npx tsc --noEmit` clean, `npx eslint` 0건, `npx next build` 클린.
+  - 1280px: `메뉴` 트리거, 패널 링크 7개(`/#plans`·`/result/sample`·`/career`·`/guide`·`/new`·`/refer`·`/#plans`), 패널 623~943, 바의 `요금` 표시.
+  - 좁은 폭: 트리거 39px(아이콘만), 브랜드 145px, 가로 넘침 없음, 패널이 화면 안(10~497), 패널 CTA 표시, 열기 → 바깥 클릭 닫힘 → 다시 열기 → Escape 닫힘 전부 통과.
+- 보존: `/new`, `/refer`, `/landing`, `/comingsoon`의 헤더는 **건드리지 않았습니다.** 같은 메뉴로 통일할지는 사용자 확인 후 진행합니다.
