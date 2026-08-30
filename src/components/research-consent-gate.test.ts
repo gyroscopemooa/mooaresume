@@ -32,6 +32,12 @@ describe("연구 동의 체크", () => {
   it("거절해도 잃는 것이 없다고 말한다", () => {
     expect(gate).toContain("활용하지 않아도 결과는 완전히 같고, 언제든 철회하실 수 있습니다.");
     expect(gate).toContain("개인정보를 삭제하고 데이터만 활용됩니다.");
+    // The inducement names the standard, not the outcome: a promise of a
+    // passing letter inside a consent panel is what makes the consent
+    // challengeable, and the research dashboard already refuses pass-rate
+    // claims until the sample can carry one.
+    expect(gate).toContain("합격 자소서의 기준이 선명해집니다");
+    expect(gate).not.toContain("합격 자소서가 완성됩니다");
   });
 
   it("문구가 바뀌면 예전 답은 유효하지 않다", () => {

@@ -3527,3 +3527,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - **두 번째 문장은 남겼습니다.** 그게 선택의 조건입니다 — 없으면 거절이 손해처럼 보이고, **거절하기 무서운 선택은 선택이 아닙니다.**
 - Files: `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`.
 - Validation: 730 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-30 — Claude: 동의 설명에 이유 한 줄 추가
+
+- Agent/session: Claude. 사용자 제안 문구: `데이터가 쌓일수록 합격 자소서가 완성됩니다.`
+- Status: completed. 마이그레이션 없음.
+
+- 들어간 문구: **`데이터가 쌓일수록 합격 자소서의 기준이 선명해집니다.`**
+- 제안 그대로가 아니라 **`기준`을 넣었습니다.** 동의 패널 안에서 결과(합격 자소서 자체)를 약속하면, **나중에 그 동의가 흔들릴 때 그 문장이 근거가 됩니다.** 유인이 과하면 자유로운 동의로 보지 않습니다.
+- 같은 조심은 이미 관리자 화면에도 적혀 있습니다: **"이 문장이 합격률을 몇 % 높인다"는 말은 표본이 충분히 커지기 전까지 쓰지 않습니다.** 동의 화면만 예외일 이유가 없습니다.
+- **기준이 선명해지는 것은 사실이고, 그것으로 충분합니다.** "우리가 데이터를 쓰겠다"보다 "당신 덕에 기준이 좋아진다"가 훨씬 잘 눌립니다.
+- 테스트로 고정했습니다: `합격 자소서의 기준이 선명해집니다`는 있어야 하고, 결과를 약속하는 원래 표현은 없어야 합니다.
+- Files: `src/components/research-consent-gate.tsx`, `.test.ts`.
+- Validation: 730 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.

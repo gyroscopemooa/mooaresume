@@ -102,11 +102,13 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
     </div>
 
     {open && <div className={styles.detail}>
-      {/* Two sentences, not four. The second one stays because it is the
-          condition of the choice: without it, declining looks like it might
-          cost something, and a choice people are afraid to decline is not a
-          choice. */}
-      <p>개인정보를 삭제하고 데이터만 활용됩니다.</p>
+      {/* The line asked for promised the finished letter itself; this promises
+          the 기준 instead. Inside a consent panel an overstated
+          inducement is the thing that makes the consent challengeable later,
+          and the same caution is already written into the research dashboard:
+          no claim about pass rates until the sample is large enough to carry
+          one. What is true, and enough, is that the standards sharpen. */}
+      <p><b>데이터가 쌓일수록 합격 자소서의 기준이 선명해집니다.</b> 개인정보를 삭제하고 데이터만 활용됩니다.</p>
       <p>활용하지 않아도 결과는 완전히 같고, 언제든 철회하실 수 있습니다.</p>
     </div>}
 
