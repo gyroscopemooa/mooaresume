@@ -2757,3 +2757,32 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - **`h1` 바깥**에 뒀습니다. 어느 기기를 쓰라는 참고 문구가 크롤러에게 이 페이지를 설명하는 한 줄에 들어가면 안 됩니다.
 - Files: `src/domain/simple-intake-mapping.ts`(+test), `src/components/simple-intake.tsx`, `.module.css`, `src/components/pro-input-page.tsx`, `.module.css`, `src/components/result-sign-in.tsx`, `.module.css`, `src/app/result/page.tsx`, `src/app/onboarding/onboarding.module.css`, `src/app/page.tsx`, `src/app/globals.css`.
 - Validation: `npx vitest run` 708 passed (+4), `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린. **화면 확인 미완** — dev 서버가 내려가 있습니다.
+
+## 2026-08-29 — Claude: 결과 화면의 세 가지 실패를 갈라냄
+
+- Agent/session: Claude. 사용자 보고: **본인 계정(jeonmeensoo@gmail.com)으로 로그인해도** `다른 계정으로 로그인하셨을 수 있습니다`가 뜬다.
+- Status: completed. 마이그레이션 없음.
+
+### 원인 — 서로 다른 실패 세 개가 한 화면으로 떨어지고 있었습니다
+
+`resultDocumentSchema.safeParse`가 실패하면 그게 **행이 없어서인지, 있는데 안 읽혀서인지** 구분이 없었습니다.
+
+- **행이 없음** — 아직 진행 중이거나, 그 런을 결제한 계정이 아님 → 계정 안내가 맞습니다.
+- **행은 있는데 파싱 실패** — **우리 문제입니다.** 저장된 문서가 스키마 변경 이전 형식일 때 그렇습니다. 이 경우에 `다른 계정으로 로그인`을 보여주는 건 **고객이 고칠 수 없는 걸 쫓게 만드는 것**입니다. 사장님이 본인 계정에서 이 화면을 본 이유가 이쪽일 가능성이 큽니다.
+
+### 고침
+
+- 두 경우를 갈랐습니다. 파싱 실패에는 새 화면: `결과는 있는데 화면이 열리지 않습니다. … 계정을 바꾸거나 다시 결제하실 필요는 없습니다.`
+- 파싱 실패는 **필드 경로까지 서버 로그로 남깁니다**(`result_document_parse_failed`). 고객은 자기가 못 보는 걸 신고할 수 없습니다.
+- 쿼리 자체가 실패한 경우도 따로 로그를 남깁니다.
+
+### 모바일 PC 안내 문구
+
+- `(자료를 올리고 결과를 보기에는 PC를 추천합니다)` → `휴대폰으로는 붙여넣고 맡기기까지 · 실제 첨삭은 PC 추천`, 11.5px → **10.5px**.
+- **휴대폰이 못 하는 것이 아니라 할 수 있는 것**으로 적었습니다. 아무것도 입력하기 전에 "당신 기기는 틀렸다"는 괄호를 보여주면 그냥 나갑니다.
+- Files: `src/app/result/page.tsx`, `src/components/result-sign-in.tsx`, `src/app/page.tsx`, `src/app/globals.css`.
+- Validation: `npx vitest run` 708 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+
+### 참고 — 포트
+
+- 사용자가 `:3000`(Codex 워크트리)에서 확인 중이었습니다. **거기에는 이 세션의 변경이 하나도 없습니다.** 확인은 `:3001`에서 해야 합니다.

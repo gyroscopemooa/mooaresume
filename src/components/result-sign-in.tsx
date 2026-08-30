@@ -27,7 +27,7 @@ type Props = {
    * description of the problem — most often they signed in with a different
    * Google account than they bought with.
    */
-  variant?: "gate" | "missing";
+  variant?: "gate" | "missing" | "stale";
 };
 
 export function ResultSignIn({ nextPath, variant = "gate" }: Props) {
@@ -57,6 +57,22 @@ export function ResultSignIn({ nextPath, variant = "gate" }: Props) {
       setFailed(true);
       setBusy(false);
     }
+  }
+
+  if (variant === "stale") {
+    return <main className={styles.gate}>
+      <div className={styles.card}>
+        <span className={styles.warn}>확인 중</span>
+        <h1>결과는 있는데 화면이 열리지 않습니다.</h1>
+        {/* Their account is right and the analysis finished; the stored document
+            does not match the current result screen. Sending them to switch
+            Google accounts would be sending them after something they cannot
+            fix. */}
+        <p>분석은 끝났고 결과도 저장돼 있습니다. <b>화면이 저장된 형식을 읽지 못하는 상태</b>라, 계정을 바꾸거나 다시 결제하실 필요는 없습니다.</p>
+        <a className={styles.secondary} href={nextPath}><RefreshCw/> 다시 확인하기</a>
+        <small><b>{SUPPORT_EMAIL}</b>로 이 화면 주소를 그대로 보내주시면 바로 열어 드립니다. 이용권을 쓰신 건은 저희 쪽에서 확인합니다.</small>
+      </div>
+    </main>;
   }
 
   if (variant === "missing") {
