@@ -3509,3 +3509,21 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 상호 배타 선택이므로 `role="radiogroup"` + `aria-checked`입니다.
 - Files: `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`, `src/components/application-case-handoff.tsx`.
 - Validation: 730 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. **로그인 상태에서만 보이는 화면이라 눈으로는 확인하지 못했습니다.**
+
+## 2026-08-30 — Claude: 체크 두 개 한 줄로 되돌리고 설명 두 문장으로
+
+- Agent/session: Claude. 사용자: 분절 토글 말고 아까 것(같은 줄, 색 없이)이 맞다. 설명도 줄일 것.
+- Status: completed. 마이그레이션 없음.
+
+```
+☐ 데이터 활용   ☐ 활용하지 않기                       자세히 ▾
+```
+
+- 분절 토글을 만들었다가 **되돌렸습니다.** 사용자 판단대로 체크 두 개가 이 화면에는 맞습니다.
+- 선택 표시는 **먹색**입니다. 이건 취향 설정이고, **그 아래 결제 버튼이 화면의 유일한 초록으로 남아야** 합니다.
+- 설명은 네 문장 → **두 문장**:
+  - `개인정보를 삭제하고 데이터만 활용됩니다.`
+  - `활용하지 않아도 결과는 완전히 같고, 언제든 철회하실 수 있습니다.`
+- **두 번째 문장은 남겼습니다.** 그게 선택의 조건입니다 — 없으면 거절이 손해처럼 보이고, **거절하기 무서운 선택은 선택이 아닙니다.**
+- Files: `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`.
+- Validation: 730 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.

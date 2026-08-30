@@ -25,13 +25,13 @@ describe("연구 동의 체크", () => {
 
   it("거절도 한 번의 클릭이다", () => {
     // A choice that is harder to decline than to accept is not a free one.
-    expect(gate).toContain('box(true, "데이터베이스 활용")');
-    expect(gate).toContain('box(false, "없이 진행하기")');
+    expect(gate).toContain('box(true, "데이터 활용")');
+    expect(gate).toContain('box(false, "활용하지 않기")');
   });
 
   it("거절해도 잃는 것이 없다고 말한다", () => {
-    expect(gate).toContain("활용하지 않아도 결과와 기능은 완전히 같습니다.");
-    expect(gate).toContain("철회하시면 보관 중이던 사본도 함께 지웁니다");
+    expect(gate).toContain("활용하지 않아도 결과는 완전히 같고, 언제든 철회하실 수 있습니다.");
+    expect(gate).toContain("개인정보를 삭제하고 데이터만 활용됩니다.");
   });
 
   it("문구가 바뀌면 예전 답은 유효하지 않다", () => {

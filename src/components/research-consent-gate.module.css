@@ -1,29 +1,31 @@
-/* One thin box above the pay button.
-   Every selector is prefixed with .gate on purpose. The container this sits in
-   styles `.action button` — full width, green, white text — which turned the
-   checkbox and the 자세히 toggle into two green slabs. A bare class loses to a
-   class-plus-element selector, so each of these needs the extra class to win. */
-.gate { margin: 14px 0 0; padding: 11px 13px; border: 1px solid #dfe6e2; border-radius: 8px; background: #fff; }
+/* One line above the pay button.
+   Every selector carries .gate on purpose. The container styles `.action
+   button` — full width, green, white, 9px bold — which turned these into green
+   slabs. A bare class loses to a class-plus-element selector. */
+.gate { margin: 14px 0 0; padding: 10px 12px; border: 1px solid #dfe6e2; border-radius: 8px; background: #fff; }
 
-.gate .row { display: flex; align-items: center; gap: 16px; }
-/* The toggle is pushed to the far end so the two choices read as a pair. */
-.gate .more { margin-left: auto; }
+.gate .row { display: flex; align-items: center; gap: 18px; }
 
 .gate .check {
-  display: flex; align-items: center; gap: 9px;
+  display: flex; align-items: center; gap: 8px;
   width: auto; padding: 0; border: 0; border-radius: 0;
-  background: none; color: #41514a;
-  font: inherit; font-size: 12.5px; font-weight: 600; text-align: left;
+  background: none; color: #8b968f;
+  font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; text-align: left;
   cursor: pointer;
 }
-.gate .check > span { display: grid; place-items: center; width: 17px; height: 17px; flex: none; border: 1px solid #c6d2cc; border-radius: 4px; background: #fff; }
-.gate .check svg { width: 12px; height: 12px; color: #41514a; }
+.gate .check > span { display: grid; place-items: center; width: 16px; height: 16px; flex: none; border: 1px solid #c6d2cc; border-radius: 4px; background: #fff; }
+.gate .check svg { width: 11px; height: 11px; color: #41514a; }
+.gate .check:hover:not(:disabled) { color: #41514a; }
 .gate .check:hover:not(:disabled) > span { border-color: #8a9690; }
 .gate .check:disabled { background: none; opacity: 0.6; cursor: default; }
+/* Selected reads as ink, not brand: this is a preference, and the pay button
+   below should stay the only green on the screen. */
+.gate .on { color: #17221d; }
 .gate .on > span { border-color: #41514a; }
 
 .gate .more {
-  display: inline-flex; align-items: center; gap: 3px; flex: none;
+  margin-left: auto; flex: none;
+  display: inline-flex; align-items: center; gap: 3px;
   width: auto; padding: 2px 4px; border: 0; border-radius: 0;
   background: none; color: #8b968f;
   font: inherit; font-size: 11.5px; font-weight: 600;
@@ -38,3 +40,10 @@
 .gate .detail b { color: #41514a; font-weight: 600; }
 
 .gate .failed { display: block; margin-top: 8px; color: #a34848; font-size: 11px; }
+
+/* At this width the label plus both segments plus 자세히 stop fitting on one
+   line, so the label goes and the control takes the row. */
+@media (max-width: 480px) {
+  .gate .label { display: none; }
+  .gate .seg { padding: 6px 10px; }
+}
