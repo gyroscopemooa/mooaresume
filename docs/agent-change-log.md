@@ -3472,3 +3472,22 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/research-consent-gate.module.css`.
 - Validation: 729 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. 빌드된 CSS에서 `.gate .check` 규칙 출력 확인.
 - **로그인 상태에서만 보이는 화면이라 눈으로는 확인하지 못했습니다.** 아직 깨져 보이면 스크린샷이 필요합니다.
+
+## 2026-08-30 — Claude: 자세히 문구 축약, 회색 버튼이 이유를 말하게
+
+- Agent/session: Claude. 사용자: `자세히` 내용은 "개인정보를 삭제하고 데이터만 활용됩니다"가 낫다. 그리고 `결제하고 분석 시작`이 왜 비활성인지.
+- Status: completed. 마이그레이션 없음.
+
+### 비활성 원인 — 동의 체크가 아닙니다
+
+- 조건은 `disabled={busy || !guest}`입니다. **동의 체크는 버튼을 막지 않습니다**(강제 선택을 뺄 때 같이 뺐습니다).
+- `guest`는 **그 탭의 `sessionStorage`에 있는 작성본**입니다. `/analysis/prepare`를 주소로 직접 열거나 새 탭에서 열면 **작성본이 없어 비활성**입니다.
+- **회색 버튼이 이유를 말하지 않는 것이 진짜 문제였습니다.** 이 세션에서 같은 종류를 여러 번 고쳤는데 여기 하나가 남아 있었습니다.
+- 이제 이유와 나갈 길을 함께 씁니다: `이 탭에 저장된 작성본이 없습니다. … 작성 화면으로 가기`.
+
+### 자세히 문구
+
+- 요청대로 줄였습니다: `개인정보를 삭제하고 데이터만 활용됩니다. 이름·연락처·주소는 지우고, 회사명·직무·기간·성과 수치만 남깁니다.`
+- 두 번째 줄(거절해도 동일 / 철회 시 사본 삭제)은 남겼습니다. **동의를 받는 화면에서 그 두 문장을 빼면 동의의 조건이 사라집니다.**
+- Files: `src/components/research-consent-gate.tsx`, `src/components/application-case-handoff.tsx`, `.module.css`.
+- Validation: 729 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.

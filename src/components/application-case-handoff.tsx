@@ -6,6 +6,7 @@ import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
 import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
+import Link from "next/link";
 import { ResearchConsentGate } from "./research-consent-gate";
 import styles from "./application-case-handoff.module.css";
 
@@ -279,6 +280,13 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
           itself after the case is saved reads as if it was not applied. */}
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
       <button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
+      {/* The draft lives in this tab's sessionStorage, so opening this URL
+          directly — or in a new tab — arrives with nothing to analyse and a
+          grey button explaining nothing. Say which of the two it is. */}
+      {!guest && !busy && <p className={styles.noDraft}>
+        이 탭에 저장된 작성본이 없습니다. 자기소개서를 넣는 화면에서 다시 시작해 주세요.
+        {" "}<Link href="/onboarding">작성 화면으로 가기</Link>
+      </p>}
       {availableCredit && (
         <button type="button" className={styles.payInstead} onClick={() => setSpendCredit(!spendCredit)} disabled={busy}>
           {spendCredit ? "이용권을 아끼고 결제해서 진행할래요" : "무료 이용권을 사용할래요"}
