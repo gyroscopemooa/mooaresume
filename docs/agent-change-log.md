@@ -2858,3 +2858,37 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - **1280px**: 화면 밖 요소 0개, CTA `무료로 진단하기` 그대로.
 - Files: `src/components/header-account.tsx`, `.module.css`, `src/components/site-nav.tsx`, `.module.css`.
 - Validation: `npx vitest run` 708 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
+
+## 2026-08-29 — Claude: 워크트리 병합 사전 검사 (병합은 미실행)
+
+- Agent/session: Claude. 사용자 요청: 워크트리 충돌 체크하면서 main에 병합.
+- Status: **검사와 계획만.** 병합은 하지 않았습니다. 계획은 `docs/merge-plan-2026-08-29.md`.
+
+### 왜 지금 병합하지 않았나
+
+- **코덱스 워크트리에 미커밋 파일이 72개** 있고, 마지막 커밋이 오늘(`Add career-specific login flow`)입니다. **진행 중인 작업입니다.**
+- 사용자 결정: **코덱스가 커밋한 뒤에** 병합.
+
+### 브랜치 3개
+
+- `codex/integrate-launch-price-banner` — **이미 main에 포함.** 할 일 없음.
+- `feature/bring-annotations-to-main` — 8/20, main보다 **143 커밋 뒤짐**. 충돌 10건이 전부 QUICK 분석 핵심 파일입니다. **그 작업은 이미 main에 있고 이후 더 발전했습니다**(`result-original-annotations.ts` + 커밋 3개). **버리는 쪽을 권합니다.** main에 없는 건 `src/middleware.ts`(dev.* 호스트 rewrite, 17줄) 하나뿐이고 지금은 쓸 일이 없습니다.
+- `feature/codex-plan` — 27 커밋, 충돌 13건. 본 작업.
+
+### 사용자 결정 3건
+
+1. **병합 시점** — 코덱스 커밋 후.
+2. **`career/*`** — **코덱스 것 채택.** main의 8/26 사본은 옛 스냅샷이고, 두 계보는 조상 관계가 아닙니다(확인함). 단 `edc631c Add unified career profile summary`가 main에만 있어 병합 직전 대조 필요.
+3. **`src/app/page.tsx`** — **내 최신 홈 유지 + 커리어 링크만.**
+
+### 조사 중 드러난 것 — 홈은 "링크 하나" 문제가 아닙니다
+
+- 코덱스는 홈을 통째로 옮겼습니다. 그쪽 `page.tsx`는 **10줄 껍데기**이고 내용 222줄이 새 파일 `src/app/home-page-content.tsx`에 있습니다(main에 없음).
+- 그래서 결정 3을 지키려면 **코덱스의 `home-page-content.tsx`를 가져오면 안 됩니다.** 가져오면 홈이 둘이 됩니다.
+- 코덱스 홈의 커리어 진입점 두 곳을 확인했습니다:
+  - 헤더 네비 `커리어 검사` → **이미 제 `SiteNav`에 들어 있어 옮길 것 없음.**
+  - **커리어 CTA 섹션**(`지원하기 전에, 나의 기준부터 정리하세요.`) → main에 없음. **이것만** 옮기면 됩니다.
+
+### 마이그레이션 주의
+
+- `20260826010000_career_assessment_profiles.sql`은 **이미 원격에 적용됐고**, main 사본에는 제가 넣은 멱등 처리가 있습니다. `--theirs`로 덮으면 그게 사라집니다. **손으로 합쳐야 합니다.**
