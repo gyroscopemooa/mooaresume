@@ -11,6 +11,7 @@ import outcomeStyles from "./outcome-learning.module.css";
 import positioningStyles from "./landing-positioning.module.css";
 import enterpriseStyles from "./enterprise-promo.module.css";
 import oneClickStyles from "./one-click.module.css";
+import careerCtaStyles from "./career-home-cta.module.css";
 import fieldStyles from "./field-credibility.module.css";
 import "./home-mobile-header.module.css";
 import "./home-startup-header.module.css";
@@ -128,6 +129,20 @@ export default function HomePage() {
             <div className="issues"><small>가장 먼저 고칠 3가지</small><ol><li><b>지원동기의 기업 연결이 약해요</b><span>공고의 ‘공정 개선’ 요구와 경험을 연결해 보세요.</span></li><li><b>성과의 근거가 부족해요</b><span>결과를 확인할 수 있는 기준이나 변화를 추가하세요.</span></li><li><b>2·3번 문항의 경험이 겹쳐요</b><span>3번에는 협업 경험을 배치하는 편이 좋아요.</span></li></ol></div>
           </div>
         </div>
+      </section>
+
+      {/* Codex's career CTA, carried over from their home so the assessments
+          have a place on the page and not only behind the drawer and the menu.
+          Placed after the sample result and before pricing: someone who has
+          just seen what the editing produces, and is about to be shown prices,
+          is exactly who benefits from being told there is a free step first. */}
+      <section className={"container " + careerCtaStyles.card}>
+        <div className={careerCtaStyles.copy}>
+          <small>FREE CAREER EXPLORATION</small>
+          <h2>지원하기 전에, 나의 기준부터 정리하세요.</h2>
+          <p>직업흥미·업무성향·직업가치를 통해 하고 싶은 활동, 일하는 방식, 중요하게 보는 조건을 무료로 살펴볼 수 있어요.</p>
+        </div>
+        <Link href="/career" className={careerCtaStyles.cta}>무료 커리어 검사 <ArrowRight /></Link>
       </section>
 
       <PricingComparison />
