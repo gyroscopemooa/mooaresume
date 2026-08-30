@@ -2941,3 +2941,33 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Homepage integration: added only `CareerAssessmentDrawer` import and render call to `src/app/page.tsx`; the drawer and catalog are supplied by the committed source files.
 - Validation: merge conflicts resolved by the stated file ownership rules; typecheck and lint run after the merge.
 - Rollback: revert the main merge commit that follows this entry.
+## 2026-08-29 — Claude: 병합 결과 검증과 두 건 수정
+
+- Agent/session: Claude. 코덱스가 `bc5f549` 커밋 후 `6f49f23`로 main에 병합했습니다. 그 결과를 검증했습니다.
+- Status: 검증 완료 + 수정 2건. 병합 자체는 코덱스 작업입니다.
+
+### 잘 된 것
+
+- 제 작업 전부 살아 있습니다: `site-nav.tsx`, `simple-intake.tsx`, `result-sign-in.tsx`, `document-classify.ts`, `upload-limits.ts`, `simple-intake-mapping.ts`.
+- 홈은 main 본문 유지 + 드로어 한 줄. 히어로·`SiteNav`·샘플 버튼 그대로.
+- 백업 사본과 스크린샷은 **하나도 들어오지 않았습니다**(`git ls-files` 0건).
+- 713 tests passed, `tsc` clean, `next build` 클린.
+
+### 수정 1 — 드로어가 붙여넣기 상자를 덮고 있었습니다
+
+- 드로어는 **왼쪽 기준 50vw**이고 **기본 열림**이었습니다. 1265px 화면에서 `aside`가 **left 0, 폭 800**으로 히어로 위에 놓였고, `elementFromPoint`로 확인하니 **자소서 입력칸 자리에 커리어 카탈로그가 있었습니다.** 이 페이지가 존재하는 이유인 입력을 할 수 없는 상태였습니다.
+- `aria-modal="true"`이기도 해서, **방문자가 아무것도 보기 전에 화면 전체를 주장하며** 열렸습니다.
+- `useState(true)` → `useState(false)`. **커리어 탐색은 두 번째 문이지 정문이 아닙니다.** 왼쪽 가장자리 탭은 그대로 남아 언제든 열 수 있고(폭 110), 모바일에서는 드로어가 숨겨지지만 `SiteNav` 메뉴에 `무료 커리어 검사`가 있어 길이 있습니다.
+- 확인: 닫은 상태에서 입력칸 위 요소가 `TEXTAREA`, 탭을 누르면 폭 800으로 열립니다.
+
+### 수정 2 — 마이그레이션 멱등성이 되돌려졌습니다
+
+- `20260826010000_career_assessment_profiles.sql`이 코덱스 버전으로 채택되면서 제가 넣은 `if not exists`·`drop trigger if exists`가 사라졌습니다(계획서에서 경고했던 지점).
+- **스키마 차이는 없었습니다.** 되돌아간 것은 재실행 가능성뿐이라 원격 DB와는 어긋나지 않습니다.
+- 그래도 복원했습니다. 비용이 0이고, 새 환경이나 `db reset`에서 한 번 더 막히는 것을 막습니다.
+
+### 남은 판단 — `src/app/home-page-content.tsx`가 고아입니다
+
+- 코덱스의 홈 본문 222줄이 함께 들어왔는데 **아무도 import 하지 않습니다.** Next는 `page.tsx`만 라우팅하므로 화면에는 영향이 없습니다.
+- `mobile-site-menu.tsx`도 이 파일에서만 쓰이므로 같이 고아입니다. **`SiteNav`와 중복 걱정은 없습니다** — 라이브 홈에는 `SiteNav`만 있습니다.
+- **지우지 않았습니다.** 코덱스 구현이라 사용자 확인이 필요합니다. 두면 홈이 둘로 갈라져 나중에 어긋납니다.
