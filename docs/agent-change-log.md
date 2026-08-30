@@ -1812,3 +1812,25 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: pending after preservation commits.
 - Rollback/recovery reference: branch commits created in this worktree; `1/` remains untracked and untouched.
 - User decision: pending integration-plan review.
+
+## 2026-08-29 — Career assessment catalog and six visual directions
+
+- Agent/session: Codex worktree eature/codex-plan.
+- Status: variant.
+- Protected baseline: the three usable Korean career assessments and result flows are unchanged.
+- Change and reason: added an assessment catalog separating available original MOOA/IPIP tools from O*NET English-original and Korean-adaptation tracks. Added six internal, non-production first-screen visual directions for user selection; no active screen was replaced.
+- Files/branch: src/domain/career-assessment-catalog.ts, catalog and design-lab components/routes, and an additive career-layout link.
+- Validation: pending TypeScript, lint, and local route verification.
+- Rollback/recovery reference: remove only the new catalog/design-lab files and additive link; current assessment routes are untouched.
+- User decision: requested a populated assessment list and six design alternatives before choosing a production direction.
+
+## 2026-08-29 — Homepage career assessment overlay
+
+- Agent/session: Codex worktree feature/codex-plan.
+- Status: variant.
+- Protected baseline: existing homepage content, CTA flow, and career assessment pages remain intact.
+- Change and reason: user requested an automatic, closable overlay drawer on the homepage that shows the assessment catalog without shrinking the home layout. The desktop drawer covers the right 50% of the viewport; mobile uses full width.
+- Files/branch: new career-assessment-drawer component/CSS; additive import/render in home-page-content; drawer rendering variant in catalog CSS/component.
+- Validation: pending typecheck, lint, local visual route verification.
+- Rollback/recovery reference: remove the one home render/import and the new drawer files; catalog page remains available separately.
+- User decision: explicitly requested the overlay rather than an inline/sidebar layout that compresses the existing homepage.

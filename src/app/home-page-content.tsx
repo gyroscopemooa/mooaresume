@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { LandingEntry } from "@/components/landing-entry";
 import { PricingComparison } from "@/components/pricing-comparison";
+import { MobileSiteMenu } from "@/components/mobile-site-menu";
+import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
 import landingStyles from "./landing-sections.module.css";
 import outcomeStyles from "./outcome-learning.module.css";
 import positioningStyles from "./landing-positioning.module.css";
@@ -42,7 +44,9 @@ export default function HomePage() {
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
         <nav aria-label="주요 메뉴"><Link href="/career">커리어 검사</Link><Link href="#how">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
+        <MobileSiteMenu />
       </header>
+      <CareerAssessmentDrawer />
 
       <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
 
