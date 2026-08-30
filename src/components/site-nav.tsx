@@ -60,13 +60,12 @@ export function SiteNav() {
   }, [open]);
 
   return <nav aria-label="주요 메뉴" className={styles.nav}>
-    {/* Order: 커리어 검사, CTA, account, menu — the menu hard against the right
-        edge with sign-in immediately to its left, as asked. On a phone the CTA
-        is hidden, so it reads 커리어 검사 · 로그인 · 메뉴.
+    {/* Order: CTA, 커리어 검사, account, menu — the button first on the left,
+        the menu hard against the right with sign-in beside it. On a phone the
+        CTA is hidden, so it reads 커리어 검사 · 로그인 · 메뉴.
         요금 moved into the panel and 커리어 검사 took its bar slot — the one free
         thing on the site earns that place more than a price nobody clicks
         before they have seen the work. */}
-    <Link href="/career" className={styles.price}>커리어 검사</Link>
     {/* Two labels, one shown at a time. On a 360px phone the full sentence
         pushed the row 18px past the screen, which is the sideways drag people
         were reporting — the header, not the content. */}
@@ -74,6 +73,7 @@ export function SiteNav() {
       <span className={styles.ctaLong}>무료로 진단하기</span>
       <span className={styles.ctaShort}>무료 진단</span>
     </Link>
+    <Link href="/career" className={styles.price}>커리어 검사</Link>
     <HeaderAccount />
 
     <div className={styles.menuWrap} ref={wrapRef}>

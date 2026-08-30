@@ -3203,3 +3203,33 @@ body{zoom:var(--app-scale)}   /* 1.25 */
 - 360px 화면 확인: 헤더가 `MOOA Resume · 커리어 검사 · 로그인 · ☰`, 부제목이 제목 아래 가운데.
 - Files: `src/app/globals.css`, `src/app/field-credibility.module.css`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-29 — Claude: 루트에 가로 넘침 방지, PC 헤더 CTA 맨 왼쪽
+
+- Agent/session: Claude. 사용자 지적: 모바일에서 아직 드래그된다. PC의 `무료로 진단하기`는 맨 왼쪽으로.
+- Status: completed. 마이그레이션 없음.
+
+### 왜 한 군데씩 잡는 방식으로는 끝나지 않았나
+
+- 이 사이트는 `body{zoom:1.25}` 위에서 장식 요소를 **`vw`로 재고 있습니다.** `.hero::before`가 `min(1180px, 160vw)`입니다.
+- `vw`는 zoom과 무관하게 뷰포트를 기준으로 하므로, **body의 실제 폭(뷰포트 ÷ 1.25)보다 항상 넓게 계산됩니다.** 하나를 막아도 반올림 하나, 새 장식 하나면 다시 드래그가 생깁니다.
+- 그래서 루트에 한 번 막았습니다:
+
+```css
+html{overflow-x:hidden;scroll-behavior:smooth}
+@supports (overflow: clip) { html { overflow-x: clip; } }
+```
+
+- **`clip`이 기본, `hidden`은 대비책**입니다. `hidden`은 루트를 스크롤 컨테이너로 만들어 `position:sticky`를 망가뜨리므로, `clip`을 지원하지 않는 브라우저(Safari 16 미만)에만 걸리게 `@supports`로 감쌌습니다.
+- **직전 수정이 효과가 없어 보였던 이유도 이것일 수 있습니다.** `.hero{overflow-x:clip}`는 `clip`을 지원하는 브라우저에서만 동작합니다.
+
+### PC 헤더 순서
+
+- `무료로 진단하기 · 커리어 검사 · 로그인 · 메뉴`. **버튼이 맨 왼쪽, 메뉴가 맨 오른쪽, 그 왼쪽이 로그인.** 모바일은 CTA가 숨겨져 `커리어 검사 · 로그인 · 메뉴`.
+
+### 확인
+
+- 390px: `html` 계산값 `overflow-x: clip`, `scrollWidth 390 = clientWidth`, `scrollTo(9999,0)` 후 `scrollX 0`, `bodyScroll 312 = bodyClient`.
+- 1440px: 헤더 순서 `무료로 진단하기 · 커리어 검사 · 로그인 · 메뉴`.
+- Files: `src/app/globals.css`, `src/components/site-nav.tsx`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
