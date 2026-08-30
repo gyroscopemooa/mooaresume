@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
-import { SiteNav } from "@/components/site-nav";
-import { LaunchPriceBanner } from "@/components/launch-price-banner";
-import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
 import { LandingEntry } from "@/components/landing-entry";
 import { PricingComparison } from "@/components/pricing-comparison";
+import { MobileSiteMenu } from "@/components/mobile-site-menu";
+import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
 import landingStyles from "./landing-sections.module.css";
 import outcomeStyles from "./outcome-learning.module.css";
 import positioningStyles from "./landing-positioning.module.css";
 import enterpriseStyles from "./enterprise-promo.module.css";
 import oneClickStyles from "./one-click.module.css";
 import fieldStyles from "./field-credibility.module.css";
-import "./home-mobile-header.module.css";
-import "./home-startup-header.module.css";
+import careerCtaStyles from "./career-home-cta.module.css";
 import { getSiteUrl } from "@/lib/site-url";
 
 const differences = [
@@ -37,87 +35,27 @@ export default function HomePage() {
     "@graph": [
       { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "MOOA Resume", alternateName: "무아레쥬메", url: siteUrl, description: "채용공고와 지원자의 경험을 연결하는 AI 자소서 첨삭 서비스" },
       { "@type": "WebSite", "@id": `${siteUrl}/#website`, url: siteUrl, name: "MOOA Resume", alternateName: "무아레쥬메", inLanguage: "ko-KR", publisher: { "@id": `${siteUrl}/#organization` } },
-      // Launched, and the markup has to say so. A Service node with no offers
-      // reads to a crawler as "a thing this company does", not "a thing you can
-      // buy right now" — and rich results for price and availability only
-      // appear when both are stated. FINAL is deliberately absent: it has no
-      // checkout yet, and listing a price for it would be an offer we cannot
-      // honour.
-      {
-        "@type": "Service",
-        "@id": `${siteUrl}/#service`,
-        name: "MOOA Resume AI 자소서 첨삭",
-        serviceType: "AI 자기소개서 첨삭 및 취업 지원서 분석",
-        provider: { "@id": `${siteUrl}/#organization` },
-        areaServed: "KR",
-        availableLanguage: "ko",
-        offers: [
-          { "@type": "Offer", name: "QUICK", description: "이미 쓴 자기소개서를 문장·논리·구체성 기준으로 첨삭합니다.", price: "5900", priceCurrency: "KRW", availability: "https://schema.org/InStock", url: `${siteUrl}/quick` },
-          { "@type": "Offer", name: "PRO", description: "채용공고와 이력서를 함께 읽어 무엇을 쓸지부터 최종검수까지 진행합니다.", price: "12900", priceCurrency: "KRW", availability: "https://schema.org/InStock", url: `${siteUrl}/pro/polish` },
-        ],
-      },
-      // Answers the questions people actually type into search, in the markup
-      // rather than only in prose. Every answer here is one the site already
-      // gives on a page a visitor can read.
-      {
-        "@type": "FAQPage",
-        "@id": `${siteUrl}/#faq`,
-        mainEntity: [
-          { "@type": "Question", name: "AI 자소서 첨삭은 어떻게 진행되나요?", acceptedAnswer: { "@type": "Answer", text: "자기소개서를 문항별로 넣고 회사가 정한 글자 수를 적으면, 채용공고와 이력서를 함께 읽어 고칠 곳과 그 이유를 근거와 함께 알려드립니다. 결과에는 문항별 Before → After와 복사해서 제출할 최종 첨삭본이 포함됩니다." } },
-          { "@type": "Question", name: "없는 경험을 지어내지는 않나요?", acceptedAnswer: { "@type": "Answer", text: "지어내지 않습니다. 근거가 모자라면 임의로 채우는 대신 확인이 필요한 질문으로 돌려드립니다. 직접 올리신 이력서에 적힌 사실은 지원자가 밝힌 내용이므로 문장에 쓰일 수 있습니다." } },
-          { "@type": "Question", name: "결제 전에 AI가 실행되나요?", acceptedAnswer: { "@type": "Answer", text: "아닙니다. 결제가 끝난 뒤에 분석이 시작됩니다. 그 전 화면은 무엇을 몇 자 분석할지 정리해 보여드리는 단계입니다." } },
-          { "@type": "Question", name: "합격 확률을 알려주나요?", acceptedAnswer: { "@type": "Answer", text: "알려주지 않습니다. 합격에는 스펙·경쟁률·채용 규모처럼 글과 무관한 요소가 섞여 있어 확률로 말할 수 없습니다. 대신 지금 지원서에서 먼저 고칠 곳을 근거와 함께 보여드립니다." } },
-          { "@type": "Question", name: "자소서 첨삭 비용은 얼마인가요?", acceptedAnswer: { "@type": "Answer", text: "한 지원 건 기준으로 QUICK 5,900원, PRO 12,900원입니다. QUICK은 이미 쓴 글을 문장·논리·구체성 기준으로 고치고, PRO는 채용공고와 이력서를 함께 읽어 무엇을 쓸지부터 최종검수까지 진행합니다. 구독이 아니라 필요할 때 한 건씩 이용합니다." } },
-          { "@type": "Question", name: "무료로 자소서 첨삭을 받아볼 수 있나요?", acceptedAnswer: { "@type": "Answer", text: "결제 전에 지원서를 넣고 무엇을 몇 자 분석할지까지 확인하실 수 있고, 첨삭 결과 예시도 공개되어 있습니다. 친구 추천으로 무료 이용권을 받으면 결제 없이 한 건을 이용하실 수 있습니다." } },
-          { "@type": "Question", name: "AI 자소서 첨삭과 사람이 하는 첨삭은 무엇이 다른가요?", acceptedAnswer: { "@type": "Answer", text: "무아레쥬메는 대학·취업전문기관·재단 등 실제 취업지원 현장에서 쌓아온 상담 경험과 첨삭 기준을 판단 규칙으로 옮겨 적용합니다. 같은 AI를 쓰더라도 무엇을 문제로 볼지, 무엇을 남기고 무엇을 덜어낼지를 정하는 기준이 결과를 가릅니다." } },
-          { "@type": "Question", name: "이력서도 함께 봐주나요?", acceptedAnswer: { "@type": "Answer", text: "PRO부터 이력서와 경력기술서를 함께 읽습니다. 자기소개서만 보면 멀쩡한 문장도 이력서와 나란히 놓으면 근무 기간이나 시점이 어긋나는 곳이 보이고, 그 지점이 면접에서 가장 먼저 질문이 들어오는 곳입니다." } },
-        ],
-      },
+      { "@type": "Service", "@id": `${siteUrl}/#service`, name: "MOOA Resume AI 자소서 첨삭", serviceType: "AI 자기소개서 첨삭 및 취업 지원서 분석", provider: { "@id": `${siteUrl}/#organization` }, areaServed: "KR", availableLanguage: "ko" },
     ],
   };
   return (
-    <><CareerAssessmentDrawer /><LaunchPriceBanner /><main className="home-page">
+    <main className="home-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
-        {/* One panel instead of a row of links. The phone rule hid every
-            non-button link in the bar, so 요금 was unreachable on the device
-            most visitors arrive on, and the list keeps growing — 커리어 검사,
-            첨삭 예시, 친구 추천. A row that hides what it cannot fit does not
-            scale. */}
-        <SiteNav />
+        <nav aria-label="주요 메뉴"><Link href="/career">커리어 검사</Link><Link href="#how">이용 방법</Link><Link href="#plans">요금</Link><Link href="/analyze" className="button button-small">무료로 진단하기</Link></nav>
+        <MobileSiteMenu />
       </header>
+      <CareerAssessmentDrawer />
 
       <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
 
       <section className="hero container">
-        {/* Three drifting blobs rather than one rotating fan. A conic gradient
-            has hard sector edges, and sweeping them past the eye is exactly
-            what made the first version read as a turning box. */}
-        <div className="hero-aura" aria-hidden="true"><i/><i/><i/></div>
         <div className="eyebrow">AI 취업 지원서 코치</div>
-        {/* Two headings chosen by width. The phone one says who this is for
-            rather than what it is called, with the search terms riding along in
-            a hidden span so a crawler still reads 자소서 첨삭 out of the h1
-            without it taking first-screen space. */}
-        <h1 className="hero-desktop">좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
-        <h1 className="hero-mobile">
-          나만의 <em>취업 코치</em>
-          <span className="hero-mobile-sub">자기소개서 컨설팅 받기</span>
-          <span className="visually-hidden">자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭</span>
-        </h1>
-        {/* Outside the h1 on purpose: an aside about which device to use has no
-            business in the one line that tells a crawler what this page is.
-            Phrased as what the phone is good for rather than as a warning about
-            what it is not — a parenthesis telling someone their device is the
-            wrong one, before they have typed anything, is a reason to leave. */}
-        <p className="hero-mobile-hint">휴대폰으로는 붙여넣고 맡기기까지 · <b>실제 첨삭은 PC 추천</b></p>
-        <p className="hero-desktop">채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
+        <h1>좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
+        <p>채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
         <LandingEntry />
-        {/* Above the fold on purpose. "무엇을 받는지"에 답하는 가장 빠른 방법은
-            설명이 아니라 그 화면이고, 결정은 여기서 납니다. */}
-        <Link href="/result/sample" className="hero-sample">첨삭 예시 보기 <ArrowRight size={18}/></Link>
-        <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
+        <div className="trust-row"><span><Check/> 없는 경험 생성 금지</span><span><Check/> 내 말투와 사실 보존</span><span><Check/> 합격 확률 표시 없음</span></div>
       </section>
 
       <section className="proof container" aria-label="분석 결과 예시">
@@ -128,6 +66,11 @@ export default function HomePage() {
             <div className="issues"><small>가장 먼저 고칠 3가지</small><ol><li><b>지원동기의 기업 연결이 약해요</b><span>공고의 ‘공정 개선’ 요구와 경험을 연결해 보세요.</span></li><li><b>성과의 근거가 부족해요</b><span>결과를 확인할 수 있는 기준이나 변화를 추가하세요.</span></li><li><b>2·3번 문항의 경험이 겹쳐요</b><span>3번에는 협업 경험을 배치하는 편이 좋아요.</span></li></ol></div>
           </div>
         </div>
+      </section>
+
+      <section className={"container " + careerCtaStyles.card}>
+        <div className={careerCtaStyles.copy}><small>FREE CAREER EXPLORATION</small><h2>지원하기 전에, 나의 기준부터 정리하세요.</h2><p>직업흥미·업무성향·직업가치를 통해 하고 싶은 활동, 일하는 방식, 중요하게 보는 조건을 무료로 살펴볼 수 있어요.</p></div>
+        <Link href="/career" className={careerCtaStyles.cta}>무료 커리어 검사 <ArrowRight /></Link>
       </section>
 
       <PricingComparison />
@@ -210,8 +153,8 @@ export default function HomePage() {
           <article>
             <span>CASES</span>
             <h3>사례 데이터베이스</h3>
-            <p>동의한 지원서와 서류전형 결과, 첨삭 전후의 변화를 개인정보를 지운 사본으로 모아 기준을 검증합니다.</p>
-            <small>동의 기반 수집 중</small>
+            <p>실제 지원서와 서류전형 결과, 첨삭 전후의 변화, 면접에서 나온 질문을 익명으로 모아 기준을 검증합니다.</p>
+            <small>동의 절차 구축 중</small>
           </article>
         </div>
 
@@ -232,7 +175,7 @@ export default function HomePage() {
 
         <div className={fieldStyles.loopNote}>
           <ShieldCheck/>
-          <p><b>실제 지원 결과는 이용자가 동의한 경우에만, 개인정보를 지운 사본으로 반영합니다.</b> 동의는 결과 화면에서 언제든 켜고 끌 수 있고, 철회하시면 보관 중이던 사본까지 그 자리에서 지웁니다. 그리고 표본이 충분히 쌓이기 전까지 &ldquo;이 문장은 합격률을 몇 % 높입니다&rdquo; 같은 수치는 쓰지 않습니다. 저희가 말할 수 있는 것은 <b>반복해서 발견되는 패턴</b>까지입니다.</p>
+          <p><b>실제 지원 결과는 이용자 동의를 받아 익명으로만 반영할 예정입니다.</b> 동의 절차와 비식별 처리를 갖춘 뒤에 시작합니다. 그리고 표본이 충분히 쌓이기 전까지 &ldquo;이 문장은 합격률을 몇 % 높입니다&rdquo; 같은 수치는 쓰지 않습니다. 저희가 말할 수 있는 것은 <b>반복해서 발견되는 패턴</b>까지입니다.</p>
         </div>
 
         <p className={fieldStyles.loopClose}>실제 경험이 기준이 되고,<br/><em>실제 결과가 다시 기준을 발전시킵니다.</em></p>
@@ -285,13 +228,8 @@ export default function HomePage() {
         <div className={positioningStyles.manifestoCopy}><span>MOOA RESUME · OUR GOAL</span><h2>무아레쥬메의 자소서 첨삭은<br/>1차 서류 합격이 목표가 아닙니다.</h2><strong>최종 합격 후 입사가 목표입니다.</strong><p>단순히 1차 합격을 위해 첨삭하시나요? 저희는 서류 합격, 면접 합격, 입사를 목표로 첨삭을 진행합니다.</p></div>
         <div className={positioningStyles.manifestoGoal}><small>OUR FINAL GOAL</small><b>우리의 목표는<br/>최종 합격입니다.</b><Link href="/onboarding">지원 준비 시작하기 <ArrowRight/></Link></div>
       </section>
-      <section className="cta-section"><div className="container"><div><span>첫 분석은 가볍게 시작하세요</span><h2>내 지원서에서 놓친 근거를<br/>지금 확인해 보세요.</h2></div><div className="cta-actions">
-        <Link href="/analyze" className="button button-light">무료 진단 시작 <ArrowRight size={18}/></Link>
-        {/* The dashboard itself, with sample data. "무엇을 받는지"에 답하는 가장
-            빠른 방법은 설명이 아니라 그 화면입니다. */}
-        <Link href="/result/sample" className="cta-secondary">첨삭 완성본 샘플 예시 보기 <ArrowRight size={16}/></Link>
-      </div></div></section>
-      <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a><span>© 2026 MOOA Resume</span></footer>
-    </main></>
+      <section className="cta-section"><div className="container"><div><span>첫 분석은 가볍게 시작하세요</span><h2>내 지원서에서 놓친 근거를<br/>지금 확인해 보세요.</h2></div><Link href="/analyze" className="button button-light">무료 진단 시작 <ArrowRight size={18}/></Link></div></section>
+      <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a><span>© 2026 MOOA Resume</span></footer>
+    </main>
   );
 }

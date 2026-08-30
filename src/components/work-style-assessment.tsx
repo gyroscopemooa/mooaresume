@@ -50,7 +50,7 @@ export function WorkStyleAssessment() {
     return <section className={styles.intro}>
       <div className={styles.introBadge}>FREE CAREER ASSESSMENT</div>
       <h1>나에게 맞는 업무방식을<br /><em>먼저 알아보세요.</em></h1>
-      <p>성격 5요인에 대한 응답을 바탕으로 업무방식과 강점에 관한 단서를 정리합니다. 결과는 진단이나 채용 판정이 아니라, 자기이해와 취업 준비를 돕기 위한 자료예요.</p>
+      <p>이 검사는 어떻게 일하는가를 살펴봅니다. 성격 5요인에 대한 응답을 바탕으로 업무방식과 강점에 관한 단서를 정리합니다. 결과는 진단이나 채용 판정이 아니라, 자기이해와 취업 준비를 돕기 위한 자료예요.</p>
       <div className={styles.introMeta}><span><Clock3 />약 7분</span><span>50문항</span><span>무료</span></div>
       <button className={styles.startButton} type="button" onClick={() => setStarted(true)}>업무성향 분석 시작하기 <ArrowRight /></button>
       <div className={styles.introNotes}>

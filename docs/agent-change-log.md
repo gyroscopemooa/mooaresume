@@ -2933,3 +2933,11 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 
 - 커리어 문서 **17개가 이미 `feature/codex-plan`에 커밋**돼 있습니다(`career-assessment-roadmap.md`, `mooa-resume-career-design-v2.md`, `psychology-platform-future-plan.md` 등). **병합하면 자동으로 따라옵니다.**
 - 미커밋 md는 `docs/agent-change-log.md` 하나뿐이고, 양쪽이 끝에 덧붙이기만 해서 **양쪽 다 남기면** 됩니다.
+
+## 2026-08-30 — Codex: career assessment implementation merge
+
+- Agent/session: Codex (`feature/codex-plan` → `main`).
+- Decision: Per user direction, adopted the Codex implementation for `src/app/career/**`, career assessment components, persistence/migration, and the assessment catalog. Preserved main's landing page and launch-banner implementation.
+- Homepage integration: added only `CareerAssessmentDrawer` import and render call to `src/app/page.tsx`; the drawer and catalog are supplied by the committed source files.
+- Validation: merge conflicts resolved by the stated file ownership rules; typecheck and lint run after the merge.
+- Rollback: revert the main merge commit that follows this entry.
