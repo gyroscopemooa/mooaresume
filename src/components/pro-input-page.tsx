@@ -135,6 +135,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   // the draft's own size: 8,000 pasted characters became an 8,000 character
   // goal, and a BUILD run then tried to fill it.
   const [simpleTargetLength, setSimpleTargetLength] = useState(String(DEFAULT_TARGET_LENGTH));
+  const [gapPrompt, setGapPrompt] = useState(false);
 
   function resetDraft() {
     if (!window.confirm("입력한 지원서와 추가 자료를 모두 지우고 새로 시작할까요?")) return;
@@ -277,6 +278,18 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
       : "";
 
   return <main className={styles.page}>
+    {gapPrompt && <div className={styles.gapOverlay} role="dialog" aria-modal="true" aria-labelledby="gap-prompt-title">
+      <div className={styles.gapDialog}>
+        <b id="gap-prompt-title">이대로 진행할까요?</b>
+        <p>없는 자료만큼 빠지는 것이 있습니다. 나중에 자료를 더해 다시 분석하실 수 있습니다.</p>
+        <ul>{simpleGaps.map((gap) => <li key={gap}>{gap}</li>)}</ul>
+        <div>
+          <button type="button" className={styles.gapCancel} onClick={() => setGapPrompt(false)}>자료 더 넣기</button>
+          <button type="button" className={styles.gapGo} onClick={() => { setGapPrompt(false); continueFlow(); }}>이대로 진행 <ArrowRight/></button>
+        </div>
+      </div>
+    </div>}
+
     <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>PRO · 기업 지원서 1건 · 12,900원</span></header>
     <div className={styles.container}>
       <div className={styles.topRow}>
@@ -316,13 +329,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
           <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
-          {/* A warning, not a wall. Someone with a draft and no posting was
-              being refused outright, which helped them less than running
-              without the comparison would have. */}
-          {simpleMapping && simpleGaps.length > 0 && <p className={styles.postingWarning}>
-            <b>이대로도 진행할 수 있습니다.</b> 다만 없는 자료만큼 빠지는 것이 있습니다:
-            {simpleGaps.map((gap) => <span key={gap} className={styles.gapLine}>· {gap}</span>)}
-          </p>}
+
         </>}
 
         <div className={inputMode === "SIMPLE" ? styles.hiddenPane : undefined}>
@@ -424,7 +431,15 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         {blockedReason && <p className={actionStyles.message}><b>아직 {content.cta}을 진행할 수 없어요.</b><br/>{blockedReason}</p>}
         <div className={actionStyles.wrap} onMouseEnter={() => blockedReason && setShowBlockedTip(true)} onMouseLeave={() => setShowBlockedTip(false)} onFocus={() => blockedReason && setShowBlockedTip(true)} onBlur={() => setShowBlockedTip(false)}>
           {blockedReason && showBlockedTip && <div role="tooltip" className={actionStyles.tooltip}>{blockedReason}</div>}
-          <button className={styles.submit} aria-disabled={Boolean(blockedReason)} onClick={() => { if (blockedReason) { setShowBlockedTip(true); return; } continueFlow(); }}>{content.cta} <ArrowRight/></button>
+          <button className={styles.submit} aria-disabled={Boolean(blockedReason)} onClick={() => {
+            if (blockedReason) { setShowBlockedTip(true); return; }
+            // Asked at the moment of pressing, not printed above the button.
+            // A notice sitting on the page while they are still filling it in is
+            // read once and then becomes furniture; a question at the last step
+            // is the only place it can still change what they do.
+            if (simpleGaps.length > 0) { setGapPrompt(true); return; }
+            continueFlow();
+          }}>{content.cta} <ArrowRight/></button>
         </div>
       </section>
     </div>

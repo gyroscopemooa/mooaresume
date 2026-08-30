@@ -3360,3 +3360,37 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 자기소개서와 글자 수는 **여전히 필수**입니다. 그 둘이 없으면 분석할 대상 자체가 없습니다.
 - Files: `src/components/result-workspace-complete.tsx`, `.module.css`, `src/domain/simple-intake-mapping.ts`(+test), `src/components/pro-input-page.tsx`, `.module.css`.
 - Validation: 716 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. 샘플에서 `전체 복사` → 안내 표시, 링크 `/onboarding` 확인.
+
+## 2026-08-30 — Claude: 참고자료 총량 상한, 진행 확인 팝업
+
+- Agent/session: Claude. 사용자 승인: 글자 수 제한 진행. 그리고 자료 부족 안내는 인라인이 아니라 팝업으로.
+- Status: completed. **마이그레이션 미적용** — `npm run db:remote:push` 필요.
+
+### 참고자료 총량 상한 — 원가 구멍
+
+- 이용권은 `purpose = 'PRIMARY'`, 즉 **자기소개서만** 셌습니다. 공고·이력서·경력기술서·포트폴리오·기타 증빙은 **세지도 않고 상한도 없이** 모델로 갔습니다.
+- 간편 입력이 자료 10개 + 기타 10개 × 5만 자를 받으므로, **PRO 한 건에 100만 자**가 실릴 수 있었습니다. 주문 하나에 원가가 판매가를 넘습니다.
+- **올릴 수 있는 양은 그대로입니다.** 바뀐 것은 **모델까지 가는 양**이고, 돈이 나가는 곳은 거기입니다.
+
+**두 가지 상한을 겁니다. 실패하는 방식이 다르기 때문입니다.**
+
+| | 값 | 왜 |
+|---|---|---|
+| 문서 1개 | 20,000자 | 300쪽 포트폴리오 하나가 예산을 다 먹고 이력서를 밀어내면 안 됩니다 |
+| 참고자료 총량 (QUICK) | 20,000자 | 자소서만 보는 상품이라 절반이면 충분 |
+| 참고자료 총량 (PRO·FINAL) | 60,000자 | 공고 한 편 + 이력서 + 경력기술서를 넉넉히 담고 남습니다 |
+| **무료 이용권** | 위의 **절반** | |
+
+- **자기소개서는 자르지도 빼지도 않습니다.** 산 물건이고, 이미 이용권의 `allowed_characters`가 막고 있으며, 조용히 짧아진 자소서는 조용히 틀린 첨삭을 만듭니다.
+- **무료 이용권도 자소서는 그대로입니다.** 자소서를 줄이면 추천 보상이 `친구가 결제한 것과 같은 상품의 이용권`이라는 **약속을 어기게 됩니다.** 원가의 대부분은 참고자료 쪽이라, 거기만 줄이면 됩니다.
+- 결제 여부는 `billing_orders.amount > 0`으로 가립니다. 이용권은 금액 0짜리 주문을 만듭니다.
+- 예산은 **중요한 자료부터** 씁니다: 공고 → 이력서 → 경력기술서 → 재첨삭 요청 → 포트폴리오 → 기타. **끝에서 떨어지는 것은 자격증 스캔**이지 공고가 아닙니다.
+- Files: 신규 `supabase/migrations/20260830010000_reference_material_budget.sql`, `src/server/analysis/reference-budget-migration.test.ts`.
+
+### 진행 확인 팝업
+
+- 자료가 없을 때의 안내를 인라인 문구에서 **확인 대화상자**로 옮겼습니다.
+- **입력하는 내내 페이지에 붙어 있는 안내는 한 번 읽히고 가구가 됩니다.** 마지막 단계에서 묻는 것이 행동을 바꿀 수 있는 유일한 자리입니다.
+- `이대로 진행할까요?` / 빠지는 것 목록 / `자료 더 넣기` · `이대로 진행`.
+- Files: `src/components/pro-input-page.tsx`, `.module.css`.
+- Validation: 723 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. `/pro/polish`에서 자소서만 넣고 시작 → 팝업 표시, 항목 2개, 버튼 2개 확인.
