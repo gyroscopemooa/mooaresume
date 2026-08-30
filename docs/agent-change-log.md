@@ -3010,3 +3010,26 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 자리는 **샘플 결과 다음, 요금표 앞**입니다. 첨삭이 무엇을 만들어내는지 막 본 사람, 그리고 곧 가격을 보게 될 사람이 **무료로 먼저 해볼 게 있다**는 말을 가장 잘 받습니다.
 - Files: `src/components/career-assessment-catalog.module.css`, `src/app/page.tsx`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. 1440px에서 드로어 720px, 카탈로그 넘침 없음, CTA 섹션과 `/career` 링크 렌더 확인.
+
+## 2026-08-29 — Claude: 드로어 폭을 줄이고, 코덱스가 만들어둔 드로어 레이아웃을 켬
+
+- Agent/session: Claude. 사용자 요청: 사이드바를 조금 더 줄여줄 것. main만.
+- Status: completed. 마이그레이션 없음.
+
+### 폭
+
+- `50vw` → **`min(44vw, 660px)`**. 1440에서 720px → **633px**(화면의 44%).
+- 상한을 둔 이유: 넓은 모니터에서 `44vw`는 이미 카탈로그로는 과합니다. 곁판은 곁판으로 읽혀야 합니다.
+
+### 진짜 원인 — 코덱스가 만들어둔 드로어 전용 레이아웃이 꺼져 있었습니다
+
+- 카탈로그 CSS 아래쪽에 **`.drawer` 변형이 이미 통째로 작성돼 있었습니다**: `그리드 1열`, `히어로 34px`, 섹션 간격 축소, 카드 `min-height` 해제, 760px 대응까지.
+- 그런데 드로어가 `<CareerAssessmentCatalog />`를 **prop 없이** 불렀습니다. `variant`의 기본값이 `"page"`라 **그 레이아웃이 한 번도 적용된 적이 없었습니다.**
+- `variant="drawer"` 한 줄을 넘겨 **켰습니다.** 처음에 제가 2열 규칙 등을 직접 추가했다가, 코덱스 것이 파일 뒤쪽에 있어 어차피 이기는 것을 확인하고 **제 중복 규칙은 전부 지웠습니다.** 더할 것이 없었습니다.
+- 어제 넣은 `repeat(3, minmax(0,1fr))`는 남깁니다. 그건 **카탈로그 페이지 쪽** 넘침 방지입니다.
+
+### 확인 (1425px)
+
+- 패널 633.6px = **44%**, 카드 **1열**, 히어로 **34px**, 넘치는 요소 **0개**.
+- Files: `src/components/career-assessment-drawer.module.css`, `career-assessment-drawer.tsx`, `career-assessment-catalog.module.css`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
