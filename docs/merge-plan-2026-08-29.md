@@ -8,7 +8,7 @@
 |---|---|
 | 병합 시점 | **코덱스가 커밋한 뒤** |
 | `career/*` 파일 | **코덱스 것을 채택** |
-| `src/app/page.tsx` | **내 최신 홈 유지 + 코덱스의 커리어 링크만** |
+| `src/app/page.tsx` | **내 최신 홈 유지 + 커리어 CTA 섹션 + 커리어 검사 사이드바(드로어)** |
 
 ---
 
@@ -119,7 +119,18 @@ export default function HomePage() {
    > 직업흥미·업무성향·직업가치를 통해 하고 싶은 활동, 일하는 방식, 중요하게 보는 조건을 무료로 살펴볼 수 있어요.
    > `무료 커리어 검사 →`
 
-   **이 섹션 하나만 가져오면 됩니다.** `src/app/career-home-cta.module.css`와 함께 `main`의 `page.tsx`에 덧붙입니다.
+   **이 섹션을 가져옵니다.** `src/app/career-home-cta.module.css`와 함께 `main`의 `page.tsx`에 덧붙입니다.
+
+3. **커리어 검사 사이드바(드로어)** — 사용자가 요청한 것. **가져옵니다.**
+
+   - `src/components/career-assessment-drawer.tsx` + `.module.css`
+   - 홈 오른쪽에 붙는 패널입니다. 기본이 **열린 상태**이고, 접으면 화면 가장자리에 `커리어 검사` 탭만 남아 다시 열 수 있습니다. `Escape`로 닫힙니다. 안에는 `CareerAssessmentCatalog`가 들어갑니다.
+   - 코덱스 홈에서는 `home-page-content.tsx:49`에서 한 줄로 렌더합니다. **`main`의 `page.tsx`에도 같은 한 줄만 넣으면 됩니다** — 홈 구조를 바꿀 필요가 없습니다.
+
+   > **⚠️ 아직 커밋되지 않았습니다.** `career-assessment-drawer.tsx`와 `.module.css`는 코덱스 워크트리에서 `??`(untracked) 상태입니다. **어느 커밋에도 없으므로 지금은 병합할 수 없습니다.** 코덱스가 커밋해야 가져올 수 있습니다.
+   > 함께 필요한 것: `CareerAssessmentCatalog` — 이것도 커밋 여부를 확인해야 합니다.
+
+   **기본 열림 상태는 다시 볼 것.** 홈 첫 화면의 오른쪽을 기본으로 가리는 패널은 자소서 첨삭을 하러 온 사람에게는 방해가 됩니다. 접힌 상태로 시작하는 편이 나은지 병합 후 화면을 보고 정합니다.
 
 ### D. `docs/agent-change-log.md` — 양쪽 다 남기기
 
@@ -140,4 +151,6 @@ npx next build
 
 ## 코덱스에게 요청할 것
 
-> `feature/codex-plan` 워크트리의 미커밋 72개를 커밋해 주세요. 그 뒤 `main`으로 병합합니다. `career/*`는 코덱스 버전을 채택하고, `src/app/page.tsx`는 `main` 버전을 유지합니다(홈 히어로·헤더가 그 사이 많이 바뀌었습니다).
+> `feature/codex-plan` 워크트리의 미커밋 72개를 커밋해 주세요. 특히 **`src/components/career-assessment-drawer.tsx`와 `.module.css`가 아직 untracked**입니다 — 이 사이드바를 `main` 홈에 가져가기로 했는데, 커밋이 없어 지금은 병합할 수 없습니다. `CareerAssessmentCatalog`도 함께 확인 부탁드립니다.
+>
+> 그 뒤 `main`으로 병합합니다. `career/*`는 코덱스 버전을 채택하고, `src/app/page.tsx`는 `main` 버전을 유지합니다(홈 히어로·헤더가 그 사이 많이 바뀌었습니다). 드로어는 `main`의 `page.tsx`에 한 줄로 넣습니다.

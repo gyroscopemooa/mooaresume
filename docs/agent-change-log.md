@@ -2892,3 +2892,23 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 ### 마이그레이션 주의
 
 - `20260826010000_career_assessment_profiles.sql`은 **이미 원격에 적용됐고**, main 사본에는 제가 넣은 멱등 처리가 있습니다. `--theirs`로 덮으면 그게 사라집니다. **손으로 합쳐야 합니다.**
+
+## 2026-08-29 — Claude: 커리어 검사 사이드바를 병합 계획에 추가
+
+- Agent/session: Claude. 사용자 지시: 메인 홈은 Claude 것을 유지하되 **사이드바 기능은 가져올 것.**
+- Status: 계획 갱신만. `docs/merge-plan-2026-08-29.md`.
+
+### 무엇인지 확인했습니다
+
+- `:3001`(코덱스)에서 홈에 붙어 있는 것은 **`career-assessment-drawer`**입니다. 오른쪽 패널이고, 기본이 **열린 상태**, 접으면 화면 가장자리에 `커리어 검사` 탭만 남습니다. `Escape`로 닫힙니다. 안에는 `CareerAssessmentCatalog`.
+- 코덱스 홈에서는 `home-page-content.tsx:49`에 **한 줄**로 들어갑니다. 따라서 **`main`의 `page.tsx`에도 한 줄만 넣으면 됩니다** — 홈 구조를 바꿀 필요가 없습니다.
+
+### 지금은 가져올 수 없습니다
+
+- `career-assessment-drawer.tsx`, `.module.css`, `career-assessment-catalog.tsx`, `.module.css` — **네 파일 모두 코덱스 워크트리에서 untracked(`??`)**입니다. **어느 커밋에도 없습니다.**
+- 앞서 커밋된 브랜치만 훑었을 때 이 이름들이 안 나온 이유입니다.
+- 코덱스가 커밋해야 병합 대상이 됩니다. 요청 문구를 계획서에 반영했습니다.
+
+### 병합 후 다시 볼 것
+
+- 드로어가 **기본 열림**입니다. 홈 첫 화면 오른쪽을 기본으로 가리는 패널은 **자소서 첨삭을 하러 온 사람에게는 방해**입니다. 접힌 상태로 시작하는 편이 나은지 화면을 보고 정합니다.
