@@ -9,6 +9,7 @@ import {
   QUICK_RUBRIC_VERSION,
   QUICK_SCHEMA_VERSION,
 } from "./prompt";
+import { resolveMaxOutputTokens } from "./output-budget";
 import { getQuickAnalysisJsonSchema, parseQuickAnalysisOutput, type QuickAnalysisOutput } from "./schema";
 
 const responsesEnvelopeSchema = z.object({
@@ -100,6 +101,10 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
       signal: AbortSignal.timeout(540_000),
       body: JSON.stringify({
         model: this.options.model,
+        // Output was the only leg of the bill with no ceiling, and it is the
+        // expensive one. Scaled to the letter rather than fixed: see
+        // resolveMaxOutputTokens.
+        max_output_tokens: resolveMaxOutputTokens(request),
         instructions: buildQuickAnalysisInstructions(request),
         input: [buildQuickAnalysisInput(request), validationFeedback.length ? `[이전 결과 검증 실패]\n${validationFeedback.join("\n")}\n위 문제를 고쳐 전체 JSON을 다시 생성하세요.` : ""].filter(Boolean).join("\n\n"),
         text: {
@@ -136,7 +141,7 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
     };
   }
   async startBackground(request: AnalysisRequest): Promise<string> {
-    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model: this.options.model, background: true, instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
+    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model: this.options.model, background: true, max_output_tokens: resolveMaxOutputTokens(request), instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
     if (!response.ok) throw new Error(`OpenAI Responses API ??? ??????. status=${response.status}`);
     return responsesEnvelopeSchema.parse(await response.json()).id;
   }
