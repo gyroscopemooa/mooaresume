@@ -2783,6 +2783,27 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files: `src/app/result/page.tsx`, `src/components/result-sign-in.tsx`, `src/app/page.tsx`, `src/app/globals.css`.
 - Validation: `npx vitest run` 708 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.
 
-### 참고 — 포트
+### 정정 — 포트
 
-- 사용자가 `:3000`(Codex 워크트리)에서 확인 중이었습니다. **거기에는 이 세션의 변경이 하나도 없습니다.** 확인은 `:3001`에서 해야 합니다.
+- **`:3000`이 이 워크트리(Claude/main)이고 `:3001`이 Codex입니다.** 앞 항목에서 반대로 적었던 것을 바로잡습니다.
+- 두 워크트리의 `npm run dev`가 **둘 다 3000을 기본값**으로 쓰기 때문에 먼저 뜨는 쪽이 3000을 가져갑니다. 포트로는 구분되지 않습니다.
+- 구분하려면 내용을 보면 됩니다: `/pro/polish`에 **`간편 입력` 스위치**가 있으면 이 워크트리입니다.
+- 즉 사용자가 지금까지 `:3000`에서 한 테스트는 **전부 이 코드가 맞습니다.**
+
+## 2026-08-29 — Claude: 모바일 화면 실제 확인 + 안내 문구 크기 수정
+
+- Agent/session: Claude. `:3000`이 이 워크트리임을 확인한 뒤 브라우저로 직접 측정했습니다.
+
+### 고친 것 — 안내 문구가 21px로 나오고 있었습니다
+
+- `.hero-mobile-hint`(0,1,0)가 `.hero>p`(0,1,1)에 **특정도로 밀려서** 10.5px 규칙이 적용되지 않고 히어로 문단 크기 그대로 나왔습니다.
+- `.hero p.hero-mobile-hint`(0,2,1)로 올려 해결했습니다. **작게 만든 줄 알았던 문구가 실제로는 제일 큰 글자였습니다** — 화면을 안 보고 넘어갔으면 그대로 나갈 뻔했습니다.
+
+### 390×844에서 확인한 것
+
+- 홈: 안내 문구 **10.5px**, 가로 넘침 없음, 샘플 버튼 266~322.
+- 온보딩: 유형 선택 **3칸**(`처음부터 작성` 라벨만), 카드 108×123.
+- `/pro/polish`: 진행 순서 **2열**, `간편 입력 | 상세 입력` 스위치 표시(폭 308), 글자 수 **700 기본값**, 간편 박스 렌더.
+- 1280px: 안내 문구 `none`, 모바일 제목 `none`, 데스크톱 제목 그대로, 샘플 버튼 하늘색 유지.
+- Files: `src/app/globals.css`.
+- Validation: `npx vitest run` 708 passed, `npx next build` 클린, 브라우저 실측 위와 같음.

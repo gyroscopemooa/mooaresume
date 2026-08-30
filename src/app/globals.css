@@ -104,7 +104,10 @@ body{zoom:var(--app-scale)}
 .hero-sample:hover{background:#1a6ba0;transform:translateY(-1px)}
 /* In the DOM for crawlers and screen readers, out of the way on screen. */
 .visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
-.hero-mobile,.hero-mobile-hint{display:none}
+.hero-mobile{display:none}
+/* Specific enough to beat `.hero p`, which is a class-plus-element selector.
+   Without this the hint inherited the sub-paragraph size and rendered at 21px. */
+.hero p.hero-mobile-hint{display:none}
 @media(max-width:760px){
   /* Everything above the input competes with the input. On a phone the
      positioning line, the sub-paragraph and the three trust chips together
@@ -121,8 +124,8 @@ body{zoom:var(--app-scale)}
      a phone headline is read in one glance, so it gets weight and a tighter
      line, and the green half carries the eye to 취업 코치 — the part that says
      who this is for. */
-  .hero-mobile-hint{display:block;margin:-12px 0 16px;color:#8b978f;font-size:10.5px;font-weight:600;letter-spacing:-.01em}
-  .hero-mobile-hint b{color:#5f6d66;font-weight:800}
+  .hero p.hero-mobile-hint{display:block;margin:-12px 0 16px;color:#8b978f;font-size:10.5px;font-weight:600;letter-spacing:-.01em;line-height:1.6}
+  .hero p.hero-mobile-hint b{color:#5f6d66;font-weight:800}
   .hero-mobile{display:block;font-size:clamp(33px,9.4vw,44px);font-weight:900;line-height:1.16;letter-spacing:-.05em;margin:12px 0 20px}
   .hero-mobile em{font-style:normal;background:linear-gradient(100deg,#1a8a5c,#176b4a);-webkit-background-clip:text;background-clip:text;color:transparent}
   /* A chip rather than a second line of heading: it reads as the thing you are
