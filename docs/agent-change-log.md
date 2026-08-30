@@ -1834,3 +1834,12 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Validation: pending typecheck, lint, local visual route verification.
 - Rollback/recovery reference: remove the one home render/import and the new drawer files; catalog page remains available separately.
 - User decision: explicitly requested the overlay rather than an inline/sidebar layout that compresses the existing homepage.
+
+## 2026-08-30 — Codex: career login layout isolation
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: `/career/login` now bypasses the shared assessment header/container through `CareerLayoutShell`; it keeps only its own full-page login layout.
+- Reason: the login page previously received both its own full-height layout and the assessment-specific wrapper, causing nested width, padding, and vertical-height rules.
+- Files: `src/app/career/layout.tsx`, `src/components/career-layout-shell.tsx`.
+- Validation: `npm run typecheck`, `npm run lint`, and local login route response check.
+- Rollback: revert these two files; all other career routes retain the original wrapper behavior.
