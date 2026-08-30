@@ -2833,3 +2833,28 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
   - 1280px: `메뉴` 트리거, 패널 링크 7개(`/#plans`·`/result/sample`·`/career`·`/guide`·`/new`·`/refer`·`/#plans`), 패널 623~943, 바의 `요금` 표시.
   - 좁은 폭: 트리거 39px(아이콘만), 브랜드 145px, 가로 넘침 없음, 패널이 화면 안(10~497), 패널 CTA 표시, 열기 → 바깥 클릭 닫힘 → 다시 열기 → Escape 닫힘 전부 통과.
 - 보존: `/new`, `/refer`, `/landing`, `/comingsoon`의 헤더는 **건드리지 않았습니다.** 같은 메뉴로 통일할지는 사용자 확인 후 진행합니다.
+
+## 2026-08-29 — Claude: 모바일에서 가로로 밀리던 원인 — 헤더였습니다
+
+- Agent/session: Claude. 사용자 보고: 모바일 메인이 옆으로 드래그된다, 코덱스 쪽은 안 그런다. 실제 폰에서는 `무료로 진단하기` 오른쪽이 살짝 잘린다.
+- Status: completed. 마이그레이션 없음. **드래그되는 건 정상이 아닙니다.**
+
+### 원인
+
+- 390px 뷰포트에서 요소를 전부 훑어 **화면 밖으로 나가는 것 하나**를 찾았습니다: `.site-header`의 `무료로 진단하기` 버튼(오른쪽 끝 396 > 390).
+- 헤더 한 줄에 브랜드(145) + 메뉴(39) + `내 계정`(약 66) + CTA(97) + 여백이 들어가 **약 412px**이 됐습니다. 사용자가 말한 "오른쪽 살짝 잘림"과 정확히 같은 증상입니다.
+- 앞서 `overflow:false`로 측정했던 것은 브라우저 창이 실제로는 507px였기 때문입니다. **390으로 제대로 지정하고 나서야 드러났습니다.**
+
+### 고침
+
+- **`내 계정` 글자를 680px 이하에서 숨깁니다.** 아이콘은 남습니다(약 50px 확보). 텍스트가 버튼 안 맨몸 노드였어서 `<span>`으로 감쌌습니다.
+- **CTA 문구를 420px 이하에서 `무료 진단`으로** 바꿉니다. 라벨 두 개를 넣고 하나만 보여줍니다 — 360px에서는 긴 문구가 18px 넘칩니다.
+- `.nav`에 `min-width:0`. 줄이 페이지를 넓히는 대신 줄어들 수 있어야 합니다.
+
+### 확인
+
+- **390px**: 화면 밖 요소 0개, `window.scrollX`가 9999로 밀어도 **0**(가로 스크롤 불가), 헤더 오른쪽 끝 = 390.
+- **360px**: 화면 밖 요소 0개, CTA `무료 진단` 오른쪽 끝 353, 가로 스크롤 불가.
+- **1280px**: 화면 밖 요소 0개, CTA `무료로 진단하기` 그대로.
+- Files: `src/components/header-account.tsx`, `.module.css`, `src/components/site-nav.tsx`, `.module.css`.
+- Validation: `npx vitest run` 708 passed, `npx tsc --noEmit` clean, `npx eslint .` 0건, `npx next build` 클린.

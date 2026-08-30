@@ -33,11 +33,15 @@
 .panelCta { display: none; align-items: center; justify-content: center; gap: 7px; margin-top: 8px; padding: 13px; border-radius: 10px; background: var(--green, #176b4a); color: #fff; font-size: 13.5px; font-weight: 800; }
 .panelCta svg { width: 15px; height: 15px; }
 
+.cta { white-space: nowrap; }
+.ctaShort { display: none; }
+
 .price { font-size: 15px; color: #526059; }
 .price:hover { color: var(--green, #176b4a); }
 
 @media (max-width: 680px) {
-  .nav { gap: 8px; }
+  /* min-width:0 so the row may shrink instead of forcing the page wider. */
+  .nav { gap: 7px; min-width: 0; }
   /* Label out, icon in. Two more characters in the bar is two fewer for the
      brand, which has to stay readable. */
   .trigger { padding: 8px 10px; font-size: 11px; }
@@ -51,4 +55,11 @@
   /* The bar has no room for the price on a phone, so the panel ends with it. */
   .price { display: none; }
   .panelCta { display: flex; }
+}
+
+/* Below this the full label does not fit beside the brand, the menu and the
+   account icon, and the row starts pushing the page sideways. */
+@media (max-width: 420px) {
+  .ctaLong { display: none; }
+  .ctaShort { display: inline; }
 }

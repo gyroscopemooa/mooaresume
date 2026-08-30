@@ -86,6 +86,12 @@ export function SiteNav() {
     {/* Stays in the bar on wide screens; the panel carries it on a phone. */}
     <Link href="/#plans" className={styles.price}>요금</Link>
     <HeaderAccount />
-    <Link href="/analyze" className="button button-small">무료로 진단하기</Link>
+    {/* Two labels, one shown at a time. On a 360px phone the full sentence
+        pushed the row 18px past the screen, which is the sideways drag people
+        were reporting — the header, not the content. */}
+    <Link href="/analyze" className={`button button-small ${styles.cta}`}>
+      <span className={styles.ctaLong}>무료로 진단하기</span>
+      <span className={styles.ctaShort}>무료 진단</span>
+    </Link>
   </nav>;
 }

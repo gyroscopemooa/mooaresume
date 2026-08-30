@@ -79,7 +79,7 @@ export function HeaderAccount() {
 
   return (
     <div className={styles.menu}>
-      <button type="button" className={styles.trigger}><CircleUser/> 내 계정</button>
+      <button type="button" className={styles.trigger} aria-label="내 계정"><CircleUser/> <span>내 계정</span></button>
       <div className={styles.drop}>
         <div className={styles.email}>{email}</div>
         <Link href="/refer">추천코드 · 무료 이용권</Link>
