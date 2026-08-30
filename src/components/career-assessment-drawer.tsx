@@ -4,14 +4,8 @@ import { ChevronLeft, ChevronRight, Compass, X } from "lucide-react";
 import { CareerAssessmentCatalog } from "./career-assessment-catalog";
 import styles from "./career-assessment-drawer.module.css";
 export function CareerAssessmentDrawer() {
-  // Open on arrival, as Codex built it and as the user confirmed they want.
-  //
-  // Noted once and not again: at 1265px the panel covers x=0..800, and the
-  // hero's paste box starts at about x=52, so the catalog sits over most of it
-  // until the visitor closes the drawer. The edge toggle and Escape both close
-  // it, and this is the same behaviour the career home already shipped with.
   const [open, setOpen] = useState(true);
   useEffect(() => { if (!open) return; const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); }; document.addEventListener("keydown", onKeyDown); return () => document.removeEventListener("keydown", onKeyDown); }, [open]);
   if (!open) return <button className={styles.reopen} type="button" onClick={() => setOpen(true)} aria-label="커리어 검사 목록 열기"><Compass /><span>커리어<br />검사</span><ChevronLeft /></button>;
-  return <section className={styles.layer} aria-label="커리어 검사 목록"><aside className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="career-drawer-title"><button className={styles.edgeToggle} type="button" onClick={() => setOpen(false)} aria-label="검사 목록 접기"><ChevronRight /></button><header className={styles.drawerHead}><div><small>FREE CAREER EXPLORATION</small><b id="career-drawer-title">커리어 검사 목록</b></div><div className={styles.actions}><button type="button" onClick={() => setOpen(false)} aria-label="검사 목록 닫기"><X /></button></div></header><div className={styles.content}><CareerAssessmentCatalog variant="drawer" /></div></aside></section>;
+  return <section className={styles.layer} aria-label="커리어 검사 목록"><aside className={styles.drawer} role="dialog" aria-modal="true" aria-labelledby="career-drawer-title"><button className={styles.edgeToggle} type="button" onClick={() => setOpen(false)} aria-label="검사 목록 접기"><ChevronRight /></button><header className={styles.drawerHead}><div><small>FREE CAREER EXPLORATION</small><b id="career-drawer-title">커리어 검사 목록</b></div><div className={styles.actions}><button type="button" onClick={() => setOpen(false)} aria-label="검사 목록 닫기"><X /></button></div></header><div className={styles.content}><CareerAssessmentCatalog /></div></aside></section>;
 }

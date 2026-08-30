@@ -3033,3 +3033,38 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - 패널 633.6px = **44%**, 카드 **1열**, 히어로 **34px**, 넘치는 요소 **0개**.
 - Files: `src/components/career-assessment-drawer.module.css`, `career-assessment-drawer.tsx`, `career-assessment-catalog.module.css`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-29 — Claude: 드로어를 코덱스 원본으로 완전 복원
+
+- Agent/session: Claude. 사용자 지시: 50vw로 되돌리고 **기존 정사각형 카드 디자인을 유지할 것.** 앞서 보인 차이는 새로고침 문제였을 수 있음.
+- Status: completed. 마이그레이션 없음.
+
+### 방식 — 손으로 되돌리지 않고 원본 커밋에서 꺼냈습니다
+
+```
+git checkout bc5f549 -- career-assessment-drawer.tsx
+                        career-assessment-drawer.module.css
+                        career-assessment-catalog.module.css
+```
+
+**코덱스 워크트리 파일과 바이트 단위로 대조해 확인했습니다:**
+
+| 파일 | 결과 |
+|---|---|
+| `career-assessment-drawer.module.css` | **완전히 같음** |
+| `career-assessment-catalog.module.css` | **완전히 같음** |
+| `career-assessment-drawer.tsx` | 내용 동일(줄바꿈 문자만) |
+| `career-assessment-catalog.tsx` | 내용 동일(줄바꿈 문자만) |
+
+### 되돌린 것 세 가지
+
+- 폭 `min(44vw,660px)` → **`50vw`**
+- 카탈로그 그리드 `repeat(3,minmax(0,1fr))` → **`repeat(3,1fr)`**
+- `variant="drawer"` 제거 → **`<CareerAssessmentCatalog />`** (드로어 전용 1열 레이아웃은 다시 꺼짐)
+- 기본 열림(`useState(true)`)은 그대로입니다.
+
+### 확인 (1425px)
+
+- 패널 **720px = 51%**, 그리드 **3열**(229·235·217), 카드 `min-height:264px` **정사각형 유지**.
+- 남는 사실 하나: 3열 합이 내용 상자보다 약 45px 넓어 오른쪽 카드가 몇 px 잘릴 수 있습니다. **원본 그대로이므로 그대로 둡니다.**
+- Validation: 713 tests passed, `tsc` clean, `next build` 클린.
