@@ -5,7 +5,9 @@
    class-plus-element selector, so each of these needs the extra class to win. */
 .gate { margin: 14px 0 0; padding: 11px 13px; border: 1px solid #dfe6e2; border-radius: 8px; background: #fff; }
 
-.gate .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gate .row { display: flex; align-items: center; gap: 16px; }
+/* The toggle is pushed to the far end so the two choices read as a pair. */
+.gate .more { margin-left: auto; }
 
 .gate .check {
   display: flex; align-items: center; gap: 9px;

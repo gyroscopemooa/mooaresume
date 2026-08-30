@@ -3491,3 +3491,21 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 두 번째 줄(거절해도 동일 / 철회 시 사본 삭제)은 남겼습니다. **동의를 받는 화면에서 그 두 문장을 빼면 동의의 조건이 사라집니다.**
 - Files: `src/components/research-consent-gate.tsx`, `src/components/application-case-handoff.tsx`, `.module.css`.
 - Validation: 729 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-30 — Claude: 체크 두 개 중 하나를 골라야 진행
+
+- Agent/session: Claude. 사용자: 체크 두 개로 만들고 하나를 골라야 진행되게. 문구는 `데이터베이스 활용` / `없이 진행하기`.
+- Status: completed. 마이그레이션 없음.
+
+```
+☐ 데이터베이스 활용   ☐ 없이 진행하기            자세히 ▾
+```
+
+- 하나를 고르기 전에는 **`결제하고 분석 시작`이 비활성**이고, 그 아래에 `위에서 하나를 골라 주세요.`가 나옵니다.
+- **기본 선택은 없습니다.** 미리 고른 답은 선택 항목에서 유효한 동의가 아니고, 분쟁을 못 버티는 동의는 그 아래 모은 사본을 전부 지워야 합니다.
+- **거절도 똑같이 한 번의 클릭입니다.** 거절이 더 번거로우면 자유로운 선택이 아닙니다.
+- 상자 하나짜리로는 급한 사람이 전부 지나칩니다. 두 개면 **결제하는 전원이 답하고**, 그 답이 기록으로 남습니다.
+- 색은 없습니다. 흰 바탕에 얇은 테두리 하나, `자세히`는 같은 카드 안에서 펼쳐집니다.
+- 상호 배타 선택이므로 `role="radiogroup"` + `aria-checked`입니다.
+- Files: `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`, `src/components/application-case-handoff.tsx`.
+- Validation: 730 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. **로그인 상태에서만 보이는 화면이라 눈으로는 확인하지 못했습니다.**
