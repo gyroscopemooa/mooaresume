@@ -3233,3 +3233,27 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 1440px: 헤더 순서 `무료로 진단하기 · 커리어 검사 · 로그인 · 메뉴`.
 - Files: `src/app/globals.css`, `src/components/site-nav.tsx`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-29 — Claude: 헤더가 런칭 배너 아래에 깔려 있었습니다
+
+- Agent/session: Claude. 사용자: 브라우저는 웨일. 모바일에서 프로필 아이콘만 있고 로그아웃 메뉴가 안 열린다.
+- Status: completed. 마이그레이션 없음.
+
+### 웨일은 문제가 아닙니다
+
+- 웨일은 크로미움 기반이고 `overflow: clip`은 크로미움 90부터 지원합니다. **못 고치는 게 아니라 강력 새로고침이 필요한 것**입니다. 확인한 값: 웨일과 같은 엔진에서 `html`의 계산된 `overflow-x`가 `clip`, 390px에서 `scrollWidth 390 = clientWidth`, `scrollTo(9999,0)` 후 `scrollX 0`.
+
+### 진짜 문제 — 쌓임 순서
+
+- `.site-header`가 `position:sticky; z-index:30`(홈 전용 규칙), 런칭 배너가 **`z-index:40`**입니다.
+- 헤더가 배너보다 **아래**에 깔려 있었습니다. 헤더는 자기 자신이 쌓임 맥락을 만들기 때문에, **그 안의 드롭다운에 `z-index:20`을 줘도 헤더 밖의 40을 넘지 못합니다.**
+- 계정 메뉴를 눌러도 아무 일이 없어 보이는 증상과 맞습니다.
+- `.site-header` 30 → **41**. 배너보다 한 칸 위입니다. 기본 규칙(globals)도 3 → 41로 맞췄습니다.
+- **헤더는 페이지에서 가장 위에 있어야 합니다.** 그 안의 메뉴가 무언가에 묻히면, 사용자에게는 고장으로 보입니다.
+
+### 확인 (390px)
+
+- `headerZ 41` > `bannerZ 40`, `html overflow-x: clip`, `scrollWidth 390 = clientWidth`, 가로 스크롤 0.
+- Files: `src/app/globals.css`, `src/app/home-startup-header.module.css`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+- **남은 확인:** 로그인한 상태에서 계정 아이콘을 눌러 로그아웃이 나오는지는 사용자 확인이 필요합니다.
