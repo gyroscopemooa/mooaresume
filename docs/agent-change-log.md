@@ -3448,3 +3448,27 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 그래도 결과 화면 맨 아래에 있던 것보다는 훨씬 많이 보입니다 — 위치를 옮긴 것이 원래 고치려던 문제였습니다.
 - Files: `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`, `src/components/application-case-handoff.tsx`, `.module.css`.
 - Validation: 729 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-30 — Claude: 동의 체크가 초록 덩어리로 깨지던 이유
+
+- Agent/session: Claude. 사용자: UI가 깨진다, 색 필요 없고 `자세히`도 한 카드 안에, 얇은 네모칸만.
+- Status: completed. 마이그레이션 없음.
+
+### 원인 — 부모가 안쪽 버튼을 전부 칠하고 있었습니다
+
+```css
+.action button{width:100%;padding:12px;background:#176b4a;color:#fff;font-size:9px;font-weight:900}
+```
+
+- 결제 영역(`application-case-handoff.module.css`)의 이 규칙이 **`.action` 안의 모든 `button`**에 걸립니다. 제 체크박스와 `자세히`가 그 안에 있어서 **초록 전체폭 블록 두 개**가 됐습니다.
+- 제 규칙이 진 이유는 특정도입니다: `.check`(클래스 1)는 `.action button`(클래스 1 + 요소 1)에 밀립니다.
+- **모든 선택자에 `.gate`를 붙였습니다.** `.gate .check`는 클래스 2라 이깁니다. `:disabled`도 같은 이유로 `.gate .check:disabled`(클래스 3)로 올렸습니다.
+
+### 모양
+
+- 배경색·강조색 없앴습니다. **흰 바탕에 얇은 테두리 한 겹**뿐입니다.
+- `자세히`는 **같은 카드 안에서** 펼쳐집니다. 별도 박스가 아닙니다.
+- 여백을 줄여 한 줄 높이로 얇게.
+- Files: `src/components/research-consent-gate.module.css`.
+- Validation: 729 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. 빌드된 CSS에서 `.gate .check` 규칙 출력 확인.
+- **로그인 상태에서만 보이는 화면이라 눈으로는 확인하지 못했습니다.** 아직 깨져 보이면 스크린샷이 필요합니다.

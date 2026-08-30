@@ -1,29 +1,38 @@
-/* One line above the pay button. Four lines of policy there is read by nobody
-   and makes the screen feel heavier than the decision actually is. */
-.gate { margin: 14px 0 0; padding: 12px 14px; border: 1px solid #e4eae7; border-radius: 11px; background: #fbfdfc; }
+/* One thin box above the pay button.
+   Every selector is prefixed with .gate on purpose. The container this sits in
+   styles `.action button` — full width, green, white text — which turned the
+   checkbox and the 자세히 toggle into two green slabs. A bare class loses to a
+   class-plus-element selector, so each of these needs the extra class to win. */
+.gate { margin: 14px 0 0; padding: 11px 13px; border: 1px solid #dfe6e2; border-radius: 8px; background: #fff; }
 
-.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.gate .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 
-.check { display: flex; align-items: center; gap: 9px; padding: 0; border: 0; background: none; color: #41514a; font: inherit; font-size: 12.5px; font-weight: 700; text-align: left; cursor: pointer; }
-.check > span { display: grid; place-items: center; width: 18px; height: 18px; flex: none; border: 1px solid #c6d2cc; border-radius: 5px; background: #fff; transition: background 130ms ease, border-color 130ms ease; }
-.check svg { width: 13px; height: 13px; color: #fff; }
-.check:hover:not(:disabled) > span { border-color: #176b4a; }
-.check:disabled { opacity: 0.6; cursor: default; }
-.on > span { border-color: #176b4a; background: #176b4a; }
-.on { color: #0f4b33; }
-
-.more { display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 4px 6px; border: 0; border-radius: 7px; background: none; color: #8b968f; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
-.more:hover { color: #176b4a; }
-.more svg { width: 13px; height: 13px; transition: transform 140ms ease; }
-.up { transform: rotate(180deg); }
-
-.detail { display: grid; gap: 7px; margin-top: 11px; padding-top: 11px; border-top: 1px solid #eef2f0; }
-.detail p { margin: 0; color: #7a867f; font-size: 11.5px; line-height: 1.8; }
-.detail b { color: #41514a; }
-
-.failed { display: block; margin-top: 9px; color: #a34848; font-size: 11.5px; }
-
-@media (max-width: 640px) {
-  .check { font-size: 12.5px; }
-  .detail p { font-size: 12px; }
+.gate .check {
+  display: flex; align-items: center; gap: 9px;
+  width: auto; padding: 0; border: 0; border-radius: 0;
+  background: none; color: #41514a;
+  font: inherit; font-size: 12.5px; font-weight: 600; text-align: left;
+  cursor: pointer;
 }
+.gate .check > span { display: grid; place-items: center; width: 17px; height: 17px; flex: none; border: 1px solid #c6d2cc; border-radius: 4px; background: #fff; }
+.gate .check svg { width: 12px; height: 12px; color: #41514a; }
+.gate .check:hover:not(:disabled) > span { border-color: #8a9690; }
+.gate .check:disabled { background: none; opacity: 0.6; cursor: default; }
+.gate .on > span { border-color: #41514a; }
+
+.gate .more {
+  display: inline-flex; align-items: center; gap: 3px; flex: none;
+  width: auto; padding: 2px 4px; border: 0; border-radius: 0;
+  background: none; color: #8b968f;
+  font: inherit; font-size: 11.5px; font-weight: 600;
+  cursor: pointer;
+}
+.gate .more:hover { color: #41514a; }
+.gate .more svg { width: 12px; height: 12px; transition: transform 140ms ease; }
+.gate .up { transform: rotate(180deg); }
+
+.gate .detail { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef2f0; }
+.gate .detail p { margin: 0; color: #8b968f; font-size: 11px; line-height: 1.75; }
+.gate .detail b { color: #41514a; font-weight: 600; }
+
+.gate .failed { display: block; margin-top: 8px; color: #a34848; font-size: 11px; }
