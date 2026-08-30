@@ -25,7 +25,6 @@ const SECTIONS = [
     links: [
       { href: "/#plans", label: "요금 안내", hint: "QUICK · PRO · FINAL 한눈에 비교" },
       { href: "/result/sample", label: "첨삭 예시 보기", hint: "완성본이 어떤 모습인지 먼저" },
-      { href: "/career", label: "무료 커리어 검사", hint: "업무성향 · 직업흥미 · 직업가치" },
     ],
   },
   {
@@ -75,16 +74,17 @@ export function SiteNav() {
             <span>{link.hint}</span>
           </Link>)}
         </div>)}
-        {/* Repeated inside the panel because the bar drops it on a phone, and
-            the price is the one link nobody should have to hunt for. */}
-        <Link href="/#plans" className={styles.panelCta} onClick={() => setOpen(false)}>
-          요금 보고 시작하기 <ArrowRight/>
+        {/* The phone bar has no CTA any more, so the panel carries it. */}
+        <Link href="/analyze" className={styles.panelCta} onClick={() => setOpen(false)}>
+          무료로 진단하기 <ArrowRight/>
         </Link>
       </div>}
     </div>
 
-    {/* Stays in the bar on wide screens; the panel carries it on a phone. */}
-    <Link href="/#plans" className={styles.price}>요금</Link>
+    {/* 요금 moved into the panel; 커리어 검사 takes the bar slot instead. It is
+        the one free thing on the site, and a free door is worth more in the bar
+        than a price nobody clicks before they have seen the work. */}
+    <Link href="/career" className={styles.price}>커리어 검사</Link>
     <HeaderAccount />
     {/* Two labels, one shown at a time. On a 360px phone the full sentence
         pushed the row 18px past the screen, which is the sideways drag people

@@ -2,7 +2,8 @@
 
 .menuWrap { position: relative; }
 
-.trigger { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border: 1px solid var(--line, #dfe6e2); border-radius: 999px; background: #fff; color: #41514a; font-size: 14px; font-weight: 700; cursor: pointer; }
+/* Squared off rather than a pill: it reads as a control, not a tag. */
+.trigger { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--line, #dfe6e2); border-radius: 9px; background: #fff; color: #41514a; font-size: 13px; font-weight: 700; cursor: pointer; }
 .trigger:hover { border-color: var(--green, #176b4a); color: var(--green, #176b4a); }
 .trigger:focus-visible { outline: 2px solid var(--green, #176b4a); outline-offset: 2px; }
 .chevron { width: 14px; height: 14px; transition: transform 140ms ease; }
@@ -36,15 +37,14 @@
 .cta { white-space: nowrap; }
 .ctaShort { display: none; }
 
-.price { font-size: 15px; color: #526059; }
+.price { font-size: 13px; color: #526059; }
 .price:hover { color: var(--green, #176b4a); }
 
 @media (max-width: 680px) {
   /* min-width:0 so the row may shrink instead of forcing the page wider. */
   .nav { gap: 7px; min-width: 0; }
-  /* Label out, icon in. Two more characters in the bar is two fewer for the
-     brand, which has to stay readable. */
-  .trigger { padding: 8px 10px; font-size: 11px; }
+  /* A square, not a lozenge: at icon-only size a pill reads as a stray dot. */
+  .trigger { width: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 9px; }
   .trigger > span, .chevron { display: none; }
   .mobileIcon { display: block; }
   /* Anchored to the header rather than the button, so a 320px panel does not
@@ -53,8 +53,15 @@
   .section b { font-size: 14px; }
   .section span { font-size: 12px; }
   /* The bar has no room for the price on a phone, so the panel ends with it. */
-  .price { display: none; }
+  /* home-mobile-header.module.css hides every non-button link in the bar with
+     `.site-header nav>a:not(.button)` — two classes and two elements. Three
+     classes outweighs it — 커리어 검사 is meant to stay in the
+     bar on a phone, which is the whole reason 요금 moved into the panel. */
+  .nav .price.price { display: inline; font-size: 12px; }
   .panelCta { display: flex; }
+  /* The phone bar drops the CTA entirely — it crowded the brand and the menu,
+     and the panel now ends with the same button. */
+  .cta { display: none; }
 }
 
 /* Below this the full label does not fit beside the brand, the menu and the

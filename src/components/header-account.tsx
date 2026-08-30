@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CircleUser } from "lucide-react";
@@ -25,6 +25,13 @@ export function HeaderAccount() {
   const [email, setEmail] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Click, not hover.
+  //
+  // The dropdown opened on :hover and :focus-within only, so on a phone there
+  // was no way in: the account icon sat there and tapping it did nothing, which
+  // meant a signed-in visitor could not sign out at all.
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +47,22 @@ export function HeaderAccount() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   async function signIn() {
     setBusy(true);
@@ -61,6 +84,7 @@ export function HeaderAccount() {
     try {
       await createClient().auth.signOut();
       setEmail(null);
+      setOpen(false);
       router.refresh();
     } finally {
       setBusy(false);
@@ -78,16 +102,16 @@ export function HeaderAccount() {
   }
 
   return (
-    <div className={styles.menu}>
-      <button type="button" className={styles.trigger} aria-label="내 계정"><CircleUser/> <span>내 계정</span></button>
-      <div className={styles.drop}>
+    <div className={styles.menu} ref={wrapRef}>
+      <button type="button" className={styles.trigger} aria-label="내 계정" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen((current) => !current)}><CircleUser/> <span>내 계정</span></button>
+      {open && <div className={styles.drop}>
         <div className={styles.email}>{email}</div>
-        <Link href="/refer">추천코드 · 무료 이용권</Link>
-        <Link href="/analyze">새 지원서 분석하기</Link>
+        <Link href="/refer" onClick={() => setOpen(false)}>추천코드 · 무료 이용권</Link>
+        <Link href="/analyze" onClick={() => setOpen(false)}>새 지원서 분석하기</Link>
         <button type="button" className={styles.signOut} onClick={() => void signOut()} disabled={busy}>
           {busy ? "로그아웃 중..." : "로그아웃"}
         </button>
-      </div>
+      </div>}
     </div>
   );
 }

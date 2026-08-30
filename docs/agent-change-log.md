@@ -3111,3 +3111,37 @@ body{zoom:var(--app-scale)}   /* 1.25 */
 - Files: `src/app/career/layout.tsx`, `src/components/career-layout-shell.tsx`.
 - Validation: `npm run typecheck`, `npm run lint`, and local login route response check.
 - Rollback: revert the commit that applies this entry; all other career routes retain the original wrapper behavior.
+## 2026-08-29 — Claude: 헤더 정리 + 로그아웃이 안 되던 버그
+
+- Agent/session: Claude. 사용자 요청 6건.
+- Status: completed. 마이그레이션 없음.
+
+### 버그 — 휴대폰에서 로그아웃할 방법이 없었습니다
+
+- 계정 드롭다운이 **`:hover`와 `:focus-within`으로만** 열렸습니다. 터치 기기에는 hover가 없으니 **아이콘만 덩그러니 있고 눌러도 아무 일이 없었습니다.**
+- 로그인한 사람이 **로그아웃을 아예 못 하는 상태**였습니다.
+- 클릭 토글로 바꿨습니다. 바깥 클릭(`mousedown`)과 `Escape`로 닫히고, 드롭다운 링크를 누르면 닫힙니다. 로그아웃 후에도 닫습니다.
+
+### 헤더 구성 변경
+
+- **`요금`을 드롭다운 안으로, `커리어 검사`를 바에 노출.** 요금은 작업을 보기 전에는 눌리지 않는 링크이고, **무료로 열리는 문 하나가 바 자리값을 더 합니다.**
+- 데스크톱 바: `메뉴 ▾ · 커리어 검사 · 내 계정 · 무료로 진단하기`
+- 패널: 서비스(요금 안내, 첨삭 예시) / 이용 안내(이용 방법, 팁과 노하우, 친구 추천) / 맨 아래 `무료로 진단하기`
+
+### 크기와 모양
+
+- 메뉴 트리거 14px → **13px**, 모서리 999px → **9px**(알약이 아니라 컨트롤로 읽히게). 바의 링크도 15px → 13px, 계정 14px → 13px.
+- 모바일 메뉴 버튼: **36×36 정사각**, 반경 9px. 아이콘만 남는 크기에서 알약은 떠도는 점처럼 보입니다.
+- 모바일 바에서 **`무료로 진단하기` 제거.** 브랜드와 메뉴를 밀어내고 있었고, 패널이 같은 버튼으로 끝납니다.
+
+### 특정도 한 건
+
+- `home-mobile-header.module.css`가 `.site-header nav>a:not(.button)`(클래스 2 + 요소 2)로 바의 링크를 전부 숨깁니다. `커리어 검사`를 살리려면 그보다 높아야 해서 **`.nav .price.price`(클래스 3)**로 올렸습니다. 클래스 하나만 겹쳐 쓴 첫 시도는 요소 개수에서 밀려 안 먹었습니다.
+
+### 확인
+
+- 1440px: 트리거 13px/9px, 바 `커리어 검사`+CTA, 패널 링크 6개.
+- 390px: 메뉴 36×36, CTA `display:none`, 바에 `커리어 검사 | 로그인`, 가로 넘침 0.
+- 360px: 헤더 오른쪽 끝 360, 가로 스크롤 불가, 넘침 0.
+- Files: `src/components/header-account.tsx`, `.module.css`, `src/components/site-nav.tsx`, `.module.css`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
