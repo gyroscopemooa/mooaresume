@@ -40,3 +40,12 @@
 .loopClose em{font-style:normal;color:#d8b877}
 @media(max-width:1000px){.loop{margin-bottom:75px;padding:34px 24px}.loopGrid,.assets{grid-template-columns:1fr}}
 @media(max-width:600px){.loop{padding:28px 20px}.loopLead{font-size:14.5px}.loopClose{font-size:16px;padding:20px}}
+
+
+/* nowrap keeps the line intact on a wide screen, but at 390px the heading ran
+   29px past its box and an ancestor clipped the tail — the sentence lost its
+   last word instead of wrapping. keep-all so it breaks between words, which is
+   what Korean needs. */
+@media (max-width: 700px) {
+  .head h2 { white-space: normal; word-break: keep-all; }
+}

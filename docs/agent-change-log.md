@@ -3175,3 +3175,31 @@ body{zoom:var(--app-scale)}   /* 1.25 */
 - **로그아웃이 여전히 안 되면 강력 새로고침(Ctrl+Shift+R) 후 다시 확인이 필요합니다.** 클릭 토글 자체는 어제 커밋에 들어가 있습니다.
 - Files: `src/app/globals.css`, `src/components/site-nav.tsx`, `.module.css`, `src/components/header-account.module.css`.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. 676·390·1440px 전부 `canScrollX: 0`.
+
+## 2026-08-29 — Claude: 부제목을 제목 아래로 고정, 남은 가로 넘침 정리
+
+- Agent/session: Claude. 사용자 지적: 모바일에서 아직 전체가 움직인다, `자기소개서 컨설팅 받기`는 무조건 `나만의 취업 코치` 아래.
+- Status: completed. 마이그레이션 없음.
+
+### 부제목이 제목 옆에 붙던 이유
+
+- `.hero-mobile-sub`가 `display:inline-flex`였습니다. **제목이 자리를 남기면 그 옆에 붙습니다** — 676px에서 실제로 `…의 취업 코치 [자기소개서 컨설팅 받기]`로 한 줄에 나왔고, 부제목이 아니라 **제목의 일부처럼** 읽혔습니다.
+- `display:flex` + `width:fit-content` + 좌우 `auto` 마진. **항상 다음 줄, 항상 가운데.**
+
+### 남아 있던 가로 넘침 하나
+
+- `현장에서 검증된 컨설팅을, 기술로.` 제목에 `white-space:nowrap`이 걸려 있어 390px에서 **상자보다 29px 넓었고**, 위쪽에서 잘려 **문장 끝 단어가 사라졌습니다.**
+- 700px 이하에서 `white-space:normal; word-break:keep-all`. `keep-all`이라 단어 중간이 아니라 **띄어쓰기에서** 줄바꿈됩니다 — 한국어에 필요한 설정입니다.
+- CSS 모듈이라 `h2`만 단독으로 쓰면 빌드가 거부합니다(순수 선택자 금지). `.head h2`로 묶었습니다.
+
+### 확인
+
+| 폭 | `htmlScrollWidth` | 실제 가로 스크롤 | 넘치는 요소 |
+|---|---|---|---|
+| 676 | 676 (= clientWidth) | **0** | 없음 |
+| 390 | 390 | **0** | 없음 |
+| 360 | 360 | **0** | 없음 |
+
+- 360px 화면 확인: 헤더가 `MOOA Resume · 커리어 검사 · 로그인 · ☰`, 부제목이 제목 아래 가운데.
+- Files: `src/app/globals.css`, `src/app/field-credibility.module.css`.
+- Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.

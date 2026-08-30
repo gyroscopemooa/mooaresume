@@ -136,7 +136,10 @@ body{zoom:var(--app-scale)}
   .hero-mobile em{font-style:normal;background:linear-gradient(100deg,#1a8a5c,#176b4a);-webkit-background-clip:text;background-clip:text;color:transparent}
   /* A chip rather than a second line of heading: it reads as the thing you are
      about to do, and it keeps the subtitle from competing with the title. */
-  .hero-mobile-sub{display:inline-flex;align-items:center;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--mint,#eaf5ef);color:var(--green-dark,#0f4b33);font-size:15px;font-weight:800;letter-spacing:-.02em}
+  /* Its own line, always. Inline-flex let it sit beside 취업 코치 whenever the
+     title happened to leave room — at 676px it did, and the chip read as part
+     of the heading rather than the line under it. */
+  .hero-mobile-sub{display:flex;width:fit-content;margin-left:auto;margin-right:auto;align-items:center;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--mint,#eaf5ef);color:var(--green-dark,#0f4b33);font-size:15px;font-weight:800;letter-spacing:-.02em}
   /* Stays a filled button up here. The hierarchy is carried by the colour
      being lighter than the green, not by draining it — a washed-out slab at
      the top of the screen just looks disabled. */
