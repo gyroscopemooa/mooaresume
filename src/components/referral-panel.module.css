@@ -19,3 +19,4 @@
 .ok{color:var(--green,#176b4a)}
 .bad{color:#a14f4f}
 @media(max-width:600px){.panel{padding:20px 18px}.code{font-size:18px}}
+.tallyEmpty{margin:16px 0 0;padding-top:16px;border-top:1px solid #e6efea;color:var(--muted,#68756f);font-size:11.5px;line-height:1.75}

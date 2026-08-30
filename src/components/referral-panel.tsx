@@ -129,10 +129,14 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
         {REFERRAL_TERMS.map((term) => <li key={term}><span>{term}</span></li>)}
       </ul>
 
-      <div className={styles.tally}>
-        <div><span>결제 대기</span><strong>{pending}명</strong></div>
-        <div><span>지급 완료</span><strong>{converted}장</strong></div>
-      </div>
+      {/* Two bare zeros say nothing and look like a rendering fault. Until
+          something has happened, say what will appear here instead. */}
+      {pending + converted === 0
+        ? <p className={styles.tallyEmpty}>아직 추천 기록이 없습니다. 친구가 코드를 넣고 결제하면 여기에 표시됩니다.</p>
+        : <div className={styles.tally}>
+            <div><span>결제 대기</span><strong>{pending}명</strong></div>
+            <div><span>지급 완료</span><strong>{converted}장</strong></div>
+          </div>}
 
       {status && <p className={`${styles.status} ${status.tone === "ok" ? styles.ok : styles.bad}`}>{status.text}</p>}
     </section>

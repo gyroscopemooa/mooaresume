@@ -3394,3 +3394,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - `이대로 진행할까요?` / 빠지는 것 목록 / `자료 더 넣기` · `이대로 진행`.
 - Files: `src/components/pro-input-page.tsx`, `.module.css`.
 - Validation: 723 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린. `/pro/polish`에서 자소서만 넣고 시작 → 팝업 표시, 항목 2개, 버튼 2개 확인.
+
+## 2026-08-30 — Claude: 동의 패널 접기 표시, 추천 집계 빈 상태
+
+- Agent/session: Claude. 사용자 보고: `지워지지 않는 것도 있습니다` 근처가 깨져 보임.
+- Status: completed. 마이그레이션 없음.
+
+- `지워지지 않는 것도 있습니다`는 `<details>`인데 **펼침 표시가 없었습니다.** 그래서 뒤따라오는 추천 패널의 **주인 없는 제목**처럼 읽혔습니다. `▸` 표시와 hover를 붙여 **열 수 있는 줄**로 보이게 했습니다.
+- 추천 집계가 `결제 대기 0명 / 지급 완료 0장`으로 **0 두 개만** 떠 있었습니다. **아무 말도 하지 않으면서 렌더링 오류처럼 보입니다.** 기록이 없을 때는 `아직 추천 기록이 없습니다. 친구가 코드를 넣고 결제하면 여기에 표시됩니다.`로 바꿨습니다.
+- **로그인 상태가 아니라 정확히 같은 화면은 재현하지 못했습니다.** 위 둘이 원인이 아니라면 스크린샷이 필요합니다.
+- Files: `src/components/research-consent.module.css`, `src/components/referral-panel.tsx`, `.module.css`.
+- Validation: 723 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
