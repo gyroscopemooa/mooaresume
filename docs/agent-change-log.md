@@ -3102,3 +3102,12 @@ body{zoom:var(--app-scale)}   /* 1.25 */
 - `cssWidth 960px` = `renderedWidth 960px` → **1.25배 부풀림 사라짐**
 - 화면 대비 **정확히 50%**, `.home-page` 안에 있음 확인.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-30 — Codex: career login layout isolation
+
+- Agent/session: Codex (`feature/codex-plan` → `main`).
+- Change: `/career/login` now bypasses the shared assessment header/container through `CareerLayoutShell`; it keeps only its own full-page login layout.
+- Reason: the login page previously received both its own full-height layout and the assessment-specific wrapper, causing nested width, padding, and vertical-height rules.
+- Files: `src/app/career/layout.tsx`, `src/components/career-layout-shell.tsx`.
+- Validation: `npm run typecheck`, `npm run lint`, and local login route response check.
+- Rollback: revert the commit that applies this entry; all other career routes retain the original wrapper behavior.
