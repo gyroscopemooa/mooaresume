@@ -3429,3 +3429,22 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 결과 화면의 기존 동의 패널은 **그대로 둡니다.** 거기서 언제든 바꾸고 철회할 수 있고, 철회하면 보관 사본도 함께 지워집니다.
 - Files: 신규 `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`; 수정 `src/components/application-case-handoff.tsx`, `.module.css`.
 - Validation: 729 tests passed (+6), `tsc` clean, `eslint` 0건, `next build` 클린.
+
+## 2026-08-30 — Claude: 동의를 한 줄 체크로 (강제 선택 철회)
+
+- Agent/session: Claude. 사용자: 두 칸짜리 강제 선택은 별로다, 심플한 체크 하나에 누르면 내용이 열리게.
+- Status: completed. 마이그레이션 없음.
+
+- 카드 두 장 → **체크 한 줄 + `자세히` 펼침**으로 바꿨습니다.
+  `☐ 익명 사본을 서비스 개선에 써도 좋습니다        자세히 ▾`
+- **시작 버튼을 더 이상 막지 않습니다.** 강제 선택을 뺐으므로 동의는 순수한 선택입니다.
+- **미리 체크하지 않는 것은 그대로입니다.** 선택 항목에 미리 체크된 상자는 유효한 동의가 아니고, 분쟁을 못 버티는 동의는 그 아래 모은 사본을 전부 지워야 합니다.
+- 설명 네 줄은 접어 뒀습니다. **결제 버튼 위의 정책 네 줄은 아무도 읽지 않고**, 결정보다 화면만 무거워 보이게 만듭니다.
+- 버튼이지만 `role="checkbox"` + `aria-checked`를 붙여 스크린리더에도 체크박스로 읽힙니다.
+
+### 남는 사실
+
+- 강제 선택이면 결제하는 **전원이** 결정합니다. 지금은 **체크한 사람만** 동의합니다. **동의 수는 강제 선택 쪽이 확실히 많습니다.**
+- 그래도 결과 화면 맨 아래에 있던 것보다는 훨씬 많이 보입니다 — 위치를 옮긴 것이 원래 고치려던 문제였습니다.
+- Files: `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`, `src/components/application-case-handoff.tsx`, `.module.css`.
+- Validation: 729 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.

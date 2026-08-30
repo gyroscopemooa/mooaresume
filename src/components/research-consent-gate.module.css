@@ -1,25 +1,29 @@
-.gate { margin: 16px 0 0; padding: 18px 20px; border: 1px solid #dfe6e2; border-radius: 13px; background: #fbfdfc; }
-.gate > b { display: block; font-size: 14px; letter-spacing: -0.02em; }
-.gate > p { margin: 7px 0 14px; color: #68756f; font-size: 12px; line-height: 1.8; }
+/* One line above the pay button. Four lines of policy there is read by nobody
+   and makes the screen feel heavier than the decision actually is. */
+.gate { margin: 14px 0 0; padding: 12px 14px; border: 1px solid #e4eae7; border-radius: 11px; background: #fbfdfc; }
 
-.options { display: grid; gap: 8px; }
-/* Buttons, not radios: the whole card is the target, which matters more on a
-   phone than the dot does. aria-pressed carries the state for a screen reader. */
-.options button { position: relative; display: block; padding: 14px 16px; padding-right: 40px; border: 1px solid #dfe6e2; border-radius: 11px; background: #fff; text-align: left; cursor: pointer; transition: border-color 140ms ease, background 140ms ease; }
-.options button:hover:not(:disabled) { border-color: #78aa91; }
-.options button:disabled { opacity: 0.6; cursor: default; }
-.options b { display: block; color: #17221d; font-size: 13px; font-weight: 700; }
-.options span { display: block; margin-top: 5px; color: #68756f; font-size: 11.5px; line-height: 1.75; }
-.options svg { position: absolute; right: 15px; top: 15px; width: 17px; height: 17px; color: #176b4a; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 
-.picked { border-color: #176b4a !important; background: #f2f9f5 !important; box-shadow: 0 0 0 1px #176b4a; }
+.check { display: flex; align-items: center; gap: 9px; padding: 0; border: 0; background: none; color: #41514a; font: inherit; font-size: 12.5px; font-weight: 700; text-align: left; cursor: pointer; }
+.check > span { display: grid; place-items: center; width: 18px; height: 18px; flex: none; border: 1px solid #c6d2cc; border-radius: 5px; background: #fff; transition: background 130ms ease, border-color 130ms ease; }
+.check svg { width: 13px; height: 13px; color: #fff; }
+.check:hover:not(:disabled) > span { border-color: #176b4a; }
+.check:disabled { opacity: 0.6; cursor: default; }
+.on > span { border-color: #176b4a; background: #176b4a; }
+.on { color: #0f4b33; }
 
-.gate small { display: block; margin-top: 11px; color: #8b968f; font-size: 11px; line-height: 1.7; }
-.failed { color: #a34848 !important; }
+.more { display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 4px 6px; border: 0; border-radius: 7px; background: none; color: #8b968f; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.more:hover { color: #176b4a; }
+.more svg { width: 13px; height: 13px; transition: transform 140ms ease; }
+.up { transform: rotate(180deg); }
+
+.detail { display: grid; gap: 7px; margin-top: 11px; padding-top: 11px; border-top: 1px solid #eef2f0; }
+.detail p { margin: 0; color: #7a867f; font-size: 11.5px; line-height: 1.8; }
+.detail b { color: #41514a; }
+
+.failed { display: block; margin-top: 9px; color: #a34848; font-size: 11.5px; }
 
 @media (max-width: 640px) {
-  .gate { padding: 16px; }
-  .options button { padding: 13px 14px; padding-right: 36px; }
-  .options b { font-size: 13.5px; }
-  .options span { font-size: 12px; }
+  .check { font-size: 12.5px; }
+  .detail p { font-size: 12px; }
 }

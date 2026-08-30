@@ -42,11 +42,6 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
   // Lets someone with a credit pay anyway. They might be saving it for a
   // different application, or simply not trust that a free run is the same run.
   const [spendCredit, setSpendCredit] = useState(true);
-  // The research question is asked here rather than only at the foot of the
-  // result screen, where almost nobody scrolls. One of two answers has to be
-  // chosen before the run starts — no default, because a pre-selected answer to
-  // an optional data question is not consent that would survive a complaint.
-  const [consentDecided, setConsentDecided] = useState(false);
   // A failed sign-in redirects here with the reason in the query string, and
   // nothing was reading it — the visitor saw a plain login screen with no sign
   // their link had just been rejected, so the natural next move was to request
@@ -279,12 +274,11 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
 
   if (authenticated) {
     return <div className={styles.action}>
-      <ResearchConsentGate onDecided={setConsentDecided}/>
+      <ResearchConsentGate/>
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
-      <button type="button" disabled={busy || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
-      {!consentDecided && <p className={styles.consentPending}>위에서 하나를 고르시면 시작할 수 있습니다.</p>}
+      <button type="button" disabled={busy || !guest} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
       {availableCredit && (
         <button type="button" className={styles.payInstead} onClick={() => setSpendCredit(!spendCredit)} disabled={busy}>
           {spendCredit ? "이용권을 아끼고 결제해서 진행할래요" : "무료 이용권을 사용할래요"}
