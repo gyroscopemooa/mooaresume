@@ -4259,3 +4259,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `admin-shell.tsx`, `admin.module.css`, `campaign-creator.tsx`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 밝은 테마가 절반만 먹던 문제
+
+- Agent/session: Claude. 사용자 지적("밝게인데 검정 배경에 검정 글씨가 남아 있다").
+- Status: main에 적용.
+- 원인: 앞 커밋에서 **변수만 만들고 사용처는 그대로 두었습니다.** `admin.module.css`가 `#0f1216`, `#171b21`, `#1f242c` 같은 색을 직접 적고 있어서, 변수를 뒤집어도 그 자리들은 어두운 채로 남았습니다. 검은 배경에 검은 글씨가 나온 이유입니다.
+- Change: 사용처의 **모든 하드코딩 색을 변수로 교체**했습니다(선언 밖 하드코딩 0개 확인). 이름이 없던 층은 변수로 승격했습니다 — `--admin-sunken`(바닥), `--admin-raise`(얹힌 층), `--admin-input`(입력칸), `--admin-ok-bg`·`--admin-warn-bg`·`--admin-bad-bg`(상태 배지 바탕), `--admin-strong`, 그리고 배지 **안 글자**용 `--admin-pill-ok/warn/bad`. 배지는 바탕이 테마마다 뒤집히므로 글자도 같이 뒤집혀야 합니다.
+- **두 팔레트의 변수 개수를 18개로 맞췄습니다.** 한쪽에만 있는 변수가 생기면 그 자리가 다시 어두운 채로 남습니다.
+- `coupons.module.css`도 같은 방식으로 정리했습니다(하드코딩 0개).
+- Files: `src/app/meensoo/admin.module.css`, `src/app/meensoo/coupons/coupons.module.css`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.
