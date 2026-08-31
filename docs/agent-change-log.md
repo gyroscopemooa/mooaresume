@@ -3802,3 +3802,12 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/career/**`, `src/components/career-*`(AI 샘플 개요/리포트, 저장 안내, 흥미·가치·업무성향 결과), `src/domain/career-interest.ts`(+test), `src/app/api/career-assessments/latest/route.ts`, `docs/career-ai-interpretation-flow.md`.
 - Validation: 736 tests passed (109 files), `tsc` clean, `eslint` 0 errors(기존 경고 2건 유지), `next build` 클린.
 - Rollback: `git revert -m 1 <merge commit>`. 스크린샷이 다시 필요하면 `feature/codex-plan`에서 해당 디렉터리만 체크아웃하면 됩니다.
+
+## 2026-08-31 — Claude: ChatGPT 차별화 지적 기록 (문서만)
+
+- Agent/session: Claude. 사용자 요청("md 저장하고싶은데 그리고 니생각도 궁금").
+- Status: 문서 추가만. 코드/스키마/프롬프트 변경 없음.
+- Change: 신규 `docs/chatgpt-and-pro-differentiation-2026-08-31.md`. 사용자가 가져온 "챗GPT에 파일 3개 올린 것과 같지 않나" 지적을 보존하고, `analysis.ts`/`result-document.ts` 스키마와 대조한 결과와 Claude의 판단을 덧붙였습니다.
+- 확인된 사실: 제안된 6단계 공정 중 ②~⑥은 이미 스키마에 존재(`requirementMatchSchema`, `documentConflictSchema`, `issueSchema.category`, `evidenceSchema`). ①(공고 명시/추정 분리)만 미구현.
+- Files: `docs/chatgpt-and-pro-differentiation-2026-08-31.md`.
+- Rollback: 파일 삭제.
