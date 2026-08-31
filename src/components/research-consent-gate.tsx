@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
-import { RESEARCH_CONSENT_VERSION } from "@/domain/deidentify";
-import { createClient } from "@/lib/supabase/client";
 import styles from "./research-consent-gate.module.css";
 
 /**
@@ -22,19 +20,20 @@ import styles from "./research-consent-gate.module.css";
  * decline than to accept is not a free one.
  */
 /**
- * 세션이 죽은 것과 저장이 실패한 것을 구분합니다.
+ * 서버가 뭐라고 했는지를 지우지 않습니다.
  *
- * PGRST303 ("JWT issued at future") means the stored token was minted against a
- * clock that ran ahead, so the database refuses it — and it refuses it for every
- * authenticated call, not just this one. Showing the raw code there is a dead
- * end: the reader needs the one action that fixes it, and needs to know the
- * failure is not about consent at all.
+ * This briefly translated JWT errors into "sign out and back in", which turned
+ * out to be advice that does not work: a freshly issued token, a token twenty
+ * minutes old, and a re-login all fail the same way. Wording a guess as
+ * instruction cost more time than the raw code ever did, and it hid the one
+ * line that identifies the failure.
+ *
+ * So the note stays short and the server's own words stay attached.
  */
 function describeFailure(code: string | undefined, message: string): string {
-  if (code === "PGRST303" || code === "PGRST301" || /jwt/i.test(message)) {
-    return "로그인 세션이 만료되었습니다. 로그아웃 후 다시 로그인하면 해결됩니다.";
-  }
-  return [code, message].filter(Boolean).join(" · ") || "알 수 없는 오류";
+  const raw = [code, message].filter(Boolean).join(" · ") || "알 수 없는 오류";
+  if (code === "401") return `로그인이 풀렸습니다. — ${raw}`;
+  return raw;
 }
 
 export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolean) => void }) {
@@ -48,20 +47,11 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
     let cancelled = false;
     void (async () => {
       try {
-        const supabase = createClient();
-        const { data: auth } = await supabase.auth.getUser();
+        const response = await fetch("/api/research-consent");
+        const body = await response.json() as { granted?: boolean | null };
         if (cancelled) return;
-        if (!auth.user) { setReady(true); return; }
-        const { data } = await supabase
-          .from("research_consents")
-          .select("granted, consent_version")
-          .eq("owner_user_id", auth.user.id)
-          .maybeSingle();
-        if (cancelled) return;
-        // An answer to older wording does not carry over — that is what
-        // versioning the consent is for.
-        if (data && data.consent_version === RESEARCH_CONSENT_VERSION) {
-          setChoice(Boolean(data.granted));
+        if (typeof body.granted === "boolean") {
+          setChoice(body.granted);
           onDecided(true);
         }
         setReady(true);
@@ -81,23 +71,20 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
    * reads the table — so both answers fail closed either way. Blocking the
    * purchase would protect nothing and lose the sale, which is the worse of the
    * two failures by a wide margin.
-   *
-   * The reason is shown rather than swallowed. "다시 눌러 주세요" is wrong advice
-   * for a missing function or a rejected constraint: pressing again cannot fix
-   * either, and hiding the code leaves nobody able to say what broke.
    */
   async function decide(granted: boolean) {
     setBusy(true);
     setFailed(null);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.rpc("set_research_consent", {
-        p_granted: granted,
-        p_consent_version: RESEARCH_CONSENT_VERSION,
+      const response = await fetch("/api/research-consent", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ granted }),
       });
-      if (error) {
-        console.error("set_research_consent", error);
-        setFailed(describeFailure(error.code, error.message ?? ""));
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({})) as { error?: string };
+        console.error("research-consent", response.status, body);
+        setFailed(describeFailure(String(response.status), body.error ?? ""));
         onDecided(true);
         setBusy(false);
         return;
@@ -105,7 +92,7 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
       setChoice(granted);
       onDecided(true);
     } catch (error) {
-      console.error("set_research_consent", error);
+      console.error("research-consent", error);
       setFailed(error instanceof Error ? error.message : "알 수 없는 오류");
       onDecided(true);
     }

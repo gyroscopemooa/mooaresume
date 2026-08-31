@@ -41,7 +41,7 @@ describe("연구 동의 체크", () => {
   });
 
   it("문구가 바뀌면 예전 답은 유효하지 않다", () => {
-    expect(gate).toContain("data.consent_version === RESEARCH_CONSENT_VERSION");
+    expect(readFileSync("src/server/research/research-consent-repository.ts", "utf8")).toContain("data.consent_version !== consentVersion");
   });
 
   it("체크박스로 읽힌다", () => {
@@ -58,32 +58,47 @@ describe("저장이 실패했을 때", () => {
     // Collection reads the consent table, so a write we could not make means no
     // collection either way — both answers fail closed. Holding the purchase
     // hostage to it protects nothing and loses the sale.
-    const failure = source.slice(source.indexOf("if (error) {"), source.indexOf("setChoice(granted)"));
+    const failure = source.slice(source.indexOf("if (!response.ok) {"), source.indexOf("setChoice(granted)"));
     expect(failure).toContain("onDecided(true)");
   });
 
   it("진짜 이유를 보여준다", () => {
     // "다시 눌러 주세요" is wrong advice for a missing function or a rejected
     // constraint: pressing again cannot fix either one.
-    expect(source).toContain("error.code");
+    expect(source).toContain("response.status");
     expect(source).toContain("데이터는 활용되지 않으며, 분석은 그대로 진행됩니다");
   });
 });
 
-describe("죽은 세션과 저장 실패를 구분", () => {
+describe("동의 저장은 서버를 거친다", () => {
   const source = readFileSync("src/components/research-consent-gate.tsx", "utf8");
+  const route = readFileSync("src/app/api/research-consent/route.ts", "utf8");
+  const repository = readFileSync("src/server/research/research-consent-repository.ts", "utf8");
 
-  it("만료된 토큰은 고칠 방법을 알려준다", () => {
-    // PGRST303 is the database refusing a token minted against a clock that ran
-    // ahead. It refuses every authenticated call, so the reader needs the one
-    // action that fixes it rather than a code that reads like a consent bug.
-    expect(source).toContain("PGRST303");
-    expect(source).toContain("로그아웃 후 다시 로그인하면 해결됩니다");
+  it("브라우저가 데이터베이스를 직접 부르지 않는다", () => {
+    // This was the only important write in the app taking that path, and it was
+    // the one that broke while every server-routed write kept working.
+    expect(source).not.toContain("supabase.rpc");
+    expect(source).not.toContain("@/lib/supabase/client");
+    expect(source).toContain('fetch("/api/research-consent"');
   });
 
-  it("그 밖의 오류는 코드를 그대로 보여준다", () => {
-    // Whoever has to fix an unknown failure needs the code; guessing at friendly
-    // wording for it would hide the only useful thing in the message.
+  it("누가 동의했는지는 서버가 직접 확인한다", () => {
+    // Writing with the service key means the row's owner cannot come from the
+    // request body — it has to come from the verified session.
+    expect(route).toContain("supabase.auth.getUser()");
+    expect(route).toContain("auth.user.id");
+    expect(route).not.toContain("body.ownerUserId");
+  });
+
+  it("문구가 바뀌면 예전 답은 이어받지 않는다", () => {
+    expect(repository).toContain("data.consent_version !== consentVersion");
+  });
+
+  it("추측한 해결책을 안내로 내보내지 않는다", () => {
+    // "로그아웃 후 다시 로그인" was a guess, and a fresh token, a twenty-minute-old
+    // token and a re-login all failed the same way.
+    expect(source).not.toContain("로그아웃 후 다시 로그인하면 해결됩니다");
     expect(source).toContain('[code, message].filter(Boolean).join(" · ")');
   });
 });

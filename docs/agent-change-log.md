@@ -3871,3 +3871,19 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 750 tests passed (+2), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - 남은 확인: 재로그인 후 동의 저장이 실제로 되는지, 그리고 `/meensoo/research` 보관 사본 수가 늘어나는지.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 연구 동의 저장을 서버 라우트로 이동
+
+- Agent/session: Claude. 사용자 제보 후속(동의 저장 401 지속).
+- Status: main에 적용. 마이그레이션 없음. **기존 RPC `set_research_consent`는 그대로 둡니다**(결과 화면의 `research-consent.tsx`가 아직 사용).
+- 조사 결과(모두 정상으로 확인됨): PC 시계 서버와 +2초 / 토큰 `iat` 미래 아님(발급 후 20분 경과분도 실패) / 서명키 `kid`가 JWKS와 일치(ES256) / REST 익명 조회 200 / auth·rest 노드 시계 동일 / 세션 갱신 미들웨어 없음. **원인 미확정.** 브라우저가 사용자 JWT로 PostgREST를 직접 부르는 경로에서만 401이 납니다.
+- 판단: 체크박스 하나를 위해 원인 추적을 더 끌 이유가 없습니다. 이 앱의 다른 중요한 쓰기는 **전부 서버 라우트 + 서비스 키**로 처리되고 그쪽은 정상입니다. 예외였던 이 경로를 나머지와 같게 맞췄습니다.
+- Files:
+  - 신규 `src/server/research/research-consent-repository.ts` — 서비스 키로 `research_consents` upsert/조회. 철회 시 최초 동의 시각은 보존(기록이므로).
+  - 신규 `src/app/api/research-consent/route.ts` — `GET`(현재 답), `POST`(저장). **소유자는 요청 본문이 아니라 `auth.getUser()`로 확인한 세션에서만** 가져옵니다.
+  - `src/components/research-consent-gate.tsx` — `supabase.rpc`/`from` 제거, `fetch("/api/research-consent")`로 교체. 브라우저 Supabase 클라이언트 의존 없음.
+  - `.test.ts` — 옮겨간 위치 기준으로 갱신.
+- 이전 시도 되돌림: "로그아웃 후 다시 로그인하면 해결됩니다" 안내는 **추측이었고 사실이 아니었습니다**(재로그인·신규 토큰·20분 경과 토큰 모두 동일 실패). 제거하고 서버가 준 코드·메시지를 그대로 노출합니다.
+- 남은 위험: **같은 경로를 쓰는 곳이 5군데 더 있습니다** — `credit-wallet.tsx`, `application-case-handoff.tsx:92`(이용권 사용), `referral-panel.tsx`, `referral-code-entry.tsx`, `redeem-client.tsx`, `application-tracker-card.tsx`, `app/result/page.tsx`. 지금 전부 같은 이유로 실패할 수 있습니다. 별도 작업으로 옮겨야 합니다.
+- Validation: 752 tests passed, `tsc` clean, `eslint` 0 errors, `next build`에 `/api/research-consent` 등록 확인.
+- Rollback: 이 커밋 revert. RPC를 지우지 않았으므로 되돌리면 이전 동작으로 그대로 복귀합니다.
