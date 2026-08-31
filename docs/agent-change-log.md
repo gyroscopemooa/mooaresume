@@ -4117,3 +4117,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 795 tests passed (+8), `tsc` clean, `eslint` 0 errors, `next build`에 `/meensoo/coupons`·`/api/meensoo/coupons` 등록 확인.
 - 남은 것: 마이그레이션 적용 후 실제 등록 흐름 테스트. "관리자 메뉴가 안 들어가진다"는 증상 확인 필요.
 - Rollback: 이 커밋 revert + `drop table public.coupon_claims, public.coupon_codes cascade; drop function public.claim_coupon_code(text);`
+
+## 2026-09-01 — Claude: 프로모션 캠페인 (①~③, ⑤⑥ 일부)
+
+- Agent/session: Claude. 사용자 스펙 10개항.
+- Status: main에 적용. **마이그레이션 적용 완료**(사용자 실행 확인).
+- 사전 조사에서 확인한 것: 메일 발송 기록(`/meensoo/mail/history`, 본문 저장)과 개별 이용권 발급(`/meensoo/rewards`)은 **이미 있었습니다.** 관리자 메뉴 9개도 모두 링크되어 있습니다. `/meensoo/rewards`가 "안 들어가진다"던 것은 **관리자 로그인 전이라 로그인 화면이 대신 뜬 것**이고(로컬·프로덕션 모두 HTTP 200 + `비밀번호` 포함), `/meensoo/coupons` 404는 **Cloudflare 배포 지연**입니다.
+- 설계: 어제 만든 공유 코드(코드 1개를 여러 명이 나눠 씀)를 **없애지 않고** 캠페인 아래로 넣었습니다. 팜플렛 배포에는 공유 코드가, 기관에 목록을 넘기고 사용 추적을 하려면 고유 코드가 맞습니다. `coupon_codes.max_uses`가 둘을 가릅니다(1이면 고유).
+- Files (신규): `20260901020000_coupon_campaigns.sql`, `src/domain/coupon-code.ts`(+test), `src/app/api/meensoo/campaigns/route.ts`, `src/app/meensoo/coupons/campaign-creator.tsx`.
+- 코드 생성 규칙: `0/O`, `1/I/L`을 **문자 집합에서 제외**했습니다. 종이에 인쇄된 코드에서 이 다섯 글자가 "코드가 안 먹혀요" 문의의 대부분을 만듭니다. 중복은 만들 때 걸러 내고, 부족하면 조용히 적게 주지 않고 **실패시킵니다**(짧은 목록을 기관에 넘기는 것이 더 나쁩니다).
+- CSV: 앞에 BOM을 붙입니다. 없으면 엑셀에서 한글이 깨지고, 그것이 이 기능의 가장 흔한 실패입니다.
+- 할인 쿠폰: 스키마와 입력은 받되 **지급 경로가 없어 생성 단계에서 거절**합니다(`COUPON_BENEFIT_UNSUPPORTED`). 조용히 무료 이용권을 주는 것보다 낫습니다.
+- 팜플렛: **기본은 코드 없는 기관 배포용**(`쿠폰코드 등록 후 사용`). 종이에 코드가 찍히면 그 코드는 한 사람 것이 되어 버립니다. 개별 코드 이미지는 선택 옵션으로 따로 만듭니다.
+- Validation: 800 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build`에 `/api/meensoo/campaigns` 등록 확인.
+- 남은 단계: ④ 마이페이지 등록칸, ⑦⑧ 메일 캠페인 연결·provider id, ⑨ 게시판(코덱스 영역).
+- Rollback: 이 커밋 revert + `drop table public.coupon_campaigns cascade;`

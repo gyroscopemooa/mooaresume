@@ -507,6 +507,7 @@ export async function listResearchCorpus(limit = 1000): Promise<ResearchCorpusRo
 
 export type AdminCouponCode = {
   id: string;
+  campaignId: string | null;
   code: string;
   label: string;
   partnerName: string;
@@ -526,11 +527,12 @@ export type AdminCouponCode = {
 };
 
 const COUPON_FIELDS =
-  "id, code, label, partner_name, product, allowed_characters, total_count, claimed_count, starts_at, expires_at, subtitle_text, benefit_text, audience_text, usage_text, footnote_text, revoked_at, created_at";
+  "id, campaign_id, code, label, partner_name, product, allowed_characters, total_count, claimed_count, starts_at, expires_at, subtitle_text, benefit_text, audience_text, usage_text, footnote_text, revoked_at, created_at";
 
 function toCouponCode(row: Record<string, unknown>): AdminCouponCode {
   return {
     id: row.id as string,
+    campaignId: (row.campaign_id as string | null) ?? null,
     code: row.code as string,
     label: row.label as string,
     partnerName: row.partner_name as string,
@@ -612,6 +614,191 @@ export async function revokeCouponCode(id: string): Promise<string | null> {
   const { error } = await serviceClient()
     .from("coupon_codes")
     .update({ revoked_at: new Date().toISOString() })
+    .eq("id", id);
+  return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
+}
+
+export type AdminCampaign = {
+  id: string;
+  partnerName: string;
+  name: string;
+  product: string;
+  benefitType: string;
+  benefitAmount: number | null;
+  allowedCharacters: number;
+  perUserLimit: number;
+  startsAt: string | null;
+  expiresAt: string | null;
+  description: string | null;
+  notice: string | null;
+  subtitleText: string;
+  benefitText: string;
+  audienceText: string;
+  usageText: string;
+  footnoteText: string;
+  archivedAt: string | null;
+  createdAt: string;
+  /** 코드 현황. 목록 화면이 캠페인마다 한 번 더 물어보지 않게 함께 담습니다. */
+  totalCodes: number;
+  usedCodes: number;
+  expiredCodes: number;
+};
+
+const CAMPAIGN_FIELDS =
+  "id, partner_name, name, product, benefit_type, benefit_amount, allowed_characters, per_user_limit, starts_at, expires_at, description, notice, subtitle_text, benefit_text, audience_text, usage_text, footnote_text, archived_at, created_at";
+
+function toCampaign(row: Record<string, unknown>, counts: { total: number; used: number; expired: number }): AdminCampaign {
+  return {
+    id: row.id as string,
+    partnerName: row.partner_name as string,
+    name: row.name as string,
+    product: row.product as string,
+    benefitType: row.benefit_type as string,
+    benefitAmount: (row.benefit_amount as number | null) ?? null,
+    allowedCharacters: row.allowed_characters as number,
+    perUserLimit: row.per_user_limit as number,
+    startsAt: (row.starts_at as string | null) ?? null,
+    expiresAt: (row.expires_at as string | null) ?? null,
+    description: (row.description as string | null) ?? null,
+    notice: (row.notice as string | null) ?? null,
+    subtitleText: row.subtitle_text as string,
+    benefitText: row.benefit_text as string,
+    audienceText: row.audience_text as string,
+    usageText: row.usage_text as string,
+    footnoteText: row.footnote_text as string,
+    archivedAt: (row.archived_at as string | null) ?? null,
+    createdAt: row.created_at as string,
+    totalCodes: counts.total,
+    usedCodes: counts.used,
+    expiredCodes: counts.expired,
+  };
+}
+
+export async function listCampaigns(limit = 100): Promise<AdminCampaign[]> {
+  const client = serviceClient();
+  const { data, error } = await client
+    .from("coupon_campaigns")
+    .select(CAMPAIGN_FIELDS)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+
+  // 코드 현황을 한 번에 읽어 캠페인마다 붙입니다. 캠페인 수만큼 질의하면
+  // 목록 한 장에 스무 번을 묻게 됩니다.
+  const ids = data.map((row) => row.id as string);
+  const { data: codes } = await client
+    .from("coupon_codes")
+    .select("campaign_id, claimed_count, max_uses, expires_at")
+    .in("campaign_id", ids.length > 0 ? ids : ["00000000-0000-0000-0000-000000000000"]);
+
+  const now = Date.now();
+  const tally = new Map<string, { total: number; used: number; expired: number }>();
+  for (const code of codes ?? []) {
+    const key = code.campaign_id as string;
+    const entry = tally.get(key) ?? { total: 0, used: 0, expired: 0 };
+    entry.total += 1;
+    if ((code.claimed_count as number) >= (code.max_uses as number)) entry.used += 1;
+    else if (code.expires_at && new Date(code.expires_at as string).getTime() < now) entry.expired += 1;
+    tally.set(key, entry);
+  }
+  return data.map((row) => toCampaign(row as Record<string, unknown>, tally.get(row.id as string) ?? { total: 0, used: 0, expired: 0 }));
+}
+
+export async function getCampaignCodes(campaignId: string): Promise<AdminCouponCode[]> {
+  const { data, error } = await serviceClient()
+    .from("coupon_codes")
+    .select(COUPON_FIELDS)
+    .eq("campaign_id", campaignId)
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => toCouponCode(row as Record<string, unknown>));
+}
+
+/**
+ * 캠페인 하나와 그 아래 고유 코드 N장을 만듭니다.
+ *
+ * 코드는 한 번에 insert합니다. 스무 장 중 열두 번째에서 실패하면 어디까지
+ * 나갔는지 알 수 없고, 다시 돌리면 앞의 열한 장이 중복됩니다.
+ */
+export async function createCampaign(input: {
+  partnerName: string;
+  name: string;
+  product: string;
+  benefitType: string;
+  benefitAmount: number | null;
+  allowedCharacters: number;
+  perUserLimit: number;
+  totalCount: number;
+  codePrefix: string;
+  startsAt: string | null;
+  expiresAt: string | null;
+  description: string | null;
+  notice: string | null;
+  subtitleText: string;
+  benefitText: string;
+  audienceText: string;
+  usageText: string;
+  footnoteText: string;
+  codes: string[];
+}): Promise<{ campaign: AdminCampaign | null; error: string | null }> {
+  const client = serviceClient();
+  const { data, error } = await client
+    .from("coupon_campaigns")
+    .insert({
+      partner_name: input.partnerName,
+      name: input.name,
+      product: input.product,
+      benefit_type: input.benefitType,
+      benefit_amount: input.benefitAmount,
+      allowed_characters: input.allowedCharacters,
+      per_user_limit: input.perUserLimit,
+      starts_at: input.startsAt,
+      expires_at: input.expiresAt,
+      description: input.description,
+      notice: input.notice,
+      subtitle_text: input.subtitleText,
+      benefit_text: input.benefitText,
+      audience_text: input.audienceText,
+      usage_text: input.usageText,
+      footnote_text: input.footnoteText,
+    })
+    .select(CAMPAIGN_FIELDS)
+    .single();
+  if (error || !data) return { campaign: null, error: `${error?.code ?? "UNKNOWN"} · ${error?.message ?? "캠페인을 만들지 못했습니다."}` };
+
+  const campaignId = data.id as string;
+  const rows = input.codes.map((code) => ({
+    campaign_id: campaignId,
+    code,
+    label: input.name,
+    partner_name: input.partnerName,
+    product: input.product,
+    allowed_characters: input.allowedCharacters,
+    // 고유 코드는 1회용입니다. total_count는 기존 제약이 요구하는 값이라 맞춰 둡니다.
+    total_count: 1,
+    max_uses: 1,
+    starts_at: input.startsAt,
+    expires_at: input.expiresAt,
+    subtitle_text: input.subtitleText,
+    benefit_text: input.benefitText,
+    audience_text: input.audienceText,
+    usage_text: input.usageText,
+    footnote_text: input.footnoteText,
+  }));
+  const { error: codeError } = await client.from("coupon_codes").insert(rows);
+  if (codeError) {
+    // 코드 없는 캠페인은 쓸모가 없고, 남겨 두면 다음에 같은 이름으로 다시
+    // 만들 때 헷갈립니다.
+    await client.from("coupon_campaigns").delete().eq("id", campaignId);
+    return { campaign: null, error: codeError.code === "23505" ? "코드가 겹쳤습니다. 다시 시도해 주세요." : `${codeError.code ?? "UNKNOWN"} · ${codeError.message}` };
+  }
+  return { campaign: toCampaign(data as Record<string, unknown>, { total: rows.length, used: 0, expired: 0 }), error: null };
+}
+
+export async function archiveCampaign(id: string): Promise<string | null> {
+  const { error } = await serviceClient()
+    .from("coupon_campaigns")
+    .update({ archived_at: new Date().toISOString() })
     .eq("id", id);
   return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
 }

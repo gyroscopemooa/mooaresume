@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { AdminCouponCode } from "@/server/admin/admin-repository";
 import styles from "./coupons.module.css";
 
 /**
@@ -25,7 +24,20 @@ function formatDate(value: string | null): string {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function describePeriod(coupon: AdminCouponCode): string {
+export type PamphletSource = {
+  partnerName: string;
+  subtitleText: string;
+  benefitText: string;
+  audienceText: string;
+  usageText: string;
+  footnoteText: string;
+  startsAt: string | null;
+  expiresAt: string | null;
+  /** 개별 코드를 찍은 이미지를 만들 때만 넣습니다. */
+  code?: string | null;
+};
+
+function describePeriod(coupon: PamphletSource): string {
   const from = formatDate(coupon.startsAt);
   const to = formatDate(coupon.expiresAt);
   if (from && to) return `${from} - ${to}`;
@@ -54,7 +66,11 @@ function Row({ y, label, value }: { y: number; label: string; value: string }) {
   );
 }
 
-export function CouponPamphlet({ coupon }: { coupon: AdminCouponCode }) {
+export function CouponPamphlet({ coupon, filename }: { coupon: PamphletSource; filename?: string }) {
+  // 기본은 기관 배포용입니다. 종이 한 장에 코드가 찍혀 있으면 그 코드는 한
+  // 사람 것이 되어 버리므로, 기관이 여러 사람에게 나눠 줄 이미지에는 코드를
+  // 넣지 않고 "등록하고 쓰세요"만 남깁니다. 개별 코드를 넣은 장은 옵션입니다.
+  const code = coupon.code?.trim() ?? "";
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState("");
@@ -86,7 +102,7 @@ export function CouponPamphlet({ coupon }: { coupon: AdminCouponCode }) {
       URL.revokeObjectURL(url);
 
       const link = document.createElement("a");
-      link.download = `mooaresume_${coupon.code}.png`;
+      link.download = `${filename ?? `mooaresume_${coupon.partnerName}`}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (error) {
@@ -134,8 +150,14 @@ export function CouponPamphlet({ coupon }: { coupon: AdminCouponCode }) {
         <rect x={452} y={846} width={232} height={52} rx={26} fill="#fff" stroke="#2b5bd7" strokeWidth={3} />
         <text x={568} y={881} fontSize={24} fontWeight={700} fill="#2b5bd7" textAnchor="middle">쿠폰 코드</text>
 
-        <text x={628} y={1002} fontSize={codeFontSize(coupon.code)} fontWeight={800} fill="#2b5bd7"
-          textAnchor="middle" letterSpacing={2}>{coupon.code}</text>
+        {code ? (
+          <text x={628} y={1002} fontSize={codeFontSize(code)} fontWeight={800} fill="#2b5bd7"
+            textAnchor="middle" letterSpacing={2}>{code}</text>
+        ) : (
+          <text x={628} y={996} fontSize={40} fontWeight={800} fill="#2b5bd7" textAnchor="middle">
+            쿠폰코드 등록 후 사용
+          </text>
+        )}
 
         <line x1={300} y1={1042} x2={956} y2={1042} stroke="#dbe4f7" strokeWidth={2} />
         <text x={628} y={1084} fontSize={25} fontWeight={700} fill="#1b2a4a" textAnchor="middle">

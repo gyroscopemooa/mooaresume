@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { buildCouponCsv, generateCouponCodes } from "./coupon-code";
 
 const migration = readFileSync("supabase/migrations/20260901010000_partner_coupon_codes.sql", "utf8");
 const entry = readFileSync("src/components/coupon-code-entry.tsx", "utf8");
@@ -59,5 +60,40 @@ describe("협업 쿠폰 코드", () => {
     expect(pamphlet).toContain("<svg");
     expect(pamphlet).not.toContain("api.openai.com");
     expect(pamphlet).toContain("canvas.toDataURL");
+  });
+});
+
+describe("코드 생성", () => {
+  it("헷갈리는 글자를 쓰지 않는다", () => {
+    // 0/O and 1/I/L are where "코드가 안 먹혀요" comes from: on paper, in most
+    // fonts, they are the same shape.
+    const codes = generateCouponCodes(200, "YOUTH");
+    for (const code of codes) {
+      expect(code.replace(/^YOUTH-/, ""), code).not.toMatch(/[OIL01]/);
+    }
+  });
+
+  it("겹치지 않는다", () => {
+    // A duplicate fails the unique constraint and takes the whole batch with it.
+    const codes = generateCouponCodes(500, "");
+    expect(new Set(codes).size).toBe(500);
+  });
+
+  it("접두어를 붙여 어느 캠페인인지 보이게 한다", () => {
+    expect(generateCouponCodes(3, "youth 재단!")[0]).toMatch(/^YOUTH-/);
+  });
+
+  it("만들 수 없으면 만들었다고 하지 않는다", () => {
+    // Silently returning fewer than asked would hand a partner a short list.
+    expect(() => generateCouponCodes(3, "", () => 0)).toThrow();
+  });
+
+  it("CSV는 엑셀에서 한글이 깨지지 않는다", () => {
+    // Without the BOM the recipient opens the file and sees mojibake, which is
+    // the most common way this feature fails.
+    const csv = buildCouponCsv([{ code: "A-B", status: "미사용", claimedAt: null }]);
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv).toContain('"쿠폰코드","상태","사용일시"');
+    expect(csv).toContain('"A-B","미사용",""');
   });
 });
