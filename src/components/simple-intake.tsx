@@ -19,6 +19,7 @@ import {
   formatBytes,
 } from "@/domain/upload-limits";
 import { countNonWhitespaceCharacters } from "@/domain/usage-entitlement";
+import type { QuestionLengthPlan } from "@/domain/simple-intake-mapping";
 import styles from "./simple-intake.module.css";
 
 /**
@@ -54,12 +55,14 @@ type Props = {
   targetLength: string;
   onTargetLengthChange: (value: string) => void;
   resolvedLengths: string;
+  lengthPlans: QuestionLengthPlan[];
+  lengthLoss: string | null;
   files: SimpleIntakeFile[];
   onFilesChange: (files: SimpleIntakeFile[]) => void;
   onError?: (message: string) => void;
 };
 
-export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, files, onFilesChange, onError }: Props) {
+export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, lengthLoss, files, onFilesChange, onError }: Props) {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [rejections, setRejections] = useState<Array<{ name: string; reason: string }>>([]);
@@ -188,6 +191,17 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
             wrong one here is the difference between a trim and a thousand
             characters of invented filler. */}
         {resolvedLengths && <b className={styles.resolved}>{resolvedLengths}</b>}
+
+        {/* 설정이 아니라 결과를 보여줍니다. 이 숫자가 없어서 완성된 자기소개서를
+            올린 사람이 기본값 그대로 절반 가까이 잘렸습니다. */}
+        {lengthPlans.length > 0 && <ul className={styles.plans}>
+          {lengthPlans.map((plan) => <li key={plan.label} data-shrink={plan.shrink >= 0.25 ? "big" : undefined}>
+            <span>{plan.label}</span>
+            <b>{plan.current.toLocaleString()}자</b>
+            {plan.target && <em>→ {plan.target.toLocaleString()}자{plan.shrink > 0 && ` (-${Math.round(plan.shrink * 100)}%)`}</em>}
+          </li>)}
+        </ul>}
+        {lengthLoss && <small className={styles.loss}>{lengthLoss}</small>}
       </label>
 
       <div className={styles.boxFoot}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TARGET_LENGTH, describeResolvedLengths, describeSimpleIntakeGap, describeSimpleIntakeGaps, mapSimpleIntake, type SimpleIntakeSource } from "./simple-intake-mapping";
+import { DEFAULT_TARGET_LENGTH, describeLengthLoss, describeResolvedLengths, describeSimpleIntakeGap, describeSimpleIntakeGaps, mapSimpleIntake, planQuestionLengths, type SimpleIntakeSource } from "./simple-intake-mapping";
 
 function file(filename: string, kind: SimpleIntakeSource["kind"], text = "내용"): SimpleIntakeSource {
   return { filename, extension: filename.split(".").pop() ?? "pdf", sizeBytes: 1024, text, kind };
@@ -139,5 +139,41 @@ describe("자료 없이도 진행", () => {
       file("이력서.pdf", "RESUME"),
     ], 700);
     expect(describeSimpleIntakeGaps(full)).toEqual([]);
+  });
+});
+
+describe("문항별 현재 분량", () => {
+  const mapping = (draft: string, target: number | null) => mapSimpleIntake(draft, [], target);
+
+  it("지금 몇 자인지와 목표를 함께 준다", () => {
+    // The screen only ever said what the target was. Someone who uploaded a
+    // finished letter and left the default never saw how long theirs already
+    // was, and lost close to half of it.
+    const plans = planQuestionLengths(mapping("1. 지원 동기\n" + "가".repeat(1200), 700));
+    expect(plans).toHaveLength(1);
+    expect(plans[0].current).toBe(1200);
+    expect(plans[0].target).toBe(700);
+    expect(Math.round(plans[0].shrink * 100)).toBe(42);
+  });
+
+  it("공백은 세지 않는다", () => {
+    // 지원서 양식이 세는 방식과 같아야 비교가 됩니다.
+    expect(planQuestionLengths(mapping("1. 지원 동기\n가 나 다\n라", 700))[0].current).toBe(4);
+  });
+
+  it("목표보다 짧으면 줄어들 것이 없다", () => {
+    expect(planQuestionLengths(mapping("1. 지원 동기\n" + "가".repeat(300), 700))[0].shrink).toBe(0);
+  });
+
+  it("조금 다듬는 정도는 경고하지 않는다", () => {
+    // Trimming to fit is half of what editing is; warning about it would train
+    // people to ignore the line.
+    expect(describeLengthLoss(planQuestionLengths(mapping("1. 지원 동기\n" + "가".repeat(800), 700)))).toBeNull();
+  });
+
+  it("많이 줄어들면 지키는 방법까지 말한다", () => {
+    const message = describeLengthLoss(planQuestionLengths(mapping("1. 지원 동기\n" + "가".repeat(1200), 700)));
+    expect(message).toContain("42%");
+    expect(message).toContain("(1200자)");
   });
 });

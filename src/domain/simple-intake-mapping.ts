@@ -163,3 +163,47 @@ export function describeResolvedLengths(mapping: SimpleIntakeMapping): string {
     ? `모든 문항 ${unique[0]}자 기준으로 봅니다.`
     : `문항별로 ${lengths.join(" · ")}자 기준으로 봅니다.`;
 }
+
+/**
+ * 문항마다 지금 몇 자이고 목표가 몇 자인지.
+ *
+ * The screen said "모든 문항 700자 기준으로 봅니다" and stopped there, which reads
+ * as a setting rather than as a consequence. Someone who uploaded a finished
+ * 자기소개서 and left the default got answers cut close to half without anything
+ * on the screen having mentioned how long theirs already were.
+ *
+ * Trimming is a legitimate thing to ask for. Being unable to see that you asked
+ * for it is not.
+ */
+export type QuestionLengthPlan = {
+  label: string;
+  current: number;
+  target: number | null;
+  /** 0.44 = 44% 줄어듦. 목표가 없거나 늘어나는 쪽이면 0. */
+  shrink: number;
+};
+
+export function planQuestionLengths(mapping: SimpleIntakeMapping): QuestionLengthPlan[] {
+  return mapping.questions
+    .filter((question) => question.answer.trim())
+    .map((question, index) => {
+      // 공백을 빼고 셉니다. 지원서 양식이 세는 방식과 결과 화면이 세는 방식이
+      // 같아야 숫자를 비교할 수 있습니다.
+      const current = question.answer.replace(/\s/g, "").length;
+      const target = question.targetLength;
+      return {
+        label: question.title.trim() || `문항 ${index + 1}`,
+        current,
+        target,
+        shrink: target && current > target ? (current - target) / current : 0,
+      };
+    });
+}
+
+/** 원문이 눈에 띄게 줄어드는 문항만. 다듬는 정도는 첨삭이지 손실이 아닙니다. */
+export function describeLengthLoss(plans: readonly QuestionLengthPlan[]): string | null {
+  const shrinking = plans.filter((plan) => plan.shrink >= 0.25);
+  if (shrinking.length === 0) return null;
+  const worst = Math.round(Math.max(...shrinking.map((plan) => plan.shrink)) * 100);
+  return `${shrinking.length}개 문항이 최대 ${worst}%까지 짧아집니다. 지금 분량을 지키고 싶으시면 글자 수를 올리거나, 문항마다 제목 뒤에 (1200자)처럼 적어 주세요.`;
+}

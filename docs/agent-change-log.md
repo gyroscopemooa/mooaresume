@@ -3902,3 +3902,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/quick-checkout-return.tsx`, `analysis-preparation.tsx`, `application-case-handoff.tsx`, `research-consent-gate.tsx`, `.module.css`(`.settled` 3줄 추가), `research-consent-gate.test.ts`.
 - Validation: 756 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert. 추가된 prop은 모두 선택값이라 되돌려도 호출부가 깨지지 않습니다.
+
+## 2026-08-31 — Claude: 첨삭 전에 문항별 현재 분량을 보여줍니다
+
+- Agent/session: Claude. 사용자 제보(완성된 자소서를 첨부로 넣고 기본값 700자로 돌렸더니 원문이 간추려짐).
+- Status: main에 적용. 마이그레이션 없음.
+- 문제: 간편 입력 화면은 `모든 문항 700자 기준으로 봅니다`까지만 말하고 **원문이 지금 몇 자인지는 어디에도 없었습니다.** 그래서 설정처럼 읽히고 결과처럼 읽히지 않습니다. 완성된 자소서를 올린 사람이 기본값을 그대로 두면 절반 가까이 잘리는데, 잘릴 것이라는 신호가 화면에 없었습니다.
+- 판단: 줄이는 것 자체는 정당한 요청입니다(`LENGTH_INTEGRITY_RULE`과 같은 입장). **문제는 줄이기를 요청했다는 사실이 안 보이는 것**입니다.
+- Change: `planQuestionLengths()` — 문항별 `현재 자수(공백 제외) / 목표 / 감소율`. `describeLengthLoss()` — 25% 이상 줄어드는 문항이 있을 때만 경고하고, 지키는 방법(글자 수 올리기, 제목 뒤 `(1200자)`)을 함께 말합니다. 다듬는 수준은 경고하지 않습니다(경고를 무시하도록 훈련시키지 않기 위해).
+- 이미 있던 것과의 관계: 제목 뒤 `(800자)` 표기를 읽는 `readTargetLengthMarker`, 극단적으로 긴 답변을 잡는 `describeOverLongAnswer`는 그대로입니다. 이번 것은 **분석 전에** 보여주는 쪽입니다.
+- 없는 기능(사용자 질문에 대한 답): 첨부한 공고나 자소서 파일에서 글자 수 제한을 **자동으로 읽어 목표를 조정하는 기능은 없습니다.** 사용자가 직접 적은 `(800자)` 표기만 반영됩니다.
+- Files: `src/domain/simple-intake-mapping.ts`(+test), `src/components/simple-intake.tsx`, `.module.css`(`.plans`/`.loss` 추가), `pro-input-page.tsx`.
+- Validation: 761 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.
