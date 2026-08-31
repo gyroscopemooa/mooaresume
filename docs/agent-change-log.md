@@ -3828,3 +3828,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 보호: `result-workspace-{claude,codex}-restored`, `result-workspace-v2`, `final-verification`은 건드리지 않았습니다.
 - Validation: 743 tests passed (+7), `tsc` clean, `eslint` 0 errors, `next build` 클린, `/result/sample` 공고·경험 분석 탭 육안 확인(두 묶음 표시, 인용 줄 `grid-column 1/3`).
 - Rollback: 이 커밋 revert. 스키마 기본값이 있어 되돌려도 저장된 결과는 그대로 파싱됩니다.
+
+## 2026-08-31 — Claude: 연구 동의 저장 실패가 결제를 막던 문제
+
+- Agent/session: Claude. 사용자 제보("데이터활용 누르니 저장하지 못했습니다").
+- Status: main에 적용. 마이그레이션 없음.
+- 증상: `/analysis/prepare`에서 동의 버튼을 누르면 "저장하지 못했습니다. 다시 눌러 주세요."만 뜨고, `onDecided`가 호출되지 않아 **결제 버튼이 계속 비활성**이었습니다. 즉 동의 저장이 깨지면 아무도 결제를 못 합니다.
+- 조사한 것: `research_consents` 스키마, `set_research_consent` 함수 정의 두 벌(`20260824050000`, `20260824060000`), `RESEARCH_CONSENT_VERSION`(10자, 한도 40) 모두 정상. 클라이언트가 `error`를 버리고 있어 **원인을 특정할 수 없는 상태**였습니다. 원격 DB 적용 여부는 확인하지 못했습니다(로컬 셸에 Supabase 토큰 없음).
+- Change 1 — 실패해도 진행: 실패 경로에서 `onDecided(true)`를 호출합니다. 수집은 동의 테이블을 읽으므로 **기록하지 못한 동의는 어느 쪽 답이든 수집 안 함으로 닫힙니다.** 결제를 막아서 지키는 것이 없고, 잃는 것은 판매입니다.
+- Change 2 — 이유 표시: `error.code · error.message`를 화면과 `console.error`에 남깁니다. 함수 부재나 제약 위반에 "다시 눌러 주세요"는 틀린 안내입니다. 다시 눌러도 고쳐지지 않습니다.
+- Files: `src/components/research-consent-gate.tsx`, `.module.css`, `.test.ts`.
+- Validation: 745 tests passed (+2), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- 남은 확인: 사용자가 다시 눌러 화면에 뜨는 에러 코드를 알려주면 근본 원인(원격 마이그레이션 미적용 여부 등)을 특정할 수 있습니다.
+- Rollback: 이 커밋 revert.

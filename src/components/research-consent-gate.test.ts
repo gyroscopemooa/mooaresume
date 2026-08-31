@@ -50,3 +50,22 @@ describe("연구 동의 체크", () => {
     expect(gate).toContain("aria-checked={choice === value}");
   });
 });
+
+describe("저장이 실패했을 때", () => {
+  const source = readFileSync("src/components/research-consent-gate.tsx", "utf8");
+
+  it("결제를 막지 않는다", () => {
+    // Collection reads the consent table, so a write we could not make means no
+    // collection either way — both answers fail closed. Holding the purchase
+    // hostage to it protects nothing and loses the sale.
+    const failure = source.slice(source.indexOf("if (error) {"), source.indexOf("setChoice(granted)"));
+    expect(failure).toContain("onDecided(true)");
+  });
+
+  it("진짜 이유를 보여준다", () => {
+    // "다시 눌러 주세요" is wrong advice for a missing function or a rejected
+    // constraint: pressing again cannot fix either one.
+    expect(source).toContain("error.code");
+    expect(source).toContain("데이터는 활용되지 않으며, 분석은 그대로 진행됩니다");
+  });
+});

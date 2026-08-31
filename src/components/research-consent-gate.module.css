@@ -39,7 +39,11 @@
 .gate .detail p { margin: 0; color: #8b968f; font-size: 11px; line-height: 1.75; }
 .gate .detail b { color: #41514a; font-weight: 600; }
 
-.gate .failed { display: block; margin-top: 8px; color: #a34848; font-size: 11px; }
+.gate .failed { display: block; margin-top: 8px; color: #8b968f; font-size: 11px; line-height: 1.7; }
+.gate .failed b { color: #a34848; font-weight: 600; }
+/* The code is for whoever has to fix it, not for the applicant — legible if
+   you look, invisible if you don't. */
+.gate .failed em { display: block; margin-top: 3px; color: #a9b3ae; font-size: 10px; font-style: normal; word-break: break-word; }
 
 /* At this width the label plus both segments plus 자세히 stop fitting on one
    line, so the label goes and the control takes the row. */

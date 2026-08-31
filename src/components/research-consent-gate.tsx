@@ -26,7 +26,7 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
   const [choice, setChoice] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,20 +58,40 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
     return () => { cancelled = true; };
   }, [onDecided]);
 
+  /**
+   * 저장에 실패해도 분석은 막지 않습니다.
+   *
+   * A consent we could not write is a consent we do not have, and collection
+   * reads the table — so both answers fail closed either way. Blocking the
+   * purchase would protect nothing and lose the sale, which is the worse of the
+   * two failures by a wide margin.
+   *
+   * The reason is shown rather than swallowed. "다시 눌러 주세요" is wrong advice
+   * for a missing function or a rejected constraint: pressing again cannot fix
+   * either, and hiding the code leaves nobody able to say what broke.
+   */
   async function decide(granted: boolean) {
     setBusy(true);
-    setFailed(false);
+    setFailed(null);
     try {
       const supabase = createClient();
       const { error } = await supabase.rpc("set_research_consent", {
         p_granted: granted,
         p_consent_version: RESEARCH_CONSENT_VERSION,
       });
-      if (error) { setFailed(true); setBusy(false); return; }
+      if (error) {
+        console.error("set_research_consent", error);
+        setFailed([error.code, error.message].filter(Boolean).join(" · ") || "알 수 없는 오류");
+        onDecided(true);
+        setBusy(false);
+        return;
+      }
       setChoice(granted);
       onDecided(true);
-    } catch {
-      setFailed(true);
+    } catch (error) {
+      console.error("set_research_consent", error);
+      setFailed(error instanceof Error ? error.message : "알 수 없는 오류");
+      onDecided(true);
     }
     setBusy(false);
   }
@@ -112,6 +132,9 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
       <p>활용하지 않아도 결과는 완전히 같고, 언제든 철회하실 수 있습니다.</p>
     </div>}
 
-    {failed && <small className={styles.failed}>저장하지 못했습니다. 다시 눌러 주세요.</small>}
+    {failed && <small className={styles.failed}>
+      <b>동의 기록을 저장하지 못했습니다.</b> 데이터는 활용되지 않으며, 분석은 그대로 진행됩니다.
+      <em>{failed}</em>
+    </small>}
   </section>;
 }
