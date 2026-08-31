@@ -4043,3 +4043,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/simple-intake.module.css`.
 - Validation: 780 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, 브라우저에서 적용된 CSS 규칙 확인(`opacity: 1; visibility: visible` 포함).
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 직무기술서 생성 기능 계획 문서 (코드 없음)
+
+- Agent/session: Claude. 사용자 요청("지금 하지 말고 md 추가해놓고 다음 할 일에 넣어놔").
+- Status: **문서만. 코드 변경 없음.**
+- 신규 `docs/career-document-builder-plan.md` — 본인 자료 전부(이력서·자소서·자격증·수료증·해외경험 등)를 넣으면 직무기술서를 만들어 주고, `심리상담사 쪽으로` 같은 방향 지정을 받는 기능.
+- 문서에 적어 둔 핵심 판단:
+  - 가장 큰 위험은 **없는 경력 생성**. 첨삭과 달리 대조할 원문이 없습니다. 방향 지정은 **배치만 바꾸고 사실을 만들지 않는다**는 선을 지켜야 합니다.
+  - 정하지 않은 것: 상품 위치·가격·출력 형식·경험은행과의 관계.
+  - 순서: 런칭 필수 항목 뒤. 단 **경험은행보다는 먼저**(결과물이 혼자 서는 쪽이 먼저).
+- **혼합 파일 카테고리는 만들지 않기로 판단**(같은 문서 6장에 근거 기록): 카테고리는 "어떻게 읽을지"를 정하는 값인데 `혼합`은 아무것도 정해 주지 않고, "모르겠다"는 이미 `UNSET`이 담당합니다. 본인 서류끼리의 혼합은 어느 쪽으로 골라도 결과가 같아 애초에 문제가 아니고, 위험한 것은 **채용공고가 섞인 경우 하나뿐**이며 그건 파일을 나누는 것 말고 답이 없습니다. 필요하면 카테고리가 아니라 **감지 후 "나눠서 올려 주세요" 안내**로 갑니다.
+- Files: `docs/career-document-builder-plan.md`.
+- Rollback: 파일 삭제.
