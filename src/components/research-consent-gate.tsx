@@ -21,6 +21,22 @@ import styles from "./research-consent-gate.module.css";
  * Declining is the same one click as agreeing. A choice that is harder to
  * decline than to accept is not a free one.
  */
+/**
+ * 세션이 죽은 것과 저장이 실패한 것을 구분합니다.
+ *
+ * PGRST303 ("JWT issued at future") means the stored token was minted against a
+ * clock that ran ahead, so the database refuses it — and it refuses it for every
+ * authenticated call, not just this one. Showing the raw code there is a dead
+ * end: the reader needs the one action that fixes it, and needs to know the
+ * failure is not about consent at all.
+ */
+function describeFailure(code: string | undefined, message: string): string {
+  if (code === "PGRST303" || code === "PGRST301" || /jwt/i.test(message)) {
+    return "로그인 세션이 만료되었습니다. 로그아웃 후 다시 로그인하면 해결됩니다.";
+  }
+  return [code, message].filter(Boolean).join(" · ") || "알 수 없는 오류";
+}
+
 export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolean) => void }) {
   const [ready, setReady] = useState(false);
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -81,7 +97,7 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
       });
       if (error) {
         console.error("set_research_consent", error);
-        setFailed([error.code, error.message].filter(Boolean).join(" · ") || "알 수 없는 오류");
+        setFailed(describeFailure(error.code, error.message ?? ""));
         onDecided(true);
         setBusy(false);
         return;

@@ -3856,3 +3856,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/domain/result-document.ts`(enum 1개 추가), `src/server/ai/quick/prompt.ts`(정의·규칙 3줄), `src/components/result-workspace-complete.tsx`(라벨 `오탈자`), `.module.css`(밑줄 물결 표시 3줄 추가, 기존 규칙 수정 없음), `prompt.test.ts`.
 - Validation: 748 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert. 저장된 결과에 `typo`가 없으므로 되돌려도 파싱이 깨지지 않습니다.
+
+## 2026-08-31 — Claude: PGRST303(만료된 토큰)을 고칠 수 있는 안내로
+
+- Agent/session: Claude. 사용자 제보(`PGRST303 · JWT issued at future`).
+- Status: main에 적용. 마이그레이션 없음.
+- 진단: **코드 버그 아님.** 브라우저에 저장된 로그인 토큰의 `iat`(발급 시각)이 서버 시각보다 미래라 PostgREST가 거부합니다. 확인한 것:
+  - Supabase는 호스팅(`*.supabase.co`), 로컬 인스턴스 아님.
+  - 현재 PC 시계는 서버와 **+2초**로 정상. 즉 지금이 아니라 **로그인 당시** 시계가 앞서 있었고, 그때 받은 토큰이 남아 있는 상태입니다.
+  - `research_consents` 스키마, `set_research_consent` 정의, `RESEARCH_CONSENT_VERSION` 모두 정상이었습니다(앞선 조사).
+- 범위 주의: 이 토큰은 **모든 인증 호출**에 쓰입니다. 동의 저장만이 아니라 지원 건 저장(`/api/application-cases`)·이용권 조회도 같이 실패합니다. 해결은 **로그아웃 후 재로그인** 하나뿐입니다.
+- Change: `describeFailure()` 추가. `PGRST303`/`PGRST301`/메시지에 `jwt`가 있으면 "로그인 세션이 만료되었습니다. 로그아웃 후 다시 로그인하면 해결됩니다."로 바꿔 보여줍니다. 그 밖의 오류는 코드를 그대로 노출합니다(고치는 사람에게 필요한 유일한 정보).
+- Files: `src/components/research-consent-gate.tsx`, `.test.ts`.
+- Validation: 750 tests passed (+2), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- 남은 확인: 재로그인 후 동의 저장이 실제로 되는지, 그리고 `/meensoo/research` 보관 사본 수가 늘어나는지.
+- Rollback: 이 커밋 revert.

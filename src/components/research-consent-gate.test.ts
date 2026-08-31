@@ -69,3 +69,21 @@ describe("저장이 실패했을 때", () => {
     expect(source).toContain("데이터는 활용되지 않으며, 분석은 그대로 진행됩니다");
   });
 });
+
+describe("죽은 세션과 저장 실패를 구분", () => {
+  const source = readFileSync("src/components/research-consent-gate.tsx", "utf8");
+
+  it("만료된 토큰은 고칠 방법을 알려준다", () => {
+    // PGRST303 is the database refusing a token minted against a clock that ran
+    // ahead. It refuses every authenticated call, so the reader needs the one
+    // action that fixes it rather than a code that reads like a consent bug.
+    expect(source).toContain("PGRST303");
+    expect(source).toContain("로그아웃 후 다시 로그인하면 해결됩니다");
+  });
+
+  it("그 밖의 오류는 코드를 그대로 보여준다", () => {
+    // Whoever has to fix an unknown failure needs the code; guessing at friendly
+    // wording for it would hide the only useful thing in the message.
+    expect(source).toContain('[code, message].filter(Boolean).join(" · ")');
+  });
+});
