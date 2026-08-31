@@ -17,6 +17,7 @@ import styles from "./referral-panel.module.css";
 export function ReferralPanel({ standalone = false }: { standalone?: boolean } = {}) {
   const [code, setCode] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState(0);
   const [converted, setConverted] = useState(0);
@@ -33,15 +34,24 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
         if (!auth.user) return;
         // Created on first view rather than at sign-up: an account that never
         // reaches a result never needs one.
-        const { data: issued } = await supabase.rpc("get_or_create_referral_code");
+        const { data: issued, error: issueError } = await supabase.rpc("get_or_create_referral_code");
         if (cancelled) return;
+        // 코드를 못 받은 것과 코드가 없는 것은 다릅니다.
+        //
+        // Failing quietly hid the panel entirely, which reads as "this account
+        // has no referral code" — indistinguishable from a call that never got
+        // an answer.
+        if (issueError) { console.error("get_or_create_referral_code", issueError); setFailed([issueError.code, issueError.message].filter(Boolean).join(" · ")); return; }
         setCode(typeof issued === "string" ? issued : null);
-        const { data: rows } = await supabase.from("referral_attributions").select("status");
-        if (cancelled || !rows) return;
+        const { data: rows, error: rowsError } = await supabase.from("referral_attributions").select("status");
+        if (cancelled) return;
+        if (rowsError) { console.error("referral_attributions", rowsError); setFailed([rowsError.code, rowsError.message].filter(Boolean).join(" · ")); return; }
+        if (!rows) return;
         setPending(rows.filter((row) => row.status === "PENDING").length);
         setConverted(rows.filter((row) => row.status === "CONVERTED").length);
-      } catch {
-        // No panel rather than an error. Nothing here is what they came for.
+      } catch (error) {
+        console.error("referral-panel", error);
+        if (!cancelled) setFailed(error instanceof Error ? error.message : "알 수 없는 오류");
       }
     })();
     return () => { cancelled = true; };
@@ -74,6 +84,13 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
   // On the result screen the panel simply does not appear for a signed-out
   // visitor — there is nothing to show and they did not come for this. On its
   // own page that would be a blank screen, so it offers the sign-in instead.
+  if (failed) {
+    if (!standalone) return null;
+    return <section className={styles.panel}>
+      <p className={styles.failed}><b>추천 코드를 불러오지 못했습니다.</b> 코드가 없는 것이 아니라 조회에 실패한 것입니다. 새로고침해 보시고, 계속 안 되면 알려 주세요. <em>{failed}</em></p>
+    </section>;
+  }
+
   if (!code) {
     if (!standalone) return null;
     if (signedIn === null) return null;

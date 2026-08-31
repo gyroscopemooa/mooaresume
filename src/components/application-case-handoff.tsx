@@ -56,6 +56,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   // default: a pre-selected answer to an optional data question is not consent
   // that would survive a complaint.
   const [consentDecided, setConsentDecided] = useState(false);
+  const [creditCheckFailed, setCreditCheckFailed] = useState(false);
   // A failed sign-in redirects here with the reason in the query string, and
   // nothing was reading it — the visitor saw a plain login screen with no sign
   // their link had just been rejected, so the natural next move was to request
@@ -75,15 +76,23 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         if (!data.user) return;
         // RLS already limits this to the signed-in account's own credits, so
         // the query cannot see anyone else's.
-        const { data: credits } = await supabase
+        const { data: credits, error } = await supabase
           .from("reward_credits")
           .select("id")
           .eq("status", "AVAILABLE")
           .eq("product", wantedProduct)
           .limit(1);
-        if (!cancelled) setAvailableCredit(Boolean(credits?.length));
-      } catch {
-        // No credit offered, ordinary checkout still works.
+        if (cancelled) return;
+        // 확인하지 못한 것을 없는 것으로 넘기면 가진 표를 두고 돈을 냅니다.
+        //
+        // The quiet version simply left the free-ticket option off the screen,
+        // which is indistinguishable from having none — except the applicant
+        // pays.
+        if (error) { console.error("reward_credits", error); setCreditCheckFailed(true); return; }
+        setAvailableCredit(Boolean(credits?.length));
+      } catch (error) {
+        console.error("reward_credits", error);
+        if (!cancelled) setCreditCheckFailed(true);
       }
     })();
     return () => { cancelled = true; };
@@ -291,6 +300,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       <ResearchConsentGate onDecided={setConsentDecided} locked={runActive}/>
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
+      {creditCheckFailed && <p className={styles.creditNotice}><Gift/> <span><b>무료 이용권 보유 여부를 확인하지 못했습니다.</b> 이용권이 있으실 수도 있습니다. 새로고침한 뒤에도 이 안내가 보이면 결제 전에 알려 주세요.</span></p>}
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
       <button type="button" disabled={busy || runActive || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
       {guest && !consentDecided && !busy && !runActive && <p className={styles.noDraft}>위에서 하나를 골라 주세요.</p>}

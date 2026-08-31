@@ -7,3 +7,8 @@
 .rewardPromise svg{width:14px;height:14px;flex:none;color:var(--green,#176b4a)}
 .rewardNotice{display:flex;align-items:center;gap:8px;margin:12px 0 0;padding:11px 13px;border:1px solid #cfe4d8;border-radius:11px;background:#f5fbf8;color:var(--green-dark,#0f4b33);font-size:12.5px;font-weight:700;line-height:1.6}
 .rewardNotice svg{width:15px;height:15px;flex:none}
+
+/* 화면의 체크는 이 브라우저 것입니다. 서버에 안 남으면 보상도 없습니다. */
+.reportFailed { margin: 8px 0 0; color: #7a5757; font-size: 11.5px; line-height: 1.8; }
+.reportFailed b { color: #a34848; }
+.reportFailed em { display: block; margin-top: 3px; color: #a9b3ae; font-size: 10.5px; font-style: normal; word-break: break-word; }

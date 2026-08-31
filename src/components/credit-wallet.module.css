@@ -16,3 +16,8 @@
 .cta:hover{background:var(--green-dark,#0d5237)}
 .empty{margin:0;color:var(--muted,#68756f);font-size:12.5px;line-height:1.85}
 @media(max-width:600px){.wallet{padding:18px 16px}.counts{grid-template-columns:1fr}.counts article{display:flex;align-items:baseline;justify-content:space-between;text-align:left}.counts strong{margin-top:0}}
+
+/* 못 물어본 것과 없는 것은 다릅니다. */
+.failed { margin: 0; color: #7a5757; font-size: 12px; line-height: 1.8; }
+.failed b { color: #a34848; }
+.failed em { display: block; margin-top: 4px; color: #a9b3ae; font-size: 10.5px; font-style: normal; word-break: break-word; }

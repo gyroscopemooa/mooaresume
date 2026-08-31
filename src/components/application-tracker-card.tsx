@@ -46,6 +46,7 @@ export function ApplicationTrackerCard(props: Props) {
   const [tracker, setTracker] = useState(() => initialTracker(props.caseId, props.company, props.role));
   const [ready, setReady] = useState(false);
   const [rewardNotice, setRewardNotice] = useState<string | null>(null);
+  const [reportFailed, setReportFailed] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -81,17 +82,27 @@ export function ApplicationTrackerCard(props: Props) {
     void (async () => {
       try {
         const supabase = createClient();
-        const { data } = await supabase.rpc("record_application_outcome", {
+        const { data, error } = await supabase.rpc("record_application_outcome", {
           p_application_case_id: props.caseId,
           p_status: status,
         });
+        // 보고가 서버에 남지 않으면 보상도 없습니다.
+        //
+        // The tick on screen comes from this browser's own storage, so a failed
+        // call still looks like a saved report — and the free ticket that a
+        // 합격/불합격 report earns simply never arrives, with nothing said.
+        if (error) {
+          console.error("record_application_outcome", error);
+          setReportFailed([error.code, error.message].filter(Boolean).join(" · "));
+          return;
+        }
         // Null means say nothing: the credit is a thank-you, and a notice
         // explaining why one did *not* arrive reads as a refusal for having
         // pressed the wrong button.
         setRewardNotice(describeOutcomeReward(parseOutcomeReward(data)));
-      } catch {
-        // The applicant's own record is already updated on screen. Nothing here
-        // is worth interrupting them for.
+      } catch (error) {
+        console.error("record_application_outcome", error);
+        setReportFailed(error instanceof Error ? error.message : "알 수 없는 오류");
       }
     })();
   }
@@ -151,6 +162,7 @@ export function ApplicationTrackerCard(props: Props) {
         {!props.isSample && ["RESULT_PENDING","INTERVIEW_1_PENDING","FINAL_INTERVIEW_PENDING"].includes(status)
           && <small className={styles.rewardPromise}><Gift /> {OUTCOME_REWARD_PROMISE}</small>}
         {rewardNotice && <p className={styles.rewardNotice}><Gift /> {rewardNotice}</p>}
+        {reportFailed && <p className={styles.reportFailed}><b>결과를 서버에 기록하지 못했습니다.</b> 화면의 표시는 이 브라우저에만 남아 있고, 결과 보고로 드리는 무료 이용권도 지급되지 않았습니다. 잠시 후 다시 눌러 주세요. <em>{reportFailed}</em></p>}
       </div>
       <ol>{tracker.events.map((event) => <li key={event.id}><span/><div><b>{labels[event.status]}</b><small>{new Date(event.occurredAt).toLocaleString("ko-KR")} · 자발적 입력 · 미인증</small></div></li>)}</ol>
     </div>}

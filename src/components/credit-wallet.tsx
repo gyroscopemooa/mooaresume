@@ -22,6 +22,7 @@ const PRODUCTS = rewardCreditProductSchema.options;
  */
 export function CreditWallet() {
   const [counts, setCounts] = useState<Record<RewardCreditProduct, number> | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,21 +32,32 @@ export function CreditWallet() {
         const { data: auth } = await supabase.auth.getUser();
         if (cancelled || !auth.user) return;
         // RLS limits this to the signed-in account's own rows.
-        const { data } = await supabase.from("reward_credits").select("product").eq("status", "AVAILABLE");
-        if (cancelled || !data) return;
+        const { data, error } = await supabase.from("reward_credits").select("product").eq("status", "AVAILABLE");
+        if (cancelled) return;
+        // 못 물어본 것과 없는 것을 구분합니다.
+        //
+        // Returning quietly made a wallet we could not read look exactly like a
+        // wallet with nothing in it. That is how a day passed with every one of
+        // these calls failing and nobody noticing.
+        if (error) { console.error("reward_credits", error); setFailed([error.code, error.message].filter(Boolean).join(" · ")); return; }
+        if (!data) return;
         const tally = { QUICK: 0, PRO: 0, FINAL: 0 } as Record<RewardCreditProduct, number>;
         for (const row of data) {
           const product = row.product as RewardCreditProduct;
           if (product in tally) tally[product] += 1;
         }
         setCounts(tally);
-      } catch {
-        // Nothing shown rather than an error; the page has other things on it.
+      } catch (error) {
+        console.error("reward_credits", error);
+        if (!cancelled) setFailed(error instanceof Error ? error.message : "알 수 없는 오류");
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
+  if (failed) return <section className={styles.wallet}>
+    <p className={styles.failed}><b>무료 이용권을 확인하지 못했습니다.</b> 이용권이 없는 것이 아니라 조회에 실패한 것입니다. 새로고침해 보시고, 계속 안 되면 알려 주세요. <em>{failed}</em></p>
+  </section>;
   if (!counts) return null;
   const total = PRODUCTS.reduce((sum, product) => sum + counts[product], 0);
 

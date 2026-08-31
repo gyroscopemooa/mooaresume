@@ -4066,3 +4066,20 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 추가(6장): 분류용 싼 신호 하나 — **채용공고는 지원 한 건에 보통 하나뿐.** 둘 이상이 공고로 분류되면 적어도 하나는 틀렸습니다. 오늘 사고(공고 1개)에는 안 걸렸겠지만 본인 서류가 여러 개 공고로 몰리는 흔한 실수를 잡습니다.
 - Files: `docs/career-document-builder-plan.md`.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 브라우저 DB 호출이 조용히 죽지 않게 (A안)
+
+- Agent/session: Claude. 사용자 결정("1a ㄱㄱ" — A안만).
+- Status: main에 적용. **마이그레이션 없음. 결제·이용권 로직은 건드리지 않았습니다.**
+- 배경: 브라우저가 DB를 직접 부르는 곳 6~7군데가 실패를 삼키고 있었습니다. 2026-08-31 서명키 장애 때 전부 401이었는데 하루 넘게 아무도 몰랐습니다 — **읽지 못한 것과 없는 것이 화면에서 똑같이 보였기 때문**입니다. 401 자체는 서명키 회전으로 해결됐고, 여기서 고치는 것은 **조용함**입니다.
+- 중단한 작업(중요): 처음에는 이용권 사용을 서버로 옮기려고 `reward-credit-repository.ts`를 작성했으나, `consume_reward_credit` RPC가 단순한 상태 변경이 아니라 **지원 건 소유 확인·중복 이용권 거부·만료 임박 우선·주문/자격 생성**까지 하는 것을 확인하고 **파일을 지웠습니다.** 특히 `ACTIVE_ENTITLEMENT_EXISTS` 거부를 빠뜨리면 이용권 1장으로 분석 2회가 가능해집니다. 이 RPC들은 `auth.uid()`에 의존하므로 서버 이전에는 마이그레이션이 필요하고, 그것은 사용자 결정 사항으로 남겼습니다(C안, 보류).
+- Change(각 지점): 실패를 `catch {}`로 넘기던 자리에서 `console.error`와 화면 문구를 남깁니다.
+  - `credit-wallet.tsx` — `이용권이 없는 것이 아니라 조회에 실패한 것입니다`
+  - `application-case-handoff.tsx` — `무료 이용권 보유 여부를 확인하지 못했습니다` (확인 실패를 '없음'으로 넘기면 **가진 이용권을 두고 결제**하게 됩니다)
+  - `referral-panel.tsx` — `코드가 없는 것이 아니라 조회에 실패한 것입니다`
+  - `application-tracker-card.tsx` — `결과를 서버에 기록하지 못했습니다` (화면의 체크는 이 브라우저 저장분이라, 실패해도 저장된 것처럼 보이고 **결과 보고 보상이 지급되지 않습니다**)
+  - `referral-code-entry.tsx`, `redeem-client.tsx` — 이미 오류를 표시하고 있어 변경 없음.
+- Files: 위 4개 컴포넌트와 각 `.module.css`, `research-consent-gate.test.ts`(+4).
+- Validation: 784 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.
+- 보류(사용자 결정 대기): B안(읽기만 서버로), C안(쓰기 서버 이전 — 마이그레이션 + 결제 로직).

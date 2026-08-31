@@ -186,3 +186,30 @@ describe("개인정보처리방침", () => {
     expect(readFileSync("src/app/sitemap.ts", "utf8")).toContain("/privacy");
   });
 });
+
+describe("조용히 죽지 않기", () => {
+  const read = (path: string) => readFileSync(path, "utf8");
+
+  it("이용권 조회 실패를 '이용권 없음'으로 넘기지 않는다", () => {
+    // A wallet we could not read looked exactly like an empty one, which is how
+    // a day passed with every browser database call failing and nobody noticing.
+    expect(read("src/components/credit-wallet.tsx")).toContain("이용권이 없는 것이 아니라 조회에 실패한 것입니다");
+    expect(read("src/components/credit-wallet.tsx")).not.toContain("Nothing shown rather than an error");
+  });
+
+  it("결제 화면은 이용권 확인 실패를 알린다", () => {
+    // Treating an unanswered question as "no ticket" means paying while holding
+    // one.
+    expect(read("src/components/application-case-handoff.tsx")).toContain("무료 이용권 보유 여부를 확인하지 못했습니다");
+  });
+
+  it("추천 코드 조회 실패를 '코드 없음'으로 넘기지 않는다", () => {
+    expect(read("src/components/referral-panel.tsx")).toContain("코드가 없는 것이 아니라 조회에 실패한 것입니다");
+  });
+
+  it("결과 보고가 서버에 안 남으면 말한다", () => {
+    // The tick on screen comes from this browser's own storage, so a failed
+    // report still looks saved — and the free ticket never arrives.
+    expect(read("src/components/application-tracker-card.tsx")).toContain("결과를 서버에 기록하지 못했습니다");
+  });
+});
