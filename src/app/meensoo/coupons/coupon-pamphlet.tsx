@@ -66,7 +66,12 @@ function Row({ y, label, value }: { y: number; label: string; value: string }) {
   );
 }
 
-export function CouponPamphlet({ coupon, filename }: { coupon: PamphletSource; filename?: string }) {
+export function CouponPamphlet({ coupon, filename, onAttach }: {
+  coupon: PamphletSource;
+  filename?: string;
+  /** 내려받는 대신 메일 첨부로 넘길 때. 같은 그림을 두 번 그리지 않습니다. */
+  onAttach?: (file: File) => void;
+}) {
   // 기본은 기관 배포용입니다. 종이 한 장에 코드가 찍혀 있으면 그 코드는 한
   // 사람 것이 되어 버리므로, 기관이 여러 사람에게 나눠 줄 이미지에는 코드를
   // 넣지 않고 "등록하고 쓰세요"만 남깁니다. 개별 코드를 넣은 장은 옵션입니다.
@@ -75,12 +80,10 @@ export function CouponPamphlet({ coupon, filename }: { coupon: PamphletSource; f
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState("");
 
-  async function download() {
+  async function render(): Promise<Blob> {
     const svg = svgRef.current;
-    if (!svg) return;
-    setBusy(true);
-    setFailed("");
-    try {
+    if (!svg) throw new Error("아직 그려지지 않았습니다.");
+    {
       const source = new XMLSerializer().serializeToString(svg);
       const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -101,15 +104,33 @@ export function CouponPamphlet({ coupon, filename }: { coupon: PamphletSource; f
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
 
-      const link = document.createElement("a");
-      link.download = `${filename ?? `mooaresume_${coupon.partnerName}`}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      return await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => result ? resolve(result) : reject(new Error("PNG를 만들지 못했습니다.")), "image/png");
+      });
+    }
+  }
+
+  const name = `${filename ?? `mooaresume_${coupon.partnerName}`}.png`;
+
+  async function run(after: (blob: Blob) => void) {
+    setBusy(true);
+    setFailed("");
+    try {
+      after(await render());
     } catch (error) {
       console.error("pamphlet", error);
-      setFailed(error instanceof Error ? error.message : "내려받지 못했습니다.");
+      setFailed(error instanceof Error ? error.message : "만들지 못했습니다.");
     }
     setBusy(false);
+  }
+
+  function download() {
+    void run((blob) => {
+      const link = document.createElement("a");
+      link.download = name;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+    });
   }
 
   return (
@@ -176,9 +197,14 @@ export function CouponPamphlet({ coupon, filename }: { coupon: PamphletSource; f
       </svg>
 
       <div className={styles.pamphletFoot}>
-        <button type="button" onClick={() => void download()} disabled={busy}>
+        <button type="button" onClick={download} disabled={busy}>
           {busy ? "만드는 중..." : "PNG로 저장"}
         </button>
+        {onAttach && (
+          <button type="button" onClick={() => void run((blob) => onAttach(new File([blob], name, { type: "image/png" })))} disabled={busy}>
+            메일에 첨부
+          </button>
+        )}
         <small>2268 × 2808px · 협업 기관에 메일로 그대로 보내시면 됩니다.</small>
         {failed && <small className={styles.pamphletFailed}>{failed}</small>}
       </div>

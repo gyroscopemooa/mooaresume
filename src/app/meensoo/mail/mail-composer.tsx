@@ -19,12 +19,19 @@ import {
  * one `/api/mail/send` route, not a replacement for it. Files are picked here
  * only — `/MAIL` keeps posting the plain JSON it always posted.
  */
-export function MailComposer() {
+export function MailComposer({ campaignId, initialSubject = "", initialBody = "", initialFiles }: {
+  /** 캠페인에서 열렸으면 발송 기록이 그 캠페인에 묶입니다. */
+  campaignId?: string;
+  initialSubject?: string;
+  initialBody?: string;
+  /** 팜플렛 PNG와 코드 CSV처럼, 캠페인 화면이 미리 붙여 주는 파일. */
+  initialFiles?: File[];
+} = {}) {
   const [to, setTo] = useState("");
   const [replyTo, setReplyTo] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
+  const [subject, setSubject] = useState(initialSubject);
+  const [body, setBody] = useState(initialBody);
+  const [files, setFiles] = useState<File[]>(initialFiles ?? []);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const filePicker = useRef<HTMLInputElement>(null);
@@ -78,6 +85,7 @@ export function MailComposer() {
     form.set("subject", subject);
     form.set("body", body);
     for (const file of files) form.append("attachments", file);
+    if (campaignId) form.set("campaignId", campaignId);
 
     const response = await fetch("/api/mail/send", { method: "POST", body: form });
     const result = await response.json().catch(() => ({}));

@@ -59,7 +59,7 @@ describe("협업 쿠폰 코드", () => {
     // coupon code that is one character off is unusable.
     expect(pamphlet).toContain("<svg");
     expect(pamphlet).not.toContain("api.openai.com");
-    expect(pamphlet).toContain("canvas.toDataURL");
+    expect(pamphlet).toContain("canvas.toBlob");
   });
 });
 

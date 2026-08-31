@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminCampaign } from "@/server/admin/admin-repository";
+import { MailComposer } from "../mail/mail-composer";
+import { buildCouponCsv } from "@/domain/coupon-code";
 import { CouponPamphlet } from "./coupon-pamphlet";
 import styles from "./coupons.module.css";
 
@@ -42,6 +44,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const [preview, setPreview] = useState<AdminCampaign | null>(null);
   const [singleCode, setSingleCode] = useState("");
   const [codeList, setCodeList] = useState<{ id: string; codes: string[] } | null>(null);
+  const [mailFiles, setMailFiles] = useState<File[] | null>(null);
 
   function pickProduct(next: string) {
     setProduct(next);
@@ -177,7 +180,39 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
 
       {preview && <>
         {/* 기본은 코드 없는 기관 배포용. 개별 코드를 넣은 장은 아래에서 따로 만듭니다. */}
-        <CouponPamphlet coupon={{ ...preview, code: null }} filename={`mooaresume_${preview.partnerName}_배포용`}/>
+        <CouponPamphlet coupon={{ ...preview, code: null }} filename={`mooaresume_${preview.partnerName}_배포용`}
+          onAttach={(file) => setMailFiles((current) => [...(current ?? []), file])}/>
+        {/* 팜플렛과 코드 목록을 붙여 바로 보냅니다. 만들어 놓고 다른 화면에서
+            다시 찾아 올리게 하면, 잘못된 캠페인의 파일을 붙이는 일이 생깁니다. */}
+        <div className={styles.creatorFoot}>
+          <button type="button" onClick={() => {
+            const csv = new File(
+              [buildCouponCsv((codeList?.codes ?? []).map((code) => ({ code, status: "미사용", claimedAt: null })))],
+              `coupons_${preview.partnerName}.csv`,
+              { type: "text/csv" },
+            );
+            setMailFiles([csv]);
+          }}>코드 CSV를 붙여 메일 쓰기</button>
+        </div>
+
+        {mailFiles && <section className={styles.mailBox}>
+          <MailComposer
+            campaignId={preview.id}
+            initialSubject={`[무아레쥬메] ${preview.partnerName} 협업 무료 이용권 안내`}
+            initialBody={`안녕하세요, 무아레쥬메입니다.
+
+${preview.name} 진행을 위한 무료 이용권 ${preview.totalCodes}장을 보내드립니다.
+
+· 혜택: ${preview.benefitText}
+· 대상: ${preview.audienceText}
+· 사용방법: ${preview.usageText}
+
+첨부된 이미지는 배포용이며, 쿠폰 코드는 CSV 파일에 있습니다.
+감사합니다.`}
+            initialFiles={mailFiles}
+          />
+        </section>}
+
         <section className={styles.singleCode}>
           <label className={styles.field}>
             <span>개별 코드 이미지 (선택)</span>

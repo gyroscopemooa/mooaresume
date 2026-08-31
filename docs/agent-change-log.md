@@ -4145,3 +4145,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 803 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - 남은 것: 캠페인 화면에서 기관에 메일 보내기(팜플렛·CSV 첨부) 연결, ⑨ 게시판(코덱스 영역).
 - Rollback: 이 커밋 revert. 추가된 컬럼은 nullable이라 되돌려도 기존 기록이 그대로 읽힙니다.
+
+## 2026-09-01 — Claude: 캠페인에서 기관에 메일 보내기 (⑦ 마무리)
+
+- Agent/session: Claude. 사용자 스펙 ⑦ 마무리.
+- Status: main에 적용. 마이그레이션 없음.
+- Change: 기존 `MailComposer`를 **그대로 재사용**합니다. 새 발송 경로를 만들지 않았습니다 — 발신 주소·첨부 검사·수신자 검증·발송 기록이 이미 그 안에 있고, 복제하면 두 벌을 관리하게 됩니다. 선택 props(`campaignId`, `initialSubject`, `initialBody`, `initialFiles`)만 더했고 기존 호출부는 인자 없이 그대로 동작합니다.
+- 캠페인 화면에서: 팜플렛 **[메일에 첨부]** 버튼이 PNG를 만들어 작성창에 붙이고, **[코드 CSV를 붙여 메일 쓰기]**가 CSV를 붙입니다. 제목·본문은 캠페인 값으로 채워집니다.
+- 이 자리에 둔 이유: 파일을 만들어 놓고 다른 화면에서 다시 찾아 올리게 하면 **다른 캠페인의 파일을 붙이는 일**이 생깁니다. 코드 목록과 팜플렛과 받는 사람이 한 화면에 있어야 어긋나지 않습니다.
+- `CouponPamphlet`은 그리는 부분을 함수로 빼서 저장과 첨부가 같은 그림을 씁니다(두 번 그리지 않습니다).
+- Files: `mail-composer.tsx`, `campaign-creator.tsx`, `coupon-pamphlet.tsx`, `coupons.module.css`, `coupon-code.test.ts`.
+- Validation: 803 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert. 추가된 props는 전부 선택값입니다.
