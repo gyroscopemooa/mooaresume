@@ -131,3 +131,28 @@ describe("분석이 시작된 뒤에는 다시 묻지 않는다", () => {
     expect(progress).toContain('phase === "waiting" || phase === "analyzing"');
   });
 });
+
+describe("결과 화면의 동의 항목", () => {
+  const consent = readFileSync("src/components/research-consent.tsx", "utf8");
+
+  it("여기도 서버를 거친다", () => {
+    // Same path that took a day: the browser calling PostgREST with the user's
+    // token. Two components asked for the same row, only one had been moved.
+    expect(consent).not.toContain("supabase.rpc");
+    expect(consent).not.toContain("@/lib/supabase/client");
+    expect(consent).toContain('fetch("/api/research-consent"');
+  });
+
+  it("설명은 접어 두고 체크만 남긴다", () => {
+    // Explaining already happened before payment. This is where the answer gets
+    // changed, and it sat between the finished 첨삭 and the referral block taking
+    // a screen for a decision most people had already made.
+    expect(consent).toContain("aria-expanded={open}");
+    expect(consent).toContain("{open && <div");
+  });
+
+  it("지워지지 않는 것을 계속 말한다", () => {
+    // Dropping this would make the promise above it stronger than it is.
+    expect(consent).toContain("REDACTION_LIMITS.map");
+  });
+});

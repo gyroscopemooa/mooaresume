@@ -3950,3 +3950,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/research-consent-gate.tsx`, `.module.css`(`.settled` 4줄 제거), `.test.ts`(철회 경로가 결과 화면에 남아 있는지 검사하도록 변경).
 - Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 결과 화면 동의 항목 축소 + 서버 경유
+
+- Agent/session: Claude. 사용자 제보(빈 목록으로 깨져 보임 + "최소만 남기고 간단하게, 결제 전 페이지처럼").
+- Status: main에 적용. 마이그레이션 없음.
+- 깨져 보인 것: `지워지지 않는 것도 있습니다` 아래 세 항목이 비어 보이는 문제. `REDACTION_LIMITS` 값은 정상입니다(3개 문장 존재). 닫힌 `<details>`를 복사하면 본문이 빠지는 브라우저 동작으로 보입니다. 어느 쪽이든 접기 방식을 직접 만든 것으로 바꿔 재현 여지를 없앴습니다.
+- Change 1 — 서버 경유: `supabase.rpc("set_research_consent")` / `.from("research_consents")` 직접 호출을 `/api/research-consent`로 교체했습니다. **오늘 하루를 먹은 경로가 정확히 이것**이고, 같은 행을 읽는 컴포넌트가 둘인데 한쪽만 옮겨져 있었습니다.
+- Change 2 — 축소: 제목 + 본문 + 불릿 4개 + `<details>` 구성을 **체크박스 한 줄 + `자세히` 접기**로 줄였습니다. 결제 전 화면(`ResearchConsentGate`)과 같은 형태입니다. 설명은 결제 전에 이미 했고, 이 자리는 답을 **바꾸는** 곳입니다. 완성된 첨삭과 추천 코드 사이에서 화면 하나를 차지하고 있었습니다.
+- 유지한 것: `REDACTION_LIMITS`(지워지지 않는 것)는 접힌 안쪽에 그대로 둡니다. 빼면 그 위의 약속이 실제보다 강해집니다. 철회 시 기존 사본 삭제 문구도 유지.
+- 동작 변경: 지금 문구에 답한 적이 없거나 비로그인이면 렌더하지 않습니다(이전에는 비로그인만 숨김). 결제 전에 이미 묻고 저장하므로 결과 화면에는 **바꿀 답이 있을 때만** 나옵니다.
+- Files: `src/components/research-consent.tsx`(재작성), `.module.css`(재작성), `research-consent-gate.test.ts`(+3).
+- Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert. RPC는 남아 있어 되돌려도 동작합니다.
