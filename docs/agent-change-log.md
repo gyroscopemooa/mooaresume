@@ -3103,6 +3103,17 @@ body{zoom:var(--app-scale)}   /* 1.25 */
 - 화면 대비 **정확히 50%**, `.home-page` 안에 있음 확인.
 - Validation: 713 tests passed, `tsc` clean, `eslint` 0건, `next build` 클린.
 
+## 2026-08-26 — Codex: 홈 오버레이 드로어 (워크트리 기록)
+
+- Agent/session: Codex worktree feature/codex-plan.
+- Status: variant.
+- Protected baseline: existing homepage content, CTA flow, and career assessment pages remain intact.
+- Change and reason: user requested an automatic, closable overlay drawer on the homepage that shows the assessment catalog without shrinking the home layout. The desktop drawer covers the right 50% of the viewport; mobile uses full width.
+- Files/branch: new career-assessment-drawer component/CSS; additive import/render in home-page-content; drawer rendering variant in catalog CSS/component.
+- Validation: pending typecheck, lint, local visual route verification.
+- Rollback/recovery reference: remove the one home render/import and the new drawer files; catalog page remains available separately.
+- User decision: explicitly requested the overlay rather than an inline/sidebar layout that compresses the existing homepage.
+
 ## 2026-08-30 — Codex: career login layout isolation
 
 - Agent/session: Codex (`feature/codex-plan` → `main`).
@@ -3589,3 +3600,205 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 줄이면 **두 번 실패한 사람이 갇힙니다.** 그리고 출력 상한이 붙었으므로 **재시도 한 번의 원가도 같이 내려갔습니다.** 3회는 그대로 두는 것이 맞습니다.
 - Files: 신규 `src/server/ai/quick/output-budget.ts`(+test); 수정 `src/server/ai/quick/openai-responses-gateway.ts`.
 - Validation: 735 tests passed (+5), `tsc` clean, `eslint` 0건, `next build` 클린.
+## 2026-08-30 — Codex: career login visual refinement
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: refined the standalone career login screen with the one-line title `검사 결과, 계속 이어보기`, a profile-entry card, outcome-retention benefits, and clearer sign-in controls.
+- Boundary: Google and email magic-link flows, redirect validation, and data handling were not changed.
+- Files: `src/app/career/login/page.tsx`, `src/app/career/login/page.module.css`.
+- Validation: `npm run typecheck` and `npm run lint`.
+- Rollback: revert only the login page and CSS visual changes.
+## 2026-08-30 — Codex: career-home AI interpretation CTA
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added a full-width, low-height AI interpretation card at the bottom of the career home. Its message and button reflect whether all three local assessment results are present.
+- Boundary: it does not execute AI, charge the user, fabricate an interpretation, or change the assessment scoring. Guest users are routed to login before the preparation screen.
+- Files: `src/components/career-public-home.tsx`, `src/components/career-public-home.module.css`.
+- Validation: `npm run typecheck`, `npm run lint`.
+- Rollback: remove the `aiCta` section and its scoped CSS only.
+## 2026-08-30 — Codex: AI interpretation scope selection
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: emphasized the career-home AI interpretation CTA and added a scope chooser on the signed-in AI preparation page. It offers a three-assessment combined interpretation only after all three results are present, alongside available single-assessment preparation paths.
+- Boundary: the page remains a launch-preparation screen; it does not run an AI model, charge the user, or claim an interpretation is already generated.
+- Files: `src/components/career-public-home.tsx`, `src/components/career-public-home.module.css`, `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning.
+- Rollback: remove the `aiCta`, `choiceSection`, and `choiceGrid` additions only.
+## 2026-08-30 — Codex: plain-language deep-interpretation flow
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: simplified the career-home CTA into one prominent `심층해설 확인하기` action. Rewrote the preparation screen in plain Korean, placed the combined interpretation first, showed available individual interpretations vertically, and explained the intended result summary, cross-result comparison, and job-posting review prompts.
+- Boundary: completion duration is not collected or interpreted. The feature does not diagnose, judge ability, predict hiring outcomes, run a model, or charge the user; it remains a launch-preparation flow.
+- Files: `src/components/career-public-home.tsx`, `src/components/career-public-home.module.css`, `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`.
+- Validation: `npm run typecheck`, `npm run lint`.
+- Rollback: remove the CTA and preparation-copy/style changes only.
+## 2026-08-30 — Codex: standalone work-style deep-interpretation entry
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: moved the work-style result’s deep-interpretation action out of the secondary action stack, removed the decorative Sparkles icon, and made it a distinct full-width primary action. Updated the individual AI-preparation headline to `AI 전문가 심층 해설 / 평가표 분석 받아보기`.
+- Boundary: no assessment answers, scoring, login behavior, AI execution, payment, or result persistence changed.
+- Files: `src/components/work-style-result.tsx`, `src/components/work-style-assessment.module.css`, `src/components/career-ai-preparation.tsx`.
+- Validation: `npm run typecheck` and `npm run lint` passed.
+- Rollback: remove the `deepInterpretation` link/CSS and restore the previous individual-preparation headline only.
+## 2026-08-30 — Codex: assessment-drawer parity and visible auth state
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: made the desktop homepage assessment drawer use the same three-column card sizing as `/career/assessments`, rather than its previous enlarged one-column presentation. The career header now checks the real Supabase session and shows `내 프로필` plus `로그아웃` for a signed-in user.
+- Boundary: this does not change assessment scoring, account-result persistence, database schema, or OAuth provider settings. Existing temporary browser-only results remain temporary.
+- Files: `src/components/career-assessment-catalog.module.css`, `src/components/career-layout-shell.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only.
+- Rollback: restore the drawer’s one-column override and the prior static login link only.
+## 2026-08-30 — Codex: RIASEC beta disclosure and O*NET original-track gate
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: made the Korean interest-result screen explicitly state `RIASEC 6 areas · MOOA beta`, name the six-area reference, and state that it is not the official O*NET original. Recorded the agreed rollout sequence and the original-English implementation gate in the validation plan. Reverted the just-added drawer three-column override at the user’s request; the narrower overlay keeps its prior one-column layout.
+- Boundary: no O*NET item text, scoring, translation, API call, account data, or Korean-adaptation claim was added. An English original cannot be exposed as an operational test until the official widget/API or unmodified source package and attribution surface are connected.
+- Files: `src/components/career-interest-result.tsx`, `src/components/career-assessment-catalog.module.css`, `docs/career-assessment-validation-plan.md`.
+- Validation: `npm run typecheck` and `npm run lint` passed.
+- Rollback: restore the prior RIASEC section copy and remove the dated validation-plan section only.
+## 2026-08-30 — Codex: standalone interest deep-interpretation entry
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: moved the interest-result deep-interpretation action out of the secondary action stack, removed the Sparkles icon, and made it the separate full-width primary action used on the work-style result.
+- Boundary: no RIASEC scoring, result data, login state, AI execution, or payment behavior changed.
+- Files: `src/components/career-interest-result.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only.
+- Rollback: restore the previous first action-stack link only.
+## 2026-08-30 — Codex: interest result save-and-restore path
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added a filtered authenticated latest-result API query and connected `/career/interest/result` to fall back to the user’s latest saved interest scores when the same-tab temporary answers are absent. The result now provides an explicit account-save entry; it does not silently upload answers.
+- Data/privacy: only the already-authenticated account can query its RLS-protected rows. The result screen restores calculated scores only, not raw answers, and uses current display copy. Saving remains a deliberate user action at `/career/profile/save`.
+- Files: `src/app/api/career-assessments/latest/route.ts`, `src/components/career-interest-result.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; local `/career/interest/result` returned HTTP 200. Authenticated remote save/restore still requires the existing migration to be applied to the target Supabase project.
+- Rollback: remove the API query parameter branch and restore the local-session-only interest-result component.
+## 2026-08-30 — Codex: values-result re-entry and account-save affordances
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: made the values result use the standalone icon-free deep-interpretation action and added the explicit account-save route. When an in-tab values result exists, `/career/values` now offers `이전 결과 다시 보기` or `새로 탐색하기`; the career home’s completed assessment cards now return directly to their corresponding local result page.
+- Boundary: no saved-server result restoration for values was added in this step; existing values answers remain current-tab data until the user explicitly saves them. No scoring, data schema, or AI behavior changed.
+- Files: `src/components/career-values-result.tsx`, `src/components/career-values-reflection.tsx`, `src/components/career-public-home.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career`, `/career/values`, and `/career/values/result` returned HTTP 200.
+- Rollback: restore the values action stack and start-only intro; remove resultHref/completed-card routing from career home.
+## 2026-08-30 — Codex: approved recovery of career public home
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Status: active recovery.
+- Protected baseline: `HEAD` version of `src/components/career-public-home.tsx` plus the session’s already-agreed deep-interpretation CTA and completed-result routing changes.
+- Change and reason: a PowerShell reserved-variable collision corrupted the working copy of the home component. The user explicitly approved recovery. Restored from the current commit and re-applied only the known session changes: the full-width `심층해설 확인하기` CTA and local completed-assessment links to their result routes.
+- Files: `src/components/career-public-home.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career` returned HTTP 200.
+- Rollback/recovery reference: `HEAD:src/components/career-public-home.tsx` is the protected committed baseline; current additions are limited to `resultHref`, `completedAssessmentIds`, and `aiCta`.
+- User decision: user explicitly approved the recovery in this task.
+## 2026-08-30 — Codex: career profile save layout repair
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: removed the nested save page’s viewport-based horizontal padding and full-viewport height. It now uses the existing career shell’s constrained content width, preventing the save UI from collapsing into a narrow vertical column.
+- Boundary: styles only; no storage, login, API, or result behavior changed.
+- Files: `src/components/career-profile-save.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/profile/save` returned HTTP 200.
+- Rollback: restore the former `.page` rule only.
+## 2026-08-30 — Codex: authenticated automatic assessment saving
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added a shared result-storage notice. A signed-in user who completes an assessment now has its response automatically posted once to the existing authenticated assessment API, with a session-scoped duplicate guard. A guest sees that the result is temporary in this browser and gets a direct login-and-keep-results action. Removed the redundant manual save action from interest and values result screens.
+- Data/privacy: no guest response is uploaded. The existing RLS-protected API receives data only after `auth.getUser()` confirms a signed-in user. A result restored from the account is not uploaded again.
+- Files: `src/components/career-assessment-storage-notice.tsx`, `src/components/career-assessment-storage-notice.module.css`, `src/components/career-interest-result.tsx`, `src/components/work-style-result.tsx`, `src/components/career-values-result.tsx`.
+- Validation: `npm run typecheck` and `npm run lint` passed; all three local result routes returned HTTP 200. Authenticated write/read verification still requires the target Supabase project to have the existing career-assessment migration applied.
+- Rollback: remove the storage-notice component/imports and restore the two manual save links only.
+## 2026-08-30 — Codex: automatic-save in-flight guard
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: strengthened the shared automatic-save flow so concurrent render instances await one in-flight save promise instead of creating duplicate assessment sessions; all instances receive the resulting saved/error state.
+- Files: `src/components/career-assessment-storage-notice.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; three result routes returned HTTP 200.
+- Rollback: replace the in-flight promise map with the prior session-scoped guard; no stored data needs migration.
+## 2026-08-30 — Codex: deep-path AI interpretation preparation redesign
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: replaced the pale preparation screen with the user-provided Stitch-inspired dark SaaS workspace: analysis-scope controls and practical report contents on the left, with a premium-style yet disabled launch-preparation package card on the right.
+- Safety/content boundary: adapted only layout and visual language. Omitted the reference’s unsupported claims about model accuracy, job matching, trend prediction, automatic learning use, price, and payment. The card explicitly says that neither payment nor an AI call runs yet.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`.
+- Validation: `npm run typecheck` and `npm run lint` passed; `/career/ai?scope=combined` and `/career/ai?scope=interest` returned HTTP 200.
+- Rollback: restore the prior AI-preparation component and CSS; no data flow, database, or API behavior was changed.
+## 2026-08-30 — Codex: full DeepPath-style AI interpretation page shell
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: expanded the prior AI-preparation restyle into the whole AI route: an independent dark product shell with its own top navigation, centered hero, full-width responsive report workspace, information cards, package panel, trust notice, and footer. The career layout now intentionally skips its standard light header on `/career/ai` only, so the two visual systems do not overlap.
+- Boundary: existing scope links, completion checks, login gate, and disabled no-payment/no-AI-call state remain unchanged. No accuracy, matching, prediction, price, payment, or training claims were added.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`, `src/components/career-layout-shell.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai?scope=combined` returned HTTP 200.
+- Rollback: restore the preceding AI-preparation component/CSS and remove only the `/career/ai` layout-shell condition; no data or API behavior changed.
+## 2026-08-30 — Codex: interest deep-interpretation sample report
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added an interactive `심층해설 예시 보기` toggle to the completed 직업흥미 AI interpretation page. It expands a three-part sample report showing result reading, experience connection, and job-post review criteria.
+- Safety/content boundary: the panel is visibly labeled as an example and states that it is neither the current user’s result nor an actual recommendation. It uses no API call, payment, new storage, or inferred user fact.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai?scope=interest` returned HTTP 200.
+- Rollback: remove the sample state, button, sample section, and associated CSS only.
+## 2026-08-30 — Codex: AI interpretation route and standalone sample report
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: changed the career-home bottom `심층해설 확인하기` CTA to open `/career/ai?scope=interest` directly. Replaced the inline interest sample with the standalone `/career/ai/sample?scope=interest` report page, and made all `/career/ai/*` routes use the independent dark AI shell.
+- Product decision documented: the new `docs/career-ai-interpretation-flow.md` distinguishes the implemented free-result/selection/sample UI from the future authenticated material-selection, entitlement/payment, server AI run, and stored real report flow.
+- Safety/content boundary: the report remains an explicitly labeled example subject, not a user result or recommendation. No checkout, payment, external AI call, upload, or persistent data operation was introduced.
+- Files: `src/components/career-public-home.tsx`, `src/components/career-layout-shell.tsx`, `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`, `src/components/career-ai-sample-report.tsx`, `src/components/career-ai-sample-report.module.css`, `src/app/career/ai/sample/page.tsx`, `docs/career-ai-interpretation-flow.md`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career`, `/career/ai?scope=interest`, and `/career/ai/sample?scope=interest` returned HTTP 200.
+- Rollback: restore the previous CTA href and remove the sample page/component/styles; no data migration required.
+## 2026-08-30 — Codex: two-page AI interpretation result example
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: used the newly supplied Stitch reference as page **1 / 2** of the standalone interest interpretation example: a dark summary dashboard with example RIASEC distribution, interpretation starting point, evidence/response-quality boundaries, and next actions. Kept the previously built narrative report as page **2 / 2**, with links in both directions.
+- Product/documentation: extended `docs/career-ai-interpretation-flow.md` with the paid-value hypothesis (cross-assessment synthesis, user-provided evidence, uncertainty signaling, follow-up questions, and application connection) and the boundary that MOOA does not replace an clinical professional.
+- Safety/content boundary: intentionally omitted the reference’s unsupported matching percentages, top-percentile claims, user name, “career DNA”, fixed job recommendations, and time-based personality inference. Both pages are clearly labeled example data.
+- Files: `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `src/components/career-ai-sample-report.module.css`, `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-preparation.tsx`, `docs/career-ai-interpretation-flow.md`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; the AI selection page and sample pages 1/2 both returned HTTP 200.
+- Rollback: remove the overview component/CSS and restore the sample page route to the prior single report; no data or API changes were made.
+## 2026-08-30 — Codex: direct Korean type/strength/role example report
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: rewrote the page-1 example report’s abstract Korean narrative. The top now leads with an explicit example type code (`ISA`, 탐구·사회·예술), a plain-language behavioral summary, and immediately visible cards for strengths to evidence, environments to check carefully, and role areas to explore.
+- Product boundary: role areas are labeled exploration starting points, not ranked job matches; “주의할 환경” replaces a fixed weakness claim. This UI is example data only and does not infer any current user trait.
+- Documentation: updated the interpretation-flow value proposition to include concise type/strength/watch-out/role exploration before detailed application connection.
+- Files: `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `docs/career-ai-interpretation-flow.md`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai/sample?scope=interest` returned HTTP 200.
+- Rollback: restore the preceding overview component/CSS and the prior documentation bullet; no data/API changes were made.
+## 2026-08-30 — Codex: page-one light editorial report treatment
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: changed only the first AI interpretation example page from the dark dashboard treatment to a white/soft-green editorial report. Its type code, strengths, environment watch-outs, and role exploration cards remain, while the detailed second page remains dark.
+- Reason: user reported that the dense dark treatment made the newly added content look broken and requested a white first page.
+- Files: `src/components/career-ai-sample-overview.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai/sample?scope=interest` returned HTTP 200.
+- Rollback: remove the final light-theme override block from the module CSS; no behavior/data changes.
+## 2026-08-30 — Codex: dynamic RIASEC exploration type labels
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added pure `getInterestProfile` domain logic. The ordered top three RIASEC areas form one of 120 exploration codes; the leading ordered pair selects one of 30 human-readable MOOA exploration labels. The basic interest result now shows this code, label, and direct Korean one-line summary. Page-one example now displays its label and stacks strengths/watch-out/role-exploration content vertically.
+- Product boundary: these are MOOA’s own exploration labels, not a copied 16Personalities system, standardized personality types, job-fit ranking, or diagnosis. Role areas remain comparison prompts, not recommendations.
+- Files: `src/domain/career-interest.ts`, `src/domain/career-interest.test.ts`, `src/components/career-interest-result.tsx`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `docs/career-ai-interpretation-flow.md`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `npm test -- career-interest.test.ts` passed (2 tests); interest result and sample overview returned HTTP 200.
+- Rollback: remove `getInterestProfile` and its result hero usage; no stored assessment data or schema changes.
+## 2026-08-30 — Codex: compact vertical career-exploration report sections
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: removed Sparkles/AI-cross-style icons from the AI selection and both example report pages. Narrowed page-one strengths/watch-out/role content to a 760px vertical report flow. Added separate example sections for role options, industry options, a career path, and conditional learning/credential candidates.
+- Credential boundary: SQLD is shown only for a selected data/analysis path and 직업상담사 2급 only for a selected career/employment-service path; both require current official eligibility/schedule and real job-post checks. No credential is inferred as necessary from a RIASEC result.
+- Documentation: added the display policy for role/industry/path/credential exploration to `docs/career-ai-interpretation-flow.md`.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `docs/career-ai-interpretation-flow.md`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `npm test -- career-interest.test.ts` passed (2 tests); AI selection and sample pages 1/2 returned HTTP 200.
+- Rollback: remove the exploration section and final CSS overrides, restoring the prior compact sample view; no data/API changes.
+
+## 2026-08-31 — Claude: 코덱스 `feature/codex-plan` 병합 (커리어 검사/AI 리포트)
+
+- Agent/session: Claude. 사용자 요청("코덱스 워크트리에서 신규기능 추가한것만 병합").
+- Status: merged into `main`.
+- 대상: `92a8a20`(assessment profiles + AI report previews), `3a4fe96`(career login layout isolation). 코덱스 워크트리 미커밋 0건 — 진행 중인 작업을 가로채지 않았습니다.
+- 충돌 2건과 해결:
+  - `docs/agent-change-log.md` — 양쪽 모두 덧붙이기만 했으므로 **양쪽을 전부 보존**했습니다. 코덱스의 홈 오버레이 드로어 기록에는 제목이 없어 제목을 달아 살렸고, 같은 항목에 대해 두 번 적힌 제목/Rollback 줄만 한 벌로 정리했습니다. 삭제한 기록은 없습니다.
+  - `src/components/career-layout-shell.tsx` — add/add. 코덱스 것이 main 것을 **포함한 상위 버전**(로그아웃 + `/career/ai` 예외 처리 추가)이라 코덱스 판을 채택했습니다. main 판의 기능 중 빠진 것은 없습니다.
+- 제외: `docs/reference/career-scroll-captures-20260825/` 스크린샷 7장(약 35MB). 사용자 결정 — 저장소 이력에 영구히 남아 이후 모든 clone이 내려받게 되므로 소스만 받았습니다. 원본은 코덱스 워크트리에 그대로 있습니다.
+- Files: `src/app/career/**`, `src/components/career-*`(AI 샘플 개요/리포트, 저장 안내, 흥미·가치·업무성향 결과), `src/domain/career-interest.ts`(+test), `src/app/api/career-assessments/latest/route.ts`, `docs/career-ai-interpretation-flow.md`.
+- Validation: 736 tests passed (109 files), `tsc` clean, `eslint` 0 errors(기존 경고 2건 유지), `next build` 클린.
+- Rollback: `git revert -m 1 <merge commit>`. 스크린샷이 다시 필요하면 `feature/codex-plan`에서 해당 디렉터리만 체크아웃하면 됩니다.
