@@ -4172,3 +4172,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `coupon-pamphlet.tsx`(재작성), `campaign-creator.tsx`, `coupons.module.css`, `api/meensoo/campaigns/route.ts`, `coupon-code.test.ts`(+5).
 - Validation: 808 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 무료 이용권 화면이 열리지 않던 원인
+
+- Agent/session: Claude. 사용자 제보(런타임 오류 화면 제공).
+- Status: main에 적용.
+- 원인: `src/app/meensoo/rewards/page.tsx:75`가 **서버 컴포넌트인데 `<input onFocus={...}>`**를 렌더했습니다. Next.js가 `Event handlers cannot be passed to Client Component props`로 렌더 자체를 실패시킵니다. **앞서 "로그인 전이라 로그인 화면이 뜬 것"이라고 보고했던 것은 틀렸습니다** — 로그인 화면은 맞게 떴지만, 로그인한 뒤에는 이 오류로 페이지가 죽습니다.
+- Change: 링크 칸만 클라이언트 컴포넌트(`ClaimLinkCell`)로 떼어 냈습니다. 표 한 줄 때문에 페이지 전체를 클라이언트로 내리면 서버에서 하던 조회가 브라우저로 넘어갑니다. 눌러서 전체 선택되는 동작은 유지 — 링크가 길어 손으로 끌어 잡기 어렵고, 이 화면에서 하는 일의 대부분이 그 값을 복사하는 것입니다.
+- 확인: `/meensoo/rewards` HTTP 200.
+- 함께 보고: `layout.tsx:96`의 `<Script strategy="beforeInteractive">` 콘솔 경고는 **개발 모드 경고이고 이 작업과 무관**합니다. 광고 태그 위치는 의도적으로 정해진 것이라(주석에 근거 기록) 건드리지 않았습니다.
+- Files: 신규 `src/app/meensoo/rewards/claim-link-cell.tsx`; 수정 `src/app/meensoo/rewards/page.tsx`.
+- Validation: 808 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

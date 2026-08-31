@@ -3,6 +3,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { REWARD_REASON_LABEL, REWARD_STATUS_LABEL, buildClaimUrl, type RewardCreditReason, type RewardCreditStatus } from "@/domain/reward-credit";
 import styles from "../admin.module.css";
 import { kst } from "../format";
+import { ClaimLinkCell } from "./claim-link-cell";
 import { RewardIssuer } from "./reward-issuer";
 
 // Pill maps its own labels from a table these statuses are not in, so the tone
@@ -72,7 +73,7 @@ export default async function AdminRewardsPage() {
                         token cannot be regenerated for an existing credit. */}
                     <td>
                       {credit.status === "UNCLAIMED"
-                        ? <input className={styles.linkCell} readOnly value={buildClaimUrl(siteUrl, credit.claimToken)} onFocus={(event) => event.currentTarget.select()} />
+                        ? <ClaimLinkCell className={styles.linkCell} url={buildClaimUrl(siteUrl, credit.claimToken)} />
                         : <small className={styles.mono}>이미 수령됨</small>}
                     </td>
                     <td className={styles.mono}>{credit.claimedAt ? kst(credit.claimedAt) : ""}</td>
