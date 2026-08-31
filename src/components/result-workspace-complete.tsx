@@ -36,6 +36,9 @@ const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
   vague: "구체성 부족",
   revise: "수정 추천",
   fact: "확인 필요",
+  // The only label here that is a fact rather than an opinion, so it says what
+  // it is and nothing softer.
+  typo: "오탈자",
   // Not grounds for rejection — the layer of small things a reviewer looking
   // for a reason can point at. Named so it reads as optional, not as a defect.
   polish: "다듬으면 좋음",

@@ -3841,3 +3841,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 745 tests passed (+2), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - 남은 확인: 사용자가 다시 눌러 화면에 뜨는 에러 코드를 알려주면 근본 원인(원격 마이그레이션 미적용 여부 등)을 특정할 수 있습니다.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 오탈자를 별도 주석 유형으로 분리
+
+- Agent/session: Claude. 사용자 요청(A 항목 마무리).
+- Status: main에 적용. 마이그레이션 없음.
+- 배경: 오탈자는 `polish`("다듬으면 깔끔해지는 사소한 부분") 안에 섞여 있었고, polish는 **문항당 2개 제한**이라 문단 길이 불균형 같은 취향 문제와 자리를 다퉜습니다. 제출된 자소서의 맞춤법 오류는 취향 문제가 아닙니다.
+- Change: `resultOriginalAnnotationSchema.type`에 `"typo"` 추가(7번째). 기존 6개 유형은 그대로입니다.
+  - 정의: 맞춤법, 띄어쓰기, 조사 오용, 회사명·직무명 표기처럼 **맞고 틀림이 분명한** 오류.
+  - 개수 제한 없음. 찾은 만큼 전부.
+  - **오탐 방지:** 회사명·제품명·학과명·업계 용어·고유명사는 틀려 보여도 건드리지 말 것. 없는 오탈자를 지적하면 맞는 표현을 틀리게 고치게 만듭니다.
+  - 범위는 틀린 낱말 하나만. 문장 전체를 덮으면 그 문장의 진짜 문제가 가려집니다.
+  - `suggestion` 없는 typo는 금지(무엇으로 고칠지 없는 지적은 쓸모가 없습니다).
+- Files: `src/domain/result-document.ts`(enum 1개 추가), `src/server/ai/quick/prompt.ts`(정의·규칙 3줄), `src/components/result-workspace-complete.tsx`(라벨 `오탈자`), `.module.css`(밑줄 물결 표시 3줄 추가, 기존 규칙 수정 없음), `prompt.test.ts`.
+- Validation: 748 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert. 저장된 결과에 `typo`가 없으므로 되돌려도 파싱이 깨지지 않습니다.

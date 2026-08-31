@@ -25,7 +25,16 @@ export const resultOriginalAnnotationSchema = z.object({
   // "fact" marks a claim the submitted text alone cannot verify. Optional
   // `suggestion` carries the rewritten example; results saved before it
   // existed simply have none, so it must stay optional.
-  type: z.enum(["good", "delete", "vague", "revise", "fact", "polish"]),
+  /**
+   * typo는 유일하게 "맞다/틀리다"가 분명한 유형입니다.
+   *
+   * It used to fall into polish, which is capped at two per question and means
+   * "would be tidier". A misspelling in a submitted application is not a matter
+   * of tidiness and does not compete with an uneven paragraph for one of two
+   * slots — every one of them is worth naming, and naming it costs the reader
+   * no judgement.
+   */
+  type: z.enum(["good", "delete", "vague", "revise", "fact", "typo", "polish"]),
   comment: z.string().min(1),
   suggestion: z.string().min(1).optional(),
   start: z.number().int().nonnegative(),

@@ -687,3 +687,27 @@ describe("공고 요구의 출처 구분", () => {
     expect(prompt).toContain("inferred라고 해서 덜 중요하게 다루지 마세요");
   });
 });
+
+describe("오탈자 유형", () => {
+  const prompt = buildQuickAnalysisInstructions(request);
+
+  it("다듬기와 섞이지 않게 따로 정의한다", () => {
+    // polish means "would be tidier" and is capped at two per question. A
+    // misspelling is not a matter of taste and should not lose a slot to an
+    // uneven paragraph.
+    expect(prompt).toContain("맞고 틀림이 분명한 오류");
+    expect(prompt).toContain("typo는 개수를 제한하지 않습니다");
+  });
+
+  it("맞는 표현을 틀리게 고치지 못하게 막는다", () => {
+    // A false typo is worse than a missed one: it makes someone correct a word
+    // that was right. Proper nouns are where that happens.
+    expect(prompt).toContain("고유명사는 틀린 것처럼 보여도 건드리지 마세요");
+    expect(prompt).toContain("suggestion 없는 typo는 넣지 마세요");
+  });
+
+  it("문장 전체를 오탈자로 덮지 못하게 한다", () => {
+    // Marking the whole clause hides whatever the clause's real problem was.
+    expect(prompt).toContain("틀린 낱말 하나만 범위로 잡으세요");
+  });
+});

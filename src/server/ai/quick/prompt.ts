@@ -234,7 +234,9 @@ ${LENGTH_INTEGRITY_RULE}`,
     // looking for a reason to cut an applicant can find a hundred, so there is
     // no gain in handing one over. This layer has to stay visibly separate
     // from real problems or it inflates trivia into defects.
-    "originalAnnotations의 polish 유형은 '이것 때문에 떨어지지는 않지만 굳이 흠으로 잡힐 필요가 없는 것'입니다. 접속사 뒤 문장부호 흔들림, 같은 단어 반복, 문단 길이 불균형, 어색한 조사처럼 사소하지만 다듬으면 깔끔해지는 부분에만 쓰세요. 내용상 문제는 polish가 아니라 vague·revise·delete로 분류하세요. polish는 문항당 2개를 넘기지 마세요.",
+    "typo는 개수를 제한하지 않습니다. 찾은 만큼 모두 적으세요. 다만 확실한 것만 적으세요 — 회사명·제품명·학과명·업계 용어·고유명사는 틀린 것처럼 보여도 건드리지 마세요. 없는 오탈자를 지적하면 맞는 표현을 틀리게 고치게 만듭니다.",
+          "typo의 comment에는 무엇이 틀렸는지 한 줄로 적고, suggestion에는 고친 표기를 넣으세요. suggestion 없는 typo는 넣지 마세요.",
+          "originalAnnotations의 polish 유형은 '이것 때문에 떨어지지는 않지만 굳이 흠으로 잡힐 필요가 없는 것'입니다. 접속사 뒤 문장부호 흔들림, 같은 단어 반복, 문단 길이 불균형, 어색한 조사처럼 사소하지만 다듬으면 깔끔해지는 부분에만 쓰세요. 내용상 문제는 polish가 아니라 vague·revise·delete로 분류하세요. polish는 문항당 2개를 넘기지 마세요.",
 
     // Same facts, different angle. This is the move that separates a
     // consultant from a checker, and it invents nothing: if the applicant did
@@ -311,8 +313,9 @@ delete: 같은 내용이 다른 곳에 이미 있거나, 빼도 전달되는 내
 vague: 주장은 있는데 그것을 받쳐 줄 행동·상황·근거가 글 안에 없는 문구.
 revise: 담긴 내용은 살릴 만한데 표현이나 구성 때문에 전달이 약해지는 문구.
 fact: 제출한 글과 자료만으로는 사실인지 확인할 수 없는 주장.
-polish: 위 다섯에 해당하지 않으면서 다듬으면 깔끔해지는 사소한 부분.`,
-    "한 문구가 여러 유형에 해당하면 fact → delete → vague → revise → polish 순으로 앞선 것을 고르세요. good은 나머지 다섯 중 어디에도 해당하지 않는 문구에만 씁니다. 같은 원문을 두 번 분석해도 같은 유형이 나와야 합니다.",
+typo: 맞춤법, 띄어쓰기, 조사 오용, 회사명·직무명 표기처럼 맞고 틀림이 분명한 오류.
+polish: 위 여섯에 해당하지 않으면서 다듬으면 깔끔해지는 사소한 부분.`,
+    "한 문구가 여러 유형에 해당하면 fact → delete → vague → revise → polish 순으로 앞선 것을 고르세요. typo는 이 순서에서 빼고, 틀린 낱말 하나만 범위로 잡으세요. 문장 전체를 typo로 덮으면 그 문장의 진짜 문제가 가려집니다. good은 나머지 다섯 중 어디에도 해당하지 않는 문구에만 씁니다. 같은 원문을 두 번 분석해도 같은 유형이 나와야 합니다.",
     // good used to mean "not bad", so the model praised sentences it went on to
     // delete. It now means a commitment: this sentence survives.
     "good은 '나쁘지 않다'가 아니라 '고칠 필요가 없어서 최종 첨삭본에 그대로 넣을 문장'에만 주세요. 뺄 문장이라면 절대 good으로 표시하지 마세요.",
