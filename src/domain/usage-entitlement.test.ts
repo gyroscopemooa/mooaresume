@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countNonWhitespaceCharacters, createQuickCheckoutQuote, toQuickCheckoutMetadata } from "./usage-entitlement";
+import { FINAL_BASE_PRICE_KRW, PRO_BASE_PRICE_KRW, PRO_EXTRA_BLOCK_CHARS, PRO_EXTRA_BLOCK_PRICE_KRW, PRO_INCLUDED_LIMIT_CHARS, countNonWhitespaceCharacters, createFinalCheckoutQuote, createProCheckoutQuote, createQuickCheckoutQuote, toQuickCheckoutMetadata } from "./usage-entitlement";
 
 describe("QUICK usage entitlement", () => {
   it("counts all question text without whitespace", () => {
@@ -36,3 +36,44 @@ describe("QUICK usage entitlement", () => {
   });
 });
 
+
+describe("PRO·FINAL 초과분 과금", () => {
+  it("포함 범위 안에서는 기본가만 받는다", () => {
+    const quote = createProCheckoutQuote(PRO_INCLUDED_LIMIT_CHARS);
+    expect(quote.extraBlocks).toBe(0);
+    expect(quote.totalPriceKrw).toBe(PRO_BASE_PRICE_KRW);
+    expect(quote.allowedCharacters).toBe(PRO_INCLUDED_LIMIT_CHARS);
+  });
+
+  it("한 글자만 넘어도 한 블록을 판다", () => {
+    // Selling by the character would price a rounding error; selling by the
+    // block is what QUICK already does.
+    const quote = createProCheckoutQuote(PRO_INCLUDED_LIMIT_CHARS + 1);
+    expect(quote.extraBlocks).toBe(1);
+    expect(quote.extraPriceKrw).toBe(PRO_EXTRA_BLOCK_PRICE_KRW);
+    expect(quote.allowedCharacters).toBe(PRO_INCLUDED_LIMIT_CHARS + PRO_EXTRA_BLOCK_CHARS);
+  });
+
+  it("허용 글자 수가 실제 분량을 덮는다", () => {
+    // This is the whole point: the database compares allowed_characters against
+    // the snapshot, and a quote that does not cover it takes the payment and
+    // then fails the run with ACTIVE_ENTITLEMENT_NOT_FOUND.
+    for (const total of [30_001, 35_000, 40_000, 55_555]) {
+      expect(createProCheckoutQuote(total).allowedCharacters).toBeGreaterThanOrEqual(total);
+      expect(createFinalCheckoutQuote(total).allowedCharacters).toBeGreaterThanOrEqual(total);
+    }
+  });
+
+  it("이미 낸 단가보다 비싸지 않다", () => {
+    // Someone who bought the tier and needs a little more room should not pay
+    // above the rate they already paid.
+    const included = PRO_BASE_PRICE_KRW / PRO_INCLUDED_LIMIT_CHARS;
+    expect(PRO_EXTRA_BLOCK_PRICE_KRW / PRO_EXTRA_BLOCK_CHARS).toBeLessThan(included);
+  });
+
+  it("FINAL도 같은 블록을 쓴다", () => {
+    const quote = createFinalCheckoutQuote(PRO_INCLUDED_LIMIT_CHARS + 12_000);
+    expect(quote.extraBlocks).toBe(2);
+    expect(quote.totalPriceKrw).toBe(FINAL_BASE_PRICE_KRW + PRO_EXTRA_BLOCK_PRICE_KRW * 2);
+  });
+});

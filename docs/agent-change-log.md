@@ -4003,3 +4003,17 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/simple-intake.tsx`, `.module.css`, `pro-input-page.tsx`, `simple-intake-mapping.test.ts`.
 - Validation: 768 tests passed (+1), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: PRO·FINAL 초과 글자 수 과금
+
+- Agent/session: Claude. 사용자 결정("1번 ㄱㄱ 초과과금").
+- Status: main에 적용. 마이그레이션 없음.
+- 문제: PRO·FINAL은 30,000자를 넘으면 **결제는 되고 분석은 `ACTIVE_ENTITLEMENT_NOT_FOUND`로 실패**했습니다(DB가 `allowed_characters >= snapshot_characters`를 봅니다). 돈은 나가고 결과는 없으며, 오류 문구로는 원인을 알 수 없었습니다. QUICK은 이미 초과 블록을 팔고 있었는데 PRO에만 그 문이 없었습니다.
+- Change: `PRO_EXTRA_BLOCK_CHARS = 10,000`, `PRO_EXTRA_BLOCK_PRICE_KRW = 3,900`. `createProCheckoutQuote`·`createFinalCheckoutQuote`가 QUICK과 같은 방식으로 초과 블록을 계산하고 `allowedCharacters`를 늘립니다.
+- **가격 근거(사용자 확인 필요):** PRO 포함 단가는 12,900 / 30,000 = 자당 0.43원. 10,000자면 4,300원이 비례가이지만, 이미 그 등급을 결제한 사람이 조금 더 넣는 것이므로 그보다 낮은 **3,900원**으로 잡았습니다. QUICK의 7,000자당 2,900원(자당 0.414원)과도 나란합니다. 다른 값을 원하시면 상수 두 개만 바꾸면 됩니다.
+- 결제 반영 확인: `polar-checkout.ts:50`이 `priceAmount: input.quote.totalPriceKrw`를 씁니다. 즉 견적을 고치면 실제 청구액이 따라갑니다(표시만 바뀌는 것이 아님).
+- 입력 화면: 한도를 넘으면 `· 초과분은 결제 시 추가됩니다`를 붙입니다. 막히는 것이 아니라 값이 붙는다는 뜻이므로, 경고가 아니라 안내로 씁니다.
+- Files: `src/domain/usage-entitlement.ts`(+test 5건), `src/components/simple-intake.tsx`.
+- Validation: 773 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- 테스트가 지키는 것: `allowedCharacters >= totalCharacters`(견적이 실제 분량을 덮지 못하면 결제 후 실패가 다시 생깁니다), 초과 단가가 포함 단가보다 낮을 것.
+- Rollback: 이 커밋 revert.

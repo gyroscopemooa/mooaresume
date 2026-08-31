@@ -219,6 +219,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
             아니라 참고자료 예산으로 따로 잘립니다. */}
         <span data-over={letterCharacters > limitCharacters ? "true" : undefined}>
           공백 제외 {letterCharacters.toLocaleString()} / {limitCharacters.toLocaleString()}자
+          {letterCharacters > limitCharacters && " · 초과분은 결제 시 추가됩니다"}
           {files.length > 0 && ` · 파일 ${files.length}개 ${formatBytes(usedBytes)}`}
         </span>
         <label className={styles.attach}>

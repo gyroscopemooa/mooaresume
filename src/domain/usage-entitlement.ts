@@ -3,6 +3,20 @@ import { z } from "zod";
 export const QUICK_BASE_PRICE_KRW = 5_900;
 export const PRO_BASE_PRICE_KRW = 12_900;
 export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
+/**
+ * PRO·FINAL 초과분 과금.
+ *
+ * Without this, a letter over the included ceiling took the payment and then
+ * failed inside the database with ACTIVE_ENTITLEMENT_NOT_FOUND — paid, and no
+ * result, for a reason the screen could not explain. QUICK already sold extra
+ * blocks; PRO simply had not been given the same door.
+ *
+ * 3,900원 per 10,000자 sits just under PRO's own included rate (12,900 / 30,000
+ * = 0.43원 per character). Someone who has already bought the tier and needs a
+ * little more room should not pay above the rate they already paid.
+ */
+export const PRO_EXTRA_BLOCK_CHARS = 10_000;
+export const PRO_EXTRA_BLOCK_PRICE_KRW = 3_900;
 // FINAL is PRO's scope plus its own verification pass, so it buys the same
 // character budget at its own price. A separate limit would mean a customer who
 // upgraded mid-application could suddenly fit less than they already had.
@@ -78,34 +92,42 @@ export function createQuickCheckoutQuote(totalCharacters: number): CheckoutQuote
 
 export function createProCheckoutQuote(totalCharacters: number): CheckoutQuote {
   const normalizedTotal = Math.max(0, Math.floor(totalCharacters));
+  const overIncluded = Math.max(0, normalizedTotal - PRO_INCLUDED_LIMIT_CHARS);
+  const extraBlocks = Math.ceil(overIncluded / PRO_EXTRA_BLOCK_CHARS);
+  const extraCharacters = extraBlocks * PRO_EXTRA_BLOCK_CHARS;
+  const extraPriceKrw = extraBlocks * PRO_EXTRA_BLOCK_PRICE_KRW;
   return checkoutQuoteSchema.parse({
     productTier: "PRO",
     totalCharacters: normalizedTotal,
     baseCharacters: PRO_INCLUDED_LIMIT_CHARS,
     includedCharacters: PRO_INCLUDED_LIMIT_CHARS,
-    extraBlocks: 0,
-    extraCharacters: 0,
-    allowedCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    extraBlocks,
+    extraCharacters,
+    allowedCharacters: PRO_INCLUDED_LIMIT_CHARS + extraCharacters,
     basePriceKrw: PRO_BASE_PRICE_KRW,
-    extraPriceKrw: 0,
-    totalPriceKrw: PRO_BASE_PRICE_KRW,
-    needsScopeReview: normalizedTotal > PRO_INCLUDED_LIMIT_CHARS,
+    extraPriceKrw,
+    totalPriceKrw: PRO_BASE_PRICE_KRW + extraPriceKrw,
+    needsScopeReview: extraBlocks > 0,
   });
 }
 export function createFinalCheckoutQuote(totalCharacters: number): CheckoutQuote {
   const normalizedTotal = Math.max(0, Math.floor(totalCharacters));
+  const overIncluded = Math.max(0, normalizedTotal - PRO_INCLUDED_LIMIT_CHARS);
+  const extraBlocks = Math.ceil(overIncluded / PRO_EXTRA_BLOCK_CHARS);
+  const extraCharacters = extraBlocks * PRO_EXTRA_BLOCK_CHARS;
+  const extraPriceKrw = extraBlocks * PRO_EXTRA_BLOCK_PRICE_KRW;
   return checkoutQuoteSchema.parse({
     productTier: "FINAL",
     totalCharacters: normalizedTotal,
     baseCharacters: PRO_INCLUDED_LIMIT_CHARS,
     includedCharacters: PRO_INCLUDED_LIMIT_CHARS,
-    extraBlocks: 0,
-    extraCharacters: 0,
-    allowedCharacters: PRO_INCLUDED_LIMIT_CHARS,
+    extraBlocks,
+    extraCharacters,
+    allowedCharacters: PRO_INCLUDED_LIMIT_CHARS + extraCharacters,
     basePriceKrw: FINAL_BASE_PRICE_KRW,
-    extraPriceKrw: 0,
-    totalPriceKrw: FINAL_BASE_PRICE_KRW,
-    needsScopeReview: normalizedTotal > PRO_INCLUDED_LIMIT_CHARS,
+    extraPriceKrw,
+    totalPriceKrw: FINAL_BASE_PRICE_KRW + extraPriceKrw,
+    needsScopeReview: extraBlocks > 0,
   });
 }
 
