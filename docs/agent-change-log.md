@@ -2032,3 +2032,245 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `docs/career-ai-interpretation-flow.md`.
 - Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `npm test -- career-interest.test.ts` passed (2 tests); AI selection and sample pages 1/2 returned HTTP 200.
 - Rollback: remove the exploration section and final CSS overrides, restoring the prior compact sample view; no data/API changes.
+## 2026-08-31 — Codex: account-backed AI interpretation eligibility
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Issue: the AI interpretation screen used only `sessionStorage` to determine completed assessments. After a local development restart or a new browser session, a logged-in user could therefore see an incorrect “start the assessment” prompt despite an account-saved record.
+- Change: after authentication, the AI preparation screen now loads the user’s latest saved assessment records from the existing authenticated endpoint and combines them with the current browser-session answers. It waits for that check before rendering the eligibility state. An individual scope needs only that individual completed record; combined scope still correctly requires all three.
+- Storage UX: clarified the result-page message when the existing assessment database migration is not available versus an ordinary save failure. No migration was applied and no account data was changed.
+- Payment boundary: this remains a preparation/selection page. Checkout, payment entitlement, and external AI calls are still deliberately not implemented; the disabled state continues to disclose that clearly.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`, `src/components/career-assessment-storage-notice.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed; `npm test -- career-interest.test.ts` passed (2 tests); `/career/ai?scope=interest` returned HTTP 200.
+- Rollback: restore the three listed component files; no schema, stored data, or remote service changes are involved.
+
+## 2026-08-31 — Codex: career-home deep-interpretation target correction
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: changed the generic bottom `심층해설 확인하기` button on the career home from the accidentally hardcoded 직업흥미 scope to the requested 직업가치 (`work_values`) scope. Individual result pages already route to their own matching scope.
+- Files: `src/components/career-public-home.tsx`.
+- Validation: inspected all career AI scope links; static route target has no API/data impact.
+- Rollback: change that single href back to the previous interest scope.
+
+## 2026-08-31 — Codex: sample deep-interpretation reports for all scopes
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: generalized the former RIASEC-only AI report example into four explicit example scopes: 직업흥미, 업무성향, 직업가치 우선순위, and 세 검사 종합. Each has its own example result axes, short type label, strength framing, environment checks, role/industry exploration, application checks, and matching two-page report links.
+- UX: every available individual/combined AI preparation page now exposes `심층해설 예시 보기` and retains its active scope through both example pages. These are static illustrative records only; they neither use the current user result nor make a job-fit or hiring prediction.
+- Files: `src/domain/career-ai-sample.ts`, `src/components/career-ai-preparation.tsx`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `src/app/career/ai/sample/page.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; example page requests for `interest`, `work_style`, `work_values`, and `combined` all returned HTTP 200.
+- Rollback: restore the listed sample components/route and remove `career-ai-sample.ts`; no account, API, schema, or payment changes are involved.
+
+## 2026-08-31 — Codex: AI selection-page sample report gallery
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added a four-card `REPORT EXAMPLES` gallery inside the completed AI preparation/selection screen. It links directly to the example reports for 직업흥미, 업무성향, 직업가치 우선순위, and 세 검사 종합, instead of only exposing the current scope’s example through one button.
+- Boundary: cards use clearly labeled static example data. They do not reveal unfinished assessments, alter the current account record, or provide a user-specific AI report.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`, `src/domain/career-ai-sample.ts`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai?scope=interest` returned HTTP 200.
+- Rollback: remove `SampleReportGallery`, its CSS rules, and the sample-scope export; no data/API changes are involved.
+
+## 2026-08-31 — Codex: RIASEC character marquee on interest introduction
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added the user-supplied six RIASEC character images to `public/images/career-characters/` and placed an automatically scrolling character-preview marquee below the `/career/interest` introduction. It repeats seamlessly, pauses on hover, has a reduced-motion fallback, and uses a smaller mobile layout.
+- Content boundary: the cards deliberately crop to the character artwork and label only its R/I/A/S/E/C area. The source images’ embedded recommended-job text is not surfaced as product content. The section explicitly calls itself a preview; actual results remain determined only by completed responses.
+- Files: `public/images/career-characters/riasec-{r,i,a,s,e,c}.png`, `src/components/career-interest-assessment.tsx`, `src/components/work-style-assessment.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed; `/career/interest` returned HTTP 200.
+- Rollback: remove the character showcase JSX/CSS and the six listed image assets; no data/API behavior is involved.
+
+## 2026-08-31 — Codex: enlarged contained RIASEC marquee cards
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: constrained the interest-page character marquee to the existing introduction content width instead of the full viewport. Enlarged desktop cards from 126×166 to 200×262 so roughly three cards are visible at once, removed the overlay label that covered image content, and retained a smaller responsive mobile version.
+- Reason: user reported that the previous full-width treatment made the supplied character artwork and its embedded readable text too small.
+- Files: `src/components/career-interest-assessment.tsx`, `src/components/work-style-assessment.module.css`.
+- Validation: `npm run typecheck` passed; `/career/interest` returned HTTP 200.
+- Rollback: restore the prior character showcase CSS/markup; no data/API changes are involved.
+
+## 2026-08-31 — Codex: preserve source quality in character marquee
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: configured the supplied PNG character artwork in the interest-page marquee to bypass Next.js image optimization and use source-quality output, while retaining the 200×262 contained card layout.
+- Reason: user reported visibly blurred small embedded text in the carousel.
+- Files: `src/components/career-interest-assessment.tsx`.
+- Validation: `npm run typecheck` passed; `/career/interest` returned HTTP 200.
+- Rollback: remove `quality={100}` and `unoptimized` from the six preview images.
+
+## 2026-08-31 — Codex: 150% RIASEC marquee card scale
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: increased desktop RIASEC character-marquee cards from 200×262 to 300×393 (150%), showing about two cards plus the next edge within the contained introduction width. Mobile cards now use 190×249.
+- Reason: user chose the 150% option to make the supplied image text easier to read while preserving a scrolling-gallery feel.
+- Files: `src/components/career-interest-assessment.tsx`, `src/components/work-style-assessment.module.css`.
+- Validation: `npm run typecheck` passed; `/career/interest` returned HTTP 200.
+- Rollback: restore the former 200×262 desktop and 154×202 mobile dimensions.
+
+## 2026-08-31 — Codex: RIASEC character-card layout and sharing prototype
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: copied the 10 newly supplied RIASEC two-letter character artworks into `public/images/career-character-examples/` and added an interest-report-only interactive character-card test section to `/career/ai/sample?scope=interest`. It includes ten selectable example cards, a toggle to compare the requested `결과 옆 카드형` and `상단 독립형` layouts, and card-plus-explanation content.
+- Sharing prototype: added browser-native share, copy-link, and mailto email controls for the selected static example URL. Native mobile sharing can expose installed apps such as KakaoTalk. Direct KakaoTalk template sending is intentionally not implemented because it requires a Kakao developer application/key. No public user-result link or user data is created.
+- Content/privacy boundary: this is visibly an example-catalog design test; the supplied image’s embedded job/fit claims are not used as a personalized result. A real result share flow must require explicit user opt-in and issue a revocable, unguessable public token.
+- Files: `public/images/career-character-examples/{ri,ra,rs,re,rc,ar,ir,er,sr,cr}.png`, `src/components/career-interest-character-preview.tsx`, `src/components/career-interest-character-preview.module.css`, `src/components/career-ai-sample-overview.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai/sample?scope=interest` returned HTTP 200.
+- Rollback: remove the preview component/CSS, its conditional overview import, and the ten example image assets; no account/API/schema changes are involved.
+
+## 2026-08-31 — Codex: independent RIASEC base-card and support-axis result flow
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: replaced the rejected in-report character layout test with an independent `/career/character?code=XYZ` result page. The domain now treats the ordered first two RIASEC letters as the 30-card base identity/name and the third as a support axis that changes only the descriptor and explanatory copy. This derives all 120 ordered three-letter explanations without requiring 120 images.
+- UI: the interest sample result links to its independent example card, and the actual interest result links to its own card using the calculated three-letter code. The page displays the three ranks, base card code/name, support-axis explanation, and native share/copy/email controls.
+- Asset behavior: cards load by their two-letter filename (`is.png`, `si.png`, etc.) from the character-example asset folder. Until the remaining 20 artworks are supplied, a deliberately labeled placeholder is shown for missing card images rather than presenting a mismatched character.
+- Boundary: two-letter card labels and third-axis descriptions are MOOA career-exploration presentation language, not official standardized type labels or a job-fit verdict. Direct public sharing remains a local UI prototype; no user data is published.
+- Files: `src/domain/career-interest.ts`, `src/app/career/character/page.tsx`, `src/components/career-character-result.tsx`, `src/components/career-character-result.module.css`, `src/components/career-interest-result.tsx`, `src/components/career-ai-sample-overview.tsx`, corresponding existing CSS modules.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/character?code=isa&example=1` and `/career/interest/result` returned HTTP 200.
+- Rollback: remove the independent character route/component and restore the prior result links; no schema, stored assessment, or remote sharing state changes are involved.
+
+## 2026-08-31 — Codex: three independent RIASEC result screens
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: turned the interest result into a clear three-screen path: **01 기본 결과**, **02 캐릭터 해설**, and **03 심층해설 예시**. The first page now presents only result essentials plus the three navigation choices. The new character route is a complete report with its base card, ordered three-axis reading, evidence-oriented strengths, environment/role exploration, and browser-native share/copy/email controls.
+- RIASEC model: all valid three-letter results remain ordered codes (for example `ISR`). The first two letters select the ordered two-letter base card, image, and MOOA exploration label; the third letter is an explanatory support axis. That yields 120 narrative combinations without falsely requiring 120 separate images. `IS` and `SI` remain distinct base cards. This is presentation for career self-exploration, not an official standardized type, diagnostic, or job-fit conclusion.
+- Files: `src/domain/career-interest.ts`, `src/components/career-interest-result.tsx`, `src/components/work-style-assessment.module.css`, `src/components/career-character-result.tsx`, `src/components/career-character-result.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/interest/result`, `/career/character?code=isr`, and `/career/ai/sample?scope=interest` each returned HTTP 200.
+- Rollback: remove the result navigation and restore the preceding character route component/domain fields; no schema, stored assessment, or remote sharing state changes are involved.
+
+## 2026-08-31 — Codex: selectable completed AI-report design variants
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: corrected the prior interpretation of “1·2·3.” The interest AI sample landing page now presents **디자인 1**, **디자인 2**, and **디자인 3** as explicit choices. Each opens a separate full example report using the same ISA example data, so the user can compare layout rather than content.
+- Variants: design 1 is the existing editorial summary/report flow; design 2 is the document-style detailed report; design 3 is a new dashboard-brief layout with axis signals, interpretation, experience prompts, role/industry exploration, environment caveat, and the actual-report next step. Existing `page=2` links remain compatible by resolving to design 2.
+- Files: `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; all three interest sample design URLs returned HTTP 200.
+- Rollback: remove the design query routing, picker markup/CSS, and design-three files; the original sample overview/report remain available.
+
+## 2026-08-31 — Codex: character-image-led sample report variants
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: revised the three AI sample design pages so they are image-card-led complete report pages rather than text-layout comparisons. Each interest design now includes an ISA example character visual plus filled interpretation, axis context, experience prompts, exploration, and caveats.
+- Asset constraint: the supplied two-letter card set does not currently include `IS`, so the ISA example uses the supplied broad 탐구형(I) source artwork as a temporary visual rather than mislabeling another two-letter character card as `IS`. When `public/images/career-character-examples/is.png` is supplied, replace this temporary visual with the exact base-card asset.
+- Sharing: no public sharing was added in these sample pages. When enabled later, the default should share only the selected generated character/report card via an explicit user action and a revocable public token, not the user’s full assessment history.
+- Files: `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `src/components/career-ai-sample-report.module.css`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; design 1, 2, and 3 interest URLs returned HTTP 200.
+
+## 2026-08-31 — Codex: result-form visual reports without sample chrome
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: revised all three interest AI-report designs to read as actual output screens, removing public-facing `EXAMPLE`, `예시`, and producer-explanation phrasing. The pages now surface result, interpretation, experience prompts, role/industry exploration, and boundaries directly.
+- Visual: changed the supplied character artwork from cover/crop rendering to contained rendering in every design so the whole image card is visible. The temporary ISA visual remains the supplied broad I artwork until the exact `is.png` base-card asset is received.
+- Sharing: deliberately remains absent from these UI prototypes. A future share action should publish only an explicitly selected card/report through a revocable public token, never the full private result history.
+- Files: `src/domain/career-ai-sample.ts`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `src/components/career-ai-sample-report.module.css`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; each interest design URL returned HTTP 200.
+
+## 2026-08-31 — Codex: ISA interpretation copy and design-two simplification
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: removed the character card from design 2 so it reads as a focused, document-style interpretation report. Replaced design 1’s axis-listing sentence and design 3’s producer-facing “해설 방식” block with concrete ISA interpretation: deep problem understanding (I), explanation/collaboration (S), and expression/improvement (A).
+- Content: the interest sample’s opening copy now behaves like an actual result narrative rather than describing how a future report would work.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; all three interest design URLs returned HTTP 200.
+
+## 2026-08-31 — Codex: unified final AI deep-interpretation result page
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: removed the public design-1/2/3 selection experience and the separate “character result card” choice from the AI sample route. `/career/ai/sample?scope=interest` now opens one unified final report: character visual, three-axis interpretation, strengths, evidence prompts, roles/industries, environment caution, and next step in one page. Historical design query parameters resolve to that same final page rather than exposing variants.
+- Files: `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-design-three.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with only the pre-existing unused `INTEREST_TEST_VERSION` warning; the unified route and former design URLs returned HTTP 200.
+
+## 2026-08-31 — Codex: 30-card RIASEC base-card review route
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: restored the former detailed report at `design=2` and implemented `design=1` as a separate, card-only review screen. It shows the actual ordered 3-letter result, the ordered 2-letter base code/name and image, the base-type core explanation, the third-axis support explanation, and a final combined interpretation. Previous/next plus a 30-card picker lets the user inspect every ordered pair without mixing it into the full report UI.
+- Data: added `RIASEC_PAIR_PROFILES` (30 generated pair profiles) and `getRiasecPairProfile`, derived from the existing `RIASEC_BASE_PROFILE_NAMES` and existing dimension/strength data. Third-axis content remains in existing `SUPPORT_COPY`; no 120 images or main type names were added.
+- Asset behavior: missing pair-image files receive a clearly labeled placeholder rather than another pair’s image. The existing supplied pairs load normally.
+- Files: `src/domain/career-interest.ts`, `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-card-review.tsx`, `src/components/career-ai-sample-card-review.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with only the pre-existing unused `INTEREST_TEST_VERSION` warning; `IS`/`RI` card-review URLs and the restored design-2 route returned HTTP 200.
+
+## 2026-08-31 — Codex: Stitch modern career insight report replacement
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Source reference: user-supplied `stitch_modern_career_type_insight (1).zip`, including `DESIGN.md` and `code.html`.
+- Change: replaced the public `/career/ai/sample?scope=interest` view with a single Stitch-inspired white, indigo/violet premium report: sticky app bar; two-column result/character hero; compact strength/role/job blocks; three insight cards; full deep interpretation; coaching summaries and detailed coaching sections; work-environment section; image download/native share/link-copy controls; responsive one-column mobile layout.
+- Data boundary: retains existing `CareerAiSample` and RIASEC three-axis data; no external AI call is made. The static output is a UI implementation of the intended result format and does not claim a live model generated it.
+- Files: `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; the target local URL returned HTTP 200.
+
+## 2026-09-01 — Codex: RIASEC 카드 전체 매핑 및 이미지 공유
+
+- 상태: 완료
+- 변경 파일: `public/images/career-character-examples/*.png`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`
+- 이유: 실제 3글자 결과의 앞 두 글자 조합에 맞는 카드가 노출되도록 하고, 예전 단일 이미지의 검은 모서리/여백을 제거하며 카드 파일 저장·공유를 제공한다.
+- 내용: 사용자 제공 20장을 추가해 30개 순서형 조합(RI/IR 등)을 완성했다. 결과 화면은 `profile.imagePath`를 사용하며, 카드 비주얼은 오른쪽 캐릭터 영역을 자연스럽게 크롭해 모서리 아티팩트가 보이지 않는다. 공유는 지원 기기에서 PNG 파일을 먼저 공유하고, 불가하면 결과 링크를 공유·복사한다.
+- 검증: `npm run typecheck`, `npm run lint` 통과. 로컬 서버(3001)는 현재 실행 중이지 않아 HTTP 화면 확인은 보류.
+- 롤백: 이 작업 이전 Git 상태 또는 해당 컴포넌트/CSS의 직전 변경사항
+## 2026-09-01 — Codex: 카드 비율 보존 표시
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.module.css`
+- 이유: 이미지 모서리를 숨기려던 `cover` 방식이 원본 카드의 위·아래·좌우 내용을 자르는 문제가 확인됐다.
+- 내용: 1122×1402 원본 비율을 유지하는 `contain` 표시로 변경했다. 둥근 컨테이너와 아주 미세한 확대만 유지해 모서리 아티팩트는 가리고 카드 전체는 보존한다.
+- 검증: `npm run lint` 통과 (기존 미사용 상수 경고 1건 유지).
+- 롤백: 직전 `object-fit: cover` CSS 변경
+## 2026-09-01 — Codex: RIASEC 대표명·3글자 결과명 통일
+
+- 상태: 완료
+- 변경 파일: `src/domain/career-interest.ts`, `src/components/career-ai-sample-design-three.tsx`
+- 이유: IS 카드 이미지의 ‘통찰형 조력자’와 웹 결과의 ‘지식 연결가’가 달라 실제 카드와 결과가 다른 유형처럼 보였다.
+- 내용: IS 기본 카드명을 ‘통찰형 조력자’로 통일했다. 3글자 결과는 `ISA · 통찰형 조력자`, 동적 부제는 `표현·창의성을 더하는 통찰형 조력자`, 기준 표기는 `기본 카드 IS · 통찰형 조력자`로 보여 2글자 카드와 3번째 보조축의 역할을 구분한다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: IS 기본 카드명 ‘지식 연결가’ 및 이전 제목 표기
+## 2026-09-01 — Codex: AI 심층해설 결과 확인 로딩 화면
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`
+- 이유: 기존 로딩 상태가 일반 AI 해설 페이지의 큰 제목을 그대로 사용하며 ‘계정에 보관한 결과’를 단정해 비로그인·저장 전 맥락에서 어색했다.
+- 내용: 헤더·푸터 없이 `검사 결과를 불러오는 중이에요.`를 보여주는 독립 로딩 패널과 회전 아이콘·스켈레톤을 추가했다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 기존 `AiFrame` 기반 로딩 분기
+## 2026-09-01 — Codex: 무아 유형명과 카드 제목 분리
+
+- 상태: 완료
+- 변경 파일: `src/domain/career-interest.ts`, `src/components/career-ai-sample-design-three.tsx`
+- 이유: 무아 고유 유형명 ‘지식 연결가’를 유지하면서도, 제공된 IS 이미지 카드 제목 ‘통찰형 조력자’와 불일치하지 않게 표시해야 했다.
+- 내용: ISA 결과 화면의 대표명은 ‘지식 연결가’로 복원했다. 카드의 시각 제목은 별도 `cardTitle`로 두어 `기본 카드 IS · 통찰형 조력자`로 표시하며, 3번째 A축의 동적 부제는 유지한다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: `baseName` 단일 이름 사용 방식
+## 2026-09-01 — Codex: RIASEC 결과·기본 카드·보조축 표기 분리
+
+- 상태: 완료
+- 변경 파일: `src/domain/career-interest.ts`, `src/components/career-ai-sample-design-three.tsx`
+- 이유: ISR 결과에서 보조축 문장에 IS 카드명을 다시 붙여, `지식 연결가`와 `통찰형 조력자`의 역할이 혼동됐다.
+- 내용: 결과 대표명은 `ISR · 지식 연결가`, 기본 카드는 `IS · 통찰형 조력자`, 세 번째 R은 `R 보조 성향 · 현장 검증을 더하는`으로 명확히 분리했다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 보조축 부제에 카드명을 덧붙이던 방식
+## 2026-09-01 — Codex: RIASEC 결과명·카드 부제 위치 조정
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`
+- 이유: 무아 결과명 ‘지식 연결가’는 ISR 코드 옆에, IS 카드명 ‘통찰형 조력자’는 바로 아래 부제로 보여야 한다는 화면 계층 요구를 반영했다.
+- 내용: 결과 줄을 `ISR · 지식 연결가`로, 부제를 `IS · 통찰형 조력자`로 재배치했다. 중복되는 기본 카드 안내는 제거하고 3축 조합만 보인다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 결과명과 카드명을 각각 세로 줄에 두던 방식
+## 2026-09-01 — Codex: RIASEC 결과·부제 타이포그래피 통일
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.module.css`
+- 이유: `ISR · 지식 연결가`와 `IS · 통찰형 조력자`가 재배치 뒤 크기·굵기·자간의 위계가 기존 카드 디자인과 어울리지 않았다.
+- 내용: 결과 코드와 무아 유형명을 한 제목 줄로 보이도록 비율·굵기·자간을 맞췄고, IS 카드명은 더 작고 선명한 부제 단계로 조정했다.
+- 검증: `npm run lint` 통과 (기존 미사용 상수 경고 1건 유지).
+- 롤백: 직전 제목 타이포그래피 CSS
+## 2026-09-01 — Codex: IS 카드 보라색 결과 테마
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`
+- 이유: IS 카드 이미지의 보라색과 ISR 등 IS 기반 결과 화면의 기존 파란색이 맞지 않았다.
+- 내용: 기본 카드 코드가 IS인 결과에만 보라색 CSS 테마를 적용했다. 결과 코드·무아 유형명·보조성향·핵심 정보 아이콘이 카드와 같은 보라 계열로 바뀌며, 다른 카드 결과는 기존 색을 유지한다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 카드 코드별 색상 테마 분기 이전 CSS
+## 2026-09-01 — Codex: 취업/진로 고민 익명게시판 기초 라운지
+
+- 상태: 완료
+- 변경 파일: `src/app/community/page.tsx`, `src/components/community-lounge.tsx`, `src/components/community-lounge.module.css`, `src/domain/community-lounge.ts`
+- 이유: 게시판 기능 자체보다 취업·진로 고민 유입을 커리어 검사와 연결하는, 교체 가능한 로컬 라운지 기초 화면이 필요했다.
+- 내용: `/community`에 `취업/진로 고민 익명게시판`을 추가했다. 주제 선택형 예시 피드, 개인정보 보호 안내, 직업흥미·커리어 검사 연결, 익명 글쓰기 준비 영역을 구현했다. 실제 글쓰기·댓글·저장·반응 수치는 아직 만들지 않았으며, 데이터와 UI/CSS를 분리해 다음 디자인 또는 DB 구현에서 교체할 수 있게 했다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 위 신규 파일 삭제 또는 이번 작업 전 Git 상태

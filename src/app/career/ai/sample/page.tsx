@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { CareerAiSampleOverview } from "@/components/career-ai-sample-overview";
-import { CareerAiSampleReport } from "@/components/career-ai-sample-report";
+import { CareerAiSampleDesignThree } from "@/components/career-ai-sample-design-three";
+import { getCareerAiSample } from "@/domain/career-ai-sample";
 
-export const metadata: Metadata = { title: "AI 심층해설 예시 | MOOA Resume", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "AI 심층해설 결과 | MOOA Resume", robots: { index: false, follow: false } };
 
-export default async function CareerAiSamplePage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-  const { page } = await searchParams;
-  return page === "2" ? <CareerAiSampleReport /> : <CareerAiSampleOverview />;
+export default async function CareerAiSamplePage({ searchParams }: { searchParams: Promise<{ scope?: string }> }) {
+  const { scope } = await searchParams;
+  return <CareerAiSampleDesignThree scope={getCareerAiSample(scope).scope} />;
 }
