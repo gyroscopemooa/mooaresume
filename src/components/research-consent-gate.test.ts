@@ -108,17 +108,17 @@ describe("분석이 시작된 뒤에는 다시 묻지 않는다", () => {
   const handoff = readFileSync("src/components/application-case-handoff.tsx", "utf8");
   const progress = readFileSync("src/components/quick-checkout-return.tsx", "utf8");
 
-  it("고른 답을 기록으로만 보여준다", () => {
+  it("아무것도 남기지 않는다", () => {
     // Pressing it mid-run changed nothing about the run, which is exactly what
-    // made it read as though it might.
-    expect(source).toContain("if (locked) {");
-    expect(source).toContain("styles.settled");
+    // made it read as though it might. Restating the settled answer instead was
+    // one more line to read for no decision.
+    expect(source).toContain("if (locked) return null;");
   });
 
-  it("철회할 곳을 같이 알려준다", () => {
-    // Consent that cannot be taken back is not consent, so locking the control
-    // here has to name where it can still be changed.
-    expect(source).toContain("결과 화면에서 언제든 바꾸실 수 있습니다");
+  it("철회 경로는 결과 화면에 남아 있다", () => {
+    // The requirement is that consent can be withdrawn, not that every screen
+    // repeats that it can.
+    expect(readFileSync("src/components/result-workspace-complete.tsx", "utf8")).toContain("<ResearchConsent />");
   });
 
   it("진행 중에는 결제 버튼도 잠근다", () => {

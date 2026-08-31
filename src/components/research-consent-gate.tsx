@@ -124,19 +124,12 @@ export function ResearchConsentGate({
 
   // 진행 중인 분석 위에 다시 물을 것이 없습니다.
   //
-  // The control stayed live while the run was going, and pressing it changed
-  // nothing about that run — which is precisely what made it look as though it
-  // might. Withdrawing is still one click on the result screen, so nothing is
-  // taken away by saying this part is settled.
-  if (locked) {
-    if (choice === null) return null;
-    return <section className={styles.gate}>
-      <p className={styles.settled}>
-        <Check/> <b>{choice ? "데이터 활용에 동의하셨습니다." : "데이터를 활용하지 않습니다."}</b>
-        결과 화면에서 언제든 바꾸실 수 있습니다.
-      </p>
-    </section>;
-  }
+  // Nothing here needs saying twice. The requirement is that consent can be
+  // withdrawn, not that every screen repeats that it can — and withdrawing
+  // lives on the result screen's 최종 첨삭본 tab, where it stays whether or not
+  // this line exists. Restating a settled answer above a running analysis is
+  // just another thing to read.
+  if (locked) return null;
 
   return <section className={styles.gate}>
     <div className={styles.row} role="radiogroup" aria-label="지원서 데이터 활용">

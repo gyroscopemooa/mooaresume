@@ -3938,3 +3938,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/simple-intake.tsx`, `.module.css`.
 - Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, `/pro/polish`에서 배지 부재·높이 실측.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 분석 진행 중 동의 문구 완전 제거
+
+- Agent/session: Claude. 사용자 판단("법적으로 필수 아니고 그냥 감춰도 될 것 같다").
+- Status: main에 적용. 앞 커밋(`e9f578e`)의 잠금 표시 방식을 바꿉니다.
+- 이전 동작: 분석이 도는 중 `데이터 활용에 동의하셨습니다 / 결과 화면에서 언제든 바꾸실 수 있습니다`를 한 줄 기록으로 남겼습니다.
+- 바뀐 동작: `locked`면 **아무것도 그리지 않습니다.**
+- 근거: 요구되는 것은 **동의를 철회할 수 있는 것**이지 모든 화면이 철회 가능함을 반복하는 것이 아닙니다. 철회 경로는 결과 화면 `최종 첨삭본` 탭의 `<ResearchConsent />`에 그대로 있고(`result-workspace-complete.tsx:665`), 이 줄이 있든 없든 유지됩니다. 이미 끝난 결정을 진행 중인 분석 위에 다시 적는 것은 읽을 거리만 늘립니다.
+- 결제 버튼 잠금(`분석이 진행 중입니다`)과 실패 시 해제는 그대로입니다.
+- Files: `src/components/research-consent-gate.tsx`, `.module.css`(`.settled` 4줄 제거), `.test.ts`(철회 경로가 결과 화면에 남아 있는지 검사하도록 변경).
+- Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.
