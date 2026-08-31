@@ -65,3 +65,6 @@
 .codeGrid code { flex: 1; color: #1b2a4a; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; }
 .codeGrid button { padding: 4px 9px; border: 1px solid #dde4e9; border-radius: 6px; background: #fff; font: inherit; font-size: 10.5px; font-weight: 700; color: #55636d; cursor: pointer; }
 .codeBox > div > a { padding: 6px 12px; border: 1px solid #dde4e9; border-radius: 7px; color: #55636d; font-size: 11.5px; font-weight: 700; }
+.withButton { display: flex; gap: 6px; }
+.withButton input { flex: 1; min-width: 0; padding: 9px 11px; border: 1px solid #ccd7de; border-radius: 8px; background: #fff; color: #17221d; font: inherit; font-size: 13px; outline: 0; }
+.withButton button { flex: none; padding: 0 12px; border: 1px solid #ccd7de; border-radius: 8px; background: #fff; color: #31404a; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }

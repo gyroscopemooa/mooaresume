@@ -4184,3 +4184,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: 신규 `src/app/meensoo/rewards/claim-link-cell.tsx`; 수정 `src/app/meensoo/rewards/page.tsx`.
 - Validation: 808 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 쿠폰 만들 때 손으로 채우는 칸 없애기
+
+- Agent/session: Claude. 사용자 요청("년월 쓰기도 귀찮다 · 공유 코드 쪽은 코드 자동 생성이 안 되고 뭘 적어야 넘어간다").
+- Status: main에 적용.
+- 기간: 두 화면 모두 **오늘 ~ 석 달 뒤**를 미리 채웁니다. 비워 두면 "기한 없음"이 되는데, 기한 없는 협업 쿠폰은 몇 년 뒤에 들고 와도 받아 주어야 합니다. 흔한 값을 채워 두고 다를 때만 고치게 하는 편이 맞습니다.
+- 기관명 하나로 나머지를 채웁니다: 캠페인명(`○○ 협업 이벤트`), 대상(`○○ 참여자 및 선정자`), 그리고 공유 코드 쪽은 **쿠폰 코드까지**(`YOUTH-2026`). **직접 고친 값은 덮어쓰지 않습니다** — 자동 입력이 손으로 쓴 값을 지우면 그건 편의가 아닙니다.
+- 공유 코드 화면의 막힘: 코드가 비어 있으면 만들기 버튼이 잠기는데 **무엇을 적어야 하는지는 아무 데도 없었습니다.** 이제 기관명을 넣으면 자동으로 채워지고, `새로` 버튼으로 무작위 코드를 다시 뽑을 수 있습니다.
+- Files: `campaign-creator.tsx`, `coupon-creator.tsx`, `coupons.module.css`.
+- Validation: 808 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

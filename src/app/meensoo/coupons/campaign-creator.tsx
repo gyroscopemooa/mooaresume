@@ -20,6 +20,22 @@ import styles from "./coupons.module.css";
 
 const PRODUCT_CHARACTERS: Record<string, number> = { QUICK: 8000, PRO: 30000, FINAL: 30000 };
 
+const asDate = (value: Date) => value.toISOString().slice(0, 10);
+
+/**
+ * 기본 기간은 오늘부터 석 달.
+ *
+ * 비워 두면 "기한 없음"이 되는데, 기한 없는 협업 쿠폰은 몇 년 뒤에 누가 들고
+ * 와도 받아 주어야 합니다. 손으로 매번 적게 하는 대신 흔한 값을 채워 두고,
+ * 다를 때만 고치게 합니다.
+ */
+function defaultPeriod(): { from: string; to: string } {
+  const today = new Date();
+  const later = new Date(today);
+  later.setMonth(later.getMonth() + 3);
+  return { from: asDate(today), to: asDate(later) };
+}
+
 export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const router = useRouter();
   const [partnerName, setPartnerName] = useState("");
@@ -30,8 +46,9 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const [benefitAmount, setBenefitAmount] = useState("");
   const [totalCount, setTotalCount] = useState("50");
   const [perUserLimit, setPerUserLimit] = useState("1");
-  const [startsAt, setStartsAt] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const period = defaultPeriod();
+  const [startsAt, setStartsAt] = useState(period.from);
+  const [expiresAt, setExpiresAt] = useState(period.to);
   const [notice, setNotice] = useState("");
   const [subtitleText, setSubtitleText] = useState("이벤트·설문 참여자를 위한 특별 혜택");
   const [benefitText, setBenefitText] = useState("QUICK 자소서 첨삭 1회 무료");
@@ -46,6 +63,17 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const [codeList, setCodeList] = useState<{ id: string; codes: string[] } | null>(null);
   const [mailFiles, setMailFiles] = useState<File[] | null>(null);
   const [copied, setCopied] = useState("");
+
+  // 기관명 하나로 나머지를 채웁니다. 직접 고치신 뒤에는 덮어쓰지 않습니다 —
+  // 자동으로 채우는 편의가 손으로 쓴 값을 지우면 그건 편의가 아닙니다.
+  function pickPartner(next: string) {
+    const before = partnerName;
+    setPartnerName(next);
+    if (!name || name === `${before} 협업 이벤트`) setName(next ? `${next} 협업 이벤트` : "");
+    if (!audienceText || audienceText === "이벤트 참여자 및 선정자" || audienceText === `${before} 참여자 및 선정자`) {
+      setAudienceText(next ? `${next} 참여자 및 선정자` : "이벤트 참여자 및 선정자");
+    }
+  }
 
   function pickProduct(next: string) {
     setProduct(next);
@@ -102,7 +130,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
     <>
       <section className={styles.creator}>
         <div className={styles.grid}>
-          {field("협업 기관명", partnerName, setPartnerName, "청년재단")}
+          {field("협업 기관명", partnerName, pickPartner, "청년재단")}
           {field("캠페인명", name, setName, "청년재단 설문 이벤트")}
           {field("코드 접두어", codePrefix, (next) => setCodePrefix(next.toUpperCase()), "비워 두면 자동")}
           <label className={styles.field}>

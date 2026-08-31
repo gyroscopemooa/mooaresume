@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminCouponCode } from "@/server/admin/admin-repository";
+import { generateCouponCodes, normalizeCodePrefix } from "@/domain/coupon-code";
 import { CouponPamphlet } from "./coupon-pamphlet";
 import styles from "./coupons.module.css";
 
@@ -14,7 +15,22 @@ import styles from "./coupons.module.css";
  * 기관의 신뢰를 대신 깎습니다. 기본값이 채워져 있어 기관명만 바꿔도 나옵니다.
  */
 
+/** 기관명에서 만든 사람이 읽기 쉬운 코드. 연도까지 붙여 어느 해 것인지 남깁니다. */
+function suggestCode(partner: string): string {
+  const prefix = normalizeCodePrefix(partner) || "MOOA";
+  return `${prefix}-${new Date().getFullYear()}`;
+}
+
 const PRODUCT_CHARACTERS: Record<string, number> = { QUICK: 8000, PRO: 30000, FINAL: 30000 };
+
+const asDate = (value: Date) => value.toISOString().slice(0, 10);
+
+function defaultPeriod(): { from: string; to: string } {
+  const today = new Date();
+  const later = new Date(today);
+  later.setMonth(later.getMonth() + 3);
+  return { from: asDate(today), to: asDate(later) };
+}
 
 export function CouponCreator({ existing }: { existing: AdminCouponCode[] }) {
   const router = useRouter();
@@ -23,8 +39,9 @@ export function CouponCreator({ existing }: { existing: AdminCouponCode[] }) {
   const [code, setCode] = useState("");
   const [product, setProduct] = useState("QUICK");
   const [totalCount, setTotalCount] = useState("50");
-  const [startsAt, setStartsAt] = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
+  const period = defaultPeriod();
+  const [startsAt, setStartsAt] = useState(period.from);
+  const [expiresAt, setExpiresAt] = useState(period.to);
   const [subtitleText, setSubtitleText] = useState("이벤트·설문 참여자를 위한 특별 혜택");
   const [benefitText, setBenefitText] = useState("QUICK 자소서 첨삭 1회 무료");
   const [audienceText, setAudienceText] = useState("이벤트 참여자 및 선정자");
@@ -34,6 +51,15 @@ export function CouponCreator({ existing }: { existing: AdminCouponCode[] }) {
   const [message, setMessage] = useState("");
   const [made, setMade] = useState<AdminCouponCode | null>(null);
   const [preview, setPreview] = useState<AdminCouponCode | null>(null);
+
+  // 기관명 하나로 나머지를 채웁니다. 코드까지 포함해서요 — 여기서 코드가 비면
+  // 만들기 버튼이 계속 잠겨 있는데, 무엇을 적어야 할지는 아무도 모릅니다.
+  function pickPartner(next: string) {
+    const before = partnerName;
+    setPartnerName(next);
+    if (!label || label === `${before} 협업 이벤트`) setLabel(next ? `${next} 협업 이벤트` : "");
+    if (!code || code === suggestCode(before)) setCode(next ? suggestCode(next) : "");
+  }
 
   // 상품을 바꾸면 혜택 문구도 따라갑니다. 손으로 고치신 뒤에는 건드리지 않습니다.
   function pickProduct(next: string) {
@@ -83,9 +109,15 @@ export function CouponCreator({ existing }: { existing: AdminCouponCode[] }) {
     <>
       <section className={styles.creator}>
         <div className={styles.grid}>
-          {field("협업 기관", partnerName, setPartnerName, "청년재단")}
+          {field("협업 기관", partnerName, pickPartner, "청년재단")}
           {field("쿠폰명", label, setLabel, "청년재단 협업 이벤트")}
-          {field("쿠폰 코드", code, (next) => setCode(next.toUpperCase()), "YOUTH-MUA-2026")}
+          <label className={styles.field}>
+            <span>쿠폰 코드</span>
+            <div className={styles.withButton}>
+              <input value={code} placeholder="기관명을 넣으면 자동" onChange={(event) => setCode(event.target.value.toUpperCase())} disabled={busy}/>
+              <button type="button" onClick={() => setCode(generateCouponCodes(1, normalizeCodePrefix(partnerName) || "MOOA")[0])} disabled={busy}>새로</button>
+            </div>
+          </label>
           <label className={styles.field}>
             <span>상품</span>
             <select value={product} onChange={(event) => pickProduct(event.target.value)} disabled={busy}>
