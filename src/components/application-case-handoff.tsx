@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
+import { isFinalEnabled } from "@/domain/final-availability";
 import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
 import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
@@ -175,7 +176,13 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     // plainly here rather than letting the fetch 404 into "오류가 발생했습니다":
     // the run is saved and nothing was charged, and the applicant needs to know
     // both of those things.
-    if (product === "FINAL") {
+    // 스위치와 벽이 따로 놀지 않게 합니다.
+    //
+    // This refused FINAL unconditionally while NEXT_PUBLIC_ENABLE_FINAL was
+    // already opening the FINAL pages, so the tier could be chosen and then not
+    // paid for — and no environment variable could change that. The flag is now
+    // the single answer to "is FINAL open".
+    if (product === "FINAL" && !isFinalEnabled()) {
       throw new Error("FINAL은 아직 결제를 열지 않았습니다. 입력하신 내용은 저장되어 있습니다.");
     }
     const response = await fetch(`/api/checkouts/${product.toLowerCase()}`, {

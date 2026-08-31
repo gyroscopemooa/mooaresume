@@ -15,6 +15,8 @@ import {
 import { loadGuestDraft, type GuestDraft } from "@/lib/guest-draft";
 import {
   countNonWhitespaceCharacters,
+  createFinalCheckoutQuote,
+  createProCheckoutQuote,
   createQuickCheckoutQuote,
 } from "@/domain/usage-entitlement";
 import { writingStyleConfig } from "@/domain/writing-style";
@@ -122,10 +124,15 @@ export function AnalysisPreparation() {
   const filledQuestionCount = guest?.questions?.filter((question) => question.answer.trim()).length ?? guest?.questionDrafts?.filter((question) => question.trim()).length ?? (guest?.draftText?.trim() ? 1 : 0);
   const totalQuestionCount = guest?.questions?.length ?? guest?.questionDrafts?.length ?? (guest?.draftText !== undefined ? 1 : 0);
   const missingQuestionCount = Math.max(totalQuestionCount - filledQuestionCount, 0);
-  const price =
-    product === "PRO"
-      ? "12,900원"
-      : `${quickQuote.totalPriceKrw.toLocaleString()}원`;
+  // 등급마다 자기 견적을 씁니다.
+  //
+  // FINAL fell into the else branch and was shown the QUICK quote, so a 19,900원
+  // product advertised itself at 8,800원 — QUICK's base plus one extra block.
+  const quote =
+    product === "FINAL" ? createFinalCheckoutQuote(totalCharacters)
+    : product === "PRO" ? createProCheckoutQuote(totalCharacters)
+    : quickQuote;
+  const price = `${quote.totalPriceKrw.toLocaleString()}원`;
   const modeLabel =
     guest?.temporaryWritingMode === "CREATE"
       ? "처음부터 작성"

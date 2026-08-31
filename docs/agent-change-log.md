@@ -4083,3 +4083,20 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 784 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
 - 보류(사용자 결정 대기): B안(읽기만 서버로), C안(쓰기 서버 이전 — 마이그레이션 + 결제 로직).
+
+## 2026-09-01 — Claude: FINAL 결제 열기
+
+- Agent/session: Claude. 사용자 요청 및 승인. 사용자가 Polar에 FINAL 상품을 만들고 `POLAR_FINAL_PRODUCT_ID`를 넣은 뒤에도 열리지 않아 조사.
+- Status: main에 적용. 마이그레이션 없음. **QUICK·PRO 결제 동작은 변경 없음.**
+- 진단(둘 다 환경변수 문제가 아니었습니다):
+  1. `application-case-handoff.tsx`가 **조건 없이** FINAL을 거부했습니다. `isFinalEnabled()`도 `POLAR_FINAL_PRODUCT_ID`도 보지 않아 어떤 env로도 열 수 없었습니다. 반면 `NEXT_PUBLIC_ENABLE_FINAL`은 이미 `/final/*` 페이지·온보딩·요금표를 열고 있었으므로, **등급은 고를 수 있는데 결제만 막히는** 상태였습니다.
+  2. `/api/checkouts/final` 라우트가 **없었습니다**(quick·pro만 존재).
+  3. 준비 화면 가격이 `product === "PRO" ? "12,900원" : quickQuote…`라, FINAL이 else로 떨어져 **QUICK 견적**을 표시했습니다. 사용자가 본 8,800원은 QUICK 5,900 + 초과 블록 2,900입니다.
+- Change 1 — 라우트 공통화: `quick/route.ts`와 `pro/route.ts`가 **바이트 단위로 동일**했습니다(diff로 확인). 등급은 URL이 아니라 `prepare_quick_checkout`이 분석 실행에서 읽고 `createCheckoutQuote`가 값을 매깁니다. 세 번째 복사본을 만드는 대신 `src/server/billing/checkout-route.ts`로 **옮기고**, 세 라우트가 함께 씁니다. 동작 변경 없음 — 같은 코드입니다.
+- Change 2 — 하드 차단을 `product === "FINAL" && !isFinalEnabled()`로 교체. 이제 스위치 하나가 "FINAL이 열렸는가"의 유일한 답입니다.
+- Change 3 — 가격을 등급별 견적으로: `createFinalCheckoutQuote` / `createProCheckoutQuote` / `quickQuote`. PRO도 하드코딩 문자열 대신 견적을 쓰므로 **초과 블록이 가격에 반영**됩니다(2026-08-31에 넣은 10,000자당 3,900원).
+- 확인한 환경: `NEXT_PUBLIC_ENABLE_FINAL=1`, `POLAR_FINAL_PRODUCT_ID` 설정됨, `POLAR_SERVER=sandbox`(테스트용). `polar-checkout.ts`는 이미 FINAL 상품 ID를 읽고 있었습니다.
+- Files: 신규 `src/server/billing/checkout-route.ts`, `src/app/api/checkouts/final/route.ts`; 수정 `checkouts/quick/route.ts`, `checkouts/pro/route.ts`(본문을 공통 처리로 교체), `application-case-handoff.tsx`, `analysis-preparation.tsx`, `final-availability.test.ts`(+3).
+- Validation: 787 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build`에 `/api/checkouts/final` 등록 확인.
+- 남은 것: 실제 결제 흐름은 **사용자 테스트 필요**(샌드박스). 운영 오픈 시 `POLAR_SERVER=production`과 Cloudflare 환경변수 반영이 별도로 필요합니다.
+- Rollback: 이 커밋 revert.
