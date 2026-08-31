@@ -504,3 +504,114 @@ export async function listResearchCorpus(limit = 1000): Promise<ResearchCorpusRo
     createdAt: row.created_at as string,
   }));
 }
+
+export type AdminCouponCode = {
+  id: string;
+  code: string;
+  label: string;
+  partnerName: string;
+  product: string;
+  allowedCharacters: number;
+  totalCount: number;
+  claimedCount: number;
+  startsAt: string | null;
+  expiresAt: string | null;
+  subtitleText: string;
+  benefitText: string;
+  audienceText: string;
+  usageText: string;
+  footnoteText: string;
+  revokedAt: string | null;
+  createdAt: string;
+};
+
+const COUPON_FIELDS =
+  "id, code, label, partner_name, product, allowed_characters, total_count, claimed_count, starts_at, expires_at, subtitle_text, benefit_text, audience_text, usage_text, footnote_text, revoked_at, created_at";
+
+function toCouponCode(row: Record<string, unknown>): AdminCouponCode {
+  return {
+    id: row.id as string,
+    code: row.code as string,
+    label: row.label as string,
+    partnerName: row.partner_name as string,
+    product: row.product as string,
+    allowedCharacters: row.allowed_characters as number,
+    totalCount: row.total_count as number,
+    claimedCount: row.claimed_count as number,
+    startsAt: (row.starts_at as string | null) ?? null,
+    expiresAt: (row.expires_at as string | null) ?? null,
+    subtitleText: row.subtitle_text as string,
+    benefitText: row.benefit_text as string,
+    audienceText: row.audience_text as string,
+    usageText: row.usage_text as string,
+    footnoteText: row.footnote_text as string,
+    revokedAt: (row.revoked_at as string | null) ?? null,
+    createdAt: row.created_at as string,
+  };
+}
+
+export async function listCouponCodes(limit = 100): Promise<AdminCouponCode[]> {
+  const { data, error } = await serviceClient()
+    .from("coupon_codes")
+    .select(COUPON_FIELDS)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data.map((row) => toCouponCode(row as Record<string, unknown>));
+}
+
+/**
+ * 협업 배포용 코드 하나를 만듭니다.
+ *
+ * The pamphlet strings are stored with the code rather than typed again at
+ * print time. A leaflet that says something the code does not do is worse than
+ * no leaflet, and the only way to keep them in step is to keep them together.
+ */
+export async function createCouponCode(input: {
+  code: string;
+  label: string;
+  partnerName: string;
+  product: string;
+  allowedCharacters: number;
+  totalCount: number;
+  startsAt: string | null;
+  expiresAt: string | null;
+  subtitleText: string;
+  benefitText: string;
+  audienceText: string;
+  usageText: string;
+  footnoteText: string;
+}): Promise<{ coupon: AdminCouponCode | null; error: string | null }> {
+  const { data, error } = await serviceClient()
+    .from("coupon_codes")
+    .insert({
+      code: input.code.trim().toUpperCase(),
+      label: input.label,
+      partner_name: input.partnerName,
+      product: input.product,
+      allowed_characters: input.allowedCharacters,
+      total_count: input.totalCount,
+      subtitle_text: input.subtitleText,
+      starts_at: input.startsAt,
+      expires_at: input.expiresAt,
+      benefit_text: input.benefitText,
+      audience_text: input.audienceText,
+      usage_text: input.usageText,
+      footnote_text: input.footnoteText,
+    })
+    .select(COUPON_FIELDS)
+    .single();
+  // 23505 is the unique violation on `code`. Naming it beats "저장하지
+  // 못했습니다" — the operator only has to pick a different word.
+  if (error) return { coupon: null, error: error.code === "23505" ? "이미 있는 코드입니다. 다른 코드로 만들어 주세요." : `${error.code ?? "UNKNOWN"} · ${error.message}` };
+  return { coupon: toCouponCode(data as Record<string, unknown>), error: null };
+}
+
+/** 배포를 멈춥니다. 이미 등록한 사람의 이용권은 그대로 둡니다. */
+export async function revokeCouponCode(id: string): Promise<string | null> {
+  const { error } = await serviceClient()
+    .from("coupon_codes")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", id);
+  return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
+}

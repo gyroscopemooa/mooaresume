@@ -1,0 +1,31 @@
+/* 추천코드 칸과 나란히 서지만, 같은 것으로 읽히면 안 됩니다.
+   그래서 색이 아니라 아이콘과 이름으로 갈라 둡니다. */
+.compact { padding: 0; }
+.card { padding: 13px 15px; border: 1px solid #e2eae6; border-radius: 10px; background: #fbfdfc; }
+
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.label { display: inline-flex; align-items: center; gap: 5px; flex: none; color: #41514a; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.label svg { width: 13px; height: 13px; color: #176b4a; }
+.label em { margin-left: 3px; padding: 1px 5px; border-radius: 7px; background: #eef2f0; color: #8b968f; font-style: normal; font-size: 9.5px; font-weight: 700; }
+
+.row input {
+  flex: 1; min-width: 130px; padding: 7px 10px;
+  border: 1px solid #dbe6e0; border-radius: 7px; background: #fff;
+  font: inherit; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; outline: 0;
+}
+.row input:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.08); }
+.row input:disabled { background: #f4f7f5; color: #8b968f; }
+
+.row button {
+  flex: none; padding: 7px 13px;
+  border: 1px solid #cfe0d7; border-radius: 7px; background: #fff;
+  color: #176b4a; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+}
+.row button:hover:not(:disabled) { background: #eef7f2; }
+.row button:disabled { color: #8b968f; cursor: default; }
+
+.message { margin: 7px 0 0; color: #a3761d; font-size: 11px; line-height: 1.7; }
+.message[data-ok="true"] { color: #176b4a; font-weight: 600; }
+
+[data-done="true"] .label svg { color: #176b4a; }

@@ -23,6 +23,7 @@ import { writingStyleConfig } from "@/domain/writing-style";
 import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import { ApplicationCaseHandoff } from "@/components/application-case-handoff";
+import { CouponCodeEntry } from "@/components/coupon-code-entry";
 import { ReferralCodeEntry } from "@/components/referral-code-entry";
 import { QuickCheckoutReturn } from "@/components/quick-checkout-return";
 import styles from "./analysis-preparation.module.css";
@@ -316,6 +317,10 @@ export function AnalysisPreparation() {
             {/* Sits with the other notes rather than in the middle of the
                 decision. It is optional, and most people do not have a code. */}
             <div className={styles.referralNote}><ReferralCodeEntry compact requireSignIn returnTo="/analysis/prepare" /></div>
+            {/* 추천코드 바로 아래, 그러나 같은 칸이 아닙니다. 추천코드는 넣은
+                사람이 결제해야 추천한 사람에게 이용권이 가고, 쿠폰은 넣는 즉시
+                넣은 사람이 받습니다. 한 칸이면 그 차이를 물어보게 됩니다. */}
+            <div className={styles.referralNote}><CouponCodeEntry compact /></div>
           </section>
           <section className={styles.scope}>
             <small>{product} 제공 범위</small>

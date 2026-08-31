@@ -4100,3 +4100,20 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 787 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build`에 `/api/checkouts/final` 등록 확인.
 - 남은 것: 실제 결제 흐름은 **사용자 테스트 필요**(샌드박스). 운영 오픈 시 `POLAR_SERVER=production`과 Cloudflare 환경변수 반영이 별도로 필요합니다.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 협업 배포용 쿠폰 코드 + 팜플렛
+
+- Agent/session: Claude. 사용자 요청(청년재단 협찬 시나리오, 디자인 예시 제공).
+- Status: main에 적용. **마이그레이션 있음 — 사용자가 `npm run db:remote:push` 실행 필요.**
+- 조사 결과(요청 4건 중 2건은 이미 존재): 메일 발송 기록은 `/meensoo/mail/history`에 **본문까지 저장**되어 있었고, 개별 이용권 발급도 `/meensoo/rewards`에 있었습니다. 관리자 메뉴에도 9개 항목이 모두 링크되어 있습니다. **"안 들어가진다"는 증상 미확인 — 사용자 회신 대기.**
+- 진짜 없던 것: **협찬 배포 구조.** 기존 이용권은 `recipient_email not null`이라 **받는 사람을 미리 알아야** 발급됩니다. 협업 기관이 이벤트 경품으로 뿌리는 상황에서는 발급 시점에 수령자를 알 수 없습니다. 그리고 **쿠폰을 입력할 칸이 아예 없었습니다** — 결제 전 입력칸은 추천코드 전용이고, 쿠폰은 `/redeem/{긴토큰}` 링크로만 받을 수 있었습니다. 팜플렛의 "쿠폰 등록" 문구가 실제로는 갈 곳이 없었습니다.
+- 설계 결정 — **기존 `reward_credits`는 손대지 않습니다.** 그 테이블은 금액 상태와 그것을 지키는 check 제약을 이고 있습니다. 대신 앞에 한 겹(`coupon_codes`)을 두고, 코드를 등록하면 평범한 이용권 한 줄이 생깁니다. 이후 사용·소진·환불 경로는 전부 그대로입니다.
+- Files (신규):
+  - `supabase/migrations/20260901010000_partner_coupon_codes.sql` — `coupon_codes`, `coupon_claims`, `claim_coupon_code()`. 수량·기간·회수·1인1회를 **각각 다른 이름의 오류**로 거부합니다(하나로 뭉치면 오탈자인지 기간 만료인지 알 수 없습니다). `for update` 행 잠금 + `claimed_count <= total_count` 제약으로 동시 등록 시 초과를 막습니다. `coupon_codes`는 RLS를 켜고 **읽기 정책을 주지 않습니다** — 목록이 열리면 유효한 코드 목록이 됩니다.
+  - `src/components/coupon-code-entry.tsx` — 결제 전 화면에 추천코드와 **별도 칸**. 둘은 이름만 비슷하고 반대로 동작합니다(추천은 결제 후 추천인에게, 쿠폰은 즉시 본인에게).
+  - `src/app/meensoo/coupons/*` — 발급 화면과 목록, 팜플렛.
+  - `src/app/api/meensoo/coupons/route.ts` — 생성·중지. `isAdmin()` 확인.
+- 팜플렛: 사용자가 준 디자인을 **SVG로 재현**하고 PNG(2268×2808)로 내려받습니다. **이미지 생성 AI를 쓰지 않았습니다** — 팜플렛은 창작이 아니라 양식이고, 생성 모델은 한글을 깨뜨리며 쿠폰 코드가 한 글자만 어긋나도 배포용으로 쓸 수 없습니다. 게다가 장당 비용이 듭니다. 기관명·부제·혜택·대상·사용방법·하단 안내가 전부 설정값이고 기본값이 채워져 있습니다.
+- Validation: 795 tests passed (+8), `tsc` clean, `eslint` 0 errors, `next build`에 `/meensoo/coupons`·`/api/meensoo/coupons` 등록 확인.
+- 남은 것: 마이그레이션 적용 후 실제 등록 흐름 테스트. "관리자 메뉴가 안 들어가진다"는 증상 확인 필요.
+- Rollback: 이 커밋 revert + `drop table public.coupon_claims, public.coupon_codes cascade; drop function public.claim_coupon_code(text);`
