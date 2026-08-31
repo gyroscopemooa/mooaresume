@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
-import { Check, FileText, HelpCircle, Loader2, Paperclip, Sparkles, Trash2, UploadCloud } from "lucide-react";
+import { Check, FileText, HelpCircle, Loader2, Paperclip, Trash2, UploadCloud } from "lucide-react";
 import {
   CLASSIFIED_KIND_LABEL,
   CLASSIFIED_KIND_ORDER,
@@ -150,7 +150,6 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
       onDrop={drop}
     >
       <div className={styles.boxHead}>
-        <span className={styles.badge}><Sparkles/> 한 번에 넣기</span>
         <h3>지원 자료를 한 번에 넣어주세요</h3>
         <p>자기소개서를 붙여넣고, 나머지 파일은 <b>여기에 끌어다 놓으세요.</b> 무엇인지는 무아가 알아서 나눕니다.</p>
         {/* The speech bubble carries the formats and the ceilings, so the box

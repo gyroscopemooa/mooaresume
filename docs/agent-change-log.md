@@ -3927,3 +3927,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/simple-intake.tsx`, `.module.css`.
 - Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, `/pro/polish`에서 높이·한 줄 여부 실측.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 간편 입력 머리말에서 배지 제거
+
+- Agent/session: Claude. 사용자 요청("굳이 한번에넣기 저 ai 아이콘 이런거 없어도될듯"). 참고: `stitch_modern_career_type_insight.zip`(사용자 제공 시안 — 현재 화면을 영문으로 다시 그린 것).
+- Status: main에 적용. 마크업·스타일만.
+- Change: `한 번에 넣기` 배지와 `Sparkles` 아이콘 제거. 제목이 바로 상자 첫 줄이 됩니다. 배지가 빠졌으므로 `.boxHead h3`의 위쪽 여백을 0으로 내렸습니다. 쓰지 않게 된 `.badge` 규칙 2줄과 `Sparkles` import도 함께 정리했습니다(제거된 요소만 겨냥한 것으로, 다른 스타일은 건드리지 않았습니다).
+- 결과: 머리말 높이 52px. 제목 + 한 줄 설명만 남습니다.
+- 시안 대조: 시안의 글자 수 칸도 한 줄 구성이라 앞 커밋(`b89e782`)과 일치합니다. 시안에 남아 있는 배지는 현재 화면을 옮겨 그린 것이라 채택하지 않았습니다.
+- Files: `src/components/simple-intake.tsx`, `.module.css`.
+- Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, `/pro/polish`에서 배지 부재·높이 실측.
+- Rollback: 이 커밋 revert.

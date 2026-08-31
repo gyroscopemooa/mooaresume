@@ -18,9 +18,7 @@
 .boxDragging { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.12), 0 18px 42px -30px rgba(15, 61, 44, 0.6); }
 
 .boxHead { position: relative; padding-right: 34px; }
-.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; background: #eaf4ef; color: #176b4a; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
-.badge svg { width: 11px; height: 11px; }
-.boxHead h3 { margin: 10px 0 5px; font-size: 18px; letter-spacing: -0.03em; }
+.boxHead h3 { margin: 0 0 5px; font-size: 18px; letter-spacing: -0.03em; }
 .boxHead p { margin: 0 0 13px; color: #5f6d66; font-size: 12px; line-height: 1.7; }
 .boxHead p b { color: #17221d; }
 
