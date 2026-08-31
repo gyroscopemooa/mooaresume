@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { classifyAll, classifyDocument, summarizeClassification } from "./document-classify";
 
@@ -67,5 +68,57 @@ describe("자료 자동 분류", () => {
     expect(summary.map((row) => row.label)).toEqual(["채용공고", "자기소개서", "이력서", "기타 자료"]);
     expect(summary.find((row) => row.label === "기타 자료")?.count).toBe(2);
     expect(summary.some((row) => row.count === 0)).toBe(false);
+  });
+});
+
+
+describe("어긋나면 고르지 않는다", () => {
+  // 실제로 터진 파일. 이름에 `채용대행`이 들어 있어 채용공고로 분류됐고,
+  // 채용공고는 근거에서 빠지는 유일한 분류라 본인 경력이 통째로 사라졌습니다.
+  const realFilename = "[복사] 1.직업상담,창업,컨설팅,스타트업,기획,운영,사업관리,채용대행,아웃소싱,인재매칭,알선,파견,헤드헌팅,신규사업,영업,입찰 2.자동차_QC,검사,현장,품질,생산,품질,구매,전_jeonmeensoo.pdf";
+  const careerText = "경력사항 · 청년맞춤형제작소 운영 2020.02 ~ 2021.12 · 주요 성과 · 수행 업무";
+
+  it("채용대행은 채용공고가 아니다", () => {
+    expect(classifyDocument({ filename: realFilename }).kind).not.toBe("JOB_POSTING");
+  });
+
+  it("이름과 내용이 다르면 비워 둔다", () => {
+    // Neither signal is trusted over the other here. The applicant knows which
+    // it is, and asking costs one click; guessing cost a failed paid run.
+    const result = classifyDocument({ filename: "채용공고_2026.pdf", text: careerText });
+    expect(result.kind).toBe("UNSET");
+    expect(result.basis).toBe("conflict");
+  });
+
+  it("한쪽만 말할 때는 그대로 따른다", () => {
+    expect(classifyDocument({ filename: "채용공고_삼성전자.pdf" }).kind).toBe("JOB_POSTING");
+    expect(classifyDocument({ text: "자격 요건 · 우대 사항 · 모집 분야" }).kind).toBe("JOB_POSTING");
+  });
+
+  it("둘이 같으면 비우지 않는다", () => {
+    expect(classifyDocument({ filename: "이력서.pdf", text: "학 력 · 경 력 사 항 · 보유 기술" }).kind).toBe("RESUME");
+  });
+});
+
+describe("고르지 못한 자료는 진행을 막는다", () => {
+  const page = readFileSync("src/components/pro-input-page.tsx", "utf8");
+  const intake = readFileSync("src/components/simple-intake.tsx", "utf8");
+
+  it("UNSET이 남아 있으면 시작 버튼이 막힌다", () => {
+    // An unclassified file belongs to no bucket, so submitting one drops it
+    // from the analysis silently — quieter than a wrong guess and worse.
+    expect(page).toContain('file.kind === "UNSET"');
+    expect(page).toContain("unsetFileCount > 0");
+  });
+
+  it("어느 줄인지 눈에 보인다", () => {
+    expect(intake).toContain('data-unset={file.kind === "UNSET"');
+    expect(intake).toContain("styles.unsetWarning");
+  });
+
+  it("왜 중요한지는 말풍선에 둔다", () => {
+    // A paragraph under the list is a paragraph nobody reads.
+    expect(intake).toContain('role="tooltip"');
+    expect(intake).toContain("첨삭에 인용하지 않습니다");
   });
 });

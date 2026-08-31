@@ -18,6 +18,16 @@ import { z } from "zod";
  */
 
 export const classifiedKindSchema = z.enum([
+  /**
+   * 고르지 못했다는 뜻입니다.
+   *
+   * A guess that is wrong in the 채용공고 direction is not a small annoyance: it
+   * is the one label that takes a document out of the evidence pool, so a
+   * career file landing there loses the applicant their own history and the run
+   * fails on a quote it cannot verify. When the filename and the text disagree,
+   * saying nothing and asking is cheaper than being confidently wrong.
+   */
+  "UNSET",
   "JOB_POSTING",
   "COVER_LETTER",
   "RESUME",
@@ -29,6 +39,7 @@ export const classifiedKindSchema = z.enum([
 export type ClassifiedKind = z.infer<typeof classifiedKindSchema>;
 
 export const CLASSIFIED_KIND_LABEL: Record<ClassifiedKind, string> = {
+  UNSET: "분류를 골라 주세요",
   JOB_POSTING: "채용공고",
   COVER_LETTER: "자기소개서",
   RESUME: "이력서",
@@ -56,7 +67,12 @@ export const CLASSIFIED_KIND_ORDER: readonly ClassifiedKind[] = [
 const FILENAME_HINTS: ReadonlyArray<readonly [ClassifiedKind, RegExp]> = [
   ["CAREER_DOCUMENT", /경력기술|경력\s*기술|career\s*description|경력증명/i],
   ["COVER_LETTER", /자기소개|자소서|자기\s*소개|cover\s*letter|coverletter|introduction/i],
-  ["JOB_POSTING", /채용\s*공고|모집\s*공고|공고|채용|jd\b|job\s*(posting|description)|recruit/i],
+  // 단독 `채용`만 뺐습니다. 채용대행·채용마케팅·채용담당처럼 지원자 본인
+  // 서류에 흔히 들어가는 낱말이라, 실제로 `채용대행`이 적힌 경력 파일이 공고로
+  // 분류되어 근거에서 빠졌고 결제한 분석이 실패했습니다. `공고`는 그대로 둡니다
+  // — 현대차공고.pdf처럼 회사 이름에 붙여 쓰는 쪽이 훨씬 흔하고, 본인 서류
+  // 이름에는 거의 오지 않습니다.
+  ["JOB_POSTING", /채용\s*공고|모집\s*공고|구인\s*공고|공고|job\s*(posting|description)|\bjd\b|recruit/i],
   ["RESUME", /이력서|입사지원서|지원서|resume|cv\b|profile/i],
   ["PORTFOLIO", /포트폴리오|portfolio|작품집|프로젝트\s*모음/i],
   ["OTHER", /자격증|수료|증명서|성적|certificate|license|transcript|award|수상/i],
@@ -83,32 +99,46 @@ export type ClassifyInput = { filename?: string; text?: string };
 export type Classification = {
   kind: ClassifiedKind;
   /** Which signal decided it. Shown as a quiet hint so a wrong guess is easy to spot. */
-  basis: "filename" | "content" | "fallback";
+  basis: "filename" | "content" | "conflict" | "fallback";
 };
+
+function guessFromFilename(filename: string): ClassifiedKind | null {
+  for (const [kind, pattern] of FILENAME_HINTS) if (pattern.test(filename)) return kind;
+  return null;
+}
+
+function guessFromContent(text: string): ClassifiedKind | null {
+  const head = text.slice(0, CONTENT_WINDOW);
+  if (!head.trim()) return null;
+  let best: { kind: ClassifiedKind; score: number } | null = null;
+  for (const [kind, pattern] of CONTENT_HINTS) {
+    const score = head.match(pattern)?.length ?? 0;
+    // Strictly greater, so a tie leaves the earlier (more decisive) kind in
+    // place rather than letting position at the bottom of the list win.
+    if (score > 0 && (!best || score > best.score)) best = { kind, score };
+  }
+  return best?.kind ?? null;
+}
 
 export function classifyDocument(input: ClassifyInput): Classification {
   const filename = (input.filename ?? "").trim();
-  if (filename) {
-    for (const [kind, pattern] of FILENAME_HINTS) {
-      if (pattern.test(filename)) return { kind, basis: "filename" };
-    }
-  }
+  const text = input.text ?? "";
+  const byName = filename ? guessFromFilename(filename) : null;
+  const byContent = guessFromContent(text);
 
-  const head = (input.text ?? "").slice(0, CONTENT_WINDOW);
-  if (head.trim()) {
-    let best: { kind: ClassifiedKind; score: number } | null = null;
-    for (const [kind, pattern] of CONTENT_HINTS) {
-      const score = head.match(pattern)?.length ?? 0;
-      // Strictly greater, so a tie leaves the earlier (more decisive) kind in
-      // place rather than letting position at the bottom of the list win.
-      if (score > 0 && (!best || score > best.score)) best = { kind, score };
-    }
-    if (best) return { kind: best.kind, basis: "content" };
-  }
+  // 두 신호가 어긋나면 고르지 않습니다.
+  //
+  // Either one alone is a reasonable guess. Together and disagreeing, they mean
+  // the file does not look like what it is called, and picking a side is how a
+  // career document ends up labelled 채용공고. The applicant knows; the screen
+  // asks them.
+  if (byName && byContent && byName !== byContent) return { kind: "UNSET", basis: "conflict" };
+  if (byName) return { kind: byName, basis: "filename" };
+  if (byContent) return { kind: byContent, basis: "content" };
 
   // Typed or pasted text with no filename and no headings is almost always the
   // letter itself — that is what the box asks for first.
-  if (!filename && (input.text ?? "").trim()) return { kind: "COVER_LETTER", basis: "fallback" };
+  if (!filename && text.trim()) return { kind: "COVER_LETTER", basis: "fallback" };
   return { kind: "OTHER", basis: "fallback" };
 }
 

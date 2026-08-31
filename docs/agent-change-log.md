@@ -4017,3 +4017,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 773 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - 테스트가 지키는 것: `allowedCharacters >= totalCharacters`(견적이 실제 분량을 덮지 못하면 결제 후 실패가 다시 생깁니다), 초과 단가가 포함 단가보다 낮을 것.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 애매한 자료 분류는 비워 두고 진행을 막습니다
+
+- Agent/session: Claude. 사용자 요청 및 승인(분류 오류로 결제한 분석이 실패한 건 조사 후).
+- Status: main에 적용. **첨삭 프롬프트·분석 로직은 건드리지 않았습니다.** 분류 규칙과 입력 화면만입니다.
+- 원인(실측): 사용자의 경력 파일 `[복사] ...채용대행,아웃소싱... 전_jeonmeensoo.pdf`가 파일명 규칙의 **단독 `채용`**에 걸려 `JOB_POSTING`으로 분류됐습니다. 채용공고는 `NON_EVIDENCE_KINDS`라 근거에서 제외되므로, 그 파일에만 있던 경력(`청년맞춤형제작소`)을 모델이 인용하자 검사기가 `INVALID_EVIDENCE`로 전체 실패시켰습니다. **검사기는 설계대로 동작했고, 잘못된 것은 분류입니다.**
+  - 앞선 보고에서 "AI가 지어낸 표현"이라고 한 것은 **오진이었습니다.** 셸 인코딩 때문에 검색어가 깨진 채로 조회했습니다. 코드값으로 다시 조회하니 해당 문서에 11회 등장합니다.
+- Change 1 — 파일명 규칙: 단독 `채용` 제거. `채용대행·채용마케팅·채용담당`이 본인 서류 이름에 흔합니다. `공고`는 유지했습니다 — `현대차공고.pdf`처럼 회사명에 붙는 쪽이 훨씬 흔하고 본인 서류에는 거의 안 옵니다(기존 테스트가 이를 잡아냈습니다).
+- Change 2 — 어긋나면 고르지 않음: `UNSET` 종류 추가. 파일명 추정과 내용 추정이 **서로 다르면** 한쪽을 고르지 않고 비워 둡니다(`basis: "conflict"`).
+- Change 3 — 비어 있으면 진행 차단: `UNSET`은 어느 분류 통에도 안 들어가 **제출하면 그 파일이 조용히 빠집니다.** 잘못 고르는 것보다 나쁩니다. 시작 버튼을 막고 사유를 표시합니다.
+- Change 4 — 화면: 해당 줄을 붉게 표시, 목록 아래 경고 한 줄, 그리고 **긴 안내문을 말풍선으로 이동**(채용공고는 참고만 하고 첨삭에 인용하지 않는다는 설명 포함).
+- Files: `src/domain/document-classify.ts`(+test 7건), `src/components/simple-intake.tsx`, `.module.css`, `pro-input-page.tsx`.
+- Validation: 780 tests passed (+7), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert. `UNSET`은 새 값이라 기존 저장 데이터에 영향이 없습니다.
+- 남은 제안(미실행): 근거가 제외된 문서에만 있을 때 결과 전체를 버리지 말고 그 근거 한 줄만 버리는 안전망. 사용자 확인 후 진행.

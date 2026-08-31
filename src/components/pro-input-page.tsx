@@ -260,7 +260,15 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue) : null;
   const simpleLengthPlans = simpleMapping ? planQuestionLengths(simpleMapping) : [];
   const simpleGaps = simpleMapping ? describeSimpleIntakeGaps(simpleMapping) : [];
-  const blockedReason = simpleMapping
+  // 고르지 못한 자료가 남아 있으면 진행하지 않습니다.
+  //
+  // An UNSET file belongs to no bucket, so submitting one drops it from the
+  // analysis without saying so — quieter than a wrong guess and worse. The
+  // applicant is the only one who knows which it is, and it is one click.
+  const unsetFileCount = simpleFiles.filter((file) => file.kind === "UNSET").length;
+  const blockedReason = unsetFileCount > 0
+    ? `자료 ${unsetFileCount}개의 종류를 골라 주세요. 파일 이름과 내용이 달라 저희가 고르지 못했습니다.`
+    : simpleMapping
     ? describeSimpleIntakeGap(simpleMapping)
     : !hasPostingSource
     ? "채용공고 링크·내용·파일 중 하나를 먼저 넣어 주세요."

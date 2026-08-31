@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
-import { Check, FileText, HelpCircle, Loader2, Paperclip, Trash2, UploadCloud } from "lucide-react";
+import { AlertCircle, Check, FileText, HelpCircle, Loader2, Paperclip, Trash2, UploadCloud } from "lucide-react";
 import {
   CLASSIFIED_KIND_LABEL,
   CLASSIFIED_KIND_ORDER,
@@ -144,6 +144,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
     onFilesChange(files.map((file) => file.id === id ? { ...file, kind, basis: "filename" } : file));
   }
 
+  const unsetCount = files.filter((file) => file.kind === "UNSET").length;
   const letterCharacters = lengthPlans.reduce((total, plan) => total + plan.current, 0) || draftCharacters;
 
   return <section className={styles.intake}>
@@ -243,7 +244,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
         <span>{summary.map((row) => `${row.label} · ${row.count}개`).join("　")}</span>
       </div>
       <ul className={styles.fileList}>
-        {files.map((file) => <li key={file.id}>
+        {files.map((file) => <li key={file.id} data-unset={file.kind === "UNSET" ? "true" : undefined}>
           <FileText/>
           <div>
             <b>{file.filename}</b>
@@ -252,15 +253,39 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
               {/* Says how it guessed, so a wrong row stands out instead of
                   needing every line read to catch. */}
               {file.basis === "content" && " · 내용을 보고 분류"}
+              {/* 이름과 내용이 서로 다른 말을 했다는 뜻입니다. 한쪽을 골라
+                  넘어가는 대신 물어봅니다 — 잘못 고르면 본인 경력이 근거에서
+                  빠집니다. */}
+              {file.basis === "conflict" && " · 파일 이름과 내용이 달라 고르지 못했습니다"}
             </small>
           </div>
           <select value={file.kind} onChange={(event) => setKind(file.id, event.target.value as ClassifiedKind)} aria-label={`${file.filename} 자료 종류`}>
+            {file.kind === "UNSET" && <option value="UNSET">{CLASSIFIED_KIND_LABEL.UNSET}</option>}
             {CLASSIFIED_KIND_ORDER.map((kind) => <option key={kind} value={kind}>{CLASSIFIED_KIND_LABEL[kind]}</option>)}
           </select>
           <button type="button" onClick={() => onFilesChange(files.filter((item) => item.id !== file.id))} aria-label={`${file.filename} 빼기`}><Trash2/></button>
         </li>)}
       </ul>
-      <p className={styles.sortedNote}>분류가 다르면 오른쪽에서 바꿔 주세요. <b>이 분류에 따라 각 자료를 어떻게 읽을지가 달라집니다</b> — 채용공고는 요구사항을 뽑고, 이력서와 경력기술서는 자소서의 근거로 대조하고, 기타 자료는 참고로만 씁니다.</p>
+      {/* 길게 늘어놓던 안내를 말풍선으로 옮겼습니다. 매번 읽히지 않으면서도
+          누르면 나오고, 목록 아래에 문단이 하나 줄어듭니다. */}
+      <p className={styles.sortedNote}>
+        분류가 다르면 오른쪽에서 바꿔 주세요.
+        <button type="button" className={styles.why} aria-label="분류가 왜 중요한지">
+          <HelpCircle/>
+          <span role="tooltip" className={styles.tooltip}>
+            <b>분류에 따라 읽는 방법이 달라집니다</b>
+            <em>채용공고</em>는 요구사항만 뽑고 <b>첨삭에 인용하지 않습니다.</b> 회사가 쓴 글이라 지원자의 경력으로 쓸 수 없기 때문입니다.<br/>
+            <em>이력서·경력기술서</em>는 자기소개서의 근거로 대조합니다.<br/>
+            <em>기타 자료</em>는 참고로만 씁니다.<br/>
+            분류가 틀리면 본인 경력이 근거에서 빠져 첨삭이 실패할 수 있습니다.
+          </span>
+        </button>
+      </p>
+
+      {unsetCount > 0 && <p className={styles.unsetWarning}>
+        <AlertCircle/>
+        <span><b>분류를 고르지 못한 자료가 {unsetCount}개 있습니다.</b> 파일 이름과 내용이 서로 다른 말을 해서, 저희가 고르면 틀릴 수 있습니다. 직접 골라 주셔야 진행됩니다.</span>
+      </p>}
     </div>}
   </section>;
 }

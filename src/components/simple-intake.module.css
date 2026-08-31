@@ -130,3 +130,25 @@
 .limit .loss { grid-column: 1 / -1; display: block; margin-top: 7px; color: #a3761d; font-size: 11px; line-height: 1.6; }
 /* 넘었다는 사실이 숫자만으로는 안 읽힙니다. */
 .boxFoot span[data-over="true"] { color: #a3761d; font-weight: 700; }
+
+/* 고르지 못한 줄. 조용히 넘어가면 그 자료가 분석에서 통째로 빠집니다. */
+.fileList li[data-unset="true"] { border-color: #e0b4b4; background: #fdf7f7; }
+.fileList li[data-unset="true"] select { border-color: #c98c8c; color: #a34848; font-weight: 700; }
+
+.unsetWarning { display: flex; gap: 8px; margin: 10px 0 0; padding: 12px 14px; border-radius: 9px; background: #fdf3f3; color: #7a5757; font-size: 11.5px; line-height: 1.75; }
+.unsetWarning svg { width: 15px; flex: none; color: #a34848; }
+.unsetWarning b { color: #a34848; }
+
+/* 안내는 말풍선으로. 목록 아래에 문단을 하나 더 두면 아무도 안 읽습니다. */
+.why { display: inline-flex; align-items: center; margin-left: 5px; padding: 0; border: 0; background: none; color: #8b968f; cursor: pointer; vertical-align: -2px; position: relative; }
+.why svg { width: 13px; height: 13px; }
+.why:hover { color: #176b4a; }
+.why .tooltip { display: none; }
+.why:hover .tooltip, .why:focus-visible .tooltip {
+  display: block; position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 5;
+  width: min(320px, 78vw); padding: 12px 14px;
+  border: 1px solid #dfe6e2; border-radius: 10px; background: #fff; box-shadow: 0 10px 26px rgba(23, 34, 29, 0.13);
+  color: #5f6d66; font-size: 11px; font-weight: 400; line-height: 1.85; text-align: left; white-space: normal;
+}
+.why .tooltip b { display: block; margin-bottom: 5px; color: #17221d; }
+.why .tooltip em { color: #176b4a; font-style: normal; font-weight: 700; }
