@@ -13,10 +13,37 @@
   --rail: 64px;
   --rail-open: 232px;
   min-height: 100vh;
+  color-scheme: dark;
   background: var(--admin-bg);
   color: var(--admin-text);
   font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
 }
+
+/* 밝은 테마.
+   변수만 바꿉니다 — 화면마다 색을 따로 적어 두면 한 곳이 반드시 빠지고,
+   그러면 이 콘솔에서 방금 겪은 일(한 화면만 흰 배경)이 다시 생깁니다.
+   초록은 밝은 바탕에서 글자로 쓰기엔 옅어, 강조색만 진하게 내립니다. */
+.shell[data-theme="light"] {
+  --admin-bg: #f5f7f9;
+  --admin-panel: #ffffff;
+  --admin-line: #dde3e9;
+  --admin-text: #17212b;
+  --admin-muted: #5f6d79;
+  --admin-accent: #1f9d55;
+  --admin-danger: #c53b3b;
+  --admin-warn: #a37312;
+  color-scheme: light;
+}
+
+.themeToggle {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 9px 0; margin-bottom: 6px;
+  border: 1px solid var(--admin-line); border-radius: 9px;
+  background: transparent; color: var(--admin-muted);
+  font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+}
+.themeToggle:hover { border-color: var(--admin-accent); color: var(--admin-accent); }
+.themeToggle svg { width: 14px; height: 14px; flex: none; }
 
 /* Fixed so expanding on hover overlays the page instead of shoving it
    sideways — a menu that reflows the table under the cursor is unusable. */

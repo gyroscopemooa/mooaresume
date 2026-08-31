@@ -4247,3 +4247,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `coupons.module.css`(재작성), `campaign-creator.tsx`, `coupon-pamphlet.tsx`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 관리자 밝게/어둡게 전환 + 첨부 자동화
+
+- Agent/session: Claude. 사용자 요청("화이트 만들 거면 전체 화이트 / 블랙 전환 기능 / 코드 여러 장이면 CSV도 자동 첨부되어야 하지 않나").
+- Status: main에 적용. 마이그레이션 없음.
+- 테마 전환: 사이드바 아래에 `밝게`/`어둡게` 버튼. **변수만 바꿉니다**(`.shell[data-theme="light"]`) — 화면마다 색을 따로 적으면 한 곳이 반드시 빠지고, 그러면 방금 겪은 일(한 화면만 흰 배경)이 다시 생깁니다. 밝은 바탕에서 초록은 글자로 쓰기 옅어 강조색만 `#1f9d55`로 내렸습니다. 고른 값은 브라우저에 남아 다음에 열 때도 유지됩니다.
+- 구현 방식: `useSyncExternalStore`로 저장소를 직접 읽습니다. 효과 안에서 `setState`로 맞추면 첫 그림을 그린 뒤 한 번 더 그리게 되고 린트 규칙(`cascading renders`)도 막습니다. 서버 쪽은 저장소가 없으므로 어두운 쪽으로 고정합니다.
+- 첨부 자동화: 메일 탭을 열면 홍보물 PNG가 자동으로 붙고, **코드가 여러 장이면 CSV도 함께** 붙습니다. 한 장뿐이면 CSV를 붙이지 않습니다 — 한 줄짜리 파일보다 본문에 코드를 적는 편이 받는 사람에게 낫고, 실제로 본문이 그렇게 적힙니다. 버튼 대신 **첨부 목록을 보여 주어** 무엇이 붙었는지 확인만 하면 되게 했습니다.
+- 사용자 질문에 대한 답(코드 변경 없음): 메일 발송 기록의 `보낸 내용`이 전부 `기록 없음`인 것은, 그 16통이 **본문 저장 기능을 넣기 전에** 보낸 것이기 때문입니다. 이후 발송분부터 `본문 보기`가 생깁니다.
+- Files: `admin-shell.tsx`, `admin.module.css`, `campaign-creator.tsx`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

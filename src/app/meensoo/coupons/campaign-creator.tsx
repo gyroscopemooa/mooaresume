@@ -325,17 +325,16 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
                 {tab === "mail" && <>
                   {/* 파일을 만든 화면에서 바로 보냅니다. 내려받아 두었다가 나중에
                       폴더에서 찾아 올리면 다른 캠페인 것을 붙이게 됩니다. */}
+                  {/* 코드가 여러 장이면 목록이 CSV로 자동으로 붙습니다.
+                      한 장뿐이면 붙이지 않습니다 — 그 한 줄짜리 파일보다
+                      본문에 코드를 적는 편이 받는 사람에게 낫습니다. */}
                   <div className={styles.creatorFoot}>
-                    <button type="button" onClick={() => {
-                      const csv = new File([buildCouponCsv(codeList?.codes ?? [])], `coupons_${preview.partnerName}.csv`, { type: "text/csv" });
-                      setMailFiles((current) => [...(current ?? []).filter((file) => !file.name.endsWith(".csv")), csv]);
-                    }}>코드 CSV 첨부</button>
                     <small>
-                      {(mailFiles ?? []).some((file) => file.name.endsWith(".png"))
-                        ? "홍보물이 첨부되어 있습니다."
-                        : "홍보물을 만드는 중입니다..."}
+                      첨부 {(mailFiles ?? []).length}개
+                      {(mailFiles ?? []).length > 0 && ` · ${(mailFiles ?? []).map((file) => file.name).join(", ")}`}
                     </small>
                   </div>
+
                   {/* 보이지 않게 한 장 그려서 곧바로 첨부합니다. 내려받아 다시
                       올리는 왕복이 사라집니다. */}
                   <CouponPamphlet
@@ -343,7 +342,14 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
                     filename={`mooaresume_${preview.partnerName}_배포용`}
                     hidden
                     autoAttach
-                    onAttach={(file) => setMailFiles((current) => [...(current ?? []).filter((item) => !item.name.endsWith(".png")), file])}/>
+                    onAttach={(file) => setMailFiles((current) => {
+                      const kept = (current ?? []).filter((item) => !item.name.endsWith(".png"));
+                      const rows = codeList?.codes ?? [];
+                      const csv = rows.length > 1 && !kept.some((item) => item.name.endsWith(".csv"))
+                        ? [new File([buildCouponCsv(rows)], `coupons_${preview.partnerName}.csv`, { type: "text/csv" })]
+                        : [];
+                      return [...kept, file, ...csv];
+                    })}/>
 
                   <MailComposer
                     campaignId={preview.id}

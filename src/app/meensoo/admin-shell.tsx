@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -9,6 +10,8 @@ import {
   ExternalLink,
   FileText,
   Gift,
+  Moon,
+  Sun,
   Ticket,
   History,
   LayoutDashboard,
@@ -34,7 +37,45 @@ const NAV = [
 
 type Props = { children: React.ReactNode; newInquiries?: number };
 
+const THEME_KEY = "mooa:admin-theme";
+const THEME_EVENT = "mooa:admin-theme-change";
+
+/**
+ * 테마는 상태가 아니라 저장된 값입니다.
+ *
+ * 효과 안에서 setState로 맞추면 첫 그림을 그린 뒤 한 번 더 그리게 되고, 린트도
+ * 그것을 막습니다. 저장소를 직접 읽고 바뀔 때만 다시 읽습니다 — 서버에는
+ * 저장소가 없으므로 서버 쪽은 어두운 쪽으로 고정합니다.
+ */
+const subscribeTheme = (onChange: () => void) => {
+  window.addEventListener(THEME_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(THEME_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+};
+
+const readTheme = (): "dark" | "light" => {
+  try {
+    return window.localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
+  } catch {
+    // 저장소를 막아 둔 브라우저. 기본값으로 두면 그만입니다.
+    return "dark";
+  }
+};
+
+const readServerTheme = (): "dark" | "light" => "dark";
+
 export function AdminShell({ children, newInquiries = 0 }: Props) {
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, readServerTheme);
+
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    try { window.localStorage.setItem(THEME_KEY, next); } catch { /* 위와 같음 */ }
+    window.dispatchEvent(new Event(THEME_EVENT));
+  }
+
   const pathname = usePathname();
   const router = useRouter();
 
@@ -46,7 +87,7 @@ export function AdminShell({ children, newInquiries = 0 }: Props) {
   }
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-theme={theme}>
       <nav className={styles.sidebar} aria-label="관리자 메뉴">
         <Link href="/meensoo" className={styles.brand}>
           <ClipboardList />
@@ -69,6 +110,13 @@ export function AdminShell({ children, newInquiries = 0 }: Props) {
         })}
 
         <div className={styles.spacer} />
+        {/* 밝게/어둡게. 브라우저에 남겨 두어 다음에 열 때도 고른 대로 뜹니다 —
+            매번 다시 고르게 하면 그건 설정이 아니라 재주입니다. */}
+        <button type="button" className={styles.themeToggle} onClick={toggleTheme}>
+          {theme === "dark" ? <Sun /> : <Moon />}
+          <span className={styles.label}>{theme === "dark" ? "밝게" : "어둡게"}</span>
+        </button>
+
         <div className={styles.railFoot}>
           <Link href="/" className={styles.link} target="_blank">
             <ExternalLink />
