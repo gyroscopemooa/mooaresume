@@ -128,3 +128,5 @@
 .limit .plans em { font-style: normal; }
 .limit .plans li[data-shrink="big"] em { color: #a3761d; font-weight: 600; }
 .limit .loss { grid-column: 1 / -1; display: block; margin-top: 7px; color: #a3761d; font-size: 11px; line-height: 1.6; }
+/* 넘었다는 사실이 숫자만으로는 안 읽힙니다. */
+.boxFoot span[data-over="true"] { color: #a3761d; font-weight: 700; }

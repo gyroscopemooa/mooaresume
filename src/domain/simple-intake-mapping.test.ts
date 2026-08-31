@@ -177,3 +177,12 @@ describe("문항별 현재 분량", () => {
     expect(message).toContain("(1200자)");
   });
 });
+
+describe("총 글자 수 한도 표시", () => {
+  it("문항 합계로 한도를 잰다", () => {
+    // The cap is on the 자기소개서, and it does not care whether it arrived by
+    // paste or by file — so the number beside it has to count both the same way.
+    const plans = planQuestionLengths(mapSimpleIntake("1. 지원 동기\n" + "가".repeat(1200) + "\n2. 직무 역량\n" + "나".repeat(800), [], 700));
+    expect(plans.reduce((total, plan) => total + plan.current, 0)).toBe(2000);
+  });
+});

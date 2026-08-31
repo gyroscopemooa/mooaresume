@@ -3990,3 +3990,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: 신규 `src/app/privacy/page.tsx`, `page.module.css`; 수정 `src/app/page.tsx`(푸터 링크), `sitemap.ts`, `research-consent.tsx`, `.module.css`, `result-workspace-complete.tsx`, `research-consent-gate.test.ts`.
 - Validation: 767 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build`에 `/privacy` 정적 생성 확인.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 입력 화면에 총 글자 수 한도 표시
+
+- Agent/session: Claude. 사용자 질문("최대 8000자라도 5항목 2000자씩이면 이미 넘는데, 항목당 한도 필요 없나?").
+- Status: main에 적용.
+- 확인한 사실: **총량 한도는 이미 있고 자동 처리됩니다.** `QUICK_INCLUDED_LIMIT_CHARS = 8,000`(초과분은 `QUICK_EXTRA_BLOCK_CHARS = 7,000`자당 `2,900원` 자동 추가 견적), `PRO_INCLUDED_LIMIT_CHARS = 30,000`. 문항당 한도도 이미 있습니다 — `targetLength`가 100~3,000자.
+- 문항당 **입력** 한도는 두지 않기로 판단: 문항 수가 사람마다 3개에서 8개까지 다르고, 총량으로 재는 것이 맞습니다. 문항당 한도를 두면 한 문항이 유난히 긴 지원서가 총량에 여유가 있는데도 막힙니다.
+- 그런데 **입력 화면이 한도를 한 번도 말하지 않았습니다.** `공백 제외 0자`로 현재 분량만 보여주고 몇 자까지 되는지는 어디에도 없어, 넘기고 있는 줄 모른 채 넘길 수 있었습니다.
+- Change: 하단 카운터를 `공백 제외 N / 30,000자`로 바꾸고, 넘으면 색으로 표시합니다. 붙여넣은 글과 자기소개서 파일을 **같은 방식으로 합산**합니다(한도는 넣은 경로를 가리지 않습니다). 첨부 자료는 이 한도가 아니라 참고자료 예산으로 따로 잘리므로 세지 않습니다.
+- **미해결(사용자 판단 필요): PRO에서 30,000자를 넘기면 결제 후 `ACTIVE_ENTITLEMENT_NOT_FOUND`로 실패합니다.** QUICK처럼 초과 블록 과금이 없고, 오류 문구도 "이용권을 찾을 수 없음"이라 원인을 알 수 없습니다. 선택지는 (가) PRO에도 초과 블록 과금 (나) 입력 화면에서 제출 차단 (다) 오류 문구만 개선. 가격 정책이 걸려 있어 결정 전까지 손대지 않았습니다.
+- Files: `src/components/simple-intake.tsx`, `.module.css`, `pro-input-page.tsx`, `simple-intake-mapping.test.ts`.
+- Validation: 768 tests passed (+1), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

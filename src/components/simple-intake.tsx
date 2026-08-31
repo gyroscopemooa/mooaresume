@@ -57,12 +57,14 @@ type Props = {
   resolvedLengths: string;
   lengthPlans: QuestionLengthPlan[];
   lengthLoss: string | null;
+  /** 이 상품이 포함하는 자기소개서 총 글자 수. */
+  limitCharacters: number;
   files: SimpleIntakeFile[];
   onFilesChange: (files: SimpleIntakeFile[]) => void;
   onError?: (message: string) => void;
 };
 
-export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, lengthLoss, files, onFilesChange, onError }: Props) {
+export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [rejections, setRejections] = useState<Array<{ name: string; reason: string }>>([]);
@@ -142,6 +144,8 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
     onFilesChange(files.map((file) => file.id === id ? { ...file, kind, basis: "filename" } : file));
   }
 
+  const letterCharacters = lengthPlans.reduce((total, plan) => total + plan.current, 0) || draftCharacters;
+
   return <section className={styles.intake}>
     <div
       className={`${styles.box} ${dragging ? styles.boxDragging : ""}`}
@@ -209,7 +213,14 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
       </label>
 
       <div className={styles.boxFoot}>
-        <span>공백 제외 {draftCharacters.toLocaleString()}자{files.length > 0 && ` · 파일 ${files.length}개 ${formatBytes(usedBytes)}`}</span>
+        {/* 한도를 옆에 붙여 둡니다. 지금까지는 지금 몇 자인지만 말하고 몇 자까지
+            되는지는 어디에서도 말하지 않아, 넘기고 있는 줄 모른 채 넘길 수
+            있었습니다. 자기소개서 본문만 셉니다 — 첨부 자료는 이 한도가
+            아니라 참고자료 예산으로 따로 잘립니다. */}
+        <span data-over={letterCharacters > limitCharacters ? "true" : undefined}>
+          공백 제외 {letterCharacters.toLocaleString()} / {limitCharacters.toLocaleString()}자
+          {files.length > 0 && ` · 파일 ${files.length}개 ${formatBytes(usedBytes)}`}
+        </span>
         <label className={styles.attach}>
           {busy ? <Loader2 className={styles.spin}/> : <Paperclip/>}
           {busy ? "파일 확인 중" : "파일 추가"}
