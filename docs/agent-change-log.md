@@ -4157,3 +4157,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `mail-composer.tsx`, `campaign-creator.tsx`, `coupon-pamphlet.tsx`, `coupons.module.css`, `coupon-code.test.ts`.
 - Validation: 803 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert. 추가된 props는 전부 선택값입니다.
+
+## 2026-09-01 — Claude: 홍보물 시각 요소 복원 + 관리자 화면 가독성
+
+- Agent/session: Claude. 사용자 지적("장식들을 날려버린 것 같다" + 원본 이미지 재제시).
+- Status: main에 적용. 마이그레이션 없음.
+- 원본 대비 빠져 있던 것(수정 전 체크): 배경 곡선·sparkle, 오른쪽 이력서+체크리스트+펜 일러스트, 4개 행 아이콘(선물·사람·달력·모니터 — 빈 사각형만 있었음), 점선 divider, 쿠폰 좌우 반원 절취·절취선·별·잎 장식, globe 아이콘, 그림자·그라데이션. 캔버스도 1134×1404 → **1122×1402**로 맞췄습니다.
+- 전부 inline SVG로 그렸습니다. **외부 이미지도 생성 API도 쓰지 않습니다.** 장식을 그림 파일로 두면 기관이 바뀔 때마다 디자이너를 불러야 하지만, 도형이면 바뀌는 것은 글자뿐입니다.
+- props 확장: `eventLabel`, `headline`, `couponDescription`, `url`. 기존 값과 합쳐 기관명·부제·혜택·대상·기간·사용방법·코드·주의사항이 모두 관리자 설정값입니다. **기관 이름을 도안 안에 하드코딩하지 않았고, 테스트가 그것을 지킵니다.**
+- 관리자 화면: 입력 폭을 `max-width: 760px`로 묶어 가로로만 흐르던 배치를 위아래로 읽히게 했고, 라벨·테두리·보조 문구의 대비를 올렸습니다(흰 바탕에서 흐려 보인다는 지적).
+- 코드 접두어는 **비워 두면 캠페인명에서 자동 생성**합니다. 손으로 정할 이유가 없고, 비어 있으면 목록에서 어느 캠페인 코드인지 구분되지 않습니다.
+- 코드 목록: 캠페인의 `팜플렛`을 누르면 **자동으로 함께 불러옵니다.** 전체 복사·CSV에 더해 **한 장씩 복사**를 넣었습니다 — 전체 복사밖에 없으면 한 명에게 코드 하나를 보낼 때 남의 코드까지 붙여 넣게 됩니다.
+- ⑨ 게시판 카테고리: 사용자 지시에 따라 **코덱스에 맡깁니다.** 손대지 않았습니다.
+- Files: `coupon-pamphlet.tsx`(재작성), `campaign-creator.tsx`, `coupons.module.css`, `api/meensoo/campaigns/route.ts`, `coupon-code.test.ts`(+5).
+- Validation: 808 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

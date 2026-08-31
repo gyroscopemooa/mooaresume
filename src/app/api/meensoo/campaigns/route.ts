@@ -44,9 +44,13 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
+  // 접두어를 비워 두면 자동으로 채웁니다. 손으로 정할 이유가 없고, 비어 있는
+  // 채로 만들면 어느 캠페인 코드인지 목록에서 구분되지 않습니다.
+  const prefix = normalizeCodePrefix(input.codePrefix) || normalizeCodePrefix(input.name) || "MOOA";
+
   let codes: string[];
   try {
-    codes = generateCouponCodes(input.totalCount, normalizeCodePrefix(input.codePrefix));
+    codes = generateCouponCodes(input.totalCount, prefix);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "코드를 만들지 못했습니다." }, { status: 400 });
   }

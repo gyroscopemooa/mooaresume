@@ -45,6 +45,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const [singleCode, setSingleCode] = useState("");
   const [codeList, setCodeList] = useState<{ id: string; codes: string[] } | null>(null);
   const [mailFiles, setMailFiles] = useState<File[] | null>(null);
+  const [copied, setCopied] = useState("");
 
   function pickProduct(next: string) {
     setProduct(next);
@@ -103,7 +104,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
         <div className={styles.grid}>
           {field("협업 기관명", partnerName, setPartnerName, "청년재단")}
           {field("캠페인명", name, setName, "청년재단 설문 이벤트")}
-          {field("코드 접두어", codePrefix, (next) => setCodePrefix(next.toUpperCase()), "YOUTH")}
+          {field("코드 접두어", codePrefix, (next) => setCodePrefix(next.toUpperCase()), "비워 두면 자동")}
           <label className={styles.field}>
             <span>대상 상품</span>
             <select value={product} onChange={(event) => pickProduct(event.target.value)} disabled={busy}>
@@ -163,7 +164,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
             <span>{campaign.expiresAt ? `${campaign.expiresAt.slice(0, 10)}까지` : "기한 없음"}</span>
             <button type="button" onClick={() => void loadCodes(campaign)}>코드 목록</button>
             <a href={`/api/meensoo/campaigns?campaignId=${campaign.id}&format=csv`}>CSV</a>
-            <button type="button" onClick={() => setPreview(preview?.id === campaign.id ? null : campaign)}>
+            <button type="button" onClick={() => { const next = preview?.id === campaign.id ? null : campaign; setPreview(next); if (next) void loadCodes(next); }}>
               {preview?.id === campaign.id ? "닫기" : "팜플렛"}
             </button>
           </article>
@@ -173,9 +174,23 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
       {codeList && <section className={styles.codeBox}>
         <div>
           <b>쿠폰 코드 {codeList.codes.length}장</b>
-          <button type="button" onClick={() => void navigator.clipboard.writeText(codeList.codes.join("\n"))}>전체 복사</button>
+          <button type="button" onClick={() => { void navigator.clipboard.writeText(codeList.codes.join("\n")); setCopied("all"); }}>
+            {copied === "all" ? "복사됨" : "전체 복사"}
+          </button>
+          <a href={`/api/meensoo/campaigns?campaignId=${codeList.id}&format=csv`}>CSV 내려받기</a>
         </div>
-        <textarea readOnly value={codeList.codes.join("\n")} rows={Math.min(12, Math.max(3, codeList.codes.length))}/>
+        {/* 한 장씩 복사하는 자리. 전체 복사밖에 없으면 한 명에게 코드 하나를
+            보낼 때 남의 코드까지 함께 붙여 넣게 됩니다. */}
+        <ul className={styles.codeGrid}>
+          {codeList.codes.map((value) => (
+            <li key={value}>
+              <code>{value}</code>
+              <button type="button" onClick={() => { void navigator.clipboard.writeText(value); setCopied(value); }}>
+                {copied === value ? "복사됨" : "복사"}
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>}
 
       {preview && <>

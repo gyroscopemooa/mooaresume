@@ -125,3 +125,38 @@ describe("메일 발송 기록", () => {
     expect(repo).toContain('status: "FAILED", error_message: item.error.slice(0, 500), provider_message_id: null');
   });
 });
+
+describe("홍보물 시각 요소", () => {
+  const flyer = readFileSync("src/app/meensoo/coupons/coupon-pamphlet.tsx", "utf8");
+
+  it("장식까지 코드로 그린다", () => {
+    // A background image file would mean calling a designer every time the
+    // partner changes; shapes mean only the words change.
+    for (const piece of ["url(#wash)", "feDropShadow", "linearGradient", "Illustration", "RowIcon"]) {
+      expect(flyer, piece).toContain(piece);
+    }
+  });
+
+  it("네 행에 각각 다른 아이콘을 쓴다", () => {
+    for (const icon of ['icon="gift"', 'icon="people"', 'icon="calendar"', 'icon="monitor"']) {
+      expect(flyer, icon).toContain(icon);
+    }
+  });
+
+  it("쿠폰은 절취 모양과 절취선을 갖는다", () => {
+    // The notches are what make it read as a ticket rather than a bordered box.
+    expect(flyer).toContain("a26 26 0 0 0 0 52");
+    expect(flyer).toContain('strokeDasharray="9 11"');
+  });
+
+  it("기관 이름을 그림 안에 박아 넣지 않는다", () => {
+    // Every string on the flyer has to come from the campaign, or the next
+    // partner gets someone else's name on their leaflet.
+    expect(flyer).not.toContain("청년재단");
+  });
+
+  it("내보내기 해상도가 원본 비율을 지킨다", () => {
+    expect(flyer).toContain("const W = 1122");
+    expect(flyer).toContain("const H = 1402");
+  });
+});
