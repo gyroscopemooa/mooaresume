@@ -66,3 +66,45 @@ describe("소제목이 있는 최종본 텍스트", () => {
     expect(text).toContain("[현장에서 배운 기준의 무게]\n제가 고친 답변입니다.");
   });
 });
+
+describe("공고에 적힌 요구와 읽어낸 요구", () => {
+  const stated = sampleResultDocument.requirementMatches.filter((match) => match.origin === "stated");
+  const inferred = sampleResultDocument.requirementMatches.filter((match) => match.origin === "inferred");
+
+  it("예전에 저장된 결과는 전부 '공고에 적힌 것'으로 읽힌다", () => {
+    // Every result saved before this field existed came from a prompt that made
+    // no distinction. Defaulting them to stated keeps them rendering as one
+    // list; defaulting to inferred would put words in the posting's mouth.
+    const saved: Record<string, unknown> = { ...sampleResultDocument.requirementMatches[0] };
+    delete saved.origin;
+    delete saved.postingQuote;
+    const parsed = resultDocumentSchema.safeParse({
+      ...sampleResultDocument,
+      requirementMatches: [saved],
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.requirementMatches[0].origin).toBe("stated");
+    expect(parsed.success && parsed.data.requirementMatches[0].postingQuote).toBeNull();
+  });
+
+  it("읽어낸 요구는 어느 문장에서 나왔는지 같이 온다", () => {
+    // The quote is what makes the split honest without a cold "AI 판단" badge:
+    // the applicant reads the sentence and decides for themselves. An inferred
+    // requirement with nothing to point at is a guess wearing a fact's clothes.
+    expect(inferred.length).toBeGreaterThan(0);
+    for (const match of inferred) expect(match.postingQuote).toBeTruthy();
+  });
+
+  it("공고에 적힌 요구는 인용을 달지 않는다", () => {
+    // The requirement is the quote. Repeating it underneath reads as evidence
+    // for something nobody doubted.
+    expect(stated.length).toBeGreaterThan(0);
+    for (const match of stated) expect(match.postingQuote).toBeNull();
+  });
+
+  it("견본은 두 묶음을 모두 보여준다", () => {
+    // 두 묶음이 다 있어야 나눈 이유가 화면에서 드러납니다.
+    expect(stated.length).toBeGreaterThan(0);
+    expect(inferred.length).toBeGreaterThan(0);
+  });
+});

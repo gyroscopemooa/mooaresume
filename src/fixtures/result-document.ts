@@ -162,20 +162,37 @@ export const sampleResultDocument: ResultDocument = {
       status: "matched",
       evidence: "검사 기준과 실제 작업 순서를 대조하고 차이를 기록한 경험",
       recommendation: "현재 근거를 지원동기와 직무역량 문항에서 일관되게 유지하세요.",
+      origin: "stated",
+      postingQuote: null,
     },
     {
       id: "requirement-2",
+      requirement: "품질 관련 자격 또는 교육 이수",
+      status: "missing",
+      evidence: "이력서와 자소서 어디에서도 관련 자격이나 교육이 확인되지 않음",
+      recommendation: "우대사항이라 없어도 지원은 가능합니다. 보유하고 있다면 이력서에 먼저 넣으세요.",
+      origin: "stated",
+      postingQuote: null,
+    },
+    // 공고에 단어로 박혀 있지 않은 두 가지. 대부분의 지원자가 그냥 지나치는
+    // 자리이고, 그래서 견본에서 제일 보여줄 값어치가 있는 자리이기도 합니다.
+    {
+      id: "requirement-3",
       requirement: "유관부서 및 현장 협업",
       status: "partial",
       evidence: "팀장과 작업자에게 관찰 내용을 공유한 경험",
       recommendation: "상대의 의견을 어떻게 반영했는지 한 문장 보완하면 좋습니다.",
+      origin: "inferred",
+      postingQuote: "유관부서와 협업하여 품질 문제를 개선하고 개선안을 현장에 적용",
     },
     {
-      id: "requirement-3",
+      id: "requirement-4",
       requirement: "개선 결과 관리",
       status: "missing",
       evidence: "개선 이후 결과를 판단할 수 있는 확인 자료가 없음",
       recommendation: "수치를 추정하지 말고 기록, 피드백 또는 작업 방식의 실제 변화를 확인하세요.",
+      origin: "inferred",
+      postingQuote: "개선 전후 지표를 관리하고 정기적으로 공유",
     },
   ],
   editSummary: [

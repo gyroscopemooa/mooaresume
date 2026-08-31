@@ -7,7 +7,7 @@ import {
   AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Clipboard,
   Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw, Sparkles,
 } from "lucide-react";
-import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document";
+import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
 import { recommendNextStep } from "@/domain/next-step";
 import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
@@ -140,6 +140,54 @@ function DiffAnswer({ original, revised, side }: { original: string; revised: st
  * pre-payment wording from analysis-preparation verbatim, so the promise does
  * not change after the applicant has paid.
  */
+const MATCH_LABEL = { matched: "근거 있음", partial: "보완 필요", missing: "근거 없음" } as const;
+
+function RequirementCards({ matches }: { matches: readonly ResultRequirementMatch[] }) {
+  return <div className={styles.matches}>{matches.map((match) => <article key={match.id} data-status={match.status}>
+    <div>{match.status === "matched" ? <CheckCircle2/> : <AlertCircle/>}<b>{MATCH_LABEL[match.status]}</b></div>
+    <section>
+      <h3>{match.requirement}</h3>
+      <p><b>현재 근거</b>{match.evidence}</p>
+      <p><b>권장 행동</b>{match.recommendation}</p>
+      {/* The quote is the disclosure. A badge reading "AI 판단" would ask to be
+          trusted and read as a hedge; the sentence it came from lets the
+          applicant decide, which is the judgement they are actually able to
+          make. */}
+      {match.postingQuote && <p className={styles.quoted}><b>이 판단이 나온 공고 문장</b>&ldquo;{match.postingQuote}&rdquo;</p>}
+    </section>
+  </article>)}</div>;
+}
+
+/**
+ * 공고에 적힌 요구와, 업무 설명에서 읽어낸 요구를 나눠 보여줍니다.
+ *
+ * Inferred is not the disclaimer section. A requirement the posting never spells
+ * out is one most applicants never answer, so it is usually where the gap opens
+ * — the heading says so rather than apologising for it. The split exists because
+ * misreading a stated requirement is our error while reading a theme out of the
+ * work description is a judgement, and the applicant should be the one making
+ * it.
+ *
+ * Results saved before this field existed are all stated, so they render exactly
+ * as they did before: one list, no headings.
+ */
+function RequirementMatches({ matches }: { matches: readonly ResultRequirementMatch[] }) {
+  const inferred = matches.filter((match) => match.origin === "inferred");
+  if (inferred.length === 0) return <RequirementCards matches={matches}/>;
+
+  const stated = matches.filter((match) => match.origin !== "inferred");
+  return <div className={styles.matchGroups}>
+    {stated.length > 0 && <section>
+      <header><h3>공고가 요구한 것</h3><p>자격요건·우대사항에 그대로 적혀 있는 항목입니다.</p></header>
+      <RequirementCards matches={stated}/>
+    </section>}
+    <section>
+      <header><h3>공고에는 없지만, 업무 설명에서 읽히는 것</h3><p>단어로 적혀 있지 않아 대부분의 지원자가 답하지 않는 부분입니다. 채우면 차이가 가장 크게 벌어집니다.</p></header>
+      <RequirementCards matches={inferred}/>
+    </section>
+  </div>;
+}
+
 function CoverageNotice({ notes }: { notes: readonly string[] }) {
   return <section className={styles.coverageNotice}><AlertCircle/><div>
     <b>빈 문항은 첨삭 대상이 아닙니다</b>
@@ -514,7 +562,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
         </section>}
       </section>}
 
-      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div>{result.requirementMatches.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>채용공고 내용이 충분하지 않아 요구역량을 대조하지 못했습니다.</b> 공고 원문을 붙여넣고 다시 분석하면 요구사항별로 지원서에 근거가 있는지 확인해 드립니다. 근거 없는 역량을 지어내지 않기 위해 비워 두었습니다.</p></div>}<div className={styles.matches}>{result.requirementMatches.map((match) => <article key={match.id} data-status={match.status}><div>{match.status === "matched" ? <CheckCircle2/> : <AlertCircle/>}<b>{match.status === "matched" ? "근거 있음" : match.status === "partial" ? "보완 필요" : "근거 없음"}</b></div><section><h3>{match.requirement}</h3><p><b>현재 근거</b>{match.evidence}</p><p><b>권장 행동</b>{match.recommendation}</p></section></article>)}</div><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
+      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div>{result.requirementMatches.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>채용공고 내용이 충분하지 않아 요구역량을 대조하지 못했습니다.</b> 공고 원문을 붙여넣고 다시 분석하면 요구사항별로 지원서에 근거가 있는지 확인해 드립니다. 근거 없는 역량을 지어내지 않기 위해 비워 두었습니다.</p></div>}<RequirementMatches matches={result.requirementMatches}/><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
 
       {view === "interview" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>INTERVIEW PREVIEW</span><h2>지원서에서 이어질 예상질문</h2></div><p>작성한 내용의 진위와 판단 과정을 확인할 가능성이 높은 질문입니다.</p></div>{result.interviewQuestions.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>이번 분석에서는 면접 예상질문을 만들지 못했습니다.</b> 지원서에 실제로 적힌 내용에서만 질문을 뽑기 때문에, 문항을 보완한 뒤 다시 분석하면 근거와 답변 포인트까지 함께 제공합니다.</p></div>}<div className={styles.interviews}>{result.interviewQuestions.map((item,index) => <article key={item.id}><span>Q{index+1}</span><div><h3>{item.question}</h3><p>{item.reason}</p><section><b>답변에 포함할 내용</b>{item.answerGuide.map((guide) => <em key={guide}>{guide}</em>)}</section></div></article>)}</div>
         {/* Sold on the pricing table as PRO's 면접 리스크 분석. A risk is not another

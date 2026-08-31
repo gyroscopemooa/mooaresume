@@ -3811,3 +3811,20 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 확인된 사실: 제안된 6단계 공정 중 ②~⑥은 이미 스키마에 존재(`requirementMatchSchema`, `documentConflictSchema`, `issueSchema.category`, `evidenceSchema`). ①(공고 명시/추정 분리)만 미구현.
 - Files: `docs/chatgpt-and-pro-differentiation-2026-08-31.md`.
 - Rollback: 파일 삭제.
+
+## 2026-08-31 — Claude: 공고 요구사항을 '적힌 것 / 읽어낸 것'으로 분리
+
+- Agent/session: Claude. 사용자 요청 및 판단 반영(2026-08-31 대화).
+- Status: main에 적용. 마이그레이션 없음.
+- 배경: [`chatgpt-and-pro-differentiation-2026-08-31.md`](./chatgpt-and-pro-differentiation-2026-08-31.md)의 유일한 실제 잔여 작업. `requirementMatches`가 공고에 그대로 적힌 요구(`Excel 활용 가능자`)와 담당업무에서 읽어낸 역량(`협업`)을 한 목록에 섞어 내보내, 해석이 사실처럼 보였습니다.
+- 사용자 판단(중요): 읽어낸 항목은 **버릴 추측이 아니라 값어치가 가장 큰 쪽**입니다. 공고에 단어가 없으니 대부분의 지원자가 답하지 않고, 그래서 채우면 차이가 벌어집니다. 또 `AI 판단` 배지는 차갑게 읽힙니다.
+- 그래서 채택한 방식: 배지 대신 **판단이 나온 공고 문장을 그대로 인용**합니다. 정직성은 인용이 담당하고, 화면은 변명이 아니라 근거 제시로 읽힙니다. 두 번째 묶음의 제목도 "확인 필요"가 아니라 "채우면 차이가 가장 크게 벌어집니다"로 씁니다.
+- Files:
+  - `src/domain/result-document.ts` — `requirementMatchSchema`에 `origin: "stated" | "inferred"`(기본 `stated`), `postingQuote: string | null`(기본 `null`) 추가. 기존에 저장된 결과는 전부 `stated`로 읽혀 예전과 똑같이 한 목록으로 그려집니다. `ResultRequirementMatch` 타입 export 추가.
+  - `src/server/ai/quick/prompt.ts` — 지시 3줄 추가(그대로 적힌 것만 stated / inferred는 postingQuote 필수, 인용 못 찾으면 항목 제외 / inferred를 덜 중요하게 다루지 말 것).
+  - `src/components/result-workspace-complete.tsx` — `RequirementMatches`, `RequirementCards` 분리. inferred가 0개면 예전과 동일하게 한 목록.
+  - `src/components/result-workspace-complete.module.css` — `.matchGroups`, `.quoted` 추가(기존 규칙 수정 없음).
+  - `src/fixtures/result-document.ts` — 견본에 stated 2개 + inferred 2개.
+- 보호: `result-workspace-{claude,codex}-restored`, `result-workspace-v2`, `final-verification`은 건드리지 않았습니다.
+- Validation: 743 tests passed (+7), `tsc` clean, `eslint` 0 errors, `next build` 클린, `/result/sample` 공고·경험 분석 탭 육안 확인(두 묶음 표시, 인용 줄 `grid-column 1/3`).
+- Rollback: 이 커밋 revert. 스키마 기본값이 있어 되돌려도 저장된 결과는 그대로 파싱됩니다.

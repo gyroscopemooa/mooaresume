@@ -662,3 +662,28 @@ describe("학업과 직무의 비중", () => {
     expect(text).toContain("공부법이나 성적 관리 이야기에 머무르지 않게");
   });
 });
+
+describe("공고 요구의 출처 구분", () => {
+  const prompt = buildQuickAnalysisInstructions({
+    ...request,
+    documents: [...request.documents, { kind: "job_posting", text: "유관부서와 협업하여 품질 문제를 개선. Excel 활용 가능자." }],
+  });
+
+  it("공고에 없는 단어를 적힌 것으로 올리지 못하게 한다", () => {
+    // Misreading the posting is our mistake and cannot be explained away;
+    // reading a theme out of the work description is a judgement.
+    expect(prompt).toContain("그대로 적힌 항목만 'stated'");
+    expect(prompt).toContain("공고를 지어내는 것과 같습니다");
+  });
+
+  it("읽어낸 요구에는 근거 문장을 요구한다", () => {
+    expect(prompt).toContain("postingQuote에 그 판단이 나온 공고 문장을 원문 그대로");
+    expect(prompt).toContain("인용할 문장을 찾을 수 없으면 그 항목 자체를 넣지 마세요");
+  });
+
+  it("읽어낸 요구를 덜 중요하게 다루지 않도록 못박는다", () => {
+    // This half is where the difference is made: a requirement the posting never
+    // spells out is one most applicants never answer.
+    expect(prompt).toContain("inferred라고 해서 덜 중요하게 다루지 마세요");
+  });
+});

@@ -58,3 +58,10 @@
 .sampleNotice a svg{width:15px;height:15px}
 .sampleNotice button{padding:11px 13px;border:1px solid #cfe4d8;border-radius:9px;background:#fff;color:#4c6459;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
 @media(max-width:760px){.sampleNotice{flex-direction:column;align-items:stretch}.sampleNotice>div{justify-content:space-between}.sampleNotice a{flex:1;justify-content:center}}
+.matchGroups{display:grid;gap:22px}
+.matchGroups>section>header{margin-bottom:10px}
+.matchGroups>section>header h3{font-size:13px;margin:0}
+.matchGroups>section>header p{margin:4px 0 0;color:#77837d;font-size:9px;line-height:1.55}
+.matches .quoted{grid-column:1/3;margin-top:2px;padding-top:9px;border-top:1px solid #eef2f0;color:#7b8781;font-size:9px;font-style:italic}
+.matches .quoted b{font-style:normal}
+@media(max-width:700px){.matches .quoted{grid-column:auto}}

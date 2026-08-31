@@ -361,6 +361,9 @@ polish: 위 다섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
     ...(request.product === "PRO" || request.product === "FINAL"
       ? [
           "requirementMatches: 채용공고의 핵심 요구사항마다 지원서·지원자료에서 근거를 찾아 matched/partial/missing으로 판정하고, evidence에는 실제 원문 근거를, recommendation에는 다음 행동을 적으세요. 근거가 없으면 missing으로 두고 지어내지 마세요.",
+          "requirementMatches의 origin: 공고에 자격요건·우대사항 등으로 그대로 적힌 항목만 'stated'입니다. 담당업무나 인재상 문장을 읽고 뽑아낸 역량은 'inferred'로 두세요. 공고에 단어가 없는데 stated로 적는 것은 공고를 지어내는 것과 같습니다.",
+          "inferred 항목에는 postingQuote에 그 판단이 나온 공고 문장을 원문 그대로 한 문장 넣으세요. 인용할 문장을 찾을 수 없으면 그 항목 자체를 넣지 마세요. stated 항목의 postingQuote는 null입니다.",
+          "inferred라고 해서 덜 중요하게 다루지 마세요. 공고에 단어로 박혀 있지 않은 요구는 대부분의 지원자가 답하지 않으므로, 근거를 만들면 차이가 가장 크게 벌어지는 자리입니다. recommendation도 그만큼 구체적으로 적으세요.",
           "interviewQuestions: 지원서에 실제로 적힌 내용에서 이어질 면접 질문을 만들고, reason에는 왜 그 질문이 나오는지, answerGuide에는 답변에 포함해야 할 사실을 적으세요.",
           "interviewRisks: 면접에서 압박이 들어올 지점을 2~5개 찾으세요. topic에는 무엇에 대한 리스크인지, risk에는 면접관이 어떻게 파고들지, evidenceQuote에는 그 판단의 근거가 되는 지원서 원문을 그대로, preparation에는 면접 전에 준비해 둘 구체적 대비를 적으세요.",
           "interviewRisks는 예상질문의 반복이 아니라, 답변이 흔들릴 수 있는 약한 고리와 그 대비여야 합니다. 근거 없는 추측성 리스크는 만들지 마세요.",

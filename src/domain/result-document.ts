@@ -60,6 +60,33 @@ export const requirementMatchSchema = z.object({
   status: z.enum(["matched", "partial", "missing"]),
   evidence: z.string().min(1),
   recommendation: z.string().min(1),
+  /**
+   * 공고에 그대로 적혀 있었는가(stated), 업무 설명에서 읽어낸 것인가(inferred).
+   *
+   * The two are worth different things and carry different risk, and until now
+   * they arrived in one flat list looking identical. "Excel 활용 가능자" is
+   * quoted from the posting; "협업" was derived from a line about working with
+   * other teams. Reading a requirement wrong is our mistake. Reading a theme out
+   * of the work description is a judgement, and the applicant is the one who
+   * should get to make it.
+   *
+   * Inferred is not the weaker half. It is usually where the difference is made,
+   * because a requirement nobody wrote down is a requirement most applicants
+   * never answer.
+   *
+   * Defaulted so results saved before this field existed still parse.
+   */
+  origin: z.enum(["stated", "inferred"]).default("stated"),
+  /**
+   * The line of the posting an inferred requirement came from.
+   *
+   * This is the honesty mechanism, and it is deliberately not a badge reading
+   * "AI 판단". A label like that asks to be trusted and reads as a disclaimer;
+   * showing the sentence lets the applicant judge for themselves, which is what
+   * they are actually equipped to do. Null for stated requirements — the
+   * requirement is the quote.
+   */
+  postingQuote: z.string().min(1).nullable().default(null),
 });
 
 // The pricing table sells "면접 리스크 분석" as part of PRO. A risk is not a
@@ -322,6 +349,7 @@ export const resultDocumentSchema = z.object({
 export type ResultDocument = z.infer<typeof resultDocumentSchema>;
 export type ResultQuestion = z.infer<typeof resultQuestionSchema>;
 export type ResultOriginalAnnotation = z.infer<typeof resultOriginalAnnotationSchema>;
+export type ResultRequirementMatch = z.infer<typeof requirementMatchSchema>;
 export type ResultInterviewRisk = z.infer<typeof interviewRiskSchema>;
 export type ResultCandidateProfile = z.infer<typeof resultCandidateProfileSchema>;
 export type ResultCareerTimelineEntry = z.infer<typeof careerTimelineEntrySchema>;
