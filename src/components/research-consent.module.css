@@ -29,3 +29,5 @@
 .status { margin: 8px 0 0; font-size: 11px; line-height: 1.6; }
 .ok { color: var(--green, #176b4a); }
 .bad { color: #a14f4f; }
+.detail a { color: #5f7a6d; text-decoration: underline; text-underline-offset: 2px; }
+.detail a:hover { color: #176b4a; }

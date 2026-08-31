@@ -17,6 +17,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${siteUrl}/examples`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/guide`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.7 },
     { url: `${siteUrl}/landing`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.6 },
+    // Low priority, but it has to be findable: someone deciding whether to hand
+    // over a 자기소개서 should be able to reach this without asking.
+    { url: `${siteUrl}/privacy`, lastModified: new Date("2026-08-31"), changeFrequency: "yearly", priority: 0.3 },
     // The result dashboard with sample data. It answers "AI 자소서 첨삭 결과가
     // 어떻게 나오나요" better than any prose on the site, and it is the only
     // product screen safe to index — it needs no draft, no login and no

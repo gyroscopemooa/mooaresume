@@ -157,6 +157,32 @@ describe("결과 화면의 동의 항목", () => {
     // person by itself. The limits list is gone from this screen, so the
     // sentence has to carry the qualifier.
     expect(consent).not.toContain("REDACTION_LIMITS");
-    expect(consent).toContain("회사명·기간·성과는 분석에 필요해 남습니다");
+    expect(consent).toContain("회사명·기간·성과 등이 저장됩니다");
+    expect(consent).toContain('href="/privacy"');
+  });
+});
+
+describe("개인정보처리방침", () => {
+  const policy = readFileSync("src/app/privacy/page.tsx", "utf8");
+
+  it("선택 동의의 무게를 이 문서가 진다", () => {
+    // The result-screen fold is one line now, so the no-penalty statement and
+    // the deletion-on-withdrawal promise have to live somewhere that is always
+    // reachable. Optional-purpose consent is challengeable without them.
+    expect(policy).toContain("동의하지 않으셔도 결과와 기능은 완전히 같습니다");
+    expect(policy).toContain("철회하시면 이미 보관 중인 사본도 그 자리에서 지우고");
+    expect(policy).toContain("REDACTION_LIMITS.map");
+  });
+
+  it("맡기는 곳과 국외 이전을 밝힌다", () => {
+    for (const vendor of ["Supabase", "OpenAI", "Polar", "Cloudflare", "Resend", "Google", "Microsoft"]) {
+      expect(policy, vendor).toContain(vendor);
+    }
+    expect(policy).toContain("국외 이전 안내");
+  });
+
+  it("찾아갈 수 있어야 의미가 있다", () => {
+    expect(readFileSync("src/app/page.tsx", "utf8")).toContain('href="/privacy"');
+    expect(readFileSync("src/app/sitemap.ts", "utf8")).toContain("/privacy");
   });
 });

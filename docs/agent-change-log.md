@@ -3974,3 +3974,19 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/research-consent.tsx`, `.module.css`(`.detail ul/li` 제거), `research-consent-gate.test.ts`.
 - Validation: 764 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 개인정보처리방침 신설 + 결과 화면 문구 두 건
+
+- Agent/session: Claude. 사용자 요청(방침 "알아서 완벽히 만들고 푸터에" · 동의 문구 축약 · 공고 없을 때 직관적으로).
+- Status: main에 적용.
+- **신규 `/privacy`**: 11개 절. 수집 항목 / 이용 목적 / 보관 기간 / 처리위탁 / 제3자 제공 / 연구 활용(선택) / 쿠키 / 이용자 권리 / 안전성 조치 / 보호책임자 / 변경.
+  - 내용은 **코드에서 확인한 사실만** 적었습니다. 처리위탁 목록(Supabase·OpenAI·Polar·Cloudflare·Resend·Google·Microsoft Clarity)은 실제 코드에서 확인. 결제 수단 정보는 Polar가 받고 우리 서버를 지나지 않는다는 점, 비밀번호를 저장하지 않는다는 점(이메일 링크·Google 로그인만) 명시.
+  - 국외 이전 안내 포함(서버가 국외에 있으므로 필수).
+  - 보관 기간은 법정 기간만 특정: 결제·환불 5년(전자상거래법), 접속기록 3개월(통신비밀보호법). 그 외는 탈퇴 시 파기.
+  - `REDACTION_LIMITS`가 여기로 돌아왔습니다. 앞 커밋에서 결과 화면에서 뺐을 때 제품 안에서 사라졌던 고지입니다.
+  - 푸터(`src/app/page.tsx`)와 `sitemap.ts`에 추가.
+- **결과 화면 동의 접기**: 두 문단 → 한 줄(`이름·연락처·주소를 지우고 회사명·기간·성과 등이 저장됩니다.`) + 방침 링크. 무불이익 고지와 철회 시 삭제 약속은 **방침 6번으로 이동**했습니다 — 선택 동의라 어딘가에는 반드시 있어야 하지만 매번 읽힐 필요는 없습니다.
+- **공고 없을 때 문구**: `채용공고 내용이 충분하지 않아 대조하지 못했습니다` → `대조할 채용공고가 없습니다. 이 항목은 공고의 요구사항을 지원서·지원자료와 하나씩 맞춰 보는 자리라, 공고가 없으면 볼 것이 없습니다.` 없는 것을 "부족하다"로 말하면 무엇이 문제인지 알 수 없습니다.
+- Files: 신규 `src/app/privacy/page.tsx`, `page.module.css`; 수정 `src/app/page.tsx`(푸터 링크), `sitemap.ts`, `research-consent.tsx`, `.module.css`, `result-workspace-complete.tsx`, `research-consent-gate.test.ts`.
+- Validation: 767 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build`에 `/privacy` 정적 생성 확인.
+- Rollback: 이 커밋 revert.
