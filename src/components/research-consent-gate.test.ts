@@ -151,8 +151,12 @@ describe("결과 화면의 동의 항목", () => {
     expect(consent).toContain("{open && <div");
   });
 
-  it("지워지지 않는 것을 계속 말한다", () => {
-    // Dropping this would make the promise above it stronger than it is.
-    expect(consent).toContain("REDACTION_LIMITS.map");
+  it("지우는 약속을 실제 크기로 적는다", () => {
+    // "개인정보를 지운 사본" on its own promises more than is delivered: the
+    // company name and the dates stay, and a specific enough employer narrows a
+    // person by itself. The limits list is gone from this screen, so the
+    // sentence has to carry the qualifier.
+    expect(consent).not.toContain("REDACTION_LIMITS");
+    expect(consent).toContain("회사명·기간·성과는 분석에 필요해 남습니다");
   });
 });

@@ -3963,3 +3963,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/research-consent.tsx`(재작성), `.module.css`(재작성), `research-consent-gate.test.ts`(+3).
 - Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert. RPC는 남아 있어 되돌려도 동작합니다.
+
+## 2026-08-31 — Claude: 결과 화면 동의 항목 추가 축소
+
+- Agent/session: Claude. 사용자 요청("체크만 냅둬도 된다 · 설명 너무 많다 · 서비스개선데이터활용 문구만").
+- Status: main에 적용. 앞 커밋(`fec94e6`)을 더 줄입니다.
+- Change: 체크 문구 `이 지원서를 익명 사본으로 서비스 개선에 활용` → **`서비스 개선 데이터 활용`**. 접힌 설명은 문단 2개 + `REDACTION_LIMITS` 3항목 → **문단 2개**로.
+- `REDACTION_LIMITS` 목록 제거에 대한 판단: 목록은 `개인정보를 지운 사본`이라는 약속의 **단서**였습니다. 단서만 지우면 약속이 실제보다 강해지므로, **약속 자체를 실제 크기로 줄여** 적었습니다 — `이름·연락처·주소를 지우고 보관합니다. 회사명·기간·성과는 분석에 필요해 남습니다.` 목록을 지우면서 약속을 그대로 뒀다면 그것이 문제였을 것입니다.
+- **미해결 위험(사용자에게 보고함): 개인정보처리방침 페이지가 없습니다.** `REDACTION_LIMITS`(소속이 특정하면 사람이 좁혀질 수 있다 등)는 제품 안에서 이 화면이 유일한 고지였고, 이제 어디에도 없습니다. 상수는 `src/domain/deidentify.ts:154`에 그대로 두었으니 방침 페이지를 만들 때 그대로 씁니다. 국내 서비스는 개인정보처리방침 게시가 법적 의무이므로 **런칭 전 필수 항목**입니다.
+- Files: `src/components/research-consent.tsx`, `.module.css`(`.detail ul/li` 제거), `research-consent-gate.test.ts`.
+- Validation: 764 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

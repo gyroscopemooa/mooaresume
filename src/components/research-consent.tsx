@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { REDACTION_LIMITS } from "@/domain/deidentify";
 import styles from "./research-consent.module.css";
 
 /**
@@ -85,7 +84,7 @@ export function ResearchConsent() {
       <div className={styles.row}>
         <label className={styles.toggle} data-on={granted}>
           <input type="checkbox" checked={granted} disabled={busy} onChange={(event) => void toggle(event.target.checked)}/>
-          <span>이 지원서를 익명 사본으로 서비스 개선에 활용</span>
+          <span>서비스 개선 데이터 활용</span>
         </label>
         <button type="button" className={styles.more} aria-expanded={open} onClick={() => setOpen(!open)}>
           자세히 <ChevronDown className={open ? styles.up : ""}/>
@@ -93,12 +92,16 @@ export function ResearchConsent() {
       </div>
 
       {open && <div className={styles.detail}>
-        <p>보관 전에 <b>이름·연락처·이메일·주민번호·주소</b>를 지웁니다. 기간·회사명·직무·성과 수치는 남깁니다 — 이것까지 지우면 분석할 것이 없습니다.</p>
-        <p><b>동의하지 않아도 결과와 기능은 완전히 같습니다.</b> 철회하시면 이미 보관 중인 사본도 그 자리에서 지우고, 이후 수집도 중단합니다.</p>
-        {/* 지워지지 않는 것을 말하지 않으면 앞의 약속이 실제보다 강해집니다. */}
-        <ul>
-          {REDACTION_LIMITS.map((limit) => <li key={limit}>{limit}</li>)}
-        </ul>
+        {/* 두 줄. 결제 전에 이미 물어보고 설명한 것을, 답을 바꾸는 자리에서
+            다시 펼쳐 놓을 이유가 없습니다.
+
+            "개인정보를 지운 사본"이라고만 쓰면 실제보다 강한 약속이 됩니다 —
+            회사명과 기간은 분석에 필요해 남고, 소속이 아주 특정하면 그것만으로
+            사람이 좁혀질 수 있습니다. 목록을 지우는 대신 약속을 실제 크기로
+            줄여 적습니다. 자세한 한계는 개인정보처리방침이 생기면 그쪽으로
+            갑니다. */}
+        <p>이름·연락처·주소를 지우고 보관합니다. <b>회사명·기간·성과는 분석에 필요해 남습니다.</b></p>
+        <p>동의하지 않아도 결과와 기능은 완전히 같고, 철회하시면 보관 중인 사본도 그 자리에서 지웁니다.</p>
       </div>}
 
       {status && <p className={`${styles.status} ${status.tone === "ok" ? styles.ok : styles.bad}`}>{status.text}</p>}
