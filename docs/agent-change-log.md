@@ -4132,3 +4132,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 800 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build`에 `/api/meensoo/campaigns` 등록 확인.
 - 남은 단계: ④ 마이페이지 등록칸, ⑦⑧ 메일 캠페인 연결·provider id, ⑨ 게시판(코덱스 영역).
 - Rollback: 이 커밋 revert + `drop table public.coupon_campaigns cascade;`
+
+## 2026-09-01 — Claude: 마이페이지 쿠폰 등록 + 메일 기록에 캠페인·제공자 ID (④⑦⑧)
+
+- Agent/session: Claude. 사용자 스펙 이어서.
+- Status: main에 적용. **마이그레이션 추가 — `20260901030000_mail_log_campaign.sql` 적용 필요.**
+- ④ 마이페이지: `/refer`의 이용권 지갑 **바로 아래**에 쿠폰 등록칸을 놓았습니다. 결과가 보이는 곳과 넣는 곳이 붙어 있어야 코드를 받은 사람이 "어디에 넣지"를 찾지 않습니다. 추천코드 칸은 같은 화면 아래쪽에 **그대로 따로** 있습니다. 등록 성공 시 **상품과 만료일**을 함께 보여줍니다 — 둘 다 없으면 "등록되었습니다"만 남고 그건 확인이 아니라 인사입니다.
+- ⑦⑧ 메일: `mail_send_log`에 `provider_message_id`, `campaign_id` 추가. 발송 폼에 `campaignId`가 실려 오면 묶고, 없으면 예전과 동일하게 동작합니다(일반 메일이 이 값 때문에 실패할 이유가 없습니다).
+- **작업 중 발견해 고친 버그:** Resend 응답에서 식별자를 읽는 코드를 성공 분기에 넣었더니, 응답 본문을 못 읽는 경우 그 예외가 바깥 `catch`로 떨어져 **이미 보낸 메일이 `FAILED`로 기록**됐습니다(기존 테스트가 잡아냈습니다). 식별자 읽기를 자체 `try/catch`로 감쌌습니다 — 식별자를 못 읽는 것과 발송이 실패한 것은 다릅니다.
+- 발송 기록 화면에 `Resend {id}`를 표시합니다. 우리 기록은 "요청을 넘겼다"까지고 실제 배달은 Resend에 있으므로, 그 둘을 잇는 값을 보관만 하지 않고 보이게 둡니다.
+- Files: `src/app/refer/page.tsx`, `coupon-code-entry.tsx`, `manual-email.ts`, `admin-repository.ts`, `api/mail/send/route.ts`, `meensoo/mail/history/page.tsx`, `coupon-code.test.ts`(+3), 신규 마이그레이션.
+- Validation: 803 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- 남은 것: 캠페인 화면에서 기관에 메일 보내기(팜플렛·CSV 첨부) 연결, ⑨ 게시판(코덱스 영역).
+- Rollback: 이 커밋 revert. 추가된 컬럼은 nullable이라 되돌려도 기존 기록이 그대로 읽힙니다.

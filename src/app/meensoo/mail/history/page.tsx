@@ -57,6 +57,12 @@ export default async function MailHistoryPage() {
                           {entry.attachmentNames.length > 0 && (
                             <small>첨부 {entry.attachmentNames.length}개 · {entry.attachmentNames.join(", ")}</small>
                           )}
+                          {/* 우리 기록은 "요청을 넘겼다"까지입니다. 실제 배달을
+                              확인하려면 이 식별자로 Resend에서 찾아야 하므로,
+                              보관만 하지 않고 눈에 보이게 둡니다. */}
+                          {entry.providerMessageId && (
+                            <small className={styles.mono}>Resend {entry.providerMessageId}</small>
+                          )}
                         </details>
                       ) : (
                         <small className={styles.mono}>기록 없음</small>

@@ -50,9 +50,12 @@ export function CouponCodeEntry({ compact = false }: { compact?: boolean }) {
         setBusy(false);
         return;
       }
-      const result = data as { product?: string; partnerName?: string } | null;
+      const result = data as { product?: string; partnerName?: string; expiresAt?: string | null } | null;
       setDone(true);
-      setMessage(`${result?.product ?? ""} 무료 이용권이 계정에 들어왔습니다. 결제 화면에서 바로 쓰실 수 있습니다.`.trim());
+      // 무엇을 받았고 언제까지인지. 둘 다 없으면 "등록되었습니다"만 남고,
+      // 그건 확인이 아니라 인사입니다.
+      const until = result?.expiresAt ? ` ${new Date(result.expiresAt).toLocaleDateString("ko-KR")}까지 쓰실 수 있습니다.` : "";
+      setMessage(`${result?.product ?? ""} 무료 이용권이 계정에 들어왔습니다.${until} 결제 화면에서 바로 쓰실 수 있습니다.`.trim());
     } catch (error) {
       console.error("claim_coupon_code", error);
       setMessage("등록하지 못했습니다. 잠시 후 다시 시도해 주세요.");

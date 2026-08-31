@@ -97,3 +97,31 @@ describe("코드 생성", () => {
     expect(csv).toContain('"A-B","미사용",""');
   });
 });
+
+describe("메일 발송 기록", () => {
+  const sender = readFileSync("src/server/notifications/manual-email.ts", "utf8");
+  const repo = readFileSync("src/server/admin/admin-repository.ts", "utf8");
+  const history = readFileSync("src/app/meensoo/mail/history/page.tsx", "utf8");
+
+  it("보낸 메일을 실패로 기록하지 않는다", () => {
+    // The id lives in the response body. If reading it throws, the outer catch
+    // files an already-delivered mail under 실패 — which is worse than having no
+    // id at all.
+    expect(sender).toContain("sent.push(to);");
+    const success = sender.slice(sender.indexOf("sent.push(to);"), sender.indexOf("} else {"));
+    expect(success).toContain("try {");
+    expect(success).toContain("} catch {");
+  });
+
+  it("제공자 식별자와 캠페인을 함께 남긴다", () => {
+    // Our log ends at "handed it over". Delivery lives in Resend, and this id is
+    // the only thing joining the two.
+    expect(repo).toContain("provider_message_id: input.providerMessageIds?.[recipient] ?? null");
+    expect(repo).toContain("campaign_id: input.campaignId ?? null");
+    expect(history).toContain("entry.providerMessageId");
+  });
+
+  it("실패한 줄에는 식별자를 붙이지 않는다", () => {
+    expect(repo).toContain('status: "FAILED", error_message: item.error.slice(0, 500), provider_message_id: null');
+  });
+});

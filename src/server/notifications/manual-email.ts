@@ -74,6 +74,10 @@ export async function sendManualEmail(input: ManualEmailInput, fetchImplementati
 
   const sent: string[] = [];
   const failed: Array<{ to: string; reason: string }> = [];
+  // 제공자가 준 식별자. 이것이 없으면 "보냈다는데 안 왔다"를 확인할 방법이
+  // 없습니다 — 우리 기록은 "요청을 넘겼다"까지이고, 그 뒤 배달 여부는
+  // Resend 대시보드에 있습니다. 그 둘을 잇는 값입니다.
+  const messageIds: Record<string, string> = {};
 
   for (const to of input.to) {
     try {
@@ -84,13 +88,24 @@ export async function sendManualEmail(input: ManualEmailInput, fetchImplementati
         signal: AbortSignal.timeout(files.length > 0 ? 60_000 : 15_000),
         body: JSON.stringify({ from: `MOOA Resume <${from}>`, to: [to], subject, text: body, html, ...(replyTo ? { reply_to: replyTo } : {}), ...(files.length > 0 ? { attachments: files } : {}) }),
       });
-      if (response.ok) sent.push(to);
-      else failed.push({ to, reason: `RESEND_${response.status}` });
+      if (response.ok) {
+        sent.push(to);
+        // 식별자를 못 읽는 것과 발송이 실패한 것은 다릅니다. 여기서 새어 나간
+        // 예외가 아래 catch로 떨어지면, 이미 보낸 메일이 실패로 기록됩니다.
+        try {
+          const payload = await response.json() as { id?: string } | null;
+          if (payload?.id) messageIds[to] = payload.id;
+        } catch {
+          // 발송은 성공했습니다. 식별자만 비워 둡니다.
+        }
+      } else {
+        failed.push({ to, reason: `RESEND_${response.status}` });
+      }
     } catch (error) {
       failed.push({ to, reason: error instanceof Error ? error.message : "UNKNOWN_ERROR" });
     }
   }
 
   if (sent.length === 0) throw new Error(failed[0]?.reason ?? "RESEND_NO_RECIPIENTS");
-  return { sent, failed };
+  return { sent, failed, messageIds };
 }

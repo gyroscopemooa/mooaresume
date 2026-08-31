@@ -45,6 +45,12 @@ export async function POST(request: Request) {
   // Checked before the recipient list for the same reason the list is checked
   // before sending: the operator should hear about a bad file once, not after
   // half a class already has the mail without it.
+  // 폼에 실려 오면 캠페인에 묶고, 없으면 예전처럼 그냥 보냅니다. 스키마를
+  // 건드리지 않는 쪽으로 둔 이유는, 일반 메일 발송이 이 값 때문에 실패할
+  // 이유가 없기 때문입니다.
+  const rawCampaignId = (payload?.fields as Record<string, unknown> | undefined)?.campaignId;
+  const campaignId = typeof rawCampaignId === "string" && /^[0-9a-f-]{36}$/i.test(rawCampaignId) ? rawCampaignId : null;
+
   const picked = payload?.files ?? [];
   const attachmentCheck = checkAttachments(picked.map((file) => ({ name: file.name, type: file.type, size: file.size })));
   if (!attachmentCheck.ok) return NextResponse.json({ error: attachmentCheckMessage(attachmentCheck) }, { status: 400 });
@@ -80,6 +86,8 @@ export async function POST(request: Request) {
       // Kept so the console can answer "what did I write" later, not only
       // "who did it reach".
       body: parsed.data.body,
+      providerMessageIds: result.messageIds,
+      campaignId: campaignId || null,
       attachmentNames: attachments.map((file) => file.filename),
     });
     if (result.failed.length > 0) {

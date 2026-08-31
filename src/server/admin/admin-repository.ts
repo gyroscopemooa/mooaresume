@@ -218,12 +218,15 @@ export type AdminMailEntry = {
   /** What was actually written. Null on rows saved before the body was kept. */
   body: string | null;
   attachmentNames: string[];
+  /** Resend's id for this message. Null on failures and on rows saved before it was kept. */
+  providerMessageId: string | null;
+  campaignId: string | null;
 };
 
 export async function listMailLog(limit = 200): Promise<AdminMailEntry[]> {
   const { data, error } = await serviceClient()
     .from("mail_send_log")
-    .select("id, batch_id, recipient, subject, reply_to, status, error_message, sent_at, body, attachment_names")
+    .select("id, batch_id, recipient, subject, reply_to, status, error_message, sent_at, body, attachment_names, provider_message_id, campaign_id")
     .order("sent_at", { ascending: false })
     .limit(limit);
   if (error || !data) return [];
@@ -237,6 +240,8 @@ export async function listMailLog(limit = 200): Promise<AdminMailEntry[]> {
     errorMessage: (row.error_message as string | null) ?? null,
     sentAt: row.sent_at as string,
     body: (row.body as string | null) ?? null,
+    providerMessageId: (row.provider_message_id as string | null) ?? null,
+    campaignId: (row.campaign_id as string | null) ?? null,
     attachmentNames: (row.attachment_names as string[] | null) ?? [],
   }));
 }
@@ -360,6 +365,10 @@ export async function recordMailSends(input: {
   /** Trimmed to the column's ceiling so an oversized body cannot fail the whole insert. */
   body?: string;
   attachmentNames?: string[];
+  /** 제공자 식별자. 배달 확인은 이 값으로만 이어집니다. */
+  providerMessageIds?: Record<string, string>;
+  /** 협업 기관 메일이면 어느 캠페인이었는지. */
+  campaignId?: string | null;
 }) {
   const shared = {
     batch_id: input.batchId,
@@ -367,10 +376,11 @@ export async function recordMailSends(input: {
     reply_to: input.replyTo,
     body: input.body?.slice(0, 50_000) ?? null,
     attachment_names: input.attachmentNames?.length ? input.attachmentNames : null,
+    campaign_id: input.campaignId ?? null,
   };
   const rows = [
-    ...input.sent.map((recipient) => ({ ...shared, recipient, status: "SENT", error_message: null })),
-    ...input.failed.map((item) => ({ ...shared, recipient: item.to, status: "FAILED", error_message: item.error.slice(0, 500) })),
+    ...input.sent.map((recipient) => ({ ...shared, recipient, status: "SENT", error_message: null, provider_message_id: input.providerMessageIds?.[recipient] ?? null })),
+    ...input.failed.map((item) => ({ ...shared, recipient: item.to, status: "FAILED", error_message: item.error.slice(0, 500), provider_message_id: null })),
   ];
   if (rows.length === 0) return;
   const { error } = await serviceClient().from("mail_send_log").insert(rows);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HeaderAccount } from "@/components/header-account";
 import { ReferralPanel } from "@/components/referral-panel";
 import { ReferralCodeEntry } from "@/components/referral-code-entry";
+import { CouponCodeEntry } from "@/components/coupon-code-entry";
 import { CreditWallet } from "@/components/credit-wallet";
 import styles from "./refer.module.css";
 
@@ -40,6 +41,11 @@ export default function ReferPage() {
         {/* Where a granted credit becomes visible. Until now it appeared only
             at the moment it was spent. */}
         <CreditWallet />
+        {/* 이용권을 보는 자리 바로 아래. 코드를 받은 사람이 "어디에 넣지"를
+            찾아 헤매지 않도록, 결과가 보이는 곳과 넣는 곳을 붙여 둡니다.
+            추천코드 칸은 이 화면 아래쪽에 따로 있습니다 — 둘은 반대로
+            동작하므로 합치지 않습니다. */}
+        <CouponCodeEntry />
 
         {/* The other direction. Someone who was handed a code will come here
             looking for where to put it, and the only field for it used to be
