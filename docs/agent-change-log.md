@@ -4207,3 +4207,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `admin-repository.ts`, `api/meensoo/campaigns/route.ts`, `campaign-creator.tsx`, `coupons/page.tsx`, `coupons.module.css`, `domain/coupon-code.ts`, `coupon-code.test.ts`(+3). 삭제: `coupon-creator.tsx`.
 - Validation: 811 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 협업 쿠폰 화면을 목록 + 슬라이드 패널로
+
+- Agent/session: Claude. 사용자 지적("사용법이 너무 어렵다 · 한번 열면 닫기도 애매하다 · 페이지를 나눌지 한 화면에서 할지").
+- Status: main에 적용. 마이그레이션 없음. **기능은 그대로이고 배치만 바꿨습니다.**
+- 판단(페이지 분리 대신 한 화면 유지): 이 화면을 여는 이유는 대개 **"지금 어떻게 되고 있나"**입니다. 그래서 목록이 먼저 나와야 하고, 만들기·코드·홍보물·메일은 **가끔 하는 일**이라 위에 겹쳐 띄우면 됩니다. 페이지를 나누면 캠페인 하나를 보려고 주소를 오가야 해서 오히려 번거롭습니다.
+- Change: 폼·코드목록·홍보물·메일을 세로로 쌓아 두던 것을 **표 + 오른쪽 슬라이드 패널**로 바꿨습니다.
+  - 첫 화면: 캠페인 표(기관·캠페인 / 상품 / 사용 n/N / 기간)와 행마다 `코드` `홍보물` `메일` 버튼. 없으면 빈 상태 안내.
+  - 패널: 상세는 **탭 3개**(코드·홍보물·메일), 만들기는 하단에 `취소`/`캠페인 만들기`.
+  - **닫는 방법을 셋 두었습니다** — ✕ 버튼, 바깥 클릭, `Esc`. 하나만 두면 그 하나를 못 찾은 사람은 갇힙니다.
+  - 만들기를 마치면 그대로 상세 패널로 넘어가 코드가 바로 보입니다.
+  - 좁은 화면에서는 패널이 전체 폭, 표는 카드로 접힙니다.
+- Files: `campaign-creator.tsx`(렌더 재구성), `coupons.module.css`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

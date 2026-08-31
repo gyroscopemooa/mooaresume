@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminCampaign } from "@/server/admin/admin-repository";
 import { MailComposer } from "../mail/mail-composer";
@@ -67,6 +67,22 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const [copied, setCopied] = useState("");
   // 두 방식을 한 화면에서 고릅니다. 따로 두었더니 "왜 두 개냐"가 먼저 걸렸습니다.
   const [mode, setMode] = useState("UNIQUE");
+  /**
+   * 목록이 먼저, 나머지는 위에 겹칩니다.
+   *
+   * 만들기·코드·홍보물·메일을 한 장에 쌓아 두었더니 열고 나면 닫을 방법이
+   * 애매했습니다. 관리자 화면을 여는 이유는 대개 "지금 어떻게 되고 있나"이므로
+   * 목록을 바닥에 두고, 나머지는 옆에서 밀려 나왔다가 ✕ 또는 Esc로 닫힙니다.
+   */
+  const [panel, setPanel] = useState<null | "create" | "detail">(null);
+  const [tab, setTab] = useState<"codes" | "flyer" | "mail">("codes");
+
+  useEffect(() => {
+    if (!panel) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setPanel(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panel]);
 
   // 기관명 하나로 나머지를 채웁니다. 직접 고치신 뒤에는 덮어쓰지 않습니다 —
   // 자동으로 채우는 편의가 손으로 쓴 값을 지우면 그건 편의가 아닙니다.
@@ -112,6 +128,8 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
       if (body.campaign) {
         setPreview(body.campaign);
         setCodeList({ id: body.campaign.id, codes: (body.codes ?? []).map((code) => ({ code, status: "미사용", claimedAt: null, claimedBy: null })) });
+        setTab("codes");
+        setPanel("detail");
       }
       router.refresh();
     } catch (error) {
@@ -119,6 +137,14 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
       setMessage("만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
     setBusy(false);
+  }
+
+  function openDetail(campaign: AdminCampaign, next: "codes" | "flyer" | "mail") {
+    setPreview(campaign);
+    setTab(next);
+    setPanel("detail");
+    setMailFiles(null);
+    void loadCodes(campaign);
   }
 
   async function loadCodes(campaign: AdminCampaign) {
@@ -134,158 +160,190 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
     </label>
   );
 
+
   return (
     <>
-      <section className={styles.creator}>
-        <div className={styles.grid}>
-          <label className={styles.field}>
-            <span>발급 방식</span>
-            <select value={mode} onChange={(event) => setMode(event.target.value)} disabled={busy}>
-              <option value="UNIQUE">고유 코드 여러 장 — 기관에 목록 전달, 사용 추적</option>
-              <option value="SHARED">공유 코드 한 장 — 팜플렛에 찍어 배포</option>
-            </select>
-          </label>
-          {field("협업 기관명", partnerName, pickPartner, "청년재단")}
-          {field("캠페인명", name, setName, "청년재단 설문 이벤트")}
-          {field("코드 접두어", codePrefix, (next) => setCodePrefix(next.toUpperCase()), "비워 두면 자동")}
-          <label className={styles.field}>
-            <span>대상 상품</span>
-            <select value={product} onChange={(event) => pickProduct(event.target.value)} disabled={busy}>
-              <option value="QUICK">QUICK</option><option value="PRO">PRO</option><option value="FINAL">FINAL</option>
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span>혜택 유형</span>
-            <select value={benefitType} onChange={(event) => setBenefitType(event.target.value)} disabled={busy}>
-              <option value="FREE_CREDIT">무료 이용권</option>
-              <option value="FIXED_DISCOUNT">정액 할인</option>
-              <option value="PERCENT_DISCOUNT">정률 할인</option>
-            </select>
-          </label>
-          {benefitType !== "FREE_CREDIT" && field(benefitType === "FIXED_DISCOUNT" ? "할인 금액(원)" : "할인율(%)", benefitAmount, setBenefitAmount, "", "number")}
-          {field(mode === "SHARED" ? "사용 가능 인원" : "발급 수량", totalCount, setTotalCount, "50", "number")}
-          {field("1인 사용 제한", perUserLimit, setPerUserLimit, "1", "number")}
-          {field("시작일", startsAt, setStartsAt, "", "date")}
-          {field("종료일", expiresAt, setExpiresAt, "", "date")}
-        </div>
+      {/* 바닥은 목록입니다. 이 화면을 여는 이유가 대개 현황 확인이기 때문입니다. */}
+      <div className={styles.toolbar}>
+        <span>{campaigns.length}개 캠페인</span>
+        <button type="button" className={styles.primary} onClick={() => { setPanel("create"); setMessage(""); }}>
+          새 캠페인
+        </button>
+      </div>
 
-        {benefitType !== "FREE_CREDIT" && (
-          <p className={styles.message}>
-            할인 쿠폰은 <b>아직 지급 경로가 없습니다.</b> 지금은 무료 이용권만 실제로 지급됩니다.
-          </p>
-        )}
+      {campaigns.length === 0 ? (
+        <p className={styles.empty}>아직 만든 캠페인이 없습니다. <b>새 캠페인</b>으로 시작하세요.</p>
+      ) : (
+        <table className={styles.table}>
+          <thead>
+            <tr><th>기관 · 캠페인</th><th>상품</th><th>사용</th><th>기간</th><th /></tr>
+          </thead>
+          <tbody>
+            {campaigns.map((campaign) => (
+              <tr key={campaign.id} data-done={Boolean(campaign.archivedAt)}>
+                <td>
+                  <b>{campaign.partnerName}</b>
+                  <small>{campaign.name}</small>
+                </td>
+                <td>{campaign.product}</td>
+                <td>
+                  <b>{campaign.usedCodes}</b> / {campaign.totalCodes}
+                  {campaign.expiredCodes > 0 && <small>만료 {campaign.expiredCodes}</small>}
+                </td>
+                <td>{campaign.expiresAt ? `${campaign.expiresAt.slice(0, 10)}까지` : "기한 없음"}</td>
+                <td className={styles.rowActions}>
+                  <button type="button" onClick={() => openDetail(campaign, "codes")}>코드</button>
+                  <button type="button" onClick={() => openDetail(campaign, "flyer")}>홍보물</button>
+                  <button type="button" onClick={() => openDetail(campaign, "mail")}>메일</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
-        <details className={styles.pamphletFields}>
-          <summary>설명·팜플렛 문구 — 기본값 그대로 두셔도 됩니다</summary>
-          <div className={styles.grid}>
-            {field("주의사항", notice, setNotice)}
-            {field("부제", subtitleText, setSubtitleText)}
-            {field("혜택", benefitText, setBenefitText)}
-            {field("대상", audienceText, setAudienceText)}
-            {field("사용방법", usageText, setUsageText)}
-            {field("하단 안내", footnoteText, setFootnoteText)}
-          </div>
-        </details>
+      {panel && (
+        <>
+          <button type="button" className={styles.backdrop} aria-label="닫기" onClick={() => setPanel(null)} />
+          <aside className={styles.panel} role="dialog" aria-modal="true">
+            <header className={styles.panelHead}>
+              <div>
+                <b>{panel === "create" ? "새 캠페인" : preview?.partnerName ?? ""}</b>
+                {panel === "detail" && <small>{preview?.name}</small>}
+              </div>
+              {/* 닫는 방법이 셋입니다: ✕, 바깥 클릭, Esc. 하나만 두면 그 하나를
+                  못 찾은 사람은 갇힙니다. */}
+              <button type="button" onClick={() => setPanel(null)} aria-label="닫기">✕</button>
+            </header>
 
-        <div className={styles.creatorFoot}>
-          <button type="button" onClick={() => void create()} disabled={busy || !partnerName || !name}>
-            {busy ? "만드는 중..." : "캠페인 만들기"}
-          </button>
-          {message && <p className={styles.message} data-ok={message.includes("만들었습니다")}>{message}</p>}
-        </div>
-      </section>
+            <div className={styles.panelBody}>
+              {panel === "create" && <>
+                <div className={styles.grid}>
+                  <label className={styles.field}>
+                    <span>발급 방식</span>
+                    <select value={mode} onChange={(event) => setMode(event.target.value)} disabled={busy}>
+                      <option value="UNIQUE">고유 코드 여러 장 — 기관에 목록 전달, 사용 추적</option>
+                      <option value="SHARED">공유 코드 한 장 — 홍보물에 찍어 배포</option>
+                    </select>
+                  </label>
+                  {field("협업 기관명", partnerName, pickPartner, "청년재단")}
+                  {field("캠페인명", name, setName, "청년재단 설문 이벤트")}
+                  {field("코드 접두어", codePrefix, (next) => setCodePrefix(next.toUpperCase()), "비워 두면 자동")}
+                  <label className={styles.field}>
+                    <span>대상 상품</span>
+                    <select value={product} onChange={(event) => pickProduct(event.target.value)} disabled={busy}>
+                      <option value="QUICK">QUICK</option><option value="PRO">PRO</option><option value="FINAL">FINAL</option>
+                    </select>
+                  </label>
+                  <label className={styles.field}>
+                    <span>혜택 유형</span>
+                    <select value={benefitType} onChange={(event) => setBenefitType(event.target.value)} disabled={busy}>
+                      <option value="FREE_CREDIT">무료 이용권</option>
+                      <option value="FIXED_DISCOUNT">정액 할인</option>
+                      <option value="PERCENT_DISCOUNT">정률 할인</option>
+                    </select>
+                  </label>
+                  {benefitType !== "FREE_CREDIT" && field(benefitType === "FIXED_DISCOUNT" ? "할인 금액(원)" : "할인율(%)", benefitAmount, setBenefitAmount, "", "number")}
+                  {field(mode === "SHARED" ? "사용 가능 인원" : "발급 수량", totalCount, setTotalCount, "50", "number")}
+                  {field("1인 사용 제한", perUserLimit, setPerUserLimit, "1", "number")}
+                  {field("시작일", startsAt, setStartsAt, "", "date")}
+                  {field("종료일", expiresAt, setExpiresAt, "", "date")}
+                </div>
 
-      {campaigns.length > 0 && <section className={styles.list}>
-        {campaigns.map((campaign) => (
-          <article key={campaign.id} data-done={Boolean(campaign.archivedAt)}>
-            <div>
-              <b>{campaign.partnerName} · {campaign.name}</b>
-              <small>
-                {campaign.product} · 전체 {campaign.totalCodes}장 · 사용 {campaign.usedCodes} · 미사용 {campaign.totalCodes - campaign.usedCodes - campaign.expiredCodes} · 만료 {campaign.expiredCodes}
-              </small>
+                {benefitType !== "FREE_CREDIT" && (
+                  <p className={styles.message}>할인 쿠폰은 <b>아직 지급 경로가 없습니다.</b> 지금은 무료 이용권만 실제로 지급됩니다.</p>
+                )}
+
+                <details className={styles.pamphletFields}>
+                  <summary>설명·홍보물 문구 — 기본값 그대로 두셔도 됩니다</summary>
+                  <div className={styles.grid}>
+                    {field("주의사항", notice, setNotice)}
+                    {field("부제", subtitleText, setSubtitleText)}
+                    {field("혜택", benefitText, setBenefitText)}
+                    {field("대상", audienceText, setAudienceText)}
+                    {field("사용방법", usageText, setUsageText)}
+                    {field("하단 안내", footnoteText, setFootnoteText)}
+                  </div>
+                </details>
+              </>}
+
+              {panel === "detail" && preview && <>
+                <nav className={styles.tabs}>
+                  <button type="button" data-active={tab === "codes"} onClick={() => setTab("codes")}>코드</button>
+                  <button type="button" data-active={tab === "flyer"} onClick={() => setTab("flyer")}>홍보물</button>
+                  <button type="button" data-active={tab === "mail"} onClick={() => setTab("mail")}>메일</button>
+                </nav>
+
+                {tab === "codes" && codeList && <>
+                  <div className={styles.codeHead}>
+                    <b>{codeList.codes.length}장 · 사용 {codeList.codes.filter((row) => row.status === "사용됨").length}</b>
+                    <button type="button" onClick={() => { void navigator.clipboard.writeText(codeList.codes.map((row) => row.code).join("\n")); setCopied("all"); }}>
+                      {copied === "all" ? "복사됨" : "전체 복사"}
+                    </button>
+                    <a href={`/api/meensoo/campaigns?campaignId=${codeList.id}&format=csv`}>CSV</a>
+                  </div>
+                  {/* 한 장씩 복사하는 자리. 전체 복사밖에 없으면 한 명에게 코드
+                      하나를 보낼 때 남의 코드까지 함께 붙여 넣게 됩니다. */}
+                  <ul className={styles.codeGrid}>
+                    {codeList.codes.map((row) => (
+                      <li key={row.code} data-used={row.status !== "미사용"}>
+                        <code>{row.code}</code>
+                        <small>
+                          {row.status}
+                          {row.claimedBy ? ` · ${row.claimedBy}` : ""}
+                          {row.claimedAt ? ` · ${row.claimedAt.slice(0, 10)}` : ""}
+                        </small>
+                        <button type="button" onClick={() => { void navigator.clipboard.writeText(row.code); setCopied(row.code); }}>
+                          {copied === row.code ? "복사됨" : "복사"}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>}
+
+                {tab === "flyer" && <>
+                  {/* 기본은 코드 없는 기관 배포용. 개별 코드를 넣은 장은 아래에서 따로. */}
+                  <CouponPamphlet coupon={{ ...preview, code: null }} filename={`mooaresume_${preview.partnerName}_배포용`}
+                    onAttach={(file) => { setMailFiles((current) => [...(current ?? []), file]); setTab("mail"); }}/>
+                  <label className={styles.field}>
+                    <span>개별 코드 이미지 (선택)</span>
+                    <input value={singleCode} onChange={(event) => setSingleCode(event.target.value.toUpperCase())} placeholder="YOUTH-AB12-CD34"/>
+                  </label>
+                  {singleCode.trim() && <CouponPamphlet coupon={{ ...preview, code: singleCode }} filename={`mooaresume_${singleCode}`}/>}
+                </>}
+
+                {tab === "mail" && <>
+                  {/* 파일을 만든 화면에서 바로 보냅니다. 내려받아 두었다가 나중에
+                      폴더에서 찾아 올리면 다른 캠페인 것을 붙이게 됩니다. */}
+                  <div className={styles.creatorFoot}>
+                    <button type="button" onClick={() => {
+                      const csv = new File([buildCouponCsv(codeList?.codes ?? [])], `coupons_${preview.partnerName}.csv`, { type: "text/csv" });
+                      setMailFiles((current) => [...(current ?? []).filter((file) => !file.name.endsWith(".csv")), csv]);
+                    }}>코드 CSV 첨부</button>
+                    <small>홍보물은 <b>홍보물</b> 탭의 [메일에 첨부]로 붙일 수 있습니다.</small>
+                  </div>
+                  <MailComposer
+                    campaignId={preview.id}
+                    initialSubject={`[무아레쥬메] ${preview.partnerName} 협업 무료 이용권 안내`}
+                    initialBody={`안녕하세요, 무아레쥬메입니다.\n\n${preview.name} 진행을 위한 무료 이용권 ${preview.totalCodes}장을 보내드립니다.\n\n· 혜택: ${preview.benefitText}\n· 대상: ${preview.audienceText}\n· 사용방법: ${preview.usageText}\n\n첨부된 이미지는 배포용이며, 쿠폰 코드는 CSV 파일에 있습니다.\n감사합니다.`}
+                    initialFiles={mailFiles ?? []}
+                  />
+                </>}
+              </>}
             </div>
-            <span>{campaign.expiresAt ? `${campaign.expiresAt.slice(0, 10)}까지` : "기한 없음"}</span>
-            <button type="button" onClick={() => void loadCodes(campaign)}>코드 목록</button>
-            <a href={`/api/meensoo/campaigns?campaignId=${campaign.id}&format=csv`}>CSV</a>
-            <button type="button" onClick={() => { const next = preview?.id === campaign.id ? null : campaign; setPreview(next); if (next) void loadCodes(next); }}>
-              {preview?.id === campaign.id ? "닫기" : "팜플렛"}
-            </button>
-          </article>
-        ))}
-      </section>}
 
-      {codeList && <section className={styles.codeBox}>
-        <div>
-          <b>쿠폰 코드 {codeList.codes.length}장</b>
-          <button type="button" onClick={() => { void navigator.clipboard.writeText(codeList.codes.join("\n")); setCopied("all"); }}>
-            {copied === "all" ? "복사됨" : "전체 복사"}
-          </button>
-          <a href={`/api/meensoo/campaigns?campaignId=${codeList.id}&format=csv`}>CSV 내려받기</a>
-        </div>
-        {/* 한 장씩 복사하는 자리. 전체 복사밖에 없으면 한 명에게 코드 하나를
-            보낼 때 남의 코드까지 함께 붙여 넣게 됩니다. */}
-        <ul className={styles.codeGrid}>
-          {codeList.codes.map((row) => (
-            <li key={row.code} data-used={row.status !== "미사용"}>
-              <code>{row.code}</code>
-              {/* 누가 언제 썼는지. 개수만 세면 "50장 중 12장"까지는 알아도
-                  기관이 묻는 "우리 당첨자가 실제로 썼나요"에 답할 수 없습니다. */}
-              <small>
-                {row.status}
-                {row.claimedBy ? ` · ${row.claimedBy}` : ""}
-                {row.claimedAt ? ` · ${row.claimedAt.slice(0, 10)}` : ""}
-              </small>
-              <button type="button" onClick={() => { void navigator.clipboard.writeText(row.code); setCopied(row.code); }}>
-                {copied === row.code ? "복사됨" : "복사"}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>}
-
-      {preview && <>
-        {/* 기본은 코드 없는 기관 배포용. 개별 코드를 넣은 장은 아래에서 따로 만듭니다. */}
-        <CouponPamphlet coupon={{ ...preview, code: null }} filename={`mooaresume_${preview.partnerName}_배포용`}
-          onAttach={(file) => setMailFiles((current) => [...(current ?? []), file])}/>
-        {/* 팜플렛과 코드 목록을 붙여 바로 보냅니다. 만들어 놓고 다른 화면에서
-            다시 찾아 올리게 하면, 잘못된 캠페인의 파일을 붙이는 일이 생깁니다. */}
-        <div className={styles.creatorFoot}>
-          <button type="button" onClick={() => {
-            const csv = new File(
-              [buildCouponCsv(codeList?.codes ?? [])],
-              `coupons_${preview.partnerName}.csv`,
-              { type: "text/csv" },
-            );
-            setMailFiles([csv]);
-          }}>코드 CSV를 붙여 메일 쓰기</button>
-        </div>
-
-        {mailFiles && <section className={styles.mailBox}>
-          <MailComposer
-            campaignId={preview.id}
-            initialSubject={`[무아레쥬메] ${preview.partnerName} 협업 무료 이용권 안내`}
-            initialBody={`안녕하세요, 무아레쥬메입니다.
-
-${preview.name} 진행을 위한 무료 이용권 ${preview.totalCodes}장을 보내드립니다.
-
-· 혜택: ${preview.benefitText}
-· 대상: ${preview.audienceText}
-· 사용방법: ${preview.usageText}
-
-첨부된 이미지는 배포용이며, 쿠폰 코드는 CSV 파일에 있습니다.
-감사합니다.`}
-            initialFiles={mailFiles}
-          />
-        </section>}
-
-        <section className={styles.singleCode}>
-          <label className={styles.field}>
-            <span>개별 코드 이미지 (선택)</span>
-            <input value={singleCode} onChange={(event) => setSingleCode(event.target.value.toUpperCase())} placeholder="YOUTH-AB12-CD34"/>
-          </label>
-          {singleCode.trim() && <CouponPamphlet coupon={{ ...preview, code: singleCode }} filename={`mooaresume_${singleCode}`}/>}
-        </section>
-      </>}
+            {panel === "create" && (
+              <footer className={styles.panelFoot}>
+                {message && <p className={styles.message} data-ok={message.includes("만들었습니다")}>{message}</p>}
+                <button type="button" onClick={() => setPanel(null)}>취소</button>
+                <button type="button" className={styles.primary} onClick={() => void create()} disabled={busy || !partnerName || !name}>
+                  {busy ? "만드는 중..." : "캠페인 만들기"}
+                </button>
+              </footer>
+            )}
+          </aside>
+        </>
+      )}
     </>
   );
 }
