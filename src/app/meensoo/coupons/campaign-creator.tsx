@@ -20,6 +20,8 @@ import styles from "./coupons.module.css";
 
 const PRODUCT_CHARACTERS: Record<string, number> = { QUICK: 8000, PRO: 30000, FINAL: 30000 };
 
+type CodeUse = { code: string; status: string; claimedAt: string | null; claimedBy: string | null };
+
 const asDate = (value: Date) => value.toISOString().slice(0, 10);
 
 /**
@@ -60,9 +62,11 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState<AdminCampaign | null>(null);
   const [singleCode, setSingleCode] = useState("");
-  const [codeList, setCodeList] = useState<{ id: string; codes: string[] } | null>(null);
+  const [codeList, setCodeList] = useState<{ id: string; codes: CodeUse[] } | null>(null);
   const [mailFiles, setMailFiles] = useState<File[] | null>(null);
   const [copied, setCopied] = useState("");
+  // 두 방식을 한 화면에서 고릅니다. 따로 두었더니 "왜 두 개냐"가 먼저 걸렸습니다.
+  const [mode, setMode] = useState("UNIQUE");
 
   // 기관명 하나로 나머지를 채웁니다. 직접 고치신 뒤에는 덮어쓰지 않습니다 —
   // 자동으로 채우는 편의가 손으로 쓴 값을 지우면 그건 편의가 아닙니다.
@@ -94,6 +98,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
           perUserLimit: Number(perUserLimit) || 1,
           totalCount: Number(totalCount) || 0,
           codePrefix,
+          mode,
           startsAt: startsAt ? new Date(startsAt).toISOString() : null,
           expiresAt: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
           description: null,
@@ -104,7 +109,10 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
       const body = await response.json().catch(() => ({})) as { campaign?: AdminCampaign; codes?: string[]; error?: string };
       if (!response.ok) { setMessage(body.error ?? `만들지 못했습니다. (${response.status})`); setBusy(false); return; }
       setMessage(`${body.codes?.length ?? 0}장을 만들었습니다.`);
-      if (body.campaign) { setPreview(body.campaign); setCodeList({ id: body.campaign.id, codes: body.codes ?? [] }); }
+      if (body.campaign) {
+        setPreview(body.campaign);
+        setCodeList({ id: body.campaign.id, codes: (body.codes ?? []).map((code) => ({ code, status: "미사용", claimedAt: null, claimedBy: null })) });
+      }
       router.refresh();
     } catch (error) {
       console.error("campaign-create", error);
@@ -115,8 +123,8 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
 
   async function loadCodes(campaign: AdminCampaign) {
     const response = await fetch(`/api/meensoo/campaigns?campaignId=${campaign.id}`);
-    const body = await response.json().catch(() => ({})) as { codes?: { code: string }[] };
-    setCodeList({ id: campaign.id, codes: (body.codes ?? []).map((row) => row.code) });
+    const body = await response.json().catch(() => ({})) as { codes?: CodeUse[] };
+    setCodeList({ id: campaign.id, codes: body.codes ?? [] });
   }
 
   const field = (labelText: string, value: string, onChange: (next: string) => void, placeholder = "", type = "text") => (
@@ -130,6 +138,13 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
     <>
       <section className={styles.creator}>
         <div className={styles.grid}>
+          <label className={styles.field}>
+            <span>발급 방식</span>
+            <select value={mode} onChange={(event) => setMode(event.target.value)} disabled={busy}>
+              <option value="UNIQUE">고유 코드 여러 장 — 기관에 목록 전달, 사용 추적</option>
+              <option value="SHARED">공유 코드 한 장 — 팜플렛에 찍어 배포</option>
+            </select>
+          </label>
           {field("협업 기관명", partnerName, pickPartner, "청년재단")}
           {field("캠페인명", name, setName, "청년재단 설문 이벤트")}
           {field("코드 접두어", codePrefix, (next) => setCodePrefix(next.toUpperCase()), "비워 두면 자동")}
@@ -148,7 +163,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
             </select>
           </label>
           {benefitType !== "FREE_CREDIT" && field(benefitType === "FIXED_DISCOUNT" ? "할인 금액(원)" : "할인율(%)", benefitAmount, setBenefitAmount, "", "number")}
-          {field("발급 수량", totalCount, setTotalCount, "50", "number")}
+          {field(mode === "SHARED" ? "사용 가능 인원" : "발급 수량", totalCount, setTotalCount, "50", "number")}
           {field("1인 사용 제한", perUserLimit, setPerUserLimit, "1", "number")}
           {field("시작일", startsAt, setStartsAt, "", "date")}
           {field("종료일", expiresAt, setExpiresAt, "", "date")}
@@ -210,11 +225,18 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
         {/* 한 장씩 복사하는 자리. 전체 복사밖에 없으면 한 명에게 코드 하나를
             보낼 때 남의 코드까지 함께 붙여 넣게 됩니다. */}
         <ul className={styles.codeGrid}>
-          {codeList.codes.map((value) => (
-            <li key={value}>
-              <code>{value}</code>
-              <button type="button" onClick={() => { void navigator.clipboard.writeText(value); setCopied(value); }}>
-                {copied === value ? "복사됨" : "복사"}
+          {codeList.codes.map((row) => (
+            <li key={row.code} data-used={row.status !== "미사용"}>
+              <code>{row.code}</code>
+              {/* 누가 언제 썼는지. 개수만 세면 "50장 중 12장"까지는 알아도
+                  기관이 묻는 "우리 당첨자가 실제로 썼나요"에 답할 수 없습니다. */}
+              <small>
+                {row.status}
+                {row.claimedBy ? ` · ${row.claimedBy}` : ""}
+                {row.claimedAt ? ` · ${row.claimedAt.slice(0, 10)}` : ""}
+              </small>
+              <button type="button" onClick={() => { void navigator.clipboard.writeText(row.code); setCopied(row.code); }}>
+                {copied === row.code ? "복사됨" : "복사"}
               </button>
             </li>
           ))}
@@ -230,7 +252,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
         <div className={styles.creatorFoot}>
           <button type="button" onClick={() => {
             const csv = new File(
-              [buildCouponCsv((codeList?.codes ?? []).map((code) => ({ code, status: "미사용", claimedAt: null })))],
+              [buildCouponCsv(codeList?.codes ?? [])],
               `coupons_${preview.partnerName}.csv`,
               { type: "text/csv" },
             );

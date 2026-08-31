@@ -160,3 +160,30 @@ describe("홍보물 시각 요소", () => {
     expect(flyer).toContain("const H = 1402");
   });
 });
+
+describe("사용 현황", () => {
+  const repo = readFileSync("src/server/admin/admin-repository.ts", "utf8");
+  const route = readFileSync("src/app/api/meensoo/campaigns/route.ts", "utf8");
+
+  it("누가 언제 썼는지 읽어 온다", () => {
+    // Counting alone answers "12 of 50" but not the question a partner asks:
+    // did our winners actually use them.
+    expect(repo).toContain("getCampaignCodeUses");
+    expect(repo).toContain("coupon_claims");
+    expect(repo).toContain("reward_credits(recipient_email)");
+  });
+
+  it("CSV에 빈 사용일시를 내보내지 않는다", () => {
+    // The old export hardcoded claimedAt to null, so every file handed to a
+    // partner said nobody had used anything.
+    expect(route).not.toContain("claimedAt: null as string | null");
+    expect(route).toContain("getCampaignCodeUses(campaignId)");
+  });
+
+  it("한 화면에서 두 방식을 고른다", () => {
+    // Two creators side by side read as two products.
+    expect(route).toContain('z.enum(["UNIQUE", "SHARED"])');
+    expect(route).toContain('generateCouponCodes(shared ? 1 : input.totalCount');
+    expect(route).toContain("usesPerCode: shared ? input.totalCount : 1");
+  });
+});

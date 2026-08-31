@@ -63,11 +63,11 @@ export function generateCouponCodes(
  * 엑셀이 첫 줄을 열 이름으로 읽고, 앞에 BOM이 없으면 한글이 깨집니다. 받는
  * 쪽이 파일을 열자마자 물음표를 보는 것이 이 기능의 가장 흔한 실패입니다.
  */
-export function buildCouponCsv(rows: ReadonlyArray<{ code: string; status: string; claimedAt: string | null }>): string {
+export function buildCouponCsv(rows: ReadonlyArray<{ code: string; status: string; claimedAt: string | null; claimedBy?: string | null }>): string {
   const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
   const lines = [
-    ["쿠폰코드", "상태", "사용일시"].map(escape).join(","),
-    ...rows.map((row) => [row.code, row.status, row.claimedAt ?? ""].map(escape).join(",")),
+    ["쿠폰코드", "상태", "사용일시", "사용자"].map(escape).join(","),
+    ...rows.map((row) => [row.code, row.status, row.claimedAt ?? "", row.claimedBy ?? ""].map(escape).join(",")),
   ];
   return `﻿${lines.join("\r\n")}\r\n`;
 }

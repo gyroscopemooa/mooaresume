@@ -68,3 +68,6 @@
 .withButton { display: flex; gap: 6px; }
 .withButton input { flex: 1; min-width: 0; padding: 9px 11px; border: 1px solid #ccd7de; border-radius: 8px; background: #fff; color: #17221d; font: inherit; font-size: 13px; outline: 0; }
 .withButton button { flex: none; padding: 0 12px; border: 1px solid #ccd7de; border-radius: 8px; background: #fff; color: #31404a; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.codeGrid li[data-used="true"] { background: #f4f7f9; }
+.codeGrid li[data-used="true"] code { color: #7b8892; text-decoration: line-through; }
+.codeGrid small { flex: none; color: #5b6a72; font-size: 10px; }

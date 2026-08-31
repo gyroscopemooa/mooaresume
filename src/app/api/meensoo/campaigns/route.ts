@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { archiveCampaign, createCampaign, getCampaignCodes } from "@/server/admin/admin-repository";
+import { archiveCampaign, createCampaign, getCampaignCodeUses } from "@/server/admin/admin-repository";
 import { isAdmin } from "@/server/admin/admin-session";
 import { buildCouponCsv, generateCouponCodes, normalizeCodePrefix } from "@/domain/coupon-code";
 
@@ -16,6 +16,7 @@ const createSchema = z.object({
   perUserLimit: z.number().int().min(1).max(100),
   totalCount: z.number().int().min(1).max(5000),
   codePrefix: z.string().trim().max(12),
+  mode: z.enum(["UNIQUE", "SHARED"]).default("UNIQUE"),
   startsAt: z.string().nullable(),
   expiresAt: z.string().nullable(),
   description: z.string().trim().max(1000).nullable(),
@@ -48,14 +49,21 @@ export async function POST(request: Request) {
   // 채로 만들면 어느 캠페인 코드인지 목록에서 구분되지 않습니다.
   const prefix = normalizeCodePrefix(input.codePrefix) || normalizeCodePrefix(input.name) || "MOOA";
 
+  // 공유 방식이면 코드는 한 장이고, 그 한 장이 수량만큼을 감당합니다.
+  // 고유 방식이면 수량만큼 코드를 만들고 각각 1회용입니다.
+  const shared = input.mode === "SHARED";
   let codes: string[];
   try {
-    codes = generateCouponCodes(input.totalCount, prefix);
+    codes = generateCouponCodes(shared ? 1 : input.totalCount, prefix);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "코드를 만들지 못했습니다." }, { status: 400 });
   }
 
-  const { campaign, error } = await createCampaign({ ...input, codes });
+  const { campaign, error } = await createCampaign({
+    ...input,
+    codes,
+    usesPerCode: shared ? input.totalCount : 1,
+  });
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json({ campaign, codes }, { status: 201 });
 }
@@ -76,12 +84,10 @@ export async function GET(request: Request) {
   const campaignId = url.searchParams.get("campaignId");
   if (!campaignId) return NextResponse.json({ error: "campaignId가 필요합니다." }, { status: 400 });
 
-  const codes = await getCampaignCodes(campaignId);
-  const rows = codes.map((code) => ({
-    code: code.code,
-    status: code.revokedAt ? "중지" : code.claimedCount > 0 ? "사용됨" : "미사용",
-    claimedAt: null as string | null,
-  }));
+  // 사용일시와 사용자를 함께 읽습니다. 예전에는 `claimedAt`을 null로 채워
+  // 내보내고 있었는데, 그러면 협업 기관이 받은 CSV에는 아무도 안 쓴 것처럼
+  // 적힙니다.
+  const rows = await getCampaignCodeUses(campaignId);
 
   if (url.searchParams.get("format") === "csv") {
     return new NextResponse(buildCouponCsv(rows), {

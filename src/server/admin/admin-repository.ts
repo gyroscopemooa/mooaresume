@@ -714,14 +714,55 @@ export async function listCampaigns(limit = 100): Promise<AdminCampaign[]> {
   return data.map((row) => toCampaign(row as Record<string, unknown>, tally.get(row.id as string) ?? { total: 0, used: 0, expired: 0 }));
 }
 
-export async function getCampaignCodes(campaignId: string): Promise<AdminCouponCode[]> {
-  const { data, error } = await serviceClient()
+export type AdminCouponUse = {
+  code: string;
+  status: string;
+  claimedAt: string | null;
+  claimedBy: string | null;
+};
+
+/**
+ * 코드별 사용 현황.
+ *
+ * 개수만 세면 "50장 중 12장 사용"까지는 알 수 있어도, 협업 기관이 묻는
+ * "우리 쪽 당첨자가 실제로 썼나요"에는 답할 수 없습니다. 누가 언제 썼는지는
+ * `coupon_claims`에 이미 남아 있으니, 읽어서 보여 주기만 하면 됩니다.
+ *
+ * 이메일은 `reward_credits`에서 가져옵니다 — 등록 시점에 계정 주소가 그쪽에
+ * 적히므로, `auth.users`를 따로 뒤질 이유가 없습니다.
+ */
+export async function getCampaignCodeUses(campaignId: string): Promise<AdminCouponUse[]> {
+  const client = serviceClient();
+  const { data: codes, error } = await client
     .from("coupon_codes")
-    .select(COUPON_FIELDS)
+    .select("id, code, claimed_count, max_uses, revoked_at, expires_at")
     .eq("campaign_id", campaignId)
     .order("created_at", { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => toCouponCode(row as Record<string, unknown>));
+  if (error || !codes) return [];
+
+  const { data: claims } = await client
+    .from("coupon_claims")
+    .select("coupon_code_id, claimed_at, reward_credits(recipient_email)")
+    .in("coupon_code_id", codes.length > 0 ? codes.map((row) => row.id as string) : ["00000000-0000-0000-0000-000000000000"]);
+
+  const byCode = new Map<string, { claimedAt: string; email: string | null }>();
+  for (const claim of claims ?? []) {
+    const credit = claim.reward_credits as { recipient_email?: string } | { recipient_email?: string }[] | null;
+    const email = Array.isArray(credit) ? credit[0]?.recipient_email ?? null : credit?.recipient_email ?? null;
+    byCode.set(claim.coupon_code_id as string, { claimedAt: claim.claimed_at as string, email });
+  }
+
+  const now = Date.now();
+  return codes.map((row) => {
+    const used = byCode.get(row.id as string);
+    const expired = row.expires_at ? new Date(row.expires_at as string).getTime() < now : false;
+    return {
+      code: row.code as string,
+      status: row.revoked_at ? "중지" : used ? "사용됨" : expired ? "만료" : "미사용",
+      claimedAt: used?.claimedAt ?? null,
+      claimedBy: used?.email ?? null,
+    };
+  });
 }
 
 /**
@@ -750,6 +791,8 @@ export async function createCampaign(input: {
   usageText: string;
   footnoteText: string;
   codes: string[];
+  /** 한 장을 여럿이 나눠 쓰는 방식이면 그 한 장이 감당할 인원. */
+  usesPerCode: number;
 }): Promise<{ campaign: AdminCampaign | null; error: string | null }> {
   const client = serviceClient();
   const { data, error } = await client
@@ -784,9 +827,11 @@ export async function createCampaign(input: {
     partner_name: input.partnerName,
     product: input.product,
     allowed_characters: input.allowedCharacters,
-    // 고유 코드는 1회용입니다. total_count는 기존 제약이 요구하는 값이라 맞춰 둡니다.
-    total_count: 1,
-    max_uses: 1,
+    // 고유 코드면 1, 공유 코드면 그 한 장이 감당할 인원. 두 값을 같이 두는
+    // 이유는 기존 제약(`claimed_count <= total_count`)이 total_count를 보기
+    // 때문입니다.
+    total_count: input.usesPerCode,
+    max_uses: input.usesPerCode,
     starts_at: input.startsAt,
     expires_at: input.expiresAt,
     subtitle_text: input.subtitleText,

@@ -4195,3 +4195,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `campaign-creator.tsx`, `coupon-creator.tsx`, `coupons.module.css`.
 - Validation: 808 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 발급 방식을 한 화면으로 + 코드별 사용 현황
+
+- Agent/session: Claude. 사용자 지적("버전 2개라 복잡하다, 드롭다운으로 구분 / 둘 다 누가 썼는지 확인 가능한 거 맞나").
+- Status: main에 적용. 마이그레이션 없음.
+- **먼저 확인한 것과 그 결과:** 기록은 `coupon_claims`에 남고 있었지만 **화면과 CSV가 보여 주지 않았습니다.** `GET /api/meensoo/campaigns`가 `claimedAt`을 `null`로 하드코딩해 내보내고 있어, **협업 기관에 넘긴 CSV에는 아무도 안 쓴 것처럼 적혔습니다.** 개수만 세면 "50장 중 12장"까지는 알아도 기관이 실제로 묻는 "우리 당첨자가 썼나요"에는 답할 수 없습니다.
+- Change 1 — `getCampaignCodeUses()`: 코드별 `상태 · 사용자 이메일 · 사용일시`. 이메일은 등록 시점에 `reward_credits.recipient_email`에 적히므로 `auth.users`를 따로 뒤지지 않습니다. CSV에 `사용자` 열을 더했고, 목록에서 사용된 코드는 취소선으로 구분됩니다.
+- Change 2 — 발급 방식 드롭다운: `고유 코드 여러 장`(기관에 목록 전달·추적) / `공유 코드 한 장`(팜플렛 배포). 공유를 고르면 코드 한 장에 `max_uses = 수량`, 고유면 수량만큼 각 1회용. 수량 칸 이름도 `발급 수량`/`사용 가능 인원`으로 바뀝니다.
+- Change 3 — 만드는 화면을 **하나로 합쳤습니다.** 중복된 `coupon-creator.tsx`는 제거했고, 캠페인 이전에 만든 공유 코드는 **목록으로 계속 보입니다**(이미 배포한 코드의 현황을 볼 수 없게 되면 안 됩니다).
+- Files: `admin-repository.ts`, `api/meensoo/campaigns/route.ts`, `campaign-creator.tsx`, `coupons/page.tsx`, `coupons.module.css`, `domain/coupon-code.ts`, `coupon-code.test.ts`(+3). 삭제: `coupon-creator.tsx`.
+- Validation: 811 tests passed (+3), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.
