@@ -152,7 +152,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
       <div className={styles.boxHead}>
         <span className={styles.badge}><Sparkles/> 한 번에 넣기</span>
         <h3>지원 자료를 한 번에 넣어주세요</h3>
-        <p>자기소개서를 붙여넣고, 나머지 파일은 이 영역에 <b>그대로 끌어다 놓으세요.</b> 어떤 자료인지는 무아가 알아서 나눕니다.</p>
+        <p>자기소개서를 붙여넣고, 나머지 파일은 <b>여기에 끌어다 놓으세요.</b> 무엇인지는 무아가 알아서 나눕니다.</p>
         {/* The speech bubble carries the formats and the ceilings, so the box
             itself does not have to read like a warning notice. */}
         <button type="button" className={styles.help} aria-label="넣을 수 있는 파일 안내">
@@ -186,11 +186,16 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           onChange={(event) => onTargetLengthChange(event.target.value.replace(/[^0-9]/g, ""))}
           placeholder="예: 500"
         />
-        <small>문항마다 다르면 제목 뒤에 <b>(800자)</b>처럼 적어 주세요. 그 문항은 적힌 값을 씁니다. 공고에 제한이 없다면 기본값 그대로 두셔도 됩니다.</small>
-        {/* Shown back, because this number decides how much gets written. A
-            wrong one here is the difference between a trim and a thousand
-            characters of invented filler. */}
-        {resolvedLengths && <b className={styles.resolved}>{resolvedLengths}</b>}
+        {/* One slot, because only one of these is ever the useful thing to
+            say. Before there is a draft the marker is what someone needs to
+            know; after there is one, what the number resolved to matters more —
+            it decides how much gets written, and a wrong one here is the
+            difference between a trim and a thousand characters of filler. The
+            marker comes back on its own in the shrink warning below, which is
+            the moment it actually matters. */}
+        {resolvedLengths
+          ? <b className={styles.resolved}>{resolvedLengths}</b>
+          : <small>문항마다 다르면 제목 뒤에 <b>(800자)</b>라고 적어 주세요.</small>}
 
         {/* 설정이 아니라 결과를 보여줍니다. 이 숫자가 없어서 완성된 자기소개서를
             올린 사람이 기본값 그대로 절반 가까이 잘렸습니다. */}

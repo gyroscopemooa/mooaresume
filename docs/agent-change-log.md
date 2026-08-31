@@ -3915,3 +3915,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/domain/simple-intake-mapping.ts`(+test), `src/components/simple-intake.tsx`, `.module.css`(`.plans`/`.loss` 추가), `pro-input-page.tsx`.
 - Validation: 761 tests passed (+5), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-08-31 — Claude: 간편 입력 머리말과 글자 수 칸 정리
+
+- Agent/session: Claude. 사용자 요청("칸 너무 넓다 · 빈 공간 많음 · 머리말 좀 더 세련되게").
+- Status: main에 적용. 문구·스타일만. 동작 변경 없음.
+- 글자 수 칸: 라벨·입력·결과를 세로로 쌓던 것을 **한 줄 3열 그리드**로 눕혔습니다. 높이 **78px → 53px**(1.25배 zoom 보정값). 좁은 화면에서는 2열로 접힙니다.
+- 안내 문구를 한 칸에 몰아 넣었습니다: 초안이 없을 때는 `(800자)` 표기 안내를, 있을 때는 `모든 문항 700자 기준으로 봅니다`를 보여줍니다. 둘 중 그 시점에 쓸모 있는 쪽만 남깁니다. `(800자)` 표기는 정작 필요한 순간(분량이 많이 줄 때) `describeLengthLoss`가 다시 말해 줍니다.
+- 문구 축약: `그 문항은 적힌 값을 씁니다. 공고에 제한이 없다면 기본값 그대로 두셔도 됩니다.` 삭제(기본값이 있다는 사실이 이미 그 뜻입니다).
+- 머리말: 꽉 찬 진초록 알약 + 900 굵기 → 연한 초록 배경 + 800. 제목 19px → 18px, 본문 12.5px/1.8 → 12px/1.7, 여백 축소.
+- Files: `src/components/simple-intake.tsx`, `.module.css`.
+- Validation: 761 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, `/pro/polish`에서 높이·한 줄 여부 실측.
+- Rollback: 이 커밋 revert.

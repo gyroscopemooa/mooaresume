@@ -18,10 +18,10 @@
 .boxDragging { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.12), 0 18px 42px -30px rgba(15, 61, 44, 0.6); }
 
 .boxHead { position: relative; padding-right: 34px; }
-.badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; background: #176b4a; color: #fff; font-size: 10.5px; font-weight: 900; letter-spacing: 0.03em; }
-.badge svg { width: 12px; height: 12px; }
-.boxHead h3 { margin: 12px 0 7px; font-size: 19px; letter-spacing: -0.03em; }
-.boxHead p { margin: 0 0 16px; color: #5f6d66; font-size: 12.5px; line-height: 1.8; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; background: #eaf4ef; color: #176b4a; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
+.badge svg { width: 11px; height: 11px; }
+.boxHead h3 { margin: 10px 0 5px; font-size: 18px; letter-spacing: -0.03em; }
+.boxHead p { margin: 0 0 13px; color: #5f6d66; font-size: 12px; line-height: 1.7; }
 .boxHead p b { color: #17221d; }
 
 /* Speech bubble, so the formats and ceilings do not turn the box into a notice
@@ -97,12 +97,14 @@
 
 /* Optional, so it sits after the box rather than above it. A required-looking
    field here would stop the people who genuinely have no limit. */
-.limit { display: grid; gap: 6px; margin-top: 13px; padding: 13px 15px; border: 1px solid #e2eae6; border-radius: 11px; background: #fbfdfc; }
-.limit > span { font-size: 12px; font-weight: 800; }
+/* 라벨·입력·결과를 한 줄에 눕힙니다. 세로로 쌓으니 다섯 줄이 되면서 칸이
+   차지하는 높이의 대부분이 빈 공간이었습니다. */
+.limit { display: grid; grid-template-columns: auto 92px minmax(0, 1fr); align-items: center; gap: 7px 10px; margin-top: 13px; padding: 9px 13px; border: 1px solid #e2eae6; border-radius: 10px; background: #fbfdfc; }
+.limit > span { font-size: 12px; font-weight: 800; white-space: nowrap; }
 .limit > span em { margin-left: 5px; padding: 2px 6px; border-radius: 8px; background: #eef2f0; color: #8a9690; font-style: normal; font-size: 10px; font-weight: 700; }
-.limit input { width: 130px; padding: 9px 11px; border: 1px solid #dbe6e0; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; outline: 0; }
+.limit input { width: 100%; padding: 6px 9px; border: 1px solid #dbe6e0; border-radius: 7px; background: #fff; font: inherit; font-size: 13px; text-align: center; outline: 0; }
 .limit input:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.08); }
-.limit small { color: #87928c; font-size: 11px; line-height: 1.75; }
+.limit small { overflow: hidden; color: #87928c; font-size: 11px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
 .limit small b { color: #41514a; }
 
 .note { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 11px 0 0; padding: 11px 13px; border: 1px solid #e7d8af; border-radius: 10px; background: #fffdf5; }
@@ -112,16 +114,19 @@
 .note button:hover { background: #fdf7e6; }
 
 @media (max-width: 640px) {
+  .limit { grid-template-columns: auto minmax(0, 1fr); }
+  .limit small { grid-column: 1 / -1; white-space: normal; }
   .limit input { width: 100%; font-size: 16px; }
+  .limit .resolved { grid-column: 1 / -1; }
   .note { flex-direction: column; align-items: stretch; gap: 9px; }
 }
-.resolved { display: block; margin-top: 2px; padding: 8px 11px; border-radius: 8px; background: #edf7f1; color: #0f4b33; font-size: 11.5px; font-weight: 700; }
+.resolved { overflow: hidden; justify-self: start; max-width: 100%; padding: 5px 9px; border-radius: 7px; background: #edf7f1; color: #0f4b33; font-size: 11px; font-weight: 700; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 
 /* 목표가 아니라 지금 분량. 이 숫자가 없어서 완성본이 절반으로 잘렸습니다. */
-.limit .plans { display: grid; gap: 4px; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid #eef2f0; list-style: none; }
+.limit .plans { grid-column: 1 / -1; display: grid; gap: 4px; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid #eef2f0; list-style: none; }
 .limit .plans li { display: flex; align-items: baseline; gap: 6px; font-size: 11px; color: #8b968f; }
 .limit .plans li > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .limit .plans b { color: #41514a; font-weight: 600; }
 .limit .plans em { font-style: normal; }
 .limit .plans li[data-shrink="big"] em { color: #a3761d; font-weight: 600; }
-.limit .loss { display: block; margin-top: 7px; color: #a3761d; font-size: 11px; line-height: 1.6; }
+.limit .loss { grid-column: 1 / -1; display: block; margin-top: 7px; color: #a3761d; font-size: 11px; line-height: 1.6; }
