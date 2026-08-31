@@ -14,6 +14,15 @@ type Props = {
   guest: GuestDraft | null;
   /** Called once a reward credit has been spent and the run is under way. */
   onCreditRunStarted?: (analysisRunId: string) => void;
+  /**
+   * 이미 시작된 분석이 있으면 결정 항목을 잠급니다.
+   *
+   * The progress block lives at the top of this page and this section stays
+   * mounted underneath it, so a running analysis left the consent choice and the
+   * pay button live. Re-clicking either does nothing to the run in flight, which
+   * is exactly why it reads as if it might.
+   */
+  runActive?: boolean;
 };
 
 const emptyMaterials = {
@@ -29,7 +38,7 @@ const subscribeToNothing = () => () => {};
 const readNoAuthError = () => null;
 const readAuthError = () => new URLSearchParams(window.location.search).get("auth_error");
 
-export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
+export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = false }: Props) {
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -279,12 +288,12 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted }: Props) {
 
   if (authenticated) {
     return <div className={styles.action}>
-      <ResearchConsentGate onDecided={setConsentDecided}/>
+      <ResearchConsentGate onDecided={setConsentDecided} locked={runActive}/>
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
-      <button type="button" disabled={busy || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
-      {guest && !consentDecided && !busy && <p className={styles.noDraft}>위에서 하나를 골라 주세요.</p>}
+      <button type="button" disabled={busy || runActive || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
+      {guest && !consentDecided && !busy && !runActive && <p className={styles.noDraft}>위에서 하나를 골라 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL
           directly — or in a new tab — arrives with nothing to analyse and a
           grey button explaining nothing. Say which of the two it is. */}

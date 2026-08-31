@@ -19,7 +19,7 @@ describe("연구 동의 체크", () => {
   });
 
   it("하나를 고르기 전에는 시작할 수 없다", () => {
-    expect(handoff).toContain("disabled={busy || !guest || !consentDecided}");
+    expect(handoff).toContain("disabled={busy || runActive || !guest || !consentDecided}");
     expect(handoff).toContain("위에서 하나를 골라 주세요.");
   });
 
@@ -100,5 +100,34 @@ describe("동의 저장은 서버를 거친다", () => {
     // token and a re-login all failed the same way.
     expect(source).not.toContain("로그아웃 후 다시 로그인하면 해결됩니다");
     expect(source).toContain('[code, message].filter(Boolean).join(" · ")');
+  });
+});
+
+describe("분석이 시작된 뒤에는 다시 묻지 않는다", () => {
+  const source = readFileSync("src/components/research-consent-gate.tsx", "utf8");
+  const handoff = readFileSync("src/components/application-case-handoff.tsx", "utf8");
+  const progress = readFileSync("src/components/quick-checkout-return.tsx", "utf8");
+
+  it("고른 답을 기록으로만 보여준다", () => {
+    // Pressing it mid-run changed nothing about the run, which is exactly what
+    // made it read as though it might.
+    expect(source).toContain("if (locked) {");
+    expect(source).toContain("styles.settled");
+  });
+
+  it("철회할 곳을 같이 알려준다", () => {
+    // Consent that cannot be taken back is not consent, so locking the control
+    // here has to name where it can still be changed.
+    expect(source).toContain("결과 화면에서 언제든 바꾸실 수 있습니다");
+  });
+
+  it("진행 중에는 결제 버튼도 잠근다", () => {
+    expect(handoff).toContain("disabled={busy || runActive");
+    expect(handoff).toContain('runActive ? "분석이 진행 중입니다"');
+  });
+
+  it("실패한 분석은 다시 결정할 수 있게 풀어 준다", () => {
+    // A failed run needs the decisions back so it can be retried.
+    expect(progress).toContain('phase === "waiting" || phase === "analyzing"');
   });
 });

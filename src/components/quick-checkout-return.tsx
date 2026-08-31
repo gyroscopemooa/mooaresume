@@ -37,9 +37,18 @@ type Props = {
   onProductConfirmed?: (product: "QUICK" | "PRO" | "FINAL") => void;
   /** Set when a run was paid for with a reward credit instead of a checkout. */
   creditRunId?: string | null;
+  /**
+   * 결제·분석이 시작되면 알립니다.
+   *
+   * The progress block sits at the top of the page while the payment section
+   * stays mounted below it, so the screen keeps offering decisions about a run
+   * that is already going. Only this component knows a checkout came back, so
+   * it is the one that has to say so.
+   */
+  onRunActive?: (active: boolean) => void;
 };
 
-export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null }: Props = {}) {
+export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, onRunActive }: Props = {}) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [product, setProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [message, setMessage] = useState("");
@@ -49,6 +58,18 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null }: 
   const startedAt = useRef<number | null>(null);
   const executing = useRef(false);
   const rootRef = useRef<HTMLElement | null>(null);
+
+  // A failed run is not active: the applicant needs the decisions back so they
+  // can retry.
+  useEffect(() => {
+    onRunActive?.(phase === "waiting" || phase === "analyzing");
+  }, [phase, onRunActive]);
+
+  // A failed run is not active: the applicant needs the decisions back so they
+  // can retry.
+  useEffect(() => {
+    onRunActive?.(phase === "waiting" || phase === "analyzing");
+  }, [phase, onRunActive]);
 
   useEffect(() => {
     const url = new URL(window.location.href);

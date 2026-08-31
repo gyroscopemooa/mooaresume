@@ -36,7 +36,14 @@ function describeFailure(code: string | undefined, message: string): string {
   return raw;
 }
 
-export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolean) => void }) {
+export function ResearchConsentGate({
+  onDecided,
+  locked = false,
+}: {
+  onDecided: (decided: boolean) => void;
+  /** 분석이 이미 시작된 뒤에는 고른 답을 보여주기만 합니다. */
+  locked?: boolean;
+}) {
   const [ready, setReady] = useState(false);
   const [choice, setChoice] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
@@ -114,6 +121,22 @@ export function ResearchConsentGate({ onDecided }: { onDecided: (decided: boolea
       {label}
     </button>
   );
+
+  // 진행 중인 분석 위에 다시 물을 것이 없습니다.
+  //
+  // The control stayed live while the run was going, and pressing it changed
+  // nothing about that run — which is precisely what made it look as though it
+  // might. Withdrawing is still one click on the result screen, so nothing is
+  // taken away by saying this part is settled.
+  if (locked) {
+    if (choice === null) return null;
+    return <section className={styles.gate}>
+      <p className={styles.settled}>
+        <Check/> <b>{choice ? "데이터 활용에 동의하셨습니다." : "데이터를 활용하지 않습니다."}</b>
+        결과 화면에서 언제든 바꾸실 수 있습니다.
+      </p>
+    </section>;
+  }
 
   return <section className={styles.gate}>
     <div className={styles.row} role="radiogroup" aria-label="지원서 데이터 활용">

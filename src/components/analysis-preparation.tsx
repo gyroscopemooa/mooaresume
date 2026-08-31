@@ -63,6 +63,8 @@ export function AnalysisPreparation() {
   // siblings on this one page. A URL parameter would not remount either of
   // them, so the progress screen would never learn the run had started.
   const [creditRunId, setCreditRunId] = useState<string | null>(null);
+  // 이미 시작된 분석에 대해 다시 결정을 묻지 않기 위한 신호.
+  const [runActive, setRunActive] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -162,7 +164,7 @@ export function AnalysisPreparation() {
           <ShieldCheck /> 결제 전 AI 호출 없음
         </span>
       </header>
-      <QuickCheckoutReturn onProductConfirmed={setConfirmedProduct} creditRunId={creditRunId} />
+      <QuickCheckoutReturn onProductConfirmed={setConfirmedProduct} creditRunId={creditRunId} onRunActive={setRunActive} />
       <div className={styles.container}>
         <Link href="/onboarding" className={styles.back}>
           <ArrowLeft /> 상품 선택으로
@@ -324,7 +326,7 @@ export function AnalysisPreparation() {
                 </li>
               ))}
             </ul>
-            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId}/>
+            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)}/>
             {/* /result/sample rather than /result: with no id, /result falls
                 back to the visitor's most recent analysis, so a returning
                 customer pressing "샘플 보기" was shown their own past result. And

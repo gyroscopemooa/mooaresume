@@ -3887,3 +3887,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 남은 위험: **같은 경로를 쓰는 곳이 5군데 더 있습니다** — `credit-wallet.tsx`, `application-case-handoff.tsx:92`(이용권 사용), `referral-panel.tsx`, `referral-code-entry.tsx`, `redeem-client.tsx`, `application-tracker-card.tsx`, `app/result/page.tsx`. 지금 전부 같은 이유로 실패할 수 있습니다. 별도 작업으로 옮겨야 합니다.
 - Validation: 752 tests passed, `tsc` clean, `eslint` 0 errors, `next build`에 `/api/research-consent` 등록 확인.
 - Rollback: 이 커밋 revert. RPC를 지우지 않았으므로 되돌리면 이전 동작으로 그대로 복귀합니다.
+
+## 2026-08-31 — Claude: 분석이 도는 중에 결제·동의를 다시 묻던 화면
+
+- Agent/session: Claude. 사용자 제보("분석시작 후에도 데이터활용 체크가 눌러진다").
+- Status: main에 적용. 마이그레이션 없음.
+- 증상: `/analysis/prepare`는 진행 표시를 **화면 맨 위**에 두고 결제 구역을 그 아래 **계속 렌더**합니다. 그래서 분석이 도는 중에도 동의 체크와 `결제하고 분석 시작`이 살아 있었습니다. 눌러도 진행 중인 분석에는 아무 영향이 없는데, 바로 그 점이 "영향이 있을지도 모른다"처럼 읽힙니다.
+- 구조상 이유: 무료 이용권 경로는 `savedCaseId`를 세우지 않고 `onCreditRunStarted`로 올려보내고, 결제 경로는 Polar에서 돌아와 새로 마운트되므로 결제 구역의 지역 상태로는 알 수 없었습니다. 진행 여부를 아는 것은 `QuickCheckoutReturn` 하나뿐입니다.
+- Change:
+  - `QuickCheckoutReturn`에 `onRunActive` 콜백 추가. `phase`가 `waiting`/`analyzing`일 때만 true. **`failed`는 false** — 실패한 분석은 다시 결정할 수 있어야 재시도가 됩니다.
+  - `AnalysisPreparation`이 그 신호를 받아 `runActive || Boolean(creditRunId)`로 결제 구역에 내려줍니다(두 경로 모두 포함).
+  - `ApplicationCaseHandoff`: 진행 중이면 시작 버튼 비활성 + 문구를 `분석이 진행 중입니다`로.
+  - `ResearchConsentGate`: `locked`면 버튼 대신 **고른 답을 한 줄 기록으로** 표시. 철회 경로(`결과 화면에서 언제든 바꾸실 수 있습니다`)를 함께 적어 동의 철회 가능성을 유지합니다.
+- Files: `src/components/quick-checkout-return.tsx`, `analysis-preparation.tsx`, `application-case-handoff.tsx`, `research-consent-gate.tsx`, `.module.css`(`.settled` 3줄 추가), `research-consent-gate.test.ts`.
+- Validation: 756 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert. 추가된 prop은 모두 선택값이라 되돌려도 호출부가 깨지지 않습니다.
