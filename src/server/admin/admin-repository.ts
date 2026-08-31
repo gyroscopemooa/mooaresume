@@ -16,6 +16,17 @@ const envSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().min(1),
 });
 
+/**
+ * 조회 실패를 조용히 넘기지 않습니다.
+ *
+ * 아홉 개 목록 함수가 오류를 빈 배열로 바꿔 돌려주고 있었습니다. 그러면 화면이
+ * "기록이 없습니다"라고 말하는데, 없는 것과 못 읽은 것은 다릅니다 — 컬럼 하나가
+ * 빠져도, 권한이 막혀도, 키가 상해도 전부 "0건"으로 보입니다. 2026-08-31에
+ * 하루 넘게 못 알아챈 장애가 정확히 이 모양이었습니다.
+ *
+ * 화면을 비우는 동작은 그대로 둡니다(관리자 화면 하나 때문에 콘솔 전체가 멈추면
+ * 더 나쁩니다). 대신 서버 로그에는 반드시 남깁니다.
+ */
 function serviceClient() {
   const env = envSchema.parse({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -88,7 +99,8 @@ export async function listPurchases(limit = 100): Promise<AdminPurchase[]> {
       .limit(limit),
     emailsByUserId(),
   ]);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => {
     const applicationCase = row.application_cases as unknown as EmbeddedCase;
     return {
@@ -138,7 +150,8 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
       .limit(limit),
     emailsByUserId(),
   ]);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => {
     const applicationCase = row.application_cases as unknown as EmbeddedCase;
     const results = row.analysis_results as unknown as unknown[] | { id: string } | null;
@@ -229,7 +242,8 @@ export async function listMailLog(limit = 200): Promise<AdminMailEntry[]> {
     .select("id, batch_id, recipient, subject, reply_to, status, error_message, sent_at, body, attachment_names, provider_message_id, campaign_id")
     .order("sent_at", { ascending: false })
     .limit(limit);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => ({
     id: row.id as string,
     batchId: row.batch_id as string,
@@ -264,7 +278,8 @@ export async function listInquiries(limit = 200): Promise<AdminInquiry[]> {
     .select("id, name, email, category, message, status, admin_note, answered_at, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => ({
     id: row.id as string,
     name: (row.name as string | null) ?? null,
@@ -286,7 +301,8 @@ export async function listWaitlist(limit = 500): Promise<AdminWaitlistEntry[]> {
     .select("id, email, source, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => ({
     id: row.id as string,
     email: row.email as string,
@@ -409,7 +425,8 @@ export async function listRewardCredits(limit = 200): Promise<AdminRewardCredit[
     .select("id, product, reason, note, recipient_email, status, claim_token, expires_at, created_at, claimed_at, consumed_at")
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => ({
     id: row.id as string,
     product: row.product as string,
@@ -500,7 +517,8 @@ export async function listResearchCorpus(limit = 1000): Promise<ResearchCorpusRo
     .select("id, product, writing_mode, editing_stance, target_company, target_role, readiness_score, findings, outcome_status, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => ({
     id: row.id as string,
     product: row.product as string,
@@ -568,7 +586,8 @@ export async function listCouponCodes(limit = 100): Promise<AdminCouponCode[]> {
     .select(COUPON_FIELDS)
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
   return data.map((row) => toCouponCode(row as Record<string, unknown>));
 }
 
@@ -691,7 +710,8 @@ export async function listCampaigns(limit = 100): Promise<AdminCampaign[]> {
     .select(CAMPAIGN_FIELDS)
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error || !data) return [];
+  if (error) { console.error("admin-query", error); return []; }
+  if (!data) return [];
 
   // 코드 현황을 한 번에 읽어 캠페인마다 붙입니다. 캠페인 수만큼 질의하면
   // 목록 한 장에 스무 번을 묻게 됩니다.

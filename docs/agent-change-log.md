@@ -4222,3 +4222,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `campaign-creator.tsx`(렌더 재구성), `coupons.module.css`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 관리자 조회 실패가 "기록 없음"으로 보이던 문제
+
+- Agent/session: Claude. 사용자 질문("메일이든 뭐든 기록이 안 보인다 · 로컬과 도메인이 기록을 따로 갖는 건가").
+- Status: main에 적용. 마이그레이션 없음.
+- **먼저 확인한 사실(DB 직접 조회):** `mail_send_log` **16건**(`무아레쥬메 무료 쿠폰 안내` 발송 기록 포함), `coupon_campaigns` 1건, `coupon_codes` 52장, `coupon_claims` 0건, `reward_credits` 5건. **기록은 전부 남아 있습니다.** `provider_message_id`·`campaign_id` 컬럼도 적용되어 있음을 확인했습니다.
+- 로컬/도메인 질문에 대한 답: **둘은 같은 Supabase 프로젝트를 봅니다.** 데이터베이스는 요청이 어디서 왔는지 모르고 나누지도 않습니다. 갈릴 수 있는 것은 **관리자 로그인 쿠키**뿐입니다 — localhost에서 로그인해도 도메인은 로그인되지 않습니다. 단, Cloudflare 환경변수의 `NEXT_PUBLIC_SUPABASE_URL`이 다른 프로젝트를 가리키면 그때는 진짜로 갈립니다(사용자 확인 필요).
+- 함께 점검: `src/app/meensoo` 아래 서버 컴포넌트에 남은 이벤트 핸들러 없음(어제 `rewards` 건 이후 재발 없음).
+- Change: 목록 조회 9곳이 오류를 **빈 배열로 바꿔** 돌려주고 있었습니다. 그러면 화면이 "기록이 없습니다"라고 말하는데, **없는 것과 못 읽은 것은 다릅니다** — 컬럼 하나가 빠져도, 권한이 막혀도, 키가 상해도 전부 "0건"으로 보입니다. 2026-08-31 장애가 하루 넘게 안 보였던 이유가 정확히 이 모양이었습니다. 이제 `console.error`로 남깁니다. 화면을 비우는 동작 자체는 유지했습니다 — 관리자 화면 하나 때문에 콘솔 전체가 멈추면 더 나쁩니다.
+- Files: `src/server/admin/admin-repository.ts`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.
