@@ -4032,3 +4032,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 780 tests passed (+7), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert. `UNSET`은 새 값이라 기존 저장 데이터에 영향이 없습니다.
 - 남은 제안(미실행): 근거가 제외된 문서에만 있을 때 결과 전체를 버리지 말고 그 근거 한 줄만 버리는 안전망. 사용자 확인 후 진행.
+
+## 2026-08-31 — Claude: 분류 안내 말풍선이 열리지 않던 문제
+
+- Agent/session: Claude. 사용자 제보("물음표는 생겼는데 눌러도 올려놔도 아무것도 안 나온다").
+- Status: main에 적용. CSS 한 줄 범위.
+- 원인: 이 모듈에는 화면 위쪽 도움말이 쓰는 `.tooltip`이 이미 있고, 그쪽은 **`opacity: 0; visibility: hidden`**으로 숨깁니다. 새로 만든 `.why`는 `display: none`으로 숨기고 hover에서 `display: block`만 되돌려, **투명하고 보이지 않는 상태가 그대로 남았습니다.** `right: 0; top: 28px`도 기존 값이 계속 적용되어 위치도 의도와 달랐습니다.
+- Change: `.why:hover .tooltip`에 `opacity: 1; visibility: visible; transform: none; right: auto; top: auto` 추가. 기존 도움말과 여는 방식을 맞췄습니다.
+- 작업 중 사고와 복구: python 문자열 슬라이스로 고치려다 **첫 번째 `role="tooltip"`(화면 위쪽 도움말)을 잘라내 컴포넌트를 크게 훼손**했습니다. `git checkout HEAD -- simple-intake.tsx simple-intake.module.css`로 직전 커밋(`255bb68`)에서 복구한 뒤, 편집 도구로 정확히 한 곳만 고쳤습니다. TSX는 손대지 않았습니다.
+- Files: `src/components/simple-intake.module.css`.
+- Validation: 780 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, 브라우저에서 적용된 CSS 규칙 확인(`opacity: 1; visibility: visible` 포함).
+- Rollback: 이 커밋 revert.

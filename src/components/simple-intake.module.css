@@ -143,9 +143,14 @@
 .why { display: inline-flex; align-items: center; margin-left: 5px; padding: 0; border: 0; background: none; color: #8b968f; cursor: pointer; vertical-align: -2px; position: relative; }
 .why svg { width: 13px; height: 13px; }
 .why:hover { color: #176b4a; }
+/* 이 화면 위쪽 도움말이 쓰는 `.tooltip`을 그대로 물려받습니다. 그쪽은
+   `opacity`/`visibility`로 숨기므로, 여기서 `display`만 되돌리면 마우스를 올려도
+   투명한 채로 남습니다 — 처음에 그렇게 만들어 아무것도 안 나왔습니다.
+   `right`/`top`도 그쪽 값이라 여기서 풀어 주어야 위로 떠오릅니다. */
 .why .tooltip { display: none; }
 .why:hover .tooltip, .why:focus-visible .tooltip {
-  display: block; position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 5;
+  display: block; opacity: 1; visibility: visible; transform: none;
+  position: absolute; right: auto; top: auto; left: 0; bottom: calc(100% + 8px); z-index: 5;
   width: min(320px, 78vw); padding: 12px 14px;
   border: 1px solid #dfe6e2; border-radius: 10px; background: #fff; box-shadow: 0 10px 26px rgba(23, 34, 29, 0.13);
   color: #5f6d66; font-size: 11px; font-weight: 400; line-height: 1.85; text-align: left; white-space: normal;
