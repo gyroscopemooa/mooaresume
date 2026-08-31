@@ -4234,3 +4234,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/server/admin/admin-repository.ts`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 쿠폰 화면 다크 테마 + 홍보물·메일 마무리
+
+- Agent/session: Claude. 사용자 지적 4건.
+- Status: main에 적용. 마이그레이션 없음.
+- **가장 큰 원인: 관리자 콘솔은 다크인데 쿠폰 화면만 밝게 만들었습니다.** `admin.module.css`가 `--admin-bg: #0f1216` 계열인데 새로 만든 화면은 흰 카드에 짙은 글자였습니다. 앞서 "글자가 흐리다"는 지적을 **대비 문제로 잘못 읽고** 색만 조금 올렸는데, 실제로는 테마가 반대였습니다. `coupons.module.css`를 전부 `--admin-*` 변수 기준으로 다시 썼습니다 — 색을 직접 적지 않으므로 나중에 테마가 바뀌어도 이 화면만 남지 않습니다. 홍보물(흰 종이)만 받침을 깔아 띄웁니다.
+- 공유 코드 홍보물: 코드가 **한 장뿐이면 그 코드를 찍습니다.** 공유 코드는 "이 종이 한 장으로 다 같이 쓰세요"라서 코드를 빼면 받는 사람이 코드를 구할 데가 없습니다. 여러 장일 때는 계속 비워 둡니다 — 종이에 코드가 있으면 그 한 장이 한 사람 것이 되어 버립니다.
+- 주의사항 입력칸: 저장만 되고 **아무 데서도 쓰이지 않고 있었습니다.** 메일 본문의 `[주의사항]` 줄로 들어갑니다. 홍보물 하단 문구는 `footnoteText`가 따로 담당합니다.
+- 홍보물 첨부: 메일 탭을 열면 **보이지 않는 한 장을 그려 자동으로 첨부**합니다. 내려받아 다시 올리는 왕복이 사라집니다 — 그 왕복 어딘가에서 다른 캠페인의 파일이 붙습니다. 한 번만 붙고, 빼려면 첨부 목록에서 지우면 됩니다.
+- 메일 본문도 사용기간과 공유 코드 안내를 포함하도록 바꿨습니다.
+- Files: `coupons.module.css`(재작성), `campaign-creator.tsx`, `coupon-pamphlet.tsx`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

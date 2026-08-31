@@ -153,6 +153,9 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
     setCodeList({ id: campaign.id, codes: body.codes ?? [] });
   }
 
+  // 코드가 한 장뿐이면 그것이 곧 공유 코드입니다.
+  const sharedCode = codeList && codeList.codes.length === 1 ? codeList.codes[0].code : null;
+
   const field = (labelText: string, value: string, onChange: (next: string) => void, placeholder = "", type = "text") => (
     <label className={styles.field}>
       <span>{labelText}</span>
@@ -303,8 +306,15 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
 
                 {tab === "flyer" && <>
                   {/* 기본은 코드 없는 기관 배포용. 개별 코드를 넣은 장은 아래에서 따로. */}
-                  <CouponPamphlet coupon={{ ...preview, code: null }} filename={`mooaresume_${preview.partnerName}_배포용`}
-                    onAttach={(file) => { setMailFiles((current) => [...(current ?? []), file]); setTab("mail"); }}/>
+                  {/* 코드가 한 장뿐이면 그 코드를 찍습니다. 공유 코드는 애초에
+                      "이 종이 한 장으로 다 같이 쓰세요"라서, 코드를 빼면 받는
+                      사람이 어디서 코드를 구해야 하는지 알 수 없습니다.
+                      여러 장일 때는 비워 둡니다 — 종이에 코드가 있으면 그 한
+                      장이 한 사람 것이 되어 버립니다. */}
+                  <CouponPamphlet
+                    coupon={{ ...preview, code: sharedCode }}
+                    filename={`mooaresume_${preview.partnerName}_배포용`}
+                    onAttach={(file) => { setMailFiles((current) => [...(current ?? []).filter((item) => !item.name.endsWith(".png")), file]); setTab("mail"); }}/>
                   <label className={styles.field}>
                     <span>개별 코드 이미지 (선택)</span>
                     <input value={singleCode} onChange={(event) => setSingleCode(event.target.value.toUpperCase())} placeholder="YOUTH-AB12-CD34"/>
@@ -320,8 +330,21 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
                       const csv = new File([buildCouponCsv(codeList?.codes ?? [])], `coupons_${preview.partnerName}.csv`, { type: "text/csv" });
                       setMailFiles((current) => [...(current ?? []).filter((file) => !file.name.endsWith(".csv")), csv]);
                     }}>코드 CSV 첨부</button>
-                    <small>홍보물은 <b>홍보물</b> 탭의 [메일에 첨부]로 붙일 수 있습니다.</small>
+                    <small>
+                      {(mailFiles ?? []).some((file) => file.name.endsWith(".png"))
+                        ? "홍보물이 첨부되어 있습니다."
+                        : "홍보물을 만드는 중입니다..."}
+                    </small>
                   </div>
+                  {/* 보이지 않게 한 장 그려서 곧바로 첨부합니다. 내려받아 다시
+                      올리는 왕복이 사라집니다. */}
+                  <CouponPamphlet
+                    coupon={{ ...preview, code: sharedCode }}
+                    filename={`mooaresume_${preview.partnerName}_배포용`}
+                    hidden
+                    autoAttach
+                    onAttach={(file) => setMailFiles((current) => [...(current ?? []).filter((item) => !item.name.endsWith(".png")), file])}/>
+
                   <MailComposer
                     campaignId={preview.id}
                     initialSubject={`[무아레쥬메] ${preview.partnerName} 협업 무료 이용권 안내`}

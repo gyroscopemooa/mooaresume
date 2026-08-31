@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./coupons.module.css";
 
 /**
@@ -151,11 +151,21 @@ function Illustration() {
   );
 }
 
-export function CouponPamphlet({ coupon, filename, onAttach }: {
+export function CouponPamphlet({ coupon, filename, onAttach, autoAttach = false, hidden = false }: {
   coupon: PamphletSource;
   filename?: string;
   /** 내려받는 대신 메일 첨부로 넘길 때. 같은 그림을 두 번 그리지 않습니다. */
   onAttach?: (file: File) => void;
+  /**
+   * 뜨자마자 한 번 첨부합니다.
+   *
+   * 메일 화면에서 "홍보물을 내려받아 다시 올려야 하나"를 묻게 만들면, 그
+   * 왕복 어딘가에서 다른 캠페인의 파일이 붙습니다. 붙어 있는 채로 시작하고,
+   * 빼고 싶으면 첨부 목록에서 지우면 됩니다.
+   */
+  autoAttach?: boolean;
+  /** 첨부만 하고 그림은 보이지 않게. */
+  hidden?: boolean;
 }) {
   // 기본은 기관 배포용입니다. 종이 한 장에 코드가 찍혀 있으면 그 코드는 한
   // 사람 것이 되어 버리므로, 여러 사람에게 나눠 줄 이미지에는 코드를 넣지 않고
@@ -165,6 +175,7 @@ export function CouponPamphlet({ coupon, filename, onAttach }: {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState("");
+  const attached = useRef(false);
 
   async function render(): Promise<Blob> {
     const svg = svgRef.current;
@@ -206,6 +217,14 @@ export function CouponPamphlet({ coupon, filename, onAttach }: {
     setBusy(false);
   }
 
+  useEffect(() => {
+    // 한 번만. 탭을 오갈 때마다 같은 파일이 쌓이면 안 됩니다.
+    if (!autoAttach || !onAttach || attached.current) return;
+    attached.current = true;
+    void run((blob) => onAttach(new File([blob], name, { type: "image/png" })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAttach]);
+
   function download() {
     void run((blob) => {
       const link = document.createElement("a");
@@ -216,7 +235,7 @@ export function CouponPamphlet({ coupon, filename, onAttach }: {
   }
 
   return (
-    <div className={styles.pamphletWrap}>
+    <div className={styles.pamphletWrap} hidden={hidden}>
       <svg ref={svgRef} className={styles.pamphlet} viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg"
         fontFamily="'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
         <defs>
