@@ -2,6 +2,7 @@ import type { ResultDocument } from "@/domain/result-document";
 import {
   buildFinalWrapUp,
   describeWrapUpStatus,
+  describeWrapUpVerdict,
   WRAP_UP_LABEL,
   WRAP_UP_NOTE,
   type WrapUpAction,
@@ -28,6 +29,7 @@ const GROUP_ORDER: WrapUpAction[] = ["NEEDS_APPLICANT", "INTERVIEW", "DONE", "KE
 
 export function FinalWrapUp({ result }: { result: ResultDocument }) {
   const wrapUp = buildFinalWrapUp(result);
+  const verdict = describeWrapUpVerdict(wrapUp);
 
   if (wrapUp.items.length === 0) {
     return (
@@ -46,6 +48,12 @@ export function FinalWrapUp({ result }: { result: ResultDocument }) {
       <section className={styles.head}>
         <span>BEFORE YOU SUBMIT</span>
         <h2>제출 전 마무리</h2>
+        {/* 판정은 서류의 상태만 말합니다. 붙을지 떨어질지는 우리가 알 수
+            없고, 그것을 점치면 손님은 우리 말을 믿고 낸 뒤에 배신당합니다. */}
+        <div className={styles.verdict} data-tone={verdict.tone}>
+          <b>{verdict.label}</b>
+          <span>{verdict.note}</span>
+        </div>
         <p>{describeWrapUpStatus(wrapUp)} 위 분석에서 나온 지적을 <b>누가 할 수 있는 일인지</b>로 다시 세웠습니다. 새로 분석하거나 첨삭본을 고치지 않습니다.</p>
 
         <div className={styles.counts}>

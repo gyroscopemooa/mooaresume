@@ -196,6 +196,41 @@ export const WRAP_UP_NOTE: Record<WrapUpAction, string> = {
  * 알 수 없고, 권했다가 떨어지면 그 문장이 책임을 집니다. 대신 **남은 일이
  * 있는지**만 사실대로 말합니다.
  */
+export type WrapUpVerdict = { label: string; tone: "check" | "ready"; note: string };
+
+/**
+ * 제출해도 되는 상태인가.
+ *
+ * 여기서 말하는 것은 **서류의 상태**이지 결과가 아닙니다. 붙을지 떨어질지는
+ * 우리가 알 수 없고, 그것을 점치는 순간 손님은 우리 말을 믿고 낸 뒤에 배신당한
+ * 기분이 됩니다. 그래서 "합격 가능성"은 한 글자도 말하지 않습니다.
+ *
+ * 대신 말할 수 있는 것이 하나 있습니다 — **사실이 어긋난 채로 나가는지**.
+ * 이력서와 자소서의 수치가 다르면 그건 확인 전에는 내면 안 되는 서류이고,
+ * 그건 우리가 실제로 확인한 것이라 말해도 되는 범위입니다.
+ */
+export function describeWrapUpVerdict(wrapUp: FinalWrapUp): WrapUpVerdict {
+  if (wrapUp.counts.NEEDS_APPLICANT > 0) {
+    return {
+      label: "확인 후 제출",
+      tone: "check",
+      note: "사실이 어긋난 곳이 남아 있습니다. 아래를 확인하고 나면 서류 쪽은 낼 수 있는 상태입니다.",
+    };
+  }
+  if (wrapUp.counts.INTERVIEW > 0) {
+    return {
+      label: "서류는 제출 가능",
+      tone: "ready",
+      note: "서류에서 고칠 곳은 남지 않았습니다. 아래는 면접에서 답할 것들입니다.",
+    };
+  }
+  return {
+    label: "제출 가능",
+    tone: "ready",
+    note: "이번 분석에서 확인이 필요한 곳은 남지 않았습니다.",
+  };
+}
+
 export function describeWrapUpStatus(wrapUp: FinalWrapUp): string {
   if (wrapUp.items.length === 0) return "따로 정리할 것이 남지 않았습니다.";
   if (wrapUp.counts.NEEDS_APPLICANT > 0) {

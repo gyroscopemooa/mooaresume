@@ -26,6 +26,16 @@ const statusSchema = z.object({
 });
 
 type Phase = "idle" | "waiting" | "analyzing" | "failed";
+/**
+ * 무엇이 실패했는가.
+ *
+ * `failed` 하나가 서로 다른 두 상황을 함께 쓰고 있었습니다. 결제를 확인하지
+ * 못한 것과 분석이 실패한 것은 손님이 할 일이 정반대입니다 — 앞은 로그인하면
+ * 결과가 나오고, 뒤는 로그인해도 볼 것이 없습니다. 그런데 두 경우 모두에
+ * "이메일로 다시 안내받기"가 떠서, 분석이 실패한 손님이 로그인 링크를 받아
+ * 눌렀다가 결제 화면으로 되돌아왔습니다.
+ */
+type FailureKind = "checkout" | "analysis";
 // Analysis normally takes 2~5 minutes and the server auto-refunds past 10
 // minutes (claim_quick_analysis_timeout_refund's 600s window). Poll well
 // past that server-side bound so a slow-but-healthy run is never mistaken
@@ -82,6 +92,10 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
   const [product, setProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [message, setMessage] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
+  const [failureKind, setFailureKind] = useState<FailureKind>("checkout");
+  // 로그인 링크가 돌아올 자리. 결과를 보러 온 사람을 결제 화면으로 돌려보내면
+  // "이 탭에 저장된 작성본이 없습니다"를 만나게 됩니다.
+  const [runId, setRunId] = useState<string | null>(null);
   const [retryRunId, setRetryRunId] = useState<string | null>(null);
   /**
    * 실패했지만 아직 끝나지 않은 상태.
@@ -149,6 +163,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         }
 
         const status = statusSchema.parse(await response.json());
+        setRunId(status.analysisRunId);
         // 결제가 확정된 그 순간에 한 번만 보고합니다. 이 확인은 몇 초마다
         // 다시 도는데, 같은 주문 번호로 보내므로 구글이 한 건으로 합칩니다.
         if (status.checkoutStatus === "SUCCEEDED" && status.orderId) {
@@ -167,6 +182,9 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
           return;
         }
         if (status.analysisStatus === "FAILED" || status.entitlementStatus === "REVOKED") {
+          // 결제는 됐고 분석이 실패한 것입니다. 로그인 링크는 도움이 되지
+          // 않습니다 — 로그인해도 볼 결과가 없습니다.
+          setFailureKind("analysis");
           setPhase("failed");
           if (status.timeoutRefunded) {
             setMessage("\uBD84\uC11D\uC774 10\uBD84\uC744 \uCD08\uACFC\uD574 \uC790\uB3D9\uC73C\uB85C \uC885\uB8CC\uD558\uACE0 \uD658\uBD88\uC744 \uC694\uCCAD\uD588\uC2B5\uB2C8\uB2E4.");
@@ -210,6 +228,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
                 // 성공하는 일이 실제로 있었고, 그때 화면만 실패로 굳었습니다.
                 // 다만 계속 거절당하면(설정이 깨진 경우) 조용히 돌지 않습니다.
                 if (executeFailures.current >= 3) {
+                  setFailureKind("analysis");
                   setPhase("failed");
                   setAutoRetrying(false);
                   setMessage(describeFailure(failure));
@@ -243,6 +262,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
               const failure: unknown = await executeResponse.json().catch(() => null);
               executeFailures.current += 1;
               if (executeFailures.current >= 3) {
+                setFailureKind("analysis");
                 setPhase("failed");
                 setAutoRetrying(false);
                 setMessage(describeFailure(failure));
@@ -338,6 +358,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         if (response.status !== 202 && !response.ok) {
           executeFailures.current += 1;
           if (executeFailures.current >= 3) {
+            setFailureKind("analysis");
             setPhase("failed");
             setAutoRetrying(false);
             setMessage(describeFailure(payload));
@@ -409,10 +430,13 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/analysis/prepare`,
+          // 어느 분석인지 알면 결과로 바로 보냅니다. 예전에는 무조건
+          // `/analysis/prepare`로 보내서, 결과를 보러 로그인한 사람이 결제
+          // 화면과 "저장된 작성본이 없습니다"를 만났습니다.
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(runId ? `/result?analysisRunId=${runId}` : "/analysis/prepare")}`,
         },
       });
-      setMessage(error ? "이메일 안내를 보내지 못했습니다." : "로그인 링크를 이메일로 보냈습니다. 결제 확인 후 결과를 확인할 수 있습니다.");
+      setMessage(error ? "이메일 안내를 보내지 못했습니다." : "로그인 링크를 이메일로 보냈습니다. 링크는 한 번만 쓸 수 있으니, 메일을 연 그 브라우저에서 바로 눌러 주세요.");
     } finally {
       setEmailBusy(false);
     }
@@ -430,7 +454,10 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         {phase === "failed" && retryRunId && <button type="button" className={styles.emailButton} onClick={() => void retryAnalysis()}>
           {"\uAE30\uC874 \uACB0\uC81C\uB85C \uB2E4\uC2DC \uBD84\uC11D\uD558\uAE30"}
         </button>}
-        {phase === "failed" && <button type="button" className={styles.emailButton} disabled={emailBusy} onClick={() => void requestEmailLink()}>
+        {/* 결제를 확인하지 못한 경우에만 띄웁니다. 분석이 실패한 손님에게
+            로그인 링크는 할 일이 아니라 헛걸음입니다 — 로그인해도 결과가
+            없고, 그 사이에 손님은 자기가 뭘 잘못한 줄 압니다. */}
+        {phase === "failed" && failureKind === "checkout" && <button type="button" className={styles.emailButton} disabled={emailBusy} onClick={() => void requestEmailLink()}>
           {emailBusy ? "전송 중..." : "이메일로 다시 안내받기"}
         </button>}
       </div>

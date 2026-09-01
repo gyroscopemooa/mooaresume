@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sampleResultDocument } from "@/fixtures/result-document";
-import { buildFinalWrapUp, describeWrapUpStatus } from "./final-wrap-up";
+import { buildFinalWrapUp, describeWrapUpStatus, describeWrapUpVerdict } from "./final-wrap-up";
 import type { ResultDocument } from "./result-document";
 
 /**
@@ -148,5 +148,48 @@ describe("describeWrapUpStatus", () => {
         likelihood: "high",
       }],
     })).toContain("면접에서 답할 것만");
+  });
+});
+
+describe("describeWrapUpVerdict", () => {
+  const verdict = (over: Partial<ResultDocument>) => describeWrapUpVerdict(buildFinalWrapUp(make({
+    rejectionRisks: [], documentConflicts: [], claimEvidence: [], interviewerFlags: [], ...over,
+  })));
+
+  it("사실이 어긋난 곳이 남으면 확인 후 제출이라고 말한다", () => {
+    const result = verdict({ rejectionRisks: [risk({})] });
+    expect(result.label).toBe("확인 후 제출");
+    expect(result.tone).toBe("check");
+  });
+
+  it("면접 항목만 남으면 서류는 낼 수 있다고 말한다", () => {
+    const result = verdict({
+      interviewerFlags: [{
+        id: "f1", headline: "전환 이유", observation: "확인할 수 있습니다.",
+        evidenceQuote: "직업상담사 자격과 취업지원사업에 대한 관심", resumeReference: null,
+        likelyQuestion: "왜 지원했습니까?", followUps: [], preparation: "이유를 정리하세요.",
+        likelihood: "high",
+      }],
+    });
+    expect(result.label).toBe("서류는 제출 가능");
+    expect(result.tone).toBe("ready");
+  });
+
+  it("이미 반영된 것만 남으면 제출 가능이다", () => {
+    expect(verdict({ rejectionRisks: [risk({ handling: "removed" })] }).label).toBe("제출 가능");
+  });
+
+  it("결과를 점치는 말은 쓰지 않는다", () => {
+    // 서류의 상태는 우리가 확인한 것이라 말해도 되지만, 붙고 떨어짐은 아닙니다.
+    // 점쳤다가 틀리면 손님은 우리 말을 믿고 낸 뒤에 배신당합니다.
+    const lines = [
+      verdict({}), verdict({ rejectionRisks: [risk({})] }),
+      verdict({ rejectionRisks: [risk({ handling: "removed" })] }),
+    ].flatMap((item) => [item.label, item.note]);
+    for (const line of lines) {
+      expect(line).not.toContain("합격");
+      expect(line).not.toContain("불합격");
+      expect(line).not.toContain("가능성");
+    }
   });
 });

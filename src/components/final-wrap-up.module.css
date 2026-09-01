@@ -53,3 +53,15 @@
   .counts { grid-template-columns: repeat(2, 1fr); }
   .group { padding: 20px 18px; }
 }
+
+/* 제출 판정. 결과가 아니라 서류의 상태입니다 — "확인 후 제출"은 아직 사실이
+   어긋난 곳이 있다는 뜻이지, 붙고 떨어짐에 대한 말이 아닙니다. */
+.verdict { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 14px 0 12px; padding: 13px 16px; border-radius: 10px; }
+.verdict b { font-size: 17px; letter-spacing: -0.04em; }
+.verdict span { flex: 1; min-width: 220px; font-size: 12px; line-height: 1.75; }
+.verdict[data-tone="check"] { border: 1px solid #e2b9b9; background: #fdf6f6; }
+.verdict[data-tone="check"] b { color: #a53d3d; }
+.verdict[data-tone="check"] span { color: #6b544f; }
+.verdict[data-tone="ready"] { border: 1px solid #b9d8c4; background: #f1f9f3; }
+.verdict[data-tone="ready"] b { color: #176b4a; }
+.verdict[data-tone="ready"] span { color: #4e6156; }

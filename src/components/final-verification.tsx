@@ -82,7 +82,10 @@ export function FinalVerification({ result, hasResume }: { result: ResultDocumen
             <span>FINAL 판정</span>
             <h2>{verdict.label}</h2>
           </div>
-          <small>고치고 다시 돌리면 이 숫자가 줄어듭니다</small>
+          {/* "고치고 다시 돌리면 이 숫자가 줄어듭니다"라고 적혀 있었습니다.
+              돈을 한 번 더 내라는 말로 읽힙니다 — 그럴 필요가 없고, 여기서
+              나온 것은 옆 탭에서 그대로 정리할 수 있습니다. */}
+          <small>아래 항목은 <b>제출 전 마무리</b>에서 할 일 순서로 정리해 두었습니다</small>
         </div>
         {verdict.count === 0 ? (
           <p className={styles.clear}>
