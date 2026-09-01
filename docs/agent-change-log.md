@@ -4924,3 +4924,19 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 알림 메일: 이제 짐작하지 않고 받은 값을 적습니다(금액·회수한 이용권 수, 또는 환불하지 않은 이유). 환불 정보 없이 불려도 단정하지 않습니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 865건 통과(신규 14건), `next build` 통과.
 - Rollback: 이 커밋 revert 후 두 함수 `drop function`. `auto_refund_state` 컬럼은 타임아웃 경로가 쓰므로 두어야 합니다.
+
+## 2026-09-02 — Claude: FINAL에 "제출 전 마무리" 탭 추가 (1단계)
+
+- Status: main 적용. **기존 FINAL 분석·프롬프트·결과 화면은 한 줄도 건드리지 않았습니다.** 새 탭만 추가했습니다.
+- 문제: FINAL은 같은 문제를 여러 관점에서 잡습니다. 수치 하나가 어긋나면 탈락요인·이력서 대조·면접관 시선에 각각 나타나, 읽는 사람에게는 일곱 개의 숙제로 보입니다. 아홉 개 섹션을 다 읽고 나면 남는 질문이 "그래서 뭘 하지"입니다.
+- 접근: **분석을 다시 하지 않습니다.** AI 호출 0회, 첨삭본 수정 0글자. 이미 나온 결과를 **"누가 할 수 있는 일인가"**로 다시 셀 뿐입니다.
+  - `DONE` — `rejectionRisks.handling`이 `removed`/`softened`. **이미 첨삭본에 반영된 것**입니다. 여기에 버튼을 다는 제안이 있었지만 만들지 않았습니다 — 누를 것이 없고, 누르면 멀쩡한 문장을 다시 건드리게 됩니다.
+  - `NEEDS_APPLICANT` — `needs_applicant` + `documentConflicts` + `claimEvidence.verdict === "unsupported"`. 손님만 답을 압니다.
+  - `INTERVIEW` — `interviewerFlags`. 서류에 문장을 더 넣기보다 면접에서 답할 것.
+  - `KEPT` — `kept_by_choice`. 알고 고른 대로 남긴 것.
+- 중복 묶기: 같은 문장을 가리키는 지적을 하나로 합칩니다(공백·문장부호 제거 후 포함 관계 비교, 12자 미만은 우연 일치를 피해 합치지 않음). 갈래가 다르면 합치지 않습니다 — 같은 문장이라도 "이미 고쳤다"와 "면접에서 답하라"는 할 일이 다릅니다. 합쳐진 경우 원래 지적 수를 화면에 밝힙니다.
+- **"제출 권장/주의" 같은 판정 문구는 쓰지 않았습니다.** 합불은 알 수 없고, 권했다가 떨어지면 그 한 줄이 책임을 집니다. `docs/analysis-consistency-and-rounded-editing-philosophy.md`의 원칙과도 충돌합니다. 대신 남은 일이 있는지만 사실대로 말합니다. 테스트로 "권장/합격/불합격"이 문구에 들어가지 않음을 잠갔습니다.
+- Files: `src/domain/final-wrap-up.ts`(+테스트 9건), `src/components/final-wrap-up.tsx`, `.module.css`, `result-workspace-complete.tsx`(View에 `wrapup` 추가, 탭 버튼 1개, 렌더 1줄).
+- 2단계(미착수, 사용자 승인 대기): `NEEDS_APPLICANT` 항목에 대해 2~3개만 물어보고 **해당 문장만** 패치해 최종본을 만드는 단계. 전체 재첨삭은 하지 않습니다 — 이미 다듬은 문장이 흔들리고 비용도 큽니다. 문장 단위라 AI 비용은 수십 원 수준.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 874건 통과(신규 9건), `next build` 통과.
+- Rollback: 이 커밋 revert. 기존 FINAL 화면은 영향받지 않습니다.
