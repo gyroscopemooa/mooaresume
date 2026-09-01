@@ -4909,3 +4909,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 미결(사용자 결정 대기): 최종 실패에도 자동 환불을 걸지 여부. 10분 초과 건에는 이미 걸려 있어 앞뒤가 맞지 않습니다. 걸 때는 이용권 회수를 함께 해야 합니다 — 지금은 실패 시 이용권이 ACTIVE로 살아나므로, 환불만 더하면 돈과 무료 이용권을 함께 주게 됩니다.
 - Validation: `tsc --noEmit` 통과, `vitest run` 전체 통과, `next build` 통과.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 최종 실패 자동 환불 + 이용권 회수
+
+- Status: 코드 커밋 완료. **마이그레이션은 아직 원격에 적용하지 않았습니다** — 사용자가 `npm run db:remote:push`를 실행해야 동작합니다.
+- Reason: 10분 초과 건에는 자동 환불이 걸려 있는데 최종 실패에는 없어 앞뒤가 맞지 않았습니다. 손님 쪽에서 보면 최종 실패가 더 나쁩니다 — 타임아웃은 아직 결과가 나올 수도 있지만 최종 실패는 나오지 않고, 자동 재시도를 두 번 다 쓴 뒤입니다.
+- 신규 마이그레이션 `20260902010000_quick_failure_auto_refund.sql`:
+  - `claim_quick_analysis_failure_refund(uuid, uuid)` — 결과가 있으면 COMPLETED, 재시도가 남았으면(FAILED가 아니면) RETRYABLE, 결제가 없으면 FAILED_WITHOUT_ORDER. 그 외에는 주문을 SUBMITTING으로 잡고 REFUND_REQUIRED를 돌려줍니다.
+  - `revoke_refunded_analysis_entitlement(uuid, uuid)` — 그 주문에 딸린 **ACTIVE** 이용권만 REVOKED로 바꿉니다. CONSUMED는 결과를 받은 다른 분석의 것이므로 건드리지 않습니다.
+  - 검증된 타임아웃 함수(`claim_quick_analysis_timeout_refund`, `mark_quick_auto_refund_*`)는 **재정의하지 않았습니다.** 두 경로가 `billing_orders.auto_refund_state`를 공유하므로 한쪽이 환불한 주문을 다른 쪽이 다시 환불하지 않습니다.
+- 신규 `src/server/billing/quick-failure-refund.ts` — `polar.refunds.create({ revokeBenefits: true })` 후 `mark_quick_auto_refund_submitted`, **그 다음에** 이용권 회수. 순서를 뒤집으면 환불 실패 시 손님에게 돈도 이용권도 남지 않습니다. 회수만 실패하면 환불된 것으로 답합니다(여기서 던지면 바깥이 다시 환불하려 듭니다).
+- 왜 회수가 필요한가: `fail_quick_analysis`가 실패 시 이용권을 ACTIVE로 되살립니다. 환불까지 하면 돈과 무료 한 판을 함께 주게 됩니다. 둘 중 하나만 드리는 것이 맞습니다.
+- 발화 지점: `supabase-quick-analysis-run-repository.ts`의 `fail()`. 환불을 먼저 하고 결과를 알림 메일에 실어 보냅니다. 환불이 던져도 삼킵니다 — 실패 기록이 환불 때문에 다시 실패하면 상태가 어긋난 런만 남습니다.
+- 알림 메일: 이제 짐작하지 않고 받은 값을 적습니다(금액·회수한 이용권 수, 또는 환불하지 않은 이유). 환불 정보 없이 불려도 단정하지 않습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 865건 통과(신규 14건), `next build` 통과.
+- Rollback: 이 커밋 revert 후 두 함수 `drop function`. `auto_refund_state` 컬럼은 타임아웃 경로가 쓰므로 두어야 합니다.

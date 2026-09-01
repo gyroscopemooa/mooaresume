@@ -7,6 +7,7 @@ import { resultDocumentSchema, type ResultDocument } from "@/domain/result-docum
 import { RESEARCH_CONSENT_VERSION, buildResearchSnapshot } from "./research-capture";
 import type { QuickAnalysisRunRepository } from "./quick-analysis-orchestrator";
 import { alertExhaustedRun } from "@/server/notifications/run-failure-alert-email";
+import { refundExhaustedRun, type FailureRefundOutcome } from "@/server/billing/quick-failure-refund";
 
 const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -152,8 +153,25 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     //
     // 알림이 실패해도 삼킵니다. 실패를 기록하는 일이 알림 때문에 다시
     // 실패하면, 남는 것은 상태가 어긋난 런입니다.
+    // 환불이 먼저입니다. 손님 돈이 알림보다 급하고, 결과를 알림에 실어 보내야
+    // 메일이 환불 여부를 짐작이 아니라 사실로 말할 수 있습니다.
+    //
+    // 환불도 정말 끝난 것인지 DB에 다시 물어봅니다 — 재시도가 남아 있으면
+    // 상태가 PENDING이고, 그때는 아무것도 하지 않습니다.
+    let refund: FailureRefundOutcome = { disposition: "NOT_REFUNDED", reason: "NOT_ATTEMPTED" };
     try {
-      await alertExhaustedRun({ analysisRunId, ownerUserId: this.ownerUserId, failureCode });
+      refund = await refundExhaustedRun({ analysisRunId, ownerUserId: this.ownerUserId });
+    } catch (refundError) {
+      // 삼킵니다. 실패를 기록하는 일이 환불 때문에 다시 실패하면 남는 것은
+      // 상태가 어긋난 런입니다. 알림은 여전히 나가고, 그 메일이 사람을
+      // 부릅니다 — 이 경로는 주문을 UNCERTAIN으로 표시해 두므로 두 번
+      // 환불되지도 않습니다.
+      refund = { disposition: "NOT_REFUNDED", reason: "REFUND_ERROR" };
+      console.error("run_failure_refund_failed", refundError instanceof Error ? refundError.message : "UNKNOWN_ERROR");
+    }
+
+    try {
+      await alertExhaustedRun({ analysisRunId, ownerUserId: this.ownerUserId, failureCode, refund });
     } catch (alertError) {
       console.error("run_failure_alert_failed", alertError instanceof Error ? alertError.message : "UNKNOWN_ERROR");
     }

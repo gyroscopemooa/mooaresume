@@ -34,11 +34,15 @@ beforeEach(() => {
 
 afterEach(() => { delete process.env.RESEND_API_KEY; });
 
-const run = (input: { analysisRunId?: string } = {}) =>
+type Refund = Parameters<typeof alertExhaustedRun>[0]["refund"];
+
+const run = (input: { analysisRunId?: string; refund?: Refund } = {}) =>
   alertExhaustedRun(
-    { analysisRunId: input.analysisRunId ?? "run-1", ownerUserId: "user-1", failureCode: "ANALYSIS_FAILED" },
+    { analysisRunId: input.analysisRunId ?? "run-1", ownerUserId: "user-1", failureCode: "ANALYSIS_FAILED", refund: input.refund },
     send as unknown as typeof fetch,
   );
+
+const sentText = () => (JSON.parse((send.mock.calls[0][1] as { body: string }).body) as { text: string }).text;
 
 describe("더 시도할 것이 없는 실패", () => {
   it("알린다", async () => {
@@ -77,5 +81,41 @@ describe("메일 설정이 없으면", () => {
 
     expect(await run()).toBe("SKIPPED_NOT_CONFIGURED");
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe("환불 결과", () => {
+  beforeEach(() => {
+    maybeSingle.mockResolvedValue({ data: { status: "FAILED", attempt_count: 3, product: "FINAL" } });
+  });
+
+  it("환불했으면 금액과 회수한 이용권을 적는다", async () => {
+    await run({ refund: { disposition: "REFUNDED", amount: 19_900, currency: "KRW", entitlementsRevoked: 1 } });
+
+    expect(sentText()).toContain("19,900원을 자동 환불했습니다");
+    expect(sentText()).toContain("이용권 1건도 회수했습니다");
+  });
+
+  it("환불하지 않았으면 왜인지 적는다", async () => {
+    // 예전에는 어느 경우든 "결제·이용권은 되돌려져 있어"라고 단정했습니다.
+    // 읽는 사람이 환불이 끝난 줄 알고 넘어가면, 손님은 돈만 내고 아무것도
+    // 못 받은 상태로 남습니다.
+    await run({ refund: { disposition: "NOT_REFUNDED", reason: "FAILED_WITHOUT_ORDER" } });
+
+    expect(sentText()).toContain("무료 이용권");
+    expect(sentText()).not.toContain("자동 환불했습니다");
+  });
+
+  it("환불 시도가 오류로 끝났으면 사람을 부른다", async () => {
+    await run({ refund: { disposition: "NOT_REFUNDED", reason: "REFUND_ERROR" } });
+
+    expect(sentText()).toContain("폴라에서 직접 확인해 주세요");
+  });
+
+  it("환불 정보 없이 불려도 단정하지 않는다", async () => {
+    await run();
+
+    expect(sentText()).toContain("환불 여부를 확인하지 못했습니다");
+    expect(sentText()).not.toContain("되돌려져 있어");
   });
 });

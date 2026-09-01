@@ -24,8 +24,41 @@ function serviceClient() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+/**
+ * 환불 결과를 그대로 옮겨 적기 위한 모양.
+ *
+ * 예전에는 이 메일이 "결제·이용권은 되돌려져 있어"라고 단정했는데, 그 경로에는
+ * 환불 호출이 아예 없었습니다. 읽는 사람이 환불이 끝난 줄 알고 넘어가면 손님은
+ * 돈만 내고 아무것도 못 받은 상태로 남습니다. 이제는 짐작하지 않고 받은 값을
+ * 적습니다.
+ */
+export type RefundSummary =
+  | { disposition: "REFUNDED"; amount: number; currency: string; entitlementsRevoked: number }
+  | { disposition: "NOT_REFUNDED"; reason: string };
+
+const REFUND_LINE: Record<string, string> = {
+  NOT_ATTEMPTED: "환불을 시도하지 않았습니다. 폴라에서 직접 확인해 주세요.",
+  REFUND_ERROR: "환불 시도가 오류로 끝났습니다. 주문은 UNCERTAIN으로 표시해 두었으니 폴라에서 직접 확인해 주세요.",
+  RETRYABLE: "아직 재시도가 남아 있어 환불하지 않았습니다.",
+  COMPLETED: "결과가 이미 나와 있어 환불하지 않았습니다.",
+  FAILED_WITHOUT_ORDER: "결제 없이(무료 이용권으로) 돌린 분석이라 환불할 결제가 없습니다.",
+  REFUND_SUBMITTED: "이미 환불이 접수된 주문입니다.",
+  REFUND_IN_PROGRESS: "환불이 진행 중이거나 상태가 불확실한 주문입니다. 폴라에서 확인해 주세요.",
+};
+
+function describeRefund(refund: RefundSummary | undefined): string {
+  if (!refund) return "환불 여부를 확인하지 못했습니다. 폴라에서 직접 확인해 주세요.";
+  if (refund.disposition === "REFUNDED") {
+    const revoked = refund.entitlementsRevoked > 0
+      ? `이용권 ${refund.entitlementsRevoked}건도 회수했습니다.`
+      : "회수할 이용권은 없었습니다(폴라 웹훅이 처리했을 수 있습니다).";
+    return `${refund.amount.toLocaleString("ko-KR")}${refund.currency === "KRW" ? "원" : ` ${refund.currency}`}을 자동 환불했습니다. ${revoked}`;
+  }
+  return REFUND_LINE[refund.reason] ?? `환불하지 않았습니다. (${refund.reason})`;
+}
+
 export async function alertExhaustedRun(
-  input: { analysisRunId: string; ownerUserId: string; failureCode: string },
+  input: { analysisRunId: string; ownerUserId: string; failureCode: string; refund?: RefundSummary },
   fetchImplementation: typeof fetch = fetch,
 ): Promise<"SENT" | "SKIPPED_RETRYABLE" | "SKIPPED_NOT_CONFIGURED" | "FAILED"> {
   const client = serviceClient();
@@ -73,12 +106,7 @@ export async function alertExhaustedRun(
         `시도 횟수: ${run.attempt_count ?? "?"}`,
         `신청자: ${email}`,
         "",
-        // 이 두 줄이 한 줄로 뭉뚱그려져 "결제·이용권은 되돌려져 있어"라고
-        // 적혀 있었습니다. `fail_quick_analysis`가 되돌리는 것은 이용권뿐이고
-        // 이 경로에는 폴라 환불 호출이 없습니다 — 읽는 사람이 환불이 끝난 줄
-        // 알고 넘어가면, 돈은 받고 아무것도 못 준 상태가 그대로 남습니다.
-        "이용권은 ACTIVE로 되돌려 두었습니다. 다시 시작할 수는 있지만, 원인이 그대로면 같은 결과가 됩니다.",
-        "결제는 환불되지 않았습니다. 자동 환불은 10분 초과 건에만 걸려 있습니다. 환불이 필요하면 폴라에서 직접 처리해 주세요.",
+        describeRefund(input.refund),
         "관리자 화면의 첨삭 결과에서 이 건을 확인해 주세요.",
       ].join("\n"),
     }),
