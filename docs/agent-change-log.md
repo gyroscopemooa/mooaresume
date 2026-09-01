@@ -4952,3 +4952,20 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 남은 문제(미착수): 링크가 Gmail의 링크 검사에 먼저 소진되어 `otp_expired`로 도착합니다. Supabase 매직링크는 GET 한 번에 소모되므로 링크 방식으로는 구조적으로 막기 어렵습니다. 6자리 코드(OTP) 입력으로 바꾸는 것이 확실한 해법이며, 화면이 붙는 작업이라 사용자 결정 대기.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 878건 통과, `next build` 통과.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 제출 전 보완 (2단계) — 물어보고 그 문장만 고치기
+
+- Status: 코드 커밋. **마이그레이션은 원격 미적용** — 사용자가 `npm run db:remote:push` 실행 필요.
+- 무엇: `제출 전 마무리`의 "확인이 필요합니다" 항목에 대해 손님에게 2~3가지만 묻고, 받은 사실로 **그 문장만** 다시 씁니다. 자기소개서 전체를 다시 첨삭하지 않습니다.
+- 전체 재첨삭을 하지 않는 이유: 이미 다듬은 문장이 다시 흔들리고, 값이 한 번 더 들고, 손님이 "고칠수록 나빠졌다"고 느낍니다. 모델에는 문제 문장 하나와 손님이 준 사실만 보냅니다 — 나머지 문장은 보지도 못하므로 흔들릴 수가 없습니다.
+- 신규 `src/domain/final-patch.ts`(+테스트 10건):
+  - `locateQuote` — 인용문이 첨삭본의 어느 문장인지 찾습니다. 공백·문장부호를 걷어내고 비교하며, **못 찾으면 비슷한 문장을 고르지 않고 못 찾았다고 답합니다.** 닮은 자리를 고치면 엉뚱한 문장이 바뀝니다.
+  - `applyPatches` — 바꾸기로 한 문장이 실제로 거기 있을 때만 치환합니다. 없으면 그 문항은 손대지 않습니다.
+  - `countAppliedPatches` — 실제로 바뀐 것만 셉니다. 화면이 고쳤다고 하는데 문서는 그대로인 상태를 막습니다.
+- `WrapUpItem.choices` 추가: 이력서 대조 항목은 두 문서가 각각 적은 값을 함께 실어, 빈칸 대신 고르게 합니다.
+- 신규 마이그레이션 `20260902020000_final_submission_patch.sql`: `final_submission_patches`(분석 1건당 보완 1건). **`analysis_results`는 덮어쓰지 않습니다** — 원래 문장이 남아야 되돌리고 "바뀐 곳만 보기"가 가능합니다. RLS는 본인 읽기만 열고 쓰기는 서버(service role)만 — 브라우저가 직접 쓸 수 있으면 아무 문장이나 보완본으로 저장됩니다.
+- 신규 `src/server/ai/final-patch-gateway.ts`: Responses API, `max_output_tokens: 2000`, strict JSON schema. 요청하지 않은 `itemId`는 걸러냅니다. 프롬프트의 핵심은 "손님이 주지 않은 숫자·회사명·성과·기간을 만들지 말 것".
+- 신규 `POST /api/final-patch`: FINAL 결과에서만, 본인 것만(RLS). 고칠 자리를 못 찾은 항목은 모델에 보내지 않습니다. 저장 실패해도 고친 문장은 화면에 돌려줍니다.
+- UI: `final-patch-form.tsx`. `제출 전 마무리` 안에서 열리고, 답한 것만 고칩니다. 결과는 before/after로 보여 줍니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 888건 통과(신규 10건), `next build` 통과.
+- Rollback: 이 커밋 revert 후 `drop table public.final_submission_patches`.

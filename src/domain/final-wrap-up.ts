@@ -33,6 +33,14 @@ export type WrapUpItem = {
   severity: "high" | "medium" | "low";
   /** 어느 분석에서 나왔는지. 같은 문제가 여러 곳에서 잡히면 여럿입니다. */
   sources: string[];
+  /**
+   * 손님이 고를 수 있는 답이 이미 있는 경우.
+   *
+   * 이력서와 자소서의 수치가 다를 때가 그렇습니다 — 둘 중 하나가 맞으므로,
+   * 빈칸을 주고 다시 쓰게 하는 것보다 둘을 나란히 보여 주고 고르게 하는 편이
+   * 정확하고 빠릅니다. 그 외에는 비어 있습니다.
+   */
+  choices: string[];
 };
 
 export type FinalWrapUp = {
@@ -85,6 +93,11 @@ function merge(drafts: Draft[]): WrapUpItem[] {
     for (const source of draft.sources) {
       if (!found.sources.includes(source)) found.sources.push(source);
     }
+    // 고를 답은 한쪽에만 있을 수 있습니다. 합치면서 잃으면 손님은 빈칸을
+    // 마주하게 됩니다.
+    for (const choice of draft.choices) {
+      if (!found.choices.includes(choice)) found.choices.push(choice);
+    }
     // 더 심각하게 본 쪽을 남깁니다. 낮춰 잡으면 손님이 넘기게 됩니다.
     if (SEVERITY_ORDER[draft.severity] < SEVERITY_ORDER[found.severity]) found.severity = draft.severity;
   }
@@ -92,7 +105,8 @@ function merge(drafts: Draft[]): WrapUpItem[] {
   // 않습니다 — 안 쓰는 필드가 타입에 남으면 다음 사람이 뜻이 있는 줄 압니다.
   return merged.map((item) => ({
     id: item.id, action: item.action, headline: item.headline,
-    todo: item.todo, quote: item.quote, severity: item.severity, sources: item.sources,
+    todo: item.todo, quote: item.quote, severity: item.severity,
+    sources: item.sources, choices: item.choices,
   }));
 }
 
@@ -117,6 +131,7 @@ export function buildFinalWrapUp(result: ResultDocument): FinalWrapUp {
       quote: risk.evidenceQuote,
       severity: risk.severity,
       sources: ["탈락요인"],
+      choices: [],
     });
   }
 
@@ -131,6 +146,8 @@ export function buildFinalWrapUp(result: ResultDocument): FinalWrapUp {
       quote: conflict.coverLetterQuote,
       severity: conflict.severity,
       sources: ["이력서 대조"],
+      // 두 문서가 각각 뭐라고 적었는지. 둘 중 하나가 맞습니다.
+      choices: [conflict.coverLetterQuote, conflict.resumeStatement],
     });
   }
 
@@ -144,6 +161,7 @@ export function buildFinalWrapUp(result: ResultDocument): FinalWrapUp {
       quote: claim.evidenceQuote,
       severity: "high",
       sources: ["주장·근거"],
+      choices: [],
     });
   }
 
@@ -156,6 +174,7 @@ export function buildFinalWrapUp(result: ResultDocument): FinalWrapUp {
       quote: flag.evidenceQuote,
       severity: flag.likelihood,
       sources: ["면접관 시선"],
+      choices: [],
     });
   }
 

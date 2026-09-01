@@ -65,3 +65,23 @@
 .verdict[data-tone="ready"] { border: 1px solid #b9d8c4; background: #f1f9f3; }
 .verdict[data-tone="ready"] b { color: #176b4a; }
 .verdict[data-tone="ready"] span { color: #4e6156; }
+
+/* 제출 전 보완. 물어보고 그 문장만 고치는 자리입니다. */
+.primaryButton { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; border: 0; border-radius: 8px; padding: 13px 20px; background: #176b4a; color: #fff; font: inherit; font-size: 13px; font-weight: 900; cursor: pointer; }
+.primaryButton:disabled { background: #aab9af; cursor: default; }
+.ghostButton { margin-top: 16px; border: 1px solid #c8d5cc; border-radius: 8px; padding: 12px 18px; background: #fff; color: #3c4c42; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.formFoot { display: flex; gap: 9px; align-items: center; }
+
+.choices { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 11px; }
+.choices button { border: 1px solid #c8d5cc; border-radius: 8px; padding: 9px 13px; background: #fff; color: #3c4c42; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }
+.choices button[data-selected="true"] { border-color: #176b4a; background: #eef7f1; color: #14503a; font-weight: 900; }
+
+.answerBox { width: 100%; box-sizing: border-box; margin-top: 10px; padding: 11px 13px; border: 1px solid #d7e2da; border-radius: 8px; background: #fff; color: #20211e; font: inherit; font-size: 13px; line-height: 1.7; resize: vertical; outline: 0; }
+.answerBox:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.12); }
+.answerBox::placeholder { color: #93a099; }
+
+.patchMessage { margin: 12px 0 0; color: #a53d3d; font-size: 12px; line-height: 1.7; }
+
+/* 바뀐 곳만 보기. 지운 문장을 남겨 두어야 무엇이 달라졌는지 보입니다. */
+.before { margin: 0; padding-left: 11px; border-left: 2px solid #ddc4c4; color: #8b7676; font-size: 12px; line-height: 1.75; text-decoration: line-through; }
+.after { margin: 9px 0 0; padding-left: 11px; border-left: 2px solid #55a77f; color: #21372a; font-size: 13px; font-weight: 650; line-height: 1.8; }

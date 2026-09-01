@@ -7,6 +7,8 @@ import {
   WRAP_UP_NOTE,
   type WrapUpAction,
 } from "@/domain/final-wrap-up";
+import { buildPatchQuestions } from "@/domain/final-patch";
+import { FinalPatchForm } from "./final-patch-form";
 import styles from "./final-wrap-up.module.css";
 
 /**
@@ -27,7 +29,7 @@ const SEVERITY_LABEL = { high: "높음", medium: "보통", low: "낮음" } as co
 const SEVERITY_CLASS = { high: styles.sevHigh, medium: styles.sevMedium, low: styles.sevLow } as const;
 const GROUP_ORDER: WrapUpAction[] = ["NEEDS_APPLICANT", "INTERVIEW", "DONE", "KEPT"];
 
-export function FinalWrapUp({ result }: { result: ResultDocument }) {
+export function FinalWrapUp({ result, analysisRunId = null }: { result: ResultDocument; analysisRunId?: string | null }) {
   const wrapUp = buildFinalWrapUp(result);
   const verdict = describeWrapUpVerdict(wrapUp);
 
@@ -74,6 +76,10 @@ export function FinalWrapUp({ result }: { result: ResultDocument }) {
           </p>
         )}
       </section>
+
+      {/* 확인이 필요한 것들 바로 아래에 둡니다. 무엇을 물어보는지 읽은 자리에서
+          바로 답할 수 있어야 합니다. */}
+      <FinalPatchForm analysisRunId={analysisRunId} questions={buildPatchQuestions(result, wrapUp)} />
 
       {GROUP_ORDER.map((action) => {
         const items = wrapUp.items.filter((item) => item.action === action);
