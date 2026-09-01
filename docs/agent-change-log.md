@@ -4294,3 +4294,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 확인된 설정(사용자 수정 후): Build command `npx @opennextjs/cloudflare build`, Version command `npx wrangler versions upload`, Production branch `main`, 비프로덕션 브랜치 빌드 켜짐. Build variables(`NEXT_PUBLIC_*`)는 소실 없이 유지됨.
 - Files: 이 문서만.
 - Rollback: 해당 없음(기록).
+
+## 2026-09-01 — Claude: 쿠폰 칸의 로그인 막다른 길
+
+- Agent/session: Claude. 사용자 질문("무료쿠폰도 로그인해야 쓸 수 있게 하는 게 맞나")에서 확인 중 발견.
+- Status: main에 적용. 마이그레이션 없음.
+- 판단(로그인 요구는 유지): 이용권은 계정에 붙는 물건(`reward_credits.owner_user_id`)이라 넣을 계정이 없으면 지급할 데가 없고, **1인 1회 제한도 신원 없이는 성립하지 않습니다**(공유 코드 한 장을 한 사람이 전부 쓰는 것을 막을 수단이 사라집니다). 파트너에게 "누가 썼는지" 답하는 기능도 같은 이유로 신원이 필요합니다. 어차피 결제에서 로그인하므로 단계가 느는 것이 아니라 순서가 앞당겨질 뿐입니다.
+- 문제: `claim_coupon_code`는 로그인을 요구하는데(`AUTHENTICATION_REQUIRED`), **쿠폰 칸에는 로그인할 방법이 없었습니다.** 추천코드 칸에는 `requireSignIn`이 있어 로그아웃 상태면 로그인을 열어 주는데, 쿠폰 칸은 코드를 넣고 누른 **뒤에야** "로그인 후 등록하실 수 있습니다"라고 답했습니다. 기관에서 쿠폰을 받아 온 사람은 그 문장을 읽고 어디서 로그인하는지는 찾지 못합니다.
+- Change: `CouponCodeEntry`에 `requireSignIn`·`returnTo`를 추가해 추천코드 칸과 같은 방식으로 맞췄습니다. 결제 화면(compact)은 **한 줄 안내**(로그인 버튼이 이미 몇 줄 아래 있으므로 버튼을 하나 더 두지 않습니다), `/refer`의 큰 카드는 **Google 로그인 버튼**을 냅니다 — 그 화면에는 다른 로그인 수단이 없습니다.
+- Files: `coupon-code-entry.tsx`, `coupon-code-entry.module.css`, `analysis-preparation.tsx`, `refer/page.tsx`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

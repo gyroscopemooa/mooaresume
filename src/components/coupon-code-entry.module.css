@@ -29,3 +29,15 @@
 .message[data-ok="true"] { color: #176b4a; font-weight: 600; }
 
 [data-done="true"] .label svg { color: #176b4a; }
+
+/* 로그아웃 상태. 결제 화면(compact)에서는 한 줄 안내로, /refer의 큰 카드에서는
+   실제로 누를 수 있는 버튼으로 나옵니다 — 그 화면에는 다른 로그인 수단이
+   없어서, 안내만 두면 그 자리가 막다른 길이 됩니다. */
+.hint { color: #8b968f; font-size: 11.5px; }
+.signIn {
+  display: flex; flex: 1; min-width: 150px; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px; border: 1px solid #cfe0d7; border-radius: 7px; background: #fff;
+  color: #41514a; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.signIn:hover:not(:disabled) { border-color: #176b4a; color: #176b4a; }
+.signIn:disabled { color: #8b968f; cursor: default; }

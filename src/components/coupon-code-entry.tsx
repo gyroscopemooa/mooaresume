@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Ticket } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./coupon-code-entry.module.css";
 
@@ -31,11 +31,55 @@ function describeCouponError(raw: string): string {
   return `등록하지 못했습니다. (${raw})`;
 }
 
-export function CouponCodeEntry({ compact = false }: { compact?: boolean }) {
+export function CouponCodeEntry({
+  compact = false,
+  requireSignIn = false,
+  returnTo = "/refer",
+}: {
+  compact?: boolean;
+  /**
+   * 로그아웃 상태에서 로그인할 길을 내줍니다.
+   *
+   * 이용권은 계정에 붙는 물건이라 `claim_coupon_code`가 로그인을 요구합니다.
+   * 그런데 안내만 하고 버튼을 두지 않으면, 기관에서 쿠폰을 받아 온 사람이
+   * "로그인하셔야 합니다"를 읽고 **어디서 로그인하는지는 못 찾는** 막다른 길에
+   * 섭니다. 추천코드 칸과 같은 방식으로 엽니다.
+   */
+  requireSignIn?: boolean;
+  returnTo?: string;
+}) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [message, setMessage] = useState("");
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!requireSignIn) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data } = await createClient().auth.getUser();
+        if (!cancelled) setSignedIn(Boolean(data.user));
+      } catch {
+        if (!cancelled) setSignedIn(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [requireSignIn]);
+
+  async function signIn() {
+    setBusy(true);
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${returnTo}` },
+      });
+      if (error) setBusy(false);
+    } catch {
+      setBusy(false);
+    }
+  }
 
   async function apply() {
     const trimmed = code.trim().toUpperCase();
@@ -63,22 +107,38 @@ export function CouponCodeEntry({ compact = false }: { compact?: boolean }) {
     setBusy(false);
   }
 
+  const needsSignIn = requireSignIn && signedIn === false;
+
   return (
     <div className={compact ? styles.compact : styles.card} data-done={done}>
       <div className={styles.row}>
         <span className={styles.label}><Ticket/> 쿠폰 코드<em>선택</em></span>
-        <input
-          value={code}
-          onChange={(event) => setCode(event.target.value.toUpperCase())}
-          placeholder="YOUTH-MUA-2026"
-          disabled={busy || done}
-          maxLength={40}
-          aria-label="쿠폰 코드"
-          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
-        />
-        <button type="button" onClick={() => void apply()} disabled={busy || done}>
-          {done ? "완료" : busy ? "확인 중" : "등록"}
-        </button>
+        {needsSignIn ? (
+          compact ? (
+            // 결제 화면에는 로그인 버튼이 이미 몇 줄 아래에 있습니다. 같은 일을
+            // 시키는 버튼이 둘이면 어느 쪽을 눌러야 하는지를 묻게 됩니다.
+            <small className={styles.hint}>로그인하시면 입력칸이 열립니다</small>
+          ) : (
+            <button type="button" className={styles.signIn} onClick={() => void signIn()} disabled={busy}>
+              {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={14}/>
+            </button>
+          )
+        ) : (
+          <>
+            <input
+              value={code}
+              onChange={(event) => setCode(event.target.value.toUpperCase())}
+              placeholder="YOUTH-MUA-2026"
+              disabled={busy || done}
+              maxLength={40}
+              aria-label="쿠폰 코드"
+              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
+            />
+            <button type="button" onClick={() => void apply()} disabled={busy || done}>
+              {done ? "완료" : busy ? "확인 중" : "등록"}
+            </button>
+          </>
+        )}
       </div>
       {message && <p className={styles.message} data-ok={done}>{message}</p>}
     </div>

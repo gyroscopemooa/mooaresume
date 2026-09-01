@@ -45,7 +45,7 @@ export default function ReferPage() {
             찾아 헤매지 않도록, 결과가 보이는 곳과 넣는 곳을 붙여 둡니다.
             추천코드 칸은 이 화면 아래쪽에 따로 있습니다 — 둘은 반대로
             동작하므로 합치지 않습니다. */}
-        <CouponCodeEntry />
+        <CouponCodeEntry requireSignIn returnTo="/refer" />
 
         {/* The other direction. Someone who was handed a code will come here
             looking for where to put it, and the only field for it used to be
