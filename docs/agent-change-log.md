@@ -4297,3 +4297,8 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/domain/community.ts`, `src/server/community/community-repository.ts`, `src/app/api/community/**`, `src/components/community-lounge.*`, `src/components/site-nav.*`, migration 및 테스트.
 - Protected work: `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`, `.codex-remote-attachments/`와 심리검사 워크트리 변경은 수정·stage 대상에서 제외합니다.
 - Rollback: 이 브랜치의 커뮤니티 후속 커밋 revert. migration은 원격 적용 전이므로 DB 롤백 불필요.
+## 2026-09-01 — Codex: 라운지 주소 유지, 공통 헤더 노출 보류
+
+- Change: `/community` 페이지와 커뮤니티 기능은 유지하되 `SiteNav`의 직접 링크와 메뉴 패널 링크는 제거했습니다.
+- Reason: Claude가 main 헤더를 계속 작업 중이므로 겹치는 공통 메뉴 변경을 이번 커뮤니티 브랜치에서 빼고, 라운지 공개 시점에 별도 결정합니다.
+- Rollback: 라운지 공개 결정 시 `SiteNav`에 링크를 별도 커밋으로 다시 추가.

@@ -72,7 +72,3 @@
   .ctaLong { display: none; }
   .ctaShort { display: inline; }
 }
-
-.lounge { font-size: 13px; color: #526059; }
-.lounge:hover { color: var(--green, #176b4a); }
-@media (max-width: 760px) { .lounge { display: none; } }
