@@ -4969,3 +4969,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - UI: `final-patch-form.tsx`. `제출 전 마무리` 안에서 열리고, 답한 것만 고칩니다. 결과는 before/after로 보여 줍니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 888건 통과(신규 10건), `next build` 통과.
 - Rollback: 이 커밋 revert 후 `drop table public.final_submission_patches`.
+
+## 2026-09-02 — Claude: GA4 연결 + 사이트맵에 커리어·라운지 추가
+
+- GA4(`G-XF0JRSBBZX`): 구글이 안내하는 스니펫은 `gtag.js`를 한 번 더 불러오게 되어 있는데, 그 라이브러리는 광고 태그(`AW-18415179469`) 때문에 이미 싣고 있습니다. 두 번 실으면 페이지뷰가 두 번 세지므로 **`gtag('config', 'G-XF0JRSBBZX')` 한 줄만** 추가했습니다. 대시보드의 "이미 있는 Google 태그 사용"도 필요 없습니다 — 코드로 붙였으므로 중복입니다.
+- 사이트맵: `/career`, `/career/assessments`, `/career/interest`, `/community` 추가(6 → 10). 직업심리검사·진로검사 계열 검색어를 실제로 받는 화면이 사이트맵에 없어, 크롤러가 홈에서 링크를 타고 들어오기만 기다리고 있었습니다. 제품 경로(로그인·결제·초안이 필요한 화면)는 기존 규칙대로 계속 제외합니다.
+- Search Console에서 확인된 사용자 조치 사항(코드 아님):
+  - `/career`, `/career/interest`, `/pricing`, `/quick`이 **사이트맵으로 제출**되어 있습니다. 이들은 페이지이지 사이트맵 XML이 아니라 항상 오류가 납니다. 삭제해야 합니다. 특히 `/pricing`은 **존재하지 않는 경로**입니다.
+  - `NOINDEX 제외 4건`은 대부분 의도한 것입니다(`/comingsoon`, `/career/values`, `/career/work-style`, 결과·관리자 화면). 잠금을 풀 때 `robots` 분기를 함께 지우면 돌아옵니다.
+  - `403 차단 1건`은 `/meensoo` 계열로 보이며 정상입니다.
+- 미결: `og:image`가 없습니다. 카카오톡·네이버·슬랙에 링크를 공유해도 썸네일이 뜨지 않습니다. `opengraph-image`로 만들 수 있으며 사용자 결정 대기.
+- Validation: `tsc --noEmit` 통과, `vitest run` 888건 통과, `next build` 통과.

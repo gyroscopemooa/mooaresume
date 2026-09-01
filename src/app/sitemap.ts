@@ -1,29 +1,37 @@
 import type { MetadataRoute } from "next";
+import { communityPostPath } from "@/domain/community";
 import { getSiteUrl } from "@/lib/site-url";
+import { listPublishedCommunityPostsForSitemap } from "@/server/community/community-publication";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
-  // /guide was public and indexable but absent here, so the one page that
-  // answers "how does this work" was left for crawlers to find on their own.
-  // Product routes stay out: they need a draft, a login or a payment, and an
-  // indexed URL that greets a visitor with an empty form helps no one.
-  // Dated to the launch rather than to whenever these lines were first typed.
-  // A stale lastModified tells a crawler the page has not changed since a date
-  // that predates the product actually opening, which is the opposite of what
-  // a launch wants said.
   const launchedAt = new Date("2026-08-24");
-  return [
+  const staticPages: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: launchedAt, changeFrequency: "weekly", priority: 1 },
+    { url: `${siteUrl}/community`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
     { url: `${siteUrl}/examples`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/guide`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.7 },
     { url: `${siteUrl}/landing`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.6 },
-    // Low priority, but it has to be findable: someone deciding whether to hand
-    // over a 자기소개서 should be able to reach this without asking.
     { url: `${siteUrl}/privacy`, lastModified: new Date("2026-08-31"), changeFrequency: "yearly", priority: 0.3 },
-    // The result dashboard with sample data. It answers "AI 자소서 첨삭 결과가
-    // 어떻게 나오나요" better than any prose on the site, and it is the only
-    // product screen safe to index — it needs no draft, no login and no
-    // payment.
     { url: `${siteUrl}/result/sample`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.8 },
+    // 커리어 검사 쪽은 제품 화면이 아니라 읽고 바로 해 볼 수 있는 페이지들이라
+    // 위의 "제품 경로는 뺀다" 규칙에 걸리지 않습니다. 로그인도 결제도 필요
+    // 없고, 검색으로 들어온 사람이 그 자리에서 할 일이 있습니다.
+    //
+    // 색인 대상에서 빠져 있던 것이 이 셋이었습니다. 직업심리검사·진로검사
+    // 계열 검색어를 실제로 받는 화면이 사이트맵에 없어서, 크롤러는 홈에서
+    // 링크를 타고 들어오기를 기다리고 있었습니다.
+    { url: `${siteUrl}/career`, lastModified: new Date("2026-09-02"), changeFrequency: "weekly", priority: 0.8 },
+    { url: `${siteUrl}/career/assessments`, lastModified: new Date("2026-09-02"), changeFrequency: "weekly", priority: 0.9 },
+    { url: `${siteUrl}/career/interest`, lastModified: new Date("2026-09-02"), changeFrequency: "monthly", priority: 0.8 },
+    // 라운지는 아직 예시 글 위주지만, 취업·진로 고민 검색어의 착지점입니다.
+    { url: `${siteUrl}/community`, lastModified: new Date("2026-09-02"), changeFrequency: "daily", priority: 0.6 },
   ];
+  try {
+    const posts = await listPublishedCommunityPostsForSitemap();
+    return [...staticPages, ...posts.map((post) => ({ url: `${siteUrl}${communityPostPath(post.id)}`, lastModified: post.updatedAt || new Date(), changeFrequency: "weekly" as const, priority: 0.6 }))];
+  } catch {
+    // A missing database configuration must not take the whole public sitemap down.
+    return staticPages;
+  }
 }

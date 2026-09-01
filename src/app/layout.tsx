@@ -107,7 +107,11 @@ function gtag(){dataLayer.push(arguments);}
 // conversion call from a component finds it either way.
 window.gtag = gtag;
 gtag('js', new Date());
-gtag('config', 'AW-18415179469');`}
+gtag('config', 'AW-18415179469');
+// GA4. 구글이 안내하는 스니펫은 gtag.js를 한 번 더 불러오게 되어 있는데, 그
+// 라이브러리는 위에서 이미 실었습니다. 두 번 실으면 페이지뷰가 두 번 세지고
+// 광고 태그까지 함께 흔들립니다 — 측정 ID만 하나 더 붙이면 됩니다.
+gtag('config', 'G-XF0JRSBBZX');`}
         </Script>
       </body>
     </html>
