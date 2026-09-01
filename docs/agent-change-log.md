@@ -4413,3 +4413,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: 마이그레이션 1, `server/feedback/feedback-repository.ts`, `server/notifications/feedback-alert-email.ts`, `api/feedback/route.ts`, `app/feedback/[analysisRunId]/*`(page·form·css), `app/meensoo/feedback/page.tsx`, `admin-repository.ts`, `admin-shell.tsx`, `meensoo/layout.tsx`, `analysis-complete-email.ts`, 분석 실행 라우트 2곳.
 - Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert. 표는 남으므로 되돌려도 데이터는 보존됩니다.
+
+## 2026-09-01 — Claude: 실패 화면이 같은 문장을 괄호에 반복하던 문제
+
+- Agent/session: Claude. 사용자 보고("`분석을 완료하지 못했습니다. (분석을 완료하지 못했습니다.)` / 짧게도 길게도 실패한다 / 쿠폰 문제인가").
+- Status: main에 적용. 마이그레이션 없음.
+- **표시 버그의 정체:** 서버는 운영에서 사유(`detail`)를 빼고 보냅니다. 클라이언트는 `detail`이 없으면 `error`를 대신 썼는데 그것이 같은 문장이라, 괄호 안에 방금 한 말이 한 번 더 들어갔습니다. **아무 정보도 아닌 데다 고장 난 것처럼 보입니다.**
+- **진단에 쓴 사실:** 이 문구는 예상 못 한 오류(500) 경로에서만 나옵니다. 검증이 막았다면 다른 문장이 나옵니다(`사실 확인에 실패해…`, 문항 지목, `다시 시도할 수 없습니다`). 그리고 실행 라우트 첫머리에 `if (!apiKey || !model) throw new Error("OPENAI_CONFIGURATION_MISSING")`이 있어, **환경변수가 비면 입력 길이와 무관하게 매번 이 화면**이 됩니다 — 짧은 글과 긴 글이 똑같이 실패한 것과 맞습니다. 이용권 경로는 정상이었습니다(소모되고 실행까지 갔습니다).
+- Change 1(서버): 사유를 통째로 내보내지 않되 **갈래**는 알려 줍니다 — `SERVICE_CONFIG`(운영자만 고칠 수 있음, 다시 눌러도 같음) / `ENTITLEMENT` / `AI_PROVIDER`(잠시 후 재시도) / `UNKNOWN`. 갈래마다 다음에 할 일이 다르므로 문장도 다르게 냅니다. 키나 내부 경로는 들어가지 않습니다.
+- Change 2(화면): 서버 문장을 그대로 쓰고, 같은 말을 괄호에 반복하지 않습니다. 갈래 이름만 `[SERVICE_CONFIG]`처럼 작게 붙여 문의할 때 댈 수 있게 했습니다. 세 곳에 흩어져 있던 같은 코드를 `describeFailure()` 하나로 모았습니다.
+- 남은 확인(사용자): Cloudflare Worker의 **Variables and Secrets**에 `OPENAI_API_KEY`·`OPENAI_MODEL`이 있는지. 이번 배포부터는 화면이 `[SERVICE_CONFIG]`인지 `[AI_PROVIDER]`인지를 직접 말해 줍니다.
+- Files: `api/analysis-runs/quick/execute/route.ts`, `components/quick-checkout-return.tsx`.
+- Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

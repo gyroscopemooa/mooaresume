@@ -48,6 +48,30 @@ type Props = {
   onRunActive?: (active: boolean) => void;
 };
 
+/**
+ * 서버가 준 문장을 그대로 씁니다.
+ *
+ * 전에는 사유를 괄호에 덧붙였는데, 운영에서는 서버가 사유를 숨기므로 괄호
+ * 안에 **같은 문장이 한 번 더** 들어갔습니다("분석을 완료하지 못했습니다.
+ * (분석을 완료하지 못했습니다.)"). 아무 정보도 아닌 데다 고장 난 것처럼
+ * 보입니다. 이제 서버가 갈래별 문장을 보내므로 그것을 그대로 보여 주고,
+ * 갈래 이름만 작게 덧붙여 문의할 때 댈 수 있게 합니다.
+ */
+function describeFailure(payload: unknown): string {
+  const body = payload && typeof payload === "object" ? payload as Record<string, unknown> : null;
+  const message = typeof body?.error === "string" ? body.error : "분석을 완료하지 못했습니다. 추가 결제 없이 다시 시도하실 수 있습니다.";
+  const code = typeof body?.code === "string" ? body.code : null;
+  const detail = typeof body?.detail === "string"
+    ? body.detail
+    // 요청 값 오류는 무엇이 잘못됐는지가 곧 사유입니다.
+    : Array.isArray(body?.issues)
+      ? body.issues.map((issue) => (issue && typeof issue === "object" && "message" in issue ? String((issue as { message: unknown }).message) : "invalid input")).join("; ")
+      : null;
+  // 개발 중에는 진짜 사유가 붙어 오므로 그대로 보여 줍니다.
+  if (detail && detail !== message) return `${message} (${detail})`;
+  return code && code !== "UNKNOWN" ? `${message} [${code}]` : message;
+}
+
 export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, onRunActive }: Props = {}) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [product, setProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
@@ -144,13 +168,8 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
               // the sibling branch below does.
               if (!advanceResponse.ok && advanceResponse.status !== 202) {
                 const failure: unknown = await advanceResponse.json().catch(() => null);
-                const detail = failure && typeof failure === "object" && "detail" in failure && typeof failure.detail === "string"
-                  ? failure.detail
-                  : failure && typeof failure === "object" && "error" in failure && typeof failure.error === "string"
-                    ? failure.error
-                    : "ANALYSIS_EXECUTION_FAILED";
                 setPhase("failed");
-                setMessage(`분석을 완료하지 못했습니다. (${detail})`);
+                setMessage(describeFailure(failure));
                 return;
               }
             } finally { executing.current = false; }
@@ -176,13 +195,8 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
               }
             } else if (executeResponse.status !== 202) {
               const failure: unknown = await executeResponse.json().catch(() => null);
-              const detail = failure && typeof failure === "object" && "detail" in failure && typeof failure.detail === "string"
-                ? failure.detail
-                : failure && typeof failure === "object" && "issues" in failure && Array.isArray(failure.issues)
-                  ? failure.issues.map((issue) => typeof issue === "object" && issue && "message" in issue ? String(issue.message) : "invalid input").join("; ")
-                  : "ANALYSIS_EXECUTION_FAILED";
               setPhase("failed");
-              setMessage(`분석을 완료하지 못했습니다. (${detail})`);
+              setMessage(describeFailure(failure));
               return;
             }
           } catch {
@@ -266,13 +280,8 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         // 202 is "still working", which is the normal answer for most of the
         // run's life. Anything else is a real failure and has to be said.
         if (response.status !== 202 && !response.ok) {
-          const detail = payload && typeof payload === "object" && "detail" in payload && typeof payload.detail === "string"
-            ? payload.detail
-            : payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
-              ? payload.error
-              : "ANALYSIS_EXECUTION_FAILED";
           setPhase("failed");
-          setMessage(`분석을 완료하지 못했습니다. (${detail})`);
+          setMessage(describeFailure(payload));
           return;
         }
       } catch {

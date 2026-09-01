@@ -37,6 +37,39 @@ class QuickRetryRefusedError extends Error {
   }
 }
 
+/**
+ * 실패를 사람이 다음에 할 일로 옮깁니다.
+ *
+ * 셋은 다음 행동이 전부 다릅니다 — 설정이 빠진 것은 **운영자만** 고칠 수
+ * 있고(다시 눌러도 영원히 같습니다), 모델 쪽 일시 오류는 잠시 뒤 다시 하면
+ * 되고, 이용권 문제는 결제 상태를 봐야 합니다. 하나로 뭉치면 셋 다 "다시
+ * 시도"만 누르다 끝납니다.
+ */
+function classifyExecutionFailure(detail: string): { code: string; message: string } {
+  if (detail.startsWith("OPENAI_CONFIGURATION_MISSING") || detail.startsWith("SUPABASE_NOT_CONFIGURED")) {
+    return {
+      code: "SERVICE_CONFIG",
+      message: "서비스 설정 문제로 분석을 시작하지 못했습니다. 결제·이용권은 그대로 있으니 잠시 후 다시 시도해 주시고, 계속되면 문의해 주세요.",
+    };
+  }
+  if (/ENTITLEMENT|REWARD_CREDIT/i.test(detail)) {
+    return {
+      code: "ENTITLEMENT",
+      message: "이용권 확인에 실패했습니다. 결제·이용권은 그대로 있습니다. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+  if (/OPENAI|RESPONSES|MODEL|\b429\b|\b5\d\d\b|timeout|ECONNRESET|fetch failed/i.test(detail)) {
+    return {
+      code: "AI_PROVIDER",
+      message: "분석 엔진이 일시적으로 응답하지 않았습니다. 추가 결제 없이 다시 시도하실 수 있습니다.",
+    };
+  }
+  return {
+    code: "UNKNOWN",
+    message: "분석을 완료하지 못했습니다. 추가 결제 없이 다시 시도하실 수 있습니다.",
+  };
+}
+
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "허용되지 않은 요청 출처입니다." }, { status: 403 });
@@ -155,8 +188,15 @@ export async function POST(request: NextRequest) {
     }
     const detail = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     console.error(`quick_analysis_execution_failed:${detail}`);
+    // 사유를 통째로 내보내지는 않되, **무엇 때문인지 갈래는** 알려 줍니다.
+    // 운영에서 사유를 전부 숨겼더니 화면에는 "분석을 완료하지 못했습니다"만
+    // 남았고, 그 한 문장으로는 설정이 빠진 것인지 잠시 실패한 것인지 구분할
+    // 수 없어 매번 로그를 열어야 했습니다. 갈래 이름에는 키도 내부 경로도
+    // 들어가지 않습니다.
+    const failure = classifyExecutionFailure(detail);
     return NextResponse.json({
-      error: "분석을 완료하지 못했습니다.",
+      error: failure.message,
+      code: failure.code,
       ...(process.env.NODE_ENV !== "production" ? { detail, diagnostic: detail } : {}),
     }, { status: 500 });
   }
