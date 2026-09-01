@@ -33,6 +33,16 @@ export type SimpleIntakeMapping = {
   sourceFile: { filename: string; extension: string; sizeBytes: number } | null;
   /** Files the caps below left out, so the screen can say so instead of dropping them silently. */
   droppedFilenames: string[];
+  /**
+   * 첨삭 대상이 된 자기소개서 파일들. 붙여넣은 글이 이겼을 때는 비어 있습니다.
+   *
+   * 두 장 이상이면 화면이 막아야 하기 때문에 세어 둡니다. 이어 붙인 뒤 문항을
+   * 나누면 "자기소개서"라고만 적힌 줄을 기준으로 그 앞이 통째로 버려져서, 어느
+   * 쪽 문항이 살아남을지가 파일 안쪽 서식에 달리게 됩니다 — 남의 자소서를 함께
+   * 올린 사람이 자기 문항 여섯 개를 잃고 남의 문항 세 개를 첨삭받는 일이 실제로
+   * 있었습니다.
+   */
+  coverLetterFilenames: string[];
 };
 
 /**
@@ -94,6 +104,8 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
     sourceFile: !draft.trim() && letterFiles[0]
       ? { filename: letterFiles[0].filename, extension: letterFiles[0].extension, sizeBytes: letterFiles[0].sizeBytes }
       : null,
+    // 붙여넣은 글이 있으면 파일은 문항에 쓰이지 않았으므로 세지 않습니다.
+    coverLetterFilenames: draft.trim() ? [] : letterFiles.map((file) => file.filename),
     droppedFilenames: dropped,
   };
 }
@@ -106,6 +118,15 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
  */
 export function describeSimpleIntakeGap(mapping: SimpleIntakeMapping): string {
   const answered = mapping.questions.filter((question) => question.answer.trim());
+  // 자기소개서가 두 장 이상이면 여기서 멈춥니다.
+  //
+  // 이어 붙여서 한 편으로 읽는 동안에는 어느 쪽이 살아남을지가 파일 안쪽 서식에
+  // 달려 있었고, 버려진 쪽은 화면 어디에도 나타나지 않았습니다. 한 회사에 내는
+  // 자기소개서는 한 편이므로, 조용히 하나를 고르는 대신 어느 것을 첨삭할지
+  // 물어봅니다. 나머지는 분류를 참고자료로 바꾸거나 빼면 됩니다.
+  if (mapping.coverLetterFilenames.length > 1) {
+    return `자기소개서가 ${mapping.coverLetterFilenames.length}개입니다. 첨삭할 하나만 남기고, 나머지는 분류를 바꾸거나 빼 주세요. (${mapping.coverLetterFilenames.join(", ")})`;
+  }
   if (answered.length === 0) return "자기소개서 내용을 붙여넣거나 자소서 파일을 넣어 주세요.";
   // The posting is no longer required. It was blocking people who have a draft
   // and no posting to hand — and refusing to run at all is worse for them than

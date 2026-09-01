@@ -66,6 +66,39 @@ describe("간편 입력 매핑", () => {
     // limit lands on that sentence rather than on a blank pass.
     expect(describeSimpleIntakeGap(mapSimpleIntake("자소서 내용입니다", [file("공고.pdf", "JOB_POSTING", "자격 요건")], 700))).toBe("");
   });
+
+  it("자기소개서가 두 장이면 하나를 고르게 한다", () => {
+    // 이어 붙여 한 편으로 읽는 동안에는 "자기소개서"라고만 적힌 줄이 어느 파일에
+    // 있느냐로 살아남는 문항이 정해졌고, 버려진 쪽은 화면에 나타나지 않았습니다.
+    // 문항 여섯 개를 올린 사람이 남의 문항 세 개를 첨삭받는 일이 실제로 있었습니다.
+    const mine = ["1. 지원동기 (1600자)", "제 지원동기입니다.", "2. 직무 강점 (1600자)", "제 강점입니다."].join("\n");
+    // 이 한 줄이 있고 없고로 살아남는 쪽이 갈렸습니다.
+    const theirs = ["자기소개서", "1. 성장과정 (700자)", "남의 성장과정입니다."].join("\n");
+
+    const one = mapSimpleIntake("", [file("내자소서.pdf", "COVER_LETTER", mine)], 700);
+    expect(describeSimpleIntakeGap(one)).toBe("");
+    expect(one.questions).toHaveLength(2);
+
+    const two = mapSimpleIntake("", [
+      file("내자소서.pdf", "COVER_LETTER", mine),
+      file("남자소서.docx", "COVER_LETTER", theirs),
+    ], 700);
+    const gap = describeSimpleIntakeGap(two);
+    expect(gap).toContain("자기소개서가 2개입니다");
+    // 어느 파일이 문제인지 말해 주어야 무엇을 빼야 할지 알 수 있습니다.
+    expect(gap).toContain("내자소서.pdf");
+    expect(gap).toContain("남자소서.docx");
+  });
+
+  it("붙여넣은 글이 있으면 첨부한 자소서 수를 세지 않는다", () => {
+    // 그때 파일은 문항에 쓰이지 않으므로, 막을 이유도 없습니다.
+    const mapping = mapSimpleIntake("붙여넣은 자소서입니다", [
+      file("옛날자소서.pdf", "COVER_LETTER", ["1. 지원동기", "예전 글"].join("\n")),
+      file("더옛날자소서.pdf", "COVER_LETTER", ["1. 지원동기", "더 예전 글"].join("\n")),
+    ], 700);
+    expect(mapping.coverLetterFilenames).toEqual([]);
+    expect(describeSimpleIntakeGap(mapping)).toBe("");
+  });
 });
 
 describe("간편 입력 글자 수", () => {

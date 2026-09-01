@@ -4866,3 +4866,34 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 영향: 코드 손실 없음. 두 변경 모두 `vitest run` 846건과 `next build`를 통과한 상태로 올라갔습니다. 다만 **커밋 메시지가 그 변경을 설명하지 않습니다.**
 - 코덱스에게: 위 두 파일의 작업은 **이미 main에 있습니다.** 다시 커밋하지 마시고, 필요하면 그 위에서 이어 가세요.
 - 재발 방지: 같은 작업 폴더를 공유하는 동안 Claude는 `git add -A`를 쓰지 않고 파일 경로를 하나씩 지정합니다.
+
+## 2026-09-02 — Codex: 커뮤니티 공개 글 SEO·검색 노출 (진행 중)
+
+- Intended change: `PUBLISHED` 커뮤니티 글마다 서버 렌더링된 고유 URL을 만들고, 제목·본문·공개 댓글·canonical 메타데이터·Open Graph·DiscussionForumPosting 구조화 데이터 및 동적 sitemap 항목을 제공한다.
+- Privacy/security: 공개 상태인 글·댓글만 노출한다. 비공개 첨부 Storage, 사용자 식별자, 비공개/숨김/삭제 글과 댓글은 검색 페이지·사이트맵에 포함하지 않는다.
+- Reason: 현재 `/community` 목록은 클라이언트 fetch라 Google·Naver 등 검색 크롤러가 개별 글의 제목·내용·댓글을 안정적으로 수집할 수 없다.
+- Files planned: `src/app/community/[postId]/page.tsx`, 전용 스타일, 커뮤니티 공개 조회 adapter, `src/app/sitemap.ts`, `src/domain/community.ts`, `src/components/community-lounge.tsx`, 테스트 및 변경 기록.
+- Validation planned: SEO helper 단위 테스트, 기존 커뮤니티 테스트, TypeScript·lint·production build.
+- Rollback: 신규 상세 라우트/스타일/SEO adapter를 제거하고 sitemap의 커뮤니티 동적 항목을 제거하면 기존 목록 전용 구조로 복원된다.
+
+## 2026-09-02 — Codex: 커뮤니티 공개 글 SEO·검색 노출 (완료)
+
+- Status: 완료. `/community/[postId]`는 `PUBLISHED` 글과 공개 댓글을 서버 HTML로 렌더링하며, 글 제목·요약·canonical·Open Graph·Twitter metadata·DiscussionForumPosting JSON-LD를 제공한다. 라운지 제목은 상세 URL로 연결되고, sitemap은 라운지와 공개 글을 포함한다.
+- Privacy/security: private attachment URL과 숨김/삭제/비공개 콘텐츠, 사용자 ID는 노출·사이트맵 대상에서 제외했다. 공개 상태의 글·댓글은 작성 시 이미 public RLS 정책으로 읽을 수 있는 콘텐츠임을 전제로 한다.
+- Files: `src/app/community/[postId]/page.tsx`, `src/app/community/[postId]/page.module.css`, `src/server/community/community-publication.ts`, `src/app/sitemap.ts`, `src/app/api/community/posts/route.ts`, `src/domain/community.ts`, `src/server/community/community-repository.ts`, `src/components/community-lounge.*`, `src/domain/community.test.ts`.
+- Validation: `npm run lint` 오류 0(기존 경고 2건), 커뮤니티 테스트 5개 통과, `npm run typecheck` 통과, `npm run build` 통과.
+- Rollback: 신규 상세 라우트/공개 조회 adapter를 제거하고 sitemap의 community 항목 및 라운지 제목 링크를 되돌리면 된다.
+
+## 2026-09-02 — Claude: 자기소개서 두 장이 올라오면 막기 + 네이버 확인 태그
+
+- Status: main 적용. 분석 로직·프롬프트·결과 화면·UI 디자인은 건드리지 않았습니다(사용자 지시).
+- 발견: 사용자가 자기 자소서(문항 6개·1,600자)와 남의 자소서(문항 3개·700자)를 함께 올렸더니 **자기 문항 여섯 개가 통째로 사라지고 남의 문항 세 개만 첨삭 대상이 되었습니다.**
+- 원인: `mapSimpleIntake`가 COVER_LETTER 파일들을 `join("\n\n")`으로 이어 붙인 뒤 `splitCoverLetterDraft`에 넘깁니다. 그 함수는 `자기소개서`라고만 적힌 줄을 찾아 **그 앞을 전부 버리고**, `이력서`/`경력기술서`/`직무기술서` 줄을 만나면 **그 뒤도 버립니다.** 그래서 어느 쪽 문항이 살아남는지가 파일 안쪽 서식에 달려 있었고, 버려진 쪽은 화면 어디에도 나타나지 않았습니다. 임시 테스트로 그대로 재현했습니다.
+- 조치: 첨삭 대상 자기소개서가 2개 이상이면 `describeSimpleIntakeGap`이 진행을 막고 파일 이름을 대며 하나만 남기라고 합니다. 사용자는 이미 있는 분류 드롭다운이나 삭제 버튼으로 해결할 수 있어 새 UI를 만들지 않았습니다.
+  - `SimpleIntakeMapping.coverLetterFilenames` 신규. 붙여넣은 글이 이겼을 때는 비어 있습니다 — 그때 파일은 문항에 쓰이지 않으므로 막을 이유가 없습니다.
+  - 테스트 3건 추가(`simple-intake-mapping.test.ts`).
+- 남은 문제(고치지 않음): 파일 **한 개**일 때도 `이력서`/`경력기술서`/`직무기술서` 줄 뒤의 문항은 버려집니다. 자소서 안에 그 소제목을 쓴 사람은 뒤쪽 문항을 잃습니다. 별건으로 다뤄야 합니다.
+- `기타(OTHER)`로 올린 자소서: `purpose: "REFERENCE"`로만 들어가 첨삭 대상이 되지 않습니다(`application-case-handoff.ts:189`). 남의 자소서를 대신 첨삭받는 악용은 이 경로로는 되지 않습니다.
+- 네이버 확인 태그: `verification.other`가 `NAVER_SITE_VERIFICATION` 환경변수에만 의존하고 있었습니다. 바로 위 주석이 구글 쪽에서 같은 구조로 겪은 실패를 적어 두고 있습니다 — 이 export는 빌드 시점에 평가되어 런타임 환경변수만으로는 태그가 아예 실리지 않습니다. 기본값 `e82574b967e594d90dde7bcd1f05cc3febda9aea`를 적어 두고 환경변수 override는 유지했습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 849건 통과, `next build` 통과.
+- Rollback: 이 커밋 revert.

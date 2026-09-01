@@ -50,7 +50,12 @@ export const metadata: Metadata = {
     // local development looked fine. An override is still honoured for anyone
     // deploying this under a different Search Console property.
     google: process.env.GOOGLE_SITE_VERIFICATION || "y6v6fCOXM0u3Uq5XESQB1g-yduLoGXJvARLW3I6RGEk",
-    other: process.env.NAVER_SITE_VERIFICATION ? { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION } : {},
+    // 네이버도 같은 이유로 기본값을 적어 둡니다. 환경변수만 있을 때 이 export가
+    // 빌드 시점에 평가되어 실서버에는 태그가 하나도 안 실렸던 것이 바로 위에
+    // 적힌 그 실패입니다. 구글 쪽만 고치고 네이버를 그대로 두면 같은 일이
+    // 네이버에서 반복됩니다. 이 값도 자격증명이 아니라 모든 페이지 HTML에
+    // 공개되는 확인용 문자열입니다.
+    other: { "naver-site-verification": process.env.NAVER_SITE_VERIFICATION || "e82574b967e594d90dde7bcd1f05cc3febda9aea" },
   },
 };
 
