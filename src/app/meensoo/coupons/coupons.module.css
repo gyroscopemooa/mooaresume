@@ -111,3 +111,9 @@
 /* 공유 코드를 쓴 사람들. 코드 한 장 아래에 명단이 붙습니다. */
 .useList { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; }
 .useList li { color: var(--admin-muted); font-size: 11.5px; }
+
+/* 되돌릴 수 없는 버튼. 옆 버튼들과 같은 회색으로 두면 실수로 눌립니다 —
+   테두리와 글자만 붉게 하고, 배경은 눌러야 채워지게 둡니다. */
+.danger { border-color: var(--admin-danger) !important; color: var(--admin-danger) !important; }
+.danger:hover { border-color: var(--admin-danger) !important; background: var(--admin-bad-bg) !important; color: var(--admin-danger) !important; }
+.danger:disabled { opacity: 0.5; cursor: default; }

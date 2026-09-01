@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { archiveCampaign, createCampaign, getCampaignCodeUses } from "@/server/admin/admin-repository";
+import { archiveCampaign, createCampaign, deleteCampaign, getCampaignCodeUses } from "@/server/admin/admin-repository";
 import { isAdmin } from "@/server/admin/admin-session";
 import { buildCouponCsv, generateCouponCodes, normalizeCodePrefix } from "@/domain/coupon-code";
 
@@ -73,6 +73,19 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => null) as { id?: string } | null;
   if (!body?.id) return NextResponse.json({ error: "id가 필요합니다." }, { status: 400 });
   const error = await archiveCampaign(body.id);
+  if (error) return NextResponse.json({ error }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * 완전 삭제. PATCH(보관)와 나란히 두는 이유는 둘이 다른 일이기 때문입니다 —
+ * 보관은 목록에서 내리고, 이쪽은 코드와 사용 기록까지 지웁니다.
+ */
+export async function DELETE(request: Request) {
+  if (!(await isAdmin())) return NextResponse.json({ error: "권한이 없습니다." }, { status: 401 });
+  const body = await request.json().catch(() => null) as { id?: string } | null;
+  if (!body?.id) return NextResponse.json({ error: "id가 필요합니다." }, { status: 400 });
+  const error = await deleteCampaign(body.id);
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

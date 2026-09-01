@@ -4797,3 +4797,33 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 원본 복구: `git show 64d5d56:public/images/career-characters/riasec-a.png > 파일` 형태로 언제든 되살릴 수 있습니다. 히스토리에서 지우지 않았습니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과, `next build` 통과, 변환본 육안 확인(글자 번짐·색 밀림 없음).
 - Rollback: 위 커밋 revert 후 `.webp` 제거.
+
+## 2026-09-02 — Codex: 라운지 공통 메뉴 진입점 복원 (진행 중)
+
+- Intended change: `SiteNav`의 메뉴 패널에 `/community` 링크를 복원한다. 상단 바의 직접 링크, 커뮤니티 UI/API/DB, 커리어 기능은 변경하지 않는다.
+- Reason: 사용자 요청으로 커뮤니티 작업을 재개하며, 기존 라운지는 이미 main에 병합되어 있지만 공통 헤더 메뉴에는 진입점이 없다. 이전 보류 사유였던 Claude의 헤더 작업은 main 반영 후 종료되어 현재 변경과 겹치지 않는다.
+- Protected work: 현재 작업 트리의 `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`, `src/app/api/meensoo/**`, `src/server/admin/admin-repository.ts`, `.codex-remote-attachments/`, `.tools/`는 수정·stage 대상에서 제외한다.
+- Validation planned: `npm run typecheck` 및 변경 파일 diff 확인.
+- Rollback: 이 항목과 함께 추가한 `SiteNav`의 `/community` 링크 한 줄을 되돌린다.
+
+## 2026-09-02 — Claude: 협업 쿠폰 무효화·완전삭제 버튼
+
+- Status: main 적용 예정 커밋. 마이그레이션 없음(기존 FK의 cascade를 그대로 씁니다).
+- Reason: `archiveCampaign`, `revokeCouponCode`와 그 API(PATCH)는 이미 있었는데 화면에 버튼이 없어 아무도 쓸 수 없었습니다. 잘못 만든 캠페인이나 새어 나간 코드를 치울 방법이 없었습니다.
+- 두 동작을 구분합니다:
+  - **보관/무효화(PATCH)** — 더 못 쓰게 막고, 누가 썼는지는 남깁니다.
+  - **완전삭제(DELETE, 신규)** — 코드와 `coupon_claims`까지 사라집니다. 되돌릴 수 없습니다.
+- 이미 지급된 `reward_credits`는 어느 쪽에서도 건드리지 않습니다. 받은 사람이 쓰던 이용권을 관리자 정리 때문에 회수하는 것은 다른 이야기입니다.
+- 신규: `deleteCampaign`, `deleteCouponCode`(admin-repository), `DELETE /api/meensoo/campaigns`, `DELETE /api/meensoo/coupons`.
+- `AdminCouponUse`에 `id` 추가. 코드 문자열만으로는 한 장을 지목할 수 없었습니다. 캠페인을 막 만든 직후의 목록은 id가 없으므로(`id: ""`) 그 순간에는 무효화·삭제 버튼을 감추고, 곧바로 서버 목록을 다시 읽어 채웁니다.
+- 확인창: `window.confirm`으로 몇 장이 사라지는지, 몇 명이 이미 썼는지, 되돌릴 수 없다는 사실을 먼저 말합니다. 삭제 버튼은 `.danger`로 붉게 구분했습니다(라이트·다크 모두 변수 사용).
+- 사용된 캠페인도 지울 수 있게 둔 이유: 실수로 만든 것을 못 지우면 목록이 실수로 가득 찹니다. 막는 대신 무엇이 사라지는지 말해 주고 사람이 정하게 합니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과, `next build` 통과.
+- Rollback: 이 커밋 revert. DB 스키마 변경이 없어 되돌릴 것이 없습니다.
+
+## 2026-09-02 — Codex: 라운지 공통 메뉴 진입점 복원 (완료)
+
+- Status: 완료. `SiteNav` 메뉴 패널의 커뮤니티 섹션에서 `/community`로 이동할 수 있다.
+- Files: `src/components/site-nav.tsx`, `docs/agent-change-log.md`.
+- Validation: `npm run typecheck` 통과, `git diff --check` 통과.
+- Rollback: `src/components/site-nav.tsx`의 `커뮤니티` 섹션을 제거하면 된다.
