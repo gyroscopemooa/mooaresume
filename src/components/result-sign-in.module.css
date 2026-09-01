@@ -1,22 +1,138 @@
-.gate { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f7f9f7; }
-.card { width: min(460px, 100%); padding: 34px 32px 30px; border: 1px solid #dfe6e2; border-radius: 16px; background: #fff; text-align: center; box-shadow: 0 20px 50px -40px rgba(15, 61, 44, 0.6); }
-.card > span { display: inline-block; padding: 5px 11px; border-radius: 999px; background: #edf7f1; color: #176b4a; font-size: 10.5px; font-weight: 900; letter-spacing: 0.04em; }
-.card h1 { margin: 14px 0 10px; font-size: 21px; line-height: 1.4; letter-spacing: -0.03em; }
-.card p { margin: 0 0 22px; color: #68756f; font-size: 13px; line-height: 1.85; }
-.card p b { color: #17221d; }
-.card button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border: 0; border-radius: 10px; background: #176b4a; color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
-.card button:hover { background: #12583c; }
-.card button:disabled { background: #c9d2cd; cursor: default; }
-.card button svg { width: 16px; height: 16px; }
-.card small { display: block; margin-top: 13px; color: #87928c; font-size: 11.5px; line-height: 1.7; }
-.warn { background: #fdf3e3 !important; color: #9a6a1c !important; }
-.secondary { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 9px; padding: 12px; border: 1px solid #dfe6e2; border-radius: 10px; color: #41514a; font-size: 13px; font-weight: 700; }
-.secondary:hover { border-color: #176b4a; color: #176b4a; }
-.secondary svg { width: 15px; height: 15px; }
-.failed { color: #a34848 !important; }
+/* 메일에서 들어오는 첫 화면.
+   ------------------------------------------------------------------
+   대부분 휴대폰이고, 결과를 보러 온 사람이라 여기 머물 생각이 없습니다.
+   그래서 셋을 지켰습니다 — 글을 줄이고, 버튼을 엄지 닿는 아래에 두고,
+   테두리를 걷어냈습니다. 카드에 선을 두르면 화면이 작아 보이고, 작은
+   화면에서 그 선은 답답함으로만 남습니다. */
 
-@media (max-width: 640px) {
-  .card { padding: 28px 22px 24px; }
-  .card h1 { font-size: 19px; }
-  .card button { padding: 15px; font-size: 15px; }
+.gate {
+  /* globals.css가 `body{zoom}`을 걸어 두는데 뷰포트 단위는 그 배율을
+     따라오지 않습니다. 그대로 쓰면 화면보다 1.25배 긴 상자가 되어 버튼이
+     접힘선 아래로 내려갑니다 — 쿠폰 패널이 왼쪽으로 잘렸던 것과 같은 함정. */
+  min-height: calc(100dvh / var(--app-scale, 1));
+  display: flex;
+  flex-direction: column;
+  padding: 0 22px calc(26px + env(safe-area-inset-bottom));
+  background: #fff;
+  color: #14201b;
+  font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
+}
+
+.card {
+  width: min(400px, 100%);
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 글자 배지 대신 아이콘 한 개. "분석 완료"라는 네 글자보다 빠르게 읽히고,
+   화면 맨 위에서 상태를 말해 줍니다. */
+.mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-top: clamp(56px, 14vh, 104px);
+  border-radius: 17px;
+  background: #eaf6f0;
+  color: #176b4a;
+}
+.mark svg { width: 25px; height: 25px; }
+.mark[data-tone="warn"] { background: #fdf3e3; color: #9a6a1c; }
+
+.card h1 {
+  margin: 22px 0 0;
+  font-size: clamp(23px, 6.2vw, 27px);
+  font-weight: 800;
+  line-height: 1.38;
+  letter-spacing: -0.038em;
+}
+
+/* 한 문단, 두 줄. 여기서 설명이 길어지면 읽지 않고 버튼만 누릅니다 —
+   그럴 거면 문장이 없는 편이 낫습니다. */
+.card p {
+  margin: 12px 0 0;
+  color: #77837d;
+  font-size: 14.5px;
+  line-height: 1.72;
+  letter-spacing: -0.01em;
+}
+.card p b { color: #14201b; font-weight: 700; }
+
+/* 버튼은 아래로 내려갑니다. 위쪽 글은 읽든 말든, 손가락은 여기로 옵니다. */
+.actions { margin-top: auto; padding-top: 32px; display: grid; gap: 10px; }
+
+.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 56px;
+  border: 0;
+  border-radius: 15px;
+  background: #176b4a;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  transition: background 130ms ease, transform 130ms ease;
+}
+.primary:hover:not(:disabled) { background: #12583c; }
+.primary:active:not(:disabled) { transform: scale(0.988); }
+.primary:disabled { background: #dfe6e2; color: #9aa8a2; cursor: default; }
+.primary svg { width: 18px; height: 18px; }
+
+/* 두 번째 행동은 테두리를 두르지 않습니다. 버튼이 둘이면 무엇이 기본인지
+   흐려지고, 이 화면의 기본은 하나뿐입니다. */
+.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #5d6b64;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.secondary:hover { background: #f4f7f5; color: #176b4a; }
+.secondary svg { width: 16px; height: 16px; }
+
+.note {
+  margin: 16px 0 0;
+  color: #9aa8a2;
+  font-size: 12.5px;
+  line-height: 1.7;
+  text-align: center;
+}
+.note b { color: #5d6b64; font-weight: 700; }
+.failed { color: #b3554f; }
+
+/* 넓은 화면에서는 카드로 세웁니다. 휴대폰에서 걷어낸 테두리를 여기서는
+   되살리는 편이 낫습니다 — 넓은 여백 한가운데 글만 떠 있으면 페이지가
+   덜 만들어진 것처럼 보입니다. */
+@media (min-width: 720px) {
+  .gate { justify-content: center; padding: 40px 24px; background: #f6f8f7; }
+  .card {
+    flex: none;
+    padding: 40px 38px 34px;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 28px 64px -44px rgba(15, 61, 44, 0.55);
+  }
+  .mark { margin-top: 0; }
+  .actions { margin-top: 0; padding-top: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary { transition: none; }
 }

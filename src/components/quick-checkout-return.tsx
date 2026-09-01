@@ -315,12 +315,22 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
           window.location.replace(payload.resultUrl);
           return;
         }
-        // 202 is "still working", which is the normal answer for most of the
-        // run's life. Anything else is a real failure and has to be said.
+        // 202는 "아직 하는 중"이고, 이 런 대부분의 시간이 그렇습니다.
+        //
+        // 그 밖의 거절이라고 곧바로 끝내지는 않습니다. 서버는 재시도가 남아
+        // 있으면 스스로 한 번 더 돌리는데, 여기서 화면을 닫아 버리면 **결과가
+        // 만들어져도 실패 화면이 남습니다** — 실제로 무료 이용권으로 돌린 분이
+        // 실패 화면을 보고, 메일 링크로 들어가서야 결과를 찾았습니다.
         if (response.status !== 202 && !response.ok) {
-          setPhase("failed");
-          setMessage(describeFailure(payload));
-          return;
+          executeFailures.current += 1;
+          if (executeFailures.current >= 3) {
+            setPhase("failed");
+            setAutoRetrying(false);
+            setMessage(describeFailure(payload));
+            return;
+          }
+          setAutoRetrying(true);
+          setMessage("한 번 실패해 다시 시도하고 있습니다. 이용권은 그대로이고 추가 결제도 없습니다.");
         }
       } catch {
         // A dropped connection does not mean the analysis failed — the run is

@@ -6,6 +6,7 @@ import { validateAnalysisRequest } from "@/application/analysis-contract";
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
 import { RESEARCH_CONSENT_VERSION, buildResearchSnapshot } from "./research-capture";
 import type { QuickAnalysisRunRepository } from "./quick-analysis-orchestrator";
+import { alertExhaustedRun } from "@/server/notifications/run-failure-alert-email";
 
 const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -144,5 +145,17 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       p_retryable: retryable,
     });
     if (error) throw new Error(`QUICK_ANALYSIS_FAIL_RECORD_FAILED:${error.code}`);
+
+    // 모든 실패가 이 한 곳을 지나므로 알림도 여기 답니다. 정말 끝난 것인지는
+    // 알림 쪽이 DB에 다시 물어봅니다 — 재시도가 남으면 상태가 PENDING으로
+    // 되돌아가 있고, 그때는 알리지 않습니다.
+    //
+    // 알림이 실패해도 삼킵니다. 실패를 기록하는 일이 알림 때문에 다시
+    // 실패하면, 남는 것은 상태가 어긋난 런입니다.
+    try {
+      await alertExhaustedRun({ analysisRunId, ownerUserId: this.ownerUserId, failureCode });
+    } catch (alertError) {
+      console.error("run_failure_alert_failed", alertError instanceof Error ? alertError.message : "UNKNOWN_ERROR");
+    }
   }
 }

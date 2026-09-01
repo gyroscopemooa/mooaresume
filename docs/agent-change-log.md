@@ -4452,3 +4452,29 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/quick-checkout-return.tsx`.
 - Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 실패 알림(A) + 무료 이용권 경로의 같은 폴링 버그 + 결과 로그인 화면
+
+- Agent/session: Claude. 사용자 요청/보고 3건.
+- Status: main에 적용. 마이그레이션 없음.
+
+### 1. 더 시도할 것이 없는 실패를 운영자에게 알림 (사용자 선택지 A)
+- 배경: 3회를 소진한 런은 **손님이 할 수 있는 일이 없습니다**(재시도 버튼도 안 뜸). 그런데 그 사실이 관리자 화면을 직접 열어야만 보였습니다. 손님이 처음부터 다시 쓰기 시작하기 전에 끼어들 수 있어야 합니다.
+- 붙인 자리: `SupabaseQuickAnalysisRunRepository.fail()` — **모든 실패가 지나는 한 곳**입니다. 알림 쪽이 DB에 상태를 다시 물어 `FAILED`로 남아 있을 때만 보냅니다(재시도가 남으면 상태가 `PENDING`으로 되돌아가 있어 알리지 않습니다). 매번 알리면 곧 안 읽는 메일이 됩니다.
+- 알림 실패는 삼킵니다 — 실패 기록이 알림 때문에 다시 실패하면 남는 것은 상태가 어긋난 런입니다.
+- 조사 결과 기록: `classifyFailure`는 이미 **`AI_PROVIDER_FAILED`만 재시도 가능**으로 봅니다. 검증 실패·원인 불명은 1회로 끝납니다. 즉 "3회씩 계속 태우는" 상황은 구조적으로 드뭅니다. 그래서 C(즉시 환불)는 실제 사례가 나온 뒤로 미룹니다.
+
+### 2. 무료 이용권 경로도 첫 거절에 포기하던 문제
+- 사용자 보고("무료쿠폰 분석 로딩에서 실패 뜨는데, 메일로 들어가면 결과는 나온다").
+- 원인: 결제 경로는 앞선 커밋에서 고쳤지만, **이용권 런은 폴링 루프가 따로 있습니다**(`creditRunId` 효과). 그쪽이 여전히 첫 non-2xx에 실패로 확정하고 멈췄습니다. 서버는 재시도해 완료했고, 화면만 죽어 있었습니다.
+- 같은 방식으로 고침: 3번까지는 계속 폴링하고 `다시 시도 중`으로 표시.
+
+### 3. 메일에서 들어오는 로그인 화면 재설계
+- 사용자 지적("너무 짜친다 / 모바일은 작고 세련되게").
+- 셋을 지켰습니다 — **글을 줄이고**(제목 한 줄, 설명 한 문단), **버튼을 엄지 닿는 아래로**(`margin-top: auto`), **테두리를 걷어냈습니다**(작은 화면에서 카드 선은 답답함으로만 남습니다). 넓은 화면에서는 카드로 되살립니다.
+- 글자 배지 대신 아이콘 한 개. 보조 행동은 테두리 없는 텍스트 버튼으로 낮췄습니다 — 버튼이 둘이면 무엇이 기본인지 흐려집니다.
+- **또 `zoom` 함정:** `min-height: 100dvh`도 배율을 따라오지 않아 화면보다 1.25배 긴 상자가 되고, 버튼이 접힘선 아래로 내려갔습니다(412px에서 버튼 하단 1021px). `calc(100dvh / var(--app-scale, 1))`로 고쳐 793px. 후기 페이지도 같이 고쳤습니다.
+- 검증: 헤드리스 크롬 412px·1280px 렌더 확인, 가로 넘침 없음.
+- Files: `run-failure-alert-email.ts`(신규)·`.test.ts`(신규 4건), `supabase-quick-analysis-run-repository.ts`, `quick-checkout-return.tsx`, `result-sign-in.tsx`, `result-sign-in.module.css`, `feedback-form.module.css`.
+- Validation: 838 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.
