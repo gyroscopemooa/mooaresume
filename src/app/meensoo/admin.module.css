@@ -345,7 +345,7 @@
   .overlay { display: block; }
 
   .sidebar {
-    width: min(78vw, 260px);
+    width: min(78%, 260px);
     padding-top: 50px;
     transform: translateX(-100%);
     transition: transform 200ms ease;
@@ -353,7 +353,7 @@
   }
   .sidebar[data-open="true"] { transform: translateX(0); }
   .sidebar:hover,
-  .sidebar:focus-within { width: min(78vw, 260px); }
+  .sidebar:focus-within { width: min(78%, 260px); }
   .closeNav { display: flex; }
 
   /* Labels only need to fade in the collapsed desktop rail; once the drawer

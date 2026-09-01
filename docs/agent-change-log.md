@@ -4318,3 +4318,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/meensoo/admin.module.css`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, 헤드리스 크롬 412px에서 항목 14개 전부 표시 확인.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 쿠폰 패널이 모바일에서 왼쪽으로 잘려 나가던 원인
+
+- Agent/session: Claude. 사용자 보고("메일이랑 캠페인 보내는 부분이 짤린다").
+- Status: main에 적용. 마이그레이션 없음.
+- 원인: `globals.css`가 **`body { zoom: 1.25 }`** 를 겁니다(`--app-scale`). 그런데 **뷰포트 단위(`vw`)는 이 배율을 따라오지 않습니다.** 그래서 `width: 100vw`로 잡은 슬라이드 패널은 412px 화면에서 **515px로 그려졌고**, 오른쪽(`right: 0`)에 붙여 둔 패널이라 넘친 103px이 **왼쪽으로 잘려 나갔습니다.** 제목·탭·라벨의 앞부분이 화면 밖에 있던 이유입니다.
+- 확인: 헤드리스 크롬 412px에서 대조 측정 — 고치기 전 `left: -103px / width: 515px`, 고친 후 `left: 0 / width: 412px`. 계산한 초과분과 정확히 일치합니다.
+- Change: 폭을 **계산하지 않도록** 바꿨습니다. 좁은 화면에서는 `left: 0; width: auto`로 양쪽에 붙이고, 기본값도 `min(680px, 100vw)` → `min(680px, 100%)`로 바꿨습니다. 퍼센트는 배율이 적용된 좌표계에서 계산되므로 화면에 정확히 맞습니다.
+- 같은 이유로 관리자 드로어의 `min(78vw, 260px)`도 `min(78%, 260px)`로 바꿨습니다 — 의도한 78%보다 넓게 나오고 있었습니다.
+- **이 프로젝트에서 `vw`는 지뢰입니다.** 전역 zoom이 있는 한, 화면 전체를 덮어야 하는 요소는 폭을 재지 말고 `left`/`right`로 붙이는 편이 안전합니다.
+- Files: `src/app/meensoo/coupons/coupons.module.css`, `src/app/meensoo/admin.module.css`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, 헤드리스 크롬 412px 대조 확인.
+- Rollback: 이 커밋 revert.
