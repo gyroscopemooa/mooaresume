@@ -4305,3 +4305,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `coupon-code-entry.tsx`, `coupon-code-entry.module.css`, `analysis-preparation.tsx`, `refer/page.tsx`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 관리자 메뉴가 모바일에서 통째로 사라지던 진짜 원인
+
+- Agent/session: Claude. 사용자 보고("배포는 됐는데 메뉴가 그대로 안 보인다").
+- Status: main에 적용. 마이그레이션 없음.
+- **원인은 이 화면의 CSS가 아니라 전역 CSS였습니다.** `src/app/globals.css`가 마케팅 헤더를 접으려고 `@media(max-width:1000px)`에서 `nav > a:not(.button){display:none}`을 겁니다. 관리자 사이드바도 `<nav>`이고 메뉴 항목이 전부 **직계 `<a>`**라, 휴대폰·태블릿에서 브랜드와 링크 10개가 전부 지워졌습니다. 남은 것이 `<button>`들(햄버거·닫기·밝게·로그아웃)과, `.railFoot` 안에 있어 직계가 아니었던 `사이트 열기` 하나뿐이었던 것이 정확한 증상 설명입니다.
+- 확인 방법: `AdminShell`을 jsdom으로 렌더해 **DOM에는 링크 12개가 모두 있음**을 먼저 확인했고(즉 React 문제 아님), 실제 `globals.css` + `admin.module.css`를 함께 넣은 페이지를 헤드리스 크롬 412px로 찍어 사용자 화면과 **똑같이 재현**한 뒤 고쳤습니다.
+- Change 1: `.sidebar > a.brand, .sidebar > a.link { display: flex }` — 전역 규칙(명시도 0,1,2)보다 높은 (0,2,1)로 이 화면에서만 되돌립니다. **전역 규칙 자체는 건드리지 않았습니다** — 그것을 기대하는 마케팅 화면들이 함께 바뀝니다.
+- Change 2: `.sidebar { align-items: stretch }` — 전역 `nav{align-items:center}`가 세로 목록에도 걸려 항목이 제 너비로 줄어든 채 가운데로 몰려 있었습니다. 목록은 왼쪽에서 시작해야 합니다.
+- 참고: 이 규칙은 1000px 이하 전체에 걸리므로 **태블릿 폭에서도** 같은 증상이었습니다. 그래서 고침도 미디어쿼리 밖에 둡니다.
+- Files: `src/app/meensoo/admin.module.css`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, 헤드리스 크롬 412px에서 항목 14개 전부 표시 확인.
+- Rollback: 이 커밋 revert.
