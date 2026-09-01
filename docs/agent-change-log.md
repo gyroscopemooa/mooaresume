@@ -4437,3 +4437,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/server/ai/quick/openai-responses-gateway.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`.
 - Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 결과가 나왔는데 실패 화면이 남던 문제
+
+- Agent/session: Claude. 사용자 확인("첨삭은 됐는데 왜 실패라고 나오나 / 재시도 3번 맞나"). 관리자 화면에는 `완료 · 시도 2회`인데 신청자 화면은 실패였습니다.
+- Status: main에 적용. 마이그레이션 없음.
+- 원인: 화면이 `analysisStatus === "FAILED"`를 보는 순간 **폴링을 끊었습니다**(`return`). 그런데 서버는 재시도가 남아 있으면 스스로 한 번 더 돌립니다. 그 사이 결과가 만들어져도 화면은 이미 듣기를 그만둔 뒤라 실패로 굳었습니다. **돈을 낸 사람에게 이보다 나쁜 화면은 없습니다** — 결과는 계정에 있는데 본인은 날린 줄 압니다.
+- 곁가지 원인 둘: `execute`/`advance` 호출이 **한 번** 거절당해도 즉시 실패로 확정했습니다. 첫 시도만 실패하고 두 번째가 성공하는 일이 실제로 있었는데, 그 한 번에 화면이 끝났습니다.
+- Change 1: `FAILED`여도 **재시도가 남아 있으면 폴링을 계속합니다.** 화면은 `다시 시도 중`으로 바뀌고(아이콘도 경고 → 진행), 끝나는 대로 결과로 이동합니다. 직접 누르는 재시도 버튼은 그대로 둡니다 — 기다리기 싫은 사람도 있습니다.
+- Change 2: 실행 호출이 거절당하면 **3번까지는 계속 폴링**하고, 그 뒤에야 실패로 확정합니다. 한 번에 포기하지 않되, 설정이 깨진 경우 10분간 조용히 도는 것도 막습니다(그 방지책이 원래 이 분기를 만든 이유였습니다).
+- Change 3: 이 파일의 한국어 문구 두 개가 유니코드 이스케이프로 깨진 채(`? 시도 2/3`) 저장돼 있어 되살렸습니다.
+- 재시도 정책(확인): DB가 `p_retryable and attempt_count < 2`일 때만 재시도를 허용합니다 — 즉 자동 재시도는 최대 한 번 더, 화면 표기는 `n/3`.
+- **비용 메모:** 재시도는 **API 요금을 다시 씁니다**(상태 조회는 아님). 첫 시도 실패가 잦으면 건당 원가가 두 배가 되므로, 실패가 반복되면 출력 토큰 상한을 봐야 합니다.
+- Files: `src/components/quick-checkout-return.tsx`.
+- Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

@@ -78,6 +78,18 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
   const [message, setMessage] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
   const [retryRunId, setRetryRunId] = useState<string | null>(null);
+  /**
+   * 실패했지만 아직 끝나지 않은 상태.
+   *
+   * 서버는 재시도가 남아 있으면 스스로 한 번 더 돌립니다. 그런데 화면은
+   * `FAILED`를 보자마자 폴링을 멈춰 버려서, **결과가 만들어져도 알지
+   * 못했습니다** — 관리자 화면에는 `완료 · 시도 2회`로 남는데 신청한 사람은
+   * 실패 화면을 보고 있었습니다. 돈을 낸 사람에게 이보다 나쁜 화면은 없습니다.
+   */
+  const [autoRetrying, setAutoRetrying] = useState(false);
+  // 실행 호출이 연달아 거절당하면 그때는 진짜로 멈춥니다. 한 번의 실패로
+  // 포기하지 않되, 영원히 도는 것도 아닙니다.
+  const executeFailures = useRef(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const startedAt = useRef<number | null>(null);
   const executing = useRef(false);
@@ -148,10 +160,21 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
           }
           if (status.retryAvailable) {
             setRetryRunId(status.analysisRunId);
-            setMessage(`\uACB0\uC81C\uB294 \uB2E4\uC2DC \uD558\uC9C0 \uC54A\uC544\uB3C4 \uB429\uB2C8\uB2E4. \uAE30\uC874 \uACB0\uC81C\uB85C \uBD84\uC11D\uC744 \uD55C \uBC88 \uB2E4\uC2DC \uC2DC\uB3C4\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uC6D0\uC778 \uCF54\uB4DC: ${status.failureCode ?? "UNKNOWN"}${status.attemptCount ? ` ? \uC2DC\uB3C4 ${status.attemptCount}/3` : ""}`);
+            setAutoRetrying(true);
+            setMessage(
+              `한 번 실패해 자동으로 다시 시도하고 있습니다${status.attemptCount ? ` (시도 ${status.attemptCount}/3)` : ""}. `
+              + "추가 결제는 없습니다. 이 화면을 그대로 두시면 끝나는 대로 결과로 이동합니다. "
+              + `직접 눌러 바로 시도하실 수도 있습니다. 원인 코드: ${status.failureCode ?? "UNKNOWN"}`,
+            );
+            // 여기서 멈추지 않습니다. 서버가 남은 시도를 스스로 돌리는데
+            // 화면이 폴링을 끊으면, 완성된 결과를 두고 실패 화면이 남습니다.
+            if (attempt < MAX_POLLS) {
+              timer = window.setTimeout(() => void poll(attempt + 1), 2000);
+            }
             return;
           }
-          setMessage("\uBD84\uC11D\uC744 \uC644\uB8CC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uACB0\uC81C\uB294 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC9C0 \uB9C8\uC138\uC694.");
+          setAutoRetrying(false);
+          setMessage("분석을 완료하지 못했습니다. 결제는 다시 하지 마시고 문의해 주세요.");
           return;
         }
         if (status.analysisStatus === "RUNNING") {
@@ -168,9 +191,18 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
               // the sibling branch below does.
               if (!advanceResponse.ok && advanceResponse.status !== 202) {
                 const failure: unknown = await advanceResponse.json().catch(() => null);
-                setPhase("failed");
-                setMessage(describeFailure(failure));
-                return;
+                executeFailures.current += 1;
+                // 한 번의 거절로 끝내지 않습니다 — 첫 시도만 실패하고 두 번째가
+                // 성공하는 일이 실제로 있었고, 그때 화면만 실패로 굳었습니다.
+                // 다만 계속 거절당하면(설정이 깨진 경우) 조용히 돌지 않습니다.
+                if (executeFailures.current >= 3) {
+                  setPhase("failed");
+                  setAutoRetrying(false);
+                  setMessage(describeFailure(failure));
+                  return;
+                }
+                setAutoRetrying(true);
+                setMessage("한 번 실패해 다시 시도하고 있습니다. 추가 결제는 없습니다.");
               }
             } finally { executing.current = false; }
           }
@@ -195,9 +227,15 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
               }
             } else if (executeResponse.status !== 202) {
               const failure: unknown = await executeResponse.json().catch(() => null);
-              setPhase("failed");
-              setMessage(describeFailure(failure));
-              return;
+              executeFailures.current += 1;
+              if (executeFailures.current >= 3) {
+                setPhase("failed");
+                setAutoRetrying(false);
+                setMessage(describeFailure(failure));
+                return;
+              }
+              setAutoRetrying(true);
+              setMessage("한 번 실패해 다시 시도하고 있습니다. 추가 결제는 없습니다.");
             }
           } catch {
             // A network-level failure here does not mean the analysis itself
@@ -361,9 +399,9 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
   return (
     <>
     <section ref={rootRef} className={styles.status} data-phase={phase}>
-      {phase === "failed" ? <TriangleAlert /> : phase === "waiting" ? <LoaderCircle className={styles.spin} /> : <CheckCircle2 />}
+      {phase === "failed" && !autoRetrying ? <TriangleAlert /> : phase === "waiting" || autoRetrying ? <LoaderCircle className={styles.spin} /> : <CheckCircle2 />}
       <div>
-        <b>{product ? `${product} · ` : ""}{phase === "failed" ? "확인이 필요합니다" : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>
+        <b>{product ? `${product} · ` : ""}{autoRetrying ? "다시 시도 중" : phase === "failed" ? "확인이 필요합니다" : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>
         <p>{message}</p>
         {phase === "failed" && retryRunId && <button type="button" className={styles.emailButton} onClick={() => void retryAnalysis()}>
           {"\uAE30\uC874 \uACB0\uC81C\uB85C \uB2E4\uC2DC \uBD84\uC11D\uD558\uAE30"}
