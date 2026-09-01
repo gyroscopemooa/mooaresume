@@ -739,6 +739,16 @@ export type AdminCouponUse = {
   status: string;
   claimedAt: string | null;
   claimedBy: string | null;
+  /**
+   * 공유 코드는 한 장을 여러 명이 씁니다.
+   *
+   * 사용 기록을 코드당 하나만 담던 동안에는 스무 명이 써도 **마지막 한 명만**
+   * 남았고, 화면은 `사용됨`이라고만 말했습니다. 기관이 실제로 묻는 것은
+   * "스무 자리 중 몇 자리가 나갔나"인데 그 답이 어디에도 없었습니다.
+   */
+  maxUses: number;
+  claimedCount: number;
+  uses: Array<{ email: string | null; claimedAt: string }>;
 };
 
 /**
@@ -765,22 +775,41 @@ export async function getCampaignCodeUses(campaignId: string): Promise<AdminCoup
     .select("coupon_code_id, claimed_at, reward_credits(recipient_email)")
     .in("coupon_code_id", codes.length > 0 ? codes.map((row) => row.id as string) : ["00000000-0000-0000-0000-000000000000"]);
 
-  const byCode = new Map<string, { claimedAt: string; email: string | null }>();
+  // 코드 하나에 여러 건이 달립니다(공유 코드). Map에 덮어쓰면 마지막 한 건만
+  // 남습니다 — 그래서 20명이 쓴 코드가 "1명이 썼다"로 보였습니다.
+  const byCode = new Map<string, Array<{ claimedAt: string; email: string | null }>>();
   for (const claim of claims ?? []) {
     const credit = claim.reward_credits as { recipient_email?: string } | { recipient_email?: string }[] | null;
     const email = Array.isArray(credit) ? credit[0]?.recipient_email ?? null : credit?.recipient_email ?? null;
-    byCode.set(claim.coupon_code_id as string, { claimedAt: claim.claimed_at as string, email });
+    const key = claim.coupon_code_id as string;
+    const list = byCode.get(key) ?? [];
+    list.push({ claimedAt: claim.claimed_at as string, email });
+    byCode.set(key, list);
   }
 
   const now = Date.now();
   return codes.map((row) => {
-    const used = byCode.get(row.id as string);
+    const uses = (byCode.get(row.id as string) ?? []).sort((a, b) => a.claimedAt.localeCompare(b.claimedAt));
+    const maxUses = Number(row.max_uses ?? 1) || 1;
+    // 화면에 세는 값은 실제 기록입니다. `claimed_count`는 캐시에 가까워서,
+    // 어긋나면 기록 쪽을 믿어야 "누가 썼나"와 숫자가 서로 맞습니다.
+    const claimedCount = uses.length > 0 ? uses.length : Number(row.claimed_count ?? 0) || 0;
     const expired = row.expires_at ? new Date(row.expires_at as string).getTime() < now : false;
+    const status = row.revoked_at
+      ? "중지"
+      // 공유 코드는 다 나가기 전까지 아직 쓸 수 있는 코드입니다. 한 명이
+      // 썼다고 "사용됨"으로 덮으면 남은 자리가 없는 것처럼 보입니다.
+      : maxUses > 1
+        ? claimedCount >= maxUses ? "소진" : expired ? "만료" : `사용 ${claimedCount}/${maxUses}`
+        : claimedCount > 0 ? "사용됨" : expired ? "만료" : "미사용";
     return {
       code: row.code as string,
-      status: row.revoked_at ? "중지" : used ? "사용됨" : expired ? "만료" : "미사용",
-      claimedAt: used?.claimedAt ?? null,
-      claimedBy: used?.email ?? null,
+      status,
+      claimedAt: uses[0]?.claimedAt ?? null,
+      claimedBy: uses[0]?.email ?? null,
+      maxUses,
+      claimedCount,
+      uses,
     };
   });
 }

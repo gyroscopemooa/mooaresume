@@ -20,7 +20,16 @@ import styles from "./coupons.module.css";
 
 const PRODUCT_CHARACTERS: Record<string, number> = { QUICK: 8000, PRO: 30000, FINAL: 30000 };
 
-type CodeUse = { code: string; status: string; claimedAt: string | null; claimedBy: string | null };
+type CodeUse = {
+  code: string;
+  status: string;
+  claimedAt: string | null;
+  claimedBy: string | null;
+  /** 공유 코드는 한 장을 여러 명이 씁니다. 그래서 "몇 자리 중 몇 자리"가 필요합니다. */
+  maxUses: number;
+  claimedCount: number;
+  uses: Array<{ email: string | null; claimedAt: string }>;
+};
 
 const asDate = (value: Date) => value.toISOString().slice(0, 10);
 
@@ -127,7 +136,22 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
       setMessage(`${body.codes?.length ?? 0}장을 만들었습니다.`);
       if (body.campaign) {
         setPreview(body.campaign);
-        setCodeList({ id: body.campaign.id, codes: (body.codes ?? []).map((code) => ({ code, status: "미사용", claimedAt: null, claimedBy: null })) });
+        // 방금 만든 것이라 아직 아무도 안 썼습니다. 공유 코드는 한 장에
+        // 수량만큼의 자리가 있으므로 그 수를 그대로 적어 둡니다 — 여기서
+        // 1로 두면 만든 직후 화면만 "1자리"라고 말하게 됩니다.
+        const seatsPerCode = mode === "SHARED" ? Math.max(1, Number(totalCount) || 1) : 1;
+        setCodeList({
+          id: body.campaign.id,
+          codes: (body.codes ?? []).map((code) => ({
+            code,
+            status: seatsPerCode > 1 ? `사용 0/${seatsPerCode}` : "미사용",
+            claimedAt: null,
+            claimedBy: null,
+            maxUses: seatsPerCode,
+            claimedCount: 0,
+            uses: [],
+          })),
+        });
         setTab("codes");
         setPanel("detail");
       }
@@ -279,7 +303,15 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
 
                 {tab === "codes" && codeList && <>
                   <div className={styles.codeHead}>
-                    <b>{codeList.codes.length}장 · 사용 {codeList.codes.filter((row) => row.status === "사용됨").length}</b>
+                    {/* 공유 코드는 "몇 장"이 아니라 "몇 자리가 나갔나"가 묻는
+                        말입니다. 한 장짜리에 `1장 · 사용 1`이라고 적으면 스무
+                        자리 중 한 자리가 나간 것인지 다 나간 것인지 알 수
+                        없습니다. */}
+                    <b>
+                      {codeList.codes.some((row) => row.maxUses > 1)
+                        ? `공유 코드 · 사용 ${codeList.codes.reduce((sum, row) => sum + row.claimedCount, 0)}/${codeList.codes.reduce((sum, row) => sum + row.maxUses, 0)}`
+                        : `${codeList.codes.length}장 · 사용 ${codeList.codes.filter((row) => row.claimedCount > 0).length}`}
+                    </b>
                     <button type="button" onClick={() => { void navigator.clipboard.writeText(codeList.codes.map((row) => row.code).join("\n")); setCopied("all"); }}>
                       {copied === "all" ? "복사됨" : "전체 복사"}
                     </button>
@@ -289,13 +321,25 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
                       하나를 보낼 때 남의 코드까지 함께 붙여 넣게 됩니다. */}
                   <ul className={styles.codeGrid}>
                     {codeList.codes.map((row) => (
-                      <li key={row.code} data-used={row.status !== "미사용"}>
+                      <li key={row.code} data-used={row.maxUses > 1 ? row.claimedCount >= row.maxUses : row.claimedCount > 0}>
                         <code>{row.code}</code>
                         <small>
                           {row.status}
-                          {row.claimedBy ? ` · ${row.claimedBy}` : ""}
-                          {row.claimedAt ? ` · ${row.claimedAt.slice(0, 10)}` : ""}
+                          {row.maxUses === 1 && row.claimedBy ? ` · ${row.claimedBy}` : ""}
+                          {row.maxUses === 1 && row.claimedAt ? ` · ${row.claimedAt.slice(0, 10)}` : ""}
                         </small>
+                        {/* 공유 코드는 쓴 사람이 여럿입니다. 한 명만 보여 주면
+                            기관이 묻는 "우리 당첨자가 썼나요"에 답할 수
+                            없습니다. */}
+                        {row.maxUses > 1 && row.uses.length > 0 && (
+                          <ul className={styles.useList}>
+                            {row.uses.map((use) => (
+                              <li key={`${use.email ?? "?"}-${use.claimedAt}`}>
+                                {use.email ?? "(계정 메일 없음)"} · {use.claimedAt.slice(0, 10)}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                         <button type="button" onClick={() => { void navigator.clipboard.writeText(row.code); setCopied(row.code); }}>
                           {copied === row.code ? "복사됨" : "복사"}
                         </button>

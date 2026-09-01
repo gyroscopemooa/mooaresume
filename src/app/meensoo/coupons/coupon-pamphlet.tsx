@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { joinPartnerSubtitle, wrapPamphletText } from "@/domain/pamphlet-text";
 import styles from "./coupons.module.css";
 
 /**
@@ -280,9 +281,16 @@ export function CouponPamphlet({ coupon, filename, onAttach, autoAttach = false,
           <tspan fill={NAVY}>{` ${coupon.headline ?? "자소서 첨삭 이용권 증정"}`}</tspan>
         </text>
 
-        <text x={92} y={348} fontSize={25} fill="#4a5468">
-          {coupon.partnerName} {coupon.subtitleText}
-        </text>
+        {/* 삽화가 x=686에서 시작하므로 그 앞에서 접습니다. SVG는 스스로
+            줄바꿈하지 않아, 접지 않으면 긴 부제가 삽화 뒤로 들어갑니다. */}
+        {wrapPamphletText(joinPartnerSubtitle(coupon.partnerName, coupon.subtitleText), {
+          fontSize: 25,
+          maxWidth: 568,
+        }).map((line, index) => (
+          <text key={line} x={92} y={348 + index * 34} fontSize={25} fill="#4a5468">
+            {line}
+          </text>
+        ))}
 
         <Illustration />
 

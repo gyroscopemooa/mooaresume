@@ -4354,3 +4354,24 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/lib/pending-code.ts`(신규), `coupon-code-entry.tsx`, `coupon-code-entry.module.css`, `referral-code-entry.tsx`, `coupon-code-entry.test.tsx`(신규 7건).
 - Validation: 822 tests passed (+11), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 공유 코드의 사용 인원이 어디에도 없던 문제 + 홍보물 부제 잘림
+
+- Agent/session: Claude. 사용자 보고("20인 공유 코드로 만들었는데 대시보드엔 쿠폰 1로만 보인다 / 부제를 길게 쓰면 삽화 뒤로 가려진다").
+- Status: main에 적용. 마이그레이션 없음.
+
+### 1. 공유 코드 사용 현황
+
+- 원인 둘: (a) `getCampaignCodeUses`가 `claimed_count`·`max_uses`를 **읽어 놓고 돌려주지 않았고**, (b) 사용 기록을 `Map<코드, 기록 하나>`에 담아 **덮어썼습니다.** 그래서 스무 명이 쓴 코드도 마지막 한 명만 남고, 화면은 `1장 · 사용 1`이라고만 말했습니다. 기관이 실제로 묻는 "스무 자리 중 몇 자리가 나갔나"에 답할 방법이 없었습니다.
+- Change: 코드 한 장에 달린 기록을 **전부** 모아 `uses`로 돌려주고, `maxUses`·`claimedCount`를 함께 보냅니다. 상태 문구도 공유 코드는 `사용 3/20`, 다 나가면 `소진`으로 갈라집니다 — 한 명이 썼다고 `사용됨`으로 덮으면 남은 자리가 없는 것처럼 보입니다.
+- 숫자는 `coupon_claims` 기록을 셉니다. `claimed_count`는 캐시에 가까워, 어긋나면 "누가 썼나" 명단과 숫자가 서로 맞지 않게 됩니다.
+- CSV도 **쓴 사람마다 한 줄**로 바꿨습니다. 공유 코드가 한 줄로 요약되면 기관은 명단을 받지 못합니다.
+
+### 2. 홍보물 부제
+
+- 원인: SVG `<text>`는 줄바꿈을 하지 않습니다. 부제는 x=92에서 오른쪽으로 계속 뻗는데, 삽화가 x=686에 **나중에** 그려져 위를 덮습니다. 길게 쓴 글이 잘리는 것이 아니라 **그림 뒤로 사라졌습니다.**
+- Change: `wrapPamphletText()`로 삽화 앞(568px)에서 최대 2줄로 접고, 그래도 넘치면 `…`을 남깁니다 — 그냥 버리면 받는 사람은 원래 그런 문장인 줄 압니다. 폭은 한글 한 칸/그 밖 0.55칸으로 어림합니다(서버에서도 계산해야 해 캔버스 계측을 쓸 수 없습니다).
+- 덤: 홍보물이 부제 앞에 기관명을 자동으로 붙이는 줄 모르고 부제에 기관명을 또 쓰면 `울산전기학원 울산전기학원 …`이 됐습니다. 이미 앞에 있으면 붙이지 않습니다(`joinPartnerSubtitle`).
+- Files: `admin-repository.ts`, `campaign-creator.tsx`, `coupons.module.css`, `coupon-pamphlet.tsx`, `domain/coupon-code.ts`, `domain/pamphlet-text.ts`(신규), `pamphlet-text.test.ts`(신규 8건).
+- Validation: 830 tests passed (+8), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

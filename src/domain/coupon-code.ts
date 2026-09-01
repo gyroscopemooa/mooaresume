@@ -63,11 +63,27 @@ export function generateCouponCodes(
  * 엑셀이 첫 줄을 열 이름으로 읽고, 앞에 BOM이 없으면 한글이 깨집니다. 받는
  * 쪽이 파일을 열자마자 물음표를 보는 것이 이 기능의 가장 흔한 실패입니다.
  */
-export function buildCouponCsv(rows: ReadonlyArray<{ code: string; status: string; claimedAt: string | null; claimedBy?: string | null }>): string {
+export function buildCouponCsv(rows: ReadonlyArray<{
+  code: string;
+  status: string;
+  claimedAt: string | null;
+  claimedBy?: string | null;
+  /** 공유 코드는 한 장에 여러 명이 달립니다. 있으면 한 명당 한 줄로 적습니다. */
+  uses?: ReadonlyArray<{ email: string | null; claimedAt: string }>;
+}>): string {
   const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
-  const lines = [
-    ["쿠폰코드", "상태", "사용일시", "사용자"].map(escape).join(","),
-    ...rows.map((row) => [row.code, row.status, row.claimedAt ?? "", row.claimedBy ?? ""].map(escape).join(",")),
-  ];
+  const cells = (code: string, status: string, at: string | null, who: string | null | undefined) =>
+    [code, status, at ?? "", who ?? ""].map(escape).join(",");
+
+  const lines = [["쿠폰코드", "상태", "사용일시", "사용자"].map(escape).join(",")];
+  for (const row of rows) {
+    // 한 명도 안 썼으면 코드 한 줄. 썼으면 **쓴 사람마다 한 줄** — 스무 명이
+    // 쓴 공유 코드가 한 줄로 요약되면 기관은 명단을 받지 못합니다.
+    if (!row.uses || row.uses.length === 0) {
+      lines.push(cells(row.code, row.status, row.claimedAt, row.claimedBy));
+      continue;
+    }
+    for (const use of row.uses) lines.push(cells(row.code, row.status, use.claimedAt, use.email));
+  }
   return `﻿${lines.join("\r\n")}\r\n`;
 }
