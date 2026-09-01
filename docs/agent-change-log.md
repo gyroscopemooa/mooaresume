@@ -4786,3 +4786,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 미처리(의도적): 캐릭터 PNG 62장이 장당 약 2MB입니다. 공개 전 WebP 변환 필요. 지금 변환하면 코덱스 원본과 충돌하므로 별도 커밋으로 미룹니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2건 유지), `vitest run` 전체 통과, `next build` 통과.
 - Rollback: 잠금은 `career-assessment-openness.ts`의 `OPEN`에 `"work-style"`, `"values"` 추가 + 두 시작 페이지의 `robots` 분기 제거. 병합은 `64d5d56` revert.
+
+## 2026-09-02 — Claude: 커리어 캐릭터 이미지 WebP 전환
+
+- Status: main에 적용. 코덱스 워크트리의 `career-value-examples` 26장은 아직 PNG입니다(그 커밋이 main에 없어서).
+- Reason: 캐릭터 카드가 장당 1.6–2.1MB PNG였습니다. `next/image`에 `unoptimized`가 걸려 있어 원본이 그대로 전송되므로, 결과지 한 장이 휴대폰에서 2MB를 받고 있었습니다.
+- 변환: `sharp` WebP quality 90, effort 6. 1122×1402 원본 크기 유지(축소 없음). **66.8MB → 7.8MB, 8.5배 감소.**
+- Files: `public/images/career-characters/*.png` 6장, `public/images/career-character-examples/*.png` 30장 → 같은 이름 `.webp`로 교체하고 PNG는 제거.
+- 참조 수정: `career-interest-assessment.tsx`(6곳), `career-ai-sample-overview.tsx`, `career-interest.ts`(2곳), `career-ai-sample-design-three.tsx`(공유·저장 파일명과 MIME을 `.webp`/`image/webp`로 — 이름만 `.png`로 내보내면 받는 쪽이 열지 못합니다).
+- 원본 복구: `git show 64d5d56:public/images/career-characters/riasec-a.png > 파일` 형태로 언제든 되살릴 수 있습니다. 히스토리에서 지우지 않았습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과, `next build` 통과, 변환본 육안 확인(글자 번짐·색 밀림 없음).
+- Rollback: 위 커밋 revert 후 `.webp` 제거.

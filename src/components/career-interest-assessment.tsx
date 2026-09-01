@@ -10,12 +10,12 @@ import styles from "./work-style-assessment.module.css";
 const storageKey = "mooa-career-interest-answers-v1";
 const options: { value: InterestAnswer; label: string }[] = [{ value: 1, label: "전혀 흥미 없음" }, { value: 2, label: "흥미 적음" }, { value: 3, label: "보통" }, { value: 4, label: "흥미 있음" }, { value: 5, label: "매우 흥미 있음" }];
 const characterPreviews = [
-  { code: "R", label: "현실형", image: "/images/career-characters/riasec-r.png" },
-  { code: "I", label: "탐구형", image: "/images/career-characters/riasec-i.png" },
-  { code: "A", label: "예술형", image: "/images/career-characters/riasec-a.png" },
-  { code: "S", label: "사회형", image: "/images/career-characters/riasec-s.png" },
-  { code: "E", label: "진취형", image: "/images/career-characters/riasec-e.png" },
-  { code: "C", label: "관습형", image: "/images/career-characters/riasec-c.png" },
+  { code: "R", label: "현실형", image: "/images/career-characters/riasec-r.webp" },
+  { code: "I", label: "탐구형", image: "/images/career-characters/riasec-i.webp" },
+  { code: "A", label: "예술형", image: "/images/career-characters/riasec-a.webp" },
+  { code: "S", label: "사회형", image: "/images/career-characters/riasec-s.webp" },
+  { code: "E", label: "진취형", image: "/images/career-characters/riasec-e.webp" },
+  { code: "C", label: "관습형", image: "/images/career-characters/riasec-c.webp" },
 ] as const;
 
 export function CareerInterestAssessment() {

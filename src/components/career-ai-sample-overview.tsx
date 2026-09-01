@@ -20,7 +20,7 @@ export function CareerAiSampleOverview({ scope }: { scope: CareerAiSampleScope }
     </section>
     {scope === "interest" && <section className={styles.characterCard}>
       <div><small>ISA CHARACTER</small><b>ISA<br />지식 연결가</b><p>복잡한 문제를 이해한 뒤, 사람에게 전달할 수 있는 언어와 방식으로 바꾸는 데 강점이 드러납니다.</p><span>I는 문제를 파고드는 힘, S는 설명·협업의 힘, A는 표현과 개선의 힘을 보완합니다.</span></div>
-      <figure><Image src="/images/career-characters/riasec-i.png" alt="ISA 캐릭터 비주얼" fill sizes="(max-width: 760px) 100vw, 420px" quality={100} unoptimized /></figure>
+      <figure><Image src="/images/career-characters/riasec-i.webp" alt="ISA 캐릭터 비주얼" fill sizes="(max-width: 760px) 100vw, 420px" quality={100} unoptimized /></figure>
     </section>}
     <section className={styles.designPicker} aria-label="심층해설 디자인 선택">
       <div><small>CHOOSE A REPORT STYLE</small><h2>결과 화면 형식을 선택해 보세요.</h2><p>결과의 해설 내용은 유지하고, 디자인과 정보 배치만 다르게 구성했습니다.</p></div>

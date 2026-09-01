@@ -107,7 +107,7 @@ export const RIASEC_PAIR_PROFILES: Record<string, RiasecPairProfile> = Object.fr
     return [code, {
       code,
       name,
-      imagePath: `/images/career-character-examples/${code.toLowerCase()}.png`,
+      imagePath: `/images/career-character-examples/${code.toLowerCase()}.webp`,
       coreDescription: `${primary.label} 활동을 중심으로 ${secondary.label} 활동을 함께 선호하는 기본 유형입니다. ${STRENGTHS[primaryCode]}과 ${STRENGTHS[secondaryCode]}이 핵심 흐름입니다.`,
     }];
   }),
@@ -203,7 +203,7 @@ export function getRiasecCharacterProfile(rawCode?: string): RiasecCharacterProf
     descriptor: support.title,
     supportLabel: `${tertiary.label}(${tertiary.code}) 보조축`,
     supportDescription: support.description,
-    imagePath: `/images/career-character-examples/${baseCode.toLowerCase()}.png`,
+    imagePath: `/images/career-character-examples/${baseCode.toLowerCase()}.webp`,
     rankings: dimensions.map((dimension, index) => ({
       rank: (index + 1) as 1 | 2 | 3,
       code: dimension.code,

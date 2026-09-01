@@ -21,7 +21,9 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
     try {
       const response = await fetch(profile.imagePath);
       const blob = await response.blob();
-      const cardFile = new File([blob], `${profile.baseCode}-career-card.png`, { type: blob.type || "image/png" });
+      // 카드가 WebP로 바뀌었습니다. 이름만 .png로 붙여 보내면 받는 쪽이 열지
+      // 못하는 파일이 되므로 확장자와 타입을 실제 파일에 맞춥니다.
+      const cardFile = new File([blob], `${profile.baseCode}-career-card.webp`, { type: blob.type || "image/webp" });
       if (navigator.canShare?.({ files: [cardFile] })) {
         await navigator.share({ ...shareData, files: [cardFile] });
         return;
@@ -83,7 +85,7 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
       </section>
 
       <section className={styles.environment}><h2>나에게 맞는 업무 환경</h2><div>{environments.map((environment, index) => <article key={environment}><i>{index === 0 ? <ClipboardList /> : index === 1 ? <Users /> : index === 2 ? <FlaskConical /> : index === 3 ? <Users /> : <TrendingUp />}</i><p>{environment}</p></article>)}</div></section>
-      <section className={styles.shareCard}><h2>나의 진로 캐릭터를 공유해 보세요.</h2><p>지원되는 기기에서는 카드 이미지 파일을 바로 공유하고, 그 외에는 결과 링크를 공유합니다.</p><div><a href={profile.imagePath} download={`${profile.baseCode}-career-card.png`}><Download />카드 이미지 저장</a><button type="button" onClick={() => void shareResult()}><Share2 />카드 이미지 공유</button><button type="button" onClick={() => void copyResultLink()}><Link2 />{copied ? "링크 복사됨" : "링크 복사"}</button></div></section>
+      <section className={styles.shareCard}><h2>나의 진로 캐릭터를 공유해 보세요.</h2><p>지원되는 기기에서는 카드 이미지 파일을 바로 공유하고, 그 외에는 결과 링크를 공유합니다.</p><div><a href={profile.imagePath} download={`${profile.baseCode}-career-card.webp`}><Download />카드 이미지 저장</a><button type="button" onClick={() => void shareResult()}><Share2 />카드 이미지 공유</button><button type="button" onClick={() => void copyResultLink()}><Link2 />{copied ? "링크 복사됨" : "링크 복사"}</button></div></section>
       <p className={styles.disclaimer}>이 결과는 자기이해와 커리어 탐색을 위한 자료입니다. 직업 적합성, 채용 결과, 합격 가능성을 판단하거나 보장하지 않습니다.</p>
     </main>
   </main>;
