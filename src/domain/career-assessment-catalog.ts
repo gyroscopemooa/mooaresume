@@ -1,9 +1,12 @@
-export type AssessmentAvailability = "available" | "license-review" | "validation-required";
+// "coming-soon"은 우리가 만든 검사인데 결과지가 아직인 경우입니다. 남의 도구를
+// 기다리는 license-review·validation-required와는 사정이 다르므로 같은 딱지를
+// 붙이지 않습니다 — 우리 사정을 남의 라이선스 탓처럼 적으면 거짓말이 됩니다.
+export type AssessmentAvailability = "available" | "coming-soon" | "license-review" | "validation-required";
 export type CareerAssessmentCatalogItem = { id: string; name: string; formalName: string; language: "ko" | "en"; availability: AssessmentAvailability; method: string; meta: string; purpose: string; route?: string; notice: string; };
 export const careerAssessmentCatalog: readonly CareerAssessmentCatalogItem[] = [
   { id:"mooa-interest-ko", name:"직업흥미 탐색", formalName:"MOOA Career Interest Exploration · Beta", language:"ko", availability:"available", method:"RIASEC 활동 영역 참고", meta:"30문항 · 약 5분", purpose:"무엇을 해 보고 싶은가를 활동 선호 중심으로 살펴봅니다.", route:"/career/interest", notice:"독자 문항 기반 탐색 도구이며 표준화 검사·직업 추천·채용 판정이 아닙니다." },
-  { id:"mooa-work-style-ko", name:"업무성향 분석", formalName:"IPIP Big-Five Factor Markers · Korean adaptation", language:"ko", availability:"available", method:"IPIP Big Five 공개 문항", meta:"50문항 · 약 7분", purpose:"어떻게 일하는가를 성격 5요인 응답 경향으로 살펴봅니다.", route:"/career/work-style", notice:"한국어 규준 퍼센타일이나 임상 진단이 아닌, 0–100 응답 경향 결과입니다." },
-  { id:"mooa-values-ko", name:"직업가치 우선순위", formalName:"MOOA Work Values Exploration · Beta", language:"ko", availability:"available", method:"직업가치 6영역 참고", meta:"18문항 · 약 4분", purpose:"어떤 근무 조건과 보상을 중요하게 보는가를 정리합니다.", route:"/career/values", notice:"독자 문항 기반 탐색 도구이며 표준화된 적성 판정이 아닙니다." },
+  { id:"mooa-work-style-ko", name:"업무성향 분석", formalName:"IPIP Big-Five Factor Markers · Korean adaptation", language:"ko", availability:"coming-soon", method:"IPIP Big Five 공개 문항", meta:"50문항 · 약 7분", purpose:"어떻게 일하는가를 성격 5요인 응답 경향으로 살펴봅니다.", notice:"한국어 규준 퍼센타일이나 임상 진단이 아닌, 0–100 응답 경향 결과입니다." },
+  { id:"mooa-values-ko", name:"직업가치 우선순위", formalName:"MOOA Work Values Exploration · Beta", language:"ko", availability:"coming-soon", method:"직업가치 6영역 참고", meta:"18문항 · 약 4분", purpose:"어떤 근무 조건과 보상을 중요하게 보는가를 정리합니다.", notice:"독자 문항 기반 탐색 도구이며 표준화된 적성 판정이 아닙니다." },
   { id:"onet-interest-en", name:"O*NET Interest Profiler", formalName:"O*NET Interest Profiler · English original", language:"en", availability:"license-review", method:"O*NET Career Exploration Tools", meta:"English original · 예정", purpose:"공식 영문 원문을 기준으로 RIASEC 직업흥미를 탐색하는 경로입니다.", notice:"원문 재배포 시 출처·라이선스·비변경 조건을 확인한 뒤 공개합니다." },
   { id:"ipip-big-five-en", name:"IPIP Big-Five", formalName:"IPIP Big-Five Factor Markers · English", language:"en", availability:"license-review", method:"International Personality Item Pool", meta:"English original · 예정", purpose:"영문 공개 IPIP 문항을 선택할 수 있는 별도 언어 경로입니다.", notice:"IPIP 공개 문항의 출처·문항판·점수 산식 확인 후 제공합니다." },
   { id:"onet-values-en", name:"O*NET Work Importance Locator", formalName:"O*NET Work Importance Locator · English original", language:"en", availability:"license-review", method:"O*NET Career Exploration Tools", meta:"English original · 예정", purpose:"일의 조건과 보상에 대한 우선순위를 영문 원문 기준으로 탐색합니다.", notice:"공식 도구의 현재 제공 상태와 재배포 조건을 확인한 뒤 공개합니다." },

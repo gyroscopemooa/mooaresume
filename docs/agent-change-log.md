@@ -4766,3 +4766,22 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 내용: `/community`에 `취업/진로 고민 익명게시판`을 추가했다. 주제 선택형 예시 피드, 개인정보 보호 안내, 직업흥미·커리어 검사 연결, 익명 글쓰기 준비 영역을 구현했다. 실제 글쓰기·댓글·저장·반응 수치는 아직 만들지 않았으며, 데이터와 UI/CSS를 분리해 다음 디자인 또는 DB 구현에서 교체할 수 있게 했다.
 - 검증: `npm run typecheck` 통과.
 - 롤백: 위 신규 파일 삭제 또는 이번 작업 전 Git 상태
+
+## 2026-09-02 — Claude: 커리어 검사 중간 병합 + 직업흥미만 공개
+
+- Status: main에 병합 완료(`64d5d56`). 잠금 작업은 이어지는 커밋. 배포는 사용자 확인 후.
+- Merge: `feature/codex-plan`의 `f4282bc`(커리어 캐릭터 결과지·해설 UI, PNG 62장 약 66MB)를 main에 병합했습니다. 그 전에 `origin/main`의 미수신 커밋 2개(`4ce4002`, `ebe6a03`)를 먼저 병합했습니다.
+- 충돌 3건과 해결:
+  - `src/components/community-lounge.tsx`, `.module.css` → **main 버전 유지**. 워크트리는 20커밋 전 분기라 라운지가 버튼 전부 `disabled`인 미리보기 단계입니다. main에는 이후 글쓰기·댓글·추천·신고 API까지 붙은 구현이 있어, 병합본을 채택하면 그 기능이 사라집니다.
+  - `docs/agent-change-log.md` → 양쪽 기록 모두 보존.
+- 남은 정리 대상(삭제하지 않음): `src/domain/community-lounge.ts`가 병합으로 들어왔으나 main의 라운지는 `@/domain/community`를 씁니다. 코덱스 소유 파일이라 판단을 넘깁니다.
+- 잠금(추가 커밋): 직업흥미만 공개하고 업무성향·직업가치는 결과지 완성 전까지 닫았습니다.
+  - 스위치: `src/domain/career-assessment-openness.ts` — `OPEN` 배열에 키를 되돌리면 다시 열립니다. 문항·채점 코드는 건드리지 않았습니다.
+  - 라우트 차단: `/career/work-style`, `/career/work-style/result`, `/career/values`, `/career/values/result` → `CareerAssessmentClosed` 안내 화면. 404가 아니라 안내로 처리해 기존 링크·검색 유입을 잃지 않습니다. 잠긴 동안 두 시작 페이지는 `robots: noindex`(열 때 되돌릴 것).
+  - 목록 표시: `/career/assessments`에 `coming-soon` 상태와 "결과지를 다듬고 있는 검사" 섹션 추가. 카드와 키워드는 남겨 SEO 유입을 유지합니다.
+  - `/career` 홈: 카드 유지, 메타 자리에 "결과지 준비 중", 기록 줄에 `COMING SOON`, 이용 가능 개수 자동 계산.
+  - `/career/profile`: 잠긴 검사를 "시작" 목록에서 제외하고, 지킬 수 없게 된 "세 결과가 모이면 열립니다" 문구를 상태에 맞게 교체.
+- 결제: 추가 조치 없음. `career-ai-preparation.tsx`가 이미 버튼 `disabled` + "현재는 결제·AI 호출이 진행되지 않습니다" 상태입니다.
+- 미처리(의도적): 캐릭터 PNG 62장이 장당 약 2MB입니다. 공개 전 WebP 변환 필요. 지금 변환하면 코덱스 원본과 충돌하므로 별도 커밋으로 미룹니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2건 유지), `vitest run` 전체 통과, `next build` 통과.
+- Rollback: 잠금은 `career-assessment-openness.ts`의 `OPEN`에 `"work-style"`, `"values"` 추가 + 두 시작 페이지의 `robots` 분기 제거. 병합은 `64d5d56` revert.
