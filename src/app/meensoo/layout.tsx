@@ -23,5 +23,5 @@ export default async function MeensooLayout({ children }: { children: React.Reac
   // it must not take the whole console down.
   const summary = await getSummary().catch(() => null);
 
-  return <AdminShell newInquiries={summary?.newInquiries ?? 0}>{children}</AdminShell>;
+  return <AdminShell newInquiries={summary?.newInquiries ?? 0} newFeedback={summary?.newFeedback ?? 0}>{children}</AdminShell>;
 }

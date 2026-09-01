@@ -19,6 +19,7 @@ import {
   LogOut,
   MessageSquare,
   Send,
+  Star,
   Users,
   X,
 } from "lucide-react";
@@ -33,11 +34,12 @@ const NAV = [
   { href: "/meensoo/rewards", label: "무료 이용권", Icon: Gift },
   { href: "/meensoo/coupons", label: "협업 쿠폰", Icon: Ticket },
   { href: "/meensoo/research", label: "축적 데이터", Icon: Database },
+  { href: "/meensoo/feedback", label: "분석 후기", Icon: Star, badgeKey: "feedback" as const },
   { href: "/meensoo/inquiries", label: "문의", Icon: MessageSquare, badgeKey: "inquiries" as const },
   { href: "/meensoo/waitlist", label: "사전 신청", Icon: Users },
 ];
 
-type Props = { children: React.ReactNode; newInquiries?: number };
+type Props = { children: React.ReactNode; newInquiries?: number; newFeedback?: number };
 
 const THEME_KEY = "mooa:admin-theme";
 const THEME_EVENT = "mooa:admin-theme-change";
@@ -69,7 +71,7 @@ const readTheme = (): "dark" | "light" => {
 
 const readServerTheme = (): "dark" | "light" => "dark";
 
-export function AdminShell({ children, newInquiries = 0 }: Props) {
+export function AdminShell({ children, newInquiries = 0, newFeedback = 0 }: Props) {
   const theme = useSyncExternalStore(subscribeTheme, readTheme, readServerTheme);
 
   function toggleTheme() {
@@ -155,6 +157,9 @@ export function AdminShell({ children, newInquiries = 0 }: Props) {
               <span className={styles.label}>{label}</span>
               {badgeKey === "inquiries" && newInquiries > 0 && (
                 <span className={`${styles.badge} ${styles.label}`}>{newInquiries}</span>
+              )}
+              {badgeKey === "feedback" && newFeedback > 0 && (
+                <span className={`${styles.badge} ${styles.label}`}>{newFeedback}</span>
               )}
             </Link>
           );

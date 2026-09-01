@@ -1,0 +1,143 @@
+/* 후기 한 장.
+   메일에서 들어온 사람은 대개 휴대폰이고, 이미 결과를 본 뒤라 여기 오래 머물
+   생각이 없습니다. 그래서 한 화면 안에서 끝나야 하고, 스크롤이 생기더라도
+   보내기 버튼이 손가락 닿는 곳에 있어야 합니다. */
+
+.page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 28px 18px 56px;
+  background:
+    radial-gradient(1100px 460px at 50% -12%, #eaf6f0 0%, rgba(234, 246, 240, 0) 70%),
+    #f7faf8;
+  color: #16241d;
+  font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
+}
+
+.card {
+  width: min(520px, 100%);
+  background: #fff;
+  border: 1px solid #e2eae6;
+  border-radius: 18px;
+  padding: clamp(22px, 5vw, 34px);
+  box-shadow: 0 24px 60px -40px rgba(16, 46, 34, 0.55);
+}
+
+.brand { display: flex; align-items: center; gap: 7px; color: #176b4a; font-size: 12px; font-weight: 800; letter-spacing: 0.02em; }
+.brand svg { width: 15px; height: 15px; }
+
+.title { margin: 14px 0 6px; font-size: clamp(21px, 5.4vw, 25px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.35; }
+.lead { margin: 0 0 22px; color: #5d6b64; font-size: 13.5px; line-height: 1.75; }
+
+.field { display: block; margin-top: 20px; }
+.field > span { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.field small { display: block; margin-top: -4px; margin-bottom: 8px; color: #8b968f; font-size: 11.5px; font-weight: 500; line-height: 1.6; }
+
+/* 별점. 라디오를 감춰 두고 별을 누르게 합니다 — 키보드와 스크린리더에는
+   그대로 라디오 그룹으로 남습니다. */
+.stars { display: flex; gap: 6px; }
+.star {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 11px 0;
+  border: 1px solid #dbe6e0;
+  border-radius: 11px;
+  background: #fbfdfc;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+.star input { position: absolute; opacity: 0; width: 0; height: 0; }
+.star svg { width: 25px; height: 25px; color: #d3ded8; transition: color 120ms ease; }
+.star[data-on="true"] { border-color: #b9dfcc; background: #f0f9f4; }
+.star[data-on="true"] svg { color: #f5b73d; fill: #f5b73d; }
+.star:has(input:focus-visible) { outline: 2px solid #176b4a; outline-offset: 2px; }
+@media (hover: hover) {
+  .star:hover { transform: translateY(-1px); border-color: #b9dfcc; }
+}
+
+/* 고른 점수를 글로도 말해 줍니다. 별만으로는 4개를 누른 것인지 3개를 누른
+   것인지 손가락에 가려 확인이 안 됩니다. */
+.ratingWord { margin: 9px 0 0; min-height: 18px; color: #176b4a; font-size: 12.5px; font-weight: 700; }
+
+.field textarea {
+  width: 100%;
+  min-height: 82px;
+  padding: 12px 13px;
+  border: 1px solid #dbe6e0;
+  border-radius: 11px;
+  background: #fbfdfc;
+  color: #16241d;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  resize: vertical;
+  outline: 0;
+}
+.field textarea::placeholder { color: #aab5af; }
+.field textarea:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.09); background: #fff; }
+
+.submit {
+  width: 100%;
+  margin-top: 24px;
+  padding: 15px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #176b4a;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.submit:hover:not(:disabled) { background: #12583c; }
+.submit:disabled { background: #b6c7bf; cursor: default; }
+
+.note { margin: 13px 0 0; color: #8b968f; font-size: 11.5px; line-height: 1.7; text-align: center; }
+.error { margin: 13px 0 0; color: #a3761d; font-size: 13px; line-height: 1.7; text-align: center; }
+
+/* 보내고 난 뒤. 같은 카드 자리에 그대로 들어앉습니다 — 화면이 통째로 바뀌면
+   방금 무엇을 했는지가 흐려집니다. */
+.done { text-align: center; padding: 8px 0 4px; }
+.doneMark { display: grid; place-items: center; width: 54px; height: 54px; margin: 0 auto 16px; border-radius: 50%; background: #eaf6f0; color: #176b4a; }
+.doneMark svg { width: 27px; height: 27px; }
+.done h1 { margin: 0 0 8px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.done p { margin: 0; color: #5d6b64; font-size: 13.5px; line-height: 1.8; }
+.homeLink {
+  display: inline-block;
+  margin-top: 22px;
+  padding: 11px 20px;
+  border: 1px solid #dbe6e0;
+  border-radius: 10px;
+  color: #16241d;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.homeLink:hover { border-color: #176b4a; color: #176b4a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .star, .submit { transition: none; }
+}
+
+/* 눈에는 안 보이지만 스크린리더는 읽습니다. 별만 있으면 "3점"이라는 말이
+   어디에도 없어 무엇을 고르는 자리인지 알 수 없습니다. */
+.srOnly {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 넓은 화면에서는 세로를 줄입니다. 휴대폰에서는 스크롤이 자연스럽지만,
+   PC에서 보내기 버튼이 접힘선 아래에 있으면 다 적어 놓고 못 보냅니다. */
+@media (min-width: 700px) and (min-height: 600px) {
+  .field { margin-top: 16px; }
+  .field textarea { min-height: 64px; }
+  .lead { margin-bottom: 16px; }
+  .submit { margin-top: 20px; padding: 14px 18px; }
+}

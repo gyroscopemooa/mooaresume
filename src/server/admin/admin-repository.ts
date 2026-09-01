@@ -293,6 +293,54 @@ export async function listInquiries(limit = 200): Promise<AdminInquiry[]> {
   }));
 }
 
+export type AdminFeedback = {
+  id: string;
+  analysisRunId: string;
+  rating: number;
+  helpfulText: string | null;
+  wishText: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+/**
+ * 분석 후기.
+ *
+ * 별점만 누르고 간 응답도 그대로 담습니다 — 글이 없다고 버리면 "대부분
+ * 만족했다"가 통계에서 사라집니다.
+ */
+export async function listFeedback(limit = 200): Promise<AdminFeedback[]> {
+  const { data, error } = await serviceClient()
+    .from("analysis_feedback")
+    .select("id, analysis_run_id, rating, helpful_text, wish_text, read_at, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) { console.error("admin-query", error); return []; }
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    analysisRunId: row.analysis_run_id as string,
+    rating: Number(row.rating ?? 0),
+    helpfulText: (row.helpful_text as string | null) ?? null,
+    wishText: (row.wish_text as string | null) ?? null,
+    readAt: (row.read_at as string | null) ?? null,
+    createdAt: row.created_at as string,
+  }));
+}
+
+/**
+ * 화면을 열면 그때까지 온 것을 읽음으로 넘깁니다.
+ *
+ * 한 건씩 누르게 하면 아무도 누르지 않고, 배지는 영원히 줄지 않아 곧 무시하는
+ * 숫자가 됩니다.
+ */
+export async function markFeedbackRead(): Promise<void> {
+  const { error } = await serviceClient()
+    .from("analysis_feedback")
+    .update({ read_at: new Date().toISOString() })
+    .is("read_at", null);
+  if (error) console.error("admin-query", error);
+}
+
 export type AdminWaitlistEntry = { id: string; email: string; source: string; createdAt: string };
 
 export async function listWaitlist(limit = 500): Promise<AdminWaitlistEntry[]> {
@@ -325,6 +373,8 @@ export type AdminSummary = {
   analysesInFlight: number;
   waitlist: number;
   newInquiries: number;
+  /** 아직 열어 보지 않은 분석 후기. 사이드바 배지가 세는 값입니다. */
+  newFeedback: number;
   mailSent7d: number;
   mailFailed7d: number;
 };
@@ -334,13 +384,14 @@ export async function getSummary(): Promise<AdminSummary> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000).toISOString();
   const countOnly = { count: "exact" as const, head: true };
 
-  const [orders, analyses, waitlist, inquiries, mailSent, mailFailed] = await Promise.all([
+  const [orders, analyses, waitlist, inquiries, mailSent, mailFailed, feedback] = await Promise.all([
     client.from("billing_orders").select("amount, status, metadata"),
     client.from("analysis_runs").select("status"),
     client.from("waitlist_signups").select("id", countOnly),
     client.from("contact_inquiries").select("id", countOnly).eq("status", "NEW"),
     client.from("mail_send_log").select("id", countOnly).eq("status", "SENT").gte("sent_at", since),
     client.from("mail_send_log").select("id", countOnly).eq("status", "FAILED").gte("sent_at", since),
+    client.from("analysis_feedback").select("id", countOnly).is("read_at", null),
   ]);
 
   const orderRows = ((orders.data ?? []) as { amount: number; status: string; metadata: unknown }[])
@@ -367,6 +418,7 @@ export async function getSummary(): Promise<AdminSummary> {
     analysesInFlight: runRows.filter((row) => row.status === "PENDING" || row.status === "RUNNING").length,
     waitlist: waitlist.count ?? 0,
     newInquiries: inquiries.count ?? 0,
+    newFeedback: feedback.count ?? 0,
     mailSent7d: mailSent.count ?? 0,
     mailFailed7d: mailFailed.count ?? 0,
   };

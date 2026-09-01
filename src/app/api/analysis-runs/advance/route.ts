@@ -113,7 +113,7 @@ async function advanceOne(run: RunRow, origin: string) {
   const { data: owner } = await serviceRoleClient().auth.admin.getUserById(run.owner_user_id);
   if (owner?.user?.email) {
     try {
-      await sendAnalysisCompleteEmail({ to: owner.user.email, resultUrl: `${origin}/result?analysisRunId=${run.id}` });
+      await sendAnalysisCompleteEmail({ to: owner.user.email, resultUrl: `${origin}/result?analysisRunId=${run.id}`, feedbackUrl: `${origin}/feedback/${run.id}` });
     } catch (emailError) {
       console.error("advance_email_failed", emailError instanceof Error ? emailError.message : "UNKNOWN_ERROR");
     }

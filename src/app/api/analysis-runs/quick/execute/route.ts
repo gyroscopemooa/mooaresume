@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     }
     if (data.user.email) {
       try {
-        await sendAnalysisCompleteEmail({ to: data.user.email, resultUrl: `${getCheckoutReturnOrigin(request.nextUrl)}/result?analysisRunId=${body.analysisRunId}` });
+        await sendAnalysisCompleteEmail({ to: data.user.email, resultUrl: `${getCheckoutReturnOrigin(request.nextUrl)}/result?analysisRunId=${body.analysisRunId}`, feedbackUrl: `${getCheckoutReturnOrigin(request.nextUrl)}/feedback/${body.analysisRunId}` });
       } catch (emailError) {
         console.error("analysis_complete_email_failed", { error: emailError instanceof Error ? emailError.message : "UNKNOWN_ERROR" });
       }
