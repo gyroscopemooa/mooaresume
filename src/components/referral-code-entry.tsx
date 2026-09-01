@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { describeReferralError, parseReferralCode } from "@/domain/referral";
+import { PENDING_REFERRAL_CODE, stashPendingCode, takePendingCode } from "@/lib/pending-code";
 import styles from "./referral-code-entry.module.css";
 
 /**
@@ -23,7 +24,14 @@ export function ReferralCodeEntry({
   returnTo = "/refer",
   compact = false,
 }: {
-  /** Offer a sign-in when signed out, rather than rendering nothing. */
+  /**
+   * 로그아웃이어도 칸을 열어 두고, 적용할 때 로그인을 거칩니다.
+   *
+   * 코드는 로그인한 계정에 적용되지만, 그렇다고 칸을 잠가 두면 코드를 받아 온
+   * 사람이 이 화면에서 할 수 있는 일이 없어집니다 — 이 화면의 로그인 버튼은
+   * 요금 안내를 한참 지나야 나옵니다. 입력은 받고, 적용을 누른 순간 코드를
+   * 맡겨 둔 채 로그인으로 보냈다가 돌아와서 대신 적용합니다.
+   */
   requireSignIn?: boolean;
   returnTo?: string;
   /**
@@ -53,6 +61,18 @@ export function ReferralCodeEntry({
     return () => { cancelled = true; };
   }, [requireSignIn]);
 
+  // 로그인하러 갔다 돌아온 경우. 맡겨 둔 코드를 대신 적용합니다.
+  useEffect(() => {
+    if (signedIn !== true) return;
+    const pending = takePendingCode(PENDING_REFERRAL_CODE);
+    if (!pending) return;
+    void (async () => {
+      setCode(pending);
+      await apply(pending);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn]);
+
   async function signIn() {
     setBusy(true);
     try {
@@ -73,12 +93,22 @@ export function ReferralCodeEntry({
    * reward on entry is a reward for typing — and the first person to notice
    * writes a loop that types their own code on a hundred throwaway accounts.
    */
-  async function apply() {
-    const parsed = parseReferralCode(code);
+  async function apply(given?: string) {
+    const parsed = parseReferralCode(given ?? code);
     if (!parsed.ok) {
       setMessage(parsed.reason === "empty" ? "코드를 입력해 주세요." : "코드 형식을 확인해 주세요. 예: MOOA7KQ2XZ");
       return;
     }
+
+    // 형식을 먼저 보고 보냅니다. 오타 하나 때문에 로그인을 다녀오게 하지
+    // 않으려는 것입니다 — 코드가 실제로 있는지는 로그인해야 알 수 있습니다.
+    if (requireSignIn && signedIn === false) {
+      stashPendingCode(PENDING_REFERRAL_CODE, parsed.code);
+      setMessage("로그인 후 자동으로 적용해 드립니다.");
+      await signIn();
+      return;
+    }
+
     setBusy(true);
     setMessage("");
     try {
@@ -106,27 +136,22 @@ export function ReferralCodeEntry({
       <div className={styles.compact} data-applied={applied}>
         <div className={styles.compactRow}>
           <span className={styles.compactLabel}><Users/> 추천코드<em>선택</em></span>
-          {needsSignIn ? (
-            // A sign-in button already sits a few lines below. Two is two
-            // decisions about the same thing.
-            <small className={styles.compactHint}>로그인하시면 입력칸이 열립니다</small>
-          ) : (
-            <>
-              <input
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-                placeholder="MOOA7KQ2XZ"
-                disabled={busy || applied}
-                maxLength={20}
-                aria-label="추천코드"
-                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
-              />
-              <button type="button" onClick={() => void apply()} disabled={busy || applied}>
-                {applied ? "완료" : busy ? "확인 중" : "적용"}
-              </button>
-            </>
-          )}
+          <input
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            placeholder="MOOA7KQ2XZ"
+            disabled={busy || applied}
+            maxLength={20}
+            aria-label="추천코드"
+            onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
+          />
+          <button type="button" onClick={() => void apply()} disabled={busy || applied}>
+            {applied ? "완료" : busy ? "확인 중" : needsSignIn ? "로그인하고 적용" : "적용"}
+          </button>
         </div>
+        {needsSignIn && !message && (
+          <small className={styles.compactHint}>적용을 누르면 로그인 후 자동으로 반영됩니다.</small>
+        )}
         {message && <p className={styles.compactMessage} data-ok={applied}>{message}</p>}
       </div>
     );
@@ -140,31 +165,25 @@ export function ReferralCodeEntry({
           받은 추천코드가 있으신가요?
           <small>
             {needsSignIn
-              ? "코드는 로그인한 계정에 적용됩니다. 먼저 로그인해 주세요."
+              ? "코드는 로그인한 계정에 적용됩니다. 적용을 누르면 로그인 후 자동으로 반영됩니다."
               : "선택 · 친구가 코드를 주셨다면 넣어 주세요"}
           </small>
         </span>
       </div>
-      {needsSignIn ? (
-        <button type="button" className={styles.signIn} onClick={() => void signIn()} disabled={busy}>
-          {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={15}/>
+      <div className={styles.row}>
+        <input
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
+          placeholder="MOOA7KQ2XZ"
+          disabled={busy || applied}
+          maxLength={20}
+          aria-label="추천코드"
+          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
+        />
+        <button type="button" onClick={() => void apply()} disabled={busy || applied}>
+          {applied ? "적용 완료" : busy ? "확인 중..." : needsSignIn ? "로그인하고 적용" : "적용하기"}
         </button>
-      ) : (
-        <div className={styles.row}>
-          <input
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            placeholder="MOOA7KQ2XZ"
-            disabled={busy || applied}
-            maxLength={20}
-            aria-label="추천코드"
-            onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
-          />
-          <button type="button" onClick={() => void apply()} disabled={busy || applied}>
-            {applied ? "적용 완료" : busy ? "확인 중..." : "적용하기"}
-          </button>
-        </div>
-      )}
+      </div>
       {message && <p className={styles.message} data-ok={applied}>{message}</p>}
     </div>
   );

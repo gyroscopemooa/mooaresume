@@ -31,6 +31,47 @@ function submit() {
   fireEvent.submit(document.querySelector("form") as HTMLFormElement);
 }
 
+describe("캠페인 화면이 나중에 붙여 주는 파일", () => {
+  const png = () => new File([new Uint8Array(64)], "배포용.png", { type: "image/png" });
+  const csv = () => new File(["code\n"], "coupons.csv", { type: "text/csv" });
+
+  it("이 화면이 뜬 뒤에 도착한 첨부도 목록에 들어온다", () => {
+    // 팜플렛은 캔버스에 그린 뒤에야 파일이 되므로 항상 늦게 온다. 첫 렌더의
+    // 값만 읽으면 화면은 "첨부됨"이라 말하고 실제로는 빈 채로 나간다.
+    const { rerender } = render(<MailComposer initialFiles={[]} />);
+    expect(screen.queryByText("배포용.png")).toBeNull();
+
+    rerender(<MailComposer initialFiles={[png()]} />);
+    expect(screen.getByText("배포용.png")).toBeTruthy();
+  });
+
+  it("코드가 여러 장이면 뒤늦게 오는 CSV도 함께 받는다", () => {
+    const { rerender } = render(<MailComposer initialFiles={[]} />);
+    rerender(<MailComposer initialFiles={[png(), csv()]} />);
+
+    expect(screen.getByText("배포용.png")).toBeTruthy();
+    expect(screen.getByText("coupons.csv")).toBeTruthy();
+  });
+
+  it("운영자가 직접 고른 파일을 덮어쓰지 않는다", () => {
+    const { rerender } = render(<MailComposer initialFiles={[]} />);
+    attach([new File([new Uint8Array(10)], "직접올린.pdf", { type: "application/pdf" })]);
+
+    rerender(<MailComposer initialFiles={[png()]} />);
+
+    expect(screen.getByText("직접올린.pdf")).toBeTruthy();
+    expect(screen.getByText("배포용.png")).toBeTruthy();
+  });
+
+  it("같은 목록이 다시 들어와도 첨부가 불어나지 않는다", () => {
+    const { rerender } = render(<MailComposer initialFiles={[png()]} />);
+    rerender(<MailComposer initialFiles={[png()]} />);
+    rerender(<MailComposer initialFiles={[png()]} />);
+
+    expect(screen.getByText("합계 1개")).toBeTruthy();
+  });
+});
+
 describe("MailComposer 첨부파일", () => {
   it("고른 파일의 이름과 크기를 보여 준다", () => {
     render(<MailComposer />);

@@ -4331,3 +4331,26 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/meensoo/coupons/coupons.module.css`, `src/app/meensoo/admin.module.css`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린, 헤드리스 크롬 412px 대조 확인.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 자동 첨부가 "붙은 것처럼 보이고" 안 붙어 나가던 문제
+
+- Agent/session: Claude. 사용자 보고("홍보물·CSV 자동 첨부가 지금 작동 안 하는 것 같다").
+- Status: main에 적용. 마이그레이션 없음.
+- 원인: `MailComposer`가 `initialFiles`를 **`useState`의 초깃값으로만** 읽고 있었습니다. 초깃값은 첫 렌더에서 한 번만 쓰입니다. 그런데 팜플렛 PNG는 **캔버스에 그린 뒤에야** 파일이 되므로 이 화면이 뜬 **다음에** 도착합니다. 그래서 캠페인 화면의 `첨부 1개 · ...png` 표시는 파일을 세고 있는데, 정작 보내는 쪽 목록은 비어 있었습니다 — **붙은 것처럼 보이고 안 붙어 나갔습니다.** 코드가 여러 장일 때 함께 붙는 CSV도 같은 이유로 빠졌습니다.
+- Change: 부모가 넘긴 목록이 **실제로 달라졌을 때만** 반영하는 효과를 넣었습니다. 부모는 렌더마다 새 배열을 만들기 때문에 배열이 아니라 내용(이름·크기)으로 비교합니다. 같은 이름은 갈아 끼우고(다른 캠페인을 열면 팜플렛이 다시 그려집니다), 운영자가 직접 고른 파일은 두고, 운영자가 지운 자동 첨부는 다시 붙지 않습니다.
+- Validation: `mail-composer.test.tsx`에 4건 추가. **고친 부분을 되돌리면 그중 3건이 실패하는 것을 확인**했습니다(회귀 테스트로 성립).
+- Files: `src/app/meensoo/mail/mail-composer.tsx`, `mail-composer.test.tsx`.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 코드 입력칸을 잠그지 않고 로그인을 건너게 함
+
+- Agent/session: Claude. 사용자 제안("어차피 결제할 때 구글 로그인하는데 저거 열어놔도 되지 않나").
+- Status: main에 적용. 마이그레이션 없음.
+- 먼저 확인한 것: 결제 화면에 로그인 수단이 **있기는 합니다**(`ApplicationCaseHandoff`). 다만 위치가 `QUICK 제공 범위` 카드보다 아래라, 모바일에서는 한참 스크롤해야 나옵니다. 잠긴 칸 옆의 "로그인하시면 열립니다"는 사실상 막다른 길이었습니다.
+- 판단: **쿠폰은 UX 문제가 아니라 돈 문제입니다.** 쿠폰은 그 분석을 공짜로 만드는 물건이라, 결제 직전에 등록하지 못하면 무료 이용권을 쥔 사람이 그대로 결제합니다. 추천코드는 못 넣어도 손해 보는 사람이 없지만, 나란히 선 두 칸이 다르게 동작하면 그것대로 헷갈리므로 같이 맞췄습니다.
+- Change: 로그아웃이어도 입력칸을 열어 둡니다. 등록/적용을 누르면 코드를 `sessionStorage`에 맡기고 구글 로그인으로 보냈다가, 돌아오면 **대신 등록**합니다(`src/lib/pending-code.ts`). 버튼 문구는 `로그인하고 등록`으로 바뀌고, 누르기 전에 무슨 일이 생길지 한 줄로 미리 알립니다 — 구글 화면으로 넘어가는 것은 놀랄 만한 일이라 누른 뒤에 알리면 늦습니다.
+- 한계(의도한 것): 코드가 실제로 있는지는 **로그인 후에야** 알려줍니다. 로그인 없이 확인해 주는 창구를 열면 코드를 찍어 보며 남의 쿠폰을 캐낼 수 있습니다. 추천코드는 형식이 정해져 있어 오타를 미리 걸러 로그인 왕복을 아낍니다.
+- 맡긴 코드는 **한 번만 꺼내 쓰고 지웁니다.** 남겨 두면 다음에 화면을 열 때마다 다시 등록을 시도하고 두 번째부터 "이미 사용하신 쿠폰"이 됩니다. `sessionStorage`라 탭을 닫으면 사라집니다 — 공용 컴퓨터에서 다음 사람에게 넘어가지 않습니다.
+- Files: `src/lib/pending-code.ts`(신규), `coupon-code-entry.tsx`, `coupon-code-entry.module.css`, `referral-code-entry.tsx`, `coupon-code-entry.test.tsx`(신규 7건).
+- Validation: 822 tests passed (+11), `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

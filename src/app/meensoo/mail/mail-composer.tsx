@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import styles from "../admin.module.css";
 import {
   MAX_ATTACHMENTS,
@@ -19,12 +19,24 @@ import {
  * one `/api/mail/send` route, not a replacement for it. Files are picked here
  * only — `/MAIL` keeps posting the plain JSON it always posted.
  */
+/** 파일 목록이 실제로 달라졌는지 보는 값. 이름과 크기면 충분합니다. */
+function signatureOf(files: File[]): string {
+  return files.map((file) => `${file.name}:${file.size}`).join("|");
+}
+
 export function MailComposer({ campaignId, initialSubject = "", initialBody = "", initialFiles }: {
   /** 캠페인에서 열렸으면 발송 기록이 그 캠페인에 묶입니다. */
   campaignId?: string;
   initialSubject?: string;
   initialBody?: string;
-  /** 팜플렛 PNG와 코드 CSV처럼, 캠페인 화면이 미리 붙여 주는 파일. */
+  /**
+   * 팜플렛 PNG와 코드 CSV처럼, 캠페인 화면이 붙여 주는 파일.
+   *
+   * **첫 렌더에만 읽으면 안 됩니다.** 팜플렛은 캔버스에 그린 뒤에야 파일이
+   * 되므로 이 화면이 이미 뜬 **다음에** 도착합니다. `useState`의 초깃값으로만
+   * 받던 동안에는, 캠페인 화면의 "첨부 1개"는 파일을 세고 있는데 정작 보내는
+   * 쪽은 빈 목록이었습니다 — 붙은 것처럼 보이고 안 붙어 나갔습니다.
+   */
   initialFiles?: File[];
 } = {}) {
   const [to, setTo] = useState("");
@@ -32,9 +44,27 @@ export function MailComposer({ campaignId, initialSubject = "", initialBody = ""
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
   const [files, setFiles] = useState<File[]>(initialFiles ?? []);
+  // 부모가 넘긴 목록이 실제로 바뀔 때만 반영합니다. 부모는 렌더마다 새 배열을
+  // 만들기 때문에, 배열 자체가 아니라 내용을 봐야 합니다.
+  const appliedSignature = useRef(signatureOf(initialFiles ?? []));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const filePicker = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const incoming = initialFiles ?? [];
+    const signature = signatureOf(incoming);
+    if (signature === appliedSignature.current) return;
+    appliedSignature.current = signature;
+    setFiles((current) => {
+      // 같은 이름은 새로 온 것으로 갈아 끼웁니다(다른 캠페인을 열면 팜플렛이
+      // 다시 그려집니다). 운영자가 직접 고른 파일은 건드리지 않고, 운영자가
+      // 지운 자동 첨부는 다시 붙지 않습니다 — 목록이 그대로면 여기까지 오지
+      // 않기 때문입니다.
+      const arriving = new Set(incoming.map((file) => file.name));
+      return [...current.filter((file) => !arriving.has(file.name)), ...incoming];
+    });
+  }, [initialFiles]);
 
   const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
 

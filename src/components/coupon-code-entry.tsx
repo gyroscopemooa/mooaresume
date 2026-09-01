@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Ticket } from "lucide-react";
+import { Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { PENDING_COUPON_CODE, stashPendingCode, takePendingCode } from "@/lib/pending-code";
 import styles from "./coupon-code-entry.module.css";
 
 /**
@@ -38,12 +39,12 @@ export function CouponCodeEntry({
 }: {
   compact?: boolean;
   /**
-   * 로그아웃 상태에서 로그인할 길을 내줍니다.
+   * 로그아웃이어도 칸을 열어 두고, 등록할 때 로그인을 거칩니다.
    *
-   * 이용권은 계정에 붙는 물건이라 `claim_coupon_code`가 로그인을 요구합니다.
-   * 그런데 안내만 하고 버튼을 두지 않으면, 기관에서 쿠폰을 받아 온 사람이
-   * "로그인하셔야 합니다"를 읽고 **어디서 로그인하는지는 못 찾는** 막다른 길에
-   * 섭니다. 추천코드 칸과 같은 방식으로 엽니다.
+   * 이용권은 계정에 붙는 물건이라 `claim_coupon_code`는 로그인을 요구합니다.
+   * 그렇다고 칸을 잠가 두면, 무료 이용권을 손에 쥔 사람이 결제 화면에서
+   * 그걸 못 쓰고 **돈을 냅니다.** 그래서 입력은 받고, 등록을 누른 순간
+   * 코드를 맡겨 둔 채 로그인으로 보냈다가 돌아와서 대신 등록합니다.
    */
   requireSignIn?: boolean;
   returnTo?: string;
@@ -68,6 +69,21 @@ export function CouponCodeEntry({
     return () => { cancelled = true; };
   }, [requireSignIn]);
 
+  // 로그인하러 갔다 돌아온 경우. 맡겨 둔 코드를 대신 등록하고 결과를 보여
+  // 줍니다 — 돌아왔더니 칸이 비어 있으면 방금 친 것을 또 치게 됩니다.
+  useEffect(() => {
+    if (signedIn !== true) return;
+    const pending = takePendingCode(PENDING_COUPON_CODE);
+    if (!pending) return;
+    void (async () => {
+      setCode(pending);
+      await apply(pending);
+    })();
+    // apply는 렌더마다 새로 만들어지므로 의존성에 넣지 않습니다. 이 효과는
+    // 로그인 상태가 정해지는 그 한 번만 돌아야 합니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn]);
+
   async function signIn() {
     setBusy(true);
     try {
@@ -81,9 +97,20 @@ export function CouponCodeEntry({
     }
   }
 
-  async function apply() {
-    const trimmed = code.trim().toUpperCase();
+  async function apply(given?: string) {
+    const trimmed = (given ?? code).trim().toUpperCase();
     if (!trimmed) { setMessage("쿠폰 코드를 넣어 주세요."); return; }
+
+    // 로그인 전에는 코드가 맞는지 확인해 줄 수 없습니다. 확인해 주는 창구를
+    // 열어 두면 코드를 찍어 보며 남의 쿠폰을 캐낼 수 있기 때문입니다. 그래서
+    // 오타는 로그인하고 돌아온 뒤에야 알려드리게 됩니다.
+    if (requireSignIn && signedIn === false) {
+      stashPendingCode(PENDING_COUPON_CODE, trimmed);
+      setMessage("로그인 후 자동으로 등록해 드립니다.");
+      await signIn();
+      return;
+    }
+
     setBusy(true);
     setMessage("");
     try {
@@ -113,33 +140,24 @@ export function CouponCodeEntry({
     <div className={compact ? styles.compact : styles.card} data-done={done}>
       <div className={styles.row}>
         <span className={styles.label}><Ticket/> 쿠폰 코드<em>선택</em></span>
-        {needsSignIn ? (
-          compact ? (
-            // 결제 화면에는 로그인 버튼이 이미 몇 줄 아래에 있습니다. 같은 일을
-            // 시키는 버튼이 둘이면 어느 쪽을 눌러야 하는지를 묻게 됩니다.
-            <small className={styles.hint}>로그인하시면 입력칸이 열립니다</small>
-          ) : (
-            <button type="button" className={styles.signIn} onClick={() => void signIn()} disabled={busy}>
-              {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={14}/>
-            </button>
-          )
-        ) : (
-          <>
-            <input
-              value={code}
-              onChange={(event) => setCode(event.target.value.toUpperCase())}
-              placeholder="YOUTH-MUA-2026"
-              disabled={busy || done}
-              maxLength={40}
-              aria-label="쿠폰 코드"
-              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
-            />
-            <button type="button" onClick={() => void apply()} disabled={busy || done}>
-              {done ? "완료" : busy ? "확인 중" : "등록"}
-            </button>
-          </>
-        )}
+        <input
+          value={code}
+          onChange={(event) => setCode(event.target.value.toUpperCase())}
+          placeholder="YOUTH-MUA-2026"
+          disabled={busy || done}
+          maxLength={40}
+          aria-label="쿠폰 코드"
+          onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
+        />
+        <button type="button" onClick={() => void apply()} disabled={busy || done}>
+          {done ? "완료" : busy ? "확인 중" : needsSignIn ? "로그인하고 등록" : "등록"}
+        </button>
       </div>
+      {/* 누르기 전에 무슨 일이 생길지 미리 말해 둡니다. 구글 화면으로 넘어가는
+          것은 놀랄 만한 일이라, 버튼을 누른 다음에 알리면 늦습니다. */}
+      {needsSignIn && !message && (
+        <p className={styles.hint}>등록을 누르면 로그인 후 자동으로 적용됩니다.</p>
+      )}
       {message && <p className={styles.message} data-ok={done}>{message}</p>}
     </div>
   );
