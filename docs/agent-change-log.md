@@ -4281,3 +4281,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/meensoo/admin-shell.tsx`, `src/app/meensoo/admin.module.css`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린. 실제 모바일 브라우저 클릭 확인은 이 환경에 실제 Supabase/Polar 키가 없어 못 했음 — 로그인 화면 이후 동작은 사용자 쪽 확인 필요.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: Cloudflare 자동 빌드가 8개 커밋 동안 죽어 있던 원인 (코드 변경 없음)
+
+- Agent/session: Claude. 사용자 확인 요청("커밋하면 자동 배포될 텐데 왜 안 되나 / 설정 바꾸는 게 맞나").
+- Status: 조사 기록. **소스 변경 없음** — Cloudflare 대시보드 설정 문제였습니다.
+- 증상: Workers 빌드가 `✘ The entry-point file at ".open-next/worker.js" was not found.`로 실패. `f8cbda8`(FINAL 결제 열기)까지는 초록, 그 다음 `2afd174`부터 최신까지 전부 빨강.
+- **코드는 원인이 아닙니다.** `f8cbda8 → 2afd174` 사이에 `package.json`·`wrangler.jsonc`·`next.config`는 하나도 바뀌지 않았고, 현재 코드로 `opennextjs-cloudflare build`를 직접 돌려 `.open-next/worker.js` 생성까지 확인했습니다.
+- 원인: Cloudflare 프로젝트의 빌드 설정에서 **Build command가 `None`** 이고 Deploy command가 `npx wrangler versions upload` 하나뿐이었습니다. 아무도 빌드를 하지 않은 채 업로드만 시도한 것입니다. 그 사이 어느 시점에 대시보드 설정이 바뀐 것으로 보입니다(커밋과 무관).
+- **함정 하나 — Retry는 소용이 없습니다.** 빌드 상세의 `Build settings`는 그 빌드가 만들어진 시점 설정의 **스냅샷**이라, 대시보드를 고친 뒤 옛 빌드를 Retry하면 여전히 옛 설정(`Build command: None`)으로 돕니다. 설정 변경을 반영하려면 **새 커밋을 push해 새 빌드를 트리거**해야 합니다.
+- 확인된 설정(사용자 수정 후): Build command `npx @opennextjs/cloudflare build`, Version command `npx wrangler versions upload`, Production branch `main`, 비프로덕션 브랜치 빌드 켜짐. Build variables(`NEXT_PUBLIC_*`)는 소실 없이 유지됨.
+- Files: 이 문서만.
+- Rollback: 해당 없음(기록).
