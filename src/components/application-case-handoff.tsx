@@ -10,6 +10,7 @@ import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import Link from "next/link";
 import { ResearchConsentGate } from "./research-consent-gate";
 import styles from "./application-case-handoff.module.css";
+import { onCreditChange } from "@/lib/credit-events";
 
 type Props = {
   guest: GuestDraft | null;
@@ -58,6 +59,14 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   // that would survive a complaint.
   const [consentDecided, setConsentDecided] = useState(false);
   const [creditCheckFailed, setCreditCheckFailed] = useState(false);
+  /**
+   * 다른 상품용으로 가지고 있는 이용권.
+   *
+   * QUICK 이용권은 PRO 분석을 대신 내지 못합니다. 그런데 그 사실을 말하지 않고
+   * 결제 화면으로 보내면, 방금 쿠폰을 등록한 사람은 **등록이 안 된 줄** 압니다.
+   * 무엇을 가지고 있는지 이름을 대는 편이 낫습니다.
+   */
+  const [otherCredits, setOtherCredits] = useState<string[]>([]);
   // A failed sign-in redirects here with the reason in the query string, and
   // nothing was reading it — the visitor saw a plain login screen with no sign
   // their link had just been rejected, so the natural next move was to request
@@ -68,7 +77,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
+    async function check() {
       try {
         const supabase = createClient();
         const { data } = await supabase.auth.getUser();
@@ -77,12 +86,13 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         if (!data.user) return;
         // RLS already limits this to the signed-in account's own credits, so
         // the query cannot see anyone else's.
+        // 상품으로 걸러 뽑지 않습니다. 걸러 버리면 "이용권이 아예 없다"와
+        // "다른 상품용을 가지고 있다"가 화면에서 똑같아집니다.
         const { data: credits, error } = await supabase
           .from("reward_credits")
-          .select("id")
+          .select("id, product")
           .eq("status", "AVAILABLE")
-          .eq("product", wantedProduct)
-          .limit(1);
+          .limit(20);
         if (cancelled) return;
         // 확인하지 못한 것을 없는 것으로 넘기면 가진 표를 두고 돈을 냅니다.
         //
@@ -90,13 +100,20 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         // which is indistinguishable from having none — except the applicant
         // pays.
         if (error) { console.error("reward_credits", error); setCreditCheckFailed(true); return; }
-        setAvailableCredit(Boolean(credits?.length));
+        const rows = (credits ?? []) as Array<{ product?: string | null }>;
+        setAvailableCredit(rows.some((row) => row.product === wantedProduct));
+        setOtherCredits([...new Set(rows.map((row) => row.product).filter((product): product is string => Boolean(product) && product !== wantedProduct))]);
       } catch (error) {
         console.error("reward_credits", error);
         if (!cancelled) setCreditCheckFailed(true);
       }
-    })();
-    return () => { cancelled = true; };
+    }
+
+    void check();
+    // 이 화면 안에서 쿠폰을 등록하면 이용권이 **조회가 끝난 뒤에** 생깁니다.
+    // 다시 보지 않으면, 방금 표를 받은 사람이 결제 화면으로 갑니다.
+    const stop = onCreditChange(() => { void check(); });
+    return () => { cancelled = true; stop(); };
   }, [wantedProduct]);
 
   /**
@@ -309,6 +326,19 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           itself after the case is saved reads as if it was not applied. */}
       {creditCheckFailed && <p className={styles.creditNotice}><Gift/> <span><b>무료 이용권 보유 여부를 확인하지 못했습니다.</b> 이용권이 있으실 수도 있습니다. 새로고침한 뒤에도 이 안내가 보이면 결제 전에 알려 주세요.</span></p>}
       {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
+      {/* 가진 것이 있는데 이 분석에는 못 쓰는 경우. 말하지 않으면 등록이
+          실패한 줄 알고 쿠폰을 다시 넣어 보다가 "이미 사용하신 쿠폰"을
+          만납니다. */}
+      {!availableCredit && otherCredits.length > 0 && (
+        <p className={styles.creditNotice}>
+          <Gift/>{" "}
+          <span>
+            <b>{otherCredits.join(", ")} 무료 이용권을 가지고 계십니다.</b>{" "}
+            지금 고르신 것은 {wantedProduct}라 이 이용권으로는 진행되지 않습니다.
+            {wantedProduct}로 바꾸시면 결제 없이 시작할 수 있습니다.
+          </span>
+        </p>
+      )}
       <button type="button" disabled={busy || runActive || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
       {guest && !consentDecided && !busy && !runActive && <p className={styles.noDraft}>위에서 하나를 골라 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL

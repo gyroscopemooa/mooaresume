@@ -4375,3 +4375,15 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `admin-repository.ts`, `campaign-creator.tsx`, `coupons.module.css`, `coupon-pamphlet.tsx`, `domain/coupon-code.ts`, `domain/pamphlet-text.ts`(신규), `pamphlet-text.test.ts`(신규 8건).
 - Validation: 830 tests passed (+8), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 쿠폰을 등록했는데 결제 화면이 나오던 사고 (긴급)
+
+- Agent/session: Claude. 사용자 보고("무료쿠폰 등록되는데 분석 시작 누르면 결제 화면. 다른 계정으로 해도 같음"). **쿠폰이 이미 배포된 뒤였습니다.**
+- Status: main에 적용. 마이그레이션 없음.
+- 원인: 결제 직전 화면에 두 기능이 함께 있는데 **서로를 모릅니다.** `ApplicationCaseHandoff`는 화면이 뜰 때 `useEffect`로 `reward_credits`를 **한 번만** 조회합니다. 쿠폰 등록은 그 조회가 끝난 **뒤에** 일어나므로, 이용권은 실제로 만들어졌는데 화면은 "없음"으로 굳은 채 남고 분석 시작이 결제로 흘렀습니다. 로그인 왕복 후 자동 등록되는 경로에서는 항상 이 순서가 되어, 계정을 바꿔도 같은 결과였습니다.
+- Change 1: 등록에 성공하면 `mooa:credit-changed`를 창에 알리고(`src/lib/credit-events.ts`), 이용권 조회 쪽이 그 신호에 다시 조회합니다. 두 컴포넌트는 부모를 공유하지 않아 상태를 위로 올릴 자리가 없습니다 — 관리자 콘솔의 테마 전환이 쓰는 방식과 같습니다.
+- Change 2(진단 겸 안내): 조회를 **상품으로 걸러 뽑지 않습니다.** 걸러 버리면 "이용권이 아예 없다"와 "다른 상품용을 가지고 있다"가 화면에서 똑같아집니다. QUICK 이용권을 들고 PRO를 고른 사람에게는 이제 그 사실을 이름을 대어 알립니다 — 말하지 않으면 등록이 실패한 줄 알고 쿠폰을 다시 넣다가 "이미 사용하신 쿠폰"을 만납니다.
+- Validation: 834 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린. 실패에는 알리지 않는 것까지 테스트로 고정했습니다.
+- 남은 확인(사용자): 배포 후 쿠폰 등록 → 같은 화면에서 버튼이 `무료 이용권으로 분석 시작 · 0원`으로 바뀌는지. 만약 여전히 결제가 나오는데 `QUICK 무료 이용권을 가지고 계십니다`라는 안내가 뜬다면, 원인은 순서가 아니라 **상품 불일치**입니다.
+- Files: `src/lib/credit-events.ts`(신규), `credit-events.test.ts`(신규), `coupon-code-entry.tsx`, `coupon-code-entry.test.tsx`, `application-case-handoff.tsx`.
+- Rollback: 이 커밋 revert.

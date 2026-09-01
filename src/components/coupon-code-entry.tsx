@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PENDING_COUPON_CODE, stashPendingCode, takePendingCode } from "@/lib/pending-code";
+import { announceCreditChange } from "@/lib/credit-events";
 import styles from "./coupon-code-entry.module.css";
 
 /**
@@ -123,6 +124,9 @@ export function CouponCodeEntry({
       }
       const result = data as { product?: string; partnerName?: string; expiresAt?: string | null } | null;
       setDone(true);
+      // 같은 화면의 "무료 이용권으로 시작"은 뜰 때 한 번만 조회합니다. 알리지
+      // 않으면 방금 만든 이용권을 못 보고 결제 화면으로 보냅니다.
+      announceCreditChange();
       // 무엇을 받았고 언제까지인지. 둘 다 없으면 "등록되었습니다"만 남고,
       // 그건 확인이 아니라 인사입니다.
       const until = result?.expiresAt ? ` ${new Date(result.expiresAt).toLocaleDateString("ko-KR")}까지 쓰실 수 있습니다.` : "";

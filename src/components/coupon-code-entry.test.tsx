@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CouponCodeEntry } from "./coupon-code-entry";
 import { PENDING_COUPON_CODE } from "@/lib/pending-code";
+import { CREDIT_CHANGED_EVENT } from "@/lib/credit-events";
 
 /**
  * 이 화면이 막히면 사람이 돈을 냅니다.
@@ -87,6 +88,40 @@ describe("로그인하고 돌아왔을 때", () => {
     await waitFor(() => expect(getUser).toHaveBeenCalled());
 
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("등록에 성공하면", () => {
+  it("같은 화면의 이용권 조회를 다시 돌리라고 알린다", async () => {
+    // 이 알림이 없으면, 이용권은 만들어졌는데 화면은 뜰 때 조회한 "없음"을
+    // 그대로 믿고 결제 화면으로 보냅니다. 쿠폰을 이미 배포한 뒤였습니다.
+    getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    const heard = vi.fn();
+    window.addEventListener(CREDIT_CHANGED_EVENT, heard);
+
+    render(<CouponCodeEntry requireSignIn />);
+    await waitFor(() => expect(getUser).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText("쿠폰 코드"), { target: { value: "YOUTH-MUA-2026" } });
+    fireEvent.click(screen.getByRole("button"));
+
+    await waitFor(() => expect(heard).toHaveBeenCalled());
+    window.removeEventListener(CREDIT_CHANGED_EVENT, heard);
+  });
+
+  it("실패하면 알리지 않는다", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    rpc.mockResolvedValue({ data: null, error: { message: "COUPON_NOT_FOUND" } });
+    const heard = vi.fn();
+    window.addEventListener(CREDIT_CHANGED_EVENT, heard);
+
+    render(<CouponCodeEntry requireSignIn />);
+    await waitFor(() => expect(getUser).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText("쿠폰 코드"), { target: { value: "NOPE" } });
+    fireEvent.click(screen.getByRole("button"));
+
+    await screen.findByText(/없는 코드입니다/);
+    expect(heard).not.toHaveBeenCalled();
+    window.removeEventListener(CREDIT_CHANGED_EVENT, heard);
   });
 });
 
