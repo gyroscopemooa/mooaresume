@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogIn, RefreshCw, Users } from "lucide-react";
+import { CircleCheck, RefreshCw, TriangleAlert, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./result-sign-in.module.css";
 
@@ -62,15 +62,17 @@ export function ResultSignIn({ nextPath, variant = "gate" }: Props) {
   if (variant === "stale") {
     return <main className={styles.gate}>
       <div className={styles.card}>
-        <span className={styles.warn}>확인 중</span>
-        <h1>결과는 있는데 화면이 열리지 않습니다.</h1>
+        <div className={styles.mark} data-tone="warn"><TriangleAlert/></div>
         {/* Their account is right and the analysis finished; the stored document
             does not match the current result screen. Sending them to switch
             Google accounts would be sending them after something they cannot
             fix. */}
-        <p>분석은 끝났고 결과도 저장돼 있습니다. <b>화면이 저장된 형식을 읽지 못하는 상태</b>라, 계정을 바꾸거나 다시 결제하실 필요는 없습니다.</p>
-        <a className={styles.secondary} href={nextPath}><RefreshCw/> 다시 확인하기</a>
-        <small><b>{SUPPORT_EMAIL}</b>로 이 화면 주소를 그대로 보내주시면 바로 열어 드립니다. 이용권을 쓰신 건은 저희 쪽에서 확인합니다.</small>
+        <h1>결과는 저장돼 있는데<br/>화면이 열리지 않습니다.</h1>
+        <p>계정을 바꾸거나 다시 결제하실 필요는 <b>없습니다.</b> 저희 쪽 화면 문제입니다.</p>
+        <div className={styles.actions}>
+          <a className={styles.primary} href={nextPath}><RefreshCw/> 다시 확인하기</a>
+          <p className={styles.note}><b>{SUPPORT_EMAIL}</b>로 이 주소를 보내주시면 바로 열어 드립니다.</p>
+        </div>
       </div>
     </main>;
   }
@@ -78,31 +80,37 @@ export function ResultSignIn({ nextPath, variant = "gate" }: Props) {
   if (variant === "missing") {
     return <main className={styles.gate}>
       <div className={styles.card}>
-        <span className={styles.warn}>확인 필요</span>
-        <h1>이 계정에서는 결과가 보이지 않습니다.</h1>
-        <p>분석이 아직 진행 중이거나, <b>결제하신 계정과 다른 계정</b>으로 로그인하셨을 수 있습니다.</p>
-        <button type="button" onClick={() => signIn(true)} disabled={busy}>
-          <Users/> {busy ? "이동 중" : "다른 계정으로 로그인하기"}
-        </button>
-        <a className={styles.secondary} href={nextPath}><RefreshCw/> 다시 확인하기</a>
-        {failed && <small className={styles.failed}>로그인 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.</small>}
-        {/* They paid. A dead end here is the worst screen on the site, so the
-            last line is a person, not an apology. */}
-        <small>그래도 보이지 않으면 <b>{SUPPORT_EMAIL}</b>로 결제하신 메일 주소를 알려주세요. 확인해서 바로 열어 드립니다.</small>
+        <div className={styles.mark} data-tone="warn"><TriangleAlert/></div>
+        <h1>이 계정에는<br/>결과가 없습니다.</h1>
+        <p><b>결제하신 계정과 다른 계정</b>으로 로그인하셨을 수 있습니다. 분석이 아직 진행 중일 수도 있고요.</p>
+        <div className={styles.actions}>
+          <button type="button" className={styles.primary} onClick={() => signIn(true)} disabled={busy}>
+            <Users/> {busy ? "이동 중" : "다른 계정으로 로그인"}
+          </button>
+          <a className={styles.secondary} href={nextPath}><RefreshCw/> 다시 확인하기</a>
+          {failed && <p className={`${styles.note} ${styles.failed}`}>로그인 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.</p>}
+          {/* They paid. A dead end here is the worst screen on the site, so the
+              last line is a person, not an apology. */}
+          <p className={styles.note}>그래도 없으면 <b>{SUPPORT_EMAIL}</b>로 결제하신 메일 주소를 보내주세요.</p>
+        </div>
       </div>
     </main>;
   }
 
   return <main className={styles.gate}>
     <div className={styles.card}>
-      <span>분석 완료</span>
-      <h1>결과가 준비되어 있습니다.</h1>
-      <p>결과는 분석을 요청한 계정에서만 열립니다. 로그인하시면 <b>이 결과 화면으로 바로</b> 돌아옵니다.</p>
-      <button type="button" onClick={() => signIn()} disabled={busy}>
-        <LogIn/> {busy ? "이동 중" : "Google로 로그인하고 결과 보기"}
-      </button>
-      {failed && <small className={styles.failed}>로그인 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.</small>}
-      <small>결제하신 메일 주소와 같은 계정으로 로그인해 주세요.</small>
+      <div className={styles.mark}><CircleCheck/></div>
+      <h1>첨삭이 끝났어요.</h1>
+      {/* 왜 로그인이 필요한지 한 줄. 남의 자소서가 열리지 않는다는 말이기도
+          해서, 이 문장은 안내이자 약속입니다. */}
+      <p>결과는 본인 계정에서만 열립니다. 로그인하면 <b>바로 이 결과로</b> 돌아옵니다.</p>
+      <div className={styles.actions}>
+        <button type="button" className={styles.primary} onClick={() => signIn()} disabled={busy}>
+          {busy ? "이동 중" : "Google로 계속하기"}
+        </button>
+        {failed && <p className={`${styles.note} ${styles.failed}`}>로그인 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.</p>}
+        <p className={styles.note}>결제하신 메일 주소와 같은 계정으로 로그인해 주세요.</p>
+      </div>
     </div>
   </main>;
 }
