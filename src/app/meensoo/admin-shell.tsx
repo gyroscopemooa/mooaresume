@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FileText,
   Gift,
+  Menu,
   Moon,
   Sun,
   Ticket,
@@ -19,6 +20,7 @@ import {
   MessageSquare,
   Send,
   Users,
+  X,
 } from "lucide-react";
 import styles from "./admin.module.css";
 
@@ -79,6 +81,33 @@ export function AdminShell({ children, newInquiries = 0 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // The rail expands on hover/focus, which touch screens never trigger — on
+  // mobile it was permanently stuck collapsed to icons with no way to open
+  // it. This gives mobile an explicit button and a slide-in drawer instead.
+  const [navOpen, setNavOpen] = useState(false);
+
+  // Adjusting state during render (React's documented pattern for this,
+  // rather than an effect) so the close on navigation doesn't cost an extra
+  // render pass.
+  const [drawerPathname, setDrawerPathname] = useState(pathname);
+  if (pathname !== drawerPathname) {
+    setDrawerPathname(pathname);
+    setNavOpen(false);
+  }
+
+  useEffect(() => {
+    if (!navOpen) return;
+    document.body.style.overflow = "hidden";
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setNavOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [navOpen]);
+
   async function signOut() {
     await fetch("/api/meensoo/logout", { method: "POST" });
     // The gate lives in the server layout, so re-fetching the tree is what
@@ -88,7 +117,29 @@ export function AdminShell({ children, newInquiries = 0 }: Props) {
 
   return (
     <div className={styles.shell} data-theme={theme}>
-      <nav className={styles.sidebar} aria-label="관리자 메뉴">
+      <button
+        type="button"
+        className={styles.menuButton}
+        onClick={() => setNavOpen(true)}
+        aria-label="메뉴 열기"
+      >
+        <Menu />
+      </button>
+
+      {navOpen && (
+        <div className={styles.overlay} onClick={() => setNavOpen(false)} aria-hidden="true" />
+      )}
+
+      <nav className={styles.sidebar} data-open={navOpen} aria-label="관리자 메뉴">
+        <button
+          type="button"
+          className={styles.closeNav}
+          onClick={() => setNavOpen(false)}
+          aria-label="메뉴 닫기"
+        >
+          <X />
+        </button>
+
         <Link href="/meensoo" className={styles.brand}>
           <ClipboardList />
           <b className={styles.label}>MOOA 관리자</b>

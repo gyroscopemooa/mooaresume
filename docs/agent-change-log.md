@@ -4271,3 +4271,13 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/meensoo/admin.module.css`, `src/app/meensoo/coupons/coupons.module.css`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 모바일에서 안 보이던 관리자 메뉴
+
+- Agent/session: Claude. 사용자 보고("/meensoo를 모바일로 열면 사이드바 메뉴가 안 보인다, 모바일에서 테스트하게 최적화해달라").
+- Status: main에 적용 예정(현재 브랜치 `claude/github-gui-sync-jfbyd5`). 마이그레이션 없음.
+- 원인: 사이드바는 `:hover`/`:focus-within`로만 펼쳐지는 64px 아이콘 레일이었습니다. 터치 화면은 호버 상태가 없어서 모바일에서는 아이콘만 뜨고 라벨(글자)이 영원히 `opacity: 0`으로 남아 사실상 메뉴를 열 방법이 없었습니다.
+- Change: 720px 이하에서 사이드바를 **슬라이드 드로어**로 바꿨습니다. 좌상단 햄버거 버튼(`Menu` 아이콘)으로 열고, 안에 `X` 닫기 버튼·바깥 오버레이 클릭·`Esc` 세 가지로 닫습니다(협업 쿠폰 패널에서 쓴 것과 같은 "닫는 방법 세 개" 원칙). 페이지 이동 시 자동으로 닫히도록 렌더 중 상태 조정 패턴을 썼습니다(`useEffect` 안에서 setState하면 린트 규칙 `react-hooks/set-state-in-effect`에 걸리고 렌더가 한 번 더 돕니다). 열려 있는 동안 배경 스크롤은 막았습니다. 데스크톱(720px 초과)의 호버 동작은 그대로입니다.
+- Files: `src/app/meensoo/admin-shell.tsx`, `src/app/meensoo/admin.module.css`.
+- Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린. 실제 모바일 브라우저 클릭 확인은 이 환경에 실제 Supabase/Polar 키가 없어 못 했음 — 로그인 화면 이후 동작은 사용자 쪽 확인 필요.
+- Rollback: 이 커밋 revert.
