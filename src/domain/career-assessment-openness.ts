@@ -15,6 +15,11 @@ export type CareerAssessmentKey = (typeof CAREER_ASSESSMENT_KEYS)[number];
 const OPEN: readonly CareerAssessmentKey[] = ["interest"];
 
 export function isCareerAssessmentOpen(key: CareerAssessmentKey): boolean {
+  // 만드는 사람은 잠긴 화면에도 들어가야 합니다. 결과지를 개발하는 중에 그
+  // 결과지가 잠겨 있으면 자기 작업물을 볼 수가 없습니다. `.env.local`에
+  // `NEXT_PUBLIC_OPEN_ALL_ASSESSMENTS=1`을 넣으면 전부 열립니다 — 프로덕션
+  // 환경변수에는 넣지 않습니다.
+  if (process.env.NEXT_PUBLIC_OPEN_ALL_ASSESSMENTS === "1") return true;
   return OPEN.includes(key);
 }
 

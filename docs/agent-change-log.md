@@ -4781,6 +4781,7 @@ html{overflow-x:hidden;scroll-behavior:smooth}
   - 목록 표시: `/career/assessments`에 `coming-soon` 상태와 "결과지를 다듬고 있는 검사" 섹션 추가. 카드와 키워드는 남겨 SEO 유입을 유지합니다.
   - `/career` 홈: 카드 유지, 메타 자리에 "결과지 준비 중", 기록 줄에 `COMING SOON`, 이용 가능 개수 자동 계산.
   - `/career/profile`: 잠긴 검사를 "시작" 목록에서 제외하고, 지킬 수 없게 된 "세 결과가 모이면 열립니다" 문구를 상태에 맞게 교체.
+- 개발용 우회: `.env.local`에 `NEXT_PUBLIC_OPEN_ALL_ASSESSMENTS=1`을 넣으면 잠긴 검사도 전부 열립니다. 코덱스가 직업가치 결과지를 만드는 동안 자기 화면에 들어갈 수 있어야 해서 넣었습니다. 프로덕션 환경변수에는 넣지 마세요.
 - 결제: 추가 조치 없음. `career-ai-preparation.tsx`가 이미 버튼 `disabled` + "현재는 결제·AI 호출이 진행되지 않습니다" 상태입니다.
 - 미처리(의도적): 캐릭터 PNG 62장이 장당 약 2MB입니다. 공개 전 WebP 변환 필요. 지금 변환하면 코덱스 원본과 충돌하므로 별도 커밋으로 미룹니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2건 유지), `vitest run` 전체 통과, `next build` 통과.
