@@ -4855,3 +4855,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 환불 타임아웃 경로는 새 필드를 내려보내지 않습니다. 환불된 결제를 전환으로 보고하지 않기 위함입니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과(신규 4건 포함), `next build` 통과.
 - Rollback: 이 커밋 revert. 스키마 변경 없음.
+
+## 2026-09-02 — Claude: 코덱스의 커뮤니티 작업이 Claude 커밋에 섞여 올라감 (사고 기록)
+
+- Status: 이미 푸시됨. **되돌리지 않았습니다** — 되돌리면 코덱스의 미커밋 작업이 사라집니다.
+- 무슨 일: Claude가 같은 작업 폴더에서 `git add -A src/`를 썼고, 그때 코덱스가 편집 중이던 파일이 함께 stage되어 Claude의 커밋 메시지로 올라갔습니다.
+- 섞여 들어간 것:
+  - `b1cff63` ← `src/components/site-nav.tsx` (+6): 사이트 내비게이션에 "커뮤니티 / 취업·진로 라운지" 항목 추가.
+  - `1e18624` ← `src/components/community-lounge.tsx` (+27/−9): 미리보기 글 대신 실제 목록을 불러오고 로딩·오류·빈 상태를 구분. 실패 시 "다시 불러오기" 버튼 추가.
+- 영향: 코드 손실 없음. 두 변경 모두 `vitest run` 846건과 `next build`를 통과한 상태로 올라갔습니다. 다만 **커밋 메시지가 그 변경을 설명하지 않습니다.**
+- 코덱스에게: 위 두 파일의 작업은 **이미 main에 있습니다.** 다시 커밋하지 마시고, 필요하면 그 위에서 이어 가세요.
+- 재발 방지: 같은 작업 폴더를 공유하는 동안 Claude는 `git add -A`를 쓰지 않고 파일 경로를 하나씩 지정합니다.
