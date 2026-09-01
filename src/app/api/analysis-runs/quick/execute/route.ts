@@ -59,9 +59,18 @@ function classifyExecutionFailure(detail: string): { code: string; message: stri
     };
   }
   if (/OPENAI|RESPONSES|MODEL|\b429\b|\b5\d\d\b|timeout|ECONNRESET|fetch failed/i.test(detail)) {
+    // 상태 코드까지 붙입니다. 401(키)·404(모델 이름)·429(한도)는 운영자가 할
+    // 일이 전부 다른데, `AI_PROVIDER` 하나로는 셋을 구분할 수 없어 매번
+    // 로그를 열어야 했습니다. 숫자에는 키도 본문도 들어가지 않습니다.
+    const status = /status=(\d{3})/.exec(detail)?.[1];
+    const persistent = status === "401" || status === "403" || status === "404";
     return {
-      code: "AI_PROVIDER",
-      message: "분석 엔진이 일시적으로 응답하지 않았습니다. 추가 결제 없이 다시 시도하실 수 있습니다.",
+      code: status ? `AI_PROVIDER_${status}` : "AI_PROVIDER",
+      message: persistent
+        // 키나 모델 이름이 틀린 것이라 다시 눌러도 같습니다. 그 사실을
+        // 말해 주지 않으면 같은 버튼을 열 번 누릅니다.
+        ? "분석 엔진 설정에 문제가 있어 시작하지 못했습니다. 결제·이용권은 그대로 있으니 문의해 주세요."
+        : "분석 엔진이 일시적으로 응답하지 않았습니다. 추가 결제 없이 다시 시도하실 수 있습니다.",
     };
   }
   return {

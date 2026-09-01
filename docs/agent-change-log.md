@@ -4426,3 +4426,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `api/analysis-runs/quick/execute/route.ts`, `components/quick-checkout-return.tsx`.
 - Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Claude: 분석 실패의 진짜 사유가 화면에 오게
+
+- Agent/session: Claude. 사용자 확인("환경변수는 있다"). 설정 누락이 아니라면 OpenAI 호출 자체가 실패하는 것이므로, 그 갈래를 더 좁혔습니다.
+- Status: main에 적용. 마이그레이션 없음.
+- Change 1: 화면 갈래에 **상태 코드**를 붙입니다 — `AI_PROVIDER_401`(키), `AI_PROVIDER_404`(모델 이름), `AI_PROVIDER_429`(한도). 셋은 운영자가 할 일이 전부 다른데 `AI_PROVIDER` 하나로는 구분이 안 돼 매번 로그를 열어야 했습니다. 401·403·404는 **다시 눌러도 같다**는 사실까지 문장으로 말합니다 — 그러지 않으면 같은 버튼을 열 번 누릅니다. 숫자에는 키도 본문도 들어가지 않습니다.
+- Change 2: `openai-responses-gateway.ts`의 오류 문구 두 곳이 **깨진 글자**(`OpenAI Responses API ??? ??????`)로 저장돼 있었습니다. 로그에 남아도 읽을 수 없어 진단에 쓸모가 없었습니다. `백그라운드 시작에 실패했습니다` / `응답 조회에 실패했습니다`로 되살리고, 실패 응답 **본문 앞 300자**를 함께 남깁니다 — 400은 무엇이 잘못됐는지가 본문에만 있습니다. 키는 헤더에 있지 본문에 없으므로 섞이지 않습니다.
+- 하지 않기로 한 것(사용자 판단): 자소서 **최소 글자 수 제한**. 제안의 근거가 "짧아서 실패했다"였는데 긴 자소서도 똑같이 실패해 그 가정이 깨졌습니다. 돈을 내든 쿠폰을 쓰든 짧게 넣는 것은 쓰는 사람의 선택이라 막지 않습니다.
+- Files: `src/server/ai/quick/openai-responses-gateway.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`.
+- Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
+- Rollback: 이 커밋 revert.

@@ -140,15 +140,32 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
       },
     };
   }
+  /**
+   * 실패한 응답의 본문을 짧게 붙입니다.
+   *
+   * status만으로는 401(키가 틀림)과 404(모델 이름이 틀림)를 구분할 수 있지만,
+   * 400은 무엇이 잘못됐는지가 본문에만 있습니다. 로그에 그 한 줄이 없으면
+   * 매번 추측하게 됩니다. 키는 요청 헤더에 있지 본문에 없으므로 여기 섞이지
+   * 않습니다.
+   */
+  private async describeFailureBody(response: Response): Promise<string> {
+    try {
+      const text = (await response.text()).slice(0, 300).replace(/\s+/g, " ").trim();
+      return text ? ` detail=${text}` : "";
+    } catch {
+      return "";
+    }
+  }
+
   async startBackground(request: AnalysisRequest): Promise<string> {
     const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model: this.options.model, background: true, max_output_tokens: resolveMaxOutputTokens(request), instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
-    if (!response.ok) throw new Error(`OpenAI Responses API ??? ??????. status=${response.status}`);
+    if (!response.ok) throw new Error(`OpenAI Responses API 백그라운드 시작에 실패했습니다. status=${response.status}${await this.describeFailureBody(response)}`);
     return responsesEnvelopeSchema.parse(await response.json()).id;
   }
 
   async getBackground(responseId: string): Promise<QuickBackgroundResponse> {
     const response = await this.fetchImplementation(`https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`, { headers: { Authorization: `Bearer ${this.options.apiKey}` }, signal: AbortSignal.timeout(30_000) });
-    if (!response.ok) throw new Error(`OpenAI Responses API ??? ??????. status=${response.status}`);
+    if (!response.ok) throw new Error(`OpenAI Responses API 응답 조회에 실패했습니다. status=${response.status}${await this.describeFailureBody(response)}`);
     const envelope = responsesEnvelopeSchema.parse(await response.json());
     if (envelope.status === "queued" || envelope.status === "in_progress" || !envelope.status) return { status: "pending", responseId: envelope.id };
     if (envelope.status !== "completed") return { status: "failed", responseId: envelope.id, reason: envelope.status ?? "unknown" };
