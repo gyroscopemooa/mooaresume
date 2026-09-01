@@ -4288,7 +4288,8 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Status: 조사 기록. **소스 변경 없음** — Cloudflare 대시보드 설정 문제였습니다.
 - 증상: Workers 빌드가 `✘ The entry-point file at ".open-next/worker.js" was not found.`로 실패. `f8cbda8`(FINAL 결제 열기)까지는 초록, 그 다음 `2afd174`부터 최신까지 전부 빨강.
 - **코드는 원인이 아닙니다.** `f8cbda8 → 2afd174` 사이에 `package.json`·`wrangler.jsonc`·`next.config`는 하나도 바뀌지 않았고, 현재 코드로 `opennextjs-cloudflare build`를 직접 돌려 `.open-next/worker.js` 생성까지 확인했습니다.
-- 원인: Cloudflare 프로젝트의 빌드 설정에서 **Build command가 `None`** 이고 Deploy command가 `npx wrangler versions upload` 하나뿐이었습니다. 아무도 빌드를 하지 않은 채 업로드만 시도한 것입니다. 그 사이 어느 시점에 대시보드 설정이 바뀐 것으로 보입니다(커밋과 무관).
+- 원인: 빌드 설정의 **세 칸이 브랜치에 따라 갈라져 실행**됩니다 — `main`(Production branch)은 `Deploy command`, 그 외 브랜치는 `Version command`. 실패한 빌드가 실행한 명령은 `npx wrangler versions upload` 한 줄이었고 이것은 `Version command` 칸의 내용입니다. 즉 **아무도 빌드를 하지 않은 채 업로드만** 시도했습니다. 스냅샷은 이 실행 명령을 라벨만 `Deploy command`로 뭉뚱그려 보여주므로, 어느 칸이 문제인지 로그만으로는 헷갈립니다.
+- 고친 방법: `Version command`를 `npx opennextjs-cloudflare build && npx wrangler versions upload`로 바꿈(사용자 적용). `Build command`는 이전에 OpenNext 문제로 손댄 이력이 있어 그대로 둡니다.
 - **함정 하나 — Retry는 소용이 없습니다.** 빌드 상세의 `Build settings`는 그 빌드가 만들어진 시점 설정의 **스냅샷**이라, 대시보드를 고친 뒤 옛 빌드를 Retry하면 여전히 옛 설정(`Build command: None`)으로 돕니다. 설정 변경을 반영하려면 **새 커밋을 push해 새 빌드를 트리거**해야 합니다.
 - 확인된 설정(사용자 수정 후): Build command `npx @opennextjs/cloudflare build`, Version command `npx wrangler versions upload`, Production branch `main`, 비프로덕션 브랜치 빌드 켜짐. Build variables(`NEXT_PUBLIC_*`)는 소실 없이 유지됨.
 - Files: 이 문서만.
