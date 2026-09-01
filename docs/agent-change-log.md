@@ -4271,3 +4271,13 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/meensoo/admin.module.css`, `src/app/meensoo/coupons/coupons.module.css`.
 - Validation: 811 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-01 — Codex: 커뮤니티 라운지 작업 이관
+
+- Status: 통합 전용 브랜치 `codex/community-lounge`에 준비됨. main에는 아직 병합하지 않았습니다.
+- Source: `feature/codex-plan`의 커밋 `f4282bc`에서 커뮤니티 관련 파일만 선별 이관했습니다. 같은 커밋의 심리검사·커리어 화면·이미지 변경은 가져오지 않았습니다.
+- Files: `src/app/community/page.tsx`, `src/components/community-lounge.tsx`, `src/components/community-lounge.module.css`, `src/domain/community-lounge.ts`.
+- Behavior: `/community`에 예시 글과 주제 필터, 개인정보 안내, 커리어 검사 연결을 제공하는 기초 라운지 화면입니다. 실제 글쓰기·댓글·저장·반응 수치는 구현하지 않았습니다.
+- Protected work: main에 있던 `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`의 미커밋 변경과 워크트리의 심리검사 미커밋 변경은 수정·stage 대상에서 제외했습니다.
+- Validation: 이관 뒤 lint/typecheck 예정.
+- Rollback: 이 브랜치의 커뮤니티 이관 커밋 revert 또는 위 신규 파일 4개 제거.
