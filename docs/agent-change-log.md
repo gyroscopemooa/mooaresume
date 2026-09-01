@@ -4437,3 +4437,50 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/server/ai/quick/openai-responses-gateway.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`.
 - Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+
+
+## 2026-09-01 — Codex: 최신 main 기반 커뮤니티 통합
+
+- Status: `origin/main` 최신 커밋 `70b1dd7` 기준 통합 브랜치에서 병합 완료. main 직접 병합·푸시·배포·원격 migration 적용은 아직 하지 않았습니다.
+- Merge: Claude의 관리자·피드백 작업과 제품 코드 충돌 없음. 변경기록은 양쪽 기록을 모두 보존했습니다.
+- Migration order: Claude의 `20260901040000_analysis_feedback.sql` 뒤에 실행되도록 커뮤니티 migration을 `20260901050000_community_lounge.sql`로 변경했습니다.
+- Rollback: 통합 merge commit revert. 원격 DB에는 아직 적용하지 않았습니다.
+
+## 2026-09-01 — Codex: 커뮤니티 라운지 작업 이관
+
+- Status: 통합 전용 브랜치 `codex/community-lounge`에 준비됨. main에는 아직 병합하지 않았습니다.
+- Source: `feature/codex-plan`의 커밋 `f4282bc`에서 커뮤니티 관련 파일만 선별 이관했습니다. 같은 커밋의 심리검사·커리어 화면·이미지 변경은 가져오지 않았습니다.
+- Files: `src/app/community/page.tsx`, `src/components/community-lounge.tsx`, `src/components/community-lounge.module.css`, `src/domain/community-lounge.ts`.
+- Behavior: `/community`에 예시 글과 주제 필터, 개인정보 안내, 커리어 검사 연결을 제공하는 기초 라운지 화면입니다. 실제 글쓰기·댓글·저장·반응 수치는 구현하지 않았습니다.
+- Protected work: main에 있던 `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`의 미커밋 변경과 워크트리의 심리검사 미커밋 변경은 수정·stage 대상에서 제외했습니다.
+- Validation: 이관 뒤 lint/typecheck 예정.
+- Rollback: 이 브랜치의 커뮤니티 이관 커밋 revert 또는 위 신규 파일 4개 제거.
+## 2026-09-01 — Codex: 커뮤니티 라운지 V2 추가 기획 문서
+
+- Status: 기획 초안만 추가. 기능·DB·API 변경 없음.
+- Reason: 현재 `/community` 기초 라운지 다음 단계의 UX·안전 기준을 별도 문서화하되, 기존의 커뮤니티 구현 보류 결정을 유지하기 위함.
+- Source limits: 공유된 ChatGPT 대화 링크는 이 환경에서 열리지 않았고, 워크트리에서도 코인니스/해당 스크린샷 기록을 찾지 못했습니다. 확인하지 못한 레퍼런스는 사실처럼 기록하지 않았습니다.
+- File: `docs/community-lounge-v2-addendum-2026-09-01.md`.
+- Rollback: 문서 파일과 이 로그 항목만 제거.
+## 2026-09-01 — Codex: 취업·진로 익명 라운지 실제 기능 기반 + 반응형 피드
+
+- Status: `codex/community-lounge` 브랜치 구현 중. main 병합·원격 migration 적용·배포는 하지 않았습니다.
+- Reference: CoinNess 라운지의 공개 정보 구조(최신/인기, 주제 탭, 화제글, 모바일 고정 작성 CTA)를 참고하되, 자산·실시간 토크·반응 경쟁 UI를 복제하지 않고 취업·진로 고민용으로 재구성했습니다.
+- UI: `/community`를 최신/인기 정렬, 4개 주제 탭, 화제글, 익명 글쓰기, 댓글, 추천, 신고 흐름이 있는 반응형 피드로 교체했습니다. 데이터/API 계층과 CSS를 분리해 Stitch 등 후속 시안으로 UI를 교체할 수 있습니다.
+- Data/privacy: 신규 local migration `20260901040000_community_lounge.sql`은 게시글·댓글·추천·첨부 메타데이터·신고와 RLS를 만듭니다. `community-attachments` 버킷은 **비공개**이며, 첨부 원본은 로그인 사용자만 60초 서명 URL로 엽니다. 원격 Supabase에는 적용하지 않았습니다.
+- Files: `src/domain/community.ts`, `src/server/community/community-repository.ts`, `src/app/api/community/**`, `src/components/community-lounge.*`, `src/components/site-nav.*`, migration 및 테스트.
+- Protected work: `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`, `.codex-remote-attachments/`와 심리검사 워크트리 변경은 수정·stage 대상에서 제외합니다.
+- Rollback: 이 브랜치의 커뮤니티 후속 커밋 revert. migration은 원격 적용 전이므로 DB 롤백 불필요.
+## 2026-09-01 — Codex: 라운지 주소 유지, 공통 헤더 노출 보류
+
+- Change: `/community` 페이지와 커뮤니티 기능은 유지하되 `SiteNav`의 직접 링크와 메뉴 패널 링크는 제거했습니다.
+- Reason: Claude가 main 헤더를 계속 작업 중이므로 겹치는 공통 메뉴 변경을 이번 커뮤니티 브랜치에서 빼고, 라운지 공개 시점에 별도 결정합니다.
+- Rollback: 라운지 공개 결정 시 `SiteNav`에 링크를 별도 커밋으로 다시 추가.
+
+## 2026-09-01 — Codex: 최신 main 기반 커뮤니티 통합
+
+- Status: `origin/main` 최신 커밋 `70b1dd7` 기준 통합 브랜치에서 병합 완료. main 직접 병합·푸시·배포·원격 migration 적용은 아직 하지 않았습니다.
+- Merge: Claude의 관리자·피드백 작업과 제품 코드 충돌 없음. 변경기록은 양쪽 기록을 모두 보존했습니다.
+- Migration order: Claude의 `20260901040000_analysis_feedback.sql` 뒤에 실행되도록 커뮤니티 migration을 `20260901050000_community_lounge.sql`로 변경했습니다.
+- Rollback: 통합 merge commit revert. 원격 DB에는 아직 적용하지 않았습니다.
