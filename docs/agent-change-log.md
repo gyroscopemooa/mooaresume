@@ -4281,3 +4281,10 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Protected work: main에 있던 `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`의 미커밋 변경과 워크트리의 심리검사 미커밋 변경은 수정·stage 대상에서 제외했습니다.
 - Validation: 이관 뒤 lint/typecheck 예정.
 - Rollback: 이 브랜치의 커뮤니티 이관 커밋 revert 또는 위 신규 파일 4개 제거.
+## 2026-09-01 — Codex: 커뮤니티 라운지 V2 추가 기획 문서
+
+- Status: 기획 초안만 추가. 기능·DB·API 변경 없음.
+- Reason: 현재 `/community` 기초 라운지 다음 단계의 UX·안전 기준을 별도 문서화하되, 기존의 커뮤니티 구현 보류 결정을 유지하기 위함.
+- Source limits: 공유된 ChatGPT 대화 링크는 이 환경에서 열리지 않았고, 워크트리에서도 코인니스/해당 스크린샷 기록을 찾지 못했습니다. 확인하지 못한 레퍼런스는 사실처럼 기록하지 않았습니다.
+- File: `docs/community-lounge-v2-addendum-2026-09-01.md`.
+- Rollback: 문서 파일과 이 로그 항목만 제거.
