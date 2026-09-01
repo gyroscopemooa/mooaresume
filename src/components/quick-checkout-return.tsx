@@ -5,6 +5,7 @@ import { CheckCircle2, LoaderCircle, TriangleAlert } from "lucide-react";
 import { z } from "zod";
 import styles from "./quick-checkout-return.module.css";
 import { createClient } from "@/lib/supabase/client";
+import { reportPurchaseConversion } from "@/lib/google-ads-conversion";
 
 const statusSchema = z.object({
   checkoutId: z.string(),
@@ -18,6 +19,10 @@ const statusSchema = z.object({
   retryAvailable: z.boolean().optional(),
   failureCode: z.string().nullable().optional(),
   attemptCount: z.number().int().nullable().optional(),
+  // 광고 전환 보고용. 결제가 확정되기 전에는 서버가 null로 내려보냅니다.
+  orderId: z.string().nullable().optional(),
+  amount: z.number().nullable().optional(),
+  currency: z.string().nullable().optional(),
 });
 
 type Phase = "idle" | "waiting" | "analyzing" | "failed";
@@ -144,6 +149,15 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         }
 
         const status = statusSchema.parse(await response.json());
+        // 결제가 확정된 그 순간에 한 번만 보고합니다. 이 확인은 몇 초마다
+        // 다시 도는데, 같은 주문 번호로 보내므로 구글이 한 건으로 합칩니다.
+        if (status.checkoutStatus === "SUCCEEDED" && status.orderId) {
+          reportPurchaseConversion({
+            transactionId: status.orderId,
+            value: status.amount ?? null,
+            currency: status.currency ?? null,
+          });
+        }
         if (status.product) {
           setProduct(status.product);
           onProductConfirmed?.(status.product);

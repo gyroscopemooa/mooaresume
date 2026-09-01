@@ -4827,3 +4827,31 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/site-nav.tsx`, `docs/agent-change-log.md`.
 - Validation: `npm run typecheck` 통과, `git diff --check` 통과.
 - Rollback: `src/components/site-nav.tsx`의 `커뮤니티` 섹션을 제거하면 된다.
+
+## 2026-09-02 — Codex: 라운지 예시 글·빈 상태 분리 (진행 중)
+
+- Intended change: 게시글 조회가 성공했지만 결과가 비어 있는 경우 예시 글을 실제 글처럼 보이지 않게 하고, 로딩·조회 실패·진짜 빈 상태를 각각 표시한다.
+- Reason: 현재 DB가 비어 있거나 조회가 실패해도 정적 예시 글이 보이는 혼동을 없앤다. API·DB schema·RLS·커리어·관리자 작업은 변경하지 않는다.
+- Validation planned: 커뮤니티 컴포넌트 관련 테스트와 TypeScript 검사.
+- Rollback: `CommunityLounge`의 조회 상태 분기를 되돌리면 기존 예시 글 동작으로 복원된다.
+
+## 2026-09-02 — Codex: 라운지 예시 글·빈 상태 분리 (완료)
+
+- Status: 완료. 라운지는 이제 정적 예시 글을 실제 글처럼 표시하지 않으며, 로딩·조회 실패(재시도 포함)·진짜 빈 상태를 구분한다. 주제·정렬 변경 중 이전 결과도 보이지 않는다.
+- Files: `src/components/community-lounge.tsx`, `docs/agent-change-log.md`.
+- Validation: `npm run test -- src/domain/community.test.ts src/server/community/community-migration.test.ts` 통과(4 tests), `npm run typecheck` 통과, `git diff --check` 통과.
+- Rollback: `CommunityLounge`의 `feedStatus`/`reloadKey` 상태 및 조건부 빈 상태 분기를 되돌리면 된다.
+
+## 2026-09-02 — Claude: 구글 광고 결제 전환 연결
+
+- Status: main 적용. 사용자가 구글 광고에서 전환 액션 "구매"를 만들고 라벨을 전달했습니다.
+- Reason: `AW-18415179469` 태그는 2026-08-24부터 실려 있었지만 전환 이벤트가 없어, 구글이 어떤 광고가 매출을 냈는지 모른 채였습니다. 전환 최적화 입찰을 켤 수 없는 상태였습니다.
+- 신규: `src/lib/google-ads-conversion.ts` (+ 테스트 4건). 전환 대상 `AW-18415179469/AHmECPaFguwcEM2thc1E`.
+- 발화 지점: `quick-checkout-return.tsx`의 상태 확인에서 `checkoutStatus === "SUCCEEDED"`이고 주문 번호가 내려온 순간. QUICK/PRO/FINAL이 모두 이 화면을 지나므로 한 곳이면 충분합니다.
+- 중복 방지 2중: 같은 창에서는 `Set`으로 한 번만 보내고, 새로고침 너머는 `transaction_id`(주문 번호)로 구글이 합칩니다. 상태 확인이 2초마다 돌기 때문에 이게 없으면 한 건이 수십 건으로 보고됩니다.
+- 금액: 상품 정가가 아니라 `billing_orders.amount`(실제 결제액)를 씁니다. 초과 과금이 붙은 결제를 정가로 보고하면 구글이 배우는 매출이 어긋납니다. 이를 위해 `/api/checkouts/quick/status`가 `orderId`/`amount`/`currency`를 함께 내려주도록 했습니다 — 마이그레이션 없이 기존 RLS(`billing order owner read`)로 본인 주문만 읽습니다. `status === 'PAID'`가 아니면 전부 null입니다.
+- 금액을 못 읽으면 `value`를 아예 빼고 보냅니다. 0이나 1을 채우면 구글이 그 숫자를 진짜 매출로 믿고 입찰을 그쪽으로 끕니다.
+- 광고 차단기나 동의 거부로 `gtag`가 없으면 조용히 넘어갑니다. 보고 실패보다 결제 완료 화면이 깨지는 쪽이 훨씬 나쁩니다.
+- 환불 타임아웃 경로는 새 필드를 내려보내지 않습니다. 환불된 결제를 전환으로 보고하지 않기 위함입니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과(신규 4건 포함), `next build` 통과.
+- Rollback: 이 커밋 revert. 스키마 변경 없음.

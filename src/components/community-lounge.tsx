@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, X } from "lucide-react";
-import { communityPreviewPosts, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
+import { communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
 import { HeaderAccount } from "@/components/header-account";
 import styles from "./community-lounge.module.css";
 
@@ -16,7 +16,9 @@ function displayTime(value: string) { const date = new Date(value); if (Number.i
 export function CommunityLounge() {
   const [sort, setSort] = useState<Sort>("latest");
   const [topic, setTopic] = useState<CommunityTopicId | "all">("all");
-  const [posts, setPosts] = useState<CommunityPost[]>(communityPreviewPosts);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [feedStatus, setFeedStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [reloadKey, setReloadKey] = useState(0);
   const [composerOpen, setComposerOpen] = useState(false);
   const [activeComments, setActiveComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, CommunityComment[]>>({});
@@ -26,13 +28,20 @@ export function CommunityLounge() {
     let cancelled = false;
     const params = new URLSearchParams({ sort });
     if (topic !== "all") params.set("topic", topic);
+    setPosts([]);
+    setFeedStatus("loading");
     void fetch(`/api/community/posts?${params}`).then(async (response) => {
-      if (!response.ok) return;
+      if (!response.ok) throw new Error("게시글을 불러오지 못했어요.");
       const data = await responseJson(response) as ApiError & { posts?: CommunityPost[] };
-      if (!cancelled && Array.isArray(data.posts) && data.posts.length) setPosts(data.posts);
-    }).catch(() => undefined);
+      if (!cancelled) {
+        setPosts(Array.isArray(data.posts) ? data.posts : []);
+        setFeedStatus("ready");
+      }
+    }).catch(() => {
+      if (!cancelled) setFeedStatus("error");
+    });
     return () => { cancelled = true; };
-  }, [sort, topic]);
+  }, [sort, topic, reloadKey]);
 
   const topicPosts = useMemo(() => posts.filter((post) => topic === "all" || post.topic === topic), [posts, topic]);
   const hotPosts = useMemo(() => [...posts].sort((a, b) => b.recommendationCount + b.commentCount - (a.recommendationCount + a.commentCount)).slice(0, 3), [posts]);
@@ -94,12 +103,14 @@ export function CommunityLounge() {
         <div className={styles.topicTabs}><button className={topic === "all" ? styles.topicSelected : ""} type="button" onClick={() => setTopic("all")}>전체</button>{communityTopics.map((item) => <button className={topic === item ? styles.topicSelected : ""} type="button" key={item} onClick={() => setTopic(item)}>{communityTopicMeta[item].label}</button>)}</div>
         <p className={styles.feedHint}>{sort === "latest" ? "방금 올라온 고민부터 읽어보세요." : "추천과 대화가 이어진 글을 먼저 봐요."}</p>
         <div className={styles.posts}>{topicPosts.map((post) => <PostCard key={post.id} post={post} comments={comments[post.id] ?? []} commentsOpen={activeComments === post.id} onRecommend={() => void toggleRecommend(post)} onToggleComments={() => void toggleComments(post)} onSubmitComment={submitComment} onReport={() => void reportPost(post.id)} />)}</div>
-        {topicPosts.length === 0 && <div className={styles.empty}><b>아직 이 주제의 글이 없어요.</b><p>첫 고민을 남기면 같은 길을 걷는 사람에게 도움이 될 수 있어요.</p><button type="button" onClick={() => setComposerOpen(true)}>첫 글 남기기</button></div>}
+        {feedStatus === "loading" && <div className={styles.empty} aria-live="polite"><b>글을 불러오는 중이에요.</b><p>잠시만 기다려 주세요.</p></div>}
+        {feedStatus === "error" && <div className={styles.empty} role="alert"><b>글을 불러오지 못했어요.</b><p>연결을 확인한 뒤 다시 시도해 주세요.</p><button type="button" onClick={() => setReloadKey((value) => value + 1)}>다시 불러오기</button></div>}
+        {feedStatus === "ready" && topicPosts.length === 0 && <div className={styles.empty}><b>아직 이 주제의 글이 없어요.</b><p>첫 고민을 남기면 같은 길을 걷는 사람에게 도움이 될 수 있어요.</p><button type="button" onClick={() => setComposerOpen(true)}>첫 글 남기기</button></div>}
       </section>
     </section>
 
     {message && <div className={styles.toast} role="status">{message}<button type="button" aria-label="안내 닫기" onClick={() => setMessage("")}><X/></button></div>}
-    {composerOpen && <PostComposer onClose={() => setComposerOpen(false)} onCreated={(post) => { setPosts((current) => [post, ...current]); setComposerOpen(false); setTopic("all"); setSort("latest"); }} onError={setMessage}/>}
+    {composerOpen && <PostComposer onClose={() => setComposerOpen(false)} onCreated={(post) => { setPosts((current) => [post, ...current]); setFeedStatus("ready"); setComposerOpen(false); setTopic("all"); setSort("latest"); }} onError={setMessage}/>}
   </main>;
 }
 
