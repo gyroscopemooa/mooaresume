@@ -1,154 +1,116 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import {
-  ArrowRight,
-  BriefcaseBusiness,
-  Compass,
-  FilePenLine,
-  LockKeyhole,
-  MessageCircleMore,
-  PenLine,
-  Sparkles,
-} from "lucide-react";
-import { communityPreviewPosts, communityTopics, type CommunityTopicId } from "@/domain/community-lounge";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, X } from "lucide-react";
+import { communityPreviewPosts, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
+import { HeaderAccount } from "@/components/header-account";
 import styles from "./community-lounge.module.css";
 
-const topicIcons = {
-  "job-search": BriefcaseBusiness,
-  career: Compass,
-  application: FilePenLine,
-  "work-life": MessageCircleMore,
-} as const;
+type Sort = "latest" | "popular";
+type ApiError = { error?: string };
+
+async function responseJson(response: Response) { return await response.json().catch(() => ({})) as ApiError; }
+function displayTime(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return value; const minutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000)); return minutes < 60 ? `${minutes}분 전` : minutes < 1440 ? `${Math.floor(minutes / 60)}시간 전` : `${Math.floor(minutes / 1440)}일 전`; }
 
 export function CommunityLounge() {
-  const [selectedTopic, setSelectedTopic] = useState<CommunityTopicId>("all");
-  const visiblePosts = useMemo(
-    () => communityPreviewPosts.filter((post) => selectedTopic === "all" || post.topic === selectedTopic),
-    [selectedTopic],
-  );
+  const [sort, setSort] = useState<Sort>("latest");
+  const [topic, setTopic] = useState<CommunityTopicId | "all">("all");
+  const [posts, setPosts] = useState<CommunityPost[]>(communityPreviewPosts);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [activeComments, setActiveComments] = useState<string | null>(null);
+  const [comments, setComments] = useState<Record<string, CommunityComment[]>>({});
+  const [message, setMessage] = useState("");
 
-  return (
-    <main className={styles.page}>
-      <header className={styles.topbar}>
-        <Link className={styles.brand} href="/" aria-label="MOOA Resume 홈">
-          <span className={styles.brandMark}>M</span>
-          <span>MOOA Resume</span>
-        </Link>
-        <nav className={styles.navigation} aria-label="커뮤니티 바로가기">
-          <Link href="/career">커리어 검사</Link>
-          <Link href="/career/ai?scope=combined">AI 심층해설</Link>
-          <Link className={styles.loginLink} href="/career/login?next=/community">로그인</Link>
-        </nav>
-      </header>
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams({ sort });
+    if (topic !== "all") params.set("topic", topic);
+    void fetch(`/api/community/posts?${params}`).then(async (response) => {
+      if (!response.ok) return;
+      const data = await responseJson(response) as ApiError & { posts?: CommunityPost[] };
+      if (!cancelled && Array.isArray(data.posts) && data.posts.length) setPosts(data.posts);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [sort, topic]);
 
-      <div className={styles.shell}>
-        <section className={styles.hero}>
-          <span className={styles.eyebrow}>MOOA COMMUNITY LOUNGE</span>
-          <h1>취업/진로 고민 익명게시판</h1>
-          <p>혼자 정리하기 어려운 취업·진로 고민을 나누고, 나에게 맞는 다음 행동을 찾아보는 공간입니다.</p>
-          <div className={styles.notice}>
-            <LockKeyhole aria-hidden="true" />
-            <span>공개 전 기초 화면입니다. 실제 글쓰기와 댓글 기능은 다음 단계에서 연결됩니다.</span>
-          </div>
-        </section>
+  const topicPosts = useMemo(() => posts.filter((post) => topic === "all" || post.topic === topic), [posts, topic]);
+  const hotPosts = useMemo(() => [...posts].sort((a, b) => b.recommendationCount + b.commentCount - (a.recommendationCount + a.commentCount)).slice(0, 3), [posts]);
 
-        <section className={styles.topicSection} aria-labelledby="community-topics">
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.eyebrow}>FIND YOUR START</span>
-              <h2 id="community-topics">지금 어떤 고민이 가장 큰가요?</h2>
-            </div>
-            <p>주제를 고르면 관련 예시와 바로 해볼 수 있는 탐색을 함께 보여줍니다.</p>
-          </div>
-          <div className={styles.topicGrid}>
-            {communityTopics.map((topic) => {
-              const isSelected = selectedTopic === topic.id;
-              return (
-                <button
-                  key={topic.id}
-                  className={`${styles.topicCard} ${isSelected ? styles.topicCardSelected : ""}`}
-                  type="button"
-                  onClick={() => setSelectedTopic(topic.id)}
-                  aria-pressed={isSelected}
-                >
-                  <strong>{topic.label}</strong>
-                  <span>{topic.description}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+  async function toggleRecommend(post: CommunityPost) {
+    if (post.id.startsWith("preview-")) { setMessage("정식 라운지가 열리면 추천할 수 있어요."); return; }
+    const response = await fetch(`/api/community/posts/${post.id}/recommend`, { method: "POST" });
+    const data = await responseJson(response) as ApiError & { recommendationCount?: number };
+    if (!response.ok) { setMessage(data.error ?? "추천을 반영하지 못했어요."); return; }
+    setPosts((current) => current.map((item) => item.id === post.id ? { ...item, recommendationCount: data.recommendationCount ?? item.recommendationCount } : item));
+  }
 
-        <div className={styles.contentGrid}>
-          <section className={styles.feed} aria-labelledby="community-feed">
-            <div className={styles.feedHeading}>
-              <div>
-                <span className={styles.eyebrow}>LOUNGE PREVIEW</span>
-                <h2 id="community-feed">고민을 이렇게 나눌 수 있어요</h2>
-              </div>
-              <span className={styles.previewBadge}>예시 글</span>
-            </div>
+  async function toggleComments(post: CommunityPost) {
+    if (post.id.startsWith("preview-")) { setMessage("정식 라운지가 열리면 댓글을 남길 수 있어요."); return; }
+    if (activeComments === post.id) { setActiveComments(null); return; }
+    setActiveComments(post.id);
+    if (comments[post.id]) return;
+    const response = await fetch(`/api/community/posts/${post.id}/comments`);
+    const data = await responseJson(response) as ApiError & { comments?: CommunityComment[] };
+    if (response.ok && Array.isArray(data.comments)) setComments((current) => ({ ...current, [post.id]: data.comments! }));
+  }
 
-            <div className={styles.posts}>
-              {visiblePosts.map((post) => {
-                const Icon = topicIcons[post.topic];
-                return (
-                  <article className={styles.postCard} key={post.id}>
-                    <div className={styles.postMeta}>
-                      <span className={styles.avatar} aria-hidden="true"><Icon /></span>
-                      <span>익명의 취업 준비자</span>
-                      <span className={styles.dot}>·</span>
-                      <span>{post.topicLabel}</span>
-                    </div>
-                    <h3>{post.title}</h3>
-                    <p>{post.excerpt}</p>
-                    <div className={styles.promptBox}>
-                      <Sparkles aria-hidden="true" />
-                      <span>{post.prompt}</span>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
+  async function submitComment(postId: string, body: string) {
+    const response = await fetch(`/api/community/posts/${postId}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body }) });
+    const data = await responseJson(response) as ApiError & { comment?: CommunityComment };
+    if (!response.ok || !data.comment) { setMessage(data.error ?? "댓글을 저장하지 못했어요."); return false; }
+    setComments((current) => ({ ...current, [postId]: [...(current[postId] ?? []), data.comment!] }));
+    setPosts((current) => current.map((post) => post.id === postId ? { ...post, commentCount: post.commentCount + 1 } : post));
+    return true;
+  }
 
-          <aside className={styles.sidebar} aria-label="커리어 탐색 바로가기">
-            <section className={styles.actionCard}>
-              <span className={styles.eyebrow}>FREE CAREER START</span>
-              <h2>고민을 말로 꺼내기 전, 내 방향부터 정리해 보세요.</h2>
-              <p>검사 결과는 정답이 아니라 내 선택을 비교해 볼 출발점이에요.</p>
-              <Link href="/career/interest" className={styles.primaryAction}>
-                직업흥미 탐색하기 <ArrowRight aria-hidden="true" />
-              </Link>
-              <Link href="/career" className={styles.secondaryAction}>
-                커리어 검사 전체 보기 <ArrowRight aria-hidden="true" />
-              </Link>
-            </section>
+  async function reportPost(postId: string) {
+    if (postId.startsWith("preview-") || !window.confirm("개인정보·괴롭힘·광고 등 운영정책 위반으로 신고할까요?")) return;
+    const response = await fetch("/api/community/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subjectType: "POST", subjectId: postId, reason: "OTHER" }) });
+    const data = await responseJson(response);
+    setMessage(response.ok ? "신고를 접수했어요. 운영 기준에 따라 검토합니다." : data.error ?? "신고를 접수하지 못했어요.");
+  }
 
-            <section className={styles.guidelineCard}>
-              <h2>익명 라운지 약속</h2>
-              <ul>
-                <li>개인 연락처·실명·회사 내부 정보는 적지 않아요.</li>
-                <li>합격 여부나 직업을 단정하는 답변은 지양해요.</li>
-                <li>경험과 상황을 중심으로 서로의 다음 선택을 돕습니다.</li>
-              </ul>
-            </section>
-          </aside>
-        </div>
+  return <main className={styles.page}>
+    <header className={styles.topbar}>
+      <Link className={styles.brand} href="/" aria-label="MOOA Resume 홈"><span>M</span><b>MOOA</b> Resume</Link>
+      <nav aria-label="라운지 주요 메뉴"><Link href="/career">커리어 검사</Link><Link className={styles.activeLink} href="/community">라운지</Link><Link href="/#plans">요금</Link><HeaderAccount /></nav>
+    </header>
 
-        <section className={styles.composer} aria-labelledby="community-compose">
-          <div>
-            <span className={styles.eyebrow}>COMING NEXT</span>
-            <h2 id="community-compose">내 고민을 익명으로 남기기</h2>
-            <p>로그인·안전 가이드·신고 흐름을 정리한 뒤 열 예정입니다.</p>
-          </div>
-          <button type="button" disabled className={styles.composerButton}>
-            <PenLine aria-hidden="true" /> 익명 고민 남기기 준비 중
-          </button>
-        </section>
-      </div>
-    </main>
-  );
+    <section className={styles.hero}>
+      <div><span className={styles.kicker}>MOOA COMMUNITY</span><h1>취업 고민을<br/><em>혼자 쌓아두지 마세요.</em></h1><p>지원, 직무, 자소서, 회사생활. 비슷한 고민을 읽고<br/>지금 내게 필요한 다음 행동을 찾아보세요.</p></div>
+      <div className={styles.heroCard}><Sparkles/><b>오늘의 시작 질문</b><p>지금 가장 막히는 건 경험 정리인가요, 직무 선택인가요?</p><button type="button" onClick={() => setComposerOpen(true)}>내 고민 정리하기 <ArrowRight/></button></div>
+    </section>
+
+    <section className={styles.layout}>
+      <aside className={styles.sidebar}>
+        <div className={styles.sideTitle}><Flame/><b>이번 주 많이 읽은 글</b></div>
+        {hotPosts.map((post, index) => <button type="button" className={styles.hotPost} key={post.id} onClick={() => setTopic(post.topic)}><span>{index + 1}</span><b>{post.title}</b><small>추천 {post.recommendationCount}</small></button>)}
+        <div className={styles.sideGuide}><b>라운지 약속</b><p>실명·연락처·회사 내부정보는 쓰지 않아요. 합격 여부를 단정하는 답변보다 다음 행동을 함께 찾아요.</p><Link href="/career">내 방향 먼저 정리하기 <ArrowRight/></Link></div>
+      </aside>
+
+      <section className={styles.feed} aria-label="취업 진로 고민 게시글">
+        <div className={styles.feedTop}><div className={styles.sortTabs}><button className={sort === "latest" ? styles.selected : ""} type="button" onClick={() => setSort("latest")}>최신</button><button className={sort === "popular" ? styles.selected : ""} type="button" onClick={() => setSort("popular")}>인기</button></div><button type="button" className={styles.writeButton} onClick={() => setComposerOpen(true)}><PenLine/> 고민 남기기</button></div>
+        <div className={styles.topicTabs}><button className={topic === "all" ? styles.topicSelected : ""} type="button" onClick={() => setTopic("all")}>전체</button>{communityTopics.map((item) => <button className={topic === item ? styles.topicSelected : ""} type="button" key={item} onClick={() => setTopic(item)}>{communityTopicMeta[item].label}</button>)}</div>
+        <p className={styles.feedHint}>{sort === "latest" ? "방금 올라온 고민부터 읽어보세요." : "추천과 대화가 이어진 글을 먼저 봐요."}</p>
+        <div className={styles.posts}>{topicPosts.map((post) => <PostCard key={post.id} post={post} comments={comments[post.id] ?? []} commentsOpen={activeComments === post.id} onRecommend={() => void toggleRecommend(post)} onToggleComments={() => void toggleComments(post)} onSubmitComment={submitComment} onReport={() => void reportPost(post.id)} />)}</div>
+        {topicPosts.length === 0 && <div className={styles.empty}><b>아직 이 주제의 글이 없어요.</b><p>첫 고민을 남기면 같은 길을 걷는 사람에게 도움이 될 수 있어요.</p><button type="button" onClick={() => setComposerOpen(true)}>첫 글 남기기</button></div>}
+      </section>
+    </section>
+
+    {message && <div className={styles.toast} role="status">{message}<button type="button" aria-label="안내 닫기" onClick={() => setMessage("")}><X/></button></div>}
+    {composerOpen && <PostComposer onClose={() => setComposerOpen(false)} onCreated={(post) => { setPosts((current) => [post, ...current]); setComposerOpen(false); setTopic("all"); setSort("latest"); }} onError={setMessage}/>} 
+  </main>;
+}
+
+function PostCard({ post, comments, commentsOpen, onRecommend, onToggleComments, onSubmitComment, onReport }: { post: CommunityPost; comments: CommunityComment[]; commentsOpen: boolean; onRecommend: () => void; onToggleComments: () => void; onSubmitComment: (postId: string, body: string) => Promise<boolean>; onReport: () => void }) {
+  const [comment, setComment] = useState(""); const [sending, setSending] = useState(false);
+  async function send() { if (!comment.trim()) return; setSending(true); if (await onSubmitComment(post.id, comment.trim())) setComment(""); setSending(false); }
+  return <article className={styles.post}><header><span className={styles.category}>{communityTopicMeta[post.topic].label}</span><span>{post.anonymousAlias}</span><i>·</i><time>{displayTime(post.createdAt)}</time><button type="button" onClick={onReport} aria-label="게시글 신고"><ShieldAlert/></button></header><h2>{post.title}</h2><p>{post.body}</p>{post.attachments.length > 0 && <div className={styles.attachments}>{post.attachments.map((file) => <a key={file.id} href={`/api/community/attachments/${file.id}`} target="_blank" rel="noreferrer"><FileText/>{file.filename}<small>로그인 후 열기</small></a>)}</div>}<footer><button type="button" onClick={onRecommend}><ThumbsUp/> 추천 <b>{post.recommendationCount}</b></button><button type="button" onClick={onToggleComments}><MessageCircle/> 댓글 <b>{post.commentCount}</b></button></footer>{commentsOpen && <div className={styles.comments}>{comments.map((item) => <div key={item.id}><b>{item.anonymousAlias}</b><time>{displayTime(item.createdAt)}</time><p>{item.body}</p></div>)}<div className={styles.commentForm}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={1000} placeholder="익명으로 댓글을 남겨보세요."/><button type="button" disabled={sending} onClick={() => void send()}>{sending ? <LoaderCircle/> : <Send/>}<span>등록</span></button></div></div>}</article>;
+}
+
+function PostComposer({ onClose, onCreated, onError }: { onClose: () => void; onCreated: (post: CommunityPost) => void; onError: (message: string) => void }) {
+  const [topic, setTopic] = useState<CommunityTopicId>("job-search"); const [title, setTitle] = useState(""); const [body, setBody] = useState(""); const [files, setFiles] = useState<File[]>([]); const [saving, setSaving] = useState(false);
+  async function submit() { setSaving(true); try { const attachments: CommunityAttachmentInput[] = []; for (const file of files) { const form = new FormData(); form.append("file", file); const response = await fetch("/api/community/uploads", { method: "POST", body: form }); const data = await responseJson(response) as ApiError & CommunityAttachmentInput; if (!response.ok) throw new Error(data.error ?? "첨부파일을 올리지 못했어요."); attachments.push(data); } const response = await fetch("/api/community/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic, title, body, attachments }) }); const data = await responseJson(response) as ApiError & { post?: CommunityPost }; if (!response.ok || !data.post) throw new Error(data.error ?? "글을 저장하지 못했어요."); onCreated(data.post); } catch (error) { onError(error instanceof Error ? error.message : "글을 저장하지 못했어요."); } finally { setSaving(false); } }
+  return <div className={styles.modalBackdrop} role="presentation"><section className={styles.composer} role="dialog" aria-modal="true" aria-labelledby="community-compose-title"><header><div><span className={styles.kicker}>ANONYMOUS POST</span><h2 id="community-compose-title">내 고민 남기기</h2></div><button type="button" aria-label="글쓰기 닫기" onClick={onClose}><X/></button></header><p className={styles.safety}><ShieldAlert/> 실명·연락처·회사 내부정보·이력서 원문은 올리지 마세요. 글과 첨부는 로그인한 라운지 사용자에게 보여요.</p><label>주제<select value={topic} onChange={(event) => setTopic(event.target.value as CommunityTopicId)}>{communityTopics.map((item) => <option key={item} value={item}>{communityTopicMeta[item].label}</option>)}</select></label><label>제목<input value={title} maxLength={110} onChange={(event) => setTitle(event.target.value)} placeholder="예: 첫 지원 직무를 정하는 기준이 있을까요?"/></label><label>고민 내용<textarea value={body} maxLength={5000} onChange={(event) => setBody(event.target.value)} placeholder="지금 상황과 이미 해본 것, 가장 막힌 지점을 적어주세요." rows={7}/><small>{body.length.toLocaleString()} / 5,000</small></label><label className={styles.filePicker}><ImagePlus/> 이미지·PDF 첨부 <small>최대 3개 · 각 8MB</small><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple onChange={(event) => setFiles(Array.from(event.target.files ?? []).slice(0, 3))}/></label>{files.length > 0 && <ul className={styles.fileList}>{files.map((file) => <li key={`${file.name}-${file.size}`}><FileText/>{file.name}<button type="button" onClick={() => setFiles((current) => current.filter((item) => item !== file))}><X/></button></li>)}</ul>}<footer><button type="button" onClick={onClose}>취소</button><button type="button" className={styles.publish} disabled={saving || title.trim().length < 2 || body.trim().length < 5} onClick={() => void submit()}>{saving ? <LoaderCircle/> : <PenLine/>} 익명으로 올리기</button></footer></section></div>;
 }

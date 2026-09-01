@@ -4288,3 +4288,12 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Source limits: 공유된 ChatGPT 대화 링크는 이 환경에서 열리지 않았고, 워크트리에서도 코인니스/해당 스크린샷 기록을 찾지 못했습니다. 확인하지 못한 레퍼런스는 사실처럼 기록하지 않았습니다.
 - File: `docs/community-lounge-v2-addendum-2026-09-01.md`.
 - Rollback: 문서 파일과 이 로그 항목만 제거.
+## 2026-09-01 — Codex: 취업·진로 익명 라운지 실제 기능 기반 + 반응형 피드
+
+- Status: `codex/community-lounge` 브랜치 구현 중. main 병합·원격 migration 적용·배포는 하지 않았습니다.
+- Reference: CoinNess 라운지의 공개 정보 구조(최신/인기, 주제 탭, 화제글, 모바일 고정 작성 CTA)를 참고하되, 자산·실시간 토크·반응 경쟁 UI를 복제하지 않고 취업·진로 고민용으로 재구성했습니다.
+- UI: `/community`를 최신/인기 정렬, 4개 주제 탭, 화제글, 익명 글쓰기, 댓글, 추천, 신고 흐름이 있는 반응형 피드로 교체했습니다. 데이터/API 계층과 CSS를 분리해 Stitch 등 후속 시안으로 UI를 교체할 수 있습니다.
+- Data/privacy: 신규 local migration `20260901040000_community_lounge.sql`은 게시글·댓글·추천·첨부 메타데이터·신고와 RLS를 만듭니다. `community-attachments` 버킷은 **비공개**이며, 첨부 원본은 로그인 사용자만 60초 서명 URL로 엽니다. 원격 Supabase에는 적용하지 않았습니다.
+- Files: `src/domain/community.ts`, `src/server/community/community-repository.ts`, `src/app/api/community/**`, `src/components/community-lounge.*`, `src/components/site-nav.*`, migration 및 테스트.
+- Protected work: `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`, `.codex-remote-attachments/`와 심리검사 워크트리 변경은 수정·stage 대상에서 제외합니다.
+- Rollback: 이 브랜치의 커뮤니티 후속 커밋 revert. migration은 원격 적용 전이므로 DB 롤백 불필요.
