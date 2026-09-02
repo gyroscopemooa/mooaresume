@@ -112,7 +112,7 @@ export default function HomePage() {
             합격을 위한 준비를 봅니다`는 우리가 무엇을 믿는지를 말했지 무엇을
             해 주는지를 말하지 않았습니다 — 그 문장은 버리지 않고 페이지
             맨 아래, 이 서비스가 왜 만들어졌는지를 말하는 자리로 옮겼습니다. */}
-        <h1 className="hero-desktop"><em>자기소개서 첨삭</em></h1>
+        <h1 className="hero-desktop"><em>자소서 첨삭</em><span className="visually-hidden"> · 자기소개서 첨삭 · AI 첨삭</span></h1>
         <h1 className="hero-mobile">
           나만의 <em>취업 코치</em>
           <span className="visually-hidden">자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭</span>
