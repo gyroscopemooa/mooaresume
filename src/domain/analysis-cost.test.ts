@@ -152,4 +152,42 @@ describe("readModelPricingFromEnv", () => {
       OPENAI_PRICE_OUTPUT_PER_1M: "10",
     })).toBeNull();
   });
+
+  it("FINAL이 전용 모델을 안 쓰면 기본 단가를 그대로 쓴다", () => {
+    const parsed = readModelPricingFromEnv({
+      OPENAI_PRICE_INPUT_PER_1M: "2",
+      OPENAI_PRICE_OUTPUT_PER_1M: "12",
+    }, "FINAL");
+    expect(parsed).toEqual({ inputPerMillionUsd: 2, outputPerMillionUsd: 12, usdToKrw: 1_400 });
+  });
+
+  it("FINAL이 전용 모델을 쓰는데 전용 단가가 없으면 기본 단가를 빌려 쓰지 않고 null", () => {
+    expect(readModelPricingFromEnv({
+      OPENAI_MODEL_FINAL: "gpt-5.6-sol",
+      OPENAI_PRICE_INPUT_PER_1M: "2",
+      OPENAI_PRICE_OUTPUT_PER_1M: "12",
+    }, "FINAL")).toBeNull();
+  });
+
+  it("FINAL 전용 단가가 있으면 그것을 쓴다", () => {
+    const parsed = readModelPricingFromEnv({
+      OPENAI_MODEL_FINAL: "gpt-5.6-sol",
+      OPENAI_PRICE_INPUT_PER_1M: "2",
+      OPENAI_PRICE_OUTPUT_PER_1M: "12",
+      OPENAI_PRICE_INPUT_PER_1M_FINAL: "4",
+      OPENAI_PRICE_OUTPUT_PER_1M_FINAL: "18",
+    }, "FINAL");
+    expect(parsed).toEqual({ inputPerMillionUsd: 4, outputPerMillionUsd: 18, usdToKrw: 1_400 });
+  });
+
+  it("QUICK/PRO는 FINAL 전용 단가와 무관하다", () => {
+    const parsed = readModelPricingFromEnv({
+      OPENAI_MODEL_FINAL: "gpt-5.6-sol",
+      OPENAI_PRICE_INPUT_PER_1M: "2",
+      OPENAI_PRICE_OUTPUT_PER_1M: "12",
+      OPENAI_PRICE_INPUT_PER_1M_FINAL: "4",
+      OPENAI_PRICE_OUTPUT_PER_1M_FINAL: "18",
+    }, "QUICK");
+    expect(parsed).toEqual({ inputPerMillionUsd: 2, outputPerMillionUsd: 12, usdToKrw: 1_400 });
+  });
 });

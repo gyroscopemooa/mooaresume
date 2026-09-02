@@ -237,8 +237,9 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
 
   const runIds = data.map((row) => row.id as string);
   // 단가는 환경변수에서 옵니다. 없으면 금액을 만들어 내지 않고 토큰만 보여
-  // 줍니다 — 틀린 원가는 없는 것보다 나쁩니다.
-  const pricing = readModelPricingFromEnv();
+  // 줍니다 — 틀린 원가는 없는 것보다 나쁩니다. FINAL이 다른 모델을 쓰면
+  // 단가도 달라지므로, 여기서 미리 하나로 고정하지 않고 행마다 그 행의
+  // product로 다시 읽습니다.
   const [ledger, paidRunIds] = await Promise.all([loadAttemptLedger(runIds), loadPaidRunIds(runIds)]);
 
   return data.map((row) => {
@@ -271,7 +272,7 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
         // 정가 기준입니다. 할인가로 팔린 건은 실제 마진이 이보다 낮습니다.
         priceKrw: paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0,
         attempts,
-        pricing,
+        pricing: readModelPricingFromEnv(process.env, product),
       }),
     };
   });
@@ -327,7 +328,7 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
         product,
         priceKrw: paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0,
         attempts,
-        pricing: readModelPricingFromEnv(),
+        pricing: readModelPricingFromEnv(process.env, product),
       }),
     },
     resultData: result?.result_data ?? null,
@@ -520,8 +521,9 @@ export async function getSummary(): Promise<AdminSummary> {
     client.from("analysis_feedback").select("id", countOnly).is("read_at", null),
     // 표가 아직 없는 환경(마이그레이션 전)도 여기로 옵니다. `error`가 있으면
     // 아래에서 원가를 `null`로 두므로, 대시보드 전체가 이 표 하나 때문에
-    // 멈추지 않습니다.
-    client.from("analysis_run_attempts").select("outcome, input_tokens, output_tokens"),
+    // 멈추지 않습니다. product를 함께 가져오는 이유는 FINAL이 다른(더 비싼)
+    // 모델을 쓸 수 있어 한 단가로 전체를 계산하면 틀리기 때문입니다.
+    client.from("analysis_run_attempts").select("outcome, input_tokens, output_tokens, analysis_runs(product)"),
   ]);
 
   const orderRows = ((orders.data ?? []) as { amount: number; status: string; metadata: unknown }[])
@@ -533,13 +535,40 @@ export async function getSummary(): Promise<AdminSummary> {
   // 매출처럼 전체 기간입니다 — 매출은 전체, 원가만 최근 며칠로 자르면 두
   // 숫자를 나란히 놓아도 마진을 못 읽습니다. 표가 없거나(마이그레이션 전)
   // 단가가 없으면 원가는 만들어 내지 않습니다.
-  const pricing = readModelPricingFromEnv();
-  const attemptRows = attempts.error ? [] : (attempts.data ?? []) as { outcome: string; input_tokens: number | null; output_tokens: number | null }[];
-  const totalCostKrw = attempts.error || !pricing ? null : (() => {
-    const inputTokens = attemptRows.reduce((sum, row) => sum + (row.input_tokens ?? 0), 0);
-    const outputTokens = attemptRows.reduce((sum, row) => sum + (row.output_tokens ?? 0), 0);
-    return (inputTokens / 1_000_000) * pricing.inputPerMillionUsd * pricing.usdToKrw
-      + (outputTokens / 1_000_000) * pricing.outputPerMillionUsd * pricing.usdToKrw;
+  //
+  // product별로 나눠서 더하는 이유: FINAL이 QUICK/PRO와 다른 모델을 쓰면
+  // 단가도 다릅니다. 한 단가로 전체를 계산하면 FINAL 몫이 틀립니다. 어느
+  // product는 단가를 몰라도(예: FINAL 전용 단가 미설정) 그 몫만 빠지고
+  // 나머지는 그대로 더합니다 — 하나가 없다고 전체를 null로 만들면, 이미
+  // 아는 QUICK/PRO 원가까지 화면에서 사라집니다.
+  type AttemptCostRow = {
+    outcome: string;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    analysis_runs: { product: string } | { product: string }[] | null;
+  };
+  const attemptRows = attempts.error ? [] : (attempts.data ?? []) as unknown as AttemptCostRow[];
+  const tokensByProduct = new Map<string, { input: number; output: number }>();
+  for (const row of attemptRows) {
+    const embedded = row.analysis_runs;
+    const product = Array.isArray(embedded) ? embedded[0]?.product : embedded?.product;
+    if (!product) continue;
+    const bucket = tokensByProduct.get(product) ?? { input: 0, output: 0 };
+    bucket.input += row.input_tokens ?? 0;
+    bucket.output += row.output_tokens ?? 0;
+    tokensByProduct.set(product, bucket);
+  }
+  const totalCostKrw = attempts.error ? null : (() => {
+    let total = 0;
+    let anyPriced = false;
+    for (const [product, tokens] of tokensByProduct) {
+      const pricing = readModelPricingFromEnv(process.env, product);
+      if (!pricing) continue;
+      anyPriced = true;
+      total += (tokens.input / 1_000_000) * pricing.inputPerMillionUsd * pricing.usdToKrw
+        + (tokens.output / 1_000_000) * pricing.outputPerMillionUsd * pricing.usdToKrw;
+    }
+    return anyPriced ? total : null;
   })();
 
   return {

@@ -53,7 +53,7 @@ function buildInput(requests: readonly PatchRequest[]): string {
 
 export async function rewriteSentences(
   requests: readonly PatchRequest[],
-  options: { apiKey: string; model: string },
+  options: { apiKey: string; model: string; reasoningEffort?: string },
   fetchImplementation: typeof fetch = fetch,
 ): Promise<Array<{ itemId: string; after: string }>> {
   if (requests.length === 0) return [];
@@ -68,6 +68,7 @@ export async function rewriteSentences(
       max_output_tokens: 2_000,
       instructions: INSTRUCTIONS,
       input: buildInput(requests),
+      ...(options.reasoningEffort ? { reasoning: { effort: options.reasoningEffort } } : {}),
       text: {
         format: {
           type: "json_schema",

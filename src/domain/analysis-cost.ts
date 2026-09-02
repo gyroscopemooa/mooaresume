@@ -165,14 +165,33 @@ export const RISK_LABEL: Record<RunCostRisk, string> = {
  *
  * 둘 중 하나라도 없으면 `null`입니다 — 반쪽짜리 단가로 계산한 금액은
  * 틀린 금액이고, 틀린 금액은 화면에 없느니만 못합니다.
+ *
+ * ------------------------------------------------------------------
+ * FINAL이 다른 모델을 쓸 때
+ * ------------------------------------------------------------------
+ * FINAL은 `OPENAI_MODEL_FINAL`로 QUICK/PRO와 다른(대개 더 비싼) 모델을 쓸 수
+ * 있습니다(`resolveModelConfig` 참고). 그 경우 기본 단가를 그대로 쓰면 원가가
+ * **낮게** 잡힙니다. 그래서 `product`가 `"FINAL"`이고 `OPENAI_MODEL_FINAL`이
+ * 설정돼 있으면 `OPENAI_PRICE_..._FINAL` 단가를 대신 읽고, 없으면 `null`을
+ * 돌려줍니다 — 실제로 돈이 나간 모델의 단가를 모르는 채로 다른 모델 단가를
+ * 빌려 쓰지 않습니다.
+ *
+ * `OPENAI_MODEL_FINAL`이 비어 있으면(=FINAL도 기본 모델로 돎) 이 함수도
+ * 기본 단가를 그대로 씁니다 — 실제로 같은 모델이 돈 것이므로 같은 단가가
+ * 맞습니다.
  */
 export function readModelPricingFromEnv(
   env: Record<string, string | undefined> = process.env,
+  product: string = "QUICK",
 ): ModelPricing | null {
-  const input = Number(env.OPENAI_PRICE_INPUT_PER_1M);
-  const output = Number(env.OPENAI_PRICE_OUTPUT_PER_1M);
+  const usesFinalModel = product === "FINAL" && Boolean(env.OPENAI_MODEL_FINAL?.trim());
+  const inputKey = usesFinalModel ? "OPENAI_PRICE_INPUT_PER_1M_FINAL" : "OPENAI_PRICE_INPUT_PER_1M";
+  const outputKey = usesFinalModel ? "OPENAI_PRICE_OUTPUT_PER_1M_FINAL" : "OPENAI_PRICE_OUTPUT_PER_1M";
+
+  const input = Number(env[inputKey]);
+  const output = Number(env[outputKey]);
   if (!Number.isFinite(input) || !Number.isFinite(output) || input < 0 || output < 0) return null;
-  if (!env.OPENAI_PRICE_INPUT_PER_1M?.trim() || !env.OPENAI_PRICE_OUTPUT_PER_1M?.trim()) return null;
+  if (!env[inputKey]?.trim() || !env[outputKey]?.trim()) return null;
 
   const rate = Number(env.USD_KRW_RATE);
   return {

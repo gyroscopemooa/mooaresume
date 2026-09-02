@@ -5,6 +5,7 @@ import { resultDocumentSchema } from "@/domain/result-document";
 import { buildFinalWrapUp } from "@/domain/final-wrap-up";
 import { applyPatches, buildPatchQuestions, countAppliedPatches, locateQuote, type SentencePatch } from "@/domain/final-patch";
 import { rewriteSentences, type PatchRequest } from "@/server/ai/final-patch-gateway";
+import { resolveModelConfig } from "@/server/ai/model-config";
 
 export const runtime = "nodejs";
 
@@ -70,12 +71,15 @@ export async function POST(request: Request) {
   }
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const model = process.env.OPENAI_MODEL?.trim();
-  if (!apiKey || !model) return NextResponse.json({ error: "지금은 보완을 처리할 수 없습니다." }, { status: 503 });
+  const baseModel = process.env.OPENAI_MODEL?.trim();
+  if (!apiKey || !baseModel) return NextResponse.json({ error: "지금은 보완을 처리할 수 없습니다." }, { status: 503 });
+  // 이 라우트는 FINAL 결과에서만 열립니다(위에서 이미 확인). FINAL 전용
+  // 모델·추론 강도가 설정돼 있으면 그것을 씁니다.
+  const { model, reasoningEffort } = resolveModelConfig("FINAL", baseModel);
 
   let rewritten: Array<{ itemId: string; after: string }>;
   try {
-    rewritten = await rewriteSentences(requests, { apiKey, model });
+    rewritten = await rewriteSentences(requests, { apiKey, model, reasoningEffort });
   } catch (error) {
     console.error("final_patch_rewrite_failed", error instanceof Error ? error.message : "UNKNOWN_ERROR");
     return NextResponse.json({ error: "문장을 다시 쓰지 못했습니다. 잠시 후 다시 시도해 주세요." }, { status: 502 });

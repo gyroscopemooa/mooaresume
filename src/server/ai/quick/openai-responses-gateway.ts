@@ -11,6 +11,7 @@ import {
 } from "./prompt";
 import { resolveMaxOutputTokens } from "./output-budget";
 import { getQuickAnalysisJsonSchema, parseQuickAnalysisOutput, type QuickAnalysisOutput } from "./schema";
+import { resolveModelConfig } from "../model-config";
 
 const responsesEnvelopeSchema = z.object({
   id: z.string().min(1),
@@ -92,6 +93,7 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
   }
 
   async analyze(request: AnalysisRequest, validationFeedback: string[] = []): Promise<QuickGatewayResult> {
+    const { model, reasoningEffort } = resolveModelConfig(request.product, this.options.model);
     const response = await this.fetchImplementation("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
@@ -100,13 +102,14 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
       },
       signal: AbortSignal.timeout(540_000),
       body: JSON.stringify({
-        model: this.options.model,
+        model,
         // Output was the only leg of the bill with no ceiling, and it is the
         // expensive one. Scaled to the letter rather than fixed: see
         // resolveMaxOutputTokens.
         max_output_tokens: resolveMaxOutputTokens(request),
         instructions: buildQuickAnalysisInstructions(request),
         input: [buildQuickAnalysisInput(request), validationFeedback.length ? `[이전 결과 검증 실패]\n${validationFeedback.join("\n")}\n위 문제를 고쳐 전체 JSON을 다시 생성하세요.` : ""].filter(Boolean).join("\n\n"),
+        ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
         text: {
           format: {
             type: "json_schema",
@@ -158,7 +161,8 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
   }
 
   async startBackground(request: AnalysisRequest, attemptNo: number = 1): Promise<string> {
-    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model: this.options.model, background: true, max_output_tokens: resolveMaxOutputTokens(request, attemptNo), instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
+    const { model, reasoningEffort } = resolveModelConfig(request.product, this.options.model);
+    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model, background: true, max_output_tokens: resolveMaxOutputTokens(request, attemptNo), instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
     if (!response.ok) throw new Error(`OpenAI Responses API 백그라운드 시작에 실패했습니다. status=${response.status}${await this.describeFailureBody(response)}`);
     return responsesEnvelopeSchema.parse(await response.json()).id;
   }

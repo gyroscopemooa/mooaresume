@@ -5354,3 +5354,20 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/globals.css`, `src/app/one-click.module.css`, `src/components/pro-input-page.module.css`, `src/components/simple-intake.module.css`.
 - Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공. 390px 모바일·1280px 데스크톱 렌더 확인 — 데스크톱 무변화, 모바일은 눈에 띄게 조밀해진 레이아웃과 그림자 확인.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-03 — Claude: FINAL 전용 모델·추론 강도가 실제로는 안 쓰이고 있던 문제
+
+- Agent/session: Claude. 사용자가 Cloudflare에 `OPENAI_MODEL_FINAL`(gpt-5.6-sol), `OPENAI_REASONING_EFFORT_FINAL`(high)을 이미 넣어뒀다고 해서 확인했습니다.
+- Status: completed. 마이그레이션 없음.
+- 확인 결과: 코드 어디에도 이 두 환경변수를 읽는 곳이 없었습니다. 실제로 읽히는 건 `OPENAI_MODEL` 하나뿐이고, QUICK/PRO/FINAL 전부 같은 값을 씁니다. **넣어둔 설정이 아무 효과가 없었습니다** — FINAL도 그냥 QUICK/PRO와 같은 모델(`gpt-5.6-terra`)로 돌고 있었습니다.
+- 조치: `src/server/ai/model-config.ts`(신규) — `resolveModelConfig(product, baseModel, env)`. FINAL이고 `OPENAI_MODEL_FINAL`이 있으면 그 모델을 쓰고, 없으면 조용히 기본 모델로 떨어집니다. `reasoningEffort`도 같은 규칙이며, 없으면 요청에 `reasoning` 필드 자체를 넣지 않습니다.
+  - `openai-responses-gateway.ts`의 `startBackground`(운영 경로)와 `analyze`(평가용) 양쪽에 배선. 요청 바디에 `reasoning: { effort }`를 조건부로 추가.
+  - `final-patch-gateway.ts`의 `rewriteSentences`도 `reasoningEffort`를 받아 같은 방식으로 실어 보내고, `final-patch/route.ts`(FINAL 전용 "제출 전 마무리" 문장 재작성)가 `resolveModelConfig("FINAL", baseModel)`을 호출하도록 배선.
+- 원가 계산도 같이 틀어지고 있었습니다: FINAL이 다른(더 비싼) 모델로 돌면 `readModelPricingFromEnv()`가 QUICK/PRO 단가를 그대로 빌려 써서 **FINAL 원가가 실제보다 낮게** 잡힙니다. `readModelPricingFromEnv(env, product)`로 바꿔, FINAL이고 `OPENAI_MODEL_FINAL`이 설정돼 있으면 `OPENAI_PRICE_..._FINAL` 전용 단가를 요구하고, 없으면 기본 단가를 빌려 쓰지 않고 `null`(단가 미설정)을 돌려줍니다. `OPENAI_MODEL_FINAL`이 비어 있으면(=FINAL도 기본 모델로 돎) 기존처럼 기본 단가를 그대로 씁니다.
+  - `admin-repository.ts`의 `listAnalyses`/`getAnalysis`는 행마다 그 행의 product로 다시 읽도록 변경.
+  - `getSummary()`(대시보드 첫 화면 원가 카드)는 `analysis_run_attempts`에 `analysis_runs(product)`를 조인해 product별로 토큰을 나눠 모으고, product별 단가로 각각 계산해 합칩니다. 한 product의 단가를 몰라도 그 몫만 빠지고 나머지는 그대로 더합니다 — 하나가 없다고 이미 아는 QUICK/PRO 원가까지 화면에서 사라지면 안 됩니다.
+- `.env.example`에 `OPENAI_MODEL_FINAL`, `OPENAI_REASONING_EFFORT_FINAL`, `OPENAI_PRICE_INPUT_PER_1M_FINAL`, `OPENAI_PRICE_OUTPUT_PER_1M_FINAL` 추가.
+- Files: `src/server/ai/model-config.ts`(신규) + `.test.ts`(신규), `src/server/ai/quick/openai-responses-gateway.ts`, `src/server/ai/quick/openai-responses-background.test.ts`(신규 케이스 3건 — PRO는 FINAL 설정 무시, FINAL은 전용 모델·추론 강도 실제로 실림, FINAL인데 전용 모델 없으면 기본으로 떨어짐), `src/server/ai/final-patch-gateway.ts`, `src/app/api/final-patch/route.ts`, `src/domain/analysis-cost.ts` + `.test.ts`(신규 4건), `src/server/admin/admin-repository.ts`, `.env.example`.
+- Validation: `npx vitest run` 928 passed(신규 12건), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 클린.
+- **남은 일(사용자)**: Cloudflare·`.env.local` 양쪽에 `OPENAI_PRICE_INPUT_PER_1M_FINAL`/`OPENAI_PRICE_OUTPUT_PER_1M_FINAL`도 넣어야 관리자 화면에서 FINAL 원가가 정확히 나옵니다(안 넣으면 FINAL 행만 "단가 미설정"으로 뜨고 QUICK/PRO는 그대로 나옵니다 — 화면이 멈추지는 않습니다).
+- Rollback: 이 커밋 revert.
