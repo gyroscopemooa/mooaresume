@@ -13,7 +13,9 @@ describe("자료 자동 분류", () => {
       ["입사지원서_홍길동.pdf", "RESUME"],
       ["경력기술서.pdf", "CAREER_DOCUMENT"],
       ["포트폴리오_2026.pdf", "PORTFOLIO"],
-      ["자격증모음.zip", "OTHER"],
+      // 자격·증명서는 이제 제 갈래가 있습니다. `기타`에 두면 참고자료 더미로
+      // 들어가, 근거로 쓰라고 올린 파일이 근거로 안 쓰입니다.
+      ["자격증모음.zip", "CERTIFICATE"],
     ];
     for (const [filename, expected] of cases) {
       expect(classifyDocument({ filename }).kind, filename).toBe(expected);
@@ -65,8 +67,8 @@ describe("자료 자동 분류", () => {
       { id: "5", filename: "수료증.pdf" },
     ]);
     const summary = summarizeClassification(items);
-    expect(summary.map((row) => row.label)).toEqual(["채용공고", "자기소개서", "이력서", "기타 자료"]);
-    expect(summary.find((row) => row.label === "기타 자료")?.count).toBe(2);
+    expect(summary.map((row) => row.label)).toEqual(["채용공고", "자기소개서", "이력서", "자격·증명서"]);
+    expect(summary.find((row) => row.label === "자격·증명서")?.count).toBe(2);
     expect(summary.some((row) => row.count === 0)).toBe(false);
   });
 });
@@ -120,5 +122,28 @@ describe("고르지 못한 자료는 진행을 막는다", () => {
     // A paragraph under the list is a paragraph nobody reads.
     expect(intake).toContain('role="tooltip"');
     expect(intake).toContain("첨삭에 인용하지 않습니다");
+  });
+});
+
+describe("자격·증명서", () => {
+  it("학교 서류도 갈래를 찾는다", () => {
+    // 생활기록부·성적표는 이름에 "증명서"가 없어 어느 규칙에도 걸리지
+    // 않았고, 그래서 분류를 고르지 못한 자료로 남았습니다. 대기업 생산직처럼
+    // 실제로 제출을 요구하는 전형이 있어 받을 이유가 분명합니다.
+    for (const filename of ["고등학교 생활기록부.pdf", "성적표.pdf", "성적증명서.pdf"]) {
+      expect(classifyDocument({ filename, text: "" }).kind).toBe("CERTIFICATE");
+    }
+  });
+
+  it("자격증 이름들을 알아본다", () => {
+    for (const filename of ["직업상담사2급.pdf", "지게차운전기능사.pdf", "운전면허증.pdf", "산업기사.pdf"]) {
+      expect(classifyDocument({ filename, text: "" }).kind).toBe("CERTIFICATE");
+    }
+  });
+
+  it("경력증명서는 경력기술서 쪽으로 남는다", () => {
+    // 규칙 순서가 지켜야 하는 것: `경력증명`이 `증명서`보다 먼저입니다.
+    // 경력증명서는 실제로 경력을 적은 문서이고, 근거 자료로 읽혀야 합니다.
+    expect(classifyDocument({ filename: "경력증명서.pdf", text: "" }).kind).toBe("CAREER_DOCUMENT");
   });
 });

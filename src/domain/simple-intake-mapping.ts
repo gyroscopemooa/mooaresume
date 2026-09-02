@@ -93,7 +93,11 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
     files.filter((file) => MATERIAL_KINDS.has(file.kind)),
     (file) => ({ ...toAttachment(file), kind: file.kind as SimpleMaterial["kind"] }),
   );
-  const freeform = capped(byKind("OTHER"), toAttachment);
+  // 자격·증명서는 지금 참고자료 쪽으로 갑니다. 분류 이름만 갈라 두고 가는
+  // 곳은 예전 그대로입니다 — 이걸 근거 자료(`materialAttachments`)로 올리려면
+  // DB의 `document_kind` 타입이나 분석 SQL을 건드려야 해서, 그 결정은 따로
+  // 받습니다. 여기서 빠뜨리면 파일이 통째로 사라지므로 반드시 함께 담습니다.
+  const freeform = capped([...byKind("OTHER"), ...byKind("CERTIFICATE")], toAttachment);
 
   return {
     questions,

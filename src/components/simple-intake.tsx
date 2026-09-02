@@ -48,6 +48,8 @@ export type SimpleIntakeFile = {
   text: string;
   kind: ClassifiedKind;
   basis: ClassifiedItem["basis"];
+  /** 글자가 없는 스캔본. 무엇인지는 본인만 압니다. */
+  unreadable?: boolean;
 };
 
 type Props = {
@@ -156,6 +158,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
             text: document.text,
             kind: guess.kind,
             basis: guess.basis,
+            ...(document.unreadable ? { unreadable: true } : {}),
           });
         }
       }
@@ -322,7 +325,22 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
                   넘어가는 대신 물어봅니다 — 잘못 고르면 본인 경력이 근거에서
                   빠집니다. */}
               {file.basis === "conflict" && " · 파일 이름과 내용이 달라 고르지 못했습니다"}
+              {file.unreadable && " · 스캔본이라 글자를 읽지 못했습니다"}
             </small>
+            {/* 글자가 없는 파일에는 한 줄을 받습니다.
+                자격증·면허증·증명서는 대부분 스캔본이고, 예전에는 여기서
+                아예 거부당했습니다 — 근거로 쓰라고 올린 파일이 문 앞에서
+                막힌 셈입니다. 사진을 모델에 보내는 대신(값·정확도도 있지만
+                주민번호가 찍혀 있습니다) 무엇인지만 본인에게 묻습니다. */}
+            {file.unreadable && (
+              <input
+                className={styles.scanNote}
+                value={file.text}
+                maxLength={200}
+                onChange={(event) => onFilesChange(files.map((item) => item.id === file.id ? { ...item, text: event.target.value } : item))}
+                placeholder="무엇인지 한 줄로 적어 주세요. 예: 직업상담사 2급 · 2020.09 취득"
+              />
+            )}
           </div>
           <select value={file.kind} onChange={(event) => setKind(file.id, event.target.value as ClassifiedKind)} aria-label={`${file.filename} 자료 종류`}>
             {file.kind === "UNSET" && <option value="UNSET">{CLASSIFIED_KIND_LABEL.UNSET}</option>}

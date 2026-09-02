@@ -45,6 +45,18 @@ export type LocalDocumentResult = {
   sizeBytes: number;
   text: string;
   characterCount: number;
+  /**
+   * 글자가 한 자도 없는 PDF입니다 — 스캔본이거나 사진으로 만든 문서입니다.
+   *
+   * 예전에는 여기서 거부했습니다. 그런데 자격증·면허증·증명서는 대부분 이
+   * 모양입니다. 수첩을 찍었거나 발급기관이 그림으로 만들어 줍니다. 그래서
+   * "자격증을 올리려던 사람"이 정확히 거부당하고 있었습니다.
+   *
+   * 파일은 받고, 무엇인지는 본인에게 묻습니다. 사진을 모델에 보내지 않는
+   * 이유는 값과 정확도만이 아닙니다 — 면허증·건강보험 서류에는 주민번호가
+   * 찍혀 있고, 그것을 외부로 보내는 것은 다른 이야기입니다.
+   */
+  unreadable?: boolean;
 };
 
 export type LocalDocumentBatch = {
@@ -135,12 +147,17 @@ export async function extractLocalDocument(file: File): Promise<LocalDocumentRes
   }
 
   const normalized = text.trim();
-  if (!normalized) throw new Error("파일에서 작성 내용을 찾지 못했어요. 직접 입력을 이용해 주세요.");
+  // PDF만 이 길로 옵니다. TXT·DOCX가 비어 있다면 그건 정말 빈 파일이라
+  // 받아 봐야 할 것이 없습니다.
+  if (!normalized && extension !== "pdf") {
+    throw new Error("파일에 내용이 없어요. 다른 파일을 넣거나 직접 붙여넣어 주세요.");
+  }
   return {
     filename: file.name,
     extension: extension ?? "",
     sizeBytes: file.size,
     text: normalized,
     characterCount: normalized.replace(/\s/g, "").length,
+    ...(normalized ? {} : { unreadable: true }),
   };
 }

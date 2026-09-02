@@ -33,6 +33,20 @@ export const classifiedKindSchema = z.enum([
   "RESUME",
   "CAREER_DOCUMENT",
   "PORTFOLIO",
+  /**
+   * 자격증·증명서·성적표.
+   *
+   * 예전에는 이것들이 전부 `OTHER`로 들어갔고, `OTHER`는 참고자료로만 쓰입니다.
+   * 그런데 FINAL이 파는 것이 **이력서 × 자소서 교차검증**입니다. 자소서에
+   * "직업상담사 2급 보유"라고 쓴 사람이 자격증을 올려도, 그것이 참고자료
+   * 더미에 들어가면 그 주장은 여전히 "근거가 확인되지 않은 주장"으로 깎입니다.
+   * 근거로 쓰라고 올린 파일이 근거로 안 쓰이는 자리였습니다.
+   *
+   * 학교 성적표와 생활기록부도 여기입니다. 대기업 생산직처럼 실제로 제출을
+   * 요구하는 전형이 있고, 그때는 자소서에 적은 학교 이야기와 대조할 수 있는
+   * 유일한 문서입니다.
+   */
+  "CERTIFICATE",
   "OTHER",
 ]);
 
@@ -45,6 +59,7 @@ export const CLASSIFIED_KIND_LABEL: Record<ClassifiedKind, string> = {
   RESUME: "이력서",
   CAREER_DOCUMENT: "경력기술서",
   PORTFOLIO: "포트폴리오",
+  CERTIFICATE: "자격·증명서",
   OTHER: "기타 자료",
 };
 
@@ -55,6 +70,7 @@ export const CLASSIFIED_KIND_ORDER: readonly ClassifiedKind[] = [
   "RESUME",
   "CAREER_DOCUMENT",
   "PORTFOLIO",
+  "CERTIFICATE",
   "OTHER",
 ];
 
@@ -75,7 +91,15 @@ const FILENAME_HINTS: ReadonlyArray<readonly [ClassifiedKind, RegExp]> = [
   ["JOB_POSTING", /채용\s*공고|모집\s*공고|구인\s*공고|공고|job\s*(posting|description)|\bjd\b|recruit/i],
   ["RESUME", /이력서|입사지원서|지원서|resume|cv\b|profile/i],
   ["PORTFOLIO", /포트폴리오|portfolio|작품집|프로젝트\s*모음/i],
-  ["OTHER", /자격증|수료|증명서|성적|certificate|license|transcript|award|수상/i],
+  // 학교 서류를 함께 둡니다. 생활기록부·성적표는 이름에 "증명서"가 없어서
+  // 어느 규칙에도 걸리지 않았고, 그래서 분류를 고르지 못한 자료로 남았습니다.
+  // 한국 자격증은 이름에 "자격증"이 안 들어갑니다. `직업상담사2급.pdf`처럼
+  // 종목 이름과 급수만 적습니다. 그래서 급수(`2급`)와 흔한 종목 어미
+  // (`~사`, `기능사`, `기술사`)까지 봅니다.
+  //
+  // 이 줄이 목록의 **맨 끝**인 것이 안전장치입니다. 자기소개서·이력서·
+  // 경력기술서 규칙이 먼저 걸리므로, 넓은 규칙이 그것들을 삼키지 않습니다.
+  ["CERTIFICATE", /자격증|자격\s*수첩|면허|수료|증명서|성적\s*증명|생활\s*기록부|학교\s*생활|성적표|certificate|license|transcript|award|수상|기능사|기능장|기술사|산업기사|정보처리|상담사|관리사|\d\s*급/i],
 ];
 
 /**
