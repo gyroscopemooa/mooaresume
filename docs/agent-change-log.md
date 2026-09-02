@@ -5226,3 +5226,22 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/onboarding/page.tsx`, `src/app/onboarding/onboarding.module.css`.
 - Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 첨삭 결과 페이지 모바일 — 헤더 버튼 화면 밖으로 잘리는 버그
+
+- Agent/session: Claude (클라우드 세션). 사용자 요청으로 온보딩 다음 "나머지 부분"(메인·첨삭페이지) 모바일 점검에 착수. 실제 서비스에서 결제 완료 후 도착하는 화면(`/result`)과 결제 전 미리보기(`/result/sample`)가 공유하는 `ResultWorkspaceComplete` 컴포넌트를 대상으로 삼았습니다.
+- **손대지 않은 것**: `/result/v2`(주석에 "이전 화면을 그대로 보존" 명시), `/result/codex`, `/result/claude`, `/result/codex-restored`, `/result/claude-restored`는 각각 별도 구현체(`result-workspace-*.tsx`)를 쓰는, 다른 에이전트의 변형 화면으로 보여 전혀 열어보지 않았습니다 — CLAUDE.md의 "다른 구현체를 삭제·교체·리팩터하지 않는다" 원칙에 따른 것입니다.
+
+### 발견한 문제 — 취향이 아니라 실제 버그
+- 모바일(360~430px)에서 헤더의 "전체 복사 / DOCX 저장 / TXT 저장" 버튼 3개 중 마지막 버튼이 **화면 밖으로 잘려 나가 있었습니다**. 직접 렌더링해 좌표를 재보니 로고 워드마크("MOOA Resume" 전체 텍스트)가 모바일에서도 줄지 않고 약 200px를 그대로 차지해, 버튼 3개가 들어갈 공간이 부족했던 것이 원인이었습니다.
+- `.header button{font-size:0}`으로 버튼 텍스트는 이미 숨기고 있었지만, 정작 더 넓은 자리를 차지하는 로고 쪽은 그대로 두고 있어 근본 원인이 남아 있었습니다.
+
+### 고친 것
+- 같은 파일에 이미 있던 방식(버튼 라벨을 `font-size:0`으로 숨기고 아이콘만 남기는 패턴)을 로고에도 그대로 적용: `≤700px`에서 `.header .brand`를 `font-size:0`으로 접어 "MOOA"·"Resume" 글자를 숨기고, `.brand>span`(초록 M 배지)만 원래 크기로 복원했습니다. 버튼 패딩도 살짝 줄여 여유를 더 뒀습니다.
+- 360~430px 전 구간에서 버튼 3개가 화면 안에 들어오는지 좌표로 재확인했습니다. 데스크톱(1280px)은 미디어쿼리 밖이라 무변화 — 워드마크·버튼 라벨 모두 그대로 보입니다.
+
+### 범위에 대해
+- 이 컴포넌트는 680줄 규모로, 점수 카드·문항별 Before/After 비교·공고 대조·면접 예상질문·최종 첨삭본까지 다양한 화면을 한 파일에서 탭으로 전환합니다. 이번엔 **화면 밖으로 잘리는 실제 버그만** 고쳤고, 이미 동작하는 나머지 영역(카드·탭·비교 화면)의 "토스 스타일" 전면 재단장은 별도로 범위를 잡아 진행하는 게 맞다고 판단해 이번엔 진행하지 않았습니다.
+- Files: `src/components/result-workspace-complete.module.css`.
+- Validation: 관련 테스트 30개 통과, `tsc` clean, `eslint` 클린, `next build` 성공. 360/390/430px 헤더 좌표 확인, 1280px 데스크톱 무변화 확인.
+- Rollback: 이 커밋 revert.
