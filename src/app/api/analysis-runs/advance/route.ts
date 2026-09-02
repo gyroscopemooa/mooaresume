@@ -222,7 +222,7 @@ async function startStrandedRun(run: PendingRun) {
     throw error;
   }
 
-  const responseId = await new OpenAIResponsesGateway({ apiKey, model }).startBackground(context.request);
+  const responseId = await new OpenAIResponsesGateway({ apiKey, model }).startBackground(context.request, context.attemptCount);
   await repository.saveBackgroundResponse(context.analysisRunId, responseId);
   return { analysisRunId: run.id, outcome: "START_RECOVERED" as const };
 }

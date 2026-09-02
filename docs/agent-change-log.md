@@ -5006,3 +5006,34 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/domain/analysis-cost.ts`(신규)·`.test.ts`(신규 16건), `src/server/analysis/attempt-ledger.ts`(신규)·`.test.ts`(신규 6건), `supabase/migrations/20260902010000_analysis_run_attempts.sql`(신규), `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/admin.module.css`, `.env.example`.
 - Validation: 860 tests passed (+22), `tsc` clean, `eslint` 0 errors (기존 경고 2건은 커리어 파일 — 손대지 않음), `next build` 클린. 헤드리스 크롬 1440px·412px 렌더 확인 — 본문 가로 넘침 없음(412=412), 표는 `.scroll` 안에서만 가로 스크롤.
 - Rollback: 이 커밋 revert. 표는 남지만 아무도 읽지 않습니다.
+
+## 2026-09-02 — Claude: 재시도 출력 상한, 협업쿠폰 대상 인원 자동입력, 모바일 버튼 정렬
+
+- Agent/session: Claude (클라우드 세션). 사용자 확인 사항 세 가지에 대한 조치.
+
+### 1. 재시도가 같은 상한으로 같은 자리에서 또 잘리던 문제
+- 배경: "1번 재시도 토큰 그건 내가 어제 커밋만 안 하고 했는지 기억이 안 나네"라는 질문에 코드를 확인한 결과 **미작업**이었습니다(`resolveMaxOutputTokens(request)`에 시도 횟수 인자 자체가 없었습니다).
+- 문제: 자동 재시도(1회)가 1회차와 **완전히 동일한 요청**이었습니다. 실패 원인이 출력 잘림(`AI_OUTPUT_VALIDATION_FAILED`)이면 같은 상한으로 같은 자리에서 또 잘리고, API 요금만 두 배로 나갑니다.
+- 확인한 사실: OpenAI는 `max_output_tokens`(상한)이 아니라 **실제로 생성한 토큰만** 청구합니다. 상한을 올려도 모델이 그만큼 쓰지 않으면 요금이 늘지 않습니다 — 즉 이 변경은 원가를 늘리는 방향이 아니라, 두 번째 시도가 필요할 때만 여유를 주는 방향입니다.
+- 바꾼 것: `resolveMaxOutputTokens(request, attemptNo)` — DB의 `analysis_runs.attempt_count`(1부터 시작)를 받아 1회차는 그대로, 2회차 ×1.35, 3회차 ×1.7. `attemptNo`를 생략하면 기존과 동일(1회차 취급)해 다른 호출부를 건드리지 않습니다.
+- 배선: `getRunningContext`(백그라운드 폴링 경로)와 `begin()`(첫 시작·재시도 시작 경로) 양쪽에서 `attempt_count`를 읽어 `startBackground(request, attemptCount)`로 전달. `begin_quick_analysis` RPC는 8번의 마이그레이션을 거친 함수라 반환 값에 손대지 않고, `begin()` 안에서 기본키 조회 한 번을 추가했습니다.
+- Files: `src/server/ai/quick/output-budget.ts`·`.test.ts`, `src/server/analysis/quick-background-execution.ts`·`.test.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/server/analysis/quick-analysis-orchestrator.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`.
+
+### 2. 협업쿠폰 "대상" 인원수 자동입력
+- 사용자 지적: 홍보물의 "(20인)"을 "대상" 자유 텍스트에 직접 타이핑했고, 이미 있는 "사용 가능 인원"/"발급 수량" 숫자와 연결이 안 돼 있었습니다.
+- 바꾼 것: `defaultAudienceText(partnerName, totalCount)`. 기관명이 이름·대상을 자동으로 채우던 기존 패턴(직접 고치면 덮어쓰지 않음)을 인원수까지 확장했습니다 — 기관명 또는 인원수 어느 쪽이 바뀌어도 "지금 값이 자동값과 같은가"로 판단해 재계산합니다.
+- 이 값 하나가 홍보물의 "대상" 행과 메일 본문에 그대로 흘러가므로 두 곳 다 자동으로 반영됩니다(사용자가 언급한 "메일에도 자동입력되고"는 이미 그렇게 동작 — 이번 변경으로 값 자체가 정확해졌습니다).
+- UNIQUE(고유 코드)·SHARED(공유 코드) 모드 구분 없이 적용했습니다 — 두 경우 다 "이 숫자만큼의 사람에게 돌아간다"는 의미는 같습니다(고유 코드도 1장 = 1명이 기본값이므로).
+- Files: `src/app/meensoo/coupons/campaign-creator.tsx`.
+
+### 3. 관리자 화면 모바일 — 캠페인 목록 버튼이 세로로 쪼개지던 문제
+- 사용자가 보낸 스크린샷: "코드/홍보물/메일/보관/삭제" 버튼이 좁은 화면에서 "코 드", "홍 보 물"처럼 한 글자씩 세로로 쪼개져 있었습니다.
+- 원인: `.rowActions`가 `display:flex`인데 `flex-wrap`도 `white-space:nowrap`도 없어, 화면이 좁아지면 버튼이 글자보다 먼저 줄어들고 그 안의 한글 텍스트가 줄바꿈됐습니다.
+- 바꾼 것: 버튼에 `white-space: nowrap` 추가(항상), 좁은 화면에서는 `.rowActions`를 `display:grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr))`로 바꿔 폭을 고르게 정렬. 데스크톱은 기존 flex 그대로 — 렌더 확인 결과 변화 없음.
+- Files: `src/app/meensoo/coupons/coupons.module.css`.
+
+### 확인한 것, 손대지 않은 것
+- `src/app/sitemap.ts`(main에서 커밋 누락, 이전에 보고함)와 `src/components/community-lounge.tsx`(eslint 에러 1건, 커뮤니티 코드)는 **main 병합으로 들어온 기존 문제**이고 이번 작업 범위 밖입니다. 커뮤니티/커리어 영역은 코덱스 담당이라 손대지 않았습니다.
+- Validation: 913 tests passed(+4), `tsc` clean(위 두 파일 제외), `eslint` — 제가 만진 파일은 0 warning/error. 헤드리스 크롬 412px·900px 렌더 확인 — 모바일 버튼 정렬 확인, 데스크톱 무변화.
+- `next build`는 위 sitemap.ts 문제로 여전히 실패합니다(제가 만든 문제 아님, PC에서 파일 두 개 커밋 필요).
+- Rollback: 이 커밋 revert.

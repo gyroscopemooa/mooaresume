@@ -36,6 +36,24 @@ type CodeUse = {
 const asDate = (value: Date) => value.toISOString().slice(0, 10);
 
 /**
+ * "대상" 문구의 자동값.
+ *
+ * "사용 가능 인원"·"발급 수량"은 이미 숫자로 있는데, 홍보물에 인원을 적으려면
+ * 그 숫자를 "대상" 자유 텍스트에 다시 손으로 옮겨 적어야 했습니다
+ * ("울산전기학원 참여자 및 선정자(20인)"). 기관명·인원수 중 뭐가 바뀌든
+ * 여기서 다시 계산하면 그럴 필요가 없습니다.
+ *
+ * 초기 상태값을 만들 때도 같은 함수를 쓰는 이유: 그러지 않으면 화면이 뜨자마자
+ * 보여 주는 기본값과, 나중에 무언가 바뀔 때 계산하는 기본값이 어긋나서
+ * "이건 자동값인가 손으로 고친 값인가"를 첫 입력에서부터 잘못 판단합니다.
+ */
+function defaultAudienceText(partner: string, totalCount: string): string {
+  const base = partner ? `${partner} 참여자 및 선정자` : "이벤트 참여자 및 선정자";
+  const seats = Number(totalCount);
+  return seats > 0 ? `${base}(${seats}인)` : base;
+}
+
+/**
  * 기본 기간은 오늘부터 석 달.
  *
  * 비워 두면 "기한 없음"이 되는데, 기한 없는 협업 쿠폰은 몇 년 뒤에 누가 들고
@@ -65,7 +83,7 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
   const [notice, setNotice] = useState("");
   const [subtitleText, setSubtitleText] = useState("이벤트·설문 참여자를 위한 특별 혜택");
   const [benefitText, setBenefitText] = useState("QUICK 자소서 첨삭 1회 무료");
-  const [audienceText, setAudienceText] = useState("이벤트 참여자 및 선정자");
+  const [audienceText, setAudienceText] = useState(defaultAudienceText("", "50"));
   const [usageText, setUsageText] = useState("mooaresume.com 접속 → 쿠폰 등록 → 첨삭 신청");
   const [footnoteText, setFootnoteText] = useState("1인 1회 사용 가능 / 타 쿠폰과 중복 사용 불가 / 이벤트 경품용");
 
@@ -95,14 +113,23 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [panel]);
 
-  // 기관명 하나로 나머지를 채웁니다. 직접 고치신 뒤에는 덮어쓰지 않습니다 —
-  // 자동으로 채우는 편의가 손으로 쓴 값을 지우면 그건 편의가 아닙니다.
+  // 자동으로 채우는 대상은 직접 고치신 뒤에는 덮어쓰지 않습니다 — 편의가
+  // 손으로 쓴 값을 지우면 그건 편의가 아닙니다. "지금 자동값과 같은가"로
+  // 판단하므로, 기관명과 인원수 어느 쪽이 바뀌어도 같은 기준으로 걸립니다.
   function pickPartner(next: string) {
     const before = partnerName;
     setPartnerName(next);
     if (!name || name === `${before} 협업 이벤트`) setName(next ? `${next} 협업 이벤트` : "");
-    if (!audienceText || audienceText === "이벤트 참여자 및 선정자" || audienceText === `${before} 참여자 및 선정자`) {
-      setAudienceText(next ? `${next} 참여자 및 선정자` : "이벤트 참여자 및 선정자");
+    if (!audienceText || audienceText === defaultAudienceText(before, totalCount)) {
+      setAudienceText(defaultAudienceText(next, totalCount));
+    }
+  }
+
+  function pickTotalCount(next: string) {
+    const before = totalCount;
+    setTotalCount(next);
+    if (!audienceText || audienceText === defaultAudienceText(partnerName, before)) {
+      setAudienceText(defaultAudienceText(partnerName, next));
     }
   }
 
@@ -348,7 +375,7 @@ ${row.claimedCount}명이 사용한 기록도 함께 사라집니다.` : "";
                     </select>
                   </label>
                   {benefitType !== "FREE_CREDIT" && field(benefitType === "FIXED_DISCOUNT" ? "할인 금액(원)" : "할인율(%)", benefitAmount, setBenefitAmount, "", "number")}
-                  {field(mode === "SHARED" ? "사용 가능 인원" : "발급 수량", totalCount, setTotalCount, "50", "number")}
+                  {field(mode === "SHARED" ? "사용 가능 인원" : "발급 수량", totalCount, pickTotalCount, "50", "number")}
                   {field("1인 사용 제한", perUserLimit, setPerUserLimit, "1", "number")}
                   {field("시작일", startsAt, setStartsAt, "", "date")}
                   {field("종료일", expiresAt, setExpiresAt, "", "date")}

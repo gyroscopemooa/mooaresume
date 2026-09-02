@@ -51,4 +51,24 @@ describe("출력 토큰 상한", () => {
     expect(resolveMaxOutputTokens(request("FINAL", 500_000))).toBe(120_000);
     expect(resolveMaxOutputTokens(request("PRO", 30_000))).toBeLessThan(120_000);
   });
+
+  it("재시도마다 상한을 올린다 — 첫 시도와 같은 상한이면 같은 자리에서 또 잘린다", () => {
+    const first = resolveMaxOutputTokens(request("QUICK", 4_000));
+    const second = resolveMaxOutputTokens(request("QUICK", 4_000), 2);
+    const third = resolveMaxOutputTokens(request("QUICK", 4_000), 3);
+    expect(second).toBeGreaterThan(first);
+    expect(third).toBeGreaterThan(second);
+  });
+
+  it("attemptNo를 생략하면 첫 시도와 같다 — 기존 호출부를 바꾸지 않는다", () => {
+    expect(resolveMaxOutputTokens(request("PRO", 10_000))).toBe(resolveMaxOutputTokens(request("PRO", 10_000), 1));
+  });
+
+  it("3회를 넘는 값이 와도 3회차 상한으로 취급한다", () => {
+    expect(resolveMaxOutputTokens(request("QUICK", 4_000), 4)).toBe(resolveMaxOutputTokens(request("QUICK", 4_000), 3));
+  });
+
+  it("재시도로 올라간 상한도 천장은 넘지 않는다", () => {
+    expect(resolveMaxOutputTokens(request("FINAL", 500_000), 3)).toBe(120_000);
+  });
 });
