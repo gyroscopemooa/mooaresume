@@ -4478,3 +4478,29 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `run-failure-alert-email.ts`(신규)·`.test.ts`(신규 4건), `supabase-quick-analysis-run-repository.ts`, `quick-checkout-return.tsx`, `result-sign-in.tsx`, `result-sign-in.module.css`, `feedback-form.module.css`.
 - Validation: 838 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 첨삭 한 건의 실제 원가와 마진 (관리자)
+
+- Agent/session: Claude (클라우드 세션). 사용자 요청: "관리자 단가 표시… 실패하고 2번하고 또 유저 재시도하고 그런 것도 나오고 총단가도 나오게, 수지타산 안 맞거나 위험한 건 조치하게 알아볼 수 있게".
+- Status: **`claude/github-gui-sync-jfbyd5` 브랜치에만** 적용. main에는 넣지 않았습니다 — 사용자 PC에 커밋되지 않은 커리어검사 워크트리 작업이 떠 있어, main을 움직이면 pull할 때 충돌합니다. 병합 시점은 사용자가 고릅니다.
+- **마이그레이션 있음**: `20260902010000_analysis_run_attempts.sql`. PC에서 `npm run db:remote:push` 필요(후기 설문 마이그레이션과 함께).
+
+### 무엇이 문제였나
+- 관리자 화면의 토큰 수는 **성공한 시도 하나의 것**이었습니다. `complete_quick_analysis`가 `analysis_runs`의 토큰 칸을 덮어쓰고, `fail_quick_analysis`는 토큰을 아예 적지 않습니다.
+- 그래서 **검증에서 걸려 버려진 응답의 요금이 어디에도 남지 않았습니다.** 모델이 끝까지 만들어 낸 응답이라 돈은 그대로 나갔는데, 기록상으로는 0입니다. 한 건에 실제로 얼마가 들었는지 물으면 답할 수 없었습니다.
+- 확인한 사실: 운영 경로는 백그라운드 경로(`startBackground` → `getBackground`)이고, DB 시도 1회 = OpenAI 호출 1회입니다. `QuickAnalysisProvider`의 내부 2회 루프는 운영에서 쓰이지 않습니다(평가용).
+
+### 바꾼 것
+1. **시도별 원장** `analysis_run_attempts` (신규 표). 추가 전용이고 브라우저에서 읽지도 쓰지도 못합니다(RLS + service_role만 grant). 입력·출력 토큰을 **나눠** 적습니다 — 출력 단가가 입력의 몇 배라 합계만으로는 원가를 못 냅니다.
+2. **기록 지점** `recordAnalysisAttempt` (신규). 브라우저 경로(`quick/execute`)와 스케줄러 경로(`analysis-runs/advance`) **양쪽 4개 자리**에 붙였습니다 — 완료 / 검증 실패 / 문항 누락 / 제공자 오류. 기록 실패는 전부 삼킵니다: **기록을 남기려다 결과를 잃는 것이 훨씬 나쁩니다.** 마이그레이션 전에도 분석은 그대로 동작합니다.
+3. **원가 계산** `src/domain/analysis-cost.ts` (신규, 순수 함수). 단가는 **환경변수**로 받습니다(`OPENAI_PRICE_INPUT_PER_1M`, `OPENAI_PRICE_OUTPUT_PER_1M`, `USD_KRW_RATE` 기본 1400). 없으면 금액을 **만들어 내지 않고** 토큰만 보여 줍니다 — 틀린 원가는 없는 것보다 나쁩니다.
+4. **위험 판정**: `LOSS`(원가 > 판매가) / `THIN`(마진 50% 미만) / `FREE_HEAVY`(무료 건인데 유료 판매가만큼 나감) / `UNKNOWN`(단가 미설정). 무료 건을 마진율로 재지 않는 것이 요점입니다 — 판매가가 0이라 늘 -100%로 나와 신호가 되지 못합니다.
+5. **화면**: 요약 카드에 `API 원가 합계`와 `확인 필요` 추가. 표에 `시도 내역`(몇 번째에서 무엇이 걸렸는지, 버려진 시도는 붉은 번호)과 `원가 · 마진` 칸 추가. 그 위에 **확인 필요 건만 모은 목록**을 따로 뒀습니다 — 표는 휴대폰에서 옆으로 밀어야 원가가 보여, 정작 급한 건을 찾을 수 없었습니다.
+
+### 알고 있는 한계
+- 판매가는 **정가 기준**(QUICK 4,900 / PRO 9,900 / FINAL 14,900)입니다. 할인가로 팔린 건은 실제 마진이 이보다 낮습니다.
+- 원장이 없는 **기존 건은 시도 0건**으로 나옵니다. 0원이라고 말하지 않습니다(합계에서도 제외).
+- `PROVIDER_FAILED`는 응답 자체를 못 받아 토큰을 모릅니다. `null`로 남기고 0으로 세지 않습니다.
+- Files: `src/domain/analysis-cost.ts`(신규)·`.test.ts`(신규 16건), `src/server/analysis/attempt-ledger.ts`(신규)·`.test.ts`(신규 6건), `supabase/migrations/20260902010000_analysis_run_attempts.sql`(신규), `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/admin.module.css`, `.env.example`.
+- Validation: 860 tests passed (+22), `tsc` clean, `eslint` 0 errors (기존 경고 2건은 커리어 파일 — 손대지 않음), `next build` 클린. 헤드리스 크롬 1440px·412px 렌더 확인 — 본문 가로 넘침 없음(412=412), 표는 `.scroll` 안에서만 가로 스크롤.
+- Rollback: 이 커밋 revert. 표는 남지만 아무도 읽지 않습니다.
