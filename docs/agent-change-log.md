@@ -5264,3 +5264,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Playwright로 360/375/390/412/414/430px 각각 렌더링해 줄 수·정렬 좌표 확인, 데스크톱(1280px) 무변화 확인.
 - Validation: 관련 테스트 통과(`analysis-preparation.test.tsx` 4개), `tsc` clean, `eslint` 클린, `next build` 성공.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 결제 전 확인화면 — 추천코드·쿠폰 코드 줄 모바일 정렬
+
+- Agent/session: Claude (클라우드 세션). 사용자가 실제 폰(갤럭시)에서 캡처한 스크린샷 3장으로 지적: (1) 이전 커밋들이 실제로 배포됐는지 확인 요청, (2) 추천코드·쿠폰코드 입력 줄에서 "로그인하고 적용/등록" 버튼이 혼자 다음 줄로 밀려나며 어색해 보임.
+
+### 배포 여부에 대해
+- 이 세션에는 Cloudflare 배포 권한(`wrangler`)이 없습니다(`wrangler whoami` 결과 미인증). `git push`로 `main`에 반영은 되지만, 실제 서비스(mooaresume) 배포는 별도로 `npm run deploy`를 실행할 수 있는 곳(사용자 PC 또는 배포 권한이 있는 환경)에서 이뤄져야 합니다. 즉 지금까지의 수정 사항이 코드에는 들어갔지만 **아직 실제 사이트에 반영되지 않았을 수 있습니다.**
+
+### 추천코드·쿠폰코드 줄 정렬
+- 원인: `ReferralCodeEntry`/`CouponCodeEntry`의 `compact` 모드가 "라벨 + 입력창 + 버튼"을 한 줄에 배치하는 `flex-wrap` 구조였는데, 로그아웃 상태의 버튼 문구("로그인하고 적용", "로그인하고 등록")가 길어서 좁은 폰 폭에서 셋이 한 줄에 다 안 들어가고 **버튼만 혼자 다음 줄로 밀려나며**, 입력창은 그 위에서 쓰지도 않는 폭을 넓게 차지하고 있었습니다.
+- 이 파일에는 이미 같은 문제를 겪고 고친 전례가 있었습니다(비압축 `.row`의 코드 주석: "나란히 두면 입력창이 코드보다 좁아지고 두 요소의 끝이 맞지 않았다 — 한 줄, 한 너비로 통일"). `compact` 모드에도 같은 해법을 적용: `≤480px`에서 라벨·입력창·버튼을 각각 완전히 독립된 한 줄(세로 스택)로 바꿔, 버튼 문구 길이와 무관하게 항상 정렬되도록 했습니다.
+- 데스크톱과 480px 초과 폭(이 컴포넌트를 쓰는 `/refer` 포함)은 미디어쿼리 밖이라 기존 한 줄 레이아웃 그대로입니다.
+- Files: `src/components/referral-code-entry.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공. Playwright로 360/390/412/430px에서 라벨·입력창·버튼이 모두 같은 폭의 독립된 줄로 떨어지는지 좌표로 확인, 1280px 데스크톱에서 기존 한 줄 레이아웃 유지 확인.
+- Rollback: 이 커밋 revert.
