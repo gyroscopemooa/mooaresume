@@ -1083,6 +1083,40 @@ export async function createCampaign(input: {
   return { campaign: toCampaign(data as Record<string, unknown>, { total: rows.length, used: 0, expired: 0 }), error: null };
 }
 
+/**
+ * 캠페인의 문구만 고칩니다.
+ *
+ * 코드·수량·기간·상품은 여기서 손대지 않습니다 — 이미 발급된 코드와
+ * 짝지어진 값이라, 만든 뒤에 바꾸면 코드가 말하는 것과 캠페인이 말하는
+ * 것이 어긋납니다. 팜플렛·메일에 그대로 나가는 문구(대상·혜택·부제 등)는
+ * 그런 부작용이 없어 자유롭게 고칠 수 있습니다.
+ */
+export async function updateCampaignText(id: string, input: {
+  partnerName: string;
+  name: string;
+  notice: string | null;
+  subtitleText: string;
+  benefitText: string;
+  audienceText: string;
+  usageText: string;
+  footnoteText: string;
+}): Promise<string | null> {
+  const { error } = await serviceClient()
+    .from("coupon_campaigns")
+    .update({
+      partner_name: input.partnerName,
+      name: input.name,
+      notice: input.notice,
+      subtitle_text: input.subtitleText,
+      benefit_text: input.benefitText,
+      audience_text: input.audienceText,
+      usage_text: input.usageText,
+      footnote_text: input.footnoteText,
+    })
+    .eq("id", id);
+  return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
+}
+
 export async function archiveCampaign(id: string): Promise<string | null> {
   const { error } = await serviceClient()
     .from("coupon_campaigns")

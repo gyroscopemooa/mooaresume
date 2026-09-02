@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { archiveCampaign, createCampaign, deleteCampaign, getCampaignCodeUses } from "@/server/admin/admin-repository";
+import { archiveCampaign, createCampaign, deleteCampaign, getCampaignCodeUses, updateCampaignText } from "@/server/admin/admin-repository";
 import { isAdmin } from "@/server/admin/admin-session";
 import { buildCouponCsv, generateCouponCodes, normalizeCodePrefix } from "@/domain/coupon-code";
 
@@ -73,6 +73,34 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => null) as { id?: string } | null;
   if (!body?.id) return NextResponse.json({ error: "id가 필요합니다." }, { status: 400 });
   const error = await archiveCampaign(body.id);
+  if (error) return NextResponse.json({ error }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}
+
+const updateSchema = z.object({
+  id: z.string().uuid(),
+  partnerName: z.string().trim().min(1).max(60),
+  name: z.string().trim().min(1).max(120),
+  notice: z.string().trim().max(1000).nullable(),
+  subtitleText: z.string().trim().min(1).max(120),
+  benefitText: z.string().trim().min(1).max(120),
+  audienceText: z.string().trim().min(1).max(120),
+  usageText: z.string().trim().min(1).max(160),
+  footnoteText: z.string().trim().min(1).max(200),
+});
+
+/**
+ * 문구만 고칩니다. PATCH(보관)와 다른 자리를 쓰는 이유는 둘이 다른 일이기
+ * 때문입니다 — 코드·수량·기간은 여기서 받지 않습니다.
+ */
+export async function PUT(request: Request) {
+  if (!(await isAdmin())) return NextResponse.json({ error: "권한이 없습니다." }, { status: 401 });
+  const parsed = updateSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다." }, { status: 400 });
+  }
+  const { id, ...fields } = parsed.data;
+  const error = await updateCampaignText(id, fields);
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

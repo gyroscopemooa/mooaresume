@@ -104,7 +104,15 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
    * 목록을 바닥에 두고, 나머지는 옆에서 밀려 나왔다가 ✕ 또는 Esc로 닫힙니다.
    */
   const [panel, setPanel] = useState<null | "create" | "detail">(null);
-  const [tab, setTab] = useState<"codes" | "flyer" | "mail">("codes");
+  const [tab, setTab] = useState<"codes" | "flyer" | "mail" | "edit">("codes");
+  // 만든 뒤에 문구만 고치는 자리. 코드·수량·기간은 없습니다 — 이미 발급된
+  // 코드와 짝지어진 값이라 여기서 바꾸면 코드가 말하는 것과 어긋납니다.
+  const [editFields, setEditFields] = useState<{
+    partnerName: string; name: string; notice: string;
+    subtitleText: string; benefitText: string; audienceText: string; usageText: string; footnoteText: string;
+  } | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editMessage, setEditMessage] = useState("");
 
   useEffect(() => {
     if (!panel) return;
@@ -260,12 +268,38 @@ ${row.claimedCount}명이 사용한 기록도 함께 사라집니다.` : "";
     setBusy(false);
   }
 
-  function openDetail(campaign: AdminCampaign, next: "codes" | "flyer" | "mail") {
+  function openDetail(campaign: AdminCampaign, next: "codes" | "flyer" | "mail" | "edit") {
     setPreview(campaign);
     setTab(next);
     setPanel("detail");
     setMailFiles(null);
+    setEditMessage("");
+    setEditFields({
+      partnerName: campaign.partnerName, name: campaign.name, notice: campaign.notice ?? "",
+      subtitleText: campaign.subtitleText, benefitText: campaign.benefitText, audienceText: campaign.audienceText,
+      usageText: campaign.usageText, footnoteText: campaign.footnoteText,
+    });
     void loadCodes(campaign);
+  }
+
+  async function saveEdit() {
+    if (!preview || !editFields) return;
+    setEditBusy(true);
+    setEditMessage("");
+    const response = await fetch("/api/meensoo/campaigns", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: preview.id, ...editFields, notice: editFields.notice.trim() || null }),
+    });
+    const body = await response.json().catch(() => ({})) as { error?: string };
+    setEditBusy(false);
+    if (!response.ok) { setEditMessage(body.error ?? `저장하지 못했습니다. (${response.status})`); return; }
+    // 화면에 남은 이전 값(홍보물 미리보기·메일 초안)이 새 문구를 그대로
+    // 반영하도록 preview 자체를 갱신합니다 — 탭을 나갔다 들어와야 보이면
+    // 저장이 안 된 줄 압니다.
+    setPreview({ ...preview, ...editFields, notice: editFields.notice.trim() || null });
+    setEditMessage("저장했습니다.");
+    router.refresh();
   }
 
   async function loadCodes(campaign: AdminCampaign) {
@@ -319,6 +353,7 @@ ${row.claimedCount}명이 사용한 기록도 함께 사라집니다.` : "";
                   <button type="button" onClick={() => openDetail(campaign, "codes")}>코드</button>
                   <button type="button" onClick={() => openDetail(campaign, "flyer")}>홍보물</button>
                   <button type="button" onClick={() => openDetail(campaign, "mail")}>메일</button>
+                  <button type="button" onClick={() => openDetail(campaign, "edit")}>수정</button>
                   {/* 치우는 두 방법을 나란히 둡니다. 보관이 왼쪽인 것은 대개
                       그쪽이 맞고, 삭제만 있으면 되돌릴 수 없는 쪽을 누르게
                       되기 때문입니다. */}
@@ -403,7 +438,31 @@ ${row.claimedCount}명이 사용한 기록도 함께 사라집니다.` : "";
                   <button type="button" data-active={tab === "codes"} onClick={() => setTab("codes")}>코드</button>
                   <button type="button" data-active={tab === "flyer"} onClick={() => setTab("flyer")}>홍보물</button>
                   <button type="button" data-active={tab === "mail"} onClick={() => setTab("mail")}>메일</button>
+                  <button type="button" data-active={tab === "edit"} onClick={() => setTab("edit")}>수정</button>
                 </nav>
+
+                {tab === "edit" && editFields && <>
+                  <p className={styles.message}>
+                    코드·수량·기간·상품은 여기서 못 바꿉니다. 이미 발급된 코드와 짝지어진 값이라,
+                    바꾸려면 캠페인을 새로 만드셔야 합니다. 문구만 고칠 수 있습니다.
+                  </p>
+                  <div className={styles.grid}>
+                    {field("협업 기관명", editFields.partnerName, (v) => setEditFields({ ...editFields, partnerName: v }))}
+                    {field("캠페인명", editFields.name, (v) => setEditFields({ ...editFields, name: v }))}
+                    {field("주의사항", editFields.notice, (v) => setEditFields({ ...editFields, notice: v }))}
+                    {field("부제", editFields.subtitleText, (v) => setEditFields({ ...editFields, subtitleText: v }))}
+                    {field("혜택", editFields.benefitText, (v) => setEditFields({ ...editFields, benefitText: v }))}
+                    {field("대상", editFields.audienceText, (v) => setEditFields({ ...editFields, audienceText: v }))}
+                    {field("사용방법", editFields.usageText, (v) => setEditFields({ ...editFields, usageText: v }))}
+                    {field("하단 안내", editFields.footnoteText, (v) => setEditFields({ ...editFields, footnoteText: v }))}
+                  </div>
+                  <div className={styles.creatorFoot}>
+                    <button type="button" className={styles.primary} disabled={editBusy} onClick={() => void saveEdit()}>
+                      {editBusy ? "저장 중..." : "저장"}
+                    </button>
+                    {editMessage && <p className={styles.message} data-ok={editMessage === "저장했습니다."}>{editMessage}</p>}
+                  </div>
+                </>}
 
                 {tab === "codes" && codeList && <>
                   <div className={styles.codeHead}>

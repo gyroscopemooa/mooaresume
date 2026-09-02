@@ -5117,3 +5117,20 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/application-case-handoff.tsx`·`.module.css`, `src/components/quick-checkout-return.tsx`·`.module.css`.
 - Validation: 913 tests passed, `tsc` clean, `eslint` — 제 파일 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공. 헤드리스 크롬 412px 렌더로 두 화면의 코드 입력 단계 확인.
 - Rollback: 이 커밋 revert. 이메일 템플릿은 손대지 않았으므로 앱 쪽만 되돌리면 됩니다.
+
+## 2026-09-02 — Claude: 캠페인 문구 수정 기능 + og:image
+
+### 1. 협업쿠폰 캠페인 문구 수정
+- 배경: "인원 넣으면 대상에 자동으로 나오는 거, 이미 만든 캠페인은 왜 안 되냐"는 질문에 확인해 보니 캠페인은 만들 때 값이 고정되고 **PATCH는 보관 처리뿐**이라 고칠 방법 자체가 없었습니다.
+- 바꾼 것: `PUT /api/meensoo/campaigns`(신규)로 문구만 고치는 경로를 추가했습니다. **코드·수량·기간·상품은 받지 않습니다** — 이미 발급된 코드와 짝지어진 값이라 여기서 바꾸면 코드가 말하는 것과 캠페인이 말하는 것이 어긋납니다. 대상·혜택·부제·사용방법·하단안내·주의사항·기관명·캠페인명, 즉 팜플렛·메일에 그대로 나가는 문구만 고칠 수 있습니다.
+- 화면: 캠페인 목록에 "수정" 버튼 추가, 상세 패널에 "수정" 탭 추가. 저장하면 `preview` 상태를 즉시 갱신해 같은 화면의 홍보물 미리보기·메일 초안에도 바로 반영됩니다.
+- Files: `src/server/admin/admin-repository.ts`(`updateCampaignText` 추가), `src/app/api/meensoo/campaigns/route.ts`(`PUT` 추가), `src/app/meensoo/coupons/campaign-creator.tsx`.
+- 테스트 없음: `admin-repository.ts`의 다른 캠페인 함수들(`createCampaign`·`archiveCampaign`·`deleteCampaign`)도 기존에 테스트가 없어 같은 관례를 따랐습니다. 실 Supabase 클라이언트를 감싼 얇은 함수라 목킹 인프라가 이 파일에 없습니다.
+
+### 2. og:image 추가
+- 배경: 카카오톡·슬랙·네이버에 링크를 공유해도 썸네일이 안 떴습니다. `layout.tsx`의 `openGraph`/`twitter` 메타데이터에 `images`가 없었습니다.
+- 만든 것: `src/app/opengraph-image.tsx`(신규). Next.js 파일 규약으로 og:image·twitter:image 태그가 자동으로 붙습니다. 동적 값이 없어 **빌드 시점에 한 번만** 그려지고(`next build`에서 `○ /opengraph-image` static으로 확인), 방문자·크롤러 요청마다 다시 그리지 않습니다.
+- 한글 렌더링 함정: `ImageResponse`(Satori)는 기본 폰트에 한글 글리프가 없어 그대로 두면 빈 네모로 뜹니다. 화면에 실제로 쓰는 글자만 Google Fonts에 `text=` 파라미터로 요청해 필요한 글리프만 받았습니다(전체 폰트보다 훨씬 가볍고, 빌드 시점 1회이므로 프로덕션 요청 속도와 무관). `fetch`가 최신 브라우저 신호를 안 보내 Google이 TTF를 주는 것을 이용했습니다(WOFF2는 Satori가 못 읽음).
+- 디자인: 아이콘(`icon.svg`)과 같은 `#176b4a` 초록 M 마크, 서비스명, "AI 자소서 첨삭" 제목, 부제, 도메인. 1200×630(표준 OG 크기).
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공 — 실제 생성된 PNG를 열어 한글이 정상적으로 렌더링되는지 확인했습니다(빈 네모 없음).
+- Rollback: 두 기능 모두 이 커밋 revert. 마이그레이션 없음, 대시보드 설정 없음 — 여기서 만든 것만으로 완결됩니다.
