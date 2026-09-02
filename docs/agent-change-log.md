@@ -5037,3 +5037,23 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 913 tests passed(+4), `tsc` clean(위 두 파일 제외), `eslint` — 제가 만진 파일은 0 warning/error. 헤드리스 크롬 412px·900px 렌더 확인 — 모바일 버튼 정렬 확인, 데스크톱 무변화.
 - `next build`는 위 sitemap.ts 문제로 여전히 실패합니다(제가 만든 문제 아님, PC에서 파일 두 개 커밋 필요).
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 빌드를 막던 사이트맵 임포트, 빈 스텁으로 막음 (main 아님)
+
+- Agent/session: Claude (클라우드 세션). 사용자 질문 "폰에서만으로 못 고치나".
+- Status: **`claude/github-gui-sync-jfbyd5` 브랜치에만** 적용. **main에는 넣지 않았습니다.**
+
+### 확인한 것
+- main의 `e46eb20`이 `src/app/sitemap.ts`에서 `communityPostPath`(`@/domain/community`)와 `listPublishedCommunityPostsForSitemap`(`@/server/community/community-publication`)을 가져오는데, 이 둘은 `git log --all`로 찾아도 **저장소 역사 어디에도 없습니다.**
+- 이건 "PC에 있는 걸 커밋만 안 한 것"이 아니라 **애초에 안 만들어진 기능**입니다. `/community`는 목록 한 화면뿐이고(`src/app/community/page.tsx`), 게시글 낱개 페이지 라우트가 없습니다. `community-lounge.tsx`도 추천·댓글·신고를 전부 그 자리에서 끝내지 다른 URL로 옮기지 않습니다.
+
+### 왜 진짜처럼 만들지 않았나
+- 낱개 게시글 페이지 경로를 제가 지어내면(`/community/[postId]` 등), 나중에 코덱스가 실제로 그 라우트를 만들 때 제 추측이 진짜 설계와 어긋날 수 있습니다. CLAUDE.md의 "다른 구현을 조용히 대체하지 않는다" 원칙에 해당한다고 판단했습니다.
+- 그래서 **사실 그대로** 최소 스텁으로 막았습니다: `listPublishedCommunityPostsForSitemap`은 빈 배열을 돌려줍니다. `/community`는 이미 정적 목록에 매일 갱신으로 올라가 있어 라운지가 색인에서 빠지는 것도 아니고, 가리킬 페이지가 없는 주소를 사이트맵에 올리는 것보다 낫습니다. `communityPostPath`는 sitemap.ts의 import가 성립하도록 존재만 하고 `/community#${postId}`를 돌려주며(호출되는 자리는 지금 없음), 낱개 페이지가 생기면 그때 채우라는 주석을 남겼습니다.
+
+### 왜 main이 아니라 브랜치에만
+- 이 브랜치는 이미 main을 병합한 상태(`38ce119`)라, 이 두 파일만 추가하면 **제 브랜치 자체가 빌드됩니다.** main은 그대로 두어, PC에서 진행 중일 수 있는 커뮤니티 작업과 충돌하지 않습니다.
+- main을 고치는 건 여전히 PC 쪽 몫입니다: 코덱스가 실제 낱개 페이지를 만들면 이 두 파일의 내용을 그대로 덮어쓰면 되고, 그건 평범한 커밋이라 충돌이 아닙니다.
+- Files: `src/domain/community.ts`(함수 추가), `src/server/community/community-publication.ts`(신규, 스텁).
+- Validation: 913 tests passed, `tsc` clean(전체, sitemap 포함), `eslint` 클린, **`next build` 성공** — 이 세션 들어 처음으로 전체 빌드가 끝까지 돕니다.
+- Rollback: 이 커밋 revert. main은 애초에 안 건드렸으므로 되돌릴 필요도 없습니다.

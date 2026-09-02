@@ -23,3 +23,15 @@ export const communityPreviewPosts: CommunityPost[] = [
   { id: "preview-application", topic: "application", title: "자소서에 쓸 경험이 너무 평범한 것 같아요", body: "대단한 프로젝트는 없지만 일하면서 문제를 해결했던 과정은 있어요. 어떻게 꺼내야 할까요?", anonymousAlias: "익명 준비자", recommendationCount: 8, commentCount: 2, createdAt: "18분 전", attachments: [] },
   { id: "preview-job-search", topic: "job-search", title: "전공과 다른 직무로 지원해도 괜찮을까요?", body: "관심은 확실하지만 관련 스펙이 많지 않아 처음부터 포기해야 하나 고민돼요.", anonymousAlias: "익명 준비자", recommendationCount: 6, commentCount: 4, createdAt: "42분 전", attachments: [] },
 ];
+/**
+ * 게시글 하나를 가리키는 경로.
+ *
+ * 지금은 낱개 페이지가 없습니다 — `/community` 한 화면에 전체 목록이
+ * 올라가고, 글 상세로 들어가는 라우트가 아직 없습니다(`community-lounge.tsx`
+ * 참고: 추천·댓글 전부 목록 화면 안에서 끝납니다). 그 라우트가 생기면
+ * 여기만 고치면 됩니다. 지금은 부르는 곳이 없어도 export는 있어야
+ * 합니다 — `src/app/sitemap.ts`가 이 이름으로 가져옵니다.
+ */
+export function communityPostPath(postId: string): string {
+  return `/community#${postId}`;
+}
