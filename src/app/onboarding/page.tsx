@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Compass, FileCheck2, FilePenLine, LockKeyhole, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Compass, FileCheck2, FilePenLine, LockKeyhole, ScanSearch, Upload } from "lucide-react";
 import { decideWritingMode, type WritingMode } from "@/domain/writing-mode";
 import { isFinalEnabled } from "@/domain/final-availability";
 import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
@@ -144,7 +144,7 @@ export default function OnboardingPage() {
 
         {activeMode && isTemporarySelection && (
           <div className={styles.autoResult}>
-            <Sparkles />
+            <ScanSearch />
             <span>
               <b>입력한 내용을 기준으로 임시 선택했어요.</b>
               <small>작성 상태가 다르다면 위 카드에서 바로 변경할 수 있습니다.</small>
@@ -207,7 +207,7 @@ export default function OnboardingPage() {
             {error && <p className={styles.error}>{error}</p>}
             {draft.trim() && (
               <div className={styles.autoResult}>
-                <Sparkles />
+                <ScanSearch />
                 <span>
                   <b>{options.find((item) => item.id === automatic.mode)?.label} 단계로 임시 추천해요.</b>
                   <small>분량을 기준으로 한 추천이며 내용의 완성도는 결제 후 분석합니다.</small>

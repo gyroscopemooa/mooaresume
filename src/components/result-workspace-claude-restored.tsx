@@ -6,10 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  AlertCircle, ArrowLeft, ArrowRight, Check, CheckCircle2, Clipboard,
-  Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw, Sparkles,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
 import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation } from "@/domain/result-document-claude-restored";
 import { claudeRestoredSampleDocument } from "@/fixtures/result-document-claude-restored";
 import { diffText } from "@/lib/text-diff";
@@ -185,7 +182,7 @@ export function ResultWorkspaceClaudeRestored({ result = claudeRestoredSampleDoc
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{question.title}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
-            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <Sparkles/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <p className={styles.after}>{answer}</p>}</section></div>
+            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : <p className={styles.after}>{answer}</p>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;

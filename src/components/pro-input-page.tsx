@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft, ArrowRight, Check, FileCheck2, FilePenLine, LockKeyhole, Plus, RotateCcw, Sparkles, Trash2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FileCheck2, FilePenLine, ListOrdered, LockKeyhole, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { clearGuestDraft, loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import { JobPostingInput } from "@/components/job-posting-input";
 import { ResumeIntake, type ResumeAttachment } from "@/components/resume-intake";
@@ -352,7 +350,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         <p className={styles.targetHint}>공고 하나에 여러 직무가 있을 때 어느 직무 기준으로 볼지 알려주시면, 그 직무의 요구사항만 대조합니다. 비워두면 공고 전체를 기준으로 봅니다.</p>
         {mode === "CREATE" ? <>
           <Link href="/pro/create-wizard" className={styles.wizardLink}>
-            <Sparkles/>
+            <ListOrdered/>
             <span><b>단계별로 하나씩 안내받기</b><small>공고·자료·경험을 순서대로 물어봅니다. 처음이라면 이쪽이 편합니다.</small></span>
             <ArrowRight/>
           </Link>

@@ -158,3 +158,39 @@
 }
 .why .tooltip b { display: block; margin-bottom: 5px; color: #17221d; }
 .why .tooltip em { color: #176b4a; font-style: normal; font-weight: 700; }
+
+/* 붙여넣은 글에서 공고 주소를 찾았을 때 뜨는 줄.
+   경고가 아니라 제안이라 붉은색을 쓰지 않습니다 — 손님은 잘못한 것이 없고,
+   우리가 도울 수 있는 일이 하나 생겼을 뿐입니다. */
+.linkFound {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  background: #f2fafe;
+}
+.linkFound > svg { flex: none; width: 17px; color: #0284c7; }
+.linkFound span { flex: 1; color: #45606f; font-size: 12px; line-height: 1.65; }
+.linkFound b { color: #0f3a52; }
+.linkFound button {
+  flex: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: linear-gradient(180deg, #0ea5e9, #0284c7);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 14px -6px rgba(2, 132, 199, .5), inset 0 -2px 0 rgba(3, 105, 161, .5);
+}
+.linkFound button:disabled { background: #9fc6dd; cursor: default; box-shadow: none; }
+
+@media (max-width: 640px) {
+  .linkFound { flex-wrap: wrap; }
+  .linkFound button { width: 100%; }
+}

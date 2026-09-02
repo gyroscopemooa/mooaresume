@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
-import { AlertCircle, Check, FileText, HelpCircle, Loader2, Paperclip, Trash2, UploadCloud } from "lucide-react";
+import { AlertCircle, Check, FileText, HelpCircle, Link as LinkIcon, Loader2, Paperclip, Trash2, UploadCloud } from "lucide-react";
 import {
   CLASSIFIED_KIND_LABEL,
   CLASSIFIED_KIND_ORDER,
@@ -19,6 +19,7 @@ import {
   formatBytes,
 } from "@/domain/upload-limits";
 import { countNonWhitespaceCharacters } from "@/domain/usage-entitlement";
+import { findPostingUrl, removePostingUrlLine } from "@/domain/posting-link";
 import type { QuestionLengthPlan } from "@/domain/simple-intake-mapping";
 import styles from "./simple-intake.module.css";
 
@@ -65,6 +66,53 @@ type Props = {
 };
 
 export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
+  const [loadingLink, setLoadingLink] = useState(false);
+  const [linkMessage, setLinkMessage] = useState("");
+  const postingUrl = findPostingUrl(draft);
+
+  /**
+   * 공고를 읽어 자료 목록에 한 장으로 넣습니다.
+   *
+   * 분석이 링크를 여는 것이 아닙니다. 여기서 한 번 읽어 글자로 바꿔 두고,
+   * 그 뒤로는 다른 첨부와 똑같이 취급합니다 — 손님이 내용을 확인하고 고칠 수도
+   * 있어야 하기 때문입니다.
+   */
+  async function loadPostingLink() {
+    if (!postingUrl || loadingLink) return;
+    setLoadingLink(true);
+    setLinkMessage("");
+    try {
+      const response = await fetch("/api/job-postings/fetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: postingUrl }),
+      });
+      const body = await response.json().catch(() => ({})) as { ok?: boolean; text?: string; title?: string };
+      if (body.ok !== true || typeof body.text !== "string" || !body.text.trim()) {
+        // 그림으로 올린 공고나 스크립트로 그리는 공고는 읽을 것이 없습니다.
+        // 못 읽었다고 말하고 붙여넣기를 권합니다 — 조용히 넘어가면 손님은
+        // 공고를 넣은 줄 압니다.
+        setLinkMessage(" 이 주소에서는 내용을 읽지 못했습니다. 공고 본문을 복사해 붙여넣어 주세요.");
+        return;
+      }
+      const host = (() => { try { return new URL(postingUrl).hostname.replace(/^www\./, ""); } catch { return "채용공고"; } })();
+      onFilesChange([...files, {
+        id: `posting-link-${Date.now()}`,
+        filename: body.title?.trim() || `${host} 채용공고`,
+        extension: "link",
+        sizeBytes: body.text.length,
+        text: body.text,
+        kind: "JOB_POSTING",
+        basis: "content",
+      }]);
+      onDraftChange(removePostingUrlLine(draft, postingUrl));
+    } catch {
+      setLinkMessage(" 지금은 불러오지 못했습니다. 공고 본문을 복사해 붙여넣어 주세요.");
+    } finally {
+      setLoadingLink(false);
+    }
+  }
+
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [rejections, setRejections] = useState<Array<{ name: string; reason: string }>>([]);
@@ -174,8 +222,25 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
         rows={9}
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
-        placeholder={"자기소개서 전체를 그대로 붙여넣어 주세요.\n\n1. 지원 동기\n작성한 답변...\n\n2. 직무 역량\n작성한 답변..."}
+        placeholder={"자기소개서 전체를 그대로 붙여넣어 주세요.\n채용공고 주소를 한 줄로 붙여넣으면 공고 내용을 불러옵니다.\n\n1. 지원 동기\n작성한 답변...\n\n2. 직무 역량\n작성한 답변..."}
       />
+
+      {/* 칸이 하나뿐이라 사람들은 여기에 공고 주소도 함께 붙여넣습니다. 지금까지
+          그 줄은 자기소개서 본문으로 읽혔습니다 — 공고를 넣었다고 생각한 사람이
+          공고 대조 없는 결과를 받았습니다.
+
+          자동으로 불러오지는 않습니다. 붙여넣는 중에 주소가 잠깐 완성되는
+          순간마다 남의 서버를 두드리게 되고, 무엇보다 손님이 시키지 않은 일을
+          하게 됩니다. 찾았다고 말하고 누를 것을 내밀기만 합니다. */}
+      {postingUrl && (
+        <div className={styles.linkFound}>
+          <LinkIcon />
+          <span><b>채용공고 주소를 찾았어요.</b>{linkMessage || " 불러오면 공고 요구사항까지 함께 봅니다."}</span>
+          <button type="button" disabled={loadingLink} onClick={() => void loadPostingLink()}>
+            {loadingLink ? "불러오는 중..." : "공고 불러오기"}
+          </button>
+        </div>
+      )}
 
       {/* Optional, and one number for the whole form, because that is what most
           application forms actually say. A question that prints its own limit

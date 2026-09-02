@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Sparkles, Star } from "lucide-react";
+import { Check, FileText, Star } from "lucide-react";
 import styles from "./feedback-form.module.css";
 
 /**
@@ -87,7 +87,7 @@ export function FeedbackForm({ analysisRunId, alreadyAnswered }: { analysisRunId
   return (
     <main className={styles.page}>
       <form className={styles.card} onSubmit={submit}>
-        <span className={styles.brand}><Sparkles/> 무아레쥬메</span>
+        <span className={styles.brand}><FileText/> 무아레쥬메</span>
         <h1 className={styles.title}>이번 분석, 어떠셨나요?</h1>
         <p className={styles.lead}>
           30초면 됩니다. 별점만 눌러 주셔도 충분하고, 적어 주신 내용은

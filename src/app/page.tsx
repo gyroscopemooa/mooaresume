@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Briefcase, Check, FileSearch, FileUp, ListChecks, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
+import { ArrowRight, Briefcase, Check, FileSearch, FileUp, ListChecks, ScanSearch, ShieldCheck, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
