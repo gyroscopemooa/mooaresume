@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
+import { ArrowRight, Briefcase, Check, FileSearch, FileUp, ListChecks, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
@@ -21,7 +21,9 @@ import { getSiteUrl } from "@/lib/site-url";
 const differences = [
   { icon: FileSearch, title: "지원서 전체를 한 번에", body: "문항별 완성도뿐 아니라 경험 중복과 공고 연결까지 함께 봅니다." },
   { icon: ShieldCheck, title: "없는 경험은 만들지 않게", body: "부족한 근거는 임의로 채우지 않고, 확인이 필요한 질문으로 돌려드립니다." },
-  { icon: Sparkles, title: "고칠 순서가 분명하게", body: "점수보다 중요한 개선 3가지를 근거와 함께 먼저 보여드립니다." },
+  // 반짝이 대신 목록입니다. 이 항목이 말하는 것은 "마법"이 아니라 순서고,
+  // 반짝이는 AI가 알아서 해 준다는 인상을 주는데 우리는 그 반대를 말합니다.
+  { icon: ListChecks, title: "고칠 순서가 분명하게", body: "점수보다 중요한 개선 3가지를 근거와 함께 먼저 보여드립니다." },
 ];
 
 // The site's front door. This was /dev-home while the Coming Soon page held
@@ -96,7 +98,7 @@ export default function HomePage() {
         <SiteNav />
       </header>
 
-      <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><Sparkles/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
+      <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><FileUp/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
 
       <section className="hero container">
         {/* Three drifting blobs rather than one rotating fan. A conic gradient
@@ -112,7 +114,7 @@ export default function HomePage() {
             합격을 위한 준비를 봅니다`는 우리가 무엇을 믿는지를 말했지 무엇을
             해 주는지를 말하지 않았습니다 — 그 문장은 버리지 않고 페이지
             맨 아래, 이 서비스가 왜 만들어졌는지를 말하는 자리로 옮겼습니다. */}
-        <h1 className="hero-desktop"><em>자소서 첨삭</em><span className="visually-hidden"> · 자기소개서 첨삭 · AI 첨삭</span></h1>
+        <h1 className="hero-desktop"><em>자기소개서 첨삭</em><span className="visually-hidden"> · 자소서 첨삭 · AI 첨삭</span></h1>
         <h1 className="hero-mobile">
           나만의 <em>취업 코치</em>
           <span className="visually-hidden">자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭</span>

@@ -142,7 +142,8 @@ body{zoom:var(--app-scale)}
    덩어리로 안 보이고, 무엇보다 그림자를 얹을 수가 없습니다 — 투명한 자리에
    그려져 글자를 지웁니다. 단색으로 두면 그림자를 겹쳐 실제로 도톰하게 만들 수
    있습니다. 아래로 갈수록 어두워지는 두 겹과, 바닥에 넓게 깔리는 한 겹. */
-.hero h1.hero-desktop{font-size:clamp(46px,6.6vw,88px);font-weight:900;letter-spacing:.01em;line-height:1;margin:10px 0 20px}
+/* 일곱 글자입니다. 다섯 글자 기준으로 잡았던 88px에서는 넓은 화면에서 좌우가 꽉 차 답답해집니다. */
+.hero h1.hero-desktop{font-size:clamp(40px,5.6vw,76px);font-weight:900;letter-spacing:.005em;line-height:1;margin:10px 0 20px}
 /* 커밍순이 눈에 띄는 이유는 두께가 아니라 **평평하고 밝아서**입니다.
    아래로 어두워지는 겹을 쌓았더니 글자가 도톰해지는 대신 가장자리가 탁해져
    투박해 보였습니다. 그 겹을 걷어내고, 색을 한 단계 밝게 올린 뒤, 아래에
