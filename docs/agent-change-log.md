@@ -5299,3 +5299,19 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 사용자 요청: "메인홈은 규격·글자·내용·UI는 건들지 말고 투박하지 않게 입체감 있게" — 레이아웃·텍스트는 그대로 두고 시각적 깊이만 추가하는 작업. 1단계로 `one-click.module.css`의 `.banner`(그라디언트 카드, 그림자가 전혀 없던 평평한 카드)에 은은한 그림자를 추가했습니다. 나머지 요소(입력창, 시작하기 버튼 등)는 이미 그림자가 있어 우선순위에서 다음으로 미뤄 이번 커밋에는 포함하지 않았습니다.
 - Files: `src/app/one-click.module.css`.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 메인홈 입체감 마무리 + PRO 빌드 페이지 글자 크기 축소
+
+- Agent/session: Claude (클라우드 세션). 사용자 요청 2가지: (1) "메인홈은 규격·글자·내용·UI는 건들지 말고 투박하지 않게 입체감 있게" — 레이아웃·텍스트 변경 없이 시각적 깊이만 추가. (2) "프로빌드(입력페이지)에서 글자 크기를 작게 해서 전체적으로 UI가 더 돋보이게".
+
+### 메인홈 입체감 (레이아웃·텍스트 무변경)
+- 지난 커밋(ONE-CLICK 배너 그림자)에 이어 나머지 평평했던 요소에 그림자만 추가: 배너 안 초록 아이콘 사각형(`one-click.module.css` `.icon`), 모바일 헤드라인 아래 "자기소개서 컨설팅 받기" 민트색 알약 칩(`globals.css` `.hero-mobile-sub`). 색·크기·문구·배치는 그대로입니다.
+- 이미 그림자가 있던 요소(입력창, 첨삭 예시 버튼, 무료로 시작하기 버튼)는 건드리지 않았습니다 — 이미 평평하지 않은 것까지 손댈 필요는 없다고 판단했습니다.
+
+### PRO 빌드(입력) 페이지 — 모바일 글자 크기 축소
+- 대상: `pro-input-page.module.css`의 폰 전용 블록(제목·진행순서 카드·섹션 제목·스타일 선택 카드 등)과 `simple-intake.module.css`의 "지원 자료를 한 번에 넣어주세요" 카드.
+- 헤드라인 위주로 눈에 띄게 줄였습니다: 페이지 제목 21px→18px, 간편입력 카드 제목 17px→15px, 진행순서 섹션 제목 16px→14.5px, 섹션 제목들 15px→13.5px, 스타일 카드 제목 13px→12.5px 등. 나머지 본문·라벨류도 전반적으로 0.5~1px씩 줄였습니다.
+- **건드리지 않은 것**: `.form textarea`, `.experienceGrid input/textarea`의 16px — 이 값을 16px 미만으로 낮추면 iOS Safari가 포커스 시 화면을 확대한 채 되돌리지 않는 버그가 재현됩니다(이 파일에 이미 적힌 경고). 요청한 "전체적으로 작게"에도 이 값만은 예외로 유지했습니다.
+- Files: `src/app/globals.css`, `src/app/one-click.module.css`, `src/components/pro-input-page.module.css`, `src/components/simple-intake.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공. 390px 모바일·1280px 데스크톱 렌더 확인 — 데스크톱 무변화, 모바일은 눈에 띄게 조밀해진 레이아웃과 그림자 확인.
+- Rollback: 이 커밋 revert.

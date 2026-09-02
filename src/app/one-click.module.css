@@ -24,6 +24,7 @@
   border-radius: 12px;
   background: #176b4a;
   color: #fff;
+  box-shadow: 0 8px 18px -8px rgba(23, 107, 74, 0.55);
 }
 .icon svg {
   width: 18px;
