@@ -132,7 +132,11 @@
   .flow ol { grid-template-columns: 1fr 1fr; gap: 7px; }
   .flow li { padding: 13px 12px; }
   .flow li > span { font-size: 10px; }
-  .flow b { font-size: 11.5px; margin-top: 7px; line-height: 1.4; }
+  /* min-height reserves two lines' worth regardless of whether this card's
+     title actually wraps — otherwise a 1-line title pulls its description up
+     while the 2-line title next to it pushes its own down, and the row reads
+     as misaligned even though the cards themselves are the same height. */
+  .flow b { font-size: 11.5px; margin-top: 7px; line-height: 1.4; min-height: 2.8em; }
   .flow p { font-size: 10.5px; line-height: 1.55; }
 }
 

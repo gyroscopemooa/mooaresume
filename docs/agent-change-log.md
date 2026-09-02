@@ -5245,3 +5245,22 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/result-workspace-complete.module.css`.
 - Validation: 관련 테스트 30개 통과, `tsc` clean, `eslint` 클린, `next build` 성공. 360/390/430px 헤더 좌표 확인, 1280px 데스크톱 무변화 확인.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: PRO 입력 페이지 진행순서 카드 정렬 + 결제 전 확인화면 헤드라인 줄바꿈
+
+- Agent/session: Claude (클라우드 세션). 사용자가 실제 폰 스크린샷을 보내 "오와 열이 안 맞는 것 같다"고 지적.
+
+### 1. `/pro/build`(및 create·polish) — 진행 순서 2×2 카드 정렬
+- 스크린샷으로 확인된 문제: 01~04 카드 4개는 높이가 이미 똑같은데(그리드 기본 stretch), 카드마다 **제목이 1줄로 끝나는지 2줄로 넘어가는지가 달라** 그 아래 설명 문단이 카드마다 다른 높이에서 시작하고 있었습니다. 사용자는 "글자 크기를 줄이면 맞지 않을까"라고 물으셨는데, 실측해보니 글자를 줄이는 대신 **제목 영역에 2줄 높이를 항상 미리 확보**(`min-height:2.8em`)하는 쪽이 글자 크기를 유지하면서도 정렬을 맞추는 더 정확한 해법이었습니다.
+- 같은 행의 두 카드 모두 설명 문단 시작 위치가 정확히 일치하는 것을 좌표로 확인했습니다(수정 전 20px 어긋남 → 수정 후 0px).
+- Files: `src/components/pro-input-page.module.css`.
+
+### 2. `/analysis/prepare` (결제 전 최종 확인 화면) — 헤드라인 줄바꿈
+- 문제: h1에 `<br/>`로 의도한 줄바꿈("입력한 자료와 제공 범위를" / "한 번만 확인해 주세요.")이 있었지만, 좁은 폰(360~390px, 흔한 폭)에서는 **첫 줄 자체가 다시 한번 줄바꿈되면서 "를" 한 글자만 혼자 남는** 3줄짜리 어색한 모양이 되고 있었습니다. 온보딩에서 썼던 방식과 동일하게, Playwright `Range.getClientRects()`로 실제 줄 수를 재서 확인 후 모바일 전용 폰트 크기(23px)로 낮춰 의도한 2줄이 실제로 2줄로 끝나도록 맞췄습니다.
+- 이 화면의 나머지 부분(상품 요약, 준비된 자료, 로그인 폼 등)은 실제 렌더링해 확인한 결과 이미 읽을 만해서 손대지 않았습니다 — CSS에 적힌 숫자만 보고 전부 바꾸면 이미 괜찮은 부분까지 건드리는 과잉 수정이 됩니다.
+- Files: `src/components/analysis-preparation.module.css`.
+
+### 검증
+- Playwright로 360/375/390/412/414/430px 각각 렌더링해 줄 수·정렬 좌표 확인, 데스크톱(1280px) 무변화 확인.
+- Validation: 관련 테스트 통과(`analysis-preparation.test.tsx` 4개), `tsc` clean, `eslint` 클린, `next build` 성공.
+- Rollback: 이 커밋 revert.
