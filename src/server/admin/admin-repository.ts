@@ -2,6 +2,12 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import {
+  PRODUCT_PRICE_KRW,
+  readModelPricingFromEnv,
+  summarizeRunCost,
+  type RunCostSummary,
+} from "@/domain/analysis-cost";
 
 /**
  * Read side of the admin console.
@@ -139,7 +145,83 @@ export type AdminAnalysis = {
   caseTitle: string | null;
   companyName: string | null;
   hasResult: boolean;
+  /** 결제된 건인지. 아니면 무료 이용권(쿠폰·추천 보상)으로 돌린 것입니다. */
+  paid: boolean;
+  /** 시도별 원장을 합친 원가. 원장이 없으면 시도 0건으로 나옵니다. */
+  cost: RunCostSummary;
+  /** 화면에 시도 내역을 그대로 펼치기 위한 목록. */
+  attempts: AdminAnalysisAttempt[];
 };
+
+export type AdminAnalysisAttempt = {
+  attemptNo: number;
+  outcome: string;
+  failureCode: string | null;
+  source: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  createdAt: string;
+};
+
+/**
+ * 한 건에 실제로 얼마가 들었는지.
+ *
+ * `analysis_runs.total_tokens`를 쓰지 않는 이유가 있습니다. 그 칸은 성공한
+ * 시도의 값으로 **덮어써지고**, 실패한 시도는 아예 적히지 않습니다. 검증에서
+ * 걸려 버려진 응답도 모델이 끝까지 만들어 낸 것이라 요금은 그대로 나갔는데,
+ * 그 금액이 어디에도 없었습니다. 그래서 시도별 원장(`analysis_run_attempts`)을
+ * 따로 읽어 합칩니다.
+ *
+ * 원장이 없는 옛 건은 시도 0건으로 나옵니다 — 0원이라고 말하지 않습니다.
+ */
+async function loadAttemptLedger(runIds: string[]) {
+  const ledger = new Map<string, AdminAnalysisAttempt[]>();
+  if (runIds.length === 0) return ledger;
+
+  const { data, error } = await serviceClient()
+    .from("analysis_run_attempts")
+    .select("analysis_run_id, attempt_no, outcome, failure_code, source, input_tokens, output_tokens, created_at")
+    .in("analysis_run_id", runIds)
+    .order("created_at", { ascending: true });
+
+  // 표가 아직 없는 환경(마이그레이션 전)도 여기로 옵니다. 화면을 막지 않고
+  // 원가만 비워 둡니다 — 원장이 없다고 첨삭 목록을 못 보면 더 나쁩니다.
+  if (error) { console.error("admin-query:attempt-ledger", error); return ledger; }
+
+  for (const row of data ?? []) {
+    const runId = row.analysis_run_id as string;
+    const list = ledger.get(runId) ?? [];
+    list.push({
+      attemptNo: (row.attempt_no as number) ?? 0,
+      outcome: row.outcome as string,
+      failureCode: (row.failure_code as string | null) ?? null,
+      source: row.source as string,
+      inputTokens: (row.input_tokens as number | null) ?? null,
+      outputTokens: (row.output_tokens as number | null) ?? null,
+      createdAt: row.created_at as string,
+    });
+    ledger.set(runId, list);
+  }
+  return ledger;
+}
+
+/**
+ * 결제로 시작된 분석인지 가려냅니다.
+ *
+ * 성공한 결제 의도가 있으면 유료, 없으면 무료 이용권입니다. 무료 건은
+ * 판매가가 0이라 마진율로 판단할 수 없어(늘 -100%가 됩니다) 원가 자체를
+ * 기준으로 봅니다 — `summarizeRunCost` 참고.
+ */
+async function loadPaidRunIds(runIds: string[]): Promise<Set<string>> {
+  if (runIds.length === 0) return new Set();
+  const { data, error } = await serviceClient()
+    .from("checkout_intents")
+    .select("analysis_run_id")
+    .eq("status", "SUCCEEDED")
+    .in("analysis_run_id", runIds);
+  if (error) { console.error("admin-query:paid-runs", error); return new Set(); }
+  return new Set((data ?? []).map((row) => row.analysis_run_id as string));
+}
 
 export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
   const [{ data, error }, emails] = await Promise.all([
@@ -152,13 +234,24 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
   ]);
   if (error) { console.error("admin-query", error); return []; }
   if (!data) return [];
+
+  const runIds = data.map((row) => row.id as string);
+  // 단가는 환경변수에서 옵니다. 없으면 금액을 만들어 내지 않고 토큰만 보여
+  // 줍니다 — 틀린 원가는 없는 것보다 나쁩니다.
+  const pricing = readModelPricingFromEnv();
+  const [ledger, paidRunIds] = await Promise.all([loadAttemptLedger(runIds), loadPaidRunIds(runIds)]);
+
   return data.map((row) => {
     const applicationCase = row.application_cases as unknown as EmbeddedCase;
     const results = row.analysis_results as unknown as unknown[] | { id: string } | null;
+    const id = row.id as string;
+    const product = row.product as string;
+    const paid = paidRunIds.has(id);
+    const attempts = ledger.get(id) ?? [];
     return {
-      id: row.id as string,
+      id,
       email: emails.get(row.owner_user_id as string) ?? "(알 수 없음)",
-      product: row.product as string,
+      product,
       writingMode: row.writing_mode as string,
       status: row.status as string,
       attemptCount: (row.attempt_count as number) ?? 0,
@@ -171,6 +264,15 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
       caseTitle: applicationCase?.title ?? null,
       companyName: applicationCase?.company_name ?? null,
       hasResult: Array.isArray(results) ? results.length > 0 : Boolean(results),
+      paid,
+      attempts,
+      cost: summarizeRunCost({
+        product,
+        // 정가 기준입니다. 할인가로 팔린 건은 실제 마진이 이보다 낮습니다.
+        priceKrw: paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0,
+        attempts,
+        pricing,
+      }),
     };
   });
 }
@@ -195,6 +297,13 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
   ]);
   if (error || !run) return null;
   const applicationCase = run.application_cases as unknown as EmbeddedCase;
+  const product = run.product as string;
+  const [ledger, paidRunIds] = await Promise.all([
+    loadAttemptLedger([analysisRunId]),
+    loadPaidRunIds([analysisRunId]),
+  ]);
+  const attempts = ledger.get(analysisRunId) ?? [];
+  const paid = paidRunIds.has(analysisRunId);
   return {
     run: {
       id: run.id as string,
@@ -212,6 +321,14 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
       caseTitle: applicationCase?.title ?? null,
       companyName: applicationCase?.company_name ?? null,
       hasResult: Boolean(result?.result_data),
+      paid,
+      attempts,
+      cost: summarizeRunCost({
+        product,
+        priceKrw: paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0,
+        attempts,
+        pricing: readModelPricingFromEnv(),
+      }),
     },
     resultData: result?.result_data ?? null,
     targetLength: (run.target_length as number | null) ?? null,

@@ -43,6 +43,25 @@ const FLOOR_TOKENS = 12_000;
  */
 const CEILING_TOKENS = 120_000;
 
+/**
+ * A retry sent the identical estimate as the first try, so a failure caused by
+ * running out of room repeated itself for the same money — a validation
+ * failure has no other visible cause here, since the budget is the only thing
+ * standing between a real answer and a cut-off one.
+ *
+ * Raising the cap costs nothing by itself: OpenAI bills the tokens a response
+ * actually used, not the ceiling it was allowed to reach. A generous cap on a
+ * retry either goes unused (free) or was exactly what the first attempt
+ * needed (the point of raising it). Keyed by DB `attempt_count`, which is
+ * 1 on the first try and increments on every subsequent begin.
+ */
+const RETRY_BUDGET_MULTIPLIER: Record<number, number> = {
+  1: 1,
+  2: 1.35,
+  3: 1.7,
+};
+const MAX_RETRY_MULTIPLIER = RETRY_BUDGET_MULTIPLIER[3];
+
 /** Characters of cover letter the answer is being written from. */
 export function letterCharacters(request: AnalysisRequest): number {
   return request.documents
@@ -50,11 +69,17 @@ export function letterCharacters(request: AnalysisRequest): number {
     .reduce((total, document) => total + document.text.length, 0);
 }
 
-export function resolveMaxOutputTokens(request: AnalysisRequest): number {
+/**
+ * @param attemptNo `analysis_runs.attempt_count` at the moment this call is
+ * made — 1 for the first try. Defaults to 1 so every existing caller keeps
+ * today's budget unless it opts in.
+ */
+export function resolveMaxOutputTokens(request: AnalysisRequest, attemptNo: number = 1): number {
   const letter = letterCharacters(request);
   // FINAL adds its own verification pass — red team, four viewpoints, claim
   // tracing, X-ray — on top of everything PRO returns.
   const productMultiplier = request.product === "FINAL" ? 1.45 : 1;
-  const estimate = letter * TOKENS_PER_CHARACTER * RESULT_TO_LETTER_RATIO * productMultiplier;
+  const retryMultiplier = RETRY_BUDGET_MULTIPLIER[attemptNo] ?? MAX_RETRY_MULTIPLIER;
+  const estimate = letter * TOKENS_PER_CHARACTER * RESULT_TO_LETTER_RATIO * productMultiplier * retryMultiplier;
   return Math.min(CEILING_TOKENS, Math.max(FLOOR_TOKENS, Math.round(estimate)));
 }

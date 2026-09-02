@@ -4998,3 +4998,100 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/sitemap.ts`.
 - Validation: 887 tests passed, `tsc` clean, `eslint` — 이 파일에 새 경고 없음, **`next build` 성공**(이 세션 들어 main이 처음으로 끝까지 빌드됨).
 - Rollback: 이 커밋 revert(`e46eb20`의 sitemap.ts 부분만 되돌아옵니다. 그러면 다시 빌드가 깨집니다).
+## 2026-09-02 — Claude: 첨삭 한 건의 실제 원가와 마진 (관리자)
+
+- Agent/session: Claude (클라우드 세션). 사용자 요청: "관리자 단가 표시… 실패하고 2번하고 또 유저 재시도하고 그런 것도 나오고 총단가도 나오게, 수지타산 안 맞거나 위험한 건 조치하게 알아볼 수 있게".
+- Status: **`claude/github-gui-sync-jfbyd5` 브랜치에만** 적용. main에는 넣지 않았습니다 — 사용자 PC에 커밋되지 않은 커리어검사 워크트리 작업이 떠 있어, main을 움직이면 pull할 때 충돌합니다. 병합 시점은 사용자가 고릅니다.
+- **마이그레이션 있음**: `20260902010000_analysis_run_attempts.sql`. PC에서 `npm run db:remote:push` 필요(후기 설문 마이그레이션과 함께).
+
+### 무엇이 문제였나
+- 관리자 화면의 토큰 수는 **성공한 시도 하나의 것**이었습니다. `complete_quick_analysis`가 `analysis_runs`의 토큰 칸을 덮어쓰고, `fail_quick_analysis`는 토큰을 아예 적지 않습니다.
+- 그래서 **검증에서 걸려 버려진 응답의 요금이 어디에도 남지 않았습니다.** 모델이 끝까지 만들어 낸 응답이라 돈은 그대로 나갔는데, 기록상으로는 0입니다. 한 건에 실제로 얼마가 들었는지 물으면 답할 수 없었습니다.
+- 확인한 사실: 운영 경로는 백그라운드 경로(`startBackground` → `getBackground`)이고, DB 시도 1회 = OpenAI 호출 1회입니다. `QuickAnalysisProvider`의 내부 2회 루프는 운영에서 쓰이지 않습니다(평가용).
+
+### 바꾼 것
+1. **시도별 원장** `analysis_run_attempts` (신규 표). 추가 전용이고 브라우저에서 읽지도 쓰지도 못합니다(RLS + service_role만 grant). 입력·출력 토큰을 **나눠** 적습니다 — 출력 단가가 입력의 몇 배라 합계만으로는 원가를 못 냅니다.
+2. **기록 지점** `recordAnalysisAttempt` (신규). 브라우저 경로(`quick/execute`)와 스케줄러 경로(`analysis-runs/advance`) **양쪽 4개 자리**에 붙였습니다 — 완료 / 검증 실패 / 문항 누락 / 제공자 오류. 기록 실패는 전부 삼킵니다: **기록을 남기려다 결과를 잃는 것이 훨씬 나쁩니다.** 마이그레이션 전에도 분석은 그대로 동작합니다.
+3. **원가 계산** `src/domain/analysis-cost.ts` (신규, 순수 함수). 단가는 **환경변수**로 받습니다(`OPENAI_PRICE_INPUT_PER_1M`, `OPENAI_PRICE_OUTPUT_PER_1M`, `USD_KRW_RATE` 기본 1400). 없으면 금액을 **만들어 내지 않고** 토큰만 보여 줍니다 — 틀린 원가는 없는 것보다 나쁩니다.
+4. **위험 판정**: `LOSS`(원가 > 판매가) / `THIN`(마진 50% 미만) / `FREE_HEAVY`(무료 건인데 유료 판매가만큼 나감) / `UNKNOWN`(단가 미설정). 무료 건을 마진율로 재지 않는 것이 요점입니다 — 판매가가 0이라 늘 -100%로 나와 신호가 되지 못합니다.
+5. **화면**: 요약 카드에 `API 원가 합계`와 `확인 필요` 추가. 표에 `시도 내역`(몇 번째에서 무엇이 걸렸는지, 버려진 시도는 붉은 번호)과 `원가 · 마진` 칸 추가. 그 위에 **확인 필요 건만 모은 목록**을 따로 뒀습니다 — 표는 휴대폰에서 옆으로 밀어야 원가가 보여, 정작 급한 건을 찾을 수 없었습니다.
+
+### 알고 있는 한계
+- 판매가는 **정가 기준**(QUICK 4,900 / PRO 9,900 / FINAL 14,900)입니다. 할인가로 팔린 건은 실제 마진이 이보다 낮습니다.
+- 원장이 없는 **기존 건은 시도 0건**으로 나옵니다. 0원이라고 말하지 않습니다(합계에서도 제외).
+- `PROVIDER_FAILED`는 응답 자체를 못 받아 토큰을 모릅니다. `null`로 남기고 0으로 세지 않습니다.
+- Files: `src/domain/analysis-cost.ts`(신규)·`.test.ts`(신규 16건), `src/server/analysis/attempt-ledger.ts`(신규)·`.test.ts`(신규 6건), `supabase/migrations/20260902010000_analysis_run_attempts.sql`(신규), `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/admin.module.css`, `.env.example`.
+- Validation: 860 tests passed (+22), `tsc` clean, `eslint` 0 errors (기존 경고 2건은 커리어 파일 — 손대지 않음), `next build` 클린. 헤드리스 크롬 1440px·412px 렌더 확인 — 본문 가로 넘침 없음(412=412), 표는 `.scroll` 안에서만 가로 스크롤.
+- Rollback: 이 커밋 revert. 표는 남지만 아무도 읽지 않습니다.
+
+## 2026-09-02 — Claude: 재시도 출력 상한, 협업쿠폰 대상 인원 자동입력, 모바일 버튼 정렬
+
+- Agent/session: Claude (클라우드 세션). 사용자 확인 사항 세 가지에 대한 조치.
+
+### 1. 재시도가 같은 상한으로 같은 자리에서 또 잘리던 문제
+- 배경: "1번 재시도 토큰 그건 내가 어제 커밋만 안 하고 했는지 기억이 안 나네"라는 질문에 코드를 확인한 결과 **미작업**이었습니다(`resolveMaxOutputTokens(request)`에 시도 횟수 인자 자체가 없었습니다).
+- 문제: 자동 재시도(1회)가 1회차와 **완전히 동일한 요청**이었습니다. 실패 원인이 출력 잘림(`AI_OUTPUT_VALIDATION_FAILED`)이면 같은 상한으로 같은 자리에서 또 잘리고, API 요금만 두 배로 나갑니다.
+- 확인한 사실: OpenAI는 `max_output_tokens`(상한)이 아니라 **실제로 생성한 토큰만** 청구합니다. 상한을 올려도 모델이 그만큼 쓰지 않으면 요금이 늘지 않습니다 — 즉 이 변경은 원가를 늘리는 방향이 아니라, 두 번째 시도가 필요할 때만 여유를 주는 방향입니다.
+- 바꾼 것: `resolveMaxOutputTokens(request, attemptNo)` — DB의 `analysis_runs.attempt_count`(1부터 시작)를 받아 1회차는 그대로, 2회차 ×1.35, 3회차 ×1.7. `attemptNo`를 생략하면 기존과 동일(1회차 취급)해 다른 호출부를 건드리지 않습니다.
+- 배선: `getRunningContext`(백그라운드 폴링 경로)와 `begin()`(첫 시작·재시도 시작 경로) 양쪽에서 `attempt_count`를 읽어 `startBackground(request, attemptCount)`로 전달. `begin_quick_analysis` RPC는 8번의 마이그레이션을 거친 함수라 반환 값에 손대지 않고, `begin()` 안에서 기본키 조회 한 번을 추가했습니다.
+- Files: `src/server/ai/quick/output-budget.ts`·`.test.ts`, `src/server/analysis/quick-background-execution.ts`·`.test.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/server/analysis/quick-analysis-orchestrator.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`.
+
+### 2. 협업쿠폰 "대상" 인원수 자동입력
+- 사용자 지적: 홍보물의 "(20인)"을 "대상" 자유 텍스트에 직접 타이핑했고, 이미 있는 "사용 가능 인원"/"발급 수량" 숫자와 연결이 안 돼 있었습니다.
+- 바꾼 것: `defaultAudienceText(partnerName, totalCount)`. 기관명이 이름·대상을 자동으로 채우던 기존 패턴(직접 고치면 덮어쓰지 않음)을 인원수까지 확장했습니다 — 기관명 또는 인원수 어느 쪽이 바뀌어도 "지금 값이 자동값과 같은가"로 판단해 재계산합니다.
+- 이 값 하나가 홍보물의 "대상" 행과 메일 본문에 그대로 흘러가므로 두 곳 다 자동으로 반영됩니다(사용자가 언급한 "메일에도 자동입력되고"는 이미 그렇게 동작 — 이번 변경으로 값 자체가 정확해졌습니다).
+- UNIQUE(고유 코드)·SHARED(공유 코드) 모드 구분 없이 적용했습니다 — 두 경우 다 "이 숫자만큼의 사람에게 돌아간다"는 의미는 같습니다(고유 코드도 1장 = 1명이 기본값이므로).
+- Files: `src/app/meensoo/coupons/campaign-creator.tsx`.
+
+### 3. 관리자 화면 모바일 — 캠페인 목록 버튼이 세로로 쪼개지던 문제
+- 사용자가 보낸 스크린샷: "코드/홍보물/메일/보관/삭제" 버튼이 좁은 화면에서 "코 드", "홍 보 물"처럼 한 글자씩 세로로 쪼개져 있었습니다.
+- 원인: `.rowActions`가 `display:flex`인데 `flex-wrap`도 `white-space:nowrap`도 없어, 화면이 좁아지면 버튼이 글자보다 먼저 줄어들고 그 안의 한글 텍스트가 줄바꿈됐습니다.
+- 바꾼 것: 버튼에 `white-space: nowrap` 추가(항상), 좁은 화면에서는 `.rowActions`를 `display:grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr))`로 바꿔 폭을 고르게 정렬. 데스크톱은 기존 flex 그대로 — 렌더 확인 결과 변화 없음.
+- Files: `src/app/meensoo/coupons/coupons.module.css`.
+
+### 확인한 것, 손대지 않은 것
+- `src/app/sitemap.ts`(main에서 커밋 누락, 이전에 보고함)와 `src/components/community-lounge.tsx`(eslint 에러 1건, 커뮤니티 코드)는 **main 병합으로 들어온 기존 문제**이고 이번 작업 범위 밖입니다. 커뮤니티/커리어 영역은 코덱스 담당이라 손대지 않았습니다.
+- Validation: 913 tests passed(+4), `tsc` clean(위 두 파일 제외), `eslint` — 제가 만진 파일은 0 warning/error. 헤드리스 크롬 412px·900px 렌더 확인 — 모바일 버튼 정렬 확인, 데스크톱 무변화.
+- `next build`는 위 sitemap.ts 문제로 여전히 실패합니다(제가 만든 문제 아님, PC에서 파일 두 개 커밋 필요).
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 빌드를 막던 사이트맵 임포트, 빈 스텁으로 막음 (main 아님)
+
+- Agent/session: Claude (클라우드 세션). 사용자 질문 "폰에서만으로 못 고치나".
+- Status: **`claude/github-gui-sync-jfbyd5` 브랜치에만** 적용. **main에는 넣지 않았습니다.**
+
+### 확인한 것
+- main의 `e46eb20`이 `src/app/sitemap.ts`에서 `communityPostPath`(`@/domain/community`)와 `listPublishedCommunityPostsForSitemap`(`@/server/community/community-publication`)을 가져오는데, 이 둘은 `git log --all`로 찾아도 **저장소 역사 어디에도 없습니다.**
+- 이건 "PC에 있는 걸 커밋만 안 한 것"이 아니라 **애초에 안 만들어진 기능**입니다. `/community`는 목록 한 화면뿐이고(`src/app/community/page.tsx`), 게시글 낱개 페이지 라우트가 없습니다. `community-lounge.tsx`도 추천·댓글·신고를 전부 그 자리에서 끝내지 다른 URL로 옮기지 않습니다.
+
+### 왜 진짜처럼 만들지 않았나
+- 낱개 게시글 페이지 경로를 제가 지어내면(`/community/[postId]` 등), 나중에 코덱스가 실제로 그 라우트를 만들 때 제 추측이 진짜 설계와 어긋날 수 있습니다. CLAUDE.md의 "다른 구현을 조용히 대체하지 않는다" 원칙에 해당한다고 판단했습니다.
+- 그래서 **사실 그대로** 최소 스텁으로 막았습니다: `listPublishedCommunityPostsForSitemap`은 빈 배열을 돌려줍니다. `/community`는 이미 정적 목록에 매일 갱신으로 올라가 있어 라운지가 색인에서 빠지는 것도 아니고, 가리킬 페이지가 없는 주소를 사이트맵에 올리는 것보다 낫습니다. `communityPostPath`는 sitemap.ts의 import가 성립하도록 존재만 하고 `/community#${postId}`를 돌려주며(호출되는 자리는 지금 없음), 낱개 페이지가 생기면 그때 채우라는 주석을 남겼습니다.
+
+### 왜 main이 아니라 브랜치에만
+- 이 브랜치는 이미 main을 병합한 상태(`38ce119`)라, 이 두 파일만 추가하면 **제 브랜치 자체가 빌드됩니다.** main은 그대로 두어, PC에서 진행 중일 수 있는 커뮤니티 작업과 충돌하지 않습니다.
+- main을 고치는 건 여전히 PC 쪽 몫입니다: 코덱스가 실제 낱개 페이지를 만들면 이 두 파일의 내용을 그대로 덮어쓰면 되고, 그건 평범한 커밋이라 충돌이 아닙니다.
+- Files: `src/domain/community.ts`(함수 추가), `src/server/community/community-publication.ts`(신규, 스텁).
+- Validation: 913 tests passed, `tsc` clean(전체, sitemap 포함), `eslint` 클린, **`next build` 성공** — 이 세션 들어 처음으로 전체 빌드가 끝까지 돕니다.
+- Rollback: 이 커밋 revert. main은 애초에 안 건드렸으므로 되돌릴 필요도 없습니다.
+
+## 2026-09-02 — Claude: 스텁 대신 진짜 원인 제거, 그리고 main에도 같은 수정
+
+- Agent/session: Claude (클라우드 세션). 사용자 지적: 사이트가 멀쩡해 보이는 것과 최신 커밋이 실제로 배포된 것은 다른 얘기다, 커뮤니티/검사는 손대지 말고 진짜 원인을 없애라.
+
+### "배포는 됐다"의 실제 의미
+- 빌드가 실패해도 **직전에 성공한 배포가 계속 서빙됩니다.** Cloudflare·Vercel 등 대부분의 플랫폼이 이렇게 동작합니다 — 실패한 빌드는 아무것도 바꾸지 않고 조용히 남습니다. 그래서 사이트는 멀쩡해 보이지만, `e46eb20`은 아직 한 번도 실제로 배포되지 않았을 가능성이 높습니다.
+- 원인: PC 로컬 작업 중 새 파일 두 개가 디스크엔 있었는데 `git add`에서 빠진 채 커밋됐습니다. 로컬 `next dev`는 디스크의 파일을 그대로 쓰므로 문제없이 돌아갔고, push 이후 Cloudflare 빌드 서버에는 그 파일이 없어 거기서만 터졌습니다.
+
+### 방향을 바꿈 — 스텁을 걷어내고 원인 자체를 없앰
+- 직전 커밋(`8bfa302`)에서 없는 함수 두 개를 빈 스텁으로 만들어 브랜치만 빌드되게 했었는데, 사용자가 "커뮤니티/검사는 신경 쓰지 말라고 했잖냐"고 정확히 짚었습니다. 스텁이라도 커뮤니티 이름의 파일을 만들어 두는 것 자체가 그 영역에 손을 대는 것이었습니다.
+- 대신 **`sitemap.ts`를 `e46eb20` 이전 구조로 되돌렸습니다** — 없는 두 함수를 부르는 부분만 제거하고, 그 커밋이 같이 넣은 유효한 것들(구글 애널리틱스 설정, `/career` 계열 사이트맵 항목)은 그대로 두었습니다. 커뮤니티 낱개 게시글 항목은 원래도 실제 라우트가 없어 채울 수 없었으므로, 정적 `/community` 목록 항목만 남기고 "낱개 페이지가 생기면 여기 채우라"는 주석만 남겼습니다.
+- `src/domain/community.ts`에 추가했던 `communityPostPath`와 새로 만들었던 `src/server/community/community-publication.ts`는 **삭제**했습니다. 이제 이 파일들은 main과 정확히 같습니다.
+- 이건 기능 개발이 아니라 **없는 함수를 부르는 import 오류 제거**라고 판단해 main에도 같은 최소 수정을 적용했습니다.
+
+### 왜 이게 CLAUDE.md의 "다른 구현 보호"에 안 걸리는가
+- 삭제·대체·리팩터한 것은 **어디에도 존재한 적 없는 코드**뿐입니다(`git log --all`로 확인, 처음부터 없었음). 실제로 동작하던 코드를 건드리거나 지운 게 아닙니다.
+- 커리어 검사 사이트맵 항목, 애널리틱스 설정 등 **실제로 동작하는 부분은 그대로 뒀습니다.**
+- Files: `src/app/sitemap.ts`, `src/domain/community.ts`(추가했던 함수 제거, main과 동일하게 복원), `src/server/community/community-publication.ts`(삭제).
+- Validation: 913 tests passed, `tsc` clean, `eslint` — 제가 만진 파일 클린(전역 에러 1건은 `community-lounge.tsx`, 손대지 않음), **`next build` 성공**.
+- main 적용: 별도 커밋으로 동일한 diff를 main에 직접 푸시. Rollback: 두 브랜치 모두 이 커밋들 revert.

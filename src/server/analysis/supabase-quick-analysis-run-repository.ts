@@ -54,9 +54,15 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       analysisRunId: z.string().uuid(),
       request: z.unknown(),
     }).parse(data);
+    // The RPC just incremented attempt_count but does not return it, and its
+    // return shape has survived eight migrations unchanged — not the place to
+    // add a column for this. One extra primary-key read instead: `begin` runs
+    // once per start or retry, never in a poll loop.
+    const { data: run } = await client().from("analysis_runs").select("attempt_count").eq("id", parsed.analysisRunId).maybeSingle();
     return {
       analysisRunId: parsed.analysisRunId,
       request: validateAnalysisRequest(parsed.request),
+      attemptCount: (run?.attempt_count as number | undefined) ?? 1,
     };
   }
 
@@ -66,7 +72,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
   }
 
   async getRunningContext(analysisRunId: string) {
-    const { data: run, error: runError } = await client().from("analysis_runs").select("id, application_case_id, submission_snapshot_id, product, writing_mode, writing_style, target_length, response_id").eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING").single();
+    const { data: run, error: runError } = await client().from("analysis_runs").select("id, application_case_id, submission_snapshot_id, product, writing_mode, writing_style, target_length, response_id, attempt_count").eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING").single();
     if (runError || !run) throw new Error(`QUICK_ANALYSIS_RUNNING_CONTEXT_FAILED:${runError?.code ?? "NOT_FOUND"}`);
     const { data: items, error: itemsError } = await client().from("submission_snapshot_items").select("document_version_id").eq("snapshot_id", run.submission_snapshot_id);
     if (itemsError) throw new Error(`QUICK_ANALYSIS_SNAPSHOT_LOAD_FAILED:${itemsError.code}`);
@@ -92,7 +98,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       // cross-check against.
       .filter((document) => run.product !== "QUICK" || !supportingKinds.has(document.kind));
     const { data: applicationCase } = await client().from("application_cases").select("company_name, role_name").eq("id", run.application_case_id).maybeSingle();
-    return { analysisRunId: run.id, responseId: run.response_id, request: validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments }) };
+    return { analysisRunId: run.id, responseId: run.response_id, attemptCount: run.attempt_count as number, request: validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments }) };
   }
 
   async complete(analysisRunId: string, result: unknown) {

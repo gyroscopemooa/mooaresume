@@ -7,6 +7,8 @@ type RunningContext = {
   analysisRunId: string;
   responseId: string | null;
   request: AnalysisRequest;
+  /** `analysis_runs.attempt_count` at read time — 1 on the first try. */
+  attemptCount: number;
 };
 
 type BackgroundRepository = {
@@ -18,7 +20,7 @@ type BackgroundRepository = {
 };
 
 type BackgroundGateway = {
-  startBackground: (request: AnalysisRequest) => Promise<string>;
+  startBackground: (request: AnalysisRequest, attemptNo?: number) => Promise<string>;
   getBackground: (responseId: string) => Promise<QuickBackgroundResponse>;
 };
 
@@ -39,7 +41,7 @@ export async function advanceQuickBackgroundAnalysis(input: {
   const running = await input.repository.getRunningContext(input.analysisRunId);
 
   if (!running.responseId) {
-    const responseId = await input.gateway.startBackground(running.request);
+    const responseId = await input.gateway.startBackground(running.request, running.attemptCount);
     await input.repository.saveBackgroundResponse(
       running.analysisRunId,
       responseId,

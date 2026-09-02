@@ -25,6 +25,7 @@ describe("QUICK background execution recovery", () => {
             analysisRunId: "run-1",
             responseId: null,
             request,
+            attemptCount: 2,
           }),
           saveBackgroundResponse,
         },
@@ -32,7 +33,8 @@ describe("QUICK background execution recovery", () => {
       }),
     ).resolves.toEqual({ status: "started", analysisRunId: "run-1" });
 
-    expect(startBackground).toHaveBeenCalledWith(request);
+    // 몇 번째 시도인지가 함께 넘어가야 재시도의 출력 상한을 올릴 수 있습니다.
+    expect(startBackground).toHaveBeenCalledWith(request, 2);
     expect(saveBackgroundResponse).toHaveBeenCalledWith(
       "run-1",
       "resp-recovered",
