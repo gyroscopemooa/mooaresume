@@ -13,25 +13,45 @@
    and wrong for the choices: three cards a screen tall each turn one decision
    into three scrolls, and the descriptions are read once and never again.
    Three across, label only — the short label is what people actually pick by. */
+/* 좁은 화면. 예전에는 3열로 욱여넣고 설명을 통째로 숨겼습니다(라벨
+   네 글자만 보고 처음부터 작성/내용 보완/최종 첨삭 중 하나를 고르라는
+   뜻이 됩니다) — 그게 이 화면이 "애매하다"고 느껴진 이유였습니다.
+   세로 한 줄씩 펼쳐 설명을 그대로 보여주는 편이 낫습니다: 스크롤은
+   늘어나지만 매번 무엇을 고르는지 다시 읽지 않아도 됩니다. */
 @media(max-width:640px){
   .hero{padding:30px 0 22px}
-  .options{grid-template-columns:repeat(3,1fr);gap:8px}
-  .options>button{min-height:auto;padding:15px 8px 14px;text-align:center;border-radius:12px}
-  .options button>svg{width:20px;margin:0 auto 9px}
-  .options small{font-size:12px;line-height:1.45}
-  /* The full sentence and its description live on the desktop card. Here the
-     label carries it: 처음부터 작성 / 내용 보완 / 완성본 검수. */
-  .options b,.options p{display:none}
-  .radio{right:7px;top:7px;width:13px;height:13px}
-  .radio svg{width:8px!important}
+
+  .options{grid-template-columns:1fr;gap:10px}
+  /* 그리드입니다 — flex로 icon·small·b·p를 한 줄에 늘어놓으면 넷이 폭을
+     나눠 가지면서 small·b·p가 각각 좁은 세로 칸에 갇혀 한 글자씩
+     줄바꿈됩니다. 아이콘은 1열에 세 줄 높이로 걸치고, 라벨·제목·설명은
+     2열에 세로로 쌓입니다. */
+  .options>button{
+    display:grid;
+    grid-template-columns:40px 1fr;
+    column-gap:14px;
+    align-items:start;
+    min-height:auto;padding:15px 46px 15px 15px;
+    text-align:left;border-radius:14px;
+  }
+  .options button>svg{
+    grid-row:1/4;grid-column:1;align-self:center;
+    box-sizing:content-box;flex:none;
+    width:21px;height:21px;margin:0;padding:9px;
+    border-radius:12px;background:var(--mint);color:var(--green);
+  }
+  .options small{grid-row:1;grid-column:2;font-size:11px}
+  .options b{grid-row:2;grid-column:2;display:block;font-size:14px;margin-top:3px}
+  .options p{grid-row:3;grid-column:2;display:block;font-size:12px;line-height:1.55;margin-top:3px}
+  .radio{left:auto;right:15px;top:50%;transform:translateY(-50%)}
 
   .products{margin-top:22px;padding-top:22px}
-  .productGrid{grid-template-columns:repeat(3,1fr);gap:8px}
-  .productGrid>a,.productGrid>div{min-height:auto;padding:15px 10px;border-radius:12px;text-align:center}
-  .productGrid small{font-size:11px;line-height:1.45}
-  .productGrid b{font-size:11.5px;margin:8px 0 0;line-height:1.4}
-  .productGrid p{display:none}
-  .productGrid em{right:6px;top:6px;padding:2px 6px;font-size:9px}
-  .productGrid span{justify-content:center;margin-top:10px;font-size:11px}
-  .productGrid span svg{display:none}
+  .productGrid{grid-template-columns:1fr;gap:10px}
+  .productGrid>a,.productGrid>div{min-height:auto;padding:16px 18px;border-radius:14px;text-align:left}
+  .productGrid small{font-size:12px}
+  .productGrid b{font-size:14.5px;margin:8px 0 4px;line-height:1.4}
+  .productGrid p{display:block;font-size:12.5px;line-height:1.65}
+  .productGrid em{right:14px;top:14px;padding:3px 8px;font-size:10px}
+  .productGrid span{justify-content:flex-start;margin-top:10px;font-size:12.5px}
+  .productGrid span svg{display:inline-block;width:13px}
 }
