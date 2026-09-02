@@ -5144,3 +5144,19 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/server/admin/admin-repository.ts`(`AdminSummary` 타입·`getSummary` 확장), `src/app/meensoo/page.tsx`.
 - Validation: 913 tests passed, `tsc` clean, `next build` 성공. 데스크톱 1200px·모바일 412px 렌더 확인 — 실매출 카드 바로 옆에 자연스럽게 배치.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 홈 화면 아이콘(PWA)과 브랜드 404 페이지
+
+- Agent/session: Claude (클라우드 세션). og:image에 이어 같은 결의 마무리 작업 — "카톡링크 이런 거 하면 고급인" 부류.
+
+### 1. 홈 화면 아이콘
+- 문제: `manifest.ts`에 `icons`가 없었습니다. 안드로이드에서 "홈 화면에 추가"를 하면 아이콘 대신 페이지 스크린샷이 뜨고, iOS는 흰 배경에 글자 일부만 잘린 모양이 됩니다.
+- 만든 것: `src/app/icon-mark.tsx`(공용 렌더러, og:image처럼 `next/og`의 `ImageResponse` 사용 — 로고가 영문 M 한 글자라 한글 폰트를 따로 받아 올 필요가 없어 og:image보다 단순합니다), `apple-icon.tsx`(iOS, 파일명만으로 Next.js가 자동 연결), `icon-192/route.tsx`·`icon-512/route.tsx`(안드로이드 매니페스트용, `dynamic = "force-static"`으로 빌드 시점 1회만 생성). `manifest.ts`에 두 아이콘을 등록했습니다.
+- 검증: 생성된 PNG를 직접 열어 확인 — 192/512/180 각각 정확한 크기, `icon.svg`와 같은 초록 M 마크.
+
+### 2. 브랜드 404 페이지
+- 문제: 없는 주소로 들어오면 Next.js 기본 흰 화면이 떠서 사이트가 아니라 서버가 고장 난 것처럼 보였습니다.
+- 만든 것: `src/app/not-found.tsx`·`.module.css`. M 마크, "페이지를 찾을 수 없습니다", 홈으로 가는 버튼. `robots: {index:false}`로 색인 제외.
+- Files: `src/app/icon-mark.tsx`(신규), `src/app/apple-icon.tsx`(신규), `src/app/icon-192/route.tsx`(신규), `src/app/icon-512/route.tsx`(신규), `src/app/manifest.ts`, `src/app/not-found.tsx`(신규), `src/app/not-found.module.css`(신규).
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공 — 새 라우트 5개 전부 `○`(static)로 확인. 헤드리스 크롬 412px 렌더로 404 화면 확인.
+- Rollback: 이 커밋 revert. 대시보드·마이그레이션 의존 없음.
