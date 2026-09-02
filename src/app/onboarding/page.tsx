@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, FileCheck2, FilePenLine, LockKeyhole, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Compass, FileCheck2, FilePenLine, LockKeyhole, Sparkles, Upload } from "lucide-react";
 import { decideWritingMode, type WritingMode } from "@/domain/writing-mode";
 import { isFinalEnabled } from "@/domain/final-availability";
 import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
@@ -12,7 +12,7 @@ import styles from "./onboarding.module.css";
 const options = [
   {
     id: "CREATE" as const,
-    icon: Sparkles,
+    icon: Compass,
     label: "처음부터 작성",
     title: "아직 아무것도 못 썼어요",
     description: "경험을 찾고 소재와 개요부터 함께 만들어요.",

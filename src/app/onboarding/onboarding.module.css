@@ -27,7 +27,11 @@
    토스 같은 앱이 선택 화면마다 쓰는 방식입니다. */
 @media(max-width:640px){
   .hero{padding:30px 0 22px}
-  .hero h1{letter-spacing:-.05em}
+  /* 이 헤드라인은 이 폭에서 한 줄에 못 들어갑니다(계산상 필요 폭이
+     컨테이너보다 넓음) — 두 줄은 피할 수 없으므로, 대신 각 줄이 폭을
+     꽉 채우도록 vw 비례로 키웁니다. 고정 36px로 두면 두 줄 다 여백만
+     남고 작아 보였습니다. */
+  .hero h1{letter-spacing:-.05em;font-size:clamp(34px,10.5vw,42px);word-break:keep-all}
 
   .options{grid-template-columns:1fr;gap:10px}
   .options>button{
@@ -47,10 +51,16 @@
     grid-row:1/-1;grid-column:1;align-self:center;
     box-sizing:content-box;flex:none;
     width:22px;height:22px;margin:0;padding:13px;
-    border-radius:14px;background:#eef1ef;color:#9aa8a2;
-    transition:background 120ms ease,color 120ms ease;
+    border-radius:14px;color:#fff;
+    box-shadow:0 6px 14px -8px rgba(15,40,30,.4);
+    transition:box-shadow 120ms ease;
   }
-  .options>button.selected svg{background:var(--green);color:#fff}
+  /* 옵션마다 고유 색을 항상 보여줍니다(선택 여부와 무관) — 선택 표시는
+     카드 테두리·그림자·라디오가 맡습니다. */
+  .options>button:nth-child(1) svg{background:linear-gradient(135deg,#22c58b,#0c7f52)}
+  .options>button:nth-child(2) svg{background:linear-gradient(135deg,#8a86ff,#5548d6)}
+  .options>button:nth-child(3) svg{background:linear-gradient(135deg,#ffb84d,#ee8a1c)}
+  .options>button.selected svg{box-shadow:0 8px 18px -6px rgba(15,40,30,.5)}
   /* 라벨(예: "처음부터 작성")은 뺍니다 — 제목 자체가 이미 그 뜻입니다.
      설명은 고른 카드에만: 아직 안 고른 것의 사정까지 미리 읽을 필요는
      없습니다. */
@@ -59,7 +69,7 @@
   .options>button.selected b{color:var(--ink)}
   .options p{display:none;grid-row:2;grid-column:2;margin-top:3px;font-size:12px;line-height:1.5;color:var(--muted)}
   .options>button.selected p{display:block}
-  .radio{left:auto;right:16px;top:50%;transform:translateY(-50%)}
+  .radio{left:auto;right:16px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-width:1.5px}
 
   .products{margin-top:22px;padding-top:22px}
   .productGrid{grid-template-columns:1fr;gap:10px}
