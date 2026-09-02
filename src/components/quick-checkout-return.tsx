@@ -92,6 +92,14 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
   const [product, setProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [message, setMessage] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
+  // 링크 대신 코드로 확인합니다. Gmail 등이 메일을 열자마자 안의 링크를
+  // 미리 눌러 보는데, 매직링크는 한 번 쓰면 끝나는 값이라 사람이 누르기
+  // 전에 이미 소모되어 있었습니다. 코드는 직접 입력해야 해서 그럴 일이
+  // 없습니다.
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [failureKind, setFailureKind] = useState<FailureKind>("checkout");
   // 로그인 링크가 돌아올 자리. 결과를 보러 온 사람을 결제 화면으로 돌려보내면
   // "이 탭에 저장된 작성본이 없습니다"를 만나게 됩니다.
@@ -436,10 +444,37 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(runId ? `/result?analysisRunId=${runId}` : "/analysis/prepare")}`,
         },
       });
-      setMessage(error ? "이메일 안내를 보내지 못했습니다." : "로그인 링크를 이메일로 보냈습니다. 링크는 한 번만 쓸 수 있으니, 메일을 연 그 브라우저에서 바로 눌러 주세요.");
+      if (error) { setMessage("이메일 안내를 보내지 못했습니다."); return; }
+      setOtpEmail(email);
+      setOtpCode("");
+      setOtpSent(true);
+      setMessage("이메일로 6자리 코드를 보냈습니다. 받으신 코드를 아래에 입력해 주세요.");
     } finally {
       setEmailBusy(false);
     }
+  }
+
+  /**
+   * 메일 속 링크가 아니라 여기서 직접 검증합니다.
+   *
+   * 링크가 아직 살아 있으면 눌러도 되지만, 이 화면은 그걸 보장할 수
+   * 없습니다. 코드는 여기서 바로 검증하므로 결과가 확실합니다.
+   */
+  async function verifyEmailCode() {
+    if (!otpCode.trim()) { setMessage("받으신 코드를 입력해 주세요."); return; }
+    setVerifyingOtp(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email: otpEmail,
+      token: otpCode.trim(),
+      type: "email",
+    });
+    if (error) {
+      setVerifyingOtp(false);
+      setMessage("코드가 올바르지 않거나 만료됐습니다. 다시 받아 주세요.");
+      return;
+    }
+    window.location.reload();
   }
 
   if (phase === "idle") return null;
@@ -457,9 +492,25 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         {/* 결제를 확인하지 못한 경우에만 띄웁니다. 분석이 실패한 손님에게
             로그인 링크는 할 일이 아니라 헛걸음입니다 — 로그인해도 결과가
             없고, 그 사이에 손님은 자기가 뭘 잘못한 줄 압니다. */}
-        {phase === "failed" && failureKind === "checkout" && <button type="button" className={styles.emailButton} disabled={emailBusy} onClick={() => void requestEmailLink()}>
+        {phase === "failed" && failureKind === "checkout" && !otpSent && <button type="button" className={styles.emailButton} disabled={emailBusy} onClick={() => void requestEmailLink()}>
           {emailBusy ? "전송 중..." : "이메일로 다시 안내받기"}
         </button>}
+        {phase === "failed" && failureKind === "checkout" && otpSent && (
+          <div className={styles.otpBlock}>
+            <input
+              type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ""))}
+              placeholder="6자리 코드"
+            />
+            <button type="button" className={styles.emailButton} disabled={verifyingOtp} onClick={() => void verifyEmailCode()}>
+              {verifyingOtp ? "확인 중..." : "코드 확인"}
+            </button>
+            <button type="button" disabled={emailBusy} onClick={() => void requestEmailLink()}>
+              코드 다시 받기
+            </button>
+          </div>
+        )}
       </div>
     </section>
     {phase !== "failed" && (

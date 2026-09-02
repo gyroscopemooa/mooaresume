@@ -45,6 +45,13 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  // 이메일 로그인은 링크 대신 코드로 받습니다. Gmail 등은 피싱 확인용으로
+  // 메일을 열자마자 안의 링크를 미리 눌러 보는데, 매직링크는 한 번 쓰면
+  // 끝나는 값이라 사람이 누르기 전에 이미 소모되어 있었습니다. 코드는
+  // 직접 입력해야 하니 그렇게 미리 소모될 일이 없습니다.
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [savedCaseId, setSavedCaseId] = useState<string | null>(null);
   const [savedAnalysisRunId, setSavedAnalysisRunId] = useState<string | null>(null);
   // An unspent credit for exactly this product. Looked up rather than assumed:
@@ -157,7 +164,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
 
   async function sendLoginLink() {
     if (!email.trim()) {
-      setMessage("로그인 링크를 받을 이메일을 입력해 주세요.");
+      setMessage("로그인 코드를 받을 이메일을 입력해 주세요.");
       return;
     }
     setBusy(true);
@@ -170,7 +177,39 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       },
     });
     setBusy(false);
-    setMessage(error ? "로그인 링크를 보내지 못했습니다." : "이메일로 로그인 링크를 보냈습니다.");
+    if (error) { setMessage("로그인 코드를 보내지 못했습니다."); return; }
+    setOtpCode("");
+    setOtpSent(true);
+    setMessage("이메일로 6자리 코드를 보냈습니다. 받으신 코드를 아래에 입력해 주세요.");
+  }
+
+  /**
+   * 이메일이 아니라 여기서 로그인을 끝냅니다.
+   *
+   * 메일의 링크가 아직 살아 있으면 눌러도 되지만, 그건 이 화면이 보장할 수
+   * 없는 일입니다. 코드는 이 화면에서 직접 검증하므로 결과가 확실합니다.
+   * 성공하면 새로고침합니다 — 링크를 눌렀을 때와 같은 자리(이용권·크레딧
+   * 조회)를 다시 타게 하는 가장 간단한 방법입니다.
+   */
+  async function verifyLoginCode() {
+    if (!otpCode.trim()) {
+      setMessage("받으신 코드를 입력해 주세요.");
+      return;
+    }
+    setVerifyingOtp(true);
+    setMessage("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: otpCode.trim(),
+      type: "email",
+    });
+    if (error) {
+      setVerifyingOtp(false);
+      setMessage("코드가 올바르지 않거나 만료됐습니다. 다시 받아 주세요.");
+      return;
+    }
+    window.location.reload();
   }
 
   async function signInWithGoogle() {
@@ -360,8 +399,21 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   return <div className={styles.login}>
     <button className={styles.oauthButton} type="button" disabled={busy} onClick={() => void signInWithGoogle()}>{"Google\uB85C \uACC4\uC18D\uD558\uAE30"}</button>
     <div className={styles.divider}><span>{"\uB610\uB294 \uC774\uBA54\uC77C\uB85C \uB85C\uADF8\uC778"}</span></div>
-    <label><Mail/><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소"/></label>
-    <button type="button" disabled={busy} onClick={() => void sendLoginLink()}>{busy ? "전송 중..." : "로그인 링크 받기"} <ArrowRight/></button>
+    <label><Mail/><input type="email" autoComplete="email" value={email} onChange={(event) => { setEmail(event.target.value); setOtpSent(false); }} placeholder="이메일 주소" disabled={otpSent}/></label>
+    {!otpSent ? (
+      <button type="button" disabled={busy} onClick={() => void sendLoginLink()}>{busy ? "전송 중..." : "로그인 코드 받기"} <ArrowRight/></button>
+    ) : (
+      <>
+        <input
+          type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+          value={otpCode}
+          onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ""))}
+          placeholder="6자리 코드"
+        />
+        <button type="button" disabled={verifyingOtp} onClick={() => void verifyLoginCode()}>{verifyingOtp ? "확인 중..." : "코드 확인"} <ArrowRight/></button>
+        <button type="button" className={styles.otpResend} disabled={busy} onClick={() => void sendLoginLink()}>코드 다시 받기</button>
+      </>
+    )}
     {(message || authError) && <p>{message || authError}</p>}
   </div>;
 }

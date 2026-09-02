@@ -5095,3 +5095,25 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/app/sitemap.ts`, `src/domain/community.ts`(추가했던 함수 제거, main과 동일하게 복원), `src/server/community/community-publication.ts`(삭제).
 - Validation: 913 tests passed, `tsc` clean, `eslint` — 제가 만진 파일 클린(전역 에러 1건은 `community-lounge.tsx`, 손대지 않음), **`next build` 성공**.
 - main 적용: 별도 커밋으로 동일한 diff를 main에 직접 푸시. Rollback: 두 브랜치 모두 이 커밋들 revert.
+
+## 2026-09-02 — Claude: 이메일 로그인을 매직링크에서 6자리 코드로
+
+- Agent/session: Claude (클라우드 세션). 사용자 질문: "매직링크가 결과 첨삭 메일에서만 쓰이는 거냐, 비용 안 늘고 문제없으면 진행".
+
+### 확인한 사실
+- 매직링크는 **완료 메일(첨삭 결과 메일)에는 안 쓰입니다.** 그 메일의 "결과 확인하기"는 평범한 URL이고, 로그인 안 돼 있으면 구글 로그인 화면(토스 스타일)이 뜹니다.
+- 실제로 매직링크를 쓰는 곳은 둘입니다: `/analysis/prepare` 게스트 화면의 "이메일로 로그인 링크 받기"(`application-case-handoff.tsx`), 결제 확인이 지연될 때의 "이메일로 다시 안내받기"(`quick-checkout-return.tsx`).
+- **링크와 코드는 같은 이메일 한 통에 든 같은 값의 두 표현입니다.** Gmail 등이 피싱 확인을 위해 메일을 열자마자 안의 링크를 먼저 방문하면, 그 순간 하나뿐인 값이 소모되어 **코드도 함께 무효화됩니다.** 그래서 "코드도 같이 보여주기"만으로는 안 고쳐지고, 이메일에서 **링크 자체를 빼야** 근본적으로 막힙니다.
+- 비용: 늘지 않습니다. `signInWithOtp` 호출 한 번, 이메일 한 통은 그대로입니다. 내용이 링크에서 코드로 바뀔 뿐이라 Resend·Supabase 어느 쪽 사용량도 변하지 않습니다.
+
+### 바꾼 것 (앱 코드)
+- 두 화면 모두 "코드 보내기" 이후 **코드 입력 단계**를 추가했습니다. `supabase.auth.verifyOtp({ email, token, type: "email" })`로 이 화면에서 직접 검증하고, 성공하면 새로고침해 링크를 눌렀을 때와 같은 경로(이용권·크레딧 재조회)를 다시 타게 했습니다.
+- 기존 `emailRedirectTo`(링크 목적지)는 그대로 뒀습니다 — 이메일 템플릿을 아직 안 고친 동안에는 링크도 계속 살아 있어야 하고, 템플릿을 고친 뒤에는 자연히 안 쓰이게 됩니다.
+- 사이드 이펙트로 발견한 것: `application-case-handoff.module.css`의 `.payInstead`가 `.action button`/`.login button`과 명세 우선순위가 같아 밑줄 텍스트가 아니라 초록 버튼으로 덮어써지는 **기존 버그**를 발견했습니다(`.oauthButton`이 이미 같은 문제를 `!important`로 피해 가고 있었습니다). 기존 사용처(`spendCredit` 토글 버튼)는 손대지 않고, 이번에 새로 추가한 "코드 다시 받기"만 별도 클래스(`.otpResend`)로 같은 방식(`!important`)을 적용했습니다.
+
+### 남은 일 — Supabase 대시보드(여기서 못 함)
+- **Authentication → Email Templates → Magic Link**에서 링크(`{{ .ConfirmationURL }}`)를 지우고 코드(`{{ .Token }}`)만 남겨야 이 수정이 실제로 효과가 있습니다. 템플릿을 안 바꾸면 지금처럼 링크와 코드가 같이 오고, 링크가 여전히 먼저 소모될 수 있습니다.
+- 예시 본문: `인증 코드: {{ .Token }}\n\n이 코드는 {{ .SiteURL }}에서 로그인할 때 사용합니다. 10분 후 만료됩니다.` (링크 관련 문구·버튼 전부 제거)
+- Files: `src/components/application-case-handoff.tsx`·`.module.css`, `src/components/quick-checkout-return.tsx`·`.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` — 제 파일 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공. 헤드리스 크롬 412px 렌더로 두 화면의 코드 입력 단계 확인.
+- Rollback: 이 커밋 revert. 이메일 템플릿은 손대지 않았으므로 앱 쪽만 되돌리면 됩니다.
