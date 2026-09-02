@@ -147,3 +147,17 @@ describe("자격·증명서", () => {
     expect(classifyDocument({ filename: "경력증명서.pdf", text: "" }).kind).toBe("CAREER_DOCUMENT");
   });
 });
+
+describe("넓은 규칙이 자기소개서를 삼키지 않는다", () => {
+  it("직업 이름이 들어간 자소서 파일명을 자격증으로 보내지 않는다", () => {
+    // `상담사`를 자격증 규칙에 넣었더니 이 파일이 자격·증명서로 갔습니다.
+    // 파일 이름에 "자기소개서"가 없으면 앞 규칙이 걸러 주지 못하므로, 마지막
+    // 규칙이 넓으면 그대로 사고가 됩니다.
+    expect(classifyDocument({ filename: "대학일자리센터_직업상담사_커리어컨설턴트_전민수.pdf", text: "" }).kind)
+      .not.toBe("CERTIFICATE");
+  });
+
+  it("급수가 붙은 진짜 자격증은 그대로 알아본다", () => {
+    expect(classifyDocument({ filename: "직업상담사2급.pdf", text: "" }).kind).toBe("CERTIFICATE");
+  });
+});

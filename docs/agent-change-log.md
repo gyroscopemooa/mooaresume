@@ -5440,3 +5440,11 @@ html{overflow-x:hidden;scroll-behavior:smooth}
   - **가는 곳은 예전과 같습니다**(참고자료). 근거 자료로 올리려면 DB의 `document_kind` enum이나 `get_running_context`의 분석 SQL을 건드려야 해서, 그 결정은 사용자에게 넘겼습니다. `mapSimpleIntake`에서 빠뜨리면 파일이 통째로 사라지므로 freeform에 명시적으로 함께 담았습니다.
 - 알아낸 것(미결): `RESUME/CAREER_DOCUMENT/PORTFOLIO`만 supporting set으로 들어가 교차검증에 읽힙니다. 자격증이 `기타`에 있는 한 "자격증을 올렸는데 근거 없다고 나오는" 문제는 남습니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 940건 통과(신규 3건, 기존 2건은 새 동작에 맞게 수정), `next build` 통과.
+
+## 2026-09-03 — Claude: 자격증 규칙이 자기소개서를 삼키던 회귀 수정 + 저장 실패 로그
+
+- **회귀(제가 만든 것)**: 자격증 파일명 규칙에 `상담사|관리사`를 넣었더니 `대학일자리센터_직업상담사_커리어컨설턴트_전민수.pdf`(실제 자기소개서)가 `CERTIFICATE`로 갔습니다. 그것들은 자격증 이름이 아니라 **직업 이름**이고, 파일 이름에 "자기소개서"가 없으면 앞 규칙이 걸러 주지 못하므로 마지막 규칙이 넓으면 그대로 사고가 됩니다. 두 낱말을 뺐고 회귀 테스트를 붙였습니다. `직업상담사2급.pdf`는 `\d\s*급`으로 계속 잡힙니다.
+- **저장 실패 로그**: `POST /api/application-cases`가 거절당하면 이제 서버 로그에 Postgres 코드·문서 개수·`kind:길이` 목록을 남깁니다. 화면에는 "지원 건을 비공개로 저장하지 못했습니다."만 남아 첨부 문제인지 마이그레이션 문제인지 구분할 수 없었습니다. **본문은 남기지 않습니다** — 지원서 내용이 로그에 쌓이면 안 됩니다.
+- **알아낸 것 — FINAL은 자기 모델 변수를 씁니다**: `resolveModelConfig`가 FINAL일 때 `OPENAI_MODEL_FINAL`을 우선합니다(`.env.local`에 설정돼 있음). 그래서 `OPENAI_MODEL`을 망가뜨려도 FINAL은 정상 동작했고, 환불 테스트가 성립하지 않았습니다. FINAL로 실패를 재현하려면 `OPENAI_MODEL_FINAL`을 망가뜨려야 합니다.
+- **아직 안 고친 것(의도)**: `경력증명서`는 회사가 발급한 증빙이고 `경력기술서`는 본인이 쓴 서류라 서로 다른 문서가 맞습니다. 다만 지금 옮기면 근거 자료(supporting set)에서 **빠져** 참고자료로 내려갑니다 — 지금보다 나빠집니다. `CERTIFICATE`를 근거 자료로 올리는 작업(ⓐ)과 **같이** 옮겨야 합니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 942건 통과, `next build` 통과.
