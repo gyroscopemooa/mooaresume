@@ -4980,3 +4980,41 @@ html{overflow-x:hidden;scroll-behavior:smooth}
   - `403 차단 1건`은 `/meensoo` 계열로 보이며 정상입니다.
 - 미결: `og:image`가 없습니다. 카카오톡·네이버·슬랙에 링크를 공유해도 썸네일이 뜨지 않습니다. `opengraph-image`로 만들 수 있으며 사용자 결정 대기.
 - Validation: `tsc --noEmit` 통과, `vitest run` 888건 통과, `next build` 통과.
+
+## 2026-09-03 — Codex: 커뮤니티 런칭 최소 운영 도구 (진행 중)
+
+- Intended change: 기존 `community_reports`와 게시글·댓글 상태값을 사용해 관리자 신고 큐, 신고 처리, 대상 글/댓글 숨김 API와 화면을 추가한다.
+- Scope: 관리자 세션으로만 접근한다. 새 table이나 기존 RLS 정책을 바꾸지 않으며, 숨김은 삭제가 아닌 `HIDDEN` 상태 전환으로 복구 가능하게 한다.
+- Follow-up: 요청 속도 제한은 DB/공유 저장소 기반으로 별도 구현·검증한다. 원격 Supabase migration 적용 및 2계정 E2E는 로컬 코드 완료 뒤 실행한다.
+- Validation planned: admin authorization/route tests, TypeScript, lint, build.
+- Rollback: 신규 `/meensoo/community-reports`, `/api/meensoo/community-reports` 및 admin repository 함수만 제거하면 기존 커뮤니티 읽기/신고 흐름으로 돌아간다.
+
+## 2026-09-03 — Codex: 커뮤니티 런칭 최소 운영 도구 (1차 완료)
+
+- Status: 관리자 신고 큐와 `HIDDEN` 처리 완료. `/meensoo/community-reports`에서 신고 내용을 보고 검토 완료 또는 대상 글·댓글 숨김을 실행한다. API는 기존 관리자 세션으로만 접근한다.
+- Files: `src/server/admin/admin-repository.ts`, `src/app/api/meensoo/community-reports/route.ts`, `src/app/meensoo/community-reports/*`, `src/app/meensoo/admin-shell.tsx`.
+- Validation: `npm run typecheck` 및 `npm run build` 통과. `npm run lint` 오류 0, 기존 경고 2건 유지.
+- Remaining: DB 기반 rate limit, 원격 migration 적용, 두 계정 E2E, 운영 담당/SLA 확정.
+- Rollback: 신규 신고 화면/API/repository 함수 및 관리자 메뉴 항목만 제거한다. 숨긴 대상은 DB에서 `PUBLISHED`로 복구 가능하다.
+
+## 2026-09-03 — Codex: 커뮤니티 DB rate limit (진행 중)
+
+- Intended change: 인증된 사용자별 고정 시간창 카운터와 security-definer RPC를 migration으로 추가하고, 글·댓글·신고·업로드·추천 API에서 원자적으로 소비한다.
+- Limits: 글 5건/시간, 댓글 20건/시간, 신고 10건/일, 첨부 업로드 12건/시간, 추천 60회/분.
+- Security: 카운터 테이블은 RLS를 켜고 직접 접근 정책을 두지 않는다. 인증 사용자만 RPC를 실행하며 auth.uid()를 기준으로 계산한다.
+- Validation planned: migration contract test, TypeScript, lint, build. 원격 DB 적용·실계정 E2E는 코드 병합 뒤 별도 실행한다.
+- Rollback: 새 migration의 rate-limit table/function과 route helper 호출을 되돌리면 된다.
+
+## 2026-09-03 — Codex: 커뮤니티 DB rate limit (완료)
+
+- Status: 글 5건/시간, 댓글 20건/시간, 신고 10건/일, 업로드 12건/시간, 추천 60회/분 제한을 atomic DB RPC로 적용했다.
+- Files: `supabase/migrations/20260903090000_community_rate_limits.sql`, `src/server/community/community-rate-limit.ts`, 커뮤니티 쓰기 API 5개, `src/server/community/community-migration.test.ts`.
+- Validation: migration contract test 3개 통과, typecheck·build 통과, lint 오류 0(기존 경고 2건).
+- Remaining: 원격 Supabase migration 적용, 두 계정 E2E, 운영 담당/SLA 확정.
+- Rollback: rate-limit migration과 helper 호출을 revert한다.
+
+## 2026-09-03 — Codex: 커뮤니티 rate limit 원격 적용
+
+- Status: 완료. `20260903090000_community_rate_limits.sql`을 연결된 원격 Supabase에 적용했고 `supabase migration list`에서 local/remote 일치 확인.
+- Note: `supabase db push`의 Docker 경고는 로컬 migration catalog cache 생성 실패이며, 원격 migration 적용 결과는 성공했다.
+- Remaining: 변경 소스의 검토·선택적 커밋·배포 후, 두 테스트 계정으로 실제 E2E를 실행한다.

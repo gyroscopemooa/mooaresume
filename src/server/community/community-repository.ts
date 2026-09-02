@@ -12,7 +12,7 @@ export function toCommunityPost(row: Row): CommunityPost {
     id: stringValue(item, "id"), storagePath: stringValue(item, "storage_path"), filename: stringValue(item, "filename"), mimeType: stringValue(item, "mime_type") as CommunityAttachment["mimeType"], byteSize: numberValue(item, "byte_size"),
   }));
   const topic = stringValue(row, "topic");
-  return { id: stringValue(row, "id"), topic: topics.has(topic as CommunityTopicId) ? topic as CommunityTopicId : "career", title: stringValue(row, "title"), body: stringValue(row, "body"), anonymousAlias: stringValue(row, "anonymous_alias"), recommendationCount: numberValue(row, "recommendation_count"), commentCount: numberValue(row, "comment_count"), createdAt: stringValue(row, "created_at"), attachments };
+  return { id: stringValue(row, "id"), topic: topics.has(topic as CommunityTopicId) ? topic as CommunityTopicId : "career", title: stringValue(row, "title"), body: stringValue(row, "body"), anonymousAlias: stringValue(row, "anonymous_alias"), recommendationCount: numberValue(row, "recommendation_count"), commentCount: numberValue(row, "comment_count"), createdAt: stringValue(row, "created_at"), updatedAt: stringValue(row, "updated_at"), attachments };
 }
 
 export function toCommunityComment(row: Row): CommunityComment {

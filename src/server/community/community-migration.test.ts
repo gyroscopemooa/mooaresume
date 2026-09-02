@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync("supabase/migrations/20260901050000_community_lounge.sql", "utf8");
+const rateLimitMigration = readFileSync("supabase/migrations/20260903090000_community_rate_limits.sql", "utf8");
 
 describe("community lounge migration", () => {
   it("keeps attachments private and readable only to signed-in members", () => {
@@ -14,5 +15,12 @@ describe("community lounge migration", () => {
     expect(migration).toContain("alter table public.community_comments enable row level security");
     expect(migration).toContain("primary key (post_id, owner_user_id)");
     expect(migration).toContain("community_reports");
+  });
+});
+describe("community rate limits", () => {
+  it("uses an authenticated, atomic database counter", () => {
+    expect(rateLimitMigration).toContain("community_rate_limit_windows");
+    expect(rateLimitMigration).toContain("take_community_rate_limit");
+    expect(rateLimitMigration).toContain("grant execute on function public.take_community_rate_limit(text, integer, integer) to authenticated");
   });
 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSameOrigin } from "@/domain/community";
 import { createClient } from "@/lib/supabase/server";
+import { takeCommunityRateLimit } from "@/server/community/community-rate-limit";
 
 const accepted = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
@@ -9,6 +10,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) return NextResponse.json({ error: "첨부는 로그인 후 이용할 수 있어요." }, { status: 401 });
+  if (!(await takeCommunityRateLimit(supabase, "UPLOAD"))) return NextResponse.json({ error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File) || !accepted.has(file.type) || file.size <= 0 || file.size > 8 * 1024 * 1024) return NextResponse.json({ error: "JPG·PNG·WEBP·PDF만, 파일당 8MB까지 올릴 수 있어요." }, { status: 400 });

@@ -1,0 +1,4 @@
+type RateLimitClient = { rpc: (functionName: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
+type CommunityAction = "POST_CREATE" | "COMMENT_CREATE" | "REPORT_CREATE" | "UPLOAD" | "RECOMMEND";
+const rules: Record<CommunityAction, { limit: number; windowSeconds: number }> = { POST_CREATE: { limit: 5, windowSeconds: 3600 }, COMMENT_CREATE: { limit: 20, windowSeconds: 3600 }, REPORT_CREATE: { limit: 10, windowSeconds: 86400 }, UPLOAD: { limit: 12, windowSeconds: 3600 }, RECOMMEND: { limit: 60, windowSeconds: 60 } };
+export async function takeCommunityRateLimit(client: RateLimitClient, action: CommunityAction) { const rule = rules[action]; const { data, error } = await client.rpc("take_community_rate_limit", { p_action: action, p_limit: rule.limit, p_window_seconds: rule.windowSeconds }); return !error && data === true; }

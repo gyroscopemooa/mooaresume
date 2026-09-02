@@ -989,3 +989,28 @@ export async function deleteCampaign(id: string): Promise<string | null> {
   const { error } = await serviceClient().from("coupon_campaigns").delete().eq("id", id);
   return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
 }
+
+export type AdminCommunityReport = { id: string; subjectType: "POST" | "COMMENT"; subjectId: string; reason: string; note: string | null; status: "OPEN" | "REVIEWED" | "CLOSED"; createdAt: string; subjectPreview: string; subjectStatus: string | null };
+
+export async function listCommunityReports(limit = 200): Promise<AdminCommunityReport[]> {
+  const { data, error } = await serviceClient().from("community_reports").select("id, subject_type, subject_id, reason, note, status, created_at").order("created_at", { ascending: false }).limit(limit);
+  if (error) throw error;
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const postIds = rows.filter((row) => row.subject_type === "POST").map((row) => row.subject_id).filter((id): id is string => typeof id === "string");
+  const commentIds = rows.filter((row) => row.subject_type === "COMMENT").map((row) => row.subject_id).filter((id): id is string => typeof id === "string");
+  const [posts, comments] = await Promise.all([
+    postIds.length ? serviceClient().from("community_posts").select("id, title, status").in("id", postIds) : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    commentIds.length ? serviceClient().from("community_comments").select("id, body, status").in("id", commentIds) : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+  ]);
+  const subjects = new Map<string, { preview: string; status: string }>();
+  for (const post of posts.data ?? []) subjects.set(String(post.id), { preview: String(post.title ?? ""), status: String(post.status ?? "") });
+  for (const comment of comments.data ?? []) subjects.set(String(comment.id), { preview: String(comment.body ?? ""), status: String(comment.status ?? "") });
+  return rows.map((row) => { const subject = subjects.get(String(row.subject_id)); return { id: String(row.id), subjectType: row.subject_type === "COMMENT" ? "COMMENT" : "POST", subjectId: String(row.subject_id), reason: String(row.reason), note: typeof row.note === "string" ? row.note : null, status: row.status === "REVIEWED" || row.status === "CLOSED" ? row.status : "OPEN", createdAt: String(row.created_at), subjectPreview: subject?.preview ?? "삭제되었거나 찾을 수 없는 대상", subjectStatus: subject?.status ?? null }; });
+}
+
+export async function resolveCommunityReport(input: { reportId: string; subjectType: "POST" | "COMMENT"; subjectId: string; action: "REVIEW" | "HIDE" }): Promise<string | null> {
+  const client = serviceClient();
+  if (input.action === "HIDE") { const table = input.subjectType === "POST" ? "community_posts" : "community_comments"; const { error } = await client.from(table).update({ status: "HIDDEN" }).eq("id", input.subjectId); if (error) return "대상을 숨기지 못했습니다."; }
+  const { error } = await client.from("community_reports").update({ status: input.action === "HIDE" ? "CLOSED" : "REVIEWED" }).eq("id", input.reportId);
+  return error ? "신고 상태를 바꾸지 못했습니다." : null;
+}

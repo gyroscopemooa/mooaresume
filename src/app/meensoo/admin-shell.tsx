@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Send,
   Star,
+  ShieldAlert,
   Users,
   X,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const NAV = [
   { href: "/meensoo/research", label: "축적 데이터", Icon: Database },
   { href: "/meensoo/feedback", label: "분석 후기", Icon: Star, badgeKey: "feedback" as const },
   { href: "/meensoo/inquiries", label: "문의", Icon: MessageSquare, badgeKey: "inquiries" as const },
+  { href: "/meensoo/community-reports", label: "커뮤니티 신고", Icon: ShieldAlert },
   { href: "/meensoo/waitlist", label: "사전 신청", Icon: Users },
 ];
 
