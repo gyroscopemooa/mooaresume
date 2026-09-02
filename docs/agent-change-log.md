@@ -5279,3 +5279,23 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/referral-code-entry.module.css`.
 - Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공. Playwright로 360/390/412/430px에서 라벨·입력창·버튼이 모두 같은 폭의 독립된 줄로 떨어지는지 좌표로 확인, 1280px 데스크톱에서 기존 한 줄 레이아웃 유지 확인.
 - Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 쿠폰 코드 칸을 추천코드와 같은 모양으로 통일 + 가로 스크롤 방어
+
+- Agent/session: Claude (클라우드 세션). 사용자가 실제 라이브 사이트(mooaresume.com)에서 캡처: (1) `/analysis/prepare`에서 가로로 화면이 벗어나 드래그해야 보이는 부분이 있음, (2) 추천코드 칸(방금 수정한 것)은 라벨/입력창/버튼이 세로로 통일됐는데 바로 아래 쿠폰 코드 칸은 여전히 라벨+입력창이 한 줄, 버튼만 별도 줄이라 두 칸이 서로 달라 보임.
+
+### 쿠폰 코드 칸 통일
+- 원인: `ReferralCodeEntry`(추천코드)와 `CouponCodeEntry`(쿠폰)는 UI가 거의 같아 보이지만 **완전히 분리된 컴포넌트·CSS 모듈**입니다. 지난 커밋에서 추천코드의 `compact` 레이아웃만 고쳤고, 쿠폰 쪽 `coupon-code-entry.module.css`는 손대지 않아 옛 `flex-wrap` 레이아웃 그대로 남아 있었습니다.
+- 조치: 쿠폰 쪽에도 `≤480px`에서 라벨·입력창·버튼을 각각 독립된 한 줄로 통일하는 동일한 규칙을 추가했습니다. 이제 두 칸이 폰에서 완전히 같은 모양입니다.
+
+### 가로 스크롤(페이지 벗어남)
+- 재현 시도: 로컬에서 360~430px 전 폭, 추천코드/쿠폰코드에 실제 값 입력, 페이지 맨 아래까지 스크롤 등 여러 상태로 `document.documentElement.scrollWidth`를 직접 측정했지만 **재현되지 않았습니다**(항상 뷰포트 폭과 정확히 일치).
+- 확실한 원인은 못 찾았지만, 가장 흔한 실제 원인(flex/grid 항목이 `width:100%`를 줘도 브라우저가 내용 기준 최소 너비를 따로 계산해 그 이상으로 못 줄어드는 문제)을 방어하기 위해 추천코드·쿠폰코드 두 곳의 입력창·버튼에 `min-width:0`을 추가했습니다. 스크린샷이 스크롤 중간(드래그 도중)에 찍힌 것이라 일시적 현상이었을 가능성도 있습니다.
+- Files: `src/components/coupon-code-entry.module.css`, `src/components/referral-code-entry.module.css`(방어 코드 추가).
+- Validation: 관련 테스트 9개 통과, `tsc` clean, `eslint` 클린, `next build` 성공. Playwright로 두 칸이 동일한 모양으로 렌더링되는지, 실제 값 입력 후에도 가로 스크롤이 없는지 확인.
+- 남은 것: 배포 후에도 가로 스크롤이 재현되면, 정확히 어느 화면·상태(로그인 여부, 입력한 값, 스크롤 위치)였는지 확인이 필요합니다.
+
+### 메인 홈 — 원클릭 배너에 그림자 추가 (진행 중)
+- 사용자 요청: "메인홈은 규격·글자·내용·UI는 건들지 말고 투박하지 않게 입체감 있게" — 레이아웃·텍스트는 그대로 두고 시각적 깊이만 추가하는 작업. 1단계로 `one-click.module.css`의 `.banner`(그라디언트 카드, 그림자가 전혀 없던 평평한 카드)에 은은한 그림자를 추가했습니다. 나머지 요소(입력창, 시작하기 버튼 등)는 이미 그림자가 있어 우선순위에서 다음으로 미뤄 이번 커밋에는 포함하지 않았습니다.
+- Files: `src/app/one-click.module.css`.
+- Rollback: 이 커밋 revert.

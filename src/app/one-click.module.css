@@ -9,6 +9,7 @@
   border: 1px solid #d9e5df;
   border-radius: 15px;
   background: linear-gradient(90deg, #eef8f3, #fff);
+  box-shadow: 0 14px 34px -26px rgba(15, 61, 44, 0.55);
 }
 .banner > div {
   display: flex;

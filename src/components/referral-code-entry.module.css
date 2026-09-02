@@ -51,5 +51,5 @@
    sized by the full container rather than by what its neighbor left over. */
 @media(max-width:480px){
   .compactRow{display:grid;gap:6px}
-  .compactRow input,.compactRow button{width:100%}
+  .compactRow input,.compactRow button{width:100%;min-width:0}
 }
