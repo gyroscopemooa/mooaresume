@@ -137,23 +137,37 @@ body{zoom:var(--app-scale)}
      a phone headline is read in one glance, so it gets weight and a tighter
      line, and the green half carries the eye to 취업 코치 — the part that says
      who this is for. */
-  .hero p.hero-mobile-hint{display:block;margin:-12px 0 16px;color:#8b978f;font-size:10.5px;font-weight:600;letter-spacing:-.01em;line-height:1.6}
-  .hero p.hero-mobile-hint b{color:#5f6d66;font-weight:800}
-  .hero-mobile{display:block;font-size:clamp(33px,9.4vw,44px);font-weight:900;line-height:1.16;letter-spacing:-.05em;margin:12px 0 20px}
-  .hero-mobile em{font-style:normal;background:linear-gradient(100deg,#1a8a5c,#176b4a);-webkit-background-clip:text;background-clip:text;color:transparent}
-  /* A chip rather than a second line of heading: it reads as the thing you are
-     about to do, and it keeps the subtitle from competing with the title. */
-  /* Its own line, always. Inline-flex let it sit beside 취업 코치 whenever the
-     title happened to leave room — at 676px it did, and the chip read as part
-     of the heading rather than the line under it. */
-  .hero-mobile-sub{display:flex;width:fit-content;margin-left:auto;margin-right:auto;align-items:center;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--mint,#eaf5ef);color:var(--green-dark,#0f4b33);font-size:15px;font-weight:800;letter-spacing:-.02em;box-shadow:0 6px 16px -10px rgba(15,75,51,.45)}
+  /* 첫 화면만 하늘색입니다.
+     `--green` 계열을 이 블록 안에서만 갈아 끼웁니다 — 커밍순 화면이 쓰는 것과
+     같은 방법이고, 색을 자리마다 새로 적는 대신 한 곳에서 바꾸면 나중에
+     되돌리기도 한 줄입니다. 데스크톱과 페이지의 나머지는 그대로 초록입니다. */
+  .hero{--green:#0284c7;--green-dark:#075985;--mint:#e0f2fe}
+  .hero p.hero-mobile-hint{display:block;margin:-6px 0 20px;color:#334155;font-size:clamp(15px,4.1vw,17px);font-weight:700;letter-spacing:-.025em;line-height:1.62}
+  .hero p.hero-mobile-hint b{color:#0284c7;font-weight:800}
+  /* 제목에 두께를 줍니다. 평평한 글자는 화면이 클수록 밋밋해 보이는데, 아주
+     옅은 그림자 하나면 종이에서 살짝 떠 보입니다 — 테두리나 상자를 더하는
+     것보다 가볍고, 글자를 읽는 데 방해가 되지 않습니다. */
+  .hero-mobile{display:block;font-size:clamp(34px,9.6vw,46px);font-weight:900;line-height:1.14;letter-spacing:-.05em;margin:12px 0 18px;text-shadow:0 1px 0 rgba(255,255,255,.9),0 10px 24px rgba(15,60,90,.10)}
+  .hero-mobile em{font-style:normal;background:linear-gradient(100deg,#38bdf8,#0369a1);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 14px rgba(2,132,199,.22))}
+  /* 알약 칩(`.hero-mobile-sub`)은 뺐습니다. 제품 이름 바로 아래에서 제품
+     이름을 한 번 더 말하는 자리였고, 그 자리에는 무엇을 해 주는지가 와야
+     합니다. 규칙만 남기면 안 쓰는 색이 남으므로 함께 지웁니다. */
   /* Stays a filled button up here. The hierarchy is carried by the colour
      being lighter than the green, not by draining it — a washed-out slab at
      the top of the screen just looks disabled. */
-  .hero-sample{order:-1;font-size:16px;padding:16px;margin:0}
+  /* 시작 버튼 아래로 내려왔습니다(`order:-1` 제거). 위에 있을 때는 첫 화면의
+     첫 버튼이 "구경하기"였습니다. 그래서 색도 한 단계 낮춥니다 — 두 개의 꽉 찬
+     버튼이 나란히 있으면 어느 쪽을 눌러야 하는지가 사라집니다. */
+  .hero-sample{font-size:15px;padding:15px;margin:10px 0 0;background:#fff;color:#0369a1;border:1px solid #bae6fd;box-shadow:0 6px 18px -10px rgba(2,132,199,.35)}
+  .hero-sample:hover{background:#f0f9ff;color:#075985}
   /* The aura is a fixed 620px box with overflow hidden. On a phone that bottom
      edge lands mid-hero and the blur ends in a straight line across the page;
      the mask lets it fall off instead of stopping. */
   .hero-aura{height:520px;-webkit-mask-image:linear-gradient(180deg,#000 52%,transparent 100%);mask-image:linear-gradient(180deg,#000 52%,transparent 100%)}
+  /* 배경 번짐도 같이 갈아입어야 합니다. 제목만 하늘색이고 뒤가 초록이면 두
+     색이 서로 밀어냅니다. */
+  .hero-aura i:nth-child(1){background:radial-gradient(circle,rgba(56,189,248,.34),transparent 68%)}
+  .hero-aura i:nth-child(2){background:radial-gradient(circle,rgba(3,105,161,.22),transparent 66%)}
+  .hero-aura i:nth-child(3){background:radial-gradient(circle,rgba(125,211,252,.30),transparent 70%)}
   .trust-row{margin-top:22px;flex-direction:column;align-items:center;gap:9px;font-size:12.5px}
 }

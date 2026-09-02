@@ -87,3 +87,81 @@
     display: none;
   }
 }
+
+/* 첫 화면의 모바일만 하늘색으로 맞춥니다. 바로 아래 제목과 버튼이 하늘색인데
+   이 배너만 초록이면 두 색이 서로 밀어냅니다.
+
+   아이콘에는 위쪽 밝은 면과 아래쪽 안쪽 선을 줍니다. 납작한 사각형에 색만
+   채우면 스티커처럼 보이고, 면이 두 개면 눌러지는 물건이 됩니다. */
+@media (max-width: 812px) {
+  .banner {
+    border-color: #cfe6f5;
+    background: linear-gradient(90deg, #eff8fe, #fff);
+    box-shadow: 0 16px 32px -26px rgba(3, 105, 161, 0.55);
+  }
+  .banner small { color: #0284c7; }
+
+  /* 한 줄짜리 띠로 만듭니다.
+     42px 둥근 사각형이 이 배너에서 가장 무거운 물건이었는데, 하는 말은 한 줄
+     안내였습니다. 게다가 번개 글자는 사각형 안에서 광학적으로 가운데가 아니라
+     살짝 치우쳐 보였습니다 — 상자를 지우면 맞출 것이 없어집니다. 글자와 같은
+     줄에 서면 가운데는 저절로 맞습니다.
+
+     `ONE-CLICK START`도 뺐습니다. 바로 아래 줄이 한국어로 같은 말을 하고
+     있어서, 영어 한 줄은 뜻을 더하지 않고 높이만 차지했습니다.
+
+     얇아진 만큼 면으로 세웁니다: 위쪽 흰 선, 아래쪽 어두운 선, 좁고 진한
+     그림자. 넓고 옅은 그림자는 물건을 띄우는 대신 흐리게만 만듭니다. */
+  .banner {
+    /* 글자만큼만 넓힙니다. 화면 폭을 다 쓰는 알약 안에서 한 줄이 왼쪽에
+       몰려 있으면 오른쪽 빈자리가 먼저 보입니다. */
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    gap: 7px;
+    margin-top: 14px;
+    /* 커밍순 화면의 "3명이 출시를 기다리고 있어요" 배지와 같은 두께입니다
+       (`4px 12px`). 그쪽이 이미 이 사이트에서 가장 가벼운 알약이고, 여기도
+       하는 일이 같은 한 줄 안내라 더 두꺼울 이유가 없습니다. */
+    padding: 5px 13px 5px 7px;
+    border: 1px solid #d8ecf9;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #fbfdff, #eef7fe);
+    box-shadow:
+      0 8px 18px -12px rgba(3, 105, 161, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(3, 105, 161, 0.07);
+  }
+  .banner > div { align-items: center; gap: 8px; }
+  /* 상자 대신 작은 원형 배지.
+     상자를 아예 없앴더니 이번에는 글자 옆에 선 하나가 붙은 것처럼 밋밋했고,
+     글자 묶음의 무게가 왼쪽으로 쏠려 가운데로 보이지 않았습니다. 22px짜리
+     동그라미 하나면 왼쪽 끝이 점으로 마무리되어 줄 전체가 가운데에 놓인
+     것처럼 읽힙니다.
+     위가 밝고 아래가 어두운 두 면에, 바깥으로 옅게 번지는 빛을 더합니다. */
+  .icon {
+    width: 19px;
+    height: 19px;
+    flex: none;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #38bdf8, #0284c7);
+    color: #fff;
+    box-shadow:
+      0 4px 10px -3px rgba(2, 132, 199, 0.55),
+      0 0 0 3px rgba(56, 189, 248, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  .icon svg { width: 11px; display: block; }
+  /* 영어 줄을 빼면 이 칸은 한 줄만 남습니다. */
+  .banner small { display: none; }
+  .banner b {
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    color: #0f3a52;
+  }
+}

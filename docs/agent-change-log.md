@@ -5371,3 +5371,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: `npx vitest run` 928 passed(신규 12건), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 클린.
 - **남은 일(사용자)**: Cloudflare·`.env.local` 양쪽에 `OPENAI_PRICE_INPUT_PER_1M_FINAL`/`OPENAI_PRICE_OUTPUT_PER_1M_FINAL`도 넣어야 관리자 화면에서 FINAL 원가가 정확히 나옵니다(안 넣으면 FINAL 행만 "단가 미설정"으로 뜨고 QUICK/PRO는 그대로 나옵니다 — 화면이 멈추지는 않습니다).
 - Rollback: 이 커밋 revert.
+
+## 2026-09-03 — Claude: 첫 화면 모바일 하늘색 개편
+
+- Status: main 적용. **모바일(≤812px)만** 바뀝니다. 데스크톱과 나머지 화면은 초록 그대로이며 브라우저로 확인했습니다.
+- 색: `.hero` 안에서만 `--green/--green-dark/--mint`를 하늘색으로 갈아 끼웁니다(커밍순 화면이 쓰는 방법과 동일). 자리마다 색을 새로 적지 않아 되돌릴 때도 한 블록입니다.
+- 문구: 알약 `자기소개서 컨설팅 받기`와 `실제 첨삭은 PC 추천` 줄을 빼고 → `자소서, 감으로 고치지 마세요. / 지원하는 직무 기준으로 분석하세요.` 앞의 것은 제품 이름 아래에서 제품 이름을 한 번 더 말했고, 뒤의 것은 손님 기기가 second best라고 먼저 말하는 문장이었습니다.
+- 순서: `첨삭 예시 보기`의 모바일 `order:-1` 제거 → 시작 버튼 **아래**로. 첫 화면 첫 버튼이 "구경하기"이면 자기 할 일보다 구경을 먼저 권하게 됩니다. 색도 꽉 찬 파랑에서 흰 바탕+파란 글자로 낮췄습니다(꽉 찬 버튼 둘이 나란히 있으면 어느 쪽인지 사라집니다).
+- ONE-CLICK 배너(모바일): 42px 아이콘 상자 제거, `ONE-CLICK START` 영어 줄 숨김, 한 줄 알약으로. 두께는 커밍순의 `.counterBadge`와 같은 `5px 13px`. 아이콘은 19px 원형 배지(위 밝음/아래 어두움 + 바깥 옅은 링) — 상자를 아예 없앴더니 밋밋하고 글자 묶음이 왼쪽으로 쏠려 가운데로 안 보였습니다. 알약은 `width: fit-content`로 가운데 정렬.
+- 입체감: 제목에 옅은 이중 그림자, `em`에 drop-shadow, 시작 버튼·파일 첨부·배너에 위아래 두 면(밝은 위, 어두운 안쪽 아래선)과 좁고 진한 그림자. 넓고 옅은 그림자는 물건을 띄우는 대신 흐리게만 만듭니다.
+- 런칭 특별가 상단바: 색(라임)은 유지하고 면만 세웠습니다 — 위쪽 흰 선, 아래쪽 어두운 선, 그림자를 좁고 진하게. CTA·알약·아이콘에 위아래 방향 그라디언트.
+- 아이콘: `MousePointerClick` → `Zap`.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 928건 통과, `next build` 통과. 모바일·데스크톱 브라우저로 육안 확인.
+- Rollback: 이 커밋 revert.

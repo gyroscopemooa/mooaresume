@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, MousePointerClick, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
+import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users, Zap } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
@@ -95,7 +95,7 @@ export default function HomePage() {
         <SiteNav />
       </header>
 
-      <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><MousePointerClick/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
+      <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><Zap/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
 
       <section className="hero container">
         {/* Three drifting blobs rather than one rotating fan. A conic gradient
@@ -110,19 +110,25 @@ export default function HomePage() {
         <h1 className="hero-desktop">좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
         <h1 className="hero-mobile">
           나만의 <em>취업 코치</em>
-          <span className="hero-mobile-sub">자기소개서 컨설팅 받기</span>
           <span className="visually-hidden">자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭</span>
         </h1>
-        {/* Outside the h1 on purpose: an aside about which device to use has no
-            business in the one line that tells a crawler what this page is.
-            Phrased as what the phone is good for rather than as a warning about
-            what it is not — a parenthesis telling someone their device is the
-            wrong one, before they have typed anything, is a reason to leave. */}
-        <p className="hero-mobile-hint">휴대폰으로는 붙여넣고 맡기기까지 · <b>실제 첨삭은 PC 추천</b></p>
+        {/* Outside the h1 on purpose: this is the promise, not the name of the
+            page, and the one line a crawler reads as the title should stay the
+            title.
+
+            It replaced two things — a pill reading 자기소개서 컨설팅 받기 and a
+            line about the phone being the wrong device. The pill named the
+            product again right under the product name, and the device note
+            told someone their phone was second best before they had typed
+            anything, which is a reason to leave rather than to switch. This
+            says what the editing is for instead. */}
+        <p className="hero-mobile-hint">자소서, 감으로 고치지 마세요.<br/><b>지원하는 직무 기준</b>으로 분석하세요.</p>
         <p className="hero-desktop">채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
         <LandingEntry />
-        {/* Above the fold on purpose. "무엇을 받는지"에 답하는 가장 빠른 방법은
-            설명이 아니라 그 화면이고, 결정은 여기서 납니다. */}
+        {/* 시작 버튼 아래입니다. 전에는 모바일에서 `order:-1`로 제목 위에
+            올려 두었는데, 첫 화면에서 가장 먼저 보이는 것이 "예시 보기"가 되면
+            읽는 사람은 자기가 할 일보다 구경거리를 먼저 권받게 됩니다. 볼
+            사람은 버튼을 지나쳐 내려오면서 봅니다. */}
         <Link href="/result/sample" className="hero-sample">첨삭 예시 보기 <ArrowRight size={18}/></Link>
         <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
       </section>
