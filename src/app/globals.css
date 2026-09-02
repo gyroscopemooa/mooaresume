@@ -113,8 +113,11 @@ body{zoom:var(--app-scale)}
    two greens side by side read as one control split in half — and lighter than
    the brand green rather than darker, which is what keeps it the second choice
    even when it sits first on a phone. Dark enough for white text at 4.6:1. */
-.hero-sample{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:12px 0 0;padding:15px;border-radius:10px;background:#1e7bb8;color:#fff;font-weight:800;font-size:15px;box-shadow:0 7px 20px rgba(30,123,184,.22);transition:background 140ms ease,transform 120ms ease}
-.hero-sample:hover{background:#1a6ba0;transform:translateY(-1px)}
+/* 시작 버튼 바로 아래에 놓이는 두 번째 버튼입니다. 꽉 찬 파랑 둘이 나란히
+   있으면 어느 쪽을 눌러야 하는지가 사라지므로, 이쪽은 흰 바탕에 파란 글자로
+   한 단계 낮춥니다. 색을 빼는 것이 아니라 순서를 매기는 것입니다. */
+.hero-sample{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin:10px 0 0;padding:15px;border:1px solid #bae6fd;border-radius:10px;background:#fff;color:#0369a1;font-weight:800;font-size:15px;box-shadow:0 6px 18px -10px rgba(2,132,199,.35);transition:background 140ms ease,transform 120ms ease}
+.hero-sample:hover{background:#f0f9ff;color:#075985;transform:translateY(-1px)}
 /* In the DOM for crawlers and screen readers, out of the way on screen. */
 .visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
 .hero-mobile{display:none}
@@ -132,17 +135,36 @@ body{zoom:var(--app-scale)}
    투명이라, 그림자가 글자 뒤가 아니라 글자 **자리**에 그려집니다 — 흰
    그림자를 얹었더니 제목이 통째로 씻겨 나갔습니다. 두께는 `em`의
    `drop-shadow`로만 줍니다. */
-.hero h1.hero-desktop{font-size:clamp(46px,6vw,84px);letter-spacing:-.06em;margin:14px 0 22px}
-.hero h1.hero-desktop em{background:linear-gradient(100deg,#38bdf8,#0369a1);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 8px 18px rgba(2,132,199,.22))}
-/* 눈썹 글자(`AI 취업 지원서 코치`)는 그대로 두되 제목에 밀리지 않게 조금
-   키우고 색만 맞춥니다. */
-.hero .eyebrow{color:#0284c7;font-size:13.5px;letter-spacing:.1em}
+/* 커밍순 화면의 `COMING SOON`과 같은 조판입니다: 900 굵기, 자간을 좁히지
+   않고 살짝 벌리고(-.06em이 아니라 .01em), 줄 높이 1.
+
+   그리고 그라디언트를 접었습니다. 속이 비치는 글자는 아무리 진하게 칠해도
+   덩어리로 안 보이고, 무엇보다 그림자를 얹을 수가 없습니다 — 투명한 자리에
+   그려져 글자를 지웁니다. 단색으로 두면 그림자를 겹쳐 실제로 도톰하게 만들 수
+   있습니다. 아래로 갈수록 어두워지는 두 겹과, 바닥에 넓게 깔리는 한 겹. */
+.hero h1.hero-desktop{font-size:clamp(46px,6.6vw,88px);font-weight:900;letter-spacing:.01em;line-height:1;margin:10px 0 20px}
+.hero h1.hero-desktop em{
+  color:#0284c7;
+  text-shadow:
+    0 1px 0 #0b7ab4,
+    0 2px 0 #0a6ea3,
+    0 3px 1px rgba(3,73,110,.28),
+    0 12px 26px rgba(2,132,199,.26);
+}
+/* 눈썹 글자. 두 가지를 말하므로 가운데 `&`를 옅게 눌러 두 덩이로 읽히게
+   합니다 — 한 줄로 이어 붙이면 무엇과 무엇인지가 사라집니다. */
+.hero .eyebrow{display:inline-flex;align-items:center;gap:7px;color:#0284c7;font-size:13px;letter-spacing:.08em;flex-wrap:wrap;justify-content:center}
+.hero .eyebrow i{font-style:normal;color:#93c5e8;font-weight:700}
 /* `.hero>p`(19px, 회색)를 이깁니다 — 이 줄은 설명이 아니라 약속이라 굵고
    짙어야 합니다. */
 .hero p.hero-lead{max-width:none;color:#334155;font-size:clamp(18px,1.9vw,25px);font-weight:700;line-height:1.6;letter-spacing:-.03em;margin:0 auto 34px}
 .hero p.hero-lead b{color:#0284c7;font-weight:800}
 /* 배경 번짐도 하늘색으로. 제목만 파랗고 뒤가 초록이면 두 색이 서로 밀어냅니다. */
-.hero{background:radial-gradient(circle at 50% 30%,#f0f8fd,transparent 45%)}
+/* 위 여백을 줄입니다.
+   `104px`는 원클릭 바가 없던 시절의 값입니다. 지금은 바로 위에 띠가 하나
+   있어서, 그 사이가 비어 보이는 만큼 작은 모니터에서는 입력칸과 버튼이
+   첫 화면 밖으로 밀려납니다. */
+.hero{padding-top:44px;background:radial-gradient(circle at 50% 30%,#f0f8fd,transparent 45%)}
 .hero-aura i:nth-child(1){background:radial-gradient(circle,rgba(56,189,248,.30),transparent 68%)}
 .hero-aura i:nth-child(2){background:radial-gradient(circle,rgba(3,105,161,.20),transparent 66%)}
 .hero-aura i:nth-child(3){background:radial-gradient(circle,rgba(125,211,252,.26),transparent 70%)}
@@ -184,8 +206,7 @@ body{zoom:var(--app-scale)}
   /* 시작 버튼 아래로 내려왔습니다(`order:-1` 제거). 위에 있을 때는 첫 화면의
      첫 버튼이 "구경하기"였습니다. 그래서 색도 한 단계 낮춥니다 — 두 개의 꽉 찬
      버튼이 나란히 있으면 어느 쪽을 눌러야 하는지가 사라집니다. */
-  .hero-sample{font-size:15px;padding:15px;margin:10px 0 0;background:#fff;color:#0369a1;border:1px solid #bae6fd;box-shadow:0 6px 18px -10px rgba(2,132,199,.35)}
-  .hero-sample:hover{background:#f0f9ff;color:#075985}
+  .hero-sample{font-size:15px}
   /* The aura is a fixed 620px box with overflow hidden. On a phone that bottom
      edge lands mid-hero and the blur ends in a straight line across the page;
      the mask lets it fall off instead of stopping. */

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users, Zap } from "lucide-react";
+import { ArrowRight, Briefcase, Check, FileSearch, ListChecks, ScanSearch, ShieldCheck, Sparkles, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
@@ -96,14 +96,14 @@ export default function HomePage() {
         <SiteNav />
       </header>
 
-      <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><Zap/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
+      <section className={"container " + oneClickStyles.banner}><div><span className={oneClickStyles.icon}><Sparkles/></span><span><small>ONE-CLICK START</small><b>한 방에 올리고, 원클릭으로 시작하세요.</b></span></div><p><strong>입력은 간단하게, 분석은 섬세하게.</strong><br/>공고부터 자소서와 지원자료까지 한곳에서 이어집니다.</p></section>
 
       <section className="hero container">
         {/* Three drifting blobs rather than one rotating fan. A conic gradient
             has hard sector edges, and sweeping them past the eye is exactly
             what made the first version read as a turning box. */}
         <div className="hero-aura" aria-hidden="true"><i/><i/><i/></div>
-        <div className="eyebrow">AI 취업 지원서 코치</div>
+        <div className="eyebrow">AI 취업 지원서 코치 <i>&amp;</i> 자소서 전용 AI 분석 엔진</div>
         {/* Two headings chosen by width. The phone one says who this is for
             rather than what it is called, with the search terms riding along in
             a hidden span so a crawler still reads 자소서 첨삭 out of the h1
