@@ -1,12 +1,10 @@
 import type { MetadataRoute } from "next";
-import { communityPostPath } from "@/domain/community";
 import { getSiteUrl } from "@/lib/site-url";
-import { listPublishedCommunityPostsForSitemap } from "@/server/community/community-publication";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl();
   const launchedAt = new Date("2026-08-24");
-  const staticPages: MetadataRoute.Sitemap = [
+  return [
     { url: siteUrl, lastModified: launchedAt, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/community`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
     { url: `${siteUrl}/examples`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.8 },
@@ -25,13 +23,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/career/assessments`, lastModified: new Date("2026-09-02"), changeFrequency: "weekly", priority: 0.9 },
     { url: `${siteUrl}/career/interest`, lastModified: new Date("2026-09-02"), changeFrequency: "monthly", priority: 0.8 },
     // 라운지는 아직 예시 글 위주지만, 취업·진로 고민 검색어의 착지점입니다.
+    //
+    // 낱개 게시글은 여기 없습니다. `/community`가 목록 한 화면뿐이라
+    // (게시글 상세 라우트가 아직 없음) 크롤러가 찾아갈 낱개 주소 자체가
+    // 없습니다. 그 라우트가 생기면 여기에 동적으로 채우면 됩니다.
     { url: `${siteUrl}/community`, lastModified: new Date("2026-09-02"), changeFrequency: "daily", priority: 0.6 },
   ];
-  try {
-    const posts = await listPublishedCommunityPostsForSitemap();
-    return [...staticPages, ...posts.map((post) => ({ url: `${siteUrl}${communityPostPath(post.id)}`, lastModified: post.updatedAt || new Date(), changeFrequency: "weekly" as const, priority: 0.6 }))];
-  } catch {
-    // A missing database configuration must not take the whole public sitemap down.
-    return staticPages;
-  }
 }

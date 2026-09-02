@@ -5,6 +5,7 @@ import { OpenAIResponsesGateway } from "@/server/ai/quick/openai-responses-gatew
 import { createQuickAnalysisResult, QuickQuestionResultMissingError } from "@/server/ai/quick/provider";
 import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "@/server/ai/quick/validator";
 import { advanceQuickBackgroundAnalysis } from "@/server/analysis/quick-background-execution";
+import { recordAnalysisAttempt } from "@/server/analysis/attempt-ledger";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
 import { selectStrandedPaidRuns, type PendingRun } from "@/server/analysis/stranded-paid-runs";
 import { SupabaseQuickAnalysisRunRepository } from "@/server/analysis/supabase-quick-analysis-run-repository";
@@ -84,6 +85,7 @@ async function advanceOne(run: RunRow, origin: string) {
   if (step.response.status === "pending") return { analysisRunId: run.id, outcome: "PENDING" as const };
   if (step.response.status === "failed") {
     await repository.fail(run.id, "AI_PROVIDER_FAILED", true);
+    await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "PROVIDER_FAILED", failureCode: "AI_PROVIDER_FAILED", source: "CRON", usage: { responseId: step.response.responseId } });
     return { analysisRunId: run.id, outcome: "PROVIDER_FAILED" as const };
   }
 
@@ -91,15 +93,20 @@ async function advanceOne(run: RunRow, origin: string) {
     .filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
   if (blocking.length > 0) {
     await repository.fail(run.id, "AI_OUTPUT_VALIDATION_FAILED", true);
+    // 버려지는 응답이지만 요금은 이미 나갔습니다. 여기서 적지 않으면
+    // 그 비용은 어디에도 남지 않습니다.
+    await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "VALIDATION_FAILED", failureCode: "AI_OUTPUT_VALIDATION_FAILED", source: "CRON", usage: step.response.result.execution });
     for (const issue of blocking) console.error(`advance ${run.id} ${issue.code}: ${issue.message}`);
     return { analysisRunId: run.id, outcome: "VALIDATION_FAILED" as const };
   }
 
   try {
     await repository.complete(run.id, createQuickAnalysisResult(step.request, step.response.result));
+    await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "COMPLETED", source: "CRON", usage: step.response.result.execution });
   } catch (error) {
     if (error instanceof QuickQuestionResultMissingError) {
       await repository.fail(run.id, "AI_OUTPUT_VALIDATION_FAILED", true);
+      await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "QUESTION_MISSING", failureCode: "AI_OUTPUT_VALIDATION_FAILED", source: "CRON", usage: step.response.result.execution });
       return { analysisRunId: run.id, outcome: "QUESTION_MISSING" as const };
     }
     // complete_quick_analysis refuses a run that is no longer RUNNING, which is
@@ -215,7 +222,7 @@ async function startStrandedRun(run: PendingRun) {
     throw error;
   }
 
-  const responseId = await new OpenAIResponsesGateway({ apiKey, model }).startBackground(context.request);
+  const responseId = await new OpenAIResponsesGateway({ apiKey, model }).startBackground(context.request, context.attemptCount);
   await repository.saveBackgroundResponse(context.analysisRunId, responseId);
   return { analysisRunId: run.id, outcome: "START_RECOVERED" as const };
 }

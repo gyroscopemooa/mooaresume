@@ -6,6 +6,7 @@ import { OpenAIResponsesGateway } from "@/server/ai/quick/openai-responses-gatew
 import { createQuickAnalysisResult, QuickQuestionResultMissingError } from "@/server/ai/quick/provider";
 import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "@/server/ai/quick/validator";
 import { advanceQuickBackgroundAnalysis } from "@/server/analysis/quick-background-execution";
+import { recordAnalysisAttempt } from "@/server/analysis/attempt-ledger";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
 import { SupabaseQuickAnalysisRunRepository } from "@/server/analysis/supabase-quick-analysis-run-repository";
 
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
       if (background.status === "pending") return NextResponse.json({ analysisRunId: body.analysisRunId, status: "RUNNING" }, { status: 202 });
       if (background.status === "failed") {
         await repository.fail(body.analysisRunId, "AI_PROVIDER_FAILED", true);
+        await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "PROVIDER_FAILED", failureCode: "AI_PROVIDER_FAILED", source: "BROWSER", usage: { responseId: background.responseId } });
         throw new Error(`OPENAI_BACKGROUND_FAILED:${background.reason}`);
       }
       // The synchronous orchestrator ran this guard; the background path
@@ -132,6 +134,10 @@ export async function POST(request: NextRequest) {
         .filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
       if (blockingIssues.length > 0) {
         await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true);
+        // 여기까지 온 응답은 모델이 끝까지 만들어 낸 것입니다. 버려지지만
+        // 요금은 이미 나갔으므로, 토큰을 적어 두지 않으면 그 비용이 어디에도
+        // 남지 않습니다.
+        await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "VALIDATION_FAILED", failureCode: "AI_OUTPUT_VALIDATION_FAILED", source: "BROWSER", usage: background.result.execution });
         const detail = blockingIssues.map((issue) => issue.message).join(" ");
         // The codes alone say which rule fired, not which quote or number
         // tripped it — and the detail never reaches the retry screen, so this
@@ -150,6 +156,7 @@ export async function POST(request: NextRequest) {
         // "분석을 완료하지 못했습니다". Record the failure so a retry is
         // possible, and say which question was not covered.
         await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true);
+        await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "QUESTION_MISSING", failureCode: "AI_OUTPUT_VALIDATION_FAILED", source: "BROWSER", usage: background.result.execution });
         return NextResponse.json({
           error: assemblyError.userMessage,
           detail: assemblyError.userMessage,
@@ -157,10 +164,11 @@ export async function POST(request: NextRequest) {
         }, { status: 422 });
       }
       await repository.complete(body.analysisRunId, result);
+      await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "COMPLETED", source: "BROWSER", usage: background.result.execution });
     } catch (executionError) {
       if (!(executionError instanceof Error) || !executionError.message.startsWith("QUICK_ANALYSIS_RUNNING_CONTEXT_FAILED:")) throw executionError;
       const context = await repository.begin(body.analysisRunId);
-      const responseId = await gateway.startBackground(context.request);
+      const responseId = await gateway.startBackground(context.request, context.attemptCount);
       await repository.saveBackgroundResponse(context.analysisRunId, responseId);
       return NextResponse.json({ analysisRunId: context.analysisRunId, status: "RUNNING" }, { status: 202 });
     }

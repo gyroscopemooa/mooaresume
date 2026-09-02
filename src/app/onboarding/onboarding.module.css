@@ -13,25 +13,93 @@
    and wrong for the choices: three cards a screen tall each turn one decision
    into three scrolls, and the descriptions are read once and never again.
    Three across, label only — the short label is what people actually pick by. */
+/* 좁은 화면. 예전에는 3열로 욱여넣고 설명을 통째로 숨겼습니다(라벨
+   네 글자만 보고 처음부터 작성/내용 보완/최종 첨삭 중 하나를 고르라는
+   뜻이 됩니다) — 그게 이 화면이 "애매하다"고 느껴진 이유였습니다.
+   세로 한 줄씩 펼쳐 설명을 그대로 보여주는 편이 낫습니다: 스크롤은
+   늘어나지만 매번 무엇을 고르는지 다시 읽지 않아도 됩니다. */
+/* 두 번째 시도. 첫 시도(세로로 펼쳐 설명을 전부 보여주기)는 "애매함"은
+   없앴지만 스크롤이 늘었고, 유형을 고르면 상품 섹션이 화면 아래쪽에
+   조용히 나타나 스크롤해야 한다는 걸 알 방법이 없었습니다. 두 문제를
+   한 번에 잡습니다 — 고르지 않은 카드는 제목 한 줄만(선택 전엔 설명이
+   필요 없습니다, 아직 내 얘기가 아니니까), 고른 카드만 설명을 보여주고,
+   "다음"은 화면 하단에 고정해 스크롤 안내 자체가 필요 없게 만듭니다.
+   토스 같은 앱이 선택 화면마다 쓰는 방식입니다. */
 @media(max-width:640px){
   .hero{padding:30px 0 22px}
-  .options{grid-template-columns:repeat(3,1fr);gap:8px}
-  .options>button{min-height:auto;padding:15px 8px 14px;text-align:center;border-radius:12px}
-  .options button>svg{width:20px;margin:0 auto 9px}
-  .options small{font-size:12px;line-height:1.45}
-  /* The full sentence and its description live on the desktop card. Here the
-     label carries it: 처음부터 작성 / 내용 보완 / 완성본 검수. */
-  .options b,.options p{display:none}
-  .radio{right:7px;top:7px;width:13px;height:13px}
-  .radio svg{width:8px!important}
+  /* 이 헤드라인은 이 폭에서 한 줄에 못 들어갑니다(계산상 필요 폭이
+     컨테이너보다 넓음) — 두 줄은 피할 수 없으므로, 대신 각 줄이 폭을
+     꽉 채우도록 vw 비례로 키웁니다. 고정 36px로 두면 두 줄 다 여백만
+     남고 작아 보였습니다. */
+  .hero h1{letter-spacing:-.05em;font-size:clamp(34px,10.5vw,42px);word-break:keep-all}
+
+  .options{grid-template-columns:1fr;gap:10px}
+  .options>button{
+    display:grid;
+    grid-template-columns:48px 1fr;
+    column-gap:14px;
+    align-items:center;
+    min-height:auto;padding:16px 44px 16px 16px;
+    text-align:left;border-radius:18px;border-width:1.5px;
+    transition:border-color 120ms ease,background 120ms ease,box-shadow 120ms ease;
+  }
+  .options>button.selected{box-shadow:0 12px 26px -16px rgba(13,82,55,.45)}
+  /* 아이콘이 세로로 몇 줄을 차지하든(선택 카드는 두 줄, 나머지는 한 줄)
+     항상 그 범위 안에서 가운데 놓입니다 — grid-row를 고정 숫자로 주면
+     설명이 없을 때 빈 줄이 남습니다. */
+  .options button>svg{
+    grid-row:1/-1;grid-column:1;align-self:center;
+    box-sizing:content-box;flex:none;
+    width:22px;height:22px;margin:0;padding:13px;
+    border-radius:14px;color:#fff;
+    box-shadow:0 6px 14px -8px rgba(15,40,30,.4);
+    transition:box-shadow 120ms ease;
+  }
+  /* 옵션마다 고유 색을 항상 보여줍니다(선택 여부와 무관) — 선택 표시는
+     카드 테두리·그림자·라디오가 맡습니다. */
+  .options>button:nth-child(1) svg{background:linear-gradient(135deg,#22c58b,#0c7f52)}
+  .options>button:nth-child(2) svg{background:linear-gradient(135deg,#8a86ff,#5548d6)}
+  .options>button:nth-child(3) svg{background:linear-gradient(135deg,#ffb84d,#ee8a1c)}
+  .options>button.selected svg{box-shadow:0 8px 18px -6px rgba(15,40,30,.5)}
+  /* 라벨(예: "처음부터 작성")은 뺍니다 — 제목 자체가 이미 그 뜻입니다.
+     설명은 고른 카드에만: 아직 안 고른 것의 사정까지 미리 읽을 필요는
+     없습니다. */
+  .options small{display:none}
+  .options b{grid-row:1;grid-column:2;display:block;font-size:15px;font-weight:800;letter-spacing:-.02em;color:#3d4a44}
+  .options>button.selected b{color:var(--ink)}
+  .options p{display:none;grid-row:2;grid-column:2;margin-top:3px;font-size:12px;line-height:1.5;color:var(--muted)}
+  .options>button.selected p{display:block}
+  .radio{left:auto;right:16px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-width:1.5px}
 
   .products{margin-top:22px;padding-top:22px}
-  .productGrid{grid-template-columns:repeat(3,1fr);gap:8px}
-  .productGrid>a,.productGrid>div{min-height:auto;padding:15px 10px;border-radius:12px;text-align:center}
-  .productGrid small{font-size:11px;line-height:1.45}
-  .productGrid b{font-size:11.5px;margin:8px 0 0;line-height:1.4}
-  .productGrid p{display:none}
-  .productGrid em{right:6px;top:6px;padding:2px 6px;font-size:9px}
-  .productGrid span{justify-content:center;margin-top:10px;font-size:11px}
-  .productGrid span svg{display:none}
+  .productGrid{grid-template-columns:1fr;gap:10px}
+  .productGrid>a,.productGrid>div{min-height:auto;padding:16px 18px;border-radius:18px;border-width:1.5px;text-align:left}
+  .productGrid>a.recommended{box-shadow:0 12px 26px -16px rgba(13,82,55,.45)}
+  .productGrid small{font-size:12px}
+  .productGrid b{font-size:14.5px;font-weight:800;margin:8px 0 4px;line-height:1.4}
+  .productGrid p{display:block;font-size:12.5px;line-height:1.65}
+  .productGrid em{right:14px;top:14px;padding:3px 8px;font-size:10px}
+  .productGrid span{justify-content:flex-start;margin-top:10px;font-size:12.5px;font-weight:800}
+  .productGrid span svg{display:inline-block;width:13px}
+
+  /* 유형을 고른 뒤 밀려서 잘리지 않게. 버튼이 뜰 때만 필요하므로
+     JS에서 activeMode가 있을 때만 이 클래스를 붙입니다. */
+  .hasStickyCta{padding-bottom:96px}
+}
+
+.stickyCta{display:none}
+@media(max-width:640px){
+  .stickyCta{
+    display:block;position:fixed;left:0;right:0;bottom:0;z-index:20;
+    padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(247,249,247,0),#f7f9f7 35%);
+  }
+  .stickyCta button{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;height:54px;border:0;border-radius:16px;
+    background:var(--green);color:#fff;
+    font:inherit;font-size:15.5px;font-weight:800;letter-spacing:-.01em;
+    cursor:pointer;
+  }
+  .stickyCta button svg{width:17px}
 }

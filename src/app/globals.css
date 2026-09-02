@@ -146,7 +146,7 @@ body{zoom:var(--app-scale)}
   /* Its own line, always. Inline-flex let it sit beside 취업 코치 whenever the
      title happened to leave room — at 676px it did, and the chip read as part
      of the heading rather than the line under it. */
-  .hero-mobile-sub{display:flex;width:fit-content;margin-left:auto;margin-right:auto;align-items:center;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--mint,#eaf5ef);color:var(--green-dark,#0f4b33);font-size:15px;font-weight:800;letter-spacing:-.02em}
+  .hero-mobile-sub{display:flex;width:fit-content;margin-left:auto;margin-right:auto;align-items:center;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--mint,#eaf5ef);color:var(--green-dark,#0f4b33);font-size:15px;font-weight:800;letter-spacing:-.02em;box-shadow:0 6px 16px -10px rgba(15,75,51,.45)}
   /* Stays a filled button up here. The hierarchy is carried by the colour
      being lighter than the green, not by draining it — a washed-out slab at
      the top of the screen just looks disabled. */

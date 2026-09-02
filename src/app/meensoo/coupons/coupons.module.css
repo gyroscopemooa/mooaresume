@@ -19,8 +19,10 @@
 .table td b { display: block; font-size: 13px; }
 .table td small { display: block; margin-top: 2px; color: var(--admin-muted); font-size: 11px; }
 
-.rowActions { display: flex; gap: 6px; justify-content: flex-end; }
-.rowActions button { padding: 6px 11px; border: 1px solid var(--admin-line); border-radius: 7px; background: var(--admin-raise); color: var(--admin-text); font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+.rowActions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+/* white-space: nowrap이 없으면 좁은 화면에서 버튼이 글자보다 먼저
+   줄어들어, "홍보물"이 "홍/보/물"처럼 한 글자씩 세로로 쪼개집니다. */
+.rowActions button { padding: 6px 11px; border: 1px solid var(--admin-line); border-radius: 7px; background: var(--admin-raise); color: var(--admin-text); font: inherit; font-size: 11.5px; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .rowActions button:hover { border-color: var(--admin-accent); color: var(--admin-accent); }
 
 .backdrop { position: fixed; inset: 0; z-index: 40; border: 0; padding: 0; background: rgba(6, 9, 12, 0.6); cursor: pointer; }
@@ -105,7 +107,16 @@
   .table thead { display: none; }
   .table tr { display: grid; gap: 4px; padding: 12px 14px; border-top: 1px solid var(--admin-line); }
   .table td { padding: 0; border: 0; }
-  .rowActions { justify-content: flex-start; margin-top: 6px; }
+  /* 그리드로 바꿔 폭을 고르게 맞춥니다. flex는 버튼 수가 줄마다 달라(보관은
+     보관 전 캠페인에만 나옴) 줄마다 폭이 들쭉날쭉했습니다. */
+  .rowActions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+    justify-content: stretch;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .rowActions button { padding: 8px 4px; font-size: 11px; text-align: center; }
 }
 
 /* 공유 코드를 쓴 사람들. 코드 한 장 아래에 명단이 붙습니다. */

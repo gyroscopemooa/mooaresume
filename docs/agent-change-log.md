@@ -4981,6 +4981,7 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 미결: `og:image`가 없습니다. 카카오톡·네이버·슬랙에 링크를 공유해도 썸네일이 뜨지 않습니다. `opengraph-image`로 만들 수 있으며 사용자 결정 대기.
 - Validation: `tsc --noEmit` 통과, `vitest run` 888건 통과, `next build` 통과.
 
+
 ## 2026-09-03 — Codex: 커뮤니티 런칭 최소 운영 도구 (진행 중)
 
 - Intended change: 기존 `community_reports`와 게시글·댓글 상태값을 사용해 관리자 신고 큐, 신고 처리, 대상 글/댓글 숨김 API와 화면을 추가한다.
@@ -5018,3 +5019,338 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Status: 완료. `20260903090000_community_rate_limits.sql`을 연결된 원격 Supabase에 적용했고 `supabase migration list`에서 local/remote 일치 확인.
 - Note: `supabase db push`의 Docker 경고는 로컬 migration catalog cache 생성 실패이며, 원격 migration 적용 결과는 성공했다.
 - Remaining: 변경 소스의 검토·선택적 커밋·배포 후, 두 테스트 계정으로 실제 E2E를 실행한다.
+
+## 2026-09-02 — Claude: 빌드를 막던 사이트맵의 없는 import 제거 (main)
+
+- Agent/session: Claude (클라우드 세션). 사용자 지적: 사이트가 살아 있는 것과 최신 커밋이 실제로 배포된 것은 다른 얘기다 — 진짜 원인을 없애라.
+- Status: main에 직접 적용.
+
+### 확인한 사실
+- `e46eb20`의 `src/app/sitemap.ts`가 `communityPostPath`(`@/domain/community`)와 `listPublishedCommunityPostsForSitemap`(`@/server/community/community-publication`)을 가져오는데, **이 둘은 `git log --all`로 찾아도 저장소 역사 어디에도 없습니다.** PC 로컬 작업 중 새 파일이 디스크엔 있었는데 `git add`에서 빠진 채 커밋된 것으로 보입니다.
+- 로컬 `next dev`는 디스크의 파일을 그대로 쓰므로 문제없이 돌아갔고, push 이후 빌드 서버에는 그 파일이 없어 `next build`가 매번 실패했습니다.
+- **"사이트가 멀쩡해 보인다"는 이 커밋이 배포됐다는 뜻이 아닙니다.** 빌드가 실패하면 새 배포가 나가지 않고, 대부분의 플랫폼처럼 직전 성공한 배포가 계속 서빙됩니다. `e46eb20`은 이번 수정 전까지 한 번도 실제로 배포되지 않았을 가능성이 높습니다.
+- `/community`는 게시글 목록 한 화면뿐이고(`src/app/community/page.tsx`) 낱개 게시글 라우트가 없습니다(`community-lounge.tsx`도 추천·댓글·신고를 전부 그 화면 안에서 끝냅니다). 그래서 애초에 채울 수 없는 import였습니다.
+
+### 바꾼 것 — 커뮤니티/검사 기능에는 손대지 않음
+- `sitemap.ts`에서 없는 두 함수를 부르는 부분만 제거하고, 그 커밋이 같이 넣은 **유효한** 것들은 그대로 두었습니다: `layout.tsx`의 GA4 설정 한 줄, `/career`·`/career/assessments`·`/career/interest` 사이트맵 항목. `/community` 정적 항목도 그대로 두고, 낱개 게시글 자리에는 "라우트가 생기면 채우라"는 주석만 남겼습니다.
+- 삭제·수정한 코드는 **어디에도 존재한 적 없는 import 두 줄과 그걸 쓰는 try/catch 블록뿐**입니다. 실제로 동작하던 코드는 하나도 건드리지 않았습니다.
+- Files: `src/app/sitemap.ts`.
+- Validation: 887 tests passed, `tsc` clean, `eslint` — 이 파일에 새 경고 없음, **`next build` 성공**(이 세션 들어 main이 처음으로 끝까지 빌드됨).
+- Rollback: 이 커밋 revert(`e46eb20`의 sitemap.ts 부분만 되돌아옵니다. 그러면 다시 빌드가 깨집니다).
+## 2026-09-02 — Claude: 첨삭 한 건의 실제 원가와 마진 (관리자)
+
+- Agent/session: Claude (클라우드 세션). 사용자 요청: "관리자 단가 표시… 실패하고 2번하고 또 유저 재시도하고 그런 것도 나오고 총단가도 나오게, 수지타산 안 맞거나 위험한 건 조치하게 알아볼 수 있게".
+- Status: **`claude/github-gui-sync-jfbyd5` 브랜치에만** 적용. main에는 넣지 않았습니다 — 사용자 PC에 커밋되지 않은 커리어검사 워크트리 작업이 떠 있어, main을 움직이면 pull할 때 충돌합니다. 병합 시점은 사용자가 고릅니다.
+- **마이그레이션 있음**: `20260902010000_analysis_run_attempts.sql`. PC에서 `npm run db:remote:push` 필요(후기 설문 마이그레이션과 함께).
+
+### 무엇이 문제였나
+- 관리자 화면의 토큰 수는 **성공한 시도 하나의 것**이었습니다. `complete_quick_analysis`가 `analysis_runs`의 토큰 칸을 덮어쓰고, `fail_quick_analysis`는 토큰을 아예 적지 않습니다.
+- 그래서 **검증에서 걸려 버려진 응답의 요금이 어디에도 남지 않았습니다.** 모델이 끝까지 만들어 낸 응답이라 돈은 그대로 나갔는데, 기록상으로는 0입니다. 한 건에 실제로 얼마가 들었는지 물으면 답할 수 없었습니다.
+- 확인한 사실: 운영 경로는 백그라운드 경로(`startBackground` → `getBackground`)이고, DB 시도 1회 = OpenAI 호출 1회입니다. `QuickAnalysisProvider`의 내부 2회 루프는 운영에서 쓰이지 않습니다(평가용).
+
+### 바꾼 것
+1. **시도별 원장** `analysis_run_attempts` (신규 표). 추가 전용이고 브라우저에서 읽지도 쓰지도 못합니다(RLS + service_role만 grant). 입력·출력 토큰을 **나눠** 적습니다 — 출력 단가가 입력의 몇 배라 합계만으로는 원가를 못 냅니다.
+2. **기록 지점** `recordAnalysisAttempt` (신규). 브라우저 경로(`quick/execute`)와 스케줄러 경로(`analysis-runs/advance`) **양쪽 4개 자리**에 붙였습니다 — 완료 / 검증 실패 / 문항 누락 / 제공자 오류. 기록 실패는 전부 삼킵니다: **기록을 남기려다 결과를 잃는 것이 훨씬 나쁩니다.** 마이그레이션 전에도 분석은 그대로 동작합니다.
+3. **원가 계산** `src/domain/analysis-cost.ts` (신규, 순수 함수). 단가는 **환경변수**로 받습니다(`OPENAI_PRICE_INPUT_PER_1M`, `OPENAI_PRICE_OUTPUT_PER_1M`, `USD_KRW_RATE` 기본 1400). 없으면 금액을 **만들어 내지 않고** 토큰만 보여 줍니다 — 틀린 원가는 없는 것보다 나쁩니다.
+4. **위험 판정**: `LOSS`(원가 > 판매가) / `THIN`(마진 50% 미만) / `FREE_HEAVY`(무료 건인데 유료 판매가만큼 나감) / `UNKNOWN`(단가 미설정). 무료 건을 마진율로 재지 않는 것이 요점입니다 — 판매가가 0이라 늘 -100%로 나와 신호가 되지 못합니다.
+5. **화면**: 요약 카드에 `API 원가 합계`와 `확인 필요` 추가. 표에 `시도 내역`(몇 번째에서 무엇이 걸렸는지, 버려진 시도는 붉은 번호)과 `원가 · 마진` 칸 추가. 그 위에 **확인 필요 건만 모은 목록**을 따로 뒀습니다 — 표는 휴대폰에서 옆으로 밀어야 원가가 보여, 정작 급한 건을 찾을 수 없었습니다.
+
+### 알고 있는 한계
+- 판매가는 **정가 기준**(QUICK 4,900 / PRO 9,900 / FINAL 14,900)입니다. 할인가로 팔린 건은 실제 마진이 이보다 낮습니다.
+- 원장이 없는 **기존 건은 시도 0건**으로 나옵니다. 0원이라고 말하지 않습니다(합계에서도 제외).
+- `PROVIDER_FAILED`는 응답 자체를 못 받아 토큰을 모릅니다. `null`로 남기고 0으로 세지 않습니다.
+- Files: `src/domain/analysis-cost.ts`(신규)·`.test.ts`(신규 16건), `src/server/analysis/attempt-ledger.ts`(신규)·`.test.ts`(신규 6건), `supabase/migrations/20260902010000_analysis_run_attempts.sql`(신규), `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/admin.module.css`, `.env.example`.
+- Validation: 860 tests passed (+22), `tsc` clean, `eslint` 0 errors (기존 경고 2건은 커리어 파일 — 손대지 않음), `next build` 클린. 헤드리스 크롬 1440px·412px 렌더 확인 — 본문 가로 넘침 없음(412=412), 표는 `.scroll` 안에서만 가로 스크롤.
+- Rollback: 이 커밋 revert. 표는 남지만 아무도 읽지 않습니다.
+
+## 2026-09-02 — Claude: 재시도 출력 상한, 협업쿠폰 대상 인원 자동입력, 모바일 버튼 정렬
+
+- Agent/session: Claude (클라우드 세션). 사용자 확인 사항 세 가지에 대한 조치.
+
+### 1. 재시도가 같은 상한으로 같은 자리에서 또 잘리던 문제
+- 배경: "1번 재시도 토큰 그건 내가 어제 커밋만 안 하고 했는지 기억이 안 나네"라는 질문에 코드를 확인한 결과 **미작업**이었습니다(`resolveMaxOutputTokens(request)`에 시도 횟수 인자 자체가 없었습니다).
+- 문제: 자동 재시도(1회)가 1회차와 **완전히 동일한 요청**이었습니다. 실패 원인이 출력 잘림(`AI_OUTPUT_VALIDATION_FAILED`)이면 같은 상한으로 같은 자리에서 또 잘리고, API 요금만 두 배로 나갑니다.
+- 확인한 사실: OpenAI는 `max_output_tokens`(상한)이 아니라 **실제로 생성한 토큰만** 청구합니다. 상한을 올려도 모델이 그만큼 쓰지 않으면 요금이 늘지 않습니다 — 즉 이 변경은 원가를 늘리는 방향이 아니라, 두 번째 시도가 필요할 때만 여유를 주는 방향입니다.
+- 바꾼 것: `resolveMaxOutputTokens(request, attemptNo)` — DB의 `analysis_runs.attempt_count`(1부터 시작)를 받아 1회차는 그대로, 2회차 ×1.35, 3회차 ×1.7. `attemptNo`를 생략하면 기존과 동일(1회차 취급)해 다른 호출부를 건드리지 않습니다.
+- 배선: `getRunningContext`(백그라운드 폴링 경로)와 `begin()`(첫 시작·재시도 시작 경로) 양쪽에서 `attempt_count`를 읽어 `startBackground(request, attemptCount)`로 전달. `begin_quick_analysis` RPC는 8번의 마이그레이션을 거친 함수라 반환 값에 손대지 않고, `begin()` 안에서 기본키 조회 한 번을 추가했습니다.
+- Files: `src/server/ai/quick/output-budget.ts`·`.test.ts`, `src/server/analysis/quick-background-execution.ts`·`.test.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/server/analysis/quick-analysis-orchestrator.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`.
+
+### 2. 협업쿠폰 "대상" 인원수 자동입력
+- 사용자 지적: 홍보물의 "(20인)"을 "대상" 자유 텍스트에 직접 타이핑했고, 이미 있는 "사용 가능 인원"/"발급 수량" 숫자와 연결이 안 돼 있었습니다.
+- 바꾼 것: `defaultAudienceText(partnerName, totalCount)`. 기관명이 이름·대상을 자동으로 채우던 기존 패턴(직접 고치면 덮어쓰지 않음)을 인원수까지 확장했습니다 — 기관명 또는 인원수 어느 쪽이 바뀌어도 "지금 값이 자동값과 같은가"로 판단해 재계산합니다.
+- 이 값 하나가 홍보물의 "대상" 행과 메일 본문에 그대로 흘러가므로 두 곳 다 자동으로 반영됩니다(사용자가 언급한 "메일에도 자동입력되고"는 이미 그렇게 동작 — 이번 변경으로 값 자체가 정확해졌습니다).
+- UNIQUE(고유 코드)·SHARED(공유 코드) 모드 구분 없이 적용했습니다 — 두 경우 다 "이 숫자만큼의 사람에게 돌아간다"는 의미는 같습니다(고유 코드도 1장 = 1명이 기본값이므로).
+- Files: `src/app/meensoo/coupons/campaign-creator.tsx`.
+
+### 3. 관리자 화면 모바일 — 캠페인 목록 버튼이 세로로 쪼개지던 문제
+- 사용자가 보낸 스크린샷: "코드/홍보물/메일/보관/삭제" 버튼이 좁은 화면에서 "코 드", "홍 보 물"처럼 한 글자씩 세로로 쪼개져 있었습니다.
+- 원인: `.rowActions`가 `display:flex`인데 `flex-wrap`도 `white-space:nowrap`도 없어, 화면이 좁아지면 버튼이 글자보다 먼저 줄어들고 그 안의 한글 텍스트가 줄바꿈됐습니다.
+- 바꾼 것: 버튼에 `white-space: nowrap` 추가(항상), 좁은 화면에서는 `.rowActions`를 `display:grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr))`로 바꿔 폭을 고르게 정렬. 데스크톱은 기존 flex 그대로 — 렌더 확인 결과 변화 없음.
+- Files: `src/app/meensoo/coupons/coupons.module.css`.
+
+### 확인한 것, 손대지 않은 것
+- `src/app/sitemap.ts`(main에서 커밋 누락, 이전에 보고함)와 `src/components/community-lounge.tsx`(eslint 에러 1건, 커뮤니티 코드)는 **main 병합으로 들어온 기존 문제**이고 이번 작업 범위 밖입니다. 커뮤니티/커리어 영역은 코덱스 담당이라 손대지 않았습니다.
+- Validation: 913 tests passed(+4), `tsc` clean(위 두 파일 제외), `eslint` — 제가 만진 파일은 0 warning/error. 헤드리스 크롬 412px·900px 렌더 확인 — 모바일 버튼 정렬 확인, 데스크톱 무변화.
+- `next build`는 위 sitemap.ts 문제로 여전히 실패합니다(제가 만든 문제 아님, PC에서 파일 두 개 커밋 필요).
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 빌드를 막던 사이트맵 임포트, 빈 스텁으로 막음 (main 아님)
+
+- Agent/session: Claude (클라우드 세션). 사용자 질문 "폰에서만으로 못 고치나".
+- Status: **`claude/github-gui-sync-jfbyd5` 브랜치에만** 적용. **main에는 넣지 않았습니다.**
+
+### 확인한 것
+- main의 `e46eb20`이 `src/app/sitemap.ts`에서 `communityPostPath`(`@/domain/community`)와 `listPublishedCommunityPostsForSitemap`(`@/server/community/community-publication`)을 가져오는데, 이 둘은 `git log --all`로 찾아도 **저장소 역사 어디에도 없습니다.**
+- 이건 "PC에 있는 걸 커밋만 안 한 것"이 아니라 **애초에 안 만들어진 기능**입니다. `/community`는 목록 한 화면뿐이고(`src/app/community/page.tsx`), 게시글 낱개 페이지 라우트가 없습니다. `community-lounge.tsx`도 추천·댓글·신고를 전부 그 자리에서 끝내지 다른 URL로 옮기지 않습니다.
+
+### 왜 진짜처럼 만들지 않았나
+- 낱개 게시글 페이지 경로를 제가 지어내면(`/community/[postId]` 등), 나중에 코덱스가 실제로 그 라우트를 만들 때 제 추측이 진짜 설계와 어긋날 수 있습니다. CLAUDE.md의 "다른 구현을 조용히 대체하지 않는다" 원칙에 해당한다고 판단했습니다.
+- 그래서 **사실 그대로** 최소 스텁으로 막았습니다: `listPublishedCommunityPostsForSitemap`은 빈 배열을 돌려줍니다. `/community`는 이미 정적 목록에 매일 갱신으로 올라가 있어 라운지가 색인에서 빠지는 것도 아니고, 가리킬 페이지가 없는 주소를 사이트맵에 올리는 것보다 낫습니다. `communityPostPath`는 sitemap.ts의 import가 성립하도록 존재만 하고 `/community#${postId}`를 돌려주며(호출되는 자리는 지금 없음), 낱개 페이지가 생기면 그때 채우라는 주석을 남겼습니다.
+
+### 왜 main이 아니라 브랜치에만
+- 이 브랜치는 이미 main을 병합한 상태(`38ce119`)라, 이 두 파일만 추가하면 **제 브랜치 자체가 빌드됩니다.** main은 그대로 두어, PC에서 진행 중일 수 있는 커뮤니티 작업과 충돌하지 않습니다.
+- main을 고치는 건 여전히 PC 쪽 몫입니다: 코덱스가 실제 낱개 페이지를 만들면 이 두 파일의 내용을 그대로 덮어쓰면 되고, 그건 평범한 커밋이라 충돌이 아닙니다.
+- Files: `src/domain/community.ts`(함수 추가), `src/server/community/community-publication.ts`(신규, 스텁).
+- Validation: 913 tests passed, `tsc` clean(전체, sitemap 포함), `eslint` 클린, **`next build` 성공** — 이 세션 들어 처음으로 전체 빌드가 끝까지 돕니다.
+- Rollback: 이 커밋 revert. main은 애초에 안 건드렸으므로 되돌릴 필요도 없습니다.
+
+## 2026-09-02 — Claude: 스텁 대신 진짜 원인 제거, 그리고 main에도 같은 수정
+
+- Agent/session: Claude (클라우드 세션). 사용자 지적: 사이트가 멀쩡해 보이는 것과 최신 커밋이 실제로 배포된 것은 다른 얘기다, 커뮤니티/검사는 손대지 말고 진짜 원인을 없애라.
+
+### "배포는 됐다"의 실제 의미
+- 빌드가 실패해도 **직전에 성공한 배포가 계속 서빙됩니다.** Cloudflare·Vercel 등 대부분의 플랫폼이 이렇게 동작합니다 — 실패한 빌드는 아무것도 바꾸지 않고 조용히 남습니다. 그래서 사이트는 멀쩡해 보이지만, `e46eb20`은 아직 한 번도 실제로 배포되지 않았을 가능성이 높습니다.
+- 원인: PC 로컬 작업 중 새 파일 두 개가 디스크엔 있었는데 `git add`에서 빠진 채 커밋됐습니다. 로컬 `next dev`는 디스크의 파일을 그대로 쓰므로 문제없이 돌아갔고, push 이후 Cloudflare 빌드 서버에는 그 파일이 없어 거기서만 터졌습니다.
+
+### 방향을 바꿈 — 스텁을 걷어내고 원인 자체를 없앰
+- 직전 커밋(`8bfa302`)에서 없는 함수 두 개를 빈 스텁으로 만들어 브랜치만 빌드되게 했었는데, 사용자가 "커뮤니티/검사는 신경 쓰지 말라고 했잖냐"고 정확히 짚었습니다. 스텁이라도 커뮤니티 이름의 파일을 만들어 두는 것 자체가 그 영역에 손을 대는 것이었습니다.
+- 대신 **`sitemap.ts`를 `e46eb20` 이전 구조로 되돌렸습니다** — 없는 두 함수를 부르는 부분만 제거하고, 그 커밋이 같이 넣은 유효한 것들(구글 애널리틱스 설정, `/career` 계열 사이트맵 항목)은 그대로 두었습니다. 커뮤니티 낱개 게시글 항목은 원래도 실제 라우트가 없어 채울 수 없었으므로, 정적 `/community` 목록 항목만 남기고 "낱개 페이지가 생기면 여기 채우라"는 주석만 남겼습니다.
+- `src/domain/community.ts`에 추가했던 `communityPostPath`와 새로 만들었던 `src/server/community/community-publication.ts`는 **삭제**했습니다. 이제 이 파일들은 main과 정확히 같습니다.
+- 이건 기능 개발이 아니라 **없는 함수를 부르는 import 오류 제거**라고 판단해 main에도 같은 최소 수정을 적용했습니다.
+
+### 왜 이게 CLAUDE.md의 "다른 구현 보호"에 안 걸리는가
+- 삭제·대체·리팩터한 것은 **어디에도 존재한 적 없는 코드**뿐입니다(`git log --all`로 확인, 처음부터 없었음). 실제로 동작하던 코드를 건드리거나 지운 게 아닙니다.
+- 커리어 검사 사이트맵 항목, 애널리틱스 설정 등 **실제로 동작하는 부분은 그대로 뒀습니다.**
+- Files: `src/app/sitemap.ts`, `src/domain/community.ts`(추가했던 함수 제거, main과 동일하게 복원), `src/server/community/community-publication.ts`(삭제).
+- Validation: 913 tests passed, `tsc` clean, `eslint` — 제가 만진 파일 클린(전역 에러 1건은 `community-lounge.tsx`, 손대지 않음), **`next build` 성공**.
+- main 적용: 별도 커밋으로 동일한 diff를 main에 직접 푸시. Rollback: 두 브랜치 모두 이 커밋들 revert.
+
+## 2026-09-02 — Claude: 이메일 로그인을 매직링크에서 6자리 코드로
+
+- Agent/session: Claude (클라우드 세션). 사용자 질문: "매직링크가 결과 첨삭 메일에서만 쓰이는 거냐, 비용 안 늘고 문제없으면 진행".
+
+### 확인한 사실
+- 매직링크는 **완료 메일(첨삭 결과 메일)에는 안 쓰입니다.** 그 메일의 "결과 확인하기"는 평범한 URL이고, 로그인 안 돼 있으면 구글 로그인 화면(토스 스타일)이 뜹니다.
+- 실제로 매직링크를 쓰는 곳은 둘입니다: `/analysis/prepare` 게스트 화면의 "이메일로 로그인 링크 받기"(`application-case-handoff.tsx`), 결제 확인이 지연될 때의 "이메일로 다시 안내받기"(`quick-checkout-return.tsx`).
+- **링크와 코드는 같은 이메일 한 통에 든 같은 값의 두 표현입니다.** Gmail 등이 피싱 확인을 위해 메일을 열자마자 안의 링크를 먼저 방문하면, 그 순간 하나뿐인 값이 소모되어 **코드도 함께 무효화됩니다.** 그래서 "코드도 같이 보여주기"만으로는 안 고쳐지고, 이메일에서 **링크 자체를 빼야** 근본적으로 막힙니다.
+- 비용: 늘지 않습니다. `signInWithOtp` 호출 한 번, 이메일 한 통은 그대로입니다. 내용이 링크에서 코드로 바뀔 뿐이라 Resend·Supabase 어느 쪽 사용량도 변하지 않습니다.
+
+### 바꾼 것 (앱 코드)
+- 두 화면 모두 "코드 보내기" 이후 **코드 입력 단계**를 추가했습니다. `supabase.auth.verifyOtp({ email, token, type: "email" })`로 이 화면에서 직접 검증하고, 성공하면 새로고침해 링크를 눌렀을 때와 같은 경로(이용권·크레딧 재조회)를 다시 타게 했습니다.
+- 기존 `emailRedirectTo`(링크 목적지)는 그대로 뒀습니다 — 이메일 템플릿을 아직 안 고친 동안에는 링크도 계속 살아 있어야 하고, 템플릿을 고친 뒤에는 자연히 안 쓰이게 됩니다.
+- 사이드 이펙트로 발견한 것: `application-case-handoff.module.css`의 `.payInstead`가 `.action button`/`.login button`과 명세 우선순위가 같아 밑줄 텍스트가 아니라 초록 버튼으로 덮어써지는 **기존 버그**를 발견했습니다(`.oauthButton`이 이미 같은 문제를 `!important`로 피해 가고 있었습니다). 기존 사용처(`spendCredit` 토글 버튼)는 손대지 않고, 이번에 새로 추가한 "코드 다시 받기"만 별도 클래스(`.otpResend`)로 같은 방식(`!important`)을 적용했습니다.
+
+### 남은 일 — Supabase 대시보드(여기서 못 함)
+- **Authentication → Email Templates → Magic Link**에서 링크(`{{ .ConfirmationURL }}`)를 지우고 코드(`{{ .Token }}`)만 남겨야 이 수정이 실제로 효과가 있습니다. 템플릿을 안 바꾸면 지금처럼 링크와 코드가 같이 오고, 링크가 여전히 먼저 소모될 수 있습니다.
+- 예시 본문: `인증 코드: {{ .Token }}\n\n이 코드는 {{ .SiteURL }}에서 로그인할 때 사용합니다. 10분 후 만료됩니다.` (링크 관련 문구·버튼 전부 제거)
+- Files: `src/components/application-case-handoff.tsx`·`.module.css`, `src/components/quick-checkout-return.tsx`·`.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` — 제 파일 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공. 헤드리스 크롬 412px 렌더로 두 화면의 코드 입력 단계 확인.
+- Rollback: 이 커밋 revert. 이메일 템플릿은 손대지 않았으므로 앱 쪽만 되돌리면 됩니다.
+
+## 2026-09-02 — Claude: 캠페인 문구 수정 기능 + og:image
+
+### 1. 협업쿠폰 캠페인 문구 수정
+- 배경: "인원 넣으면 대상에 자동으로 나오는 거, 이미 만든 캠페인은 왜 안 되냐"는 질문에 확인해 보니 캠페인은 만들 때 값이 고정되고 **PATCH는 보관 처리뿐**이라 고칠 방법 자체가 없었습니다.
+- 바꾼 것: `PUT /api/meensoo/campaigns`(신규)로 문구만 고치는 경로를 추가했습니다. **코드·수량·기간·상품은 받지 않습니다** — 이미 발급된 코드와 짝지어진 값이라 여기서 바꾸면 코드가 말하는 것과 캠페인이 말하는 것이 어긋납니다. 대상·혜택·부제·사용방법·하단안내·주의사항·기관명·캠페인명, 즉 팜플렛·메일에 그대로 나가는 문구만 고칠 수 있습니다.
+- 화면: 캠페인 목록에 "수정" 버튼 추가, 상세 패널에 "수정" 탭 추가. 저장하면 `preview` 상태를 즉시 갱신해 같은 화면의 홍보물 미리보기·메일 초안에도 바로 반영됩니다.
+- Files: `src/server/admin/admin-repository.ts`(`updateCampaignText` 추가), `src/app/api/meensoo/campaigns/route.ts`(`PUT` 추가), `src/app/meensoo/coupons/campaign-creator.tsx`.
+- 테스트 없음: `admin-repository.ts`의 다른 캠페인 함수들(`createCampaign`·`archiveCampaign`·`deleteCampaign`)도 기존에 테스트가 없어 같은 관례를 따랐습니다. 실 Supabase 클라이언트를 감싼 얇은 함수라 목킹 인프라가 이 파일에 없습니다.
+
+### 2. og:image 추가
+- 배경: 카카오톡·슬랙·네이버에 링크를 공유해도 썸네일이 안 떴습니다. `layout.tsx`의 `openGraph`/`twitter` 메타데이터에 `images`가 없었습니다.
+- 만든 것: `src/app/opengraph-image.tsx`(신규). Next.js 파일 규약으로 og:image·twitter:image 태그가 자동으로 붙습니다. 동적 값이 없어 **빌드 시점에 한 번만** 그려지고(`next build`에서 `○ /opengraph-image` static으로 확인), 방문자·크롤러 요청마다 다시 그리지 않습니다.
+- 한글 렌더링 함정: `ImageResponse`(Satori)는 기본 폰트에 한글 글리프가 없어 그대로 두면 빈 네모로 뜹니다. 화면에 실제로 쓰는 글자만 Google Fonts에 `text=` 파라미터로 요청해 필요한 글리프만 받았습니다(전체 폰트보다 훨씬 가볍고, 빌드 시점 1회이므로 프로덕션 요청 속도와 무관). `fetch`가 최신 브라우저 신호를 안 보내 Google이 TTF를 주는 것을 이용했습니다(WOFF2는 Satori가 못 읽음).
+- 디자인: 아이콘(`icon.svg`)과 같은 `#176b4a` 초록 M 마크, 서비스명, "AI 자소서 첨삭" 제목, 부제, 도메인. 1200×630(표준 OG 크기).
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공 — 실제 생성된 PNG를 열어 한글이 정상적으로 렌더링되는지 확인했습니다(빈 네모 없음).
+- Rollback: 두 기능 모두 이 커밋 revert. 마이그레이션 없음, 대시보드 설정 없음 — 여기서 만든 것만으로 완결됩니다.
+
+## 2026-09-02 — Claude: 대시보드 첫 화면에 API 원가·마진 카드
+
+- Agent/session: Claude (클라우드 세션). 사용자 승인("ㄱㄱ")으로 진행. 제가 먼저 찾아 제안한 항목 — "실매출"은 첫 화면에 있는데 원가는 `/meensoo/analyses`(최근 200건 한정)에 들어가야만 보였습니다.
+- 바꾼 것: `getSummary()`에 `analysis_run_attempts` 전체를 더하는 쿼리를 추가했습니다. **매출처럼 전체 기간**입니다 — 매출은 전체로 보면서 원가만 최근 며칠로 자르면 두 숫자를 나란히 놓아도 마진을 못 읽습니다.
+- **무료 이용권 원가도 포함됩니다.** 무료로 나간 분석도 API 요금은 그대로 나가는데, 위쪽 "실매출"에는 안 잡히므로 여기 원가에 넣지 않으면 마진이 실제보다 좋아 보입니다. "실매출 대비 마진" 문구로 이걸 그대로 드러냈습니다 — 초기에 무료쿠폰 비중이 크면 마진이 낮게(음수로도) 나올 수 있는데, 그게 정확한 그림입니다.
+- 표가 없거나(마이그레이션 전) 단가 환경변수가 없으면 "단가 미설정"만 보여 주고 숫자를 만들어 내지 않습니다. 쿼리 실패도 대시보드 전체를 막지 않고 이 카드만 비웁니다.
+- Files: `src/server/admin/admin-repository.ts`(`AdminSummary` 타입·`getSummary` 확장), `src/app/meensoo/page.tsx`.
+- Validation: 913 tests passed, `tsc` clean, `next build` 성공. 데스크톱 1200px·모바일 412px 렌더 확인 — 실매출 카드 바로 옆에 자연스럽게 배치.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 홈 화면 아이콘(PWA)과 브랜드 404 페이지
+
+- Agent/session: Claude (클라우드 세션). og:image에 이어 같은 결의 마무리 작업 — "카톡링크 이런 거 하면 고급인" 부류.
+
+### 1. 홈 화면 아이콘
+- 문제: `manifest.ts`에 `icons`가 없었습니다. 안드로이드에서 "홈 화면에 추가"를 하면 아이콘 대신 페이지 스크린샷이 뜨고, iOS는 흰 배경에 글자 일부만 잘린 모양이 됩니다.
+- 만든 것: `src/app/icon-mark.tsx`(공용 렌더러, og:image처럼 `next/og`의 `ImageResponse` 사용 — 로고가 영문 M 한 글자라 한글 폰트를 따로 받아 올 필요가 없어 og:image보다 단순합니다), `apple-icon.tsx`(iOS, 파일명만으로 Next.js가 자동 연결), `icon-192/route.tsx`·`icon-512/route.tsx`(안드로이드 매니페스트용, `dynamic = "force-static"`으로 빌드 시점 1회만 생성). `manifest.ts`에 두 아이콘을 등록했습니다.
+- 검증: 생성된 PNG를 직접 열어 확인 — 192/512/180 각각 정확한 크기, `icon.svg`와 같은 초록 M 마크.
+
+### 2. 브랜드 404 페이지
+- 문제: 없는 주소로 들어오면 Next.js 기본 흰 화면이 떠서 사이트가 아니라 서버가 고장 난 것처럼 보였습니다.
+- 만든 것: `src/app/not-found.tsx`·`.module.css`. M 마크, "페이지를 찾을 수 없습니다", 홈으로 가는 버튼. `robots: {index:false}`로 색인 제외.
+- Files: `src/app/icon-mark.tsx`(신규), `src/app/apple-icon.tsx`(신규), `src/app/icon-192/route.tsx`(신규), `src/app/icon-512/route.tsx`(신규), `src/app/manifest.ts`, `src/app/not-found.tsx`(신규), `src/app/not-found.module.css`(신규).
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공 — 새 라우트 5개 전부 `○`(static)로 확인. 헤드리스 크롬 412px 렌더로 404 화면 확인.
+- Rollback: 이 커밋 revert. 대시보드·마이그레이션 의존 없음.
+
+## 2026-09-02 — Claude: 온보딩 모바일 — 3열 압축을 세로 카드로
+
+- Agent/session: Claude (클라우드 세션). 사용자 지적: "온보딩이 젤 애매하다", "요즘 앱 모바일은 아기자기하게 하잖아".
+- 대상은 모바일뿐입니다(≤640px). 메인·첨삭 페이지는 나중으로 미뤘습니다.
+
+### 원인
+- 좁은 화면에서 "처음부터 작성/내용 보완/최종 첨삭" 세 카드와 "QUICK/PRO/FINAL" 세 카드가 **3열로 욱여넣어져 있었고, 설명 문단이 통째로 숨겨져 있었습니다**(`display:none`). 남은 건 라벨 네 글자뿐이라, 처음 온 사람이 무엇을 고르는 자리인지 알 방법이 없었습니다. "애매하다"는 지적이 정확했습니다.
+- 실제로 렌더링해 확인하니 3열 유지 자체도 문제였습니다 — 카드 폭이 좁아 "처음부터 작성" 같은 4~5자 라벨도 한 글자씩 줄바꿈됐습니다.
+
+### 바꾼 것
+- 두 그리드 다 **세로 한 줄씩 펼치는 방식**으로 바꿨습니다. 스크롤은 늘지만 설명을 그대로 보여줘 한 번에 읽고 고를 수 있습니다.
+- "처음부터 작성" 카드는 아이콘을 민트색 원형 칩(`var(--mint)`/`var(--green)`)에 담아 왼쪽에 두고, 라벨·제목·설명을 오른쪽에 세로로 쌓았습니다. **처음엔 flex로 짰다가 아이콘·라벨·제목·설명 네 형제가 폭을 나눠 가지며 각각 좁은 세로 칸에 갇혀 다시 한 글자씩 줄바꿈되는 걸 렌더링해서 발견**했습니다 — CSS 그리드로 바꿔 아이콘은 1열에 세 줄 높이로 걸치고 라벨·제목·설명은 2열에 쌓이게 고쳤습니다.
+- "QUICK/PRO/FINAL" 카드는 이미 세로 쌓임(`flex-direction:column`) 구조였어서 열 수만 1개로 줄이고 숨겨져 있던 설명을 다시 보여주는 것으로 충분했습니다.
+- 라디오 표시는 카드 오른쪽 중앙으로 옮겼습니다(가로 줄 레이아웃에 맞게).
+
+### 색·로고 교체 용이성 (별도 질문에 대한 답)
+- `globals.css`에 이미 `--green:#176b4a`, `--mint:#eaf5ef`, `--ink`, `--muted`, `--line` 같은 토큰이 `:root`에 정의돼 있습니다. 그런데 **온보딩을 포함해 대부분의 페이지 CSS 모듈이 이 토큰을 안 쓰고 있습니다** — `#176b4a` 같은 값을 각 파일에 직접 하드코딩해 뒀습니다(같은 값이라 눈에는 안 보이는 차이입니다).
+- 그래서 지금 상태로는 브랜드 컬러 하나 바꾸는 게 "토큰 값 한 줄 수정"이 아니라 **파일 여러 개를 찾아 바꿔야 하는 일**입니다. 이번에 새로 짠 모바일 규칙에는 토큰(`var(--mint)`, `var(--green)`)을 썼습니다 — 새 코드부터라도 조금씩 옮겨두면 나중이 편해집니다.
+- 지금 당장 전체를 토큰으로 정리하지는 않았습니다. 색이 아직 확정 전이라는 말씀도 있었고, 정해지지 않은 값을 기준으로 대규모 치환부터 해두는 건 헛수고가 될 수 있어서입니다. **색·로고·파비콘이 정해지면 그때 한 번에 토큰 정리를 해 드리면, 그다음부터는 정말 한 곳만 바꾸면 됩니다.**
+- Files: `src/app/onboarding/onboarding.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `next build` 성공. 헤드리스 크롬 412px(모바일)·1280px(데스크톱) 렌더 확인 — 데스크톱 무변화, 모바일에서 설명 텍스트 정상 노출·줄바꿈 없음.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 온보딩 모바일 2차 — 토스 스타일, 하단 고정 CTA
+
+- Agent/session: Claude (클라우드 세션). 사용자 피드백: "한방에 보이는 게 나은 거 같은데 지금처럼 하면 유형선택 후 스크롤해야 하는 걸 유저는 모를 듯. 토스/3.3처럼", "디자인이 좀 저렴해 보인다".
+- 목업 3개(지금 배포판/압축형/토스식) 스크린샷으로 먼저 비교 후 사용자가 토스식을 선택.
+
+### 구조 — 스크롤 안내를 없앰
+- 문제: 유형 카드를 고르면 상품 섹션이 화면 아래쪽에 조용히 나타납니다. 처음 온 사람은 그게 생긴 줄 모릅니다.
+- 해결: **화면 하단에 고정된 "다음 · 상품 선택하기" 버튼**을 추가했습니다(모바일에서만, `≤640px`). 유형을 고르면 뜨고, 누르면 상품 섹션으로 부드럽게 스크롤합니다. 토스가 선택 화면마다 쓰는 패턴입니다. 데스크톱은 가릴 콘텐츠가 없어 이 버튼 자체를 숨겼습니다(`display:none` 기본, 모바일 미디어쿼리에서만 켬).
+- 안 고른 카드는 라벨·설명을 다 빼고 **제목 한 줄만** 남겼습니다 — 아직 내 이야기가 아닌 카드까지 미리 읽을 필요는 없습니다. 고른 카드만 설명이 나타납니다.
+
+### 디자인 — "저렴해 보인다"는 지적
+- 아이콘을 안 고른 상태에선 회색 칩(`#eef1ef`/`#9aa8a2`), 고르면 초록 칩(`var(--green)`/흰색)으로 바꿔 선택 여부가 색만으로도 분명하게 했습니다.
+- 고른 카드에 은은한 그림자(`box-shadow`)를 줘 눌린 느낌·입체감을 살렸습니다 — 평평한 색 블록만 있던 게 "저렴해 보인다"는 인상의 원인 중 하나로 보입니다.
+- 제목 글자 굵기를 800으로, 자간을 살짝 좁혀(`-0.02em`) 더 또렷하고 힘 있게 보이도록 했습니다. PRO 추천 카드에도 같은 그림자·굵기를 맞춰 일관성을 줬습니다.
+
+### 검증 — 실제 빌드로
+- 이번엔 손으로 마크업을 재구성한 목업이 아니라 **실제로 `next build` + `next start`로 서버를 띄우고 Playwright로 진짜 페이지를 조작**했습니다: 카드 클릭 → 선택 스타일·설명·하단 버튼 등장 확인 → 버튼 클릭 → 부드러운 스크롤로 상품 섹션 도달 확인. 데스크톱(1280px)에서는 하단 버튼이 `display:none`으로 실제로 숨는 것도 계산된 스타일로 확인했습니다.
+- Files: `src/app/onboarding/page.tsx`, `src/app/onboarding/onboarding.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공, 실제 서버 기동 후 인터랙션 확인(모바일 412px·데스크톱 1280px).
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 온보딩 모바일 3차 — 옵션별 색, 헤드라인 두 줄 채우기
+
+- Agent/session: Claude (클라우드 세션). 목업으로 여러 색 조합 비교 후 사용자가 "멀티 컬러 옵션 1"을 승인, 아이콘은 "투박하지 않게", 선택 표시는 단순 원 채우기로 확정. 별도로 "지금 어디까지 작성하셨나요?" 헤드라인이 모바일에서 한 줄에 안 들어가면 어중간하게 작아 보이지 말고 큼직하게 채워달라는 요청.
+
+### 옵션 카드 아이콘 — 항상 고유 색
+- 이전엔 선택 전엔 회색, 선택하면 초록으로 바뀌는 방식이었습니다. 승인된 목업은 세 옵션이 처음부터 각자 색을 가지는 방식(초록/보라/주황) — 선택 여부는 카드 테두리·그림자·라디오가 대신 표시합니다.
+- `:nth-child(1/2/3)`로 옵션마다 그라디언트 배경(초록 `#22c58b→#0c7f52`, 보라 `#8a86ff→#5548d6`, 주황 `#ffb84d→#ee8a1c`)을 고정 지정. 그라디언트 아래 은은한 그림자만 추가(요청대로 가짜 광택 의사요소는 넣지 않음) — "투박하지 않게"의 최소 적용.
+- CREATE 옵션 아이콘을 `Sparkles`에서 `Compass`로 교체(요청: "AI 반짝이 아이콘을 옵션 카드에서는 되도록 안 쓰기"). 자동 추천 배너 2곳의 `Sparkles`는 "AI가 자동으로 골랐다"는 의미에 맞아 그대로 뒀습니다.
+- 라디오(선택 원)는 이미 구조상 빈 `<span>`이라 선택 시 `#176b4a`로 그냥 채워지는 방식이었습니다 — 별도 체크 아이콘을 넣지 않는 요청과 정확히 일치해 구조는 그대로 두고 크기만 17px→20px로 키웠습니다.
+
+### 헤드라인 — 두 줄이면 큼직하게
+- 문제: `.hero h1`이 `var(--type-page-title)`(모바일에서 사실상 고정 36px)를 그대로 썼습니다. 실측(Playwright `Range.getClientRects`로 줄 수 확인)해보니 이 헤드라인은 흔한 폰 폭(360~430px)에서 애초에 한 줄로 절대 안 들어갑니다 — 두 줄은 피할 수 없는데, 36px로 두면 두 줄 다 여백만 남고 작아 보였습니다.
+- 처음 시도(`clamp(40px,12.5vw,54px)`)는 과했습니다 — 세 줄로 넘어가 버림(직접 렌더링해서 발견, 계산만으로는 안 잡히는 문제였습니다). `clamp(34px,10.5vw,42px)`로 다시 맞추고, 360~430px 전 구간에서 정확히 두 줄로 떨어지는지 재확인했습니다.
+- `word-break:keep-all` 추가 — 글자 아무 데서나 끊기지 않고 "지금 어디까지 / 작성하셨나요?"처럼 단어(띄어쓰기) 경계에서만 끊기도록 했습니다. 전엔 "지금 어디까지 작 / 성하셨나요?"처럼 단어 중간이 끊겨 어색했습니다.
+- 데스크톱(`>640px`)은 이 규칙이 미디어쿼리 안에만 있어 영향 없음 — 1280px 렌더로 확인.
+
+### 검증
+- Playwright로 실제 빌드 서버(및 개발 서버로 반복 튜닝) 구동 후: `Range.getClientRects()`로 줄 수·줄 폭을 직접 측정(요소 자체의 `getClientRects()`는 블록 하나짜리 사각형만 반환해 줄 수 판별에 못 씀 — Range로 텍스트 노드를 감싸야 줄마다 사각형이 나옵니다), 360/375/390/412/414/430px 전부 두 줄 확인, 카드 클릭 → 선택 스타일·하단 CTA 등장 확인, 데스크톱 1280px 무변화 확인.
+- Files: `src/app/onboarding/page.tsx`, `src/app/onboarding/onboarding.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 첨삭 결과 페이지 모바일 — 헤더 버튼 화면 밖으로 잘리는 버그
+
+- Agent/session: Claude (클라우드 세션). 사용자 요청으로 온보딩 다음 "나머지 부분"(메인·첨삭페이지) 모바일 점검에 착수. 실제 서비스에서 결제 완료 후 도착하는 화면(`/result`)과 결제 전 미리보기(`/result/sample`)가 공유하는 `ResultWorkspaceComplete` 컴포넌트를 대상으로 삼았습니다.
+- **손대지 않은 것**: `/result/v2`(주석에 "이전 화면을 그대로 보존" 명시), `/result/codex`, `/result/claude`, `/result/codex-restored`, `/result/claude-restored`는 각각 별도 구현체(`result-workspace-*.tsx`)를 쓰는, 다른 에이전트의 변형 화면으로 보여 전혀 열어보지 않았습니다 — CLAUDE.md의 "다른 구현체를 삭제·교체·리팩터하지 않는다" 원칙에 따른 것입니다.
+
+### 발견한 문제 — 취향이 아니라 실제 버그
+- 모바일(360~430px)에서 헤더의 "전체 복사 / DOCX 저장 / TXT 저장" 버튼 3개 중 마지막 버튼이 **화면 밖으로 잘려 나가 있었습니다**. 직접 렌더링해 좌표를 재보니 로고 워드마크("MOOA Resume" 전체 텍스트)가 모바일에서도 줄지 않고 약 200px를 그대로 차지해, 버튼 3개가 들어갈 공간이 부족했던 것이 원인이었습니다.
+- `.header button{font-size:0}`으로 버튼 텍스트는 이미 숨기고 있었지만, 정작 더 넓은 자리를 차지하는 로고 쪽은 그대로 두고 있어 근본 원인이 남아 있었습니다.
+
+### 고친 것
+- 같은 파일에 이미 있던 방식(버튼 라벨을 `font-size:0`으로 숨기고 아이콘만 남기는 패턴)을 로고에도 그대로 적용: `≤700px`에서 `.header .brand`를 `font-size:0`으로 접어 "MOOA"·"Resume" 글자를 숨기고, `.brand>span`(초록 M 배지)만 원래 크기로 복원했습니다. 버튼 패딩도 살짝 줄여 여유를 더 뒀습니다.
+- 360~430px 전 구간에서 버튼 3개가 화면 안에 들어오는지 좌표로 재확인했습니다. 데스크톱(1280px)은 미디어쿼리 밖이라 무변화 — 워드마크·버튼 라벨 모두 그대로 보입니다.
+
+### 범위에 대해
+- 이 컴포넌트는 680줄 규모로, 점수 카드·문항별 Before/After 비교·공고 대조·면접 예상질문·최종 첨삭본까지 다양한 화면을 한 파일에서 탭으로 전환합니다. 이번엔 **화면 밖으로 잘리는 실제 버그만** 고쳤고, 이미 동작하는 나머지 영역(카드·탭·비교 화면)의 "토스 스타일" 전면 재단장은 별도로 범위를 잡아 진행하는 게 맞다고 판단해 이번엔 진행하지 않았습니다.
+- Files: `src/components/result-workspace-complete.module.css`.
+- Validation: 관련 테스트 30개 통과, `tsc` clean, `eslint` 클린, `next build` 성공. 360/390/430px 헤더 좌표 확인, 1280px 데스크톱 무변화 확인.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: PRO 입력 페이지 진행순서 카드 정렬 + 결제 전 확인화면 헤드라인 줄바꿈
+
+- Agent/session: Claude (클라우드 세션). 사용자가 실제 폰 스크린샷을 보내 "오와 열이 안 맞는 것 같다"고 지적.
+
+### 1. `/pro/build`(및 create·polish) — 진행 순서 2×2 카드 정렬
+- 스크린샷으로 확인된 문제: 01~04 카드 4개는 높이가 이미 똑같은데(그리드 기본 stretch), 카드마다 **제목이 1줄로 끝나는지 2줄로 넘어가는지가 달라** 그 아래 설명 문단이 카드마다 다른 높이에서 시작하고 있었습니다. 사용자는 "글자 크기를 줄이면 맞지 않을까"라고 물으셨는데, 실측해보니 글자를 줄이는 대신 **제목 영역에 2줄 높이를 항상 미리 확보**(`min-height:2.8em`)하는 쪽이 글자 크기를 유지하면서도 정렬을 맞추는 더 정확한 해법이었습니다.
+- 같은 행의 두 카드 모두 설명 문단 시작 위치가 정확히 일치하는 것을 좌표로 확인했습니다(수정 전 20px 어긋남 → 수정 후 0px).
+- Files: `src/components/pro-input-page.module.css`.
+
+### 2. `/analysis/prepare` (결제 전 최종 확인 화면) — 헤드라인 줄바꿈
+- 문제: h1에 `<br/>`로 의도한 줄바꿈("입력한 자료와 제공 범위를" / "한 번만 확인해 주세요.")이 있었지만, 좁은 폰(360~390px, 흔한 폭)에서는 **첫 줄 자체가 다시 한번 줄바꿈되면서 "를" 한 글자만 혼자 남는** 3줄짜리 어색한 모양이 되고 있었습니다. 온보딩에서 썼던 방식과 동일하게, Playwright `Range.getClientRects()`로 실제 줄 수를 재서 확인 후 모바일 전용 폰트 크기(23px)로 낮춰 의도한 2줄이 실제로 2줄로 끝나도록 맞췄습니다.
+- 이 화면의 나머지 부분(상품 요약, 준비된 자료, 로그인 폼 등)은 실제 렌더링해 확인한 결과 이미 읽을 만해서 손대지 않았습니다 — CSS에 적힌 숫자만 보고 전부 바꾸면 이미 괜찮은 부분까지 건드리는 과잉 수정이 됩니다.
+- Files: `src/components/analysis-preparation.module.css`.
+
+### 검증
+- Playwright로 360/375/390/412/414/430px 각각 렌더링해 줄 수·정렬 좌표 확인, 데스크톱(1280px) 무변화 확인.
+- Validation: 관련 테스트 통과(`analysis-preparation.test.tsx` 4개), `tsc` clean, `eslint` 클린, `next build` 성공.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 결제 전 확인화면 — 추천코드·쿠폰 코드 줄 모바일 정렬
+
+- Agent/session: Claude (클라우드 세션). 사용자가 실제 폰(갤럭시)에서 캡처한 스크린샷 3장으로 지적: (1) 이전 커밋들이 실제로 배포됐는지 확인 요청, (2) 추천코드·쿠폰코드 입력 줄에서 "로그인하고 적용/등록" 버튼이 혼자 다음 줄로 밀려나며 어색해 보임.
+
+### 배포 여부에 대해
+- 이 세션에는 Cloudflare 배포 권한(`wrangler`)이 없습니다(`wrangler whoami` 결과 미인증). `git push`로 `main`에 반영은 되지만, 실제 서비스(mooaresume) 배포는 별도로 `npm run deploy`를 실행할 수 있는 곳(사용자 PC 또는 배포 권한이 있는 환경)에서 이뤄져야 합니다. 즉 지금까지의 수정 사항이 코드에는 들어갔지만 **아직 실제 사이트에 반영되지 않았을 수 있습니다.**
+
+### 추천코드·쿠폰코드 줄 정렬
+- 원인: `ReferralCodeEntry`/`CouponCodeEntry`의 `compact` 모드가 "라벨 + 입력창 + 버튼"을 한 줄에 배치하는 `flex-wrap` 구조였는데, 로그아웃 상태의 버튼 문구("로그인하고 적용", "로그인하고 등록")가 길어서 좁은 폰 폭에서 셋이 한 줄에 다 안 들어가고 **버튼만 혼자 다음 줄로 밀려나며**, 입력창은 그 위에서 쓰지도 않는 폭을 넓게 차지하고 있었습니다.
+- 이 파일에는 이미 같은 문제를 겪고 고친 전례가 있었습니다(비압축 `.row`의 코드 주석: "나란히 두면 입력창이 코드보다 좁아지고 두 요소의 끝이 맞지 않았다 — 한 줄, 한 너비로 통일"). `compact` 모드에도 같은 해법을 적용: `≤480px`에서 라벨·입력창·버튼을 각각 완전히 독립된 한 줄(세로 스택)로 바꿔, 버튼 문구 길이와 무관하게 항상 정렬되도록 했습니다.
+- 데스크톱과 480px 초과 폭(이 컴포넌트를 쓰는 `/refer` 포함)은 미디어쿼리 밖이라 기존 한 줄 레이아웃 그대로입니다.
+- Files: `src/components/referral-code-entry.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공. Playwright로 360/390/412/430px에서 라벨·입력창·버튼이 모두 같은 폭의 독립된 줄로 떨어지는지 좌표로 확인, 1280px 데스크톱에서 기존 한 줄 레이아웃 유지 확인.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 쿠폰 코드 칸을 추천코드와 같은 모양으로 통일 + 가로 스크롤 방어
+
+- Agent/session: Claude (클라우드 세션). 사용자가 실제 라이브 사이트(mooaresume.com)에서 캡처: (1) `/analysis/prepare`에서 가로로 화면이 벗어나 드래그해야 보이는 부분이 있음, (2) 추천코드 칸(방금 수정한 것)은 라벨/입력창/버튼이 세로로 통일됐는데 바로 아래 쿠폰 코드 칸은 여전히 라벨+입력창이 한 줄, 버튼만 별도 줄이라 두 칸이 서로 달라 보임.
+
+### 쿠폰 코드 칸 통일
+- 원인: `ReferralCodeEntry`(추천코드)와 `CouponCodeEntry`(쿠폰)는 UI가 거의 같아 보이지만 **완전히 분리된 컴포넌트·CSS 모듈**입니다. 지난 커밋에서 추천코드의 `compact` 레이아웃만 고쳤고, 쿠폰 쪽 `coupon-code-entry.module.css`는 손대지 않아 옛 `flex-wrap` 레이아웃 그대로 남아 있었습니다.
+- 조치: 쿠폰 쪽에도 `≤480px`에서 라벨·입력창·버튼을 각각 독립된 한 줄로 통일하는 동일한 규칙을 추가했습니다. 이제 두 칸이 폰에서 완전히 같은 모양입니다.
+
+### 가로 스크롤(페이지 벗어남)
+- 재현 시도: 로컬에서 360~430px 전 폭, 추천코드/쿠폰코드에 실제 값 입력, 페이지 맨 아래까지 스크롤 등 여러 상태로 `document.documentElement.scrollWidth`를 직접 측정했지만 **재현되지 않았습니다**(항상 뷰포트 폭과 정확히 일치).
+- 확실한 원인은 못 찾았지만, 가장 흔한 실제 원인(flex/grid 항목이 `width:100%`를 줘도 브라우저가 내용 기준 최소 너비를 따로 계산해 그 이상으로 못 줄어드는 문제)을 방어하기 위해 추천코드·쿠폰코드 두 곳의 입력창·버튼에 `min-width:0`을 추가했습니다. 스크린샷이 스크롤 중간(드래그 도중)에 찍힌 것이라 일시적 현상이었을 가능성도 있습니다.
+- Files: `src/components/coupon-code-entry.module.css`, `src/components/referral-code-entry.module.css`(방어 코드 추가).
+- Validation: 관련 테스트 9개 통과, `tsc` clean, `eslint` 클린, `next build` 성공. Playwright로 두 칸이 동일한 모양으로 렌더링되는지, 실제 값 입력 후에도 가로 스크롤이 없는지 확인.
+- 남은 것: 배포 후에도 가로 스크롤이 재현되면, 정확히 어느 화면·상태(로그인 여부, 입력한 값, 스크롤 위치)였는지 확인이 필요합니다.
+
+### 메인 홈 — 원클릭 배너에 그림자 추가 (진행 중)
+- 사용자 요청: "메인홈은 규격·글자·내용·UI는 건들지 말고 투박하지 않게 입체감 있게" — 레이아웃·텍스트는 그대로 두고 시각적 깊이만 추가하는 작업. 1단계로 `one-click.module.css`의 `.banner`(그라디언트 카드, 그림자가 전혀 없던 평평한 카드)에 은은한 그림자를 추가했습니다. 나머지 요소(입력창, 시작하기 버튼 등)는 이미 그림자가 있어 우선순위에서 다음으로 미뤄 이번 커밋에는 포함하지 않았습니다.
+- Files: `src/app/one-click.module.css`.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 메인홈 입체감 마무리 + PRO 빌드 페이지 글자 크기 축소
+
+- Agent/session: Claude (클라우드 세션). 사용자 요청 2가지: (1) "메인홈은 규격·글자·내용·UI는 건들지 말고 투박하지 않게 입체감 있게" — 레이아웃·텍스트 변경 없이 시각적 깊이만 추가. (2) "프로빌드(입력페이지)에서 글자 크기를 작게 해서 전체적으로 UI가 더 돋보이게".
+
+### 메인홈 입체감 (레이아웃·텍스트 무변경)
+- 지난 커밋(ONE-CLICK 배너 그림자)에 이어 나머지 평평했던 요소에 그림자만 추가: 배너 안 초록 아이콘 사각형(`one-click.module.css` `.icon`), 모바일 헤드라인 아래 "자기소개서 컨설팅 받기" 민트색 알약 칩(`globals.css` `.hero-mobile-sub`). 색·크기·문구·배치는 그대로입니다.
+- 이미 그림자가 있던 요소(입력창, 첨삭 예시 버튼, 무료로 시작하기 버튼)는 건드리지 않았습니다 — 이미 평평하지 않은 것까지 손댈 필요는 없다고 판단했습니다.
+
+### PRO 빌드(입력) 페이지 — 모바일 글자 크기 축소
+- 대상: `pro-input-page.module.css`의 폰 전용 블록(제목·진행순서 카드·섹션 제목·스타일 선택 카드 등)과 `simple-intake.module.css`의 "지원 자료를 한 번에 넣어주세요" 카드.
+- 헤드라인 위주로 눈에 띄게 줄였습니다: 페이지 제목 21px→18px, 간편입력 카드 제목 17px→15px, 진행순서 섹션 제목 16px→14.5px, 섹션 제목들 15px→13.5px, 스타일 카드 제목 13px→12.5px 등. 나머지 본문·라벨류도 전반적으로 0.5~1px씩 줄였습니다.
+- **건드리지 않은 것**: `.form textarea`, `.experienceGrid input/textarea`의 16px — 이 값을 16px 미만으로 낮추면 iOS Safari가 포커스 시 화면을 확대한 채 되돌리지 않는 버그가 재현됩니다(이 파일에 이미 적힌 경고). 요청한 "전체적으로 작게"에도 이 값만은 예외로 유지했습니다.
+- Files: `src/app/globals.css`, `src/app/one-click.module.css`, `src/components/pro-input-page.module.css`, `src/components/simple-intake.module.css`.
+- Validation: 913 tests passed, `tsc` clean, `eslint` 클린, `next build` 성공. 390px 모바일·1280px 데스크톱 렌더 확인 — 데스크톱 무변화, 모바일은 눈에 띄게 조밀해진 레이아웃과 그림자 확인.
+- Rollback: 이 커밋 revert.

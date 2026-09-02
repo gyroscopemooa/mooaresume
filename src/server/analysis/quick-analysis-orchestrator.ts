@@ -4,6 +4,7 @@ import { resultDocumentSchema, type ResultDocument } from "@/domain/result-docum
 export type QuickAnalysisRunContext = {
   analysisRunId: string;
   request: AnalysisRequest;
+  attemptCount: number;
 };
 
 export interface QuickAnalysisRunRepository {

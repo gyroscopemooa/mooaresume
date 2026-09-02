@@ -157,8 +157,8 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
     }
   }
 
-  async startBackground(request: AnalysisRequest): Promise<string> {
-    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model: this.options.model, background: true, max_output_tokens: resolveMaxOutputTokens(request), instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
+  async startBackground(request: AnalysisRequest, attemptNo: number = 1): Promise<string> {
+    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model: this.options.model, background: true, max_output_tokens: resolveMaxOutputTokens(request, attemptNo), instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
     if (!response.ok) throw new Error(`OpenAI Responses API 백그라운드 시작에 실패했습니다. status=${response.status}${await this.describeFailureBody(response)}`);
     return responsesEnvelopeSchema.parse(await response.json()).id;
   }

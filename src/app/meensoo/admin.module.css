@@ -365,3 +365,86 @@
 }
 .linkCell{width:340px;padding:6px 9px;border-radius:7px;border:1px solid var(--admin-line);background:var(--admin-sunken);color:var(--admin-muted);font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;font-size:11px}
 .linkCell:focus{outline:2px solid var(--admin-accent);outline-offset:1px;color:var(--admin-text)}
+
+/* 시도 내역과 원가.
+   ------------------------------------------------------------------
+   한 칸에 여러 줄이 들어가는 자리라, 표의 다른 칸보다 글자를 한 단계
+   줄였습니다. 크기를 맞추면 이 두 칸이 표를 세로로 늘려 다른 행이
+   화면 밖으로 밀려납니다. */
+
+.attemptList { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; min-width: 148px; }
+.attemptList li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--admin-text);
+}
+/* 번호를 동그라미로 두면 몇 번째 시도인지가 글을 읽기 전에 보입니다. */
+.attemptList b {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--admin-raise);
+  border: 1px solid var(--admin-line);
+  font-size: 10px;
+  font-weight: 700;
+}
+.attemptList em { font-style: normal; color: var(--admin-muted); font-variant-numeric: tabular-nums; }
+.attemptList small { margin-left: auto; color: var(--admin-muted); font-size: 10.5px; }
+
+/* 결과를 못 낸 시도. 돈만 나간 줄이라 눈에 띄어야 합니다 — 색 하나로만
+   구분하지 않고 번호 배경까지 바꿉니다. */
+.attemptList li[data-wasted="true"] span { color: var(--admin-danger); }
+.attemptList li[data-wasted="true"] b {
+  background: var(--admin-bad-bg);
+  border-color: var(--admin-pill-bad);
+  color: var(--admin-danger);
+}
+
+.costCell { display: grid; gap: 4px; min-width: 132px; }
+.costCell strong { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.costCell .pill { justify-self: start; }
+.costCell small { color: var(--admin-muted); font-size: 11px; line-height: 1.55; }
+
+/* 단가가 없을 때의 안내. 표 위에 한 줄로 두어, 금액 칸이 비어 있는 이유를
+   찾아 헤매지 않게 합니다. */
+.hint code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--admin-raise);
+  border: 1px solid var(--admin-line);
+  font-size: 11.5px;
+}
+
+/* 확인이 필요한 건만 모은 자리.
+   표가 아니라 목록입니다 — 표로 만들면 여기도 옆으로 밀어야 하고, 그러면
+   이 자리를 따로 만든 이유가 사라집니다. */
+.riskList { list-style: none; margin: 0; padding: 0; }
+.riskList li {
+  padding: 13px 16px;
+  border-top: 1px solid var(--admin-line);
+  display: grid;
+  gap: 5px;
+}
+.riskList li:first-child { border-top: 0; }
+
+.riskTop { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.riskTop b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.riskTop small { color: var(--admin-muted); font-size: 12px; }
+
+.riskWho { font-size: 13px; color: var(--admin-text); word-break: break-all; }
+
+.riskWhy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--admin-muted);
+}
+.riskWhy a { margin-left: auto; color: var(--admin-accent); font-weight: 600; text-decoration: none; }
+.riskWhy a:hover { text-decoration: underline; }

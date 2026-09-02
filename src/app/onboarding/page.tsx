@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, FileCheck2, FilePenLine, LockKeyhole, Sparkles, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Compass, FileCheck2, FilePenLine, LockKeyhole, Sparkles, Upload } from "lucide-react";
 import { decideWritingMode, type WritingMode } from "@/domain/writing-mode";
 import { isFinalEnabled } from "@/domain/final-availability";
 import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
@@ -12,7 +12,7 @@ import styles from "./onboarding.module.css";
 const options = [
   {
     id: "CREATE" as const,
-    icon: Sparkles,
+    icon: Compass,
     label: "처음부터 작성",
     title: "아직 아무것도 못 썼어요",
     description: "경험을 찾고 소재와 개요부터 함께 만들어요.",
@@ -115,7 +115,7 @@ export default function OnboardingPage() {
         <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
         <Link href="/examples">첨삭 예시</Link>
       </header>
-      <div className={styles.container}>
+      <div className={`${styles.container} ${activeMode ? styles.hasStickyCta : ""}`}>
         <Link href="/" className={styles.back}><ArrowLeft /> 홈으로</Link>
         <section className={styles.hero}>
           <span>내 작성 단계 확인</span>
@@ -218,7 +218,7 @@ export default function OnboardingPage() {
         </details>
 
         {activeMode && (
-          <section className={styles.products}>
+          <section id="onboarding-products" className={styles.products}>
             <div>
               <span>이용 가능한 상품</span>
               <h2>{activeMode === "CREATE" ? "처음 작성은 PRO로 시작합니다." : "원하는 검토 범위를 선택하세요."}</h2>
@@ -267,6 +267,22 @@ export default function OnboardingPage() {
           </section>
         )}
       </div>
+
+      {/* 좁은 화면 전용. 유형을 고르면 상품 섹션이 화면 아래쪽에 조용히
+          나타나는데, 스크롤하지 않으면 그게 생겼는지조차 모릅니다. 다음
+          할 일을 화면에 항상 붙여 두면 스크롤을 안내할 필요가 없어집니다
+          — 토스 같은 앱이 선택 화면마다 쓰는 방식입니다. 데스크톱은
+          가릴 콘텐츠가 없어(css에서 숨김) 필요 없습니다. */}
+      {activeMode && (
+        <div className={styles.stickyCta}>
+          <button
+            type="button"
+            onClick={() => document.getElementById("onboarding-products")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          >
+            다음 · 상품 선택하기 <ArrowRight />
+          </button>
+        </div>
+      )}
     </main>
   );
 }
