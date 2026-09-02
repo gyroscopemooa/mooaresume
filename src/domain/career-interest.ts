@@ -42,7 +42,7 @@ export function getInterestHeadline(scores: InterestScore[]) {
 
 type RiasecCode = (typeof INTEREST_DIMENSIONS)[number]["code"];
 
-const PROFILE_NAMES: Record<string, string> = {
+export const RIASEC_BASE_PROFILE_NAMES: Record<string, string> = {
   RI: "현장 해법가", RA: "제작 탐구가", RS: "지원 문제해결가", RE: "기술 추진가", RC: "정밀 운영가",
   IR: "현장 분석가", IA: "창의 탐구가", IS: "지식 연결가", IE: "전략 분석가", IC: "체계 설계가",
   AR: "창작 제작가", AI: "아이디어 연구가", AS: "공감 표현가", AE: "창의 기획가", AC: "콘텐츠 정리자",
@@ -87,6 +87,36 @@ const ROLE_AREAS: Record<RiasecCode, readonly string[]> = {
   C: ["운영 기획·관리", "데이터·프로세스 관리"],
 };
 
+export type RiasecPairProfile = {
+  code: string;
+  name: string;
+  imagePath: string;
+  coreDescription: string;
+};
+
+/**
+ * The single source of truth for the 30 ordered base cards. A third RIASEC
+ * letter is intentionally absent here: it is an explanatory support axis.
+ */
+export const RIASEC_PAIR_PROFILES: Record<string, RiasecPairProfile> = Object.fromEntries(
+  Object.entries(RIASEC_BASE_PROFILE_NAMES).map(([code, name]) => {
+    const primaryCode = code[0] as RiasecCode;
+    const secondaryCode = code[1] as RiasecCode;
+    const primary = INTEREST_DIMENSIONS.find((dimension) => dimension.code === primaryCode)!;
+    const secondary = INTEREST_DIMENSIONS.find((dimension) => dimension.code === secondaryCode)!;
+    return [code, {
+      code,
+      name,
+      imagePath: `/images/career-character-examples/${code.toLowerCase()}.webp`,
+      coreDescription: `${primary.label} 활동을 중심으로 ${secondary.label} 활동을 함께 선호하는 기본 유형입니다. ${STRENGTHS[primaryCode]}과 ${STRENGTHS[secondaryCode]}이 핵심 흐름입니다.`,
+    }];
+  }),
+) as Record<string, RiasecPairProfile>;
+
+export function getRiasecPairProfile(rawPair?: string): RiasecPairProfile {
+  const pair = (rawPair ?? "IS").toUpperCase().replace(/[^RIASEC]/g, "").slice(0, 2);
+  return RIASEC_PAIR_PROFILES[pair] ?? RIASEC_PAIR_PROFILES.IS;
+}
 export type InterestProfile = {
   code: string;
   typeName: string;
@@ -109,10 +139,85 @@ export function getInterestProfile(scores: InterestScore[]): InterestProfile {
   const areas = [...ROLE_AREAS[primary.code as RiasecCode], ...ROLE_AREAS[secondary.code as RiasecCode]].filter((value, index, values) => values.indexOf(value) === index).slice(0, 3);
   return {
     code: `${primary.code}${secondary.code}${tertiary.code}`,
-    typeName: PROFILE_NAMES[pair] ?? `${primary.label} ${secondary.label} 탐색가`,
+    typeName: RIASEC_BASE_PROFILE_NAMES[pair] ?? `${primary.label} ${secondary.label} 탐색가`,
     headline: `${ACTIONS[primary.code as RiasecCode]} 일과 ${ACTIONS[secondary.code as RiasecCode]} 일을 함께 좋아하는 편`,
     strengths: [STRENGTHS[primary.code as RiasecCode], STRENGTHS[secondary.code as RiasecCode]],
     watchOut: WATCH_OUTS[primary.code as RiasecCode],
     roleAreas: areas,
+  };
+}
+const SUPPORT_COPY: Record<RiasecCode, { title: string; description: string }> = {
+  R: { title: "현장 검증을 더하는", description: "현실형 보조축이 더해져 도구·현장·구체적인 결과를 직접 확인하고 다루는 활동에도 흥미가 나타납니다." },
+  I: { title: "탐구를 넓히는", description: "탐구형 보조축이 더해져 자료·원인·원리를 더 깊게 파고들고 검증하는 활동에도 흥미가 나타납니다." },
+  A: { title: "표현·창의성을 더하는", description: "예술형 보조축이 더해져 아이디어를 표현하고 기존 방식을 새롭게 바꾸는 활동에도 흥미가 나타납니다." },
+  S: { title: "사람과 연결하는", description: "사회형 보조축이 더해져 상대를 돕고 설명하며 함께 성장하는 활동에도 흥미가 나타납니다." },
+  E: { title: "기획·추진을 더하는", description: "진취형 보조축이 더해져 목표를 제안하고 사람·자원을 움직여 실행하는 활동에도 흥미가 나타납니다." },
+  C: { title: "체계적 운영을 더하는", description: "관습형 보조축이 더해져 정보·기준·절차를 정리하고 정확하게 운영하는 활동에도 흥미가 나타납니다." },
+};
+
+export type RiasecCharacterProfile = {
+  code: string;
+  baseCode: string;
+  baseName: string;
+  cardTitle: string;
+  descriptor: string;
+  supportLabel: string;
+  supportDescription: string;
+  imagePath: string;
+  rankings: Array<{
+    rank: 1 | 2 | 3;
+    code: string;
+    label: string;
+    subtitle: string;
+    description: string;
+  }>;
+  focusSummary: string;
+  strengths: string[];
+  watchOut: string;
+  roleAreas: string[];
+};
+
+/**
+ * The first ordered pair selects the 30-card base identity. The third ordered
+ * RIASEC area is a MOOA explanatory support axis: it changes the narrative,
+ * not the base card image or base type name.
+ */
+export function getRiasecCharacterProfile(rawCode?: string): RiasecCharacterProfile {
+  const normalized = (rawCode ?? "ISR").toUpperCase().replace(/[^RIASEC]/g, "").slice(0, 3);
+  const code = normalized.length === 3 && new Set(normalized).size === 3 ? normalized : "ISR";
+  const dimensions = code.split("").map((letter) => INTEREST_DIMENSIONS.find((dimension) => dimension.code === letter)!);
+  const [primary, secondary, tertiary] = dimensions;
+  const baseCode = `${primary.code}${secondary.code}`;
+  const support = SUPPORT_COPY[tertiary.code as RiasecCode];
+  const baseName = RIASEC_BASE_PROFILE_NAMES[baseCode] ?? `${primary.label} ${secondary.label} 탐색가`;
+  const cardTitle = baseCode === "IS" ? "통찰형 조력자" : baseName;
+  const roleAreas = [...ROLE_AREAS[primary.code as RiasecCode], ...ROLE_AREAS[secondary.code as RiasecCode]]
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .slice(0, 4);
+
+  return {
+    code,
+    baseCode,
+    baseName,
+    cardTitle,
+    descriptor: support.title,
+    supportLabel: `${tertiary.label}(${tertiary.code}) 보조축`,
+    supportDescription: support.description,
+    imagePath: `/images/career-character-examples/${baseCode.toLowerCase()}.webp`,
+    rankings: dimensions.map((dimension, index) => ({
+      rank: (index + 1) as 1 | 2 | 3,
+      code: dimension.code,
+      label: dimension.label,
+      subtitle: dimension.subtitle,
+      description: dimension.description,
+    })),
+    focusSummary: `${ACTIONS[primary.code as RiasecCode]} 활동과 ${ACTIONS[secondary.code as RiasecCode]} 활동을 함께 선호하는 경향에 ${tertiary.label} 보조축이 더해진 결과입니다.`,
+    strengths: [
+      STRENGTHS[primary.code as RiasecCode],
+      STRENGTHS[secondary.code as RiasecCode],
+      `${tertiary.label} 보조축: ${support.description}`,
+    ],
+    watchOut: WATCH_OUTS[primary.code as RiasecCode],
+    roleAreas,
   };
 }

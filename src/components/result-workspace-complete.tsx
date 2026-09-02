@@ -25,10 +25,11 @@ import { ApplicationTrackerCard } from "@/components/application-tracker-card";
 import { CandidateProfileCard } from "@/components/candidate-profile-card";
 import styles from "./result-workspace-complete.module.css";
 import { FinalVerification } from "./final-verification";
+import { FinalWrapUp } from "./final-wrap-up";
 import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
 
-type View = "overview" | "submission" | "revision" | "verification" | "fit" | "interview" | "final";
+type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "final";
 
 const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
   good: "좋은 표현",
@@ -267,7 +268,9 @@ function readCarriedMaterialCount(): number {
 }
 
 
-export function ResultWorkspaceComplete({ result = sampleResultDocument }: { result?: ResultDocument }) {
+// 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
+// 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
+export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null }: { result?: ResultDocument; analysisRunId?: string | null }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
@@ -495,11 +498,16 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument }: { res
       <nav className={styles.tabs}>
         {tabs.filter((tab) => !tab[2] || showsProTabs).map(([id,label,pro]) => <button key={id} onClick={() => setView(id)} className={view === id ? styles.active : ""}>{label}{pro && <small>PRO</small>}</button>)}
         {result.product === "FINAL" && <button onClick={() => setView("verification")} className={view === "verification" ? styles.active : ""}>FINAL 검증<small>FINAL</small></button>}
+        {/* 검증 옆에 둡니다. 순서가 곧 읽는 순서입니다 — 무엇이 문제인지 본
+            다음에 그래서 무엇을 할지가 옵니다. */}
+        {result.product === "FINAL" && <button onClick={() => setView("wrapup")} className={view === "wrapup" ? styles.active : ""}>제출 전 마무리<small>FINAL</small></button>}
       </nav>
 
       {view === "verification" && result.product === "FINAL" && (
         <FinalVerification result={result} hasResume={result.suppliedResume} />
       )}
+
+      {view === "wrapup" && result.product === "FINAL" && <FinalWrapUp result={result} analysisRunId={analysisRunId} />}
 
       {view === "overview" && <section className={styles.overview}>
         <div className={styles.score}><div>{/* Said "· 샘플" on every result, paid ones included — telling a customer

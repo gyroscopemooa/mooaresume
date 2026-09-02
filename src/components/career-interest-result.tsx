@@ -58,6 +58,11 @@ export function CareerInterestResult() {
 
   return <main className={styles.result}>
     <div className={styles.resultHero}><span><CheckCircle2 />{isSavedResult ? "저장 기록 불러옴" : "탐색 완료"}</span><h1>{profile.code} · {profile.typeName}</h1><p>{profile.headline}</p><small>상위 3개 RIASEC 영역을 순서대로 적은 탐색 코드입니다. {isSavedResult ? `${savedDate ? `${savedDate}에 ` : ""}계정에 저장한 결과입니다.` : "직업 적합성·능력·채용 결과를 판정하지 않습니다."}</small></div>
+    <nav className={styles.resultNavigation} aria-label="결과 화면 이동">
+      <span className={styles.resultNavigationCurrent}><small>01</small>기본 결과</span>
+      <Link href={`/career/character?code=${profile.code}`}><small>02</small>캐릭터 해설 <ArrowRight /></Link>
+      <Link href="/career/ai/sample?scope=interest"><small>03</small>심층해설 예시 <ArrowRight /></Link>
+    </nav>
     <CareerAssessmentStorageNotice assessmentCode="interest" assessmentVersion="mooa-riasec-exploration-kr-beta-v1" answersRaw={raw} resultPath="/career/interest/result" restored={isSavedResult} />
     <section className={styles.chartCard}><div><span className={styles.sectionKicker}>RIASEC 6 AREAS · MOOA BETA</span><h2>RIASEC 6영역을 참고한<br />활동 흥미</h2><p>현실형·탐구형·예술형·사회형·진취형·관습형의 활동 선호를 무아 자체 베타 문항으로 살펴봅니다. 공식 O*NET 원문 검사는 아닙니다.</p></div><div className={styles.chart}><ResponsiveContainer width="100%" height="100%"><RadarChart data={data} outerRadius="72%"><PolarGrid stroke="#d7e1da"/><PolarAngleAxis dataKey="subject" tick={{ fill: "#53655b", fontSize: 10 }}/><Radar dataKey="score" stroke="#176b4a" fill="#43a574" fillOpacity={0.32}/><Tooltip formatter={(value) => [`${value} / 100`, "흥미 응답 환산"]}/></RadarChart></ResponsiveContainer></div></section>
     <section className={styles.scoreGrid}>{scores.map((score) => <article key={score.dimension}><div><span>{score.code} · {score.label}</span><b>{score.level}</b></div><strong>{score.score}<small>/100</small></strong><div className={styles.scoreLine}><i style={{ width: `${score.score}%` }} /></div><p>{score.subtitle}</p></article>)}</section>

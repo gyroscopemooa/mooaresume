@@ -21,6 +21,8 @@ import styles from "./coupons.module.css";
 const PRODUCT_CHARACTERS: Record<string, number> = { QUICK: 8000, PRO: 30000, FINAL: 30000 };
 
 type CodeUse = {
+  /** 한 장만 막거나 지울 때 씁니다. */
+  id: string;
   code: string;
   status: string;
   claimedAt: string | null;
@@ -109,6 +111,68 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
     if (/^(QUICK|PRO|FINAL) /.test(benefitText)) setBenefitText(`${next} 자소서 첨삭 1회 무료`);
   }
 
+  /**
+   * 지우기와 내리기는 다른 일입니다.
+   *
+   * 보관·무효화는 더 못 쓰게 막을 뿐 누가 썼는지는 남습니다. 완전 삭제는
+   * 그 기록까지 지웁니다 — 잘못 만든 것을 치울 때는 그게 맞고, 이미 나간
+   * 캠페인에는 되돌릴 방법이 없습니다. 그래서 몇 명이 썼는지를 먼저 말해
+   * 주고 확인을 받습니다. 이미 받은 사람의 이용권은 어느 쪽이든 그대로입니다.
+   */
+  async function mutate(url: string, method: "PATCH" | "DELETE", id: string, done: string) {
+    setBusy(true);
+    setMessage("");
+    const response = await fetch(url, {
+      method,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    const body = await response.json().catch(() => ({})) as { error?: string };
+    setBusy(false);
+    if (!response.ok) { setMessage(body.error ?? `처리하지 못했습니다. (${response.status})`); return false; }
+    setMessage(done);
+    router.refresh();
+    return true;
+  }
+
+  async function archive(campaign: AdminCampaign) {
+    if (!window.confirm(`"${campaign.name}"을 보관할까요?
+
+목록에서 내려가고 새로 등록할 수 없게 됩니다. 코드와 사용 기록은 그대로 남습니다.`)) return;
+    await mutate("/api/meensoo/campaigns", "PATCH", campaign.id, "보관했습니다.");
+  }
+
+  async function removeCampaign(campaign: AdminCampaign) {
+    const used = campaign.usedCodes > 0
+      ? `
+
+이미 ${campaign.usedCodes}명이 사용했습니다. 누가 썼는지에 대한 기록도 함께 사라집니다.`
+      : "";
+    if (!window.confirm(`"${campaign.name}"을 완전히 삭제할까요?
+
+코드 ${campaign.totalCodes}장과 사용 기록이 사라집니다. 되돌릴 수 없습니다.${used}
+
+이미 지급된 이용권은 그대로 두므로 받은 분들은 계속 쓰실 수 있습니다.`)) return;
+    if (await mutate("/api/meensoo/campaigns", "DELETE", campaign.id, "삭제했습니다.")) setPanel(null);
+  }
+
+  async function revokeCode(row: CodeUse) {
+    if (!window.confirm(`${row.code} 한 장을 무효화할까요?
+
+앞으로 등록할 수 없게 되고, 이미 등록한 분의 이용권은 그대로 둡니다.`)) return;
+    if (await mutate("/api/meensoo/coupons", "PATCH", row.id, `${row.code}을 무효화했습니다.`) && preview) await loadCodes(preview);
+  }
+
+  async function removeCode(row: CodeUse) {
+    const used = row.claimedCount > 0 ? `
+
+${row.claimedCount}명이 사용한 기록도 함께 사라집니다.` : "";
+    if (!window.confirm(`${row.code} 한 장을 완전히 삭제할까요?
+
+되돌릴 수 없습니다.${used}`)) return;
+    if (await mutate("/api/meensoo/coupons", "DELETE", row.id, `${row.code}을 삭제했습니다.`) && preview) await loadCodes(preview);
+  }
+
   async function create() {
     setBusy(true);
     setMessage("");
@@ -143,6 +207,9 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
         setCodeList({
           id: body.campaign.id,
           codes: (body.codes ?? []).map((code) => ({
+            // 방금 만든 목록은 코드 문자열만 들고 옵니다. 한 장을 막거나 지우려면
+            // 서버가 붙인 id가 필요해서, 바로 아래에서 진짜 목록을 다시 읽습니다.
+            id: "",
             code,
             status: seatsPerCode > 1 ? `사용 0/${seatsPerCode}` : "미사용",
             claimedAt: null,
@@ -154,6 +221,9 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
         });
         setTab("codes");
         setPanel("detail");
+        // 위 목록은 즉시 보여 주기 위한 것이라 id가 없습니다. 서버에서 다시
+        // 읽어 덮어써야 한 장씩 막거나 지울 수 있습니다.
+        void loadCodes(body.campaign);
       }
       router.refresh();
     } catch (error) {
@@ -222,6 +292,13 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
                   <button type="button" onClick={() => openDetail(campaign, "codes")}>코드</button>
                   <button type="button" onClick={() => openDetail(campaign, "flyer")}>홍보물</button>
                   <button type="button" onClick={() => openDetail(campaign, "mail")}>메일</button>
+                  {/* 치우는 두 방법을 나란히 둡니다. 보관이 왼쪽인 것은 대개
+                      그쪽이 맞고, 삭제만 있으면 되돌릴 수 없는 쪽을 누르게
+                      되기 때문입니다. */}
+                  {!campaign.archivedAt && (
+                    <button type="button" disabled={busy} onClick={() => void archive(campaign)}>보관</button>
+                  )}
+                  <button type="button" className={styles.danger} disabled={busy} onClick={() => void removeCampaign(campaign)}>삭제</button>
                 </td>
               </tr>
             ))}
@@ -343,6 +420,12 @@ export function CampaignCreator({ campaigns }: { campaigns: AdminCampaign[] }) {
                         <button type="button" onClick={() => { void navigator.clipboard.writeText(row.code); setCopied(row.code); }}>
                           {copied === row.code ? "복사됨" : "복사"}
                         </button>
+                        {row.id && row.status !== "중지" && (
+                          <button type="button" disabled={busy} onClick={() => void revokeCode(row)}>무효화</button>
+                        )}
+                        {row.id && (
+                          <button type="button" className={styles.danger} disabled={busy} onClick={() => void removeCode(row)}>삭제</button>
+                        )}
                       </li>
                     ))}
                   </ul>

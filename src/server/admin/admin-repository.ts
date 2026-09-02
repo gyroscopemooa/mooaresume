@@ -816,6 +816,18 @@ export async function revokeCouponCode(id: string): Promise<string | null> {
   return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
 }
 
+/**
+ * 코드를 지웁니다. 무효화와 다릅니다 — 이건 되돌릴 수 없습니다.
+ *
+ * `coupon_claims`가 코드를 따라 사라지므로 "누가 이 코드를 썼는지"도 함께
+ * 없어집니다. 이미 나간 이용권(`reward_credits`)은 건드리지 않습니다. 받은
+ * 사람이 쓰던 것을 관리자 쪽 정리 때문에 빼앗는 것은 다른 이야기입니다.
+ */
+export async function deleteCouponCode(id: string): Promise<string | null> {
+  const { error } = await serviceClient().from("coupon_codes").delete().eq("id", id);
+  return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
+}
+
 export type AdminCampaign = {
   id: string;
   partnerName: string;
@@ -904,6 +916,8 @@ export async function listCampaigns(limit = 100): Promise<AdminCampaign[]> {
 }
 
 export type AdminCouponUse = {
+  /** 한 장만 막거나 지울 때 필요합니다. 코드 문자열은 화면에 보이는 이름일 뿐입니다. */
+  id: string;
   code: string;
   status: string;
   claimedAt: string | null;
@@ -972,6 +986,7 @@ export async function getCampaignCodeUses(campaignId: string): Promise<AdminCoup
         ? claimedCount >= maxUses ? "소진" : expired ? "만료" : `사용 ${claimedCount}/${maxUses}`
         : claimedCount > 0 ? "사용됨" : expired ? "만료" : "미사용";
     return {
+      id: row.id as string,
       code: row.code as string,
       status,
       claimedAt: uses[0]?.claimedAt ?? null,
@@ -1073,5 +1088,21 @@ export async function archiveCampaign(id: string): Promise<string | null> {
     .from("coupon_campaigns")
     .update({ archived_at: new Date().toISOString() })
     .eq("id", id);
+  return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
+}
+
+/**
+ * 캠페인을 통째로 지웁니다. 보관과 다릅니다 — 되돌릴 수 없습니다.
+ *
+ * `coupon_codes`가 캠페인을 따라 사라지고, `coupon_claims`가 다시 코드를
+ * 따라 사라집니다. 그래서 이 캠페인으로 누가 무엇을 받았는지는 남지 않습니다.
+ * 이미 나간 이용권은 그대로 두므로 받은 사람 쪽은 아무것도 잃지 않습니다.
+ *
+ * 몇 명이 이미 썼는지는 화면에서 먼저 보여 주고 확인을 받습니다. 여기서
+ * 막지 않는 이유: 잘못 만든 캠페인을 지우는 것이 관리자의 정당한 일이고,
+ * 사용된 캠페인만 영영 못 지우게 하면 목록이 실수로 가득 찹니다.
+ */
+export async function deleteCampaign(id: string): Promise<string | null> {
+  const { error } = await serviceClient().from("coupon_campaigns").delete().eq("id", id);
   return error ? `${error.code ?? "UNKNOWN"} · ${error.message}` : null;
 }

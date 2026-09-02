@@ -55,5 +55,5 @@ export default async function ResultPage({
     return <ResultSignIn nextPath={`/result?analysisRunId=${encodeURIComponent(analysisRunId)}`} variant="missing"/>;
   }
 
-  return <ResultWorkspaceComplete result={parsed.data}/>;
+  return <ResultWorkspaceComplete result={parsed.data} analysisRunId={(data?.analysis_run_id as string | undefined) ?? analysisRunId ?? null}/>;
 }

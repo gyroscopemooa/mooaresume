@@ -29,5 +29,5 @@ export default async function CompleteResultPage({
     return <main><p>아직 분석 결과가 준비되지 않았습니다.</p><Link href="/analysis/prepare">분석 준비 화면으로</Link></main>;
   }
 
-  return <ResultWorkspaceComplete result={parsed.data}/>;
+  return <ResultWorkspaceComplete result={parsed.data} analysisRunId={(data?.analysis_run_id as string | undefined) ?? analysisRunId ?? null}/>;
 }

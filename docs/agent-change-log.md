@@ -4438,6 +4438,52 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 834 tests passed, `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
 
+
+
+## 2026-09-01 — Codex: 최신 main 기반 커뮤니티 통합
+
+- Status: `origin/main` 최신 커밋 `70b1dd7` 기준 통합 브랜치에서 병합 완료. main 직접 병합·푸시·배포·원격 migration 적용은 아직 하지 않았습니다.
+- Merge: Claude의 관리자·피드백 작업과 제품 코드 충돌 없음. 변경기록은 양쪽 기록을 모두 보존했습니다.
+- Migration order: Claude의 `20260901040000_analysis_feedback.sql` 뒤에 실행되도록 커뮤니티 migration을 `20260901050000_community_lounge.sql`로 변경했습니다.
+- Rollback: 통합 merge commit revert. 원격 DB에는 아직 적용하지 않았습니다.
+
+## 2026-09-01 — Codex: 커뮤니티 라운지 작업 이관
+
+- Status: 통합 전용 브랜치 `codex/community-lounge`에 준비됨. main에는 아직 병합하지 않았습니다.
+- Source: `feature/codex-plan`의 커밋 `f4282bc`에서 커뮤니티 관련 파일만 선별 이관했습니다. 같은 커밋의 심리검사·커리어 화면·이미지 변경은 가져오지 않았습니다.
+- Files: `src/app/community/page.tsx`, `src/components/community-lounge.tsx`, `src/components/community-lounge.module.css`, `src/domain/community-lounge.ts`.
+- Behavior: `/community`에 예시 글과 주제 필터, 개인정보 안내, 커리어 검사 연결을 제공하는 기초 라운지 화면입니다. 실제 글쓰기·댓글·저장·반응 수치는 구현하지 않았습니다.
+- Protected work: main에 있던 `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`의 미커밋 변경과 워크트리의 심리검사 미커밋 변경은 수정·stage 대상에서 제외했습니다.
+- Validation: 이관 뒤 lint/typecheck 예정.
+- Rollback: 이 브랜치의 커뮤니티 이관 커밋 revert 또는 위 신규 파일 4개 제거.
+## 2026-09-01 — Codex: 커뮤니티 라운지 V2 추가 기획 문서
+
+- Status: 기획 초안만 추가. 기능·DB·API 변경 없음.
+- Reason: 현재 `/community` 기초 라운지 다음 단계의 UX·안전 기준을 별도 문서화하되, 기존의 커뮤니티 구현 보류 결정을 유지하기 위함.
+- Source limits: 공유된 ChatGPT 대화 링크는 이 환경에서 열리지 않았고, 워크트리에서도 코인니스/해당 스크린샷 기록을 찾지 못했습니다. 확인하지 못한 레퍼런스는 사실처럼 기록하지 않았습니다.
+- File: `docs/community-lounge-v2-addendum-2026-09-01.md`.
+- Rollback: 문서 파일과 이 로그 항목만 제거.
+## 2026-09-01 — Codex: 취업·진로 익명 라운지 실제 기능 기반 + 반응형 피드
+
+- Status: `codex/community-lounge` 브랜치 구현 중. main 병합·원격 migration 적용·배포는 하지 않았습니다.
+- Reference: CoinNess 라운지의 공개 정보 구조(최신/인기, 주제 탭, 화제글, 모바일 고정 작성 CTA)를 참고하되, 자산·실시간 토크·반응 경쟁 UI를 복제하지 않고 취업·진로 고민용으로 재구성했습니다.
+- UI: `/community`를 최신/인기 정렬, 4개 주제 탭, 화제글, 익명 글쓰기, 댓글, 추천, 신고 흐름이 있는 반응형 피드로 교체했습니다. 데이터/API 계층과 CSS를 분리해 Stitch 등 후속 시안으로 UI를 교체할 수 있습니다.
+- Data/privacy: 신규 local migration `20260901040000_community_lounge.sql`은 게시글·댓글·추천·첨부 메타데이터·신고와 RLS를 만듭니다. `community-attachments` 버킷은 **비공개**이며, 첨부 원본은 로그인 사용자만 60초 서명 URL로 엽니다. 원격 Supabase에는 적용하지 않았습니다.
+- Files: `src/domain/community.ts`, `src/server/community/community-repository.ts`, `src/app/api/community/**`, `src/components/community-lounge.*`, `src/components/site-nav.*`, migration 및 테스트.
+- Protected work: `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`, `.codex-remote-attachments/`와 심리검사 워크트리 변경은 수정·stage 대상에서 제외합니다.
+- Rollback: 이 브랜치의 커뮤니티 후속 커밋 revert. migration은 원격 적용 전이므로 DB 롤백 불필요.
+## 2026-09-01 — Codex: 라운지 주소 유지, 공통 헤더 노출 보류
+
+- Change: `/community` 페이지와 커뮤니티 기능은 유지하되 `SiteNav`의 직접 링크와 메뉴 패널 링크는 제거했습니다.
+- Reason: Claude가 main 헤더를 계속 작업 중이므로 겹치는 공통 메뉴 변경을 이번 커뮤니티 브랜치에서 빼고, 라운지 공개 시점에 별도 결정합니다.
+- Rollback: 라운지 공개 결정 시 `SiteNav`에 링크를 별도 커밋으로 다시 추가.
+
+## 2026-09-01 — Codex: 최신 main 기반 커뮤니티 통합
+
+- Status: `origin/main` 최신 커밋 `70b1dd7` 기준 통합 브랜치에서 병합 완료. main 직접 병합·푸시·배포·원격 migration 적용은 아직 하지 않았습니다.
+- Merge: Claude의 관리자·피드백 작업과 제품 코드 충돌 없음. 변경기록은 양쪽 기록을 모두 보존했습니다.
+- Migration order: Claude의 `20260901040000_analysis_feedback.sql` 뒤에 실행되도록 커뮤니티 migration을 `20260901050000_community_lounge.sql`로 변경했습니다.
+- Rollback: 통합 merge commit revert. 원격 DB에는 아직 적용하지 않았습니다.
 ## 2026-09-01 — Claude: 결과가 나왔는데 실패 화면이 남던 문제
 
 - Agent/session: Claude. 사용자 확인("첨삭은 됐는데 왜 실패라고 나오나 / 재시도 3번 맞나"). 관리자 화면에는 `완료 · 시도 2회`인데 신청자 화면은 실패였습니다.
@@ -4478,6 +4524,462 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `run-failure-alert-email.ts`(신규)·`.test.ts`(신규 4건), `supabase-quick-analysis-run-repository.ts`, `quick-checkout-return.tsx`, `result-sign-in.tsx`, `result-sign-in.module.css`, `feedback-form.module.css`.
 - Validation: 838 tests passed (+4), `tsc` clean, `eslint` 0 errors, `next build` 클린.
 - Rollback: 이 커밋 revert.
+## 2026-08-31 — Codex: account-backed AI interpretation eligibility
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Issue: the AI interpretation screen used only `sessionStorage` to determine completed assessments. After a local development restart or a new browser session, a logged-in user could therefore see an incorrect “start the assessment” prompt despite an account-saved record.
+- Change: after authentication, the AI preparation screen now loads the user’s latest saved assessment records from the existing authenticated endpoint and combines them with the current browser-session answers. It waits for that check before rendering the eligibility state. An individual scope needs only that individual completed record; combined scope still correctly requires all three.
+- Storage UX: clarified the result-page message when the existing assessment database migration is not available versus an ordinary save failure. No migration was applied and no account data was changed.
+- Payment boundary: this remains a preparation/selection page. Checkout, payment entitlement, and external AI calls are still deliberately not implemented; the disabled state continues to disclose that clearly.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`, `src/components/career-assessment-storage-notice.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed; `npm test -- career-interest.test.ts` passed (2 tests); `/career/ai?scope=interest` returned HTTP 200.
+- Rollback: restore the three listed component files; no schema, stored data, or remote service changes are involved.
+
+## 2026-08-31 — Codex: career-home deep-interpretation target correction
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: changed the generic bottom `심층해설 확인하기` button on the career home from the accidentally hardcoded 직업흥미 scope to the requested 직업가치 (`work_values`) scope. Individual result pages already route to their own matching scope.
+- Files: `src/components/career-public-home.tsx`.
+- Validation: inspected all career AI scope links; static route target has no API/data impact.
+- Rollback: change that single href back to the previous interest scope.
+
+## 2026-08-31 — Codex: sample deep-interpretation reports for all scopes
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: generalized the former RIASEC-only AI report example into four explicit example scopes: 직업흥미, 업무성향, 직업가치 우선순위, and 세 검사 종합. Each has its own example result axes, short type label, strength framing, environment checks, role/industry exploration, application checks, and matching two-page report links.
+- UX: every available individual/combined AI preparation page now exposes `심층해설 예시 보기` and retains its active scope through both example pages. These are static illustrative records only; they neither use the current user result nor make a job-fit or hiring prediction.
+- Files: `src/domain/career-ai-sample.ts`, `src/components/career-ai-preparation.tsx`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `src/app/career/ai/sample/page.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; example page requests for `interest`, `work_style`, `work_values`, and `combined` all returned HTTP 200.
+- Rollback: restore the listed sample components/route and remove `career-ai-sample.ts`; no account, API, schema, or payment changes are involved.
+
+## 2026-08-31 — Codex: AI selection-page sample report gallery
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added a four-card `REPORT EXAMPLES` gallery inside the completed AI preparation/selection screen. It links directly to the example reports for 직업흥미, 업무성향, 직업가치 우선순위, and 세 검사 종합, instead of only exposing the current scope’s example through one button.
+- Boundary: cards use clearly labeled static example data. They do not reveal unfinished assessments, alter the current account record, or provide a user-specific AI report.
+- Files: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`, `src/domain/career-ai-sample.ts`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai?scope=interest` returned HTTP 200.
+- Rollback: remove `SampleReportGallery`, its CSS rules, and the sample-scope export; no data/API changes are involved.
+
+## 2026-08-31 — Codex: RIASEC character marquee on interest introduction
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: added the user-supplied six RIASEC character images to `public/images/career-characters/` and placed an automatically scrolling character-preview marquee below the `/career/interest` introduction. It repeats seamlessly, pauses on hover, has a reduced-motion fallback, and uses a smaller mobile layout.
+- Content boundary: the cards deliberately crop to the character artwork and label only its R/I/A/S/E/C area. The source images’ embedded recommended-job text is not surfaced as product content. The section explicitly calls itself a preview; actual results remain determined only by completed responses.
+- Files: `public/images/career-characters/riasec-{r,i,a,s,e,c}.png`, `src/components/career-interest-assessment.tsx`, `src/components/work-style-assessment.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed; `/career/interest` returned HTTP 200.
+- Rollback: remove the character showcase JSX/CSS and the six listed image assets; no data/API behavior is involved.
+
+## 2026-08-31 — Codex: enlarged contained RIASEC marquee cards
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: constrained the interest-page character marquee to the existing introduction content width instead of the full viewport. Enlarged desktop cards from 126×166 to 200×262 so roughly three cards are visible at once, removed the overlay label that covered image content, and retained a smaller responsive mobile version.
+- Reason: user reported that the previous full-width treatment made the supplied character artwork and its embedded readable text too small.
+- Files: `src/components/career-interest-assessment.tsx`, `src/components/work-style-assessment.module.css`.
+- Validation: `npm run typecheck` passed; `/career/interest` returned HTTP 200.
+- Rollback: restore the prior character showcase CSS/markup; no data/API changes are involved.
+
+## 2026-08-31 — Codex: preserve source quality in character marquee
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: configured the supplied PNG character artwork in the interest-page marquee to bypass Next.js image optimization and use source-quality output, while retaining the 200×262 contained card layout.
+- Reason: user reported visibly blurred small embedded text in the carousel.
+- Files: `src/components/career-interest-assessment.tsx`.
+- Validation: `npm run typecheck` passed; `/career/interest` returned HTTP 200.
+- Rollback: remove `quality={100}` and `unoptimized` from the six preview images.
+
+## 2026-08-31 — Codex: 150% RIASEC marquee card scale
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: increased desktop RIASEC character-marquee cards from 200×262 to 300×393 (150%), showing about two cards plus the next edge within the contained introduction width. Mobile cards now use 190×249.
+- Reason: user chose the 150% option to make the supplied image text easier to read while preserving a scrolling-gallery feel.
+- Files: `src/components/career-interest-assessment.tsx`, `src/components/work-style-assessment.module.css`.
+- Validation: `npm run typecheck` passed; `/career/interest` returned HTTP 200.
+- Rollback: restore the former 200×262 desktop and 154×202 mobile dimensions.
+
+## 2026-08-31 — Codex: RIASEC character-card layout and sharing prototype
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: copied the 10 newly supplied RIASEC two-letter character artworks into `public/images/career-character-examples/` and added an interest-report-only interactive character-card test section to `/career/ai/sample?scope=interest`. It includes ten selectable example cards, a toggle to compare the requested `결과 옆 카드형` and `상단 독립형` layouts, and card-plus-explanation content.
+- Sharing prototype: added browser-native share, copy-link, and mailto email controls for the selected static example URL. Native mobile sharing can expose installed apps such as KakaoTalk. Direct KakaoTalk template sending is intentionally not implemented because it requires a Kakao developer application/key. No public user-result link or user data is created.
+- Content/privacy boundary: this is visibly an example-catalog design test; the supplied image’s embedded job/fit claims are not used as a personalized result. A real result share flow must require explicit user opt-in and issue a revocable, unguessable public token.
+- Files: `public/images/career-character-examples/{ri,ra,rs,re,rc,ar,ir,er,sr,cr}.png`, `src/components/career-interest-character-preview.tsx`, `src/components/career-interest-character-preview.module.css`, `src/components/career-ai-sample-overview.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/ai/sample?scope=interest` returned HTTP 200.
+- Rollback: remove the preview component/CSS, its conditional overview import, and the ten example image assets; no account/API/schema changes are involved.
+
+## 2026-08-31 — Codex: independent RIASEC base-card and support-axis result flow
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: replaced the rejected in-report character layout test with an independent `/career/character?code=XYZ` result page. The domain now treats the ordered first two RIASEC letters as the 30-card base identity/name and the third as a support axis that changes only the descriptor and explanatory copy. This derives all 120 ordered three-letter explanations without requiring 120 images.
+- UI: the interest sample result links to its independent example card, and the actual interest result links to its own card using the calculated three-letter code. The page displays the three ranks, base card code/name, support-axis explanation, and native share/copy/email controls.
+- Asset behavior: cards load by their two-letter filename (`is.png`, `si.png`, etc.) from the character-example asset folder. Until the remaining 20 artworks are supplied, a deliberately labeled placeholder is shown for missing card images rather than presenting a mismatched character.
+- Boundary: two-letter card labels and third-axis descriptions are MOOA career-exploration presentation language, not official standardized type labels or a job-fit verdict. Direct public sharing remains a local UI prototype; no user data is published.
+- Files: `src/domain/career-interest.ts`, `src/app/career/character/page.tsx`, `src/components/career-character-result.tsx`, `src/components/career-character-result.module.css`, `src/components/career-interest-result.tsx`, `src/components/career-ai-sample-overview.tsx`, corresponding existing CSS modules.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/character?code=isa&example=1` and `/career/interest/result` returned HTTP 200.
+- Rollback: remove the independent character route/component and restore the prior result links; no schema, stored assessment, or remote sharing state changes are involved.
+
+## 2026-08-31 — Codex: three independent RIASEC result screens
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: turned the interest result into a clear three-screen path: **01 기본 결과**, **02 캐릭터 해설**, and **03 심층해설 예시**. The first page now presents only result essentials plus the three navigation choices. The new character route is a complete report with its base card, ordered three-axis reading, evidence-oriented strengths, environment/role exploration, and browser-native share/copy/email controls.
+- RIASEC model: all valid three-letter results remain ordered codes (for example `ISR`). The first two letters select the ordered two-letter base card, image, and MOOA exploration label; the third letter is an explanatory support axis. That yields 120 narrative combinations without falsely requiring 120 separate images. `IS` and `SI` remain distinct base cards. This is presentation for career self-exploration, not an official standardized type, diagnostic, or job-fit conclusion.
+- Files: `src/domain/career-interest.ts`, `src/components/career-interest-result.tsx`, `src/components/work-style-assessment.module.css`, `src/components/career-character-result.tsx`, `src/components/career-character-result.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; `/career/interest/result`, `/career/character?code=isr`, and `/career/ai/sample?scope=interest` each returned HTTP 200.
+- Rollback: remove the result navigation and restore the preceding character route component/domain fields; no schema, stored assessment, or remote sharing state changes are involved.
+
+## 2026-08-31 — Codex: selectable completed AI-report design variants
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: corrected the prior interpretation of “1·2·3.” The interest AI sample landing page now presents **디자인 1**, **디자인 2**, and **디자인 3** as explicit choices. Each opens a separate full example report using the same ISA example data, so the user can compare layout rather than content.
+- Variants: design 1 is the existing editorial summary/report flow; design 2 is the document-style detailed report; design 3 is a new dashboard-brief layout with axis signals, interpretation, experience prompts, role/industry exploration, environment caveat, and the actual-report next step. Existing `page=2` links remain compatible by resolving to design 2.
+- Files: `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; all three interest sample design URLs returned HTTP 200.
+- Rollback: remove the design query routing, picker markup/CSS, and design-three files; the original sample overview/report remain available.
+
+## 2026-08-31 — Codex: character-image-led sample report variants
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: revised the three AI sample design pages so they are image-card-led complete report pages rather than text-layout comparisons. Each interest design now includes an ISA example character visual plus filled interpretation, axis context, experience prompts, exploration, and caveats.
+- Asset constraint: the supplied two-letter card set does not currently include `IS`, so the ISA example uses the supplied broad 탐구형(I) source artwork as a temporary visual rather than mislabeling another two-letter character card as `IS`. When `public/images/career-character-examples/is.png` is supplied, replace this temporary visual with the exact base-card asset.
+- Sharing: no public sharing was added in these sample pages. When enabled later, the default should share only the selected generated character/report card via an explicit user action and a revocable public token, not the user’s full assessment history.
+- Files: `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `src/components/career-ai-sample-report.module.css`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; design 1, 2, and 3 interest URLs returned HTTP 200.
+
+## 2026-08-31 — Codex: result-form visual reports without sample chrome
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: revised all three interest AI-report designs to read as actual output screens, removing public-facing `EXAMPLE`, `예시`, and producer-explanation phrasing. The pages now surface result, interpretation, experience prompts, role/industry exploration, and boundaries directly.
+- Visual: changed the supplied character artwork from cover/crop rendering to contained rendering in every design so the whole image card is visible. The temporary ISA visual remains the supplied broad I artwork until the exact `is.png` base-card asset is received.
+- Sharing: deliberately remains absent from these UI prototypes. A future share action should publish only an explicitly selected card/report through a revocable public token, never the full private result history.
+- Files: `src/domain/career-ai-sample.ts`, `src/components/career-ai-sample-overview.tsx`, `src/components/career-ai-sample-overview.module.css`, `src/components/career-ai-sample-report.tsx`, `src/components/career-ai-sample-report.module.css`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; each interest design URL returned HTTP 200.
+
+## 2026-08-31 — Codex: ISA interpretation copy and design-two simplification
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: removed the character card from design 2 so it reads as a focused, document-style interpretation report. Replaced design 1’s axis-listing sentence and design 3’s producer-facing “해설 방식” block with concrete ISA interpretation: deep problem understanding (I), explanation/collaboration (S), and expression/improvement (A).
+- Content: the interest sample’s opening copy now behaves like an actual result narrative rather than describing how a future report would work.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; all three interest design URLs returned HTTP 200.
+
+## 2026-08-31 — Codex: unified final AI deep-interpretation result page
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: removed the public design-1/2/3 selection experience and the separate “character result card” choice from the AI sample route. `/career/ai/sample?scope=interest` now opens one unified final report: character visual, three-axis interpretation, strengths, evidence prompts, roles/industries, environment caution, and next step in one page. Historical design query parameters resolve to that same final page rather than exposing variants.
+- Files: `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-design-three.tsx`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with only the pre-existing unused `INTEREST_TEST_VERSION` warning; the unified route and former design URLs returned HTTP 200.
+
+## 2026-08-31 — Codex: 30-card RIASEC base-card review route
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Change: restored the former detailed report at `design=2` and implemented `design=1` as a separate, card-only review screen. It shows the actual ordered 3-letter result, the ordered 2-letter base code/name and image, the base-type core explanation, the third-axis support explanation, and a final combined interpretation. Previous/next plus a 30-card picker lets the user inspect every ordered pair without mixing it into the full report UI.
+- Data: added `RIASEC_PAIR_PROFILES` (30 generated pair profiles) and `getRiasecPairProfile`, derived from the existing `RIASEC_BASE_PROFILE_NAMES` and existing dimension/strength data. Third-axis content remains in existing `SUPPORT_COPY`; no 120 images or main type names were added.
+- Asset behavior: missing pair-image files receive a clearly labeled placeholder rather than another pair’s image. The existing supplied pairs load normally.
+- Files: `src/domain/career-interest.ts`, `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-card-review.tsx`, `src/components/career-ai-sample-card-review.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with only the pre-existing unused `INTEREST_TEST_VERSION` warning; `IS`/`RI` card-review URLs and the restored design-2 route returned HTTP 200.
+
+## 2026-08-31 — Codex: Stitch modern career insight report replacement
+
+- Agent/session: Codex (`feature/codex-plan`).
+- Source reference: user-supplied `stitch_modern_career_type_insight (1).zip`, including `DESIGN.md` and `code.html`.
+- Change: replaced the public `/career/ai/sample?scope=interest` view with a single Stitch-inspired white, indigo/violet premium report: sticky app bar; two-column result/character hero; compact strength/role/job blocks; three insight cards; full deep interpretation; coaching summaries and detailed coaching sections; work-environment section; image download/native share/link-copy controls; responsive one-column mobile layout.
+- Data boundary: retains existing `CareerAiSample` and RIASEC three-axis data; no external AI call is made. The static output is a UI implementation of the intended result format and does not claim a live model generated it.
+- Files: `src/app/career/ai/sample/page.tsx`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`.
+- Validation: `npm run typecheck` passed; `npm run lint` passed with the pre-existing unused `INTEREST_TEST_VERSION` warning only; the target local URL returned HTTP 200.
+
+## 2026-09-01 — Codex: RIASEC 카드 전체 매핑 및 이미지 공유
+
+- 상태: 완료
+- 변경 파일: `public/images/career-character-examples/*.png`, `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`
+- 이유: 실제 3글자 결과의 앞 두 글자 조합에 맞는 카드가 노출되도록 하고, 예전 단일 이미지의 검은 모서리/여백을 제거하며 카드 파일 저장·공유를 제공한다.
+- 내용: 사용자 제공 20장을 추가해 30개 순서형 조합(RI/IR 등)을 완성했다. 결과 화면은 `profile.imagePath`를 사용하며, 카드 비주얼은 오른쪽 캐릭터 영역을 자연스럽게 크롭해 모서리 아티팩트가 보이지 않는다. 공유는 지원 기기에서 PNG 파일을 먼저 공유하고, 불가하면 결과 링크를 공유·복사한다.
+- 검증: `npm run typecheck`, `npm run lint` 통과. 로컬 서버(3001)는 현재 실행 중이지 않아 HTTP 화면 확인은 보류.
+- 롤백: 이 작업 이전 Git 상태 또는 해당 컴포넌트/CSS의 직전 변경사항
+## 2026-09-01 — Codex: 카드 비율 보존 표시
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.module.css`
+- 이유: 이미지 모서리를 숨기려던 `cover` 방식이 원본 카드의 위·아래·좌우 내용을 자르는 문제가 확인됐다.
+- 내용: 1122×1402 원본 비율을 유지하는 `contain` 표시로 변경했다. 둥근 컨테이너와 아주 미세한 확대만 유지해 모서리 아티팩트는 가리고 카드 전체는 보존한다.
+- 검증: `npm run lint` 통과 (기존 미사용 상수 경고 1건 유지).
+- 롤백: 직전 `object-fit: cover` CSS 변경
+## 2026-09-01 — Codex: RIASEC 대표명·3글자 결과명 통일
+
+- 상태: 완료
+- 변경 파일: `src/domain/career-interest.ts`, `src/components/career-ai-sample-design-three.tsx`
+- 이유: IS 카드 이미지의 ‘통찰형 조력자’와 웹 결과의 ‘지식 연결가’가 달라 실제 카드와 결과가 다른 유형처럼 보였다.
+- 내용: IS 기본 카드명을 ‘통찰형 조력자’로 통일했다. 3글자 결과는 `ISA · 통찰형 조력자`, 동적 부제는 `표현·창의성을 더하는 통찰형 조력자`, 기준 표기는 `기본 카드 IS · 통찰형 조력자`로 보여 2글자 카드와 3번째 보조축의 역할을 구분한다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: IS 기본 카드명 ‘지식 연결가’ 및 이전 제목 표기
+## 2026-09-01 — Codex: AI 심층해설 결과 확인 로딩 화면
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-preparation.tsx`, `src/components/career-ai-preparation.module.css`
+- 이유: 기존 로딩 상태가 일반 AI 해설 페이지의 큰 제목을 그대로 사용하며 ‘계정에 보관한 결과’를 단정해 비로그인·저장 전 맥락에서 어색했다.
+- 내용: 헤더·푸터 없이 `검사 결과를 불러오는 중이에요.`를 보여주는 독립 로딩 패널과 회전 아이콘·스켈레톤을 추가했다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 기존 `AiFrame` 기반 로딩 분기
+## 2026-09-01 — Codex: 무아 유형명과 카드 제목 분리
+
+- 상태: 완료
+- 변경 파일: `src/domain/career-interest.ts`, `src/components/career-ai-sample-design-three.tsx`
+- 이유: 무아 고유 유형명 ‘지식 연결가’를 유지하면서도, 제공된 IS 이미지 카드 제목 ‘통찰형 조력자’와 불일치하지 않게 표시해야 했다.
+- 내용: ISA 결과 화면의 대표명은 ‘지식 연결가’로 복원했다. 카드의 시각 제목은 별도 `cardTitle`로 두어 `기본 카드 IS · 통찰형 조력자`로 표시하며, 3번째 A축의 동적 부제는 유지한다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: `baseName` 단일 이름 사용 방식
+## 2026-09-01 — Codex: RIASEC 결과·기본 카드·보조축 표기 분리
+
+- 상태: 완료
+- 변경 파일: `src/domain/career-interest.ts`, `src/components/career-ai-sample-design-three.tsx`
+- 이유: ISR 결과에서 보조축 문장에 IS 카드명을 다시 붙여, `지식 연결가`와 `통찰형 조력자`의 역할이 혼동됐다.
+- 내용: 결과 대표명은 `ISR · 지식 연결가`, 기본 카드는 `IS · 통찰형 조력자`, 세 번째 R은 `R 보조 성향 · 현장 검증을 더하는`으로 명확히 분리했다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 보조축 부제에 카드명을 덧붙이던 방식
+## 2026-09-01 — Codex: RIASEC 결과명·카드 부제 위치 조정
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`
+- 이유: 무아 결과명 ‘지식 연결가’는 ISR 코드 옆에, IS 카드명 ‘통찰형 조력자’는 바로 아래 부제로 보여야 한다는 화면 계층 요구를 반영했다.
+- 내용: 결과 줄을 `ISR · 지식 연결가`로, 부제를 `IS · 통찰형 조력자`로 재배치했다. 중복되는 기본 카드 안내는 제거하고 3축 조합만 보인다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 결과명과 카드명을 각각 세로 줄에 두던 방식
+## 2026-09-01 — Codex: RIASEC 결과·부제 타이포그래피 통일
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.module.css`
+- 이유: `ISR · 지식 연결가`와 `IS · 통찰형 조력자`가 재배치 뒤 크기·굵기·자간의 위계가 기존 카드 디자인과 어울리지 않았다.
+- 내용: 결과 코드와 무아 유형명을 한 제목 줄로 보이도록 비율·굵기·자간을 맞췄고, IS 카드명은 더 작고 선명한 부제 단계로 조정했다.
+- 검증: `npm run lint` 통과 (기존 미사용 상수 경고 1건 유지).
+- 롤백: 직전 제목 타이포그래피 CSS
+## 2026-09-01 — Codex: IS 카드 보라색 결과 테마
+
+- 상태: 완료
+- 변경 파일: `src/components/career-ai-sample-design-three.tsx`, `src/components/career-ai-sample-design-three.module.css`
+- 이유: IS 카드 이미지의 보라색과 ISR 등 IS 기반 결과 화면의 기존 파란색이 맞지 않았다.
+- 내용: 기본 카드 코드가 IS인 결과에만 보라색 CSS 테마를 적용했다. 결과 코드·무아 유형명·보조성향·핵심 정보 아이콘이 카드와 같은 보라 계열로 바뀌며, 다른 카드 결과는 기존 색을 유지한다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 카드 코드별 색상 테마 분기 이전 CSS
+## 2026-09-01 — Codex: 취업/진로 고민 익명게시판 기초 라운지
+
+- 상태: 완료
+- 변경 파일: `src/app/community/page.tsx`, `src/components/community-lounge.tsx`, `src/components/community-lounge.module.css`, `src/domain/community-lounge.ts`
+- 이유: 게시판 기능 자체보다 취업·진로 고민 유입을 커리어 검사와 연결하는, 교체 가능한 로컬 라운지 기초 화면이 필요했다.
+- 내용: `/community`에 `취업/진로 고민 익명게시판`을 추가했다. 주제 선택형 예시 피드, 개인정보 보호 안내, 직업흥미·커리어 검사 연결, 익명 글쓰기 준비 영역을 구현했다. 실제 글쓰기·댓글·저장·반응 수치는 아직 만들지 않았으며, 데이터와 UI/CSS를 분리해 다음 디자인 또는 DB 구현에서 교체할 수 있게 했다.
+- 검증: `npm run typecheck` 통과.
+- 롤백: 위 신규 파일 삭제 또는 이번 작업 전 Git 상태
+
+## 2026-09-02 — Claude: 커리어 검사 중간 병합 + 직업흥미만 공개
+
+- Status: main에 병합 완료(`64d5d56`). 잠금 작업은 이어지는 커밋. 배포는 사용자 확인 후.
+- Merge: `feature/codex-plan`의 `f4282bc`(커리어 캐릭터 결과지·해설 UI, PNG 62장 약 66MB)를 main에 병합했습니다. 그 전에 `origin/main`의 미수신 커밋 2개(`4ce4002`, `ebe6a03`)를 먼저 병합했습니다.
+- 충돌 3건과 해결:
+  - `src/components/community-lounge.tsx`, `.module.css` → **main 버전 유지**. 워크트리는 20커밋 전 분기라 라운지가 버튼 전부 `disabled`인 미리보기 단계입니다. main에는 이후 글쓰기·댓글·추천·신고 API까지 붙은 구현이 있어, 병합본을 채택하면 그 기능이 사라집니다.
+  - `docs/agent-change-log.md` → 양쪽 기록 모두 보존.
+- 남은 정리 대상(삭제하지 않음): `src/domain/community-lounge.ts`가 병합으로 들어왔으나 main의 라운지는 `@/domain/community`를 씁니다. 코덱스 소유 파일이라 판단을 넘깁니다.
+- 잠금(추가 커밋): 직업흥미만 공개하고 업무성향·직업가치는 결과지 완성 전까지 닫았습니다.
+  - 스위치: `src/domain/career-assessment-openness.ts` — `OPEN` 배열에 키를 되돌리면 다시 열립니다. 문항·채점 코드는 건드리지 않았습니다.
+  - 라우트 차단: `/career/work-style`, `/career/work-style/result`, `/career/values`, `/career/values/result` → `CareerAssessmentClosed` 안내 화면. 404가 아니라 안내로 처리해 기존 링크·검색 유입을 잃지 않습니다. 잠긴 동안 두 시작 페이지는 `robots: noindex`(열 때 되돌릴 것).
+  - 목록 표시: `/career/assessments`에 `coming-soon` 상태와 "결과지를 다듬고 있는 검사" 섹션 추가. 카드와 키워드는 남겨 SEO 유입을 유지합니다.
+  - `/career` 홈: 카드 유지, 메타 자리에 "결과지 준비 중", 기록 줄에 `COMING SOON`, 이용 가능 개수 자동 계산.
+  - `/career/profile`: 잠긴 검사를 "시작" 목록에서 제외하고, 지킬 수 없게 된 "세 결과가 모이면 열립니다" 문구를 상태에 맞게 교체.
+- 개발용 우회: `.env.local`에 `NEXT_PUBLIC_OPEN_ALL_ASSESSMENTS=1`을 넣으면 잠긴 검사도 전부 열립니다. 코덱스가 직업가치 결과지를 만드는 동안 자기 화면에 들어갈 수 있어야 해서 넣었습니다. 프로덕션 환경변수에는 넣지 마세요.
+- 결제: 추가 조치 없음. `career-ai-preparation.tsx`가 이미 버튼 `disabled` + "현재는 결제·AI 호출이 진행되지 않습니다" 상태입니다.
+- 미처리(의도적): 캐릭터 PNG 62장이 장당 약 2MB입니다. 공개 전 WebP 변환 필요. 지금 변환하면 코덱스 원본과 충돌하므로 별도 커밋으로 미룹니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2건 유지), `vitest run` 전체 통과, `next build` 통과.
+- Rollback: 잠금은 `career-assessment-openness.ts`의 `OPEN`에 `"work-style"`, `"values"` 추가 + 두 시작 페이지의 `robots` 분기 제거. 병합은 `64d5d56` revert.
+
+## 2026-09-02 — Claude: 커리어 캐릭터 이미지 WebP 전환
+
+- Status: main에 적용. 코덱스 워크트리의 `career-value-examples` 26장은 아직 PNG입니다(그 커밋이 main에 없어서).
+- Reason: 캐릭터 카드가 장당 1.6–2.1MB PNG였습니다. `next/image`에 `unoptimized`가 걸려 있어 원본이 그대로 전송되므로, 결과지 한 장이 휴대폰에서 2MB를 받고 있었습니다.
+- 변환: `sharp` WebP quality 90, effort 6. 1122×1402 원본 크기 유지(축소 없음). **66.8MB → 7.8MB, 8.5배 감소.**
+- Files: `public/images/career-characters/*.png` 6장, `public/images/career-character-examples/*.png` 30장 → 같은 이름 `.webp`로 교체하고 PNG는 제거.
+- 참조 수정: `career-interest-assessment.tsx`(6곳), `career-ai-sample-overview.tsx`, `career-interest.ts`(2곳), `career-ai-sample-design-three.tsx`(공유·저장 파일명과 MIME을 `.webp`/`image/webp`로 — 이름만 `.png`로 내보내면 받는 쪽이 열지 못합니다).
+- 원본 복구: `git show 64d5d56:public/images/career-characters/riasec-a.png > 파일` 형태로 언제든 되살릴 수 있습니다. 히스토리에서 지우지 않았습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과, `next build` 통과, 변환본 육안 확인(글자 번짐·색 밀림 없음).
+- Rollback: 위 커밋 revert 후 `.webp` 제거.
+
+## 2026-09-02 — Codex: 라운지 공통 메뉴 진입점 복원 (진행 중)
+
+- Intended change: `SiteNav`의 메뉴 패널에 `/community` 링크를 복원한다. 상단 바의 직접 링크, 커뮤니티 UI/API/DB, 커리어 기능은 변경하지 않는다.
+- Reason: 사용자 요청으로 커뮤니티 작업을 재개하며, 기존 라운지는 이미 main에 병합되어 있지만 공통 헤더 메뉴에는 진입점이 없다. 이전 보류 사유였던 Claude의 헤더 작업은 main 반영 후 종료되어 현재 변경과 겹치지 않는다.
+- Protected work: 현재 작업 트리의 `MOOA_RESUME_RESULT_DOCUMENT_UPSTAGE_ADDENDUM.md`, `next-env.d.ts`, `src/app/api/meensoo/**`, `src/server/admin/admin-repository.ts`, `.codex-remote-attachments/`, `.tools/`는 수정·stage 대상에서 제외한다.
+- Validation planned: `npm run typecheck` 및 변경 파일 diff 확인.
+- Rollback: 이 항목과 함께 추가한 `SiteNav`의 `/community` 링크 한 줄을 되돌린다.
+
+## 2026-09-02 — Claude: 협업 쿠폰 무효화·완전삭제 버튼
+
+- Status: main 적용 예정 커밋. 마이그레이션 없음(기존 FK의 cascade를 그대로 씁니다).
+- Reason: `archiveCampaign`, `revokeCouponCode`와 그 API(PATCH)는 이미 있었는데 화면에 버튼이 없어 아무도 쓸 수 없었습니다. 잘못 만든 캠페인이나 새어 나간 코드를 치울 방법이 없었습니다.
+- 두 동작을 구분합니다:
+  - **보관/무효화(PATCH)** — 더 못 쓰게 막고, 누가 썼는지는 남깁니다.
+  - **완전삭제(DELETE, 신규)** — 코드와 `coupon_claims`까지 사라집니다. 되돌릴 수 없습니다.
+- 이미 지급된 `reward_credits`는 어느 쪽에서도 건드리지 않습니다. 받은 사람이 쓰던 이용권을 관리자 정리 때문에 회수하는 것은 다른 이야기입니다.
+- 신규: `deleteCampaign`, `deleteCouponCode`(admin-repository), `DELETE /api/meensoo/campaigns`, `DELETE /api/meensoo/coupons`.
+- `AdminCouponUse`에 `id` 추가. 코드 문자열만으로는 한 장을 지목할 수 없었습니다. 캠페인을 막 만든 직후의 목록은 id가 없으므로(`id: ""`) 그 순간에는 무효화·삭제 버튼을 감추고, 곧바로 서버 목록을 다시 읽어 채웁니다.
+- 확인창: `window.confirm`으로 몇 장이 사라지는지, 몇 명이 이미 썼는지, 되돌릴 수 없다는 사실을 먼저 말합니다. 삭제 버튼은 `.danger`로 붉게 구분했습니다(라이트·다크 모두 변수 사용).
+- 사용된 캠페인도 지울 수 있게 둔 이유: 실수로 만든 것을 못 지우면 목록이 실수로 가득 찹니다. 막는 대신 무엇이 사라지는지 말해 주고 사람이 정하게 합니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과, `next build` 통과.
+- Rollback: 이 커밋 revert. DB 스키마 변경이 없어 되돌릴 것이 없습니다.
+
+## 2026-09-02 — Codex: 라운지 공통 메뉴 진입점 복원 (완료)
+
+- Status: 완료. `SiteNav` 메뉴 패널의 커뮤니티 섹션에서 `/community`로 이동할 수 있다.
+- Files: `src/components/site-nav.tsx`, `docs/agent-change-log.md`.
+- Validation: `npm run typecheck` 통과, `git diff --check` 통과.
+- Rollback: `src/components/site-nav.tsx`의 `커뮤니티` 섹션을 제거하면 된다.
+
+## 2026-09-02 — Codex: 라운지 예시 글·빈 상태 분리 (진행 중)
+
+- Intended change: 게시글 조회가 성공했지만 결과가 비어 있는 경우 예시 글을 실제 글처럼 보이지 않게 하고, 로딩·조회 실패·진짜 빈 상태를 각각 표시한다.
+- Reason: 현재 DB가 비어 있거나 조회가 실패해도 정적 예시 글이 보이는 혼동을 없앤다. API·DB schema·RLS·커리어·관리자 작업은 변경하지 않는다.
+- Validation planned: 커뮤니티 컴포넌트 관련 테스트와 TypeScript 검사.
+- Rollback: `CommunityLounge`의 조회 상태 분기를 되돌리면 기존 예시 글 동작으로 복원된다.
+
+## 2026-09-02 — Codex: 라운지 예시 글·빈 상태 분리 (완료)
+
+- Status: 완료. 라운지는 이제 정적 예시 글을 실제 글처럼 표시하지 않으며, 로딩·조회 실패(재시도 포함)·진짜 빈 상태를 구분한다. 주제·정렬 변경 중 이전 결과도 보이지 않는다.
+- Files: `src/components/community-lounge.tsx`, `docs/agent-change-log.md`.
+- Validation: `npm run test -- src/domain/community.test.ts src/server/community/community-migration.test.ts` 통과(4 tests), `npm run typecheck` 통과, `git diff --check` 통과.
+- Rollback: `CommunityLounge`의 `feedStatus`/`reloadKey` 상태 및 조건부 빈 상태 분기를 되돌리면 된다.
+
+## 2026-09-02 — Claude: 구글 광고 결제 전환 연결
+
+- Status: main 적용. 사용자가 구글 광고에서 전환 액션 "구매"를 만들고 라벨을 전달했습니다.
+- Reason: `AW-18415179469` 태그는 2026-08-24부터 실려 있었지만 전환 이벤트가 없어, 구글이 어떤 광고가 매출을 냈는지 모른 채였습니다. 전환 최적화 입찰을 켤 수 없는 상태였습니다.
+- 신규: `src/lib/google-ads-conversion.ts` (+ 테스트 4건). 전환 대상 `AW-18415179469/AHmECPaFguwcEM2thc1E`.
+- 발화 지점: `quick-checkout-return.tsx`의 상태 확인에서 `checkoutStatus === "SUCCEEDED"`이고 주문 번호가 내려온 순간. QUICK/PRO/FINAL이 모두 이 화면을 지나므로 한 곳이면 충분합니다.
+- 중복 방지 2중: 같은 창에서는 `Set`으로 한 번만 보내고, 새로고침 너머는 `transaction_id`(주문 번호)로 구글이 합칩니다. 상태 확인이 2초마다 돌기 때문에 이게 없으면 한 건이 수십 건으로 보고됩니다.
+- 금액: 상품 정가가 아니라 `billing_orders.amount`(실제 결제액)를 씁니다. 초과 과금이 붙은 결제를 정가로 보고하면 구글이 배우는 매출이 어긋납니다. 이를 위해 `/api/checkouts/quick/status`가 `orderId`/`amount`/`currency`를 함께 내려주도록 했습니다 — 마이그레이션 없이 기존 RLS(`billing order owner read`)로 본인 주문만 읽습니다. `status === 'PAID'`가 아니면 전부 null입니다.
+- 금액을 못 읽으면 `value`를 아예 빼고 보냅니다. 0이나 1을 채우면 구글이 그 숫자를 진짜 매출로 믿고 입찰을 그쪽으로 끕니다.
+- 광고 차단기나 동의 거부로 `gtag`가 없으면 조용히 넘어갑니다. 보고 실패보다 결제 완료 화면이 깨지는 쪽이 훨씬 나쁩니다.
+- 환불 타임아웃 경로는 새 필드를 내려보내지 않습니다. 환불된 결제를 전환으로 보고하지 않기 위함입니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 전체 통과(신규 4건 포함), `next build` 통과.
+- Rollback: 이 커밋 revert. 스키마 변경 없음.
+
+## 2026-09-02 — Claude: 코덱스의 커뮤니티 작업이 Claude 커밋에 섞여 올라감 (사고 기록)
+
+- Status: 이미 푸시됨. **되돌리지 않았습니다** — 되돌리면 코덱스의 미커밋 작업이 사라집니다.
+- 무슨 일: Claude가 같은 작업 폴더에서 `git add -A src/`를 썼고, 그때 코덱스가 편집 중이던 파일이 함께 stage되어 Claude의 커밋 메시지로 올라갔습니다.
+- 섞여 들어간 것:
+  - `b1cff63` ← `src/components/site-nav.tsx` (+6): 사이트 내비게이션에 "커뮤니티 / 취업·진로 라운지" 항목 추가.
+  - `1e18624` ← `src/components/community-lounge.tsx` (+27/−9): 미리보기 글 대신 실제 목록을 불러오고 로딩·오류·빈 상태를 구분. 실패 시 "다시 불러오기" 버튼 추가.
+- 영향: 코드 손실 없음. 두 변경 모두 `vitest run` 846건과 `next build`를 통과한 상태로 올라갔습니다. 다만 **커밋 메시지가 그 변경을 설명하지 않습니다.**
+- 코덱스에게: 위 두 파일의 작업은 **이미 main에 있습니다.** 다시 커밋하지 마시고, 필요하면 그 위에서 이어 가세요.
+- 재발 방지: 같은 작업 폴더를 공유하는 동안 Claude는 `git add -A`를 쓰지 않고 파일 경로를 하나씩 지정합니다.
+
+## 2026-09-02 — Codex: 커뮤니티 공개 글 SEO·검색 노출 (진행 중)
+
+- Intended change: `PUBLISHED` 커뮤니티 글마다 서버 렌더링된 고유 URL을 만들고, 제목·본문·공개 댓글·canonical 메타데이터·Open Graph·DiscussionForumPosting 구조화 데이터 및 동적 sitemap 항목을 제공한다.
+- Privacy/security: 공개 상태인 글·댓글만 노출한다. 비공개 첨부 Storage, 사용자 식별자, 비공개/숨김/삭제 글과 댓글은 검색 페이지·사이트맵에 포함하지 않는다.
+- Reason: 현재 `/community` 목록은 클라이언트 fetch라 Google·Naver 등 검색 크롤러가 개별 글의 제목·내용·댓글을 안정적으로 수집할 수 없다.
+- Files planned: `src/app/community/[postId]/page.tsx`, 전용 스타일, 커뮤니티 공개 조회 adapter, `src/app/sitemap.ts`, `src/domain/community.ts`, `src/components/community-lounge.tsx`, 테스트 및 변경 기록.
+- Validation planned: SEO helper 단위 테스트, 기존 커뮤니티 테스트, TypeScript·lint·production build.
+- Rollback: 신규 상세 라우트/스타일/SEO adapter를 제거하고 sitemap의 커뮤니티 동적 항목을 제거하면 기존 목록 전용 구조로 복원된다.
+
+## 2026-09-02 — Codex: 커뮤니티 공개 글 SEO·검색 노출 (완료)
+
+- Status: 완료. `/community/[postId]`는 `PUBLISHED` 글과 공개 댓글을 서버 HTML로 렌더링하며, 글 제목·요약·canonical·Open Graph·Twitter metadata·DiscussionForumPosting JSON-LD를 제공한다. 라운지 제목은 상세 URL로 연결되고, sitemap은 라운지와 공개 글을 포함한다.
+- Privacy/security: private attachment URL과 숨김/삭제/비공개 콘텐츠, 사용자 ID는 노출·사이트맵 대상에서 제외했다. 공개 상태의 글·댓글은 작성 시 이미 public RLS 정책으로 읽을 수 있는 콘텐츠임을 전제로 한다.
+- Files: `src/app/community/[postId]/page.tsx`, `src/app/community/[postId]/page.module.css`, `src/server/community/community-publication.ts`, `src/app/sitemap.ts`, `src/app/api/community/posts/route.ts`, `src/domain/community.ts`, `src/server/community/community-repository.ts`, `src/components/community-lounge.*`, `src/domain/community.test.ts`.
+- Validation: `npm run lint` 오류 0(기존 경고 2건), 커뮤니티 테스트 5개 통과, `npm run typecheck` 통과, `npm run build` 통과.
+- Rollback: 신규 상세 라우트/공개 조회 adapter를 제거하고 sitemap의 community 항목 및 라운지 제목 링크를 되돌리면 된다.
+
+## 2026-09-02 — Claude: 자기소개서 두 장이 올라오면 막기 + 네이버 확인 태그
+
+- Status: main 적용. 분석 로직·프롬프트·결과 화면·UI 디자인은 건드리지 않았습니다(사용자 지시).
+- 발견: 사용자가 자기 자소서(문항 6개·1,600자)와 남의 자소서(문항 3개·700자)를 함께 올렸더니 **자기 문항 여섯 개가 통째로 사라지고 남의 문항 세 개만 첨삭 대상이 되었습니다.**
+- 원인: `mapSimpleIntake`가 COVER_LETTER 파일들을 `join("\n\n")`으로 이어 붙인 뒤 `splitCoverLetterDraft`에 넘깁니다. 그 함수는 `자기소개서`라고만 적힌 줄을 찾아 **그 앞을 전부 버리고**, `이력서`/`경력기술서`/`직무기술서` 줄을 만나면 **그 뒤도 버립니다.** 그래서 어느 쪽 문항이 살아남는지가 파일 안쪽 서식에 달려 있었고, 버려진 쪽은 화면 어디에도 나타나지 않았습니다. 임시 테스트로 그대로 재현했습니다.
+- 조치: 첨삭 대상 자기소개서가 2개 이상이면 `describeSimpleIntakeGap`이 진행을 막고 파일 이름을 대며 하나만 남기라고 합니다. 사용자는 이미 있는 분류 드롭다운이나 삭제 버튼으로 해결할 수 있어 새 UI를 만들지 않았습니다.
+  - `SimpleIntakeMapping.coverLetterFilenames` 신규. 붙여넣은 글이 이겼을 때는 비어 있습니다 — 그때 파일은 문항에 쓰이지 않으므로 막을 이유가 없습니다.
+  - 테스트 3건 추가(`simple-intake-mapping.test.ts`).
+- 남은 문제(고치지 않음): 파일 **한 개**일 때도 `이력서`/`경력기술서`/`직무기술서` 줄 뒤의 문항은 버려집니다. 자소서 안에 그 소제목을 쓴 사람은 뒤쪽 문항을 잃습니다. 별건으로 다뤄야 합니다.
+- `기타(OTHER)`로 올린 자소서: `purpose: "REFERENCE"`로만 들어가 첨삭 대상이 되지 않습니다(`application-case-handoff.ts:189`). 남의 자소서를 대신 첨삭받는 악용은 이 경로로는 되지 않습니다.
+- 네이버 확인 태그: `verification.other`가 `NAVER_SITE_VERIFICATION` 환경변수에만 의존하고 있었습니다. 바로 위 주석이 구글 쪽에서 같은 구조로 겪은 실패를 적어 두고 있습니다 — 이 export는 빌드 시점에 평가되어 런타임 환경변수만으로는 태그가 아예 실리지 않습니다. 기본값 `e82574b967e594d90dde7bcd1f05cc3febda9aea`를 적어 두고 환경변수 override는 유지했습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 849건 통과, `next build` 통과.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 자소서 안쪽 소제목에서 문항이 잘리던 문제
+
+- Status: main 적용. 분석·프롬프트·결과 화면은 건드리지 않았습니다.
+- 증상: `이력서`/`경력기술서`/`직무기술서`라고만 적힌 줄 뒤의 문항이 사라졌습니다. 파일을 **한 개만** 올려도 생깁니다 — 자소서 안에서 그 말을 소제목으로 쓴 사람은 뒤쪽 문항을 잃고, 화면은 남은 문항만 보여 주므로 없어진 사실이 드러나지 않았습니다.
+- 원래 의도는 옳습니다: 한 파일에 자소서와 이력서를 이어 붙여 낸 사람의 이력서 부분을 문항으로 읽지 않기 위한 경계였습니다.
+- 조치: `findLetterEnd`를 새로 두고, 자르기 전에 **문항 번호가 이어지는지** 봅니다. 그 줄 뒤의 첫 문항 번호가 앞의 마지막 번호 **바로 다음 번호**면 소제목으로 보고 자르지 않습니다. 이력서 항목은 대개 1부터 다시 세므로 진짜 경계는 그대로 잘립니다.
+- 기존 테스트(`ignores resume GPA and a sentence beginning with 2번의`)는 경력기술서 뒤에 문항이 없어 그대로 통과합니다. 소제목 경우와 1부터 다시 세는 경우로 테스트 2건 추가.
+- 함께: 실패 알림 메일의 "결제·이용권은 되돌려져 있어" 문구를 고쳤습니다. `fail_quick_analysis`는 이용권만 ACTIVE로 되돌리고 이 경로에는 폴라 환불 호출이 없습니다. 환불이 끝난 줄 알고 넘어가면 손님은 돈만 내고 아무것도 못 받은 상태로 남습니다.
+- 미결(사용자 결정 대기): 최종 실패에도 자동 환불을 걸지 여부. 10분 초과 건에는 이미 걸려 있어 앞뒤가 맞지 않습니다. 걸 때는 이용권 회수를 함께 해야 합니다 — 지금은 실패 시 이용권이 ACTIVE로 살아나므로, 환불만 더하면 돈과 무료 이용권을 함께 주게 됩니다.
+- Validation: `tsc --noEmit` 통과, `vitest run` 전체 통과, `next build` 통과.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 최종 실패 자동 환불 + 이용권 회수
+
+- Status: 코드 커밋 완료. **마이그레이션은 아직 원격에 적용하지 않았습니다** — 사용자가 `npm run db:remote:push`를 실행해야 동작합니다.
+- Reason: 10분 초과 건에는 자동 환불이 걸려 있는데 최종 실패에는 없어 앞뒤가 맞지 않았습니다. 손님 쪽에서 보면 최종 실패가 더 나쁩니다 — 타임아웃은 아직 결과가 나올 수도 있지만 최종 실패는 나오지 않고, 자동 재시도를 두 번 다 쓴 뒤입니다.
+- 신규 마이그레이션 `20260902010000_quick_failure_auto_refund.sql`:
+  - `claim_quick_analysis_failure_refund(uuid, uuid)` — 결과가 있으면 COMPLETED, 재시도가 남았으면(FAILED가 아니면) RETRYABLE, 결제가 없으면 FAILED_WITHOUT_ORDER. 그 외에는 주문을 SUBMITTING으로 잡고 REFUND_REQUIRED를 돌려줍니다.
+  - `revoke_refunded_analysis_entitlement(uuid, uuid)` — 그 주문에 딸린 **ACTIVE** 이용권만 REVOKED로 바꿉니다. CONSUMED는 결과를 받은 다른 분석의 것이므로 건드리지 않습니다.
+  - 검증된 타임아웃 함수(`claim_quick_analysis_timeout_refund`, `mark_quick_auto_refund_*`)는 **재정의하지 않았습니다.** 두 경로가 `billing_orders.auto_refund_state`를 공유하므로 한쪽이 환불한 주문을 다른 쪽이 다시 환불하지 않습니다.
+- 신규 `src/server/billing/quick-failure-refund.ts` — `polar.refunds.create({ revokeBenefits: true })` 후 `mark_quick_auto_refund_submitted`, **그 다음에** 이용권 회수. 순서를 뒤집으면 환불 실패 시 손님에게 돈도 이용권도 남지 않습니다. 회수만 실패하면 환불된 것으로 답합니다(여기서 던지면 바깥이 다시 환불하려 듭니다).
+- 왜 회수가 필요한가: `fail_quick_analysis`가 실패 시 이용권을 ACTIVE로 되살립니다. 환불까지 하면 돈과 무료 한 판을 함께 주게 됩니다. 둘 중 하나만 드리는 것이 맞습니다.
+- 발화 지점: `supabase-quick-analysis-run-repository.ts`의 `fail()`. 환불을 먼저 하고 결과를 알림 메일에 실어 보냅니다. 환불이 던져도 삼킵니다 — 실패 기록이 환불 때문에 다시 실패하면 상태가 어긋난 런만 남습니다.
+- 알림 메일: 이제 짐작하지 않고 받은 값을 적습니다(금액·회수한 이용권 수, 또는 환불하지 않은 이유). 환불 정보 없이 불려도 단정하지 않습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 865건 통과(신규 14건), `next build` 통과.
+- Rollback: 이 커밋 revert 후 두 함수 `drop function`. `auto_refund_state` 컬럼은 타임아웃 경로가 쓰므로 두어야 합니다.
+
+## 2026-09-02 — Claude: FINAL에 "제출 전 마무리" 탭 추가 (1단계)
+
+- Status: main 적용. **기존 FINAL 분석·프롬프트·결과 화면은 한 줄도 건드리지 않았습니다.** 새 탭만 추가했습니다.
+- 문제: FINAL은 같은 문제를 여러 관점에서 잡습니다. 수치 하나가 어긋나면 탈락요인·이력서 대조·면접관 시선에 각각 나타나, 읽는 사람에게는 일곱 개의 숙제로 보입니다. 아홉 개 섹션을 다 읽고 나면 남는 질문이 "그래서 뭘 하지"입니다.
+- 접근: **분석을 다시 하지 않습니다.** AI 호출 0회, 첨삭본 수정 0글자. 이미 나온 결과를 **"누가 할 수 있는 일인가"**로 다시 셀 뿐입니다.
+  - `DONE` — `rejectionRisks.handling`이 `removed`/`softened`. **이미 첨삭본에 반영된 것**입니다. 여기에 버튼을 다는 제안이 있었지만 만들지 않았습니다 — 누를 것이 없고, 누르면 멀쩡한 문장을 다시 건드리게 됩니다.
+  - `NEEDS_APPLICANT` — `needs_applicant` + `documentConflicts` + `claimEvidence.verdict === "unsupported"`. 손님만 답을 압니다.
+  - `INTERVIEW` — `interviewerFlags`. 서류에 문장을 더 넣기보다 면접에서 답할 것.
+  - `KEPT` — `kept_by_choice`. 알고 고른 대로 남긴 것.
+- 중복 묶기: 같은 문장을 가리키는 지적을 하나로 합칩니다(공백·문장부호 제거 후 포함 관계 비교, 12자 미만은 우연 일치를 피해 합치지 않음). 갈래가 다르면 합치지 않습니다 — 같은 문장이라도 "이미 고쳤다"와 "면접에서 답하라"는 할 일이 다릅니다. 합쳐진 경우 원래 지적 수를 화면에 밝힙니다.
+- **"제출 권장/주의" 같은 판정 문구는 쓰지 않았습니다.** 합불은 알 수 없고, 권했다가 떨어지면 그 한 줄이 책임을 집니다. `docs/analysis-consistency-and-rounded-editing-philosophy.md`의 원칙과도 충돌합니다. 대신 남은 일이 있는지만 사실대로 말합니다. 테스트로 "권장/합격/불합격"이 문구에 들어가지 않음을 잠갔습니다.
+- Files: `src/domain/final-wrap-up.ts`(+테스트 9건), `src/components/final-wrap-up.tsx`, `.module.css`, `result-workspace-complete.tsx`(View에 `wrapup` 추가, 탭 버튼 1개, 렌더 1줄).
+- 2단계(미착수, 사용자 승인 대기): `NEEDS_APPLICANT` 항목에 대해 2~3개만 물어보고 **해당 문장만** 패치해 최종본을 만드는 단계. 전체 재첨삭은 하지 않습니다 — 이미 다듬은 문장이 흔들리고 비용도 큽니다. 문장 단위라 AI 비용은 수십 원 수준.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 874건 통과(신규 9건), `next build` 통과.
+- Rollback: 이 커밋 revert. 기존 FINAL 화면은 영향받지 않습니다.
+
+## 2026-09-02 — Claude: 제출 판정 문구 추가 + 로그인 링크 버그 2건
+
+- Status: main 적용. 분석 로직은 건드리지 않았습니다.
+- 제출 판정(사용자 요청): `제출 전 마무리` 맨 위에 `확인 후 제출` / `서류는 제출 가능` / `제출 가능` 세 상태를 넣었습니다. **결과가 아니라 서류의 상태만** 말합니다 — "합격", "불합격", "가능성"이라는 말이 들어가지 않음을 테스트로 잠갔습니다. 사실이 어긋난 채 나가는지는 우리가 실제로 확인한 것이라 말해도 되는 범위이고, 붙고 떨어짐은 아닙니다.
+- `final-verification.tsx`의 "고치고 다시 돌리면 이 숫자가 줄어듭니다" → "아래 항목은 **제출 전 마무리**에서 할 일 순서로 정리해 두었습니다". 앞 문구는 돈을 한 번 더 내라는 말로 읽혔습니다.
+- 로그인 링크 버그 2건(`quick-checkout-return.tsx`):
+  1. `phase === "failed"` 하나가 **결제 확인 실패**와 **분석 실패**를 함께 쓰고 있었습니다. 두 경우 모두 "이메일로 다시 안내받기"가 떠서, 분석이 실패한 손님이 로그인 링크를 받아 눌렀다가 결제 화면으로 되돌아왔습니다. 로그인해도 볼 결과가 없는 상황입니다. `FailureKind`를 두어 **결제 확인 실패에만** 버튼을 띄웁니다.
+  2. 링크가 항상 `next=/analysis/prepare`(결제 전 화면)로 돌아왔습니다. 이제 분석 ID를 알면 `/result?analysisRunId=...`로 보냅니다. 사용자가 실제로 만난 "이 탭에 저장된 작성본이 없습니다"가 이것입니다.
+- 남은 문제(미착수): 링크가 Gmail의 링크 검사에 먼저 소진되어 `otp_expired`로 도착합니다. Supabase 매직링크는 GET 한 번에 소모되므로 링크 방식으로는 구조적으로 막기 어렵습니다. 6자리 코드(OTP) 입력으로 바꾸는 것이 확실한 해법이며, 화면이 붙는 작업이라 사용자 결정 대기.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 878건 통과, `next build` 통과.
+- Rollback: 이 커밋 revert.
+
+## 2026-09-02 — Claude: 제출 전 보완 (2단계) — 물어보고 그 문장만 고치기
+
+- Status: 코드 커밋. **마이그레이션은 원격 미적용** — 사용자가 `npm run db:remote:push` 실행 필요.
+- 무엇: `제출 전 마무리`의 "확인이 필요합니다" 항목에 대해 손님에게 2~3가지만 묻고, 받은 사실로 **그 문장만** 다시 씁니다. 자기소개서 전체를 다시 첨삭하지 않습니다.
+- 전체 재첨삭을 하지 않는 이유: 이미 다듬은 문장이 다시 흔들리고, 값이 한 번 더 들고, 손님이 "고칠수록 나빠졌다"고 느낍니다. 모델에는 문제 문장 하나와 손님이 준 사실만 보냅니다 — 나머지 문장은 보지도 못하므로 흔들릴 수가 없습니다.
+- 신규 `src/domain/final-patch.ts`(+테스트 10건):
+  - `locateQuote` — 인용문이 첨삭본의 어느 문장인지 찾습니다. 공백·문장부호를 걷어내고 비교하며, **못 찾으면 비슷한 문장을 고르지 않고 못 찾았다고 답합니다.** 닮은 자리를 고치면 엉뚱한 문장이 바뀝니다.
+  - `applyPatches` — 바꾸기로 한 문장이 실제로 거기 있을 때만 치환합니다. 없으면 그 문항은 손대지 않습니다.
+  - `countAppliedPatches` — 실제로 바뀐 것만 셉니다. 화면이 고쳤다고 하는데 문서는 그대로인 상태를 막습니다.
+- `WrapUpItem.choices` 추가: 이력서 대조 항목은 두 문서가 각각 적은 값을 함께 실어, 빈칸 대신 고르게 합니다.
+- 신규 마이그레이션 `20260902020000_final_submission_patch.sql`: `final_submission_patches`(분석 1건당 보완 1건). **`analysis_results`는 덮어쓰지 않습니다** — 원래 문장이 남아야 되돌리고 "바뀐 곳만 보기"가 가능합니다. RLS는 본인 읽기만 열고 쓰기는 서버(service role)만 — 브라우저가 직접 쓸 수 있으면 아무 문장이나 보완본으로 저장됩니다.
+- 신규 `src/server/ai/final-patch-gateway.ts`: Responses API, `max_output_tokens: 2000`, strict JSON schema. 요청하지 않은 `itemId`는 걸러냅니다. 프롬프트의 핵심은 "손님이 주지 않은 숫자·회사명·성과·기간을 만들지 말 것".
+- 신규 `POST /api/final-patch`: FINAL 결과에서만, 본인 것만(RLS). 고칠 자리를 못 찾은 항목은 모델에 보내지 않습니다. 저장 실패해도 고친 문장은 화면에 돌려줍니다.
+- UI: `final-patch-form.tsx`. `제출 전 마무리` 안에서 열리고, 답한 것만 고칩니다. 결과는 before/after로 보여 줍니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 888건 통과(신규 10건), `next build` 통과.
+- Rollback: 이 커밋 revert 후 `drop table public.final_submission_patches`.
+
+## 2026-09-02 — Claude: GA4 연결 + 사이트맵에 커리어·라운지 추가
+
+- GA4(`G-XF0JRSBBZX`): 구글이 안내하는 스니펫은 `gtag.js`를 한 번 더 불러오게 되어 있는데, 그 라이브러리는 광고 태그(`AW-18415179469`) 때문에 이미 싣고 있습니다. 두 번 실으면 페이지뷰가 두 번 세지므로 **`gtag('config', 'G-XF0JRSBBZX')` 한 줄만** 추가했습니다. 대시보드의 "이미 있는 Google 태그 사용"도 필요 없습니다 — 코드로 붙였으므로 중복입니다.
+- 사이트맵: `/career`, `/career/assessments`, `/career/interest`, `/community` 추가(6 → 10). 직업심리검사·진로검사 계열 검색어를 실제로 받는 화면이 사이트맵에 없어, 크롤러가 홈에서 링크를 타고 들어오기만 기다리고 있었습니다. 제품 경로(로그인·결제·초안이 필요한 화면)는 기존 규칙대로 계속 제외합니다.
+- Search Console에서 확인된 사용자 조치 사항(코드 아님):
+  - `/career`, `/career/interest`, `/pricing`, `/quick`이 **사이트맵으로 제출**되어 있습니다. 이들은 페이지이지 사이트맵 XML이 아니라 항상 오류가 납니다. 삭제해야 합니다. 특히 `/pricing`은 **존재하지 않는 경로**입니다.
+  - `NOINDEX 제외 4건`은 대부분 의도한 것입니다(`/comingsoon`, `/career/values`, `/career/work-style`, 결과·관리자 화면). 잠금을 풀 때 `robots` 분기를 함께 지우면 돌아옵니다.
+  - `403 차단 1건`은 `/meensoo` 계열로 보이며 정상입니다.
+- 미결: `og:image`가 없습니다. 카카오톡·네이버·슬랙에 링크를 공유해도 썸네일이 뜨지 않습니다. `opengraph-image`로 만들 수 있으며 사용자 결정 대기.
+- Validation: `tsc --noEmit` 통과, `vitest run` 888건 통과, `next build` 통과.
 
 ## 2026-09-02 — Claude: 첨삭 한 건의 실제 원가와 마진 (관리자)
 

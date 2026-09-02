@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createCouponCode, revokeCouponCode } from "@/server/admin/admin-repository";
+import { createCouponCode, deleteCouponCode, revokeCouponCode } from "@/server/admin/admin-repository";
 import { isAdmin } from "@/server/admin/admin-session";
 
 export const runtime = "nodejs";
@@ -41,6 +41,18 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => null) as { id?: string } | null;
   if (!body?.id) return NextResponse.json({ error: "id가 필요합니다." }, { status: 400 });
   const error = await revokeCouponCode(body.id);
+  if (error) return NextResponse.json({ error }, { status: 400 });
+  return NextResponse.json({ ok: true });
+}
+
+/** 완전 삭제. PATCH는 못 쓰게 막을 뿐이고, 이쪽은 사용 기록까지 지웁니다. */
+export async function DELETE(request: Request) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "권한이 없습니다." }, { status: 401 });
+  }
+  const body = await request.json().catch(() => null) as { id?: string } | null;
+  if (!body?.id) return NextResponse.json({ error: "id가 필요합니다." }, { status: 400 });
+  const error = await deleteCouponCode(body.id);
   if (error) return NextResponse.json({ error }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

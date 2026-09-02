@@ -28,6 +28,12 @@ const SECTIONS = [
     ],
   },
   {
+    title: "커뮤니티",
+    links: [
+      { href: "/community", label: "취업·진로 라운지", hint: "익명 고민을 읽고 다음 행동 찾기" },
+    ],
+  },
+  {
     title: "이용 안내",
     links: [
       { href: "/guide", label: "이용 방법 · 자주 묻는 질문", hint: "순서, 요금, 자주 막히는 것" },

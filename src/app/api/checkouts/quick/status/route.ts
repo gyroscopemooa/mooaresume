@@ -98,5 +98,25 @@ export async function GET(request: NextRequest) {
       console.error("quick_timeout_refund_failed", { error: timeoutError instanceof Error ? timeoutError.message : "UNKNOWN_ERROR" });
     }
   }
-  return NextResponse.json({ ...checkout, retryAvailable, failureCode: runDiagnostic?.failure_code ?? null, attemptCount: runDiagnostic?.attempt_count ?? null });
+  // 광고 전환에 실제로 받은 금액을 실어 보내기 위한 값입니다. 상품 정가로
+  // 대신하면 초과 과금이 붙은 결제가 정가로 보고되어, 구글이 배우는 매출이
+  // 실제와 어긋납니다. 주문 번호는 전환 중복 제거의 열쇠이기도 합니다.
+  // 읽지 못하면 그냥 비워 둡니다 — 이 조회 하나 때문에 결제 완료 화면이
+  // 멈추는 편이 훨씬 나쁩니다.
+  const { data: order } = await supabase
+    .from("billing_orders")
+    .select("provider_order_id, amount, currency, status")
+    .eq("provider_checkout_id", parsed.data.checkoutId)
+    .maybeSingle();
+  const paid = order?.status === "PAID";
+
+  return NextResponse.json({
+    ...checkout,
+    retryAvailable,
+    failureCode: runDiagnostic?.failure_code ?? null,
+    attemptCount: runDiagnostic?.attempt_count ?? null,
+    orderId: paid ? (order?.provider_order_id as string | null) ?? null : null,
+    amount: paid ? (order?.amount as number | null) ?? null : null,
+    currency: paid ? (order?.currency as string | null) ?? null : null,
+  });
 }
