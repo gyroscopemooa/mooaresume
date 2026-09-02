@@ -4980,3 +4980,21 @@ html{overflow-x:hidden;scroll-behavior:smooth}
   - `403 차단 1건`은 `/meensoo` 계열로 보이며 정상입니다.
 - 미결: `og:image`가 없습니다. 카카오톡·네이버·슬랙에 링크를 공유해도 썸네일이 뜨지 않습니다. `opengraph-image`로 만들 수 있으며 사용자 결정 대기.
 - Validation: `tsc --noEmit` 통과, `vitest run` 888건 통과, `next build` 통과.
+
+## 2026-09-02 — Claude: 빌드를 막던 사이트맵의 없는 import 제거 (main)
+
+- Agent/session: Claude (클라우드 세션). 사용자 지적: 사이트가 살아 있는 것과 최신 커밋이 실제로 배포된 것은 다른 얘기다 — 진짜 원인을 없애라.
+- Status: main에 직접 적용.
+
+### 확인한 사실
+- `e46eb20`의 `src/app/sitemap.ts`가 `communityPostPath`(`@/domain/community`)와 `listPublishedCommunityPostsForSitemap`(`@/server/community/community-publication`)을 가져오는데, **이 둘은 `git log --all`로 찾아도 저장소 역사 어디에도 없습니다.** PC 로컬 작업 중 새 파일이 디스크엔 있었는데 `git add`에서 빠진 채 커밋된 것으로 보입니다.
+- 로컬 `next dev`는 디스크의 파일을 그대로 쓰므로 문제없이 돌아갔고, push 이후 빌드 서버에는 그 파일이 없어 `next build`가 매번 실패했습니다.
+- **"사이트가 멀쩡해 보인다"는 이 커밋이 배포됐다는 뜻이 아닙니다.** 빌드가 실패하면 새 배포가 나가지 않고, 대부분의 플랫폼처럼 직전 성공한 배포가 계속 서빙됩니다. `e46eb20`은 이번 수정 전까지 한 번도 실제로 배포되지 않았을 가능성이 높습니다.
+- `/community`는 게시글 목록 한 화면뿐이고(`src/app/community/page.tsx`) 낱개 게시글 라우트가 없습니다(`community-lounge.tsx`도 추천·댓글·신고를 전부 그 화면 안에서 끝냅니다). 그래서 애초에 채울 수 없는 import였습니다.
+
+### 바꾼 것 — 커뮤니티/검사 기능에는 손대지 않음
+- `sitemap.ts`에서 없는 두 함수를 부르는 부분만 제거하고, 그 커밋이 같이 넣은 **유효한** 것들은 그대로 두었습니다: `layout.tsx`의 GA4 설정 한 줄, `/career`·`/career/assessments`·`/career/interest` 사이트맵 항목. `/community` 정적 항목도 그대로 두고, 낱개 게시글 자리에는 "라우트가 생기면 채우라"는 주석만 남겼습니다.
+- 삭제·수정한 코드는 **어디에도 존재한 적 없는 import 두 줄과 그걸 쓰는 try/catch 블록뿐**입니다. 실제로 동작하던 코드는 하나도 건드리지 않았습니다.
+- Files: `src/app/sitemap.ts`.
+- Validation: 887 tests passed, `tsc` clean, `eslint` — 이 파일에 새 경고 없음, **`next build` 성공**(이 세션 들어 main이 처음으로 끝까지 빌드됨).
+- Rollback: 이 커밋 revert(`e46eb20`의 sitemap.ts 부분만 되돌아옵니다. 그러면 다시 빌드가 깨집니다).
