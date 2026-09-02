@@ -1,0 +1,59 @@
+/* 첫 화면에서 내려온 문장이 놓이는 자리.
+ *
+ * 제목 자리를 내주었다고 해서 힘을 잃으면 안 되는 문장입니다. 그래서 카드로
+ * 가두거나 아이콘을 붙이지 않고, 넓은 여백 가운데에 글자만 둡니다 — 이
+ * 페이지에서 유일하게 아무것도 팔지 않는 자리라 그 조용함이 곧 무게가 됩니다.
+ *
+ * 위에 얇은 선 하나로 앞 섹션과 끊고, 배경은 아주 옅은 하늘빛 한 겹만
+ * 깝니다. 색을 더 쓰면 바로 아래 초록 CTA와 다투게 됩니다.
+ */
+.creed {
+  position: relative;
+  margin-top: 8px;
+  padding: 76px 0 84px;
+  text-align: center;
+}
+.creed::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 54px;
+  height: 2px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #7dd3fc, #0284c7);
+}
+.creed > span {
+  display: inline-flex;
+  color: #0284c7;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.creed h2 {
+  margin: 16px 0 18px;
+  font-size: clamp(26px, 3.2vw, 40px);
+  line-height: 1.34;
+  letter-spacing: -0.05em;
+  color: #17221d;
+}
+.creed h2 em {
+  font-style: normal;
+  background: linear-gradient(100deg, #38bdf8, #0369a1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.creed p {
+  max-width: 640px;
+  margin: 0 auto;
+  color: #62726a;
+  font-size: clamp(14px, 1.3vw, 16.5px);
+  line-height: 1.85;
+}
+
+@media (max-width: 812px) {
+  .creed { padding: 52px 0 56px; }
+  .creed h2 { margin: 13px 0 14px; }
+}

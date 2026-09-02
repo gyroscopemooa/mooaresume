@@ -13,6 +13,7 @@ import enterpriseStyles from "./enterprise-promo.module.css";
 import oneClickStyles from "./one-click.module.css";
 import careerCtaStyles from "./career-home-cta.module.css";
 import fieldStyles from "./field-credibility.module.css";
+import creedStyles from "./creed.module.css";
 import "./home-mobile-header.module.css";
 import "./home-startup-header.module.css";
 import { getSiteUrl } from "@/lib/site-url";
@@ -107,7 +108,11 @@ export default function HomePage() {
             rather than what it is called, with the search terms riding along in
             a hidden span so a crawler still reads 자소서 첨삭 out of the h1
             without it taking first-screen space. */}
-        <h1 className="hero-desktop">좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h1>
+        {/* 사람들이 실제로 검색창에 치는 말이 곧 제목입니다. `좋은 문장보다,
+            합격을 위한 준비를 봅니다`는 우리가 무엇을 믿는지를 말했지 무엇을
+            해 주는지를 말하지 않았습니다 — 그 문장은 버리지 않고 페이지
+            맨 아래, 이 서비스가 왜 만들어졌는지를 말하는 자리로 옮겼습니다. */}
+        <h1 className="hero-desktop"><em>자기소개서 첨삭</em></h1>
         <h1 className="hero-mobile">
           나만의 <em>취업 코치</em>
           <span className="visually-hidden">자소서 첨삭 · 자기소개서 첨삭 · AI 첨삭</span>
@@ -123,7 +128,7 @@ export default function HomePage() {
             anything, which is a reason to leave rather than to switch. This
             says what the editing is for instead. */}
         <p className="hero-mobile-hint">자소서, 감으로 고치지 마세요.<br/><b>지원하는 직무 기준</b>으로 분석하세요.</p>
-        <p className="hero-desktop">채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
+        <p className="hero-desktop hero-lead">자소서, 감으로 고치지 마세요.<br/><b>지원하는 직무 기준</b>으로 분석하세요.</p>
         <LandingEntry />
         {/* 시작 버튼 아래입니다. 전에는 모바일에서 `order:-1`로 제목 위에
             올려 두었는데, 첫 화면에서 가장 먼저 보이는 것이 "예시 보기"가 되면
@@ -312,6 +317,16 @@ export default function HomePage() {
         <div className={positioningStyles.manifestoCopy}><span>MOOA RESUME · OUR GOAL</span><h2>무아레쥬메의 자소서 첨삭은<br/>1차 서류 합격이 목표가 아닙니다.</h2><strong>최종 합격 후 입사가 목표입니다.</strong><p>단순히 1차 합격을 위해 첨삭하시나요? 저희는 서류 합격, 면접 합격, 입사를 목표로 첨삭을 진행합니다.</p></div>
         <div className={positioningStyles.manifestoGoal}><small>OUR FINAL GOAL</small><b>우리의 목표는<br/>최종 합격입니다.</b><Link href="/onboarding">지원 준비 시작하기 <ArrowRight/></Link></div>
       </section>
+      {/* 첫 화면에서 내려온 문장입니다.
+          제목 자리에서는 검색해서 들어온 사람에게 무엇을 해 주는지를 먼저
+          말해야 해서 자리를 내주었지만, 이 문장이 이 서비스의 이유입니다.
+          최종 합격을 말한 바로 다음이 그 이유가 놓일 자리입니다. */}
+      <section className={"container " + creedStyles.creed}>
+        <span>WHY WE BUILT THIS</span>
+        <h2>좋은 문장보다,<br/><em>합격을 위한 준비</em>를 봅니다.</h2>
+        <p>채용공고와 내 경험, 지원서 전체를 연결해 지금 가장 먼저 고칠 부분을 근거와 함께 알려드려요.</p>
+      </section>
+
       <section className="cta-section"><div className="container"><div><span>첫 분석은 가볍게 시작하세요</span><h2>내 지원서에서 놓친 근거를<br/>지금 확인해 보세요.</h2></div><div className="cta-actions">
         <Link href="/analyze" className="button button-light">무료 진단 시작 <ArrowRight size={18}/></Link>
         {/* The dashboard itself, with sample data. "무엇을 받는지"에 답하는 가장

@@ -93,7 +93,7 @@
 
    아이콘에는 위쪽 밝은 면과 아래쪽 안쪽 선을 줍니다. 납작한 사각형에 색만
    채우면 스티커처럼 보이고, 면이 두 개면 눌러지는 물건이 됩니다. */
-@media (max-width: 812px) {
+@media (max-width: 760px) {
   .banner {
     border-color: #cfe6f5;
     background: linear-gradient(90deg, #eff8fe, #fff);
@@ -172,4 +172,43 @@
     line-height: 1.35;
     color: #0f3a52;
   }
+}
+
+/* PC도 하늘색으로, 그리고 얇게.
+ *
+ * 아래 첫 화면이 전부 하늘색인데 이 배너만 초록이면 두 색이 서로 밀어냅니다.
+ *
+ * `ONE-CLICK START`는 지웁니다 — 바로 옆 줄이 한국어로 같은 말을 하고 있어서
+ * 뜻을 더하지 않고 높이만 차지했습니다. 대신 오른쪽 설명(`입력은 간단하게,
+ * 분석은 섬세하게`)은 남깁니다. 그건 다른 말을 하고 있습니다.
+ *
+ * 아이콘은 모바일과 같은 원형 배지로 바꿉니다. 사각형 타일은 이 배너에서
+ * 가장 무거운 물건이었는데, 하는 말은 한 줄 안내입니다. */
+@media (min-width: 761px) {
+  .banner {
+    gap: 24px;
+    padding: 16px 24px;
+    border-color: #d8ecf9;
+    border-radius: 14px;
+    background: linear-gradient(96deg, #f2fafe, #fff);
+    box-shadow:
+      0 14px 30px -24px rgba(3, 105, 161, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  .banner > div { gap: 11px; }
+  .icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #38bdf8, #0284c7);
+    box-shadow:
+      0 6px 14px -5px rgba(2, 132, 199, 0.55),
+      0 0 0 4px rgba(56, 189, 248, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  .icon svg { width: 15px; }
+  .banner small { display: none; }
+  .banner b { margin-top: 0; font-size: 16px; letter-spacing: -0.035em; color: #0f3a52; }
+  .banner p { color: #4a6a7d; }
+  .banner p strong { color: #0f3a52; }
 }

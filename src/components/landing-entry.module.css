@@ -23,7 +23,7 @@
 
    그림자를 두 겹으로 겹칩니다. 넓고 옅은 것 하나로는 버튼이 종이에 붙어
    보이고, 아래쪽 안쪽 선 하나를 더하면 눌리는 물건처럼 보입니다. */
-@media (max-width: 812px) {
+@media (max-width: 760px) {
   .primary {
     background: linear-gradient(180deg, #0ea5e9, #0284c7);
     box-shadow: 0 10px 24px -8px rgba(2, 132, 199, .45), inset 0 -2px 0 rgba(3, 105, 161, .55);
@@ -31,4 +31,26 @@
   .primary:hover, .primary:active { background: linear-gradient(180deg, #0284c7, #0369a1); }
   .meta label { color: #0284c7; }
   .inputBox { box-shadow: 0 12px 30px -22px rgba(2, 132, 199, .55); }
+}
+
+/* PC에서는 입력창과 버튼을 키웁니다.
+ *
+ * 이 화면에서 손님이 실제로 하는 일은 자기소개서를 붙여넣는 것 하나입니다.
+ * 그런데 입력창이 폰과 같은 높이면, 넓은 화면에서는 그 한 가지가 페이지의
+ * 부속처럼 보입니다. 세로를 1.5배로 올려 붙여넣을 자리라는 것이 먼저 보이게
+ * 합니다.
+ *
+ * 버튼도 같이 키웁니다. 글자만 키우면 글자가 큰 버튼이 되지만, 높이를 주면
+ * 누를 수 있는 물건이 됩니다.
+ */
+@media (min-width: 761px) {
+  .inputBox textarea { min-height: 420px; padding: 26px 28px; font-size: 15px; }
+  .primary {
+    margin-top: 14px;
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+  }
+  .primary svg { width: 20px; height: 20px; }
 }
