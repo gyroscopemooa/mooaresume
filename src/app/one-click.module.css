@@ -158,10 +158,18 @@
   .icon svg { width: 11px; display: block; }
   /* 영어 줄을 빼면 이 칸은 한 줄만 남습니다. */
   .banner small { display: none; }
+  /* 글자 상자를 글자에 딱 맞춥니다.
+     알약을 재 보니 글자 위가 10px, 아래가 6px이었습니다. 범인은 `b`에 걸린
+     `margin-top: 4px`이었습니다 — 위의 `ONE-CLICK START`와 띄우려던 간격인데,
+     그 줄을 숨기고 나니 띄울 상대가 없는 여백만 남아 글자를 아래로 밀고
+     있었습니다. 배경도 테두리도 없는 자리라 눈에는 "위가 더 넓다"로만 보입니다. */
+  .banner > div > span { line-height: 1; }
   .banner b {
+    margin-top: 0;
     font-size: 12.5px;
     font-weight: 800;
     letter-spacing: -0.035em;
+    line-height: 1.35;
     color: #0f3a52;
   }
 }
