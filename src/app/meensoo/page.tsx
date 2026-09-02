@@ -28,6 +28,22 @@ export default async function AdminDashboard() {
           <strong>{krw(summary.revenueKrw)}</strong>
           <small>실제 결제 {summary.realOrders}건 · 테스트·무료 제외</small>
         </div>
+        {/* 실매출 바로 옆입니다. 매출만 있고 원가가 없으면 절반짜리
+            대시보드입니다 — 무료 이용권도 API 요금은 그대로 나가므로 여기
+            원가에는 포함되지만 위 실매출에는 없습니다. */}
+        <div className={styles.card}>
+          <span>API 원가 (전체 기간)</span>
+          <strong>{summary.totalCostKrw !== null ? krw(Math.round(summary.totalCostKrw)) : "단가 미설정"}</strong>
+          {summary.totalCostKrw !== null ? (
+            <small>
+              실매출 대비 마진 {krw(Math.round(summary.revenueKrw - summary.totalCostKrw))}
+              {summary.revenueKrw > 0 && ` (${Math.round(((summary.revenueKrw - summary.totalCostKrw) / summary.revenueKrw) * 100)}%)`}
+              {summary.wastedAttempts > 0 && ` · 버려진 시도 ${summary.wastedAttempts}건 포함`}
+            </small>
+          ) : (
+            <small>OPENAI_PRICE_INPUT_PER_1M 등 환경변수 필요</small>
+          )}
+        </div>
         <div className={styles.card}>
           <span>매출로 세지 않은 결제</span>
           <strong>{summary.freeOrders + summary.sandboxOrders + summary.unknownOrders}건</strong>

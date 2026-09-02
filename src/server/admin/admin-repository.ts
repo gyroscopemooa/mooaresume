@@ -494,6 +494,15 @@ export type AdminSummary = {
   newFeedback: number;
   mailSent7d: number;
   mailFailed7d: number;
+  /**
+   * 전체 기간 API 원가. `revenueKrw`처럼 기간 제한이 없습니다 — 매출을
+   * 전체 기간으로 보면서 원가만 최근 며칠로 자르면 두 숫자를 나란히 놓고
+   * 마진을 못 읽습니다. 단가가 없으면 `null`입니다(틀린 원가는 없느니만
+   * 못합니다).
+   */
+  totalCostKrw: number | null;
+  /** 결과를 못 낸 시도. 원가에는 포함되지만 매출에는 없는 몫입니다. */
+  wastedAttempts: number;
 };
 
 export async function getSummary(): Promise<AdminSummary> {
@@ -501,7 +510,7 @@ export async function getSummary(): Promise<AdminSummary> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1_000).toISOString();
   const countOnly = { count: "exact" as const, head: true };
 
-  const [orders, analyses, waitlist, inquiries, mailSent, mailFailed, feedback] = await Promise.all([
+  const [orders, analyses, waitlist, inquiries, mailSent, mailFailed, feedback, attempts] = await Promise.all([
     client.from("billing_orders").select("amount, status, metadata"),
     client.from("analysis_runs").select("status"),
     client.from("waitlist_signups").select("id", countOnly),
@@ -509,6 +518,10 @@ export async function getSummary(): Promise<AdminSummary> {
     client.from("mail_send_log").select("id", countOnly).eq("status", "SENT").gte("sent_at", since),
     client.from("mail_send_log").select("id", countOnly).eq("status", "FAILED").gte("sent_at", since),
     client.from("analysis_feedback").select("id", countOnly).is("read_at", null),
+    // 표가 아직 없는 환경(마이그레이션 전)도 여기로 옵니다. `error`가 있으면
+    // 아래에서 원가를 `null`로 두므로, 대시보드 전체가 이 표 하나 때문에
+    // 멈추지 않습니다.
+    client.from("analysis_run_attempts").select("outcome, input_tokens, output_tokens"),
   ]);
 
   const orderRows = ((orders.data ?? []) as { amount: number; status: string; metadata: unknown }[])
@@ -516,6 +529,18 @@ export async function getSummary(): Promise<AdminSummary> {
   const runRows = (analyses.data ?? []) as { status: string }[];
   const paid = orderRows.filter((row) => row.status === "PAID");
   const real = paid.filter(isRealRevenue);
+
+  // 매출처럼 전체 기간입니다 — 매출은 전체, 원가만 최근 며칠로 자르면 두
+  // 숫자를 나란히 놓아도 마진을 못 읽습니다. 표가 없거나(마이그레이션 전)
+  // 단가가 없으면 원가는 만들어 내지 않습니다.
+  const pricing = readModelPricingFromEnv();
+  const attemptRows = attempts.error ? [] : (attempts.data ?? []) as { outcome: string; input_tokens: number | null; output_tokens: number | null }[];
+  const totalCostKrw = attempts.error || !pricing ? null : (() => {
+    const inputTokens = attemptRows.reduce((sum, row) => sum + (row.input_tokens ?? 0), 0);
+    const outputTokens = attemptRows.reduce((sum, row) => sum + (row.output_tokens ?? 0), 0);
+    return (inputTokens / 1_000_000) * pricing.inputPerMillionUsd * pricing.usdToKrw
+      + (outputTokens / 1_000_000) * pricing.outputPerMillionUsd * pricing.usdToKrw;
+  })();
 
   return {
     paidOrders: paid.length,
@@ -538,6 +563,8 @@ export async function getSummary(): Promise<AdminSummary> {
     newFeedback: feedback.count ?? 0,
     mailSent7d: mailSent.count ?? 0,
     mailFailed7d: mailFailed.count ?? 0,
+    totalCostKrw,
+    wastedAttempts: attemptRows.filter((row) => row.outcome !== "COMPLETED").length,
   };
 }
 

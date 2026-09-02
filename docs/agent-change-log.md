@@ -5134,3 +5134,13 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 디자인: 아이콘(`icon.svg`)과 같은 `#176b4a` 초록 M 마크, 서비스명, "AI 자소서 첨삭" 제목, 부제, 도메인. 1200×630(표준 OG 크기).
 - Validation: 913 tests passed, `tsc` clean, `eslint` 클린(전역 에러 1건은 손대지 않은 `community-lounge.tsx`), `next build` 성공 — 실제 생성된 PNG를 열어 한글이 정상적으로 렌더링되는지 확인했습니다(빈 네모 없음).
 - Rollback: 두 기능 모두 이 커밋 revert. 마이그레이션 없음, 대시보드 설정 없음 — 여기서 만든 것만으로 완결됩니다.
+
+## 2026-09-02 — Claude: 대시보드 첫 화면에 API 원가·마진 카드
+
+- Agent/session: Claude (클라우드 세션). 사용자 승인("ㄱㄱ")으로 진행. 제가 먼저 찾아 제안한 항목 — "실매출"은 첫 화면에 있는데 원가는 `/meensoo/analyses`(최근 200건 한정)에 들어가야만 보였습니다.
+- 바꾼 것: `getSummary()`에 `analysis_run_attempts` 전체를 더하는 쿼리를 추가했습니다. **매출처럼 전체 기간**입니다 — 매출은 전체로 보면서 원가만 최근 며칠로 자르면 두 숫자를 나란히 놓아도 마진을 못 읽습니다.
+- **무료 이용권 원가도 포함됩니다.** 무료로 나간 분석도 API 요금은 그대로 나가는데, 위쪽 "실매출"에는 안 잡히므로 여기 원가에 넣지 않으면 마진이 실제보다 좋아 보입니다. "실매출 대비 마진" 문구로 이걸 그대로 드러냈습니다 — 초기에 무료쿠폰 비중이 크면 마진이 낮게(음수로도) 나올 수 있는데, 그게 정확한 그림입니다.
+- 표가 없거나(마이그레이션 전) 단가 환경변수가 없으면 "단가 미설정"만 보여 주고 숫자를 만들어 내지 않습니다. 쿼리 실패도 대시보드 전체를 막지 않고 이 카드만 비웁니다.
+- Files: `src/server/admin/admin-repository.ts`(`AdminSummary` 타입·`getSummary` 확장), `src/app/meensoo/page.tsx`.
+- Validation: 913 tests passed, `tsc` clean, `next build` 성공. 데스크톱 1200px·모바일 412px 렌더 확인 — 실매출 카드 바로 옆에 자연스럽게 배치.
+- Rollback: 이 커밋 revert.
