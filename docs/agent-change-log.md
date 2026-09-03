@@ -5571,3 +5571,17 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 테스트 2건 추가: 폴라가 말하는 금액만 환불하는지, 0일 때 호출하지 않고 UNCERTAIN으로 두는지.
 - 함께 확인된 것(조치 없음): `AI_PROVIDER_404`는 앞 커밋대로 재시도 없이 바로 FAILED로 기록됐습니다(`d032fc58`, attempt 1). 화면이 "다시 시도 중"에서 멈춰 있던 것은 그 전 런(`1aaa6a56`, `AI_OUTPUT_VALIDATION_FAILED` attempt 2)이 재시도 대상이라 계속 걸고 있었기 때문입니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 952건 통과, `next build` 통과.
+
+## 2026-09-04 — Claude: 이용권 회수 제약 위반 수정 + QUICK 상한 안내
+
+- **환불은 성공했습니다.** 앞 커밋의 `refundableAmount` 수정이 통해 주문이 `auto_refund_state = SUBMITTED`, 폴라 환불 ID까지 받았습니다.
+- **이용권 회수만 실패**했습니다: `quick_failure_refund_revoke_failed { code: '23514' }`. `analysis_entitlements`의 체크 제약이 `status = 'REVOKED'`일 때 `revoked_at is not null`을 함께 요구하는데, `revoke_refunded_analysis_entitlement`가 상태만 바꾸고 있었습니다. 제가 만든 함수의 실수입니다.
+  - 신규 마이그레이션 `20260904010000_fix_revoke_refunded_entitlement.sql` — `revoked_at`을 함께 채우고 `consumed_*`를 명시적으로 비웁니다.
+  - 이 실패가 환불을 되돌리지 않은 것은 호출부가 회수 실패를 삼키고 "환불됨"으로 답하도록 만들어 두었기 때문입니다. 던졌다면 바깥이 환불을 한 번 더 시도했을 것이고 그게 훨씬 나쁩니다.
+  - 남은 증상은 손님이 **돈도 돌려받고 이용권도 그대로** 갖는 것이었습니다.
+- **QUICK 상한(사용자 승인)**: `QUICK_MAX_CHARS = 15,000자`(포함 8,000 + 1블록 7,000). 그 위에서는 결제 화면에 "이 분량은 PRO가 더 낫습니다"를 띄우고 PRO 링크를 답니다. **막지는 않습니다** — 사실을 말하고 고르게 합니다.
+  - 근거: 2블록(11,700원)은 PRO와 1,200원 차이, 3블록(14,600원)은 **PRO보다 1,700원 비쌉니다**. 알면 아무도 고르지 않을 선택지를 모른다는 이유로 파는 것은 팔 이유가 되지 못합니다.
+  - `QUICK_MAX_CHARS`는 포함량과 블록에서 계산합니다. 숫자를 따로 적어 두면 하나만 고쳤을 때 조용히 어긋납니다(테스트로 잠갔습니다).
+- **보류하기로 한 것(사용자 결정)**: 기본 글자수 축소, 추가 글자 과금 상향, 참고자료 과금. 실측 근거 — 참고자료 8,322자가 더해질 때 토큰은 약 10,600 증가(글자당 1.3 토큰, 전부 입력)로 판매가의 0.5% 미만입니다. 걷을 돈이 없고, FINAL이 파는 교차검증에 세금을 매기는 구조가 되며, 손님이 자료를 빼면 품질이 무너집니다. 원가는 계량기가 아니라 이미 있는 상한(참고자료 60,000자)으로 묶는 것이 맞습니다.
+- **사용자 실행 필요**: `npm run db:remote:push`
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 956건 통과(신규 4건), `next build` 통과.

@@ -31,6 +31,26 @@ export const QUICK_SOFT_LIMIT_CHARS = 7_000;
 export const QUICK_INCLUDED_LIMIT_CHARS = 8_000;
 export const QUICK_EXTRA_BLOCK_CHARS = 7_000;
 export const QUICK_EXTRA_BLOCK_PRICE_KRW = 2_900;
+/**
+ * QUICK이 팔 수 있는 마지막 길이.
+ *
+ * QUICK은 8,000자를 품고 7,000자마다 2,900원을 더 받습니다. 블록이 쌓이면
+ * PRO 값에 다가가고, 결국 넘습니다:
+ *
+ *   1블록 · ~15,000자 → 8,800원  (PRO보다 4,100원 쌈)
+ *   2블록 · ~22,000자 → 11,700원 (PRO보다 1,200원 쌈)
+ *   3블록 · ~29,000자 → 14,600원 (**PRO보다 1,700원 비쌈**)
+ *
+ * 세 번째 줄은 손님이 더 내고 덜 받는 자리입니다. PRO는 12,900원에 공고 대조와
+ * 경험 매칭까지 하고, 30,000자를 추가금 없이 품습니다. 그걸 알면 아무도 그
+ * 선택을 하지 않습니다 — 모르니까 하는 것이고, 그건 팔 이유가 되지 못합니다.
+ *
+ * 그래서 1블록까지만 팝니다. 그 위는 PRO로 안내합니다. 상품 설명("작성한 글을
+ * 빠르게 첨삭")과도 맞습니다 — 15,000자는 이미 지원서 한 벌이지 한 편이
+ * 아닙니다.
+ */
+export const QUICK_MAX_EXTRA_BLOCKS = 1;
+export const QUICK_MAX_CHARS = QUICK_INCLUDED_LIMIT_CHARS + QUICK_EXTRA_BLOCK_CHARS * QUICK_MAX_EXTRA_BLOCKS;
 export const productTierSchema = z.enum(["QUICK", "PRO", "FINAL"]);
 export type ProductTier = z.infer<typeof productTierSchema>;
 
@@ -87,6 +107,16 @@ export function createQuickCheckoutQuote(totalCharacters: number): CheckoutQuote
     totalPriceKrw: QUICK_BASE_PRICE_KRW + extraPriceKrw,
     needsScopeReview: extraBlocks > 0,
   });
+}
+
+/**
+ * 이 분량에 QUICK을 파는 것이 손님에게 손해인가.
+ *
+ * 막는 것이 목적이 아니라 **더 나은 쪽을 알려 주는 것**이 목적입니다. 무엇이
+ * 더 싼지는 우리가 알고 손님은 모릅니다.
+ */
+export function exceedsQuickCeiling(totalCharacters: number): boolean {
+  return Math.max(0, Math.floor(totalCharacters)) > QUICK_MAX_CHARS;
 }
 
 

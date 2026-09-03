@@ -18,3 +18,32 @@
 .shortNotice svg{width:12px}
 .resumeNotice{display:flex;gap:9px;margin-top:12px;padding:14px 16px;border:1px solid #eddfb6;border-radius:10px;background:#fffdf5}.resumeNotice svg{width:16px;flex:none;color:#a3761d;margin-top:2px}.resumeNotice span{display:flex;flex-direction:column;gap:5px}.resumeNotice b{font-size:13px;color:#7a5f16}.resumeNotice small{color:#82704a;font-size:11.5px;line-height:1.8}.resumeNotice small b{font-size:inherit;color:#5f4a0f}
 .referralNote{margin-top:12px}
+
+/* 더 나은 등급이 있을 때 뜨는 안내.
+   경고가 아니라 제안이라 붉은색을 쓰지 않습니다 — 손님은 잘못한 것이 없고,
+   우리가 아는 사실을 알려 주는 자리입니다. */
+.betterTierNotice {
+  margin: 12px 0 0;
+  padding: 15px 17px;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  background: #f2fafe;
+  color: #45606f;
+  font-size: 12.5px;
+  line-height: 1.8;
+}
+.betterTierNotice b { color: #0f3a52; }
+.betterTierNotice a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  border-radius: 8px;
+  padding: 9px 14px;
+  background: linear-gradient(180deg, #0ea5e9, #0284c7);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 6px 14px -6px rgba(2, 132, 199, .5), inset 0 -2px 0 rgba(3, 105, 161, .5);
+}
+.betterTierNotice a svg { width: 15px; }
