@@ -5478,3 +5478,21 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Validation: 커뮤니티 테스트 6개, typecheck, production build 통과. 린트 오류 0, 기존 경고 2건 유지.
 - Launch status: 코드·DB 런칭 최소선 완료. 배포 후 두 테스트 계정 E2E와 관리자 신고 숨김 확인만 남음.
 - Rollback: 후속 migration을 revert하고 이전 함수 구현으로 복구한다.
+
+## 2026-09-03 — Codex: 커뮤니티 작성 버튼 피드백 개선 (진행 중)
+
+- Status: active.
+- Protected baseline: 현재 메인에 병합된 `src/components/community-lounge.tsx` 작성창 및 클로드의 비커뮤니티 작업.
+- Change and reason: 사용자가 로그인한 로컬 커뮤니티에서 제목·본문 최소 길이를 채우기 전 제출 버튼이 이유 없이 비활성화되어 작성 불가처럼 보인다고 보고했다. 커뮤니티 작성창만 수정해 버튼을 항상 누를 수 있게 하고, 부족한 입력은 즉시 한국어 안내로 표시한다. 서버 검증·권한·DB는 변경하지 않는다.
+- Files/branch: `src/components/community-lounge.tsx` on shared `main`.
+- Validation: component/domain tests, typecheck, production build planned.
+- Rollback/recovery reference: this focused UX commit can be reverted independently.
+- User decision: 사용자 요청에 따른 즉시 수정.
+
+## 2026-09-03 — Codex: 커뮤니티 작성 버튼 피드백 개선 (완료)
+
+- Status: active.
+- Change: `익명으로 올리기`는 저장 중일 때만 비활성화한다. 제목이 2자 미만이거나 본문이 5자 미만이면 클릭 직후 각각의 입력 안내를 표시하며, 유효한 제목·본문은 앞뒤 공백을 정리해 기존 API로 보낸다.
+- Files: `src/components/community-lounge.tsx`, `docs/agent-change-log.md`.
+- Validation: `npm run typecheck`, `npm run build`, `git diff --check` 통과.
+- Rollback: 이 UX 변경 커밋을 revert하면 기존 비활성화 조건으로 돌아간다.
