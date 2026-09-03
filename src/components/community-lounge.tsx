@@ -19,6 +19,8 @@ export function CommunityLounge() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [feedStatus, setFeedStatus] = useState<"loading" | "ready" | "error">("loading");
   const [reloadKey, setReloadKey] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [activeComments, setActiveComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Record<string, CommunityComment[]>>({});
@@ -31,9 +33,10 @@ export function CommunityLounge() {
 
     void fetch(`/api/community/posts?${params}`).then(async (response) => {
       if (!response.ok) throw new Error("게시글을 불러오지 못했어요.");
-      const data = await responseJson(response) as ApiError & { posts?: CommunityPost[] };
+      const data = await responseJson(response) as ApiError & { posts?: CommunityPost[]; hasMore?: boolean };
       if (!cancelled) {
         setPosts(Array.isArray(data.posts) ? data.posts : []);
+        setHasMore(Boolean(data.hasMore));
         setFeedStatus("ready");
       }
     }).catch(() => {
@@ -41,6 +44,25 @@ export function CommunityLounge() {
     });
     return () => { cancelled = true; };
   }, [sort, topic, reloadKey]);
+
+  // 정렬/주제를 바꾸면 처음부터 다시 세므로, "더 보기"는 언제나 지금까지
+  // 쌓인 글 개수를 다음 페이지의 시작점으로 씁니다.
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({ sort, offset: String(posts.length) });
+      if (topic !== "all") params.set("topic", topic);
+      const response = await fetch(`/api/community/posts?${params}`);
+      if (!response.ok) throw new Error();
+      const data = await responseJson(response) as ApiError & { posts?: CommunityPost[]; hasMore?: boolean };
+      setPosts((current) => [...current, ...(Array.isArray(data.posts) ? data.posts : [])]);
+      setHasMore(Boolean(data.hasMore));
+    } catch {
+      setMessage("더 보기를 불러오지 못했어요.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const topicPosts = useMemo(() => posts.filter((post) => topic === "all" || post.topic === topic), [posts, topic]);
   const hotPosts = useMemo(() => [...posts].sort((a, b) => b.recommendationCount + b.commentCount - (a.recommendationCount + a.commentCount)).slice(0, 3), [posts]);
@@ -102,6 +124,7 @@ export function CommunityLounge() {
         <div className={styles.topicTabs}><button className={topic === "all" ? styles.topicSelected : ""} type="button" onClick={() => setTopic("all")}>전체</button>{communityTopics.map((item) => <button className={topic === item ? styles.topicSelected : ""} type="button" key={item} onClick={() => { setFeedStatus("loading"); setTopic(item); }}>{communityTopicMeta[item].label}</button>)}</div>
         <p className={styles.feedHint}>{sort === "latest" ? "방금 올라온 고민부터 읽어보세요." : "추천과 대화가 이어진 글을 먼저 봐요."}</p>
         <div className={styles.posts}>{topicPosts.map((post) => <PostCard key={post.id} post={post} comments={comments[post.id] ?? []} commentsOpen={activeComments === post.id} onRecommend={() => void toggleRecommend(post)} onToggleComments={() => void toggleComments(post)} onSubmitComment={submitComment} onReport={() => void reportPost(post.id)} />)}</div>
+        {feedStatus === "ready" && hasMore && <button type="button" className={styles.loadMore} disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? <LoaderCircle/> : "더 보기"}</button>}
         {feedStatus === "loading" && <div className={styles.empty} aria-live="polite"><b>글을 불러오는 중이에요.</b><p>잠시만 기다려 주세요.</p></div>}
         {feedStatus === "error" && <div className={styles.empty} role="alert"><b>글을 불러오지 못했어요.</b><p>연결을 확인한 뒤 다시 시도해 주세요.</p><button type="button" onClick={() => { setFeedStatus("loading"); setReloadKey((value) => value + 1); }}>다시 불러오기</button></div>}
         {feedStatus === "ready" && topicPosts.length === 0 && <div className={styles.empty}><b>아직 이 주제의 글이 없어요.</b><p>첫 고민을 남기면 같은 길을 걷는 사람에게 도움이 될 수 있어요.</p><button type="button" onClick={() => setComposerOpen(true)}>첫 글 남기기</button></div>}

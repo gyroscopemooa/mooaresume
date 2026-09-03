@@ -5718,3 +5718,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx vitest run` 970 passed(회귀 없음, 이 부분은 기존 관례대로 전용 테스트 없이 진행 — 다른 커뮤니티 라우트들도 Supabase 목킹 테스트가 없는 것과 같은 이유), `npx tsc --noEmit` clean, `npx eslint` 클린.
 - Rollback: 이 커밋 revert. `DELETE` 핸들러가 없어져도 기존 POST 업로드/글쓰기 동작에는 영향 없습니다(고아 파일 정리만 사라짐).
 - 다음: 인수인계 문서 3번(목록 40→20개, "더 보기" 없음)으로 이어갑니다.
+
+## 2026-09-03 — Claude: 커뮤니티 인수인계 3번 — "더 보기" 없이 글이 잘려 있던 문제
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 인수인계 문서 3번.
+- Status: completed. 마이그레이션 없음.
+- 실제로 확인한 상태는 문서 설명과 달랐습니다: 문서는 "API가 이미 `hasMore`/`nextOffset`을 내려주는데 화면이 안 쓴다"고 적었지만, 최신 main의 `posts/route.ts` GET은 **`hasMore`/`offset`/`range` 자체가 없이 그냥 `.limit(40)`으로 최신 40개만 고정해서 돌려주고 있었습니다.** 문서가 가리키던 페이지네이션 구현을 코덱스가 그 사이 더 단순한 형태로 되돌린 것으로 보입니다. 결과적으로 증상은 문서와 같습니다 — **글이 40개(문서 작성 시점엔 20개)를 넘으면 볼 방법이 없습니다.**
+- API를 진짜로 페이지네이션하도록 다시 만들었습니다. `PAGE_SIZE = 20`, `offset` 쿼리 파라미터(기본 0)를 받아 `.range(offset, offset+PAGE_SIZE)`로 **한 개 더** 가져온 뒤, 21번째가 있으면 `hasMore: true`로 표시하고 20개만 잘라 돌려줍니다. 문서가 경고한 대로 count 전용 질의를 따로 만들지 않았습니다.
+- 화면(`community-lounge.tsx`): `hasMore`/`loadingMore` 상태를 추가하고, 정렬·주제를 바꾸는 기존 `useEffect`는 그대로 두되(0페이지를 다시 불러오는 지금 동작이 맞습니다) `loadMore()`를 새로 만들어 **지금 쌓인 글 개수(`posts.length`)를 다음 페이지의 시작점**으로 씁니다. 별도의 `offset` 상태를 두지 않은 이유는, 정렬/주제가 바뀔 때마다 `posts` 배열 자체가 통째로 새로 채워지므로 그 길이가 항상 정확한 다음 시작점이기 때문입니다 — 상태 두 개를 맞춰 두는 것보다 하나에서 계산하는 편이 어긋날 일이 없습니다.
+- 목록 아래에 "더 보기" 버튼을 추가했습니다(`feedStatus === "ready" && hasMore`일 때만). 불러오는 동안은 버튼을 비활성화하고 아이콘으로 바꿉니다(이 컴포넌트의 다른 버튼들과 같은 방식 — 별도 스핀 애니메이션 없이 아이콘 교체만 하는 기존 관례를 따름). 실패하면 토스트 메시지로만 알리고 이미 불러온 글은 그대로 둡니다.
+- 문서가 "고치지 마세요"라고 명시한 부분(`range(offset, offset+20)`이 21개를 가져오는 이유, `slice(0,20)`+`hasMore` 계산 방식)은 그 설명 그대로 새로 구현했습니다 — 이전 구현이 사라진 상태였을 뿐, 그 설계 자체가 틀렸던 적은 없습니다.
+- Files: `src/app/api/community/posts/route.ts`(GET 핸들러 재작성), `src/components/community-lounge.tsx`(`hasMore`/`loadingMore` 상태, `loadMore()`, 버튼), `src/components/community-lounge.module.css`(`.loadMore` 스타일 추가).
+- Validation: `npx vitest run` 970 passed(회귀 없음, 기존 관례대로 이 라우트도 전용 테스트 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 이전처럼 최신 40개만 보이는 상태로 돌아갑니다(깨지지 않음, 기능만 없어짐).
+- 다음: 인수인계 문서 4번("이번 페이지 인기"만 뽑히는 인기글)으로 이어갑니다.

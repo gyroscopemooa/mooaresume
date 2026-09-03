@@ -5,16 +5,26 @@ import { takeCommunityRateLimit } from "@/server/community/community-rate-limit"
 import { toCommunityPost } from "@/server/community/community-repository";
 import { communityPostSelect } from "@/server/community/community-publication";
 
+// 화면(community-lounge.tsx)의 "더 보기"도 같은 크기로 한 페이지씩 요청합니다.
+const PAGE_SIZE = 20;
+
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get("sort") === "popular" ? "popular" : "latest";
   const topic = request.nextUrl.searchParams.get("topic");
+  const rawOffset = Number(request.nextUrl.searchParams.get("offset"));
+  const offset = Number.isInteger(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
   const supabase = await createClient();
-  let query = supabase.from("community_posts").select(communityPostSelect).eq("status", "PUBLISHED").limit(40);
+  let query = supabase.from("community_posts").select(communityPostSelect).eq("status", "PUBLISHED");
   if (topic && ["job-search", "career", "application", "work-life"].includes(topic)) query = query.eq("topic", topic);
   query = sort === "popular" ? query.order("recommendation_count", { ascending: false }).order("comment_count", { ascending: false }).order("created_at", { ascending: false }) : query.order("created_at", { ascending: false });
-  const { data, error } = await query;
+  // 페이지 크기보다 하나 더 가져와, 그 21번째가 있으면 다음 페이지가 있다는
+  // 뜻입니다. count 전용 질의를 따로 안 해도 됩니다.
+  const { data, error } = await query.range(offset, offset + PAGE_SIZE);
   if (error) return NextResponse.json({ error: "라운지를 불러오지 못했습니다." }, { status: 500 });
-  return NextResponse.json({ posts: (data ?? []).map((row) => toCommunityPost(row as Record<string, unknown>)) });
+  const rows = data ?? [];
+  const hasMore = rows.length > PAGE_SIZE;
+  const posts = rows.slice(0, PAGE_SIZE).map((row) => toCommunityPost(row as Record<string, unknown>));
+  return NextResponse.json({ posts, hasMore, nextOffset: offset + posts.length });
 }
 
 export async function POST(request: NextRequest) {
