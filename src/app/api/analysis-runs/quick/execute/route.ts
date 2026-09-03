@@ -90,13 +90,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
+  // 바깥 catch에서도 쓸 수 있게 밖에 둡니다.
+  //
+  // 여기서 무엇이 터지든 `begin_quick_analysis`는 이미 이용권을 소모하고 런을
+  // RUNNING으로 바꿔 두었습니다. 그런데 바깥 catch는 화면에 문장만 돌려주고
+  // 끝나서, 런은 RUNNING에 그대로 남고 `fail_quick_analysis`가 불리지
+  // 않았습니다. 실패로 기록되지 않으니 자동 환불도, 실패 알림도 걸리지
+  // 않습니다 — 모델 이름 하나가 틀리면 손님 돈만 들어오고 아무 일도 일어나지
+  // 않는 상태가 됩니다. 실제로 그렇게 두 시간 멈춰 있던 런이 있었습니다.
+  //
+  // 10분 타임아웃 환불이 결국 잡아 주기는 하지만, 그건 크론이 돌아야 하고
+  // 손님은 그동안 아무 말도 못 듣습니다.
+  let repository: SupabaseQuickAnalysisRunRepository | null = null;
+  let failableRunId: string | null = null;
   try {
     const body = bodySchema.parse(await request.json());
+    failableRunId = body.analysisRunId;
     const apiKey = process.env.OPENAI_API_KEY;
     const model = process.env.OPENAI_MODEL;
     if (!apiKey || !model) throw new Error("OPENAI_CONFIGURATION_MISSING");
 
-    const repository = new SupabaseQuickAnalysisRunRepository(data.user.id);
+    repository = new SupabaseQuickAnalysisRunRepository(data.user.id);
     if (body.retry) {
       try { await repository.prepareRetry(body.analysisRunId); }
       catch (error) {
@@ -211,6 +225,24 @@ export async function POST(request: NextRequest) {
     // 수 없어 매번 로그를 열어야 했습니다. 갈래 이름에는 키도 내부 경로도
     // 들어가지 않습니다.
     const failure = classifyExecutionFailure(detail);
+
+    // 실패로 적어 둡니다. 그래야 이용권이 돌아가고, 알림이 나가고, 최종
+    // 실패라면 자동 환불이 걸립니다.
+    //
+    // 401·403·404는 우리 설정이 틀린 것이라 다시 눌러도 같은 답이 옵니다.
+    // 그때는 재시도로 두지 않습니다 — 같은 실패를 두 번 더 사는 대신, 바로
+    // 최종 실패로 보내 환불과 알림을 받는 편이 손님에게도 우리에게도 낫습니다.
+    if (repository && failableRunId) {
+      const retryable = !/^AI_PROVIDER_(401|403|404)$/.test(failure.code);
+      try {
+        await repository.fail(failableRunId, failure.code === "UNKNOWN" ? "ANALYSIS_FAILED" : failure.code, retryable);
+      } catch (failError) {
+        // 이미 실패로 적혀 있거나 상태가 맞지 않는 경우입니다. 원래 오류를
+        // 이것으로 덮으면 진짜 이유가 사라집니다.
+        console.error("quick_analysis_fail_record_failed", failError instanceof Error ? failError.message : "UNKNOWN_ERROR");
+      }
+    }
+
     return NextResponse.json({
       error: failure.message,
       code: failure.code,

@@ -5547,3 +5547,16 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 
 - 앞 커밋에서 넣은 "작성 스타일과 첨삭 방향은 기본값(균형)으로 진행합니다" 안내가 화면에 나오지 않았습니다. 상세 입력 영역 전체가 `inputMode === "SIMPLE"`일 때 `hiddenPane`으로 감춰지는데, 안내를 **그 칸 안에** 두었기 때문입니다. 감춰지는 칸 밖, 자료 목록 바로 아래로 옮겼습니다(사용자 요청 위치).
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 950건 통과, `next build` 통과.
+
+## 2026-09-04 — Claude: 분석 시작 실패가 실패로 기록되지 않던 구멍
+
+- **사용자 재현**: `OPENAI_MODEL`을 없는 이름으로 바꾸고 QUICK 결제·분석 → `AI_PROVIDER_404`. 화면에는 "분석 엔진 설정에 문제가 있어 시작하지 못했습니다"가 떴는데, **환불도 알림도 없었습니다.**
+- **원격 DB 확인**: 그 런은 두 시간 넘게 `status=RUNNING, failure_code=null, attempt_count=1`. `begin_quick_analysis`가 이미 이용권을 소모하고 RUNNING으로 바꿔 둔 뒤였고, 그 다음 실패는 **바깥 catch가 화면에 문장만 돌려주고 끝났습니다.** `fail_quick_analysis`가 불리지 않으니 이용권 복구도, 실패 알림도, 자동 환불도 걸리지 않습니다. 모델 이름 하나가 틀리면 **손님 돈만 들어오고 아무 일도 일어나지 않는** 상태가 됩니다.
+- 10분 타임아웃 환불이 결국 잡아 주기는 하지만 크론이 돌아야 하고(로컬에는 없습니다), 그동안 손님은 아무 말도 듣지 못합니다.
+- **조치**: `execute` 라우트의 바깥 catch에서 `repository.fail(runId, code, retryable)`을 부릅니다. `repository`와 런 ID를 try 밖으로 올려 두었습니다.
+  - `AI_PROVIDER_401/403/404`는 **재시도하지 않습니다**. 우리 설정이 틀린 것이라 다시 눌러도 같은 답이 오고, 같은 실패를 두 번 더 사는 대신 바로 최종 실패로 보내 환불·알림을 받는 편이 낫습니다.
+  - 그 외(429·5xx·타임아웃)는 재시도로 둡니다.
+  - `fail` 호출이 다시 실패해도(이미 실패로 적혔거나 상태가 맞지 않는 경우) 원래 오류를 덮지 않고 로그만 남깁니다.
+- 화면에 OpenAI 원문이 보인 것은 개발 모드 전용 `detail`입니다(`NODE_ENV !== "production"`). 프로덕션에는 나가지 않습니다.
+- 남은 정리: `1aaa6a56` 런이 RUNNING으로 멈춰 있습니다. 서버가 뜬 상태에서 `POST /api/analysis-runs/advance`(크론 시크릿)를 한 번 부르면 타임아웃 환불로 정리됩니다. 샌드박스라 실제 돈은 아닙니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 950건 통과, `next build` 통과.
