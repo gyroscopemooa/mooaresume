@@ -5532,3 +5532,18 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 경계값 근거: 덜어내는 첨삭은 정상입니다(안정형·분량 초과). 그래도 절반 아래로는 잘 가지 않습니다. 문제가 된 판들은 원문의 3~4%였습니다. 200자 미만 원문에는 비율을 적용하지 않습니다 — 100자에서 40%는 40자라 문장 두엇만 다듬어도 걸립니다.
 - **프롬프트·모델·분석 로직은 건드리지 않았습니다.** 나온 결과가 껍데기인지 보는 눈만 더했습니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 950건 통과(신규 3건), `next build` 통과.
+
+## 2026-09-03 — Codex: 커뮤니티 첨부 비용 제한·더 보기·접힌 게시글 (진행 중)
+
+- Status: active.
+- Protected baseline: 기존 커뮤니티 API, RLS, rate-limit RPC, 작성창과 라운지 목록 UI. 비커뮤니티의 진행 중 변경은 건드리지 않는다.
+- Change and reason: 사용자 결정에 따라 PDF는 유지하되, 첨부가 있는 게시글은 계정당 하루 1회로 제한한다. 그 한 게시글에서 이미지는 최대 2장·각 3MB, PDF를 포함한 전체 첨부 총량은 24MB로 제한한다. 목록은 20개씩 더 보기를 제공하고, 긴 제목·본문은 접어서 상세/더 보기로 읽게 한다. 비로그인 첨부 클릭은 JSON 오류 대신 커뮤니티 로그인 안내로 되돌린다.
+- Files/branch: community domain/schema, post/upload/attachment routes, community migrations/tests, lounge component/CSS, change log on shared `main`.
+- Validation: targeted tests, typecheck/build as available, remote migration apply planned.
+- Rollback/recovery reference: this focused commit and migration can be reverted independently; user will later decide whether to remove attachments after launch.
+- User decision: explicit implementation request.
+
+## 2026-09-03 — Claude: 간편 입력 안내가 감춰지는 칸 안에 있던 문제
+
+- 앞 커밋에서 넣은 "작성 스타일과 첨삭 방향은 기본값(균형)으로 진행합니다" 안내가 화면에 나오지 않았습니다. 상세 입력 영역 전체가 `inputMode === "SIMPLE"`일 때 `hiddenPane`으로 감춰지는데, 안내를 **그 칸 안에** 두었기 때문입니다. 감춰지는 칸 밖, 자료 목록 바로 아래로 옮겼습니다(사용자 요청 위치).
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 950건 통과, `next build` 통과.

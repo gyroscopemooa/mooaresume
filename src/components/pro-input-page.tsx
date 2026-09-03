@@ -338,6 +338,17 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
 
+          {/* 자료 목록 바로 아래입니다.
+              처음에는 아래쪽 스타일 선택 자리에 두었는데, 그 자리는 간편
+              입력일 때 `hiddenPane`으로 통째로 감춰지는 칸 안이라 영영 보이지
+              않았습니다. 안내는 감춰지는 칸 밖에 있어야 합니다. */}
+          <p className={styles.styleHint}>
+            <LockKeyhole/>
+            <span>
+              <b>작성 스타일과 첨삭 방향은 기본값(균형)으로 진행합니다.</b>{" "}
+              직접 고르고 싶으시면 위에서 <b>상세 입력</b>으로 바꿔 주세요.
+            </span>
+          </p>
         </>}
 
         <div className={inputMode === "SIMPLE" ? styles.hiddenPane : undefined}>
@@ -417,7 +428,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
 
             고르고 싶은 사람에게는 상세 입력이 있습니다. 그래서 여기서는
             그 길이 있다는 것만 한 줄로 알려 줍니다. */}
-        {inputMode === "DETAILED" ? <>
+        {inputMode === "DETAILED" && <>
         <section className={styles.styleSection}>
           <div className={styles.sectionTitle}><div><span>작성 스타일</span><h3>어떤 느낌으로 작성할까요?</h3></div><small>나중에 변경 가능</small></div>
           <div className={styles.styleGrid}>{writingStyles.map((style) => { const option = writingStyleConfig[style]; return <button type="button" key={style} className={writingStyle === style ? styles.styleSelected : ""} onClick={() => setWritingStyle(style)}>
@@ -442,15 +453,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
           </button>; })}</div>
           <p className={styles.styleSafety}><LockKeyhole/> 어떤 방향을 골라도 사실은 바뀌지 않습니다. 다듬는 것은 표현이고, 지원자가 실제로 한 일은 그대로 둡니다.</p>
         </section>
-        </> : (
-          <p className={styles.styleHint}>
-            <LockKeyhole/>
-            <span>
-              <b>작성 스타일과 첨삭 방향은 기본값(균형)으로 진행합니다.</b>
-              직접 고르고 싶으시면 위에서 <b>상세 입력</b>으로 바꿔 주세요.
-            </span>
-          </p>
-        )}
+        </>}
         </div>
         <div className={styles.notice}><LockKeyhole/><span><b>아직 서버로 전송하지 않습니다.</b><small>다음 화면에서 범위를 확인한 뒤 로그인·결제 경계로 이동합니다.</small></span></div>
         {blockedReason && <p className={actionStyles.message}><b>아직 {content.cta}을 진행할 수 없어요.</b><br/>{blockedReason}</p>}
