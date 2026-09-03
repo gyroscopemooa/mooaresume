@@ -5675,3 +5675,19 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 **적용하지 않고 남긴 것**: 연관 채널 구조화 데이터(`sameAs`, 가이드 p22~24). 네이버 블로그·SNS 채널의 실제 주소가 있어야 하는데 없습니다. 주소를 받으면 `page.tsx`의 Organization 노드에 넣으면 됩니다.
 
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 969건 통과(신규 3건), `next build` 통과.
+
+## 2026-09-04 — Claude: 커뮤니티 리뷰 결과 문서화 + 자동 글 환경변수 자리 마련
+
+- 사용자가 집 밖에서 모바일 GUI로 이어서 개발하기로 해, 코덱스의 미커밋 커뮤니티 작업을 **읽기만 하고**(파일 수정 없음) 결과를 `docs/handoff-community-mobile.md` 로 남겼습니다.
+- 리뷰에서 확인된 것(자세한 내용과 고치는 법은 위 문서):
+  - 🔴 `take_community_attachment_post_limit` RPC가 **어느 마이그레이션에도 없습니다.** 첨부가 있는 글은 첫 시도부터 429로 막힙니다. 기존 `take_community_rate_limit(p_action)` 에 `'ATTACHMENT_POST'` case 한 줄을 더하는 것이 맞는 수정입니다 — 새 함수를 만들 이유가 없습니다.
+  - 🔴 작성 모달이 제목 110자·파일 3개·8MB를 허용하는데 서버는 80자·이미지 2장·3MB로 거부합니다. 게다가 `submit()` 이 **파일을 먼저 업로드하고** 글을 저장해, 거부될 때마다 스토리지에 고아 파일이 남습니다.
+  - 🟠 목록이 40 → 20개로 줄었는데 클라이언트가 `hasMore`·`nextOffset` 을 쓰지 않아 "더 보기"가 없습니다.
+  - 🟠 `hotPosts` 가 로드된 20개 안에서만 인기글을 뽑습니다("이번주 10개 / 인기 20개" 요구사항에는 서버 질의가 필요).
+  - 🟡 비로그인 첨부 리다이렉트 대상 `/community?attachment=login-required` 를 읽는 코드가 없습니다.
+  - 🟡 `byteSize` 가 클라이언트 신고값이라 전체 용량 검사를 우회할 수 있습니다(실제 상한은 업로드 라우트가 막아 30MB).
+  - 🟢 주제 목록이 라우트와 도메인 두 곳에 있습니다.
+  - **맞게 되어 있는 것**: `range(offset, offset+20)` 이 21개를 가져오는 것은 21번째 존재 확인용이고 `slice(0,20)` + `hasMore` 도 정확합니다. 문서에 "고치지 마세요"로 적어 두었습니다.
+- 매일 자동 글(글 3·댓글 3) 기능은 **환경변수 자리만** 만들었습니다(구현은 모바일에서 진행). `.env.example` 에 `COMMUNITY_SEED_CRON_SECRET`·`COMMUNITY_SEED_USER_ID`·`COMMUNITY_SEED_ENABLED`·`COMMUNITY_SEED_MODEL` 을 추가했고, 비밀값 하나를 생성해 `.env.local` 에 넣었습니다. 인증 규칙은 기존 `ANALYSIS_CRON_SECRET`(비어 있으면 항상 거부)을 그대로 따릅니다.
+- 설계 문서에 **밝히고 쓰는 편집 콘텐츠**로 못 박았습니다: 익명 사용자로 위장하지 않고 `is_editorial` + `운영팀` 배지를 답니다. 구글은 순위를 노린 대량 생산 콘텐츠(scaled content abuse)를 제재하므로, 익명 사용자 글로 위장한 하루 3+3(월 180개)은 검색 유입을 늘리려다 사이트 전체를 깎아먹을 수 있습니다.
+- Validation: 소스 변경 없음(문서·env 템플릿만). `vitest run` 969건 통과 상태 유지.
