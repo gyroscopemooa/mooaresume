@@ -51,7 +51,8 @@ const rpc = vi.fn();
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc }) }));
 
 const refundsCreate = vi.fn();
-vi.mock("@polar-sh/sdk", () => ({ Polar: class { refunds = { create: refundsCreate }; } }));
+const ordersGet = vi.fn();
+vi.mock("@polar-sh/sdk", () => ({ Polar: class { refunds = { create: refundsCreate }; orders = { get: ordersGet }; } }));
 
 vi.mock("./polar-checkout", () => ({
   getPolarCheckoutConfiguration: () => ({ accessToken: "token", server: "sandbox" }),
@@ -72,6 +73,7 @@ beforeEach(() => {
   process.env.SUPABASE_SECRET_KEY = "secret";
   rpc.mockReset();
   refundsCreate.mockReset().mockResolvedValue({ id: "refund-1" });
+  ordersGet.mockReset().mockResolvedValue({ refundableAmount: 19_900 });
 });
 
 afterEach(() => { vi.clearAllMocks(); });
@@ -138,5 +140,38 @@ describe("refundExhaustedRun", () => {
     });
 
     expect(await call()).toMatchObject({ disposition: "REFUNDED", entitlementsRevoked: 0 });
+  });
+});
+
+describe("돌려줄 수 있는 금액", () => {
+  it("폴라가 말하는 만큼만 환불한다", async () => {
+    // 저장해 둔 금액은 totalAmount라 수수료·세금까지 들어 있습니다. 그대로
+    // 보냈다가 "Refund amount exceeds refundable amount"로 거절당하면 손님은
+    // 한 푼도 못 돌려받습니다.
+    rpc.mockImplementation((name: string) => {
+      if (name === "claim_quick_analysis_failure_refund") return Promise.resolve({ data: CLAIM, error: null });
+      if (name === "revoke_refunded_analysis_entitlement") return Promise.resolve({ data: 1, error: null });
+      return Promise.resolve({ data: null, error: null });
+    });
+    ordersGet.mockResolvedValue({ refundableAmount: 17_500 });
+
+    await refundExhaustedRun({ analysisRunId: "run-1", ownerUserId: "user-1" });
+
+    expect(refundsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 17_500 }),
+      expect.anything(),
+    );
+  });
+
+  it("돌려줄 것이 없으면 폴라를 부르지 않고 UNCERTAIN으로 둔다", async () => {
+    rpc.mockImplementation((name: string) => {
+      if (name === "claim_quick_analysis_failure_refund") return Promise.resolve({ data: CLAIM, error: null });
+      return Promise.resolve({ data: null, error: null });
+    });
+    ordersGet.mockResolvedValue({ refundableAmount: 0 });
+
+    await expect(refundExhaustedRun({ analysisRunId: "run-1", ownerUserId: "user-1" })).rejects.toThrow("POLAR_NOTHING_REFUNDABLE");
+    expect(refundsCreate).not.toHaveBeenCalled();
+    expect(rpc.mock.calls.map(([name]) => name as string)).toContain("mark_quick_auto_refund_uncertain");
   });
 });

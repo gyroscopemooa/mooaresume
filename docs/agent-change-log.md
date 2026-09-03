@@ -5560,3 +5560,14 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - 화면에 OpenAI 원문이 보인 것은 개발 모드 전용 `detail`입니다(`NODE_ENV !== "production"`). 프로덕션에는 나가지 않습니다.
 - 남은 정리: `1aaa6a56` 런이 RUNNING으로 멈춰 있습니다. 서버가 뜬 상태에서 `POST /api/analysis-runs/advance`(크론 시크릿)를 한 번 부르면 타임아웃 환불로 정리됩니다. 샌드박스라 실제 돈은 아닙니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 950건 통과, `next build` 통과.
+
+## 2026-09-04 — Claude: 환불이 "돌려줄 수 있는 금액"을 넘겨 거절되던 문제
+
+- **사용자 재현 로그**: `run_failure_refund_failed ... {"loc":["body","amount"],"msg":"Refund amount exceeds refundable amount","input":8800}`
+- 원인: `billing_orders.amount`에는 웹훅이 `event.data.totalAmount`(세금·수수료 포함)를 넣습니다(`polar-webhook.ts:138`). 환불할 때 그 값을 그대로 보냈는데, 폴라가 돌려줄 수 있는 것은 그보다 작습니다. 같은 파일 161줄이 이미 `netAmount`와 `refundedAmount`를 구분하고 있었는데 환불 쪽만 그 사실을 몰랐습니다.
+- 결과: 환불이 통째로 거절되고 주문에 `auto_refund_state = UNCERTAIN`만 남습니다. 실제로 QUICK 8,800원 주문이 그 상태로 남아 있었습니다. 이용권은 `fail_quick_analysis`가 ACTIVE로 되돌려 두어 손님이 다시 돌릴 수는 있지만, 돈은 그대로입니다.
+- 조치: 신규 `polar-refundable-amount.ts` — `polar.orders.get`으로 **폴라가 알려 주는 `refundableAmount`**를 읽고 `min(저장 금액, refundableAmount)`만 환불합니다. 우리가 계산해서 맞히려 들지 않습니다. 0이면 폴라를 부르지 않고 `POLAR_NOTHING_REFUNDABLE`로 던져 `UNCERTAIN`으로 남깁니다.
+- **두 경로 모두에 적용**했습니다: 최종 실패 환불(`quick-failure-refund.ts`)과 10분 타임아웃 환불(`quick-timeout-refund.ts`). 타임아웃 쪽은 아직 실제로 발화한 적이 없어 드러나지 않았을 뿐 같은 결함이었습니다.
+- 테스트 2건 추가: 폴라가 말하는 금액만 환불하는지, 0일 때 호출하지 않고 UNCERTAIN으로 두는지.
+- 함께 확인된 것(조치 없음): `AI_PROVIDER_404`는 앞 커밋대로 재시도 없이 바로 FAILED로 기록됐습니다(`d032fc58`, attempt 1). 화면이 "다시 시도 중"에서 멈춰 있던 것은 그 전 런(`1aaa6a56`, `AI_OUTPUT_VALIDATION_FAILED` attempt 2)이 재시도 대상이라 계속 걸고 있었기 때문입니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 952건 통과, `next build` 통과.

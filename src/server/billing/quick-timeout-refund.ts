@@ -4,6 +4,7 @@ import { Polar } from "@polar-sh/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getPolarCheckoutConfiguration } from "./polar-checkout";
+import { resolveRefundableAmount } from "./polar-refundable-amount";
 
 const claimSchema = z.discriminatedUnion("disposition", [
   z.object({ disposition: z.literal("COMPLETED") }),
@@ -45,9 +46,14 @@ export async function refundTimedOutQuickAnalysis(input: { analysisRunId: string
   try {
     const config = getPolarCheckoutConfiguration();
     const polar = new Polar({ accessToken: config.accessToken, server: config.server });
+    // 저장해 둔 금액은 `totalAmount`라 폴라가 돌려줄 수 있는 것보다 클 수
+    // 있습니다. 그대로 보내면 "Refund amount exceeds refundable amount"로
+    // 통째로 거절당하고, 손님은 한 푼도 못 돌려받습니다.
+    const refundAmount = await resolveRefundableAmount(polar, claim.providerOrderId, claim.amount);
+    if (refundAmount <= 0) throw new Error("POLAR_NOTHING_REFUNDABLE");
     const refund = await polar.refunds.create({
       orderId: claim.providerOrderId,
-      amount: claim.amount,
+      amount: refundAmount,
       reason: "service_disruption",
       comment: "Automatic refund: QUICK analysis exceeded 10 minutes without a result.",
       revokeBenefits: true,

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Polar } from "@polar-sh/sdk";
 import { z } from "zod";
 import { getPolarCheckoutConfiguration } from "./polar-checkout";
+import { resolveRefundableAmount } from "./polar-refundable-amount";
 
 /**
  * 더 시도할 것이 없는 실패를 환불합니다.
@@ -65,9 +66,14 @@ export async function refundExhaustedRun(input: {
   try {
     const config = getPolarCheckoutConfiguration();
     const polar = new Polar({ accessToken: config.accessToken, server: config.server });
+    // 저장해 둔 금액은 `totalAmount`라 폴라가 돌려줄 수 있는 것보다 클 수
+    // 있습니다. 그대로 보내면 "Refund amount exceeds refundable amount"로
+    // 통째로 거절당하고, 손님은 한 푼도 못 돌려받습니다.
+    const refundAmount = await resolveRefundableAmount(polar, claim.providerOrderId, claim.amount);
+    if (refundAmount <= 0) throw new Error("POLAR_NOTHING_REFUNDABLE");
     const refund = await polar.refunds.create({
       orderId: claim.providerOrderId,
-      amount: claim.amount,
+      amount: refundAmount,
       reason: "service_disruption",
       // 폴라 쪽에서도 혜택을 거두게 합니다. 우리 쪽 회수와 겹치지만, 웹훅이
       // 늦거나 유실되어도 한쪽은 반드시 걸립니다. 두 번 거두어도 이미 REVOKED인
