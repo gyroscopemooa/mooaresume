@@ -5514,3 +5514,21 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `supabase/migrations/20260903120000_relax_community_post_rate_limit.sql`, `src/server/community/community-migration.test.ts`, `src/components/community-lounge.module.css`, `docs/agent-change-log.md`.
 - Validation: 커뮤니티 migration 테스트 3개 통과, 원격 Supabase migration 적용 완료. 전체 `typecheck`/build는 변경하지 않은 `src/evals/quick-eval.ts`의 `ANSWER_TOO_SHORT` 유니온 누락 오류로 실패했으며 커뮤니티 테스트는 통과했다.
 - Rollback: 이 후속 migration과 CSS 변경 커밋을 revert한다.
+
+## 2026-09-03 — Claude: 껍데기 첨삭이 완료로 기록되던 문제
+
+- **증상**: FINAL이 0점을 내고 첨삭이 거의 없었습니다. 사용자는 첨부파일 탓으로 의심했습니다.
+- **조사**: 원격 DB에서 같은 자소서(6문항·10,537자)로 돌린 FINAL 세 판을 비교했습니다.
+
+  | 시각 | mode | score | 원문 → 첨삭 | rejectionRisks / interviewerFlags / claimEvidence |
+  |---|---|---|---|---|
+  | 9/2 | BUILD | 15 | 10,537 → **362** | 0 / 0 / 0 |
+  | 9/2 | BUILD | **58** | 10,537 → **9,814** | 5 / 2 / 8 |
+  | 9/3 | BUILD | 0 | 10,537 → **394** | 0 / 0 / 0 |
+
+  **같은 입력·같은 모드인데 결과가 널뜁니다.** 첨부파일도, 모델 설정도, 예산도 원인이 아니었습니다(`gpt-5.6-sol`/`high`, 참고자료 예산 60,000자, `max_output_tokens` 약 42,000에 실제 사용 6,177). 모델이 간헐적으로 껍데기를 돌려줍니다.
+- **진짜 문제는 그것을 받아들인 쪽입니다.** 검증기에 `LENGTH_OVER`(너무 김)는 있는데 **아래쪽 한도가 없었습니다.** `revisedAnswer`가 한 글자라도 있으면 스키마를 통과하므로, 1,687자 답변이 65자로 돌아와도 COMPLETED로 기록되어 손님에게 전달됐습니다. 자동 환불도 걸리지 않습니다 — 실패가 아니니까요.
+- **조치**: `ANSWER_TOO_SHORT` 검사 추가. 원문이 200자 이상인 문항에서 첨삭본이 원문의 40% 미만이면 막습니다. `BLOCKING_VALIDATION_CODES`에 넣었으므로 `AI_OUTPUT_VALIDATION_FAILED`(retryable)로 떨어져 **자동 재시도**로 넘어갑니다. 재시도는 출력 예산도 1.35배로 잡습니다.
+- 경계값 근거: 덜어내는 첨삭은 정상입니다(안정형·분량 초과). 그래도 절반 아래로는 잘 가지 않습니다. 문제가 된 판들은 원문의 3~4%였습니다. 200자 미만 원문에는 비율을 적용하지 않습니다 — 100자에서 40%는 40자라 문장 두엇만 다듬어도 걸립니다.
+- **프롬프트·모델·분석 로직은 건드리지 않았습니다.** 나온 결과가 껍데기인지 보는 눈만 더했습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 950건 통과(신규 3건), `next build` 통과.

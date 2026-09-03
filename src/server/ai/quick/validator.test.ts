@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import type { QuickAnalysisOutput } from "./schema";
-import { validateQuickAnalysis } from "./validator";
+import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
 
 const output = (revisedAnswer: string, evidenceQuote: string): QuickAnalysisOutput => ({
   schemaVersion: "1.0",
@@ -60,5 +60,33 @@ describe("PRO supporting-material validation", () => {
 
     expect(issues.some((issue) => issue.code === "NEW_NUMBER")).toBe(true);
     expect(issues.some((issue) => issue.code === "INVALID_EVIDENCE")).toBe(true);
+  });
+});
+describe("껍데기 첨삭", () => {
+  const longAnswer = "가".repeat(1700);
+  const output = (revised: string) => ({
+    readiness: { score: 50, label: "보통", summary: "요약", reasons: ["이유"] },
+    priorities: [], verificationQuestions: [],
+    revisions: [{ questionOrder: 1, revisedAnswer: revised, highlightedPhrases: [], reasons: [] }],
+  });
+
+  it("원문의 절반에도 못 미치면 막는다", () => {
+    // 1,687자가 65자로 돌아온 판이 실제로 완료 처리되어 손님에게 갔습니다.
+    const issues = validateQuickAnalysis(longAnswer, output("짧게 줄인 한 줄입니다.") as never, 1600);
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(true);
+    expect(BLOCKING_VALIDATION_CODES.has("ANSWER_TOO_SHORT")).toBe(true);
+  });
+
+  it("많이 덜어낸 첨삭은 통과시킨다", () => {
+    // 안정형은 위험한 문장을 지웁니다. 그것과 "안 한 첨삭"을 가르는 선입니다.
+    const issues = validateQuickAnalysis(longAnswer, output("가".repeat(1100)) as never, 1600);
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
+  });
+
+  it("원문이 짧으면 비율을 적용하지 않는다", () => {
+    // 100자에서 40%는 40자입니다. 문장 두엇만 다듬어도 걸립니다.
+    const short = "가".repeat(120);
+    const issues = validateQuickAnalysis(short, output("가".repeat(30)) as never, 700);
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
   });
 });
