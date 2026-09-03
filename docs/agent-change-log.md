@@ -5659,3 +5659,19 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
   - 이를 위해 `quick-timeout-refund.ts`의 성공 반환에 `amount`·`currency`를 **추가**했습니다(기존 필드·동작 변경 없음).
 - 테스트 5건: 결제 총액을 적는지(세전 금액이 나오지 않는지), 환불 안 된 건에 안 보내는지, 주소 없으면 멈추는지, 설정 없으면 조용히 넘어가는지, 전송 거절에도 던지지 않는지.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 966건 통과(신규 5건), `next build` 통과.
+
+## 2026-09-04 — Claude: 네이버 웹마스터도구 가이드 대조 후 보완
+
+사용자가 준 `wmt_guide_ps_quality.pdf`(네이버 웹마스터도구 · 사이트 품질향상 가이드, 27p)를 pdfjs로 추출해 현재 사이트와 대조했습니다.
+
+**이미 되어 있던 것**(조치 없음): `naver-site-verification` 메타태그, 네이버 애널리틱스(wcslog), sitemap.xml, 사이트맵 수록 페이지 대부분의 canonical, `<img>` alt 누락 0건, `href="#"` + onclick 링크 0건, 구조화 데이터(Organization·WebSite·Service·FAQPage·DiscussionForumPosting).
+
+**보완한 것 두 가지:**
+
+1. `robots.ts` — 네이버 검색로봇 `Yeti` 규칙을 명시적으로 추가(가이드 p10). `*`가 이미 포함하지만 가이드가 명시를 권합니다.
+   - **막는 목록을 두 묶음에 똑같이 넣었습니다.** robots.txt는 가장 구체적인 User-agent 묶음 **하나만** 읽으므로, Yeti 묶음에 disallow를 빠뜨리면 Yeti는 `*`의 목록을 보지 않고 `/redeem/`을 수집합니다 — 그 경로에는 이용권을 가져갈 수 있는 토큰이 들어 있습니다. 목록을 `DISALLOWED` 상수 하나로 묶고, 신규 `robots.test.ts` 3건으로 잠갔습니다(두 묶음의 disallow가 같은지, `/redeem/`·`/meensoo/`가 들어 있는지).
+2. `privacy/page.tsx` — `alternates.canonical` 추가. 사이트맵에 실린 주소 중 대표 URL이 비어 있던 유일한 페이지였습니다. 개인정보처리방침은 외부에서 링크될 때 추적 파라미터가 붙기 쉬워 중복 문서로 세어질 수 있습니다(가이드 p15).
+
+**적용하지 않고 남긴 것**: 연관 채널 구조화 데이터(`sameAs`, 가이드 p22~24). 네이버 블로그·SNS 채널의 실제 주소가 있어야 하는데 없습니다. 주소를 받으면 `page.tsx`의 Organization 노드에 넣으면 됩니다.
+
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 969건 통과(신규 3건), `next build` 통과.

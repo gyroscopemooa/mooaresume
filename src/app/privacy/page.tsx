@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: "개인정보처리방침",
   description: "무아레쥬메가 수집하는 개인정보의 항목과 목적, 보관 기간, 처리를 맡기는 회사, 이용자가 행사할 수 있는 권리를 정리했습니다.",
   robots: { index: true, follow: true },
+  // 사이트맵에 실려 있는 주소 중 대표 URL이 비어 있던 유일한 곳입니다.
+  // 개인정보처리방침은 여기저기서 링크되는 페이지라 추적 파라미터가 붙기
+  // 쉽고, 그때마다 크롤러가 다른 문서로 셀 수 있습니다.
+  alternates: { canonical: "/privacy" },
 };
 
 const EFFECTIVE_DATE = "2026년 8월 31일";
