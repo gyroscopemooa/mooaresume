@@ -5747,3 +5747,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx vitest run` 970 passed(회귀 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 사이드바가 다시 "지금 페이지 안에서 인기"로 돌아갑니다(깨지지 않음).
 - 다음: 인수인계 문서 5번(비로그인 첨부 클릭 시 안내 없음)으로 이어갑니다.
+
+## 2026-09-03 — Claude: 커뮤니티 인수인계 5번 — 비로그인으로 첨부 누르면 안내 없이 막히던 문제
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 인수인계 문서 5번.
+- Status: completed. 마이그레이션 없음.
+- 확인한 것: 문서는 "`/community?attachment=login-required`로 리다이렉트하는데 그 파라미터를 읽는 코드가 없다"고 적었지만, 최신 main의 `attachments/[attachmentId]/route.ts`는 **리다이렉트 자체를 안 하고 있었습니다** — 비로그인 상태로는 `NextResponse.json({error:...}, {status:401})`을 그대로 돌려줬습니다. 첨부 링크는 `target="_blank"`라, 실제로는 **새 탭에 꾸미지 않은 JSON 오류 문구만 뜨는** 상태였습니다. 리다이렉트가 사라졌을 뿐 증상(안내 없이 막힘)은 문서와 같아 원래 의도대로 다시 만들었습니다.
+- `attachments/[attachmentId]/route.ts`: 비로그인이면 `/community?attachment=login-required`로 리다이렉트하도록 되돌렸습니다.
+- `src/app/community/page.tsx`: 서버 컴포넌트가 `searchParams`를 읽어(이 프로젝트의 다른 페이지들과 같은 `Promise<{...}>` 규칙) `attachment === "login-required"`를 `<CommunityLounge attachmentNotice>` prop으로 넘깁니다.
+- `community-lounge.tsx`: 상단(topbar 바로 아래)에 배너를 추가했습니다 — "첨부파일은 로그인 후에 볼 수 있어요" + **로그인하기 버튼**(헤더의 `HeaderAccount`가 쓰는 것과 같은 Google OAuth를 이 컴포넌트에서 직접 부릅니다, 로그인 후 `/community`로 복귀) + 닫기 버튼. 새로고침해도 같은 배너가 또 뜨지 않도록, 배너를 띄운 즉시 `router.replace("/community")`로 주소의 표시만 지웁니다(보여줄지 말지를 결정하는 배너 상태는 마운트 시점 값만 쓰므로 안 사라집니다).
+- 배너는 별도 클래스(`.loginNotice`)로 만들었고, 기존 `.safety`(작성 모달 경고 배너)와 같은 색 톤(주황 계열)을 써서 "주의가 필요한 안내"라는 시각 언어를 맞췄습니다.
+- Files: `src/app/api/community/attachments/[attachmentId]/route.ts`, `src/app/community/page.tsx`, `src/components/community-lounge.tsx`, `src/components/community-lounge.module.css`(`.loginNotice` 추가 + 모바일 여백 보정).
+- Validation: `npx vitest run` 970 passed(회귀 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 다시 벌거벗은 401 JSON으로 돌아갑니다(깨지지 않음, 안내만 없어짐).
+- 다음: 인수인계 문서 6번(첨부 용량을 브라우저가 자기 신고)으로 이어갑니다.

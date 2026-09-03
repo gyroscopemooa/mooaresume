@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, X } from "lucide-react";
 import { communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
 import { HeaderAccount } from "@/components/header-account";
+import { createClient } from "@/lib/supabase/client";
 import styles from "./community-lounge.module.css";
 
 type Sort = "latest" | "popular";
@@ -13,7 +15,15 @@ type ApiError = { error?: string };
 async function responseJson(response: Response) { return await response.json().catch(() => ({})) as ApiError; }
 function displayTime(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return value; const minutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000)); return minutes < 60 ? `${minutes}분 전` : minutes < 1440 ? `${Math.floor(minutes / 60)}시간 전` : `${Math.floor(minutes / 1440)}일 전`; }
 
-export function CommunityLounge() {
+export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice?: boolean } = {}) {
+  const router = useRouter();
+  // 처음 값(마운트 시점)만 씁니다 — 배너를 닫은 뒤 부모가 리렌더된다고
+  // 다시 켜지면 안 됩니다. 그래서 useState 초깃값으로만 받습니다.
+  const [showAttachmentNotice, setShowAttachmentNotice] = useState(attachmentNotice);
+  useEffect(() => {
+    // 새로고침해도 같은 배너가 또 뜨지 않게, 보여준 즉시 주소의 표시만 지웁니다.
+    if (attachmentNotice) router.replace("/community");
+  }, [attachmentNotice, router]);
   const [sort, setSort] = useState<Sort>("latest");
   const [topic, setTopic] = useState<CommunityTopicId | "all">("all");
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -115,11 +125,27 @@ export function CommunityLounge() {
     setMessage(response.ok ? "신고를 접수했어요. 운영 기준에 따라 검토합니다." : data.error ?? "신고를 접수하지 못했어요.");
   }
 
+  // 헤더의 계정 메뉴가 쓰는 것과 같은 로그인입니다. 첨부를 누르자마자
+  // 새 탭이 아니라 이 배너에서 바로 로그인까지 끝낼 수 있게 여기서도
+  // 직접 부릅니다.
+  async function signInForAttachment() {
+    await createClient().auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/community` },
+    });
+  }
+
   return <main className={styles.page}>
     <header className={styles.topbar}>
       <Link className={styles.brand} href="/" aria-label="MOOA Resume 홈"><span>M</span><b>MOOA</b> Resume</Link>
       <nav aria-label="라운지 주요 메뉴"><Link href="/career">커리어 검사</Link><Link className={styles.activeLink} href="/community">라운지</Link><Link href="/#plans">요금</Link><HeaderAccount /></nav>
     </header>
+
+    {showAttachmentNotice && <div className={styles.loginNotice} role="status">
+      <ShieldAlert/> 첨부파일은 로그인 후에 볼 수 있어요.
+      <button type="button" onClick={() => void signInForAttachment()}>로그인하기</button>
+      <button type="button" aria-label="안내 닫기" onClick={() => setShowAttachmentNotice(false)}><X/></button>
+    </div>}
 
     <section className={styles.hero}>
       <div><span className={styles.kicker}>MOOA COMMUNITY</span><h1>취업 고민을<br/><em>혼자 쌓아두지 마세요.</em></h1><p>지원, 직무, 자소서, 회사생활. 비슷한 고민을 읽고<br/>지금 내게 필요한 다음 행동을 찾아보세요.</p></div>

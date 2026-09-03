@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/community" },
 };
 
-export default function CommunityPage() {
-  return <CommunityLounge />;
+export default async function CommunityPage({ searchParams }: { searchParams: Promise<{ attachment?: string }> }) {
+  const { attachment } = await searchParams;
+  return <CommunityLounge attachmentNotice={attachment === "login-required"} />;
 }
