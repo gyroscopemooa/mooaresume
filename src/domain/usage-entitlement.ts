@@ -31,26 +31,7 @@ export const QUICK_SOFT_LIMIT_CHARS = 7_000;
 export const QUICK_INCLUDED_LIMIT_CHARS = 8_000;
 export const QUICK_EXTRA_BLOCK_CHARS = 7_000;
 export const QUICK_EXTRA_BLOCK_PRICE_KRW = 2_900;
-/**
- * QUICK이 팔 수 있는 마지막 길이.
- *
- * QUICK은 8,000자를 품고 7,000자마다 2,900원을 더 받습니다. 블록이 쌓이면
- * PRO 값에 다가가고, 결국 넘습니다:
- *
- *   1블록 · ~15,000자 → 8,800원  (PRO보다 4,100원 쌈)
- *   2블록 · ~22,000자 → 11,700원 (PRO보다 1,200원 쌈)
- *   3블록 · ~29,000자 → 14,600원 (**PRO보다 1,700원 비쌈**)
- *
- * 세 번째 줄은 손님이 더 내고 덜 받는 자리입니다. PRO는 12,900원에 공고 대조와
- * 경험 매칭까지 하고, 30,000자를 추가금 없이 품습니다. 그걸 알면 아무도 그
- * 선택을 하지 않습니다 — 모르니까 하는 것이고, 그건 팔 이유가 되지 못합니다.
- *
- * 그래서 1블록까지만 팝니다. 그 위는 PRO로 안내합니다. 상품 설명("작성한 글을
- * 빠르게 첨삭")과도 맞습니다 — 15,000자는 이미 지원서 한 벌이지 한 편이
- * 아닙니다.
- */
-export const QUICK_MAX_EXTRA_BLOCKS = 1;
-export const QUICK_MAX_CHARS = QUICK_INCLUDED_LIMIT_CHARS + QUICK_EXTRA_BLOCK_CHARS * QUICK_MAX_EXTRA_BLOCKS;
+
 export const productTierSchema = z.enum(["QUICK", "PRO", "FINAL"]);
 export type ProductTier = z.infer<typeof productTierSchema>;
 
@@ -110,15 +91,32 @@ export function createQuickCheckoutQuote(totalCharacters: number): CheckoutQuote
 }
 
 /**
- * 이 분량에 QUICK을 파는 것이 손님에게 손해인가.
+ * 이 분량에서는 QUICK이 PRO보다 **비싼가**.
  *
- * 막는 것이 목적이 아니라 **더 나은 쪽을 알려 주는 것**이 목적입니다. 무엇이
- * 더 싼지는 우리가 알고 손님은 모릅니다.
+ * QUICK은 8,000자를 품고 7,000자마다 2,900원을 더 받습니다. 블록이 쌓이다 보면
+ * 어느 지점에서 PRO 기본가를 넘어섭니다:
+ *
+ *   1블록 · ~15,000자 →  8,800원 (PRO보다 4,100원 쌈)
+ *   2블록 · ~22,000자 → 11,700원 (PRO보다 1,200원 쌈)
+ *   3블록 · ~29,000자 → 14,600원 (**PRO보다 1,700원 비쌈**)
+ *
+ * 세 번째 줄에서만 손님이 **더 내고 덜 받습니다.** 그 위에서는 PRO가 값도 싸고
+ * 공고 대조·경험 매칭까지 하며 30,000자를 추가금 없이 품습니다. 알면 아무도
+ * 고르지 않을 선택지인데, 모른다는 것은 파는 이유가 되지 못합니다.
+ *
+ * 그 아래(1~2블록)에서는 QUICK이 진짜로 더 쌉니다. 거기서 PRO를 권하면 그건
+ * 안내가 아니라 장사입니다. 그래서 아무 말도 하지 않습니다.
+ *
+ * 기준을 숫자로 적어 두지 않고 **두 값을 실제로 견주어 봅니다.** 언젠가 가격이
+ * 바뀌면 안내가 뜨는 자리도 같이 움직여야 하는데, 적어 둔 숫자는 따라오지
+ * 않습니다.
+ *
+ * 막는 함수가 아닙니다. 이 값이 참이어도 결제는 그대로 진행됩니다 — 사실을
+ * 말하고 고르는 것은 손님입니다.
  */
-export function exceedsQuickCeiling(totalCharacters: number): boolean {
-  return Math.max(0, Math.floor(totalCharacters)) > QUICK_MAX_CHARS;
+export function quickCostsMoreThanPro(totalCharacters: number): boolean {
+  return createQuickCheckoutQuote(totalCharacters).totalPriceKrw > PRO_BASE_PRICE_KRW;
 }
-
 
 export function createProCheckoutQuote(totalCharacters: number): CheckoutQuote {
   const normalizedTotal = Math.max(0, Math.floor(totalCharacters));

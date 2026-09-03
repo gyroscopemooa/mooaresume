@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FINAL_BASE_PRICE_KRW, PRO_BASE_PRICE_KRW, PRO_EXTRA_BLOCK_CHARS, PRO_EXTRA_BLOCK_PRICE_KRW, PRO_INCLUDED_LIMIT_CHARS, QUICK_MAX_CHARS, countNonWhitespaceCharacters, createFinalCheckoutQuote, createProCheckoutQuote, createQuickCheckoutQuote, exceedsQuickCeiling, toQuickCheckoutMetadata } from "./usage-entitlement";
+import { FINAL_BASE_PRICE_KRW, PRO_BASE_PRICE_KRW, PRO_EXTRA_BLOCK_CHARS, PRO_EXTRA_BLOCK_PRICE_KRW, PRO_INCLUDED_LIMIT_CHARS, countNonWhitespaceCharacters, createFinalCheckoutQuote, createProCheckoutQuote, createQuickCheckoutQuote, quickCostsMoreThanPro, toQuickCheckoutMetadata } from "./usage-entitlement";
 
 describe("QUICK usage entitlement", () => {
   it("counts all question text without whitespace", () => {
@@ -78,27 +78,36 @@ describe("PRO·FINAL 초과분 과금", () => {
   });
 });
 
-describe("QUICK 상한", () => {
-  it("1블록까지는 QUICK을 그대로 판다", () => {
-    // 8,800원이라 PRO보다 4,100원 쌉니다. 정당한 선택입니다.
-    expect(exceedsQuickCeiling(15_000)).toBe(false);
+describe("QUICK이 PRO보다 비싸지는 자리", () => {
+  it("1블록은 아무 말도 하지 않는다", () => {
+    // 8,800원. PRO보다 4,100원 쌉니다. 여기서 PRO를 권하면 안내가 아니라
+    // 장사입니다.
+    expect(quickCostsMoreThanPro(15_000)).toBe(false);
     expect(createQuickCheckoutQuote(15_000).totalPriceKrw).toBe(8_800);
   });
 
-  it("2블록부터는 PRO를 권한다", () => {
-    // 11,700원. PRO와 1,200원 차이인데 PRO가 훨씬 많이 봅니다.
-    expect(exceedsQuickCeiling(15_001)).toBe(true);
+  it("2블록도 아무 말도 하지 않는다", () => {
+    // 11,700원. 여전히 PRO보다 1,200원 쌉니다. 덜 받는 대신 덜 냅니다 —
+    // 그것은 손해가 아니라 선택입니다.
+    expect(createQuickCheckoutQuote(22_000).totalPriceKrw).toBe(11_700);
+    expect(quickCostsMoreThanPro(22_000)).toBe(false);
   });
 
-  it("QUICK이 PRO보다 비싸지는 구간이 상한 위에 있다", () => {
-    // 이 자리를 열어 두면 손님이 더 내고 덜 받습니다.
-    const overPriced = createQuickCheckoutQuote(22_001).totalPriceKrw;
-    expect(overPriced).toBeGreaterThan(PRO_BASE_PRICE_KRW);
-    expect(exceedsQuickCeiling(22_001)).toBe(true);
+  it("3블록부터 PRO를 알려 준다", () => {
+    // 14,600원. 여기서만 손님이 **더 내고 덜 받습니다.**
+    const quick = createQuickCheckoutQuote(22_001).totalPriceKrw;
+    expect(quick).toBe(14_600);
+    expect(quick).toBeGreaterThan(PRO_BASE_PRICE_KRW);
+    expect(quickCostsMoreThanPro(22_001)).toBe(true);
   });
 
-  it("상한은 포함량과 블록에서 나온다", () => {
-    // 숫자를 따로 적어 두면 하나만 고쳤을 때 조용히 어긋납니다.
-    expect(QUICK_MAX_CHARS).toBe(15_000);
+  it("기준을 적어 두지 않고 두 값을 견준다", () => {
+    // 언젠가 가격이 바뀌면 안내가 뜨는 자리도 따라 움직여야 합니다. 적어 둔
+    // 숫자는 따라오지 않습니다. 그래서 경계마다 실제 견줌과 맞는지 봅니다.
+    for (const characters of [0, 8_000, 8_001, 15_000, 15_001, 22_000, 22_001, 29_000, 50_000]) {
+      expect(quickCostsMoreThanPro(characters)).toBe(
+        createQuickCheckoutQuote(characters).totalPriceKrw > PRO_BASE_PRICE_KRW,
+      );
+    }
   });
 });

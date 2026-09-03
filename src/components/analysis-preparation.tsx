@@ -20,7 +20,7 @@ import {
   createFinalCheckoutQuote,
   createProCheckoutQuote,
   createQuickCheckoutQuote,
-  exceedsQuickCeiling,
+  quickCostsMoreThanPro,
 } from "@/domain/usage-entitlement";
 import { writingStyleConfig } from "@/domain/writing-style";
 import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
@@ -219,18 +219,22 @@ export function AnalysisPreparation() {
             {product === "QUICK" && missingQuestionCount > 0 && (
               <p className={styles.missingNotice}>작성되지 않은 문항 {missingQuestionCount}개는 첨삭·생성 대상에서 제외됩니다. 빈 문항까지 보완하려면 PRO · 내용 보완으로 진행해 주세요.</p>
             )}
-            {/* 이 분량에서는 QUICK이 손님에게 손해입니다.
-                8,000자를 품고 7,000자마다 2,900원을 더 받다 보면 PRO 값에
-                닿고, 결국 넘습니다. 무엇이 더 싼지는 우리가 알고 손님은
-                모릅니다 — 알면 아무도 고르지 않을 선택지를 모른다는 이유로
-                파는 것은 팔 이유가 되지 못합니다.
-                막지는 않습니다. 사실을 말하고 고르게 합니다. */}
-            {product === "QUICK" && exceedsQuickCeiling(totalCharacters) && (
+            {/* 이 분량에서만 QUICK이 PRO보다 **비쌉니다.**
+                8,000자를 품고 7,000자마다 2,900원을 더 받다 보면 세 번째
+                블록에서 PRO 값을 넘어섭니다. 그 아래에서는 QUICK이 진짜로 더
+                싸니까 아무 말도 하지 않습니다 — 거기서 PRO를 권하면 안내가
+                아니라 장사입니다.
+                여기서는 다릅니다. 더 내고 덜 받는 자리이고, 그걸 아는 쪽은
+                우리뿐입니다. 알면 아무도 고르지 않을 선택지를 모른다는
+                이유로 파는 것은 팔 이유가 되지 못합니다.
+                막지는 않습니다. 사실을 말하고 고르는 것은 손님입니다. */}
+            {product === "QUICK" && quickCostsMoreThanPro(totalCharacters) && (
               <p className={styles.betterTierNotice}>
-                <b>이 분량은 PRO가 더 낫습니다.</b>{" "}
+                <b>이 분량은 PRO가 더 쌉니다.</b>{" "}
                 지금 QUICK으로 진행하면 {quickQuote.totalPriceKrw.toLocaleString("ko-KR")}원인데,
-                PRO는 {PRO_BASE_PRICE_KRW.toLocaleString("ko-KR")}원에 공고 요구역량 대조와 경험 근거 매칭,
-                면접 예상질문까지 포함하고 {PRO_INCLUDED_LIMIT_CHARS.toLocaleString("ko-KR")}자까지 추가금이 없습니다.
+                PRO는 {PRO_BASE_PRICE_KRW.toLocaleString("ko-KR")}원입니다.
+                값이 싼 쪽이 공고 요구역량 대조와 경험 근거 매칭, 면접 예상질문까지
+                포함하고 {PRO_INCLUDED_LIMIT_CHARS.toLocaleString("ko-KR")}자까지 추가금이 없습니다.
                 <Link href="/pro/polish">PRO로 진행하기 <ArrowRight /></Link>
               </p>
             )}
