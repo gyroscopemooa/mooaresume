@@ -65,7 +65,21 @@ export function CommunityLounge() {
   }
 
   const topicPosts = useMemo(() => posts.filter((post) => topic === "all" || post.topic === topic), [posts, topic]);
-  const hotPosts = useMemo(() => [...posts].sort((a, b) => b.recommendationCount + b.commentCount - (a.recommendationCount + a.commentCount)).slice(0, 3), [posts]);
+
+  // 지금 로드된 페이지(최대 20개, 게다가 주제로 걸러진 것)가 아니라 사이트
+  // 전체에서 뽑아야 하는 목록이라 별도로 요청합니다. 예전에는 이 화면에
+  // 보이는 posts만 정렬해 "인기글"이라고 이름 붙였는데, 그러면 실제로는
+  // "지금 이 페이지 안에서 인기"였고 500개 중 최신 20개만 대상이 됐습니다.
+  const [hotPosts, setHotPosts] = useState<CommunityPost[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/community/posts?sort=popular&window=7d&limit=3").then(async (response) => {
+      if (!response.ok) return;
+      const data = await responseJson(response) as ApiError & { posts?: CommunityPost[] };
+      if (!cancelled && Array.isArray(data.posts)) setHotPosts(data.posts);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   async function toggleRecommend(post: CommunityPost) {
     if (post.id.startsWith("preview-")) { setMessage("정식 라운지가 열리면 추천할 수 있어요."); return; }

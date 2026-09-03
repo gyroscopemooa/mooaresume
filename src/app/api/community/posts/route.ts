@@ -13,17 +13,26 @@ export async function GET(request: NextRequest) {
   const topic = request.nextUrl.searchParams.get("topic");
   const rawOffset = Number(request.nextUrl.searchParams.get("offset"));
   const offset = Number.isInteger(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+  // 사이드바의 "이번 주 많이 읽은 글"처럼, 지금 로드된 페이지가 아니라
+  // 전체에서 뽑아야 하는 작은 목록을 위한 것입니다. 예: ?limit=3.
+  const rawLimit = Number(request.nextUrl.searchParams.get("limit"));
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 && rawLimit <= PAGE_SIZE ? rawLimit : PAGE_SIZE;
   const supabase = await createClient();
   let query = supabase.from("community_posts").select(communityPostSelect).eq("status", "PUBLISHED");
   if (topic && ["job-search", "career", "application", "work-life"].includes(topic)) query = query.eq("topic", topic);
+  // ?window=7d 같은 형식만 받습니다. "이번 주 인기글"이 사실은 "지금 로드된
+  // 20개 중 인기순"이었던 문제 — 기간을 두지 않으면 몇 달 전 인기글이
+  // 계속 상단을 차지해 "이번 주"라는 이름과도 맞지 않습니다.
+  const windowDays = /^(\d{1,3})d$/.exec(request.nextUrl.searchParams.get("window") ?? "")?.[1];
+  if (windowDays) query = query.gte("created_at", new Date(Date.now() - Number(windowDays) * 86_400_000).toISOString());
   query = sort === "popular" ? query.order("recommendation_count", { ascending: false }).order("comment_count", { ascending: false }).order("created_at", { ascending: false }) : query.order("created_at", { ascending: false });
-  // 페이지 크기보다 하나 더 가져와, 그 21번째가 있으면 다음 페이지가 있다는
+  // limit보다 하나 더 가져와, 그 다음 하나가 있으면 다음 페이지가 있다는
   // 뜻입니다. count 전용 질의를 따로 안 해도 됩니다.
-  const { data, error } = await query.range(offset, offset + PAGE_SIZE);
+  const { data, error } = await query.range(offset, offset + limit);
   if (error) return NextResponse.json({ error: "라운지를 불러오지 못했습니다." }, { status: 500 });
   const rows = data ?? [];
-  const hasMore = rows.length > PAGE_SIZE;
-  const posts = rows.slice(0, PAGE_SIZE).map((row) => toCommunityPost(row as Record<string, unknown>));
+  const hasMore = rows.length > limit;
+  const posts = rows.slice(0, limit).map((row) => toCommunityPost(row as Record<string, unknown>));
   return NextResponse.json({ posts, hasMore, nextOffset: offset + posts.length });
 }
 

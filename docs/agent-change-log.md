@@ -5732,3 +5732,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx vitest run` 970 passed(회귀 없음, 기존 관례대로 이 라우트도 전용 테스트 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 이전처럼 최신 40개만 보이는 상태로 돌아갑니다(깨지지 않음, 기능만 없어짐).
 - 다음: 인수인계 문서 4번("이번 페이지 인기"만 뽑히는 인기글)으로 이어갑니다.
+
+## 2026-09-03 — Claude: 커뮤니티 인수인계 4번 — "이번 주 인기글"이 지금 로드된 페이지 안에서만 뽑히던 문제
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 인수인계 문서 4번.
+- Status: completed. 마이그레이션 없음.
+- 확인한 문제: 사이드바 "이번 주 많이 읽은 글"이 `[...posts].sort(...).slice(0,3)`로, **지금 화면에 로드된(최대 20개, 게다가 topic 파라미터로 서버에서 이미 걸러진) 목록만** 정렬해 뽑고 있었습니다. 글이 500개여도 최신 20개 중에서만 고르고, "이번 주"라는 이름과 달리 기간 제한도 없어 몇 달 전 인기글이 계속 상단을 차지할 수 있었습니다.
+- 문서가 제안한 대로 서버가 따로 뽑아 주게 했습니다. `posts/route.ts` GET에 두 파라미터를 추가:
+  - `limit` — 페이지네이션용 `PAGE_SIZE`(20)와 별개로, 사이드바처럼 작은 목록이 필요할 때 씁니다(1~20 사이만 허용, 범위 밖이면 기존 기본값으로).
+  - `window` — `7d` 형식만 받아 `created_at >= now() - N일`로 거릅니다. 형식이 안 맞으면 조용히 무시(기간 제한 없이 진행)합니다.
+  - 두 파라미터 모두 기존 `offset`/`hasMore` 계산에 그대로 얹었습니다 — 새 코드 경로를 안 만들고 `limit`이 3번 항목의 `PAGE_SIZE` 자리를 대신하도록 했습니다.
+- 화면: `hotPosts`를 `posts`에서 파생하는 `useMemo` 대신, 마운트 시 한 번 `GET /api/community/posts?sort=popular&window=7d&limit=3`을 직접 불러오는 상태로 바꿨습니다. 정렬/주제 탭을 바꿔도 이 사이드바는 영향받지 않습니다(원래도 그래야 맞습니다 — "이번 주 인기글"은 지금 보고 있는 필터와 무관한 정보입니다).
+- Files: `src/app/api/community/posts/route.ts`(`limit`/`window` 파라미터 추가), `src/components/community-lounge.tsx`(`hotPosts`를 서버 조회로 교체).
+- Validation: `npx vitest run` 970 passed(회귀 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 사이드바가 다시 "지금 페이지 안에서 인기"로 돌아갑니다(깨지지 않음).
+- 다음: 인수인계 문서 5번(비로그인 첨부 클릭 시 안내 없음)으로 이어갑니다.
