@@ -25,6 +25,10 @@ export async function POST(request: NextRequest) {
   if (!(await takeCommunityRateLimit(supabase, "POST_CREATE"))) return NextResponse.json({ error: "잠시 후 다시 시도해 주세요." }, { status: 429 });
   const parsed = createCommunityPostSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "입력 내용을 확인해 주세요." }, { status: 400 });
+  // 첨부가 있는 글은 하루 한 번. 첨부 없는 글은 위의 일반 POST_CREATE 한도만 받습니다.
+  if (parsed.data.attachments.length && !(await takeCommunityRateLimit(supabase, "ATTACHMENT_POST"))) {
+    return NextResponse.json({ error: "첨부가 있는 글은 하루 한 번만 올릴 수 있어요." }, { status: 429 });
+  }
   if (parsed.data.attachments.some((file) => !file.storagePath.startsWith(`${auth.user.id}/`))) return NextResponse.json({ error: "내가 올린 첨부파일만 사용할 수 있어요." }, { status: 403 });
   const { data: post, error: postError } = await supabase.from("community_posts").insert({ topic: parsed.data.topic, title: parsed.data.title, body: parsed.data.body }).select(communityPostSelect).single();
   if (postError || !post) return NextResponse.json({ error: "글을 저장하지 못했습니다. 데이터베이스 적용 상태를 확인해 주세요." }, { status: 500 });

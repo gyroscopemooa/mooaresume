@@ -5691,3 +5691,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 매일 자동 글(글 3·댓글 3) 기능은 **환경변수 자리만** 만들었습니다(구현은 모바일에서 진행). `.env.example` 에 `COMMUNITY_SEED_CRON_SECRET`·`COMMUNITY_SEED_USER_ID`·`COMMUNITY_SEED_ENABLED`·`COMMUNITY_SEED_MODEL` 을 추가했고, 비밀값 하나를 생성해 `.env.local` 에 넣었습니다. 인증 규칙은 기존 `ANALYSIS_CRON_SECRET`(비어 있으면 항상 거부)을 그대로 따릅니다.
 - 설계 문서에 **밝히고 쓰는 편집 콘텐츠**로 못 박았습니다: 익명 사용자로 위장하지 않고 `is_editorial` + `운영팀` 배지를 답니다. 구글은 순위를 노린 대량 생산 콘텐츠(scaled content abuse)를 제재하므로, 익명 사용자 글로 위장한 하루 3+3(월 180개)은 검색 유입을 늘리려다 사이트 전체를 깎아먹을 수 있습니다.
 - Validation: 소스 변경 없음(문서·env 템플릿만). `vitest run` 969건 통과 상태 유지.
+
+## 2026-09-03 — Claude: 커뮤니티 인수인계 1번 — 첨부 있는 글이 100% 실패하던 문제
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). `docs/handoff-community-mobile.md`의 1번(최우선)을 순서대로 처리합니다. **코덱스가 만든 커뮤니티 구현은 지우거나 갈아엎지 않고, 있는 것 위에서만 고쳤습니다.**
+- Status: completed. **마이그레이션 있음 — `npm run db:remote:push` 필요.**
+- 확인한 것: 인수인계 문서가 지목한 `await supabase.rpc("take_community_attachment_post_limit")` 호출은 **최신 main을 받아보니 이미 코덱스가 지운 상태**였습니다(존재하지 않는 RPC를 부르던 것 자체는 해소됨). 다만 그 결과 **첨부 있는 글에 하루 1회라는 원래 의도된 제한이 통째로 사라져** 있었고, 그냥 일반 `POST_CREATE`(시간당 20회) 한도만 적용되고 있었습니다. 인수인계 문서가 요청한 실제 목표(첨부 글 하루 1회 제한을 살리기)는 아직 안 되어 있어 그대로 구현했습니다.
+- 문서 지시대로 **새 함수를 만들지 않고**, 이미 있는 `public.take_community_rate_limit(p_action text)`에 `case` 한 줄만 추가했습니다: `when 'ATTACHMENT_POST' then v_limit := 1; v_window_seconds := 86400;`. 기존 5개 액션(`POST_CREATE`/`COMMENT_CREATE`/`REPORT_CREATE`/`UPLOAD`/`RECOMMEND`) 한도는 `20260903120000_relax_community_post_rate_limit.sql`에서 그대로 복사해 값이 바뀌지 않았습니다.
+- `src/server/community/community-rate-limit.ts`의 `CommunityAction`에 `"ATTACHMENT_POST"` 추가.
+- `src/app/api/community/posts/route.ts`: 요청을 파싱해 `parsed.data.attachments.length`를 알 수 있게 된 직후(기존 소유권 검사 바로 앞)에 `첨부가 있으면 ATTACHMENT_POST 한도도 통과해야 함`을 추가했습니다. 첨부 없는 글은 기존과 동일하게 `POST_CREATE`만 봅니다.
+- 참고(문서에 이미 적혀 있던 내용, 코드 변경 없음): 이 한도는 UTC 고정 버킷이라 한국시간 오전 9시에 초기화됩니다. 자정 기준으로 바꾸려면 `v_window_started_at` 계산에 시간대 보정이 필요합니다 — 이번 수정 범위 밖이라 손대지 않았습니다.
+- Files: `supabase/migrations/20260904020000_attachment_post_rate_limit.sql`(신규), `src/server/community/community-rate-limit.ts`, `src/app/api/community/posts/route.ts`, `src/server/community/community-migration.test.ts`(신규 테스트 1건 — 새 case 추가 + 기존 5개 한도 무변경 + 옛 RPC 이름 완전히 없음을 함께 확인).
+- Validation: `npx vitest run` 970 passed(신규 1건), `npx tsc --noEmit` clean, `npx eslint` 클린.
+- Rollback: 이 커밋 revert. 마이그레이션은 `case` 한 줄만 늘리므로 되돌려도 기존 5개 액션 동작에는 영향 없습니다.
+- 다음: 인수인계 문서 2번(입력창-서버 규칙 불일치, 업로드 순서로 인한 고아 파일)으로 이어갑니다.
