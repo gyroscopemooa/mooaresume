@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const migration = readFileSync("supabase/migrations/20260901050000_community_lounge.sql", "utf8");
 const rateLimitMigration = readFileSync("supabase/migrations/20260903090000_community_rate_limits.sql", "utf8");
 const lockedRateLimitMigration = readFileSync("supabase/migrations/20260903110000_lock_community_rate_limit_rules.sql", "utf8");
+const relaxedPostRateLimitMigration = readFileSync("supabase/migrations/20260903120000_relax_community_post_rate_limit.sql", "utf8");
 
 describe("community lounge migration", () => {
   it("keeps attachments private and readable only to signed-in members", () => {
@@ -26,5 +27,6 @@ describe("community rate limits", () => {
     expect(lockedRateLimitMigration).toContain("drop function public.take_community_rate_limit(text, integer, integer)");
     expect(lockedRateLimitMigration).toContain("when 'POST_CREATE' then v_limit := 5");
     expect(lockedRateLimitMigration).toContain("grant execute on function public.take_community_rate_limit(text) to authenticated");
+    expect(relaxedPostRateLimitMigration).toContain("when 'POST_CREATE' then v_limit := 20; v_window_seconds := 3600");
   });
 });

@@ -5496,3 +5496,21 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - Files: `src/components/community-lounge.tsx`, `docs/agent-change-log.md`.
 - Validation: `npm run typecheck`, `npm run build`, `git diff --check` 통과.
 - Rollback: 이 UX 변경 커밋을 revert하면 기존 비활성화 조건으로 돌아간다.
+
+## 2026-09-03 — Codex: 커뮤니티 초기 운영 한도·작성창 오류 표시 (진행 중)
+
+- Status: active.
+- Protected baseline: 커뮤니티 rate-limit RPC와 `community-lounge` 작성창. 비커뮤니티 코드와 기존 마이그레이션은 보존한다.
+- Change and reason: 실제 테스트에서 글 5개/시간 제한이 초기 운영과 신고 검증을 막았다. 후속 migration으로 글 생성 한도만 20개/시간으로 완화한다. 또한 작성 모달이 열려 있는 동안 오류 toast가 backdrop 아래로 가려지는 z-index 문제를 고친다.
+- Files/branch: 새 후속 community migration, migration test, `src/components/community-lounge.module.css`, `docs/agent-change-log.md` on shared `main`.
+- Validation: targeted migration test, typecheck, build, remote migration apply planned.
+- Rollback/recovery reference: 이 후속 migration과 CSS 커밋을 revert하면 5개/시간 및 기존 표시 위치로 복귀한다.
+- User decision: 사용자가 5개 이후 차단 및 안내가 가려지는 문제를 직접 보고해 수정 요청.
+
+## 2026-09-03 — Codex: 커뮤니티 초기 운영 한도·작성창 오류 표시 (완료)
+
+- Status: active.
+- Change: 글 생성 rate limit을 시간당 5개에서 20개로 완화하는 후속 migration을 추가·원격 적용했다. toast z-index를 60으로 올려 작성 모달(z-index 50) 위에서 오류가 보이게 했다.
+- Files: `supabase/migrations/20260903120000_relax_community_post_rate_limit.sql`, `src/server/community/community-migration.test.ts`, `src/components/community-lounge.module.css`, `docs/agent-change-log.md`.
+- Validation: 커뮤니티 migration 테스트 3개 통과, 원격 Supabase migration 적용 완료. 전체 `typecheck`/build는 변경하지 않은 `src/evals/quick-eval.ts`의 `ANSWER_TOO_SHORT` 유니온 누락 오류로 실패했으며 커뮤니티 테스트는 통과했다.
+- Rollback: 이 후속 migration과 CSS 변경 커밋을 revert한다.
