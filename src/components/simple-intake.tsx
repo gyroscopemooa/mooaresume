@@ -144,10 +144,26 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
     try {
       const { extractLocalDocuments } = await import("@/lib/local-document");
       const added: SimpleIntakeFile[] = [];
+      // 한 파일이 넘어졌다고 나머지를 잃지 않습니다. 압축파일 하나가 안
+      // 열렸다고 같이 고른 자소서·이력서까지 사라지면, 손님은 무엇이 문제였는지
+      // 알 길이 없이 처음부터 다시 골라야 합니다.
+      const failures: Array<{ name: string; reason: string }> = [];
       for (const file of accepted) {
         // A ZIP comes back as several documents, which is the point of taking
         // it: the applicant compresses a folder rather than picking files.
-        const batch = await extractLocalDocuments(file);
+        let batch;
+        try {
+          batch = await extractLocalDocuments(file);
+        } catch (reason) {
+          failures.push({ name: file.name, reason: reason instanceof Error ? reason.message : "읽지 못했어요" });
+          continue;
+        }
+        // 압축파일이 지나친 항목들입니다. 여기까지 와서 버려지고 있었습니다 —
+        // 자격증 사진(jpg·png)만 담긴 압축파일을 올리면 아무 일도 일어나지
+        // 않는 것처럼 보였고, 실제로 손님이 그렇게 겪었습니다.
+        for (const name of batch.skipped) {
+          failures.push({ name: `${file.name} 안의 ${name}`, reason: "글자를 읽을 수 없는 형식" });
+        }
         for (const document of batch.documents) {
           const guess = classifyDocument({ filename: document.filename, text: document.text });
           added.push({
@@ -171,6 +187,12 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
         seen.add(key);
         return true;
       })]);
+      if (failures.length) {
+        setRejections((current) => {
+          const seen = new Set(current.map((item) => `${item.name}:${item.reason}`));
+          return [...current, ...failures.filter((item) => !seen.has(`${item.name}:${item.reason}`))];
+        });
+      }
     } catch (reason) {
       onError?.(reason instanceof Error ? reason.message : "파일을 읽지 못했어요.");
     } finally {

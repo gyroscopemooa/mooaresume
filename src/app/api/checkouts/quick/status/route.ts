@@ -105,10 +105,20 @@ export async function GET(request: NextRequest) {
   // 멈추는 편이 훨씬 나쁩니다.
   const { data: order } = await supabase
     .from("billing_orders")
-    .select("provider_order_id, amount, currency, status")
+    .select("provider_order_id, amount, currency, status, auto_refund_state")
     .eq("provider_checkout_id", parsed.data.checkoutId)
     .maybeSingle();
   const paid = order?.status === "PAID";
+  // 최종 실패로 자동 환불이 나간 주문인가.
+  //
+  // `status`를 보지 않는 이유가 있습니다. 그 값은 폴라의 `order.refunded`
+  // 웹훅이 도착해야 REFUNDED로 바뀌는데, 웹훅은 늦게 오거나(로컬에서는 아예
+  // 오지 않고) 손님은 그 사이에 이 화면을 봅니다. 우리가 환불을 걸었다는
+  // 사실은 우리가 직접 남긴 `auto_refund_state`가 알고 있습니다.
+  //
+  // SUBMITTED만 봅니다. SUBMITTING은 아직 나가는 중이고, UNCERTAIN은 접수됐는지
+  // 조차 모르는 상태입니다 — 그 두 경우에 "환불했습니다"라고 말하면 안 됩니다.
+  const autoRefunded = order?.auto_refund_state === "SUBMITTED";
 
   return NextResponse.json({
     ...checkout,
@@ -118,5 +128,6 @@ export async function GET(request: NextRequest) {
     orderId: paid ? (order?.provider_order_id as string | null) ?? null : null,
     amount: paid ? (order?.amount as number | null) ?? null : null,
     currency: paid ? (order?.currency as string | null) ?? null : null,
+    autoRefunded,
   });
 }

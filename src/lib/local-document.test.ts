@@ -65,9 +65,13 @@ describe("압축파일 열기", () => {
     expect(batch.skipped).toHaveLength(3);
   });
 
-  it("읽을 수 있는 문서가 하나도 없으면 왜인지 말한다", async () => {
+  it("읽을 수 있는 문서가 하나도 없으면 왜인지, 그래서 뭘 하면 되는지 말한다", async () => {
+    // 자격증 압축파일은 거의 사진입니다. "PDF·DOCX만 됩니다"는 사실이지만
+    // 사진을 올린 사람에게는 다음에 뭘 하라는 말이 아닙니다.
     await expect(extractLocalDocuments(await zipOf({ "사진.jpg": "binary" })))
-      .rejects.toThrow(/읽을 수 있는 문서를 찾지 못했어요/);
+      .rejects.toThrow(/사진\(JPG·PNG\)은 글자를 읽을 수 없어요/);
+    await expect(extractLocalDocuments(await zipOf({ "사진.jpg": "binary" })))
+      .rejects.toThrow(/PDF로 저장해 올리시거나/);
   });
 
   it("압축파일이 아니면 그대로 한 개로 읽는다", async () => {

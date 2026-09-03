@@ -5599,3 +5599,43 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - **이름도 고쳤습니다.** `QUICK_MAX_CHARS`/`exceedsQuickCeiling`은 "못 산다"로 읽혔고 실제로 사용자가 그렇게 읽었습니다. 결제를 막는 코드는 처음부터 없었습니다 — `analysis-preparation.tsx`의 문단 하나가 전부입니다.
 - 안내 문구도 "PRO가 더 낫습니다" → **"PRO가 더 쌉니다"**로 바꿨습니다. 이제 이 문구는 값이 실제로 역전된 자리에서만 뜨므로, 더 정확하고 더 셉니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 956건 통과, `next build` 통과.
+
+## 2026-09-04 — Claude: 환불하고도 "문의해 주세요"라고 말하던 화면 + 조용히 사라지던 첨부
+
+### 1. 환불 확인 (조치 없음, 사실 확인)
+
+사용자가 "8,800원 냈는데 8,000원만 환불된 것 아니냐"고 물었습니다. **전액 환불됐습니다.**
+
+폴라 API로 직접 확인:
+
+```
+REFUND a65254ee status=succeeded amount=8000 tax=800
+ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillRefundable=0 status=refunded
+```
+
+`Order.refundableAmount`는 **세전 금액(net)**이고(SDK 주석: "Amount in cents that can still be refunded (net, before taxes)"), 세금은 `refundedTaxAmount`로 함께 나갑니다. 8,000 + 800 = 8,800, `stillRefundable = 0`. 대시보드가 세금을 별도 줄로 빼서 8,000만 보인 것입니다.
+
+**이용권 회수도 성공했습니다** — 앞 커밋의 마이그레이션이 적용되어 `REVOKED` + `revoked_at` 기록됨(18:51:08). 다만 그 **이전** 환불건(17:52, order `b656f53f`)의 이용권은 아직 `ACTIVE`로 남아 있습니다. 마이그레이션 전에 실패한 건이라 손으로 정리가 필요합니다.
+
+`billing_orders.status`가 아직 `PAID`인 것은 로컬에 `order.refunded` 웹훅이 닿지 않기 때문입니다.
+
+### 2. 환불했는데 "문의해 주세요"라고 말하던 화면
+
+- 증상: 자동 환불이 나간 뒤에도 결제 복귀 화면이 **`QUICK · 확인이 필요합니다` / "결제는 다시 하지 마시고 문의해 주세요"**를 띄웠습니다.
+- 원인: `quick-checkout-return.tsx`의 최종 실패 분기가 **타임아웃 환불(`timeoutRefunded`)만** 알고 있고, 최종 실패 자동 환불은 몰랐습니다. 상태 API가 그 사실을 내려 주지 않았습니다.
+- 조치:
+  - `api/checkouts/quick/status/route.ts` — `billing_orders.auto_refund_state`를 함께 읽어 `autoRefunded`(= `SUBMITTED`)를 내려보냅니다. `status`(REFUNDED)를 쓰지 않은 이유는 그 값이 폴라 웹훅을 기다려야 하고 손님은 그 전에 이 화면을 보기 때문입니다. `SUBMITTING`·`UNCERTAIN`은 제외했습니다 — 접수됐는지 모르는 건에 "환불했습니다"라고 말할 수 없습니다.
+  - 제목을 `확인이 필요합니다` → **`환불했습니다`**로, 본문을 "전액 자동 환불했습니다. 따로 문의하지 않으셔도 됩니다. 카드사에 따라 며칠 걸릴 수 있습니다"로 바꿨습니다. 타임아웃 환불 분기에도 같은 제목이 걸리도록 했습니다.
+
+### 3. zip이 "에러도 없이" 안 올라가던 것
+
+- 원인 두 가지가 겹쳐 있었습니다.
+  1. **`extractLocalDocuments`가 돌려주는 `skipped`를 `simple-intake.tsx`가 통째로 버리고 있었습니다.** 압축파일 안의 사진(jpg·png)은 글자를 읽을 수 없어 건너뛰는데, 그 사실이 화면 어디에도 나오지 않았습니다. **자격증 압축파일은 대부분 사진입니다.**
+  2. **파일 하나가 넘어지면 배치 전체를 잃었습니다.** `extractLocalDocuments` 호출이 반복문 바깥의 단일 try 안에 있어, 압축파일 하나가 던지면 이미 읽은 자소서·이력서까지 `added`째로 버려지고 `onError`만 남았습니다.
+- 조치:
+  - 파일마다 try를 두어 실패한 것만 이름과 이유로 남기고 나머지는 살립니다.
+  - `batch.skipped`를 기존 "넣지 못한 파일 N개" 목록에 `압축파일명 안의 항목명` 형태로 올립니다.
+  - 압축파일에 읽을 것이 하나도 없을 때의 문구를 **다음에 무엇을 하면 되는지**까지 말하도록 고쳤습니다: "사진(JPG·PNG)은 글자를 읽을 수 없어요 — PDF로 저장해 올리시거나, 자격증 이름을 입력칸에 적어 주세요."
+- 테스트: 신규 `src/components/simple-intake.test.tsx` 3건(사진만 든 zip이 화면에 남는지, 하나 실패해도 나머지가 남는지, 지나친 항목이 이름으로 나오는지) + `local-document.test.ts` 문구 검증 강화.
+  - 테스트를 쓰다 한 번 속았습니다: `cleanup` 없이 `document.querySelector`로 입력창을 찾아 앞 테스트의 컴포넌트를 집었습니다. `afterEach(cleanup)` + `view.container` 기준으로 고쳤고, 그 이유를 파일에 적어 두었습니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 959건 통과(신규 3건), `next build` 통과.

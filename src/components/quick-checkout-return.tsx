@@ -16,6 +16,7 @@ const statusSchema = z.object({
   entitlementStatus: z.enum(["ACTIVE", "CONSUMED", "REVOKED"]).nullable(),
   hasResult: z.boolean(),
   timeoutRefunded: z.boolean().optional(),
+  autoRefunded: z.boolean().optional(),
   retryAvailable: z.boolean().optional(),
   failureCode: z.string().nullable().optional(),
   attemptCount: z.number().int().nullable().optional(),
@@ -114,6 +115,10 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
    * 실패 화면을 보고 있었습니다. 돈을 낸 사람에게 이보다 나쁜 화면은 없습니다.
    */
   const [autoRetrying, setAutoRetrying] = useState(false);
+  // 실패 중에서도 **돈이 이미 돌아간** 실패입니다. 제목이 "확인이
+  // 필요합니다"로 남으면, 본문에서 환불했다고 말해도 손님은 먼저 읽은
+  // 제목을 믿습니다.
+  const [refunded, setRefunded] = useState(false);
   // 실행 호출이 연달아 거절당하면 그때는 진짜로 멈춥니다. 한 번의 실패로
   // 포기하지 않되, 영원히 도는 것도 아닙니다.
   const executeFailures = useRef(0);
@@ -214,6 +219,18 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
             return;
           }
           setAutoRetrying(false);
+          // 자동 환불이 이미 나간 건에 "문의해 주세요"라고 말하고 있었습니다.
+          // 돈은 벌써 돌아갔는데 손님은 떼인 줄 알고 메일을 씁니다. 우리가 한
+          // 일을 우리가 말하지 않으면, 손님이 물어볼 수밖에 없습니다.
+          if (status.autoRefunded) {
+            setRefunded(true);
+            setMessage(
+              "분석을 완료하지 못해 결제하신 금액을 전액 자동으로 환불했습니다. "
+              + "따로 문의하지 않으셔도 됩니다. 카드사에 따라 환불이 실제로 보이기까지 며칠 걸릴 수 있습니다. "
+              + "원인 코드: " + (status.failureCode ?? "UNKNOWN"),
+            );
+            return;
+          }
           setMessage("분석을 완료하지 못했습니다. 결제는 다시 하지 마시고 문의해 주세요.");
           return;
         }
@@ -484,7 +501,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
     <section ref={rootRef} className={styles.status} data-phase={phase}>
       {phase === "failed" && !autoRetrying ? <TriangleAlert /> : phase === "waiting" || autoRetrying ? <LoaderCircle className={styles.spin} /> : <CheckCircle2 />}
       <div>
-        <b>{product ? `${product} · ` : ""}{autoRetrying ? "다시 시도 중" : phase === "failed" ? "확인이 필요합니다" : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>
+        <b>{product ? `${product} · ` : ""}{autoRetrying ? "다시 시도 중" : phase === "failed" ? (refunded ? "환불했습니다" : "확인이 필요합니다") : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>
         <p>{message}</p>
         {phase === "failed" && retryRunId && <button type="button" className={styles.emailButton} onClick={() => void retryAnalysis()}>
           {"\uAE30\uC874 \uACB0\uC81C\uB85C \uB2E4\uC2DC \uBD84\uC11D\uD558\uAE30"}

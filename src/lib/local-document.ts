@@ -110,7 +110,10 @@ export async function extractLocalDocuments(file: File): Promise<LocalDocumentBa
   }
 
   if (documents.length === 0) {
-    throw new Error("압축파일 안에서 읽을 수 있는 문서를 찾지 못했어요. PDF·DOCX·TXT·MD만 읽을 수 있습니다.");
+    // 자격증 압축파일은 거의 사진입니다 — 수첩을 찍었거나 발급기관이 그림으로
+    // 줍니다. "PDF·DOCX·TXT·MD만 읽을 수 있습니다"는 사실이지만, 사진을 올린
+    // 사람에게는 무엇을 어떻게 하라는 말인지 알려 주지 않습니다.
+    throw new Error("압축파일 안에서 읽을 수 있는 문서를 찾지 못했어요. 사진(JPG·PNG)은 글자를 읽을 수 없어요 — PDF로 저장해 올리시거나, 자격증 이름을 입력칸에 적어 주세요.");
   }
   return { documents, skipped };
 }
