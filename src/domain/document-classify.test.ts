@@ -163,4 +163,21 @@ describe("넓은 규칙이 자기소개서를 삼키지 않는다", () => {
   it("급수가 붙은 진짜 자격증은 그대로 알아본다", () => {
     expect(classifyDocument({ filename: "직업상담사2급.pdf", text: "" }).kind).toBe("CERTIFICATE");
   });
+
+  it("증빙과 자격증 이름을 자격·증명서로 본다", () => {
+    // 실제로 "증빙-ITQ OA MASTER - 전민수.pdf"가 기타 자료로 빠졌습니다.
+    // 스캔본이라 본문이 비어 있어 파일 이름이 유일한 단서인데, 그 이름이
+    // 이미 무엇인지 말하고 있었습니다.
+    for (const filename of ["증빙-ITQ OA MASTER - 전민수.pdf", "컴퓨터활용능력 2급.pdf", "컴활1급.pdf"]) {
+      expect(classifyDocument({ filename, text: "" }).kind).toBe("CERTIFICATE");
+    }
+  });
+
+  it("직무 이름이 든 자기소개서를 증명서로 오인하지 않는다", () => {
+    // 앞서 `상담사|관리사`를 넣었다가 자기소개서를 삼킨 적이 있습니다.
+    expect(classifyDocument({
+      filename: "대학일자리센터_직업상담사_커리어컨설턴트_전민수.pdf",
+      text: "저는 상담 업무를 하며 사람의 이야기를 듣는 일에 보람을 느꼈습니다.",
+    }).kind).not.toBe("CERTIFICATE");
+  });
 });

@@ -5639,3 +5639,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 테스트: 신규 `src/components/simple-intake.test.tsx` 3건(사진만 든 zip이 화면에 남는지, 하나 실패해도 나머지가 남는지, 지나친 항목이 이름으로 나오는지) + `local-document.test.ts` 문구 검증 강화.
   - 테스트를 쓰다 한 번 속았습니다: `cleanup` 없이 `document.querySelector`로 입력창을 찾아 앞 테스트의 컴포넌트를 집었습니다. `afterEach(cleanup)` + `view.container` 기준으로 고쳤고, 그 이유를 파일에 적어 두었습니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 959건 통과(신규 3건), `next build` 통과.
+
+## 2026-09-04 — Claude: 증빙·ITQ·컴활을 자격·증명서로 분류
+
+- 사용자 화면에서 `증빙-ITQ OA MASTER - 전민수.pdf`가 **기타 자료**로 빠졌습니다. 스캔본이라 본문이 비어 있어 파일 이름이 유일한 단서인데, `증빙`도 `ITQ`도 규칙에 없었습니다.
+- `document-classify.ts`의 CERTIFICATE 규칙에 `증빙|컴퓨터활용능력|컴활|ITQ`를 더했습니다. 일반 명사는 넣지 않았습니다 — 앞서 `상담사|관리사`를 넣었다가 자기소개서를 삼킨 적이 있어, 증빙 문서에만 나타나는 말과 구체적인 자격증 이름으로 제한했습니다.
+- 테스트 2건: 새 이름들이 CERTIFICATE로 가는지, 그리고 **직무 이름이 든 자기소개서를 다시 삼키지 않는지**(회귀 잠금).
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 961건 통과.

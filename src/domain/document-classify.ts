@@ -108,7 +108,7 @@ const FILENAME_HINTS: ReadonlyArray<readonly [ClassifiedKind, RegExp]> = [
   // **직업 이름**이라, `대학일자리센터_직업상담사_커리어컨설턴트_전민수.pdf`
   // 같은 자기소개서 파일이 자격증으로 넘어갔습니다. 파일 이름에 "자기소개서"가
   // 없으면 앞 규칙이 걸러 주지 못하므로, 이 줄이 넓으면 그대로 사고가 됩니다.
-  ["CERTIFICATE", /자격증|자격\s*수첩|면허|수료|경력\s*증명|재직\s*증명|증명서|성적\s*증명|생활\s*기록부|학교\s*생활|성적표|certificate|license|transcript|award|수상|기능사|기능장|기술사|산업기사|정보처리|\d\s*급/i],
+  ["CERTIFICATE", /자격증|자격\s*수첩|면허|수료|경력\s*증명|재직\s*증명|증명서|증빙|성적\s*증명|생활\s*기록부|학교\s*생활|성적표|certificate|license|transcript|award|수상|기능사|기능장|기술사|산업기사|정보처리|컴퓨터활용능력|컴활|ITQ|\d\s*급/i],
 ];
 
 /**
