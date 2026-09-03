@@ -5462,3 +5462,19 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - **간편 입력에서 `작성 스타일`·`첨삭 방향`을 감췄습니다**(상세 입력 전용). 간편을 고른 사람은 "빨리 맡기고 싶다"고 말한 것이고, 실제로는 대부분 기본값 그대로 지나가 물어본 척만 하는 자리였습니다. 대신 기본값(균형)으로 간다는 것과 상세 입력에서 고를 수 있다는 것을 한 줄로 알립니다.
 - **사용자 실행 필요**: `npm run db:remote:push` — 이 두 마이그레이션이 적용되기 전에는 `CERTIFICATE`가 DB 타입에 없어 지원 건 저장이 실패합니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 947건 통과(신규 5건), `next build` 통과.
+
+## 2026-09-03 — Codex: rate-limit RPC 고정 규칙화 (진행 중)
+
+- Intended change: 기존 3인자 rate-limit RPC를 폐기하고, 허용 action과 시간창·한도를 DB 함수 안에 고정한 1인자 RPC로 교체한다.
+- Reason: 인증 사용자가 RPC를 직접 호출하면서 제한값·시간창을 임의로 전달할 수 있는 여지를 없앤다.
+- Scope: 커뮤니티 rate-limit migration/helper/test만 변경한다. 클로드의 제품 코드·공통 UI는 건드리지 않는다.
+- Validation planned: migration test, typecheck, lint, build, remote migration plan/apply.
+- Rollback: 이 후속 migration을 revert하고 이전 3인자 함수/호출로 복구한다.
+
+## 2026-09-03 — Codex: rate-limit RPC 고정 규칙화 (완료)
+
+- Status: 완료. 3인자 RPC를 폐기하고, DB 내부에서 허용 action과 한도·시간창을 고정한 1인자 RPC로 교체했다. 원격 migration `20260903110000_lock_community_rate_limit_rules.sql` 적용 및 local/remote 일치 확인.
+- Files: `supabase/migrations/20260903110000_lock_community_rate_limit_rules.sql`, `src/server/community/community-rate-limit.ts`, `src/server/community/community-migration.test.ts`.
+- Validation: 커뮤니티 테스트 6개, typecheck, production build 통과. 린트 오류 0, 기존 경고 2건 유지.
+- Launch status: 코드·DB 런칭 최소선 완료. 배포 후 두 테스트 계정 E2E와 관리자 신고 숨김 확인만 남음.
+- Rollback: 후속 migration을 revert하고 이전 함수 구현으로 복구한다.
