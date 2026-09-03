@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { canRetryAnalysis } from "@/domain/analysis-retry";
 import { createClient } from "@/lib/supabase/server";
+import { notifyRefundedApplicant } from "@/server/notifications/refund-notice-email";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
 import { createPolarCheckoutReconciliationRuntime, reconcilePolarCheckout } from "@/server/billing/polar-checkout-reconciliation";
 import { SupabasePolarEntitlementRepository } from "@/server/billing/supabase-polar-entitlement-repository";
@@ -93,7 +94,24 @@ export async function GET(request: NextRequest) {
   if (checkout.analysisStatus === "RUNNING") {
     try {
       const timeout = await refundTimedOutQuickAnalysis({ analysisRunId: checkout.analysisRunId, ownerUserId: authData.user.id });
-      if (timeout.disposition === "REFUND_SUBMITTED") return NextResponse.json({ ...data, analysisStatus: "FAILED", timeoutRefunded: true });
+      if (timeout.disposition === "REFUND_SUBMITTED") {
+        // 화면은 창을 닫으면 사라집니다. 이 경로도 손님이 환불을 알 수 있는
+        // 유일한 자리가 화면 하나였습니다.
+        //
+        // `amount`가 있다는 것은 **이번 호출이 환불을 만들었다**는 뜻입니다.
+        // 이미 접수돼 있던 주문은 금액 없이 같은 disposition으로 돌아오는데,
+        // 이 화면은 2초마다 다시 물어봅니다 — 구분하지 않으면 같은 메일을
+        // 폴링 횟수만큼 보냅니다.
+        if ("amount" in timeout) try {
+          await notifyRefundedApplicant({
+            ownerUserId: authData.user.id,
+            refund: { disposition: "REFUNDED", amount: timeout.amount, currency: timeout.currency, entitlementsRevoked: 0 },
+          });
+        } catch (noticeError) {
+          console.error("refund_notice_email_failed", { error: noticeError instanceof Error ? noticeError.message : "UNKNOWN_ERROR" });
+        }
+        return NextResponse.json({ ...data, analysisStatus: "FAILED", timeoutRefunded: true });
+      }
     } catch (timeoutError) {
       console.error("quick_timeout_refund_failed", { error: timeoutError instanceof Error ? timeoutError.message : "UNKNOWN_ERROR" });
     }

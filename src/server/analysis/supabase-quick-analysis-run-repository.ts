@@ -8,6 +8,7 @@ import { RESEARCH_CONSENT_VERSION, buildResearchSnapshot } from "./research-capt
 import type { QuickAnalysisRunRepository } from "./quick-analysis-orchestrator";
 import { alertExhaustedRun } from "@/server/notifications/run-failure-alert-email";
 import { refundExhaustedRun, type FailureRefundOutcome } from "@/server/billing/quick-failure-refund";
+import { notifyRefundedApplicant } from "@/server/notifications/refund-notice-email";
 
 const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -174,6 +175,15 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       // 환불되지도 않습니다.
       refund = { disposition: "NOT_REFUNDED", reason: "REFUND_ERROR" };
       console.error("run_failure_refund_failed", refundError instanceof Error ? refundError.message : "UNKNOWN_ERROR");
+    }
+
+    // 손님에게 먼저 알립니다. 관리자 알림은 우리를 부르는 것이고, 이건
+    // **돈이 돌아갔다는 사실을 유일하게 손님에게 전하는 경로**입니다 — 결제
+    // 복귀 화면은 창을 닫으면 사라집니다.
+    try {
+      await notifyRefundedApplicant({ ownerUserId: this.ownerUserId, refund });
+    } catch (noticeError) {
+      console.error("refund_notice_email_failed", noticeError instanceof Error ? noticeError.message : "UNKNOWN_ERROR");
     }
 
     try {

@@ -5646,3 +5646,16 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - `document-classify.ts`의 CERTIFICATE 규칙에 `증빙|컴퓨터활용능력|컴활|ITQ`를 더했습니다. 일반 명사는 넣지 않았습니다 — 앞서 `상담사|관리사`를 넣었다가 자기소개서를 삼킨 적이 있어, 증빙 문서에만 나타나는 말과 구체적인 자격증 이름으로 제한했습니다.
 - 테스트 2건: 새 이름들이 CERTIFICATE로 가는지, 그리고 **직무 이름이 든 자기소개서를 다시 삼키지 않는지**(회귀 잠금).
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 961건 통과.
+
+## 2026-09-04 — Claude: 환불 안내 메일(손님용) 신설 — 사용자 승인
+
+- 문제: 자동 환불이 나갔다는 사실이 가는 곳이 **관리자 메일과 결제 복귀 화면 둘뿐**이었습니다. 관리자 메일은 손님이 못 보고, 복귀 화면은 **창을 닫으면 사라집니다.** 손님은 며칠 뒤 카드 내역만 보고 "돈만 나갔다"고 생각하게 됩니다.
+- 신규 `src/server/notifications/refund-notice-email.ts` — `notifyRefundedApplicant()`. 기존 `analysis-complete-email.ts`의 Resend 호출 구조를 그대로 따랐습니다(설정 없으면 skip, 실패해도 던지지 않음).
+- **`disposition === "REFUNDED"`일 때만 보냅니다.** `SUBMITTING`·`UNCERTAIN`은 접수 여부조차 모르는 상태이고, 그때 "환불했습니다"라고 쓰는 것은 아무 말도 하지 않는 것보다 나쁩니다.
+- **금액은 `claim.amount`(= `billing_orders.amount`, 결제 총액)를 씁니다.** 폴라에 보낸 `refundAmount`는 세전이라 8,000처럼 보이는데, 그 숫자를 메일에 적으면 손님 카드 내역(8,800)과 어긋나 "800원이 덜 왔다"로 읽힙니다. 테스트로 잠갔습니다.
+- 연결한 곳 두 군데:
+  - 최종 실패 환불 — `supabase-quick-analysis-run-repository.ts`의 `fail()`에서 **관리자 알림보다 먼저** 보냅니다. 관리자 알림은 우리를 부르는 것이고, 이건 손님에게 사실을 전하는 유일한 경로입니다. 실패해도 삼킵니다.
+  - 10분 타임아웃 환불 — `api/checkouts/quick/status/route.ts`. `refundTimedOutQuickAnalysis`가 이번 호출에서 환불을 만들었을 때만(`"amount" in timeout`) 보냅니다. **이 화면은 2초마다 폴링하므로**, 이미 접수돼 있던 주문(금액 없이 같은 disposition으로 돌아옴)까지 보내면 폴링 횟수만큼 메일이 나갑니다.
+  - 이를 위해 `quick-timeout-refund.ts`의 성공 반환에 `amount`·`currency`를 **추가**했습니다(기존 필드·동작 변경 없음).
+- 테스트 5건: 결제 총액을 적는지(세전 금액이 나오지 않는지), 환불 안 된 건에 안 보내는지, 주소 없으면 멈추는지, 설정 없으면 조용히 넘어가는지, 전송 거절에도 던지지 않는지.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0(기존 경고 2), `vitest run` 966건 통과(신규 5건), `next build` 통과.

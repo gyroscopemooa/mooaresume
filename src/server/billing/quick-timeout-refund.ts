@@ -65,7 +65,10 @@ export async function refundTimedOutQuickAnalysis(input: { analysisRunId: string
       p_provider_refund_id: refund.id,
     });
     if (markError) throw new Error(`QUICK_TIMEOUT_REFUND_MARK_FAILED:${markError.code}`);
-    return { disposition: "REFUND_SUBMITTED" as const };
+    // 손님에게 환불했다고 알릴 수 있도록 금액을 함께 돌려줍니다. `claim.amount`는
+    // 저장해 둔 결제 총액이라 손님의 카드 내역과 같은 숫자입니다 — 폴라에 보낸
+    // `refundAmount`는 세전이라 800원쯤 작아 보입니다.
+    return { disposition: "REFUND_SUBMITTED" as const, amount: claim.amount, currency: claim.currency };
   } catch (error) {
     await supabase.rpc("mark_quick_auto_refund_uncertain", {
       p_billing_order_id: claim.billingOrderId,
