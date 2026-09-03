@@ -5448,3 +5448,17 @@ html{overflow-x:hidden;scroll-behavior:smooth}
 - **알아낸 것 — FINAL은 자기 모델 변수를 씁니다**: `resolveModelConfig`가 FINAL일 때 `OPENAI_MODEL_FINAL`을 우선합니다(`.env.local`에 설정돼 있음). 그래서 `OPENAI_MODEL`을 망가뜨려도 FINAL은 정상 동작했고, 환불 테스트가 성립하지 않았습니다. FINAL로 실패를 재현하려면 `OPENAI_MODEL_FINAL`을 망가뜨려야 합니다.
 - **아직 안 고친 것(의도)**: `경력증명서`는 회사가 발급한 증빙이고 `경력기술서`는 본인이 쓴 서류라 서로 다른 문서가 맞습니다. 다만 지금 옮기면 근거 자료(supporting set)에서 **빠져** 참고자료로 내려갑니다 — 지금보다 나빠집니다. `CERTIFICATE`를 근거 자료로 올리는 작업(ⓐ)과 **같이** 옮겨야 합니다.
 - Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 942건 통과, `next build` 통과.
+
+## 2026-09-03 — Claude: 자격·증명서를 근거 자료로 + 간편 입력에서 스타일 선택 제거
+
+- **먼저 정정**: 앞 기록에서 "자격증이 `기타`면 교차검증에 안 읽힌다"고 적었는데 **틀렸습니다**. `begin_quick_analysis`의 필터는 `d.kind not in ('OTHER','REVISION_REQUEST') or product in ('PRO','FINAL')`이라 **PRO·FINAL에서는 `기타`도 읽힙니다**(QUICK에서만 빠집니다). 실제 문제는 다른 둘이었습니다:
+  - 모델에 **`'portfolio'`** 라는 이름으로 전달됐습니다(`else 'portfolio' end`). 증빙이 작품집으로 소개되면 근거로 쓰라는 신호가 사라집니다.
+  - 예산 순서가 **맨 뒤(6)**였습니다. 주석에도 "기타 증빙 is what falls off the end"라고 적혀 있습니다. 자료를 많이 넣을수록 먼저 잘리는데, 그 사람이 FINAL 손님입니다.
+- 신규 마이그레이션 2개:
+  - `20260903100000_document_kind_certificate.sql` — `alter type ... add value if not exists 'CERTIFICATE'`. **트랜잭션 밖**입니다(같은 트랜잭션에서는 방금 더한 값을 쓸 수 없습니다).
+  - `20260903100100_certificate_evidence.sql` — `begin_quick_analysis`를 `create or replace`. 바꾼 것은 **두 줄뿐**입니다: 우선순위에 `CERTIFICATE = 3`(이력서 바로 다음, 나머지는 한 칸씩 밀림), 라벨에 `'certificate'`. 예산 계산식·이용권 처리·`OTHER` 노출 규칙은 그대로이며 마이그레이션 테스트 5건으로 잠갔습니다.
+- 코드: `analysis-contract`의 문서 kind에 `certificate` 추가, `candidateMaterialKindSchema`·`CANDIDATE_MATERIAL_LABEL`에 `CERTIFICATE` 추가, `MATERIAL_KINDS`에 포함(근거 자료로 감), `application-case-handoff`의 kind 유니온 확장.
+- **경력증명서를 `CAREER_DOCUMENT`에서 분리**했습니다. 경력기술서는 본인이 쓴 서류, 경력증명서·재직증명서는 회사가 발급한 증빙이라 같은 갈래에 두면 대조의 양쪽이 한 편이 됩니다. 둘 다 근거 자료로 가므로 옮겨도 분석에서 빠지지 않습니다 — 앞 커밋 시점에는 참고자료로 내려앉아 더 나빠졌을 일이라 미뤄 뒀던 것입니다.
+- **간편 입력에서 `작성 스타일`·`첨삭 방향`을 감췄습니다**(상세 입력 전용). 간편을 고른 사람은 "빨리 맡기고 싶다"고 말한 것이고, 실제로는 대부분 기본값 그대로 지나가 물어본 척만 하는 자리였습니다. 대신 기본값(균형)으로 간다는 것과 상세 입력에서 고를 수 있다는 것을 한 줄로 알립니다.
+- **사용자 실행 필요**: `npm run db:remote:push` — 이 두 마이그레이션이 적용되기 전에는 `CERTIFICATE`가 DB 타입에 없어 지원 건 저장이 실패합니다.
+- Validation: `tsc --noEmit` 통과, `eslint src` 오류 0, `vitest run` 947건 통과(신규 5건), `next build` 통과.

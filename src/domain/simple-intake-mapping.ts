@@ -21,7 +21,7 @@ export type SimpleIntakeSource = {
 };
 
 export type SimpleAttachment = { filename: string; extension: string; sizeBytes: number; text: string };
-export type SimpleMaterial = SimpleAttachment & { kind: "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" };
+export type SimpleMaterial = SimpleAttachment & { kind: "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "CERTIFICATE" };
 
 export type SimpleIntakeMapping = {
   questions: CoverLetterQuestion[];
@@ -56,7 +56,9 @@ export type SimpleIntakeMapping = {
 const MAX_ATTACHMENTS_PER_LIST = 10;
 const MAX_ATTACHMENT_CHARACTERS = 50_000;
 
-const MATERIAL_KINDS: ReadonlySet<ClassifiedKind> = new Set(["RESUME", "CAREER_DOCUMENT", "PORTFOLIO"]);
+// 자격·증명서가 여기 있어야 근거 자료로 갑니다. 참고자료 쪽에 있으면 모델에는
+// 가지만 예산에서 맨 뒤에 서고, 자료를 많이 넣을수록 먼저 잘립니다.
+const MATERIAL_KINDS: ReadonlySet<ClassifiedKind> = new Set(["RESUME", "CAREER_DOCUMENT", "PORTFOLIO", "CERTIFICATE"]);
 
 export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSource[], defaultTargetLength: number | null = null): SimpleIntakeMapping {
   const byKind = (kind: ClassifiedKind) => files.filter((file) => file.kind === kind);
@@ -93,11 +95,7 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
     files.filter((file) => MATERIAL_KINDS.has(file.kind)),
     (file) => ({ ...toAttachment(file), kind: file.kind as SimpleMaterial["kind"] }),
   );
-  // 자격·증명서는 지금 참고자료 쪽으로 갑니다. 분류 이름만 갈라 두고 가는
-  // 곳은 예전 그대로입니다 — 이걸 근거 자료(`materialAttachments`)로 올리려면
-  // DB의 `document_kind` 타입이나 분석 SQL을 건드려야 해서, 그 결정은 따로
-  // 받습니다. 여기서 빠뜨리면 파일이 통째로 사라지므로 반드시 함께 담습니다.
-  const freeform = capped([...byKind("OTHER"), ...byKind("CERTIFICATE")], toAttachment);
+  const freeform = capped(byKind("OTHER"), toAttachment);
 
   return {
     questions,

@@ -81,7 +81,11 @@ export const CLASSIFIED_KIND_ORDER: readonly ClassifiedKind[] = [
  * shortens to 자소서 — a looser pattern placed earlier would swallow both.
  */
 const FILENAME_HINTS: ReadonlyArray<readonly [ClassifiedKind, RegExp]> = [
-  ["CAREER_DOCUMENT", /경력기술|경력\s*기술|career\s*description|경력증명/i],
+  // `경력증명`을 뺐습니다. 경력기술서는 **본인이 쓴** 서류이고 경력증명서는
+  // **회사가 발급한** 증빙이라, 같은 갈래에 두면 대조의 양쪽이 한 편이 됩니다.
+  // 이제 아래 `CERTIFICATE`가 받습니다 — 둘 다 근거 자료로 가므로 옮겨도
+  // 분석에서 빠지지 않습니다.
+  ["CAREER_DOCUMENT", /경력기술|경력\s*기술|career\s*description/i],
   ["COVER_LETTER", /자기소개|자소서|자기\s*소개|cover\s*letter|coverletter|introduction/i],
   // 단독 `채용`만 뺐습니다. 채용대행·채용마케팅·채용담당처럼 지원자 본인
   // 서류에 흔히 들어가는 낱말이라, 실제로 `채용대행`이 적힌 경력 파일이 공고로
@@ -104,7 +108,7 @@ const FILENAME_HINTS: ReadonlyArray<readonly [ClassifiedKind, RegExp]> = [
   // **직업 이름**이라, `대학일자리센터_직업상담사_커리어컨설턴트_전민수.pdf`
   // 같은 자기소개서 파일이 자격증으로 넘어갔습니다. 파일 이름에 "자기소개서"가
   // 없으면 앞 규칙이 걸러 주지 못하므로, 이 줄이 넓으면 그대로 사고가 됩니다.
-  ["CERTIFICATE", /자격증|자격\s*수첩|면허|수료|증명서|성적\s*증명|생활\s*기록부|학교\s*생활|성적표|certificate|license|transcript|award|수상|기능사|기능장|기술사|산업기사|정보처리|\d\s*급/i],
+  ["CERTIFICATE", /자격증|자격\s*수첩|면허|수료|경력\s*증명|재직\s*증명|증명서|성적\s*증명|생활\s*기록부|학교\s*생활|성적표|certificate|license|transcript|award|수상|기능사|기능장|기술사|산업기사|정보처리|\d\s*급/i],
 ];
 
 /**

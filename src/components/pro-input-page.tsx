@@ -410,6 +410,14 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         </div></details>
 
         <div className={styles.included}><b>PRO 결과에 포함</b><span><Check/> 공고 요구역량</span><span><Check/> 경험 근거 매칭</span><span><Check/> 문항 간 중복·충돌</span><span><Check/> 문항별 Before/After</span><span><Check/> 최종본·면접 예상질문</span></div>
+        {/* 간편 입력에서는 묻지 않습니다.
+            간편 입력을 고른 사람은 "빨리 맡기고 싶다"고 말한 것입니다. 그 뒤에
+            고르는 화면을 둘씩 세워 두면 간편이 아니게 되고, 실제로는 대부분
+            기본값 그대로 지나칩니다 — 물어본 척만 하는 셈입니다.
+
+            고르고 싶은 사람에게는 상세 입력이 있습니다. 그래서 여기서는
+            그 길이 있다는 것만 한 줄로 알려 줍니다. */}
+        {inputMode === "DETAILED" ? <>
         <section className={styles.styleSection}>
           <div className={styles.sectionTitle}><div><span>작성 스타일</span><h3>어떤 느낌으로 작성할까요?</h3></div><small>나중에 변경 가능</small></div>
           <div className={styles.styleGrid}>{writingStyles.map((style) => { const option = writingStyleConfig[style]; return <button type="button" key={style} className={writingStyle === style ? styles.styleSelected : ""} onClick={() => setWritingStyle(style)}>
@@ -434,6 +442,15 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
           </button>; })}</div>
           <p className={styles.styleSafety}><LockKeyhole/> 어떤 방향을 골라도 사실은 바뀌지 않습니다. 다듬는 것은 표현이고, 지원자가 실제로 한 일은 그대로 둡니다.</p>
         </section>
+        </> : (
+          <p className={styles.styleHint}>
+            <LockKeyhole/>
+            <span>
+              <b>작성 스타일과 첨삭 방향은 기본값(균형)으로 진행합니다.</b>
+              직접 고르고 싶으시면 위에서 <b>상세 입력</b>으로 바꿔 주세요.
+            </span>
+          </p>
+        )}
         </div>
         <div className={styles.notice}><LockKeyhole/><span><b>아직 서버로 전송하지 않습니다.</b><small>다음 화면에서 범위를 확인한 뒤 로그인·결제 경계로 이동합니다.</small></span></div>
         {blockedReason && <p className={actionStyles.message}><b>아직 {content.cta}을 진행할 수 없어요.</b><br/>{blockedReason}</p>}

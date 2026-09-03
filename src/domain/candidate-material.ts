@@ -50,7 +50,10 @@ export type CandidateFreeformAttachment = z.infer<typeof candidateFreeformAttach
  * ("이력서", "경력기술서") — a résumé filed as a generic attachment is read as
  * a portfolio, and the model weighs it differently.
  */
-export const candidateMaterialKindSchema = z.enum(["RESUME", "CAREER_DOCUMENT", "PORTFOLIO"]);
+// `CERTIFICATE`는 근거 자료입니다 — 자격증·면허증·졸업증명서처럼 **남이 발급한**
+// 문서. 자기소개서에 적은 자격과 학력이 참인지 아는 방법이 이것뿐이라, 참고자료가
+// 아니라 이력서·경력기술서와 같은 줄에 세웁니다.
+export const candidateMaterialKindSchema = z.enum(["RESUME", "CAREER_DOCUMENT", "PORTFOLIO", "CERTIFICATE"]);
 export type CandidateMaterialKind = z.infer<typeof candidateMaterialKindSchema>;
 
 export const candidateMaterialAttachmentSchema = candidateFreeformAttachmentSchema.extend({
@@ -65,6 +68,7 @@ export const CANDIDATE_MATERIAL_LABEL: Record<CandidateMaterialKind, string> = {
   RESUME: "이력서(입사지원서)",
   CAREER_DOCUMENT: "경력기술서",
   PORTFOLIO: "포트폴리오",
+  CERTIFICATE: "자격·증명서",
 };
 
 export const candidateMaterialDraftSchema = z.object({

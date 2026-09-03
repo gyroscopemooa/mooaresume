@@ -48,7 +48,7 @@ export const guestApplicationHandoffSchema = z.object({
 export type GuestApplicationHandoff = z.infer<typeof guestApplicationHandoffSchema>;
 
 export type PlannedDocument = {
-  kind: "JOB_POSTING" | "COVER_LETTER" | "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "REVISION_REQUEST" | "OTHER";
+  kind: "JOB_POSTING" | "COVER_LETTER" | "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "CERTIFICATE" | "REVISION_REQUEST" | "OTHER";
   title: string;
   sourceType: "TEXT" | "FILE" | "URL";
   normalizedText: string;

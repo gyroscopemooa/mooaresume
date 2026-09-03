@@ -141,10 +141,13 @@ describe("자격·증명서", () => {
     }
   });
 
-  it("경력증명서는 경력기술서 쪽으로 남는다", () => {
-    // 규칙 순서가 지켜야 하는 것: `경력증명`이 `증명서`보다 먼저입니다.
-    // 경력증명서는 실제로 경력을 적은 문서이고, 근거 자료로 읽혀야 합니다.
-    expect(classifyDocument({ filename: "경력증명서.pdf", text: "" }).kind).toBe("CAREER_DOCUMENT");
+  it("경력증명서와 경력기술서를 가른다", () => {
+    // 경력기술서는 본인이 쓴 서류, 경력증명서는 회사가 발급한 증빙입니다.
+    // 같은 갈래에 두면 대조의 양쪽이 한 편이 됩니다. 둘 다 근거 자료로
+    // 가므로 갈라도 분석에서 빠지지 않습니다.
+    expect(classifyDocument({ filename: "경력기술서.pdf", text: "" }).kind).toBe("CAREER_DOCUMENT");
+    expect(classifyDocument({ filename: "경력증명서.pdf", text: "" }).kind).toBe("CERTIFICATE");
+    expect(classifyDocument({ filename: "재직증명서.pdf", text: "" }).kind).toBe("CERTIFICATE");
   });
 });
 

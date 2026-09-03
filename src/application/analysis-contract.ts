@@ -4,7 +4,10 @@ import { writingStyleSchema } from "@/domain/writing-style";
 import { editingStanceSchema } from "@/domain/editing-stance";
 
 export const analysisDocumentInputSchema = z.object({
-  kind: z.enum(["cover_letter", "job_posting", "resume", "career_description", "portfolio", "revision_request"]),
+  // `certificate`는 증빙 서류입니다 — 자격증·면허증·졸업증명서. 예전에는
+  // `portfolio`라는 이름으로 모델에 갔고, 작품집으로 소개된 증빙은 근거로
+  // 쓰이지 않았습니다.
+  kind: z.enum(["cover_letter", "job_posting", "resume", "career_description", "portfolio", "revision_request", "certificate"]),
   text: z.string().min(1),
   // PostgreSQL represents an absent original_filename as null. Normalize it
   // at the external boundary so a pasted text document can be analyzed just
