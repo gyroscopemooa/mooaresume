@@ -5799,3 +5799,15 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx vitest run` 970 passed(회귀 없음, 이 라우트도 기존 관례대로 전용 테스트 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공(`/api/community/posts/[postId]` 라우트 등록 확인).
 - Rollback: 이 커밋 revert. `REMOVED`로 바뀐 글이 있었다면 `PUBLISHED`로 직접 되돌려야 화면에 다시 나타납니다(삭제가 소프트 삭제라 데이터 자체는 남아 있습니다).
 - **남은 일(사용자)**: `COMMUNITY_ADMIN_EMAILS` 환경변수 추가. 그 전까지는 삭제 버튼이 보여도 눌러도 403으로 거부됩니다(안전한 방향의 기본값).
+
+## 2026-09-04 — Claude: 헤더에서 "커뮤니티" 링크를 임시로 숨김(페이지는 그대로 살아있음)
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "헤더에만 안나오게하고 링크로 들어가게 해줘" — 모바일에서 실사용자로 테스트하는 동안 일반 방문자에게 아직 커뮤니티를 노출하고 싶지 않다는 취지.
+- Status: completed. 마이그레이션 없음, 라우트 삭제 없음.
+- 확인한 것: `SiteNav`(`site-nav.tsx`)는 `src/app/page.tsx`(홈) 한 곳에서만 쓰이고, `/community`로 가는 링크는 이 컴포넌트의 `SECTIONS` 배열 안 "커뮤니티" 섹션 하나뿐이었습니다. `/community/page.tsx` 라우트 자체나 `middleware.ts` 등 접근 제어 로직은 전혀 건드리지 않았습니다 — 주소를 직접 입력하거나 다른 페이지(글쓰기 완료 후 리다이렉트 등)에서 들어오는 링크는 그대로 작동합니다.
+- `site-nav.tsx`의 `SECTIONS` 배열에서 `{title: "커뮤니티", links: [{href: "/community", ...}]}` 객체 하나만 제거하고, 그 자리에 왜 뺐는지와 언제 다시 넣으면 되는지 설명하는 주석을 남겼습니다. 배열의 나머지 두 섹션("서비스", "이용 안내")과 그 안의 다른 링크(요금 안내, 첨삭 예시, 이용 방법, 팁과 노하우, 친구 추천)는 전혀 변경하지 않았습니다.
+- Files: `src/components/site-nav.tsx`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint src/components/site-nav.tsx` clean, `npx vitest run` 970 passed(회귀 없음), `npx next build` 성공(`/community`, `/community/[postId]` 라우트 정상 등록 — 페이지 자체는 안 지워졌음을 재확인).
+- Rollback: 이 커밋 revert. 되돌리면 헤더 메뉴에 "커뮤니티" 섹션이 다시 나타납니다(코드만 되돌리면 되고, 데이터나 스키마 영향 없음).
+- 다음: 실사용자 테스트가 끝나면 이 커밋을 되돌리거나, `SECTIONS` 배열에 "커뮤니티" 섹션을 다시 추가하면 됩니다.
+
