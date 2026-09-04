@@ -173,6 +173,7 @@ export function ProCreateWizard() {
         {current === 2 && <>
           <MaterialUpload attachments={materialAttachments} onChange={setMaterialAttachments} />
           <AdditionalInfoInput
+            fileHintLayout="collapsible"
             text={notes}
             attachments={freeformAttachments}
             onTextChange={setNotes}

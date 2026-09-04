@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { FileText, LoaderCircle, Paperclip, X } from "lucide-react";
 import type { CandidateFreeformAttachment } from "@/domain/candidate-material";
 import { ARCHIVE_DOCUMENT_ACCEPT } from "@/lib/local-document";
@@ -23,6 +23,14 @@ type Props = {
    */
   placeholder?: string;
   label?: string;
+  /**
+   * 파일 형식·ZIP 안내는 세 줄짜리라 좁은 화면에서 입력칸보다 길어집니다.
+   * "collapsible"이면 좁은 화면에서만 접고, 넓은 화면에서는 지금처럼 펼쳐 둡니다.
+   * PC는 이 안내를 입력칸 옆 설명란으로 옮기는 편이 나아서 자리만 잡아둔
+   * 상태입니다 — 그때 여기에 "side"를 더하면 됩니다.
+   * 기본값은 기존 동작이라 다른 호출부는 그대로입니다.
+   */
+  fileHintLayout?: "inline" | "collapsible";
 };
 
 export function AdditionalInfoInput({
@@ -32,7 +40,11 @@ export function AdditionalInfoInput({
   onAttachmentsChange,
   placeholder = EXPERIENCE_PLACEHOLDER,
   label,
+  fileHintLayout = "inline",
 }: Props) {
+  const hintId = useId();
+  const [hintOpen, setHintOpen] = useState(false);
+  const collapsibleHint = fileHintLayout === "collapsible";
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
@@ -124,7 +136,14 @@ export function AdditionalInfoInput({
       {/* The zip line promises less than the feature does on purpose: an
           archive is the one upload where the applicant cannot see what got
           through, so what will not make it is named before they try. */}
-      <p className={styles.fileHint}>PDF · DOCX · TXT · MD 지원 · 스캔 PDF/JPG/PNG는 결제 후 문서 인식 예정<br/>ZIP은 안에 든 PDF·DOCX·TXT·MD만 꺼내 읽습니다. 암호가 걸려 있거나 HWP·이미지가 들어 있으면 그 파일은 빠지며, 빠진 파일 이름을 알려 드립니다. 꺼낸 파일도 첨부 {MAX_ATTACHMENTS}개 제한에 포함됩니다.<br/>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요. 파일에 따라 추출이 제한될 수 있어 중요한 내용은 직접 입력해 주세요.</p>
+      {collapsibleHint && <button
+        type="button"
+        className={styles.hintToggle}
+        aria-expanded={hintOpen}
+        aria-controls={hintId}
+        onClick={() => setHintOpen((open) => !open)}
+      >{hintOpen ? "▾" : "▸"} 어떤 파일을 올릴 수 있나요? <b>{hintOpen ? "접기" : "자세히"}</b></button>}
+      <p id={hintId} className={styles.fileHint} data-collapsible={collapsibleHint || undefined} data-open={hintOpen || undefined}>PDF · DOCX · TXT · MD 지원 · 스캔 PDF/JPG/PNG는 결제 후 문서 인식 예정<br/>ZIP은 안에 든 PDF·DOCX·TXT·MD만 꺼내 읽습니다. 암호가 걸려 있거나 HWP·이미지가 들어 있으면 그 파일은 빠지며, 빠진 파일 이름을 알려 드립니다. 꺼낸 파일도 첨부 {MAX_ATTACHMENTS}개 제한에 포함됩니다.<br/>파일을 끌어다 놓거나 첨부 버튼으로 올릴 수 있어요. 파일에 따라 추출이 제한될 수 있어 중요한 내용은 직접 입력해 주세요.</p>
         <span>직접 입력 {text.length.toLocaleString()}자 <small>최대 12,000자</small>{attachmentCharacters > 0 ? ` · 첨부 원문 ${attachmentCharacters.toLocaleString()}자` : ""}</span>
       </footer>
       {error && <p className={styles.error}>{error}</p>}

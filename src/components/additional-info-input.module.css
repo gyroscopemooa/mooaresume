@@ -5,3 +5,12 @@
    두고 안내문은 아래 줄로 내립니다. */
 .composer footer{height:auto;min-height:34px;flex-wrap:wrap;gap:4px 10px;padding:6px 9px;overflow:visible}
 .composer footer>p{order:3;flex:1 1 100%;padding:0}
+/* 파일 안내 접기. 넓은 화면에서는 토글을 감추고 안내를 그대로 펼쳐 둬서 지금과
+   똑같이 보입니다 — PC는 이 안내를 입력칸 옆 설명란으로 옮기는 편이 낫다고 보고
+   자리만 잡아둔 상태입니다. 좁은 화면에서만 토글을 띄우고 안내를 접습니다. */
+.hintToggle{display:none}
+@media(max-width:760px){
+  .composer footer .hintToggle{display:inline-flex;align-items:center;gap:4px;order:2;flex:1 1 100%;margin:2px 0 0;padding:6px 8px;border:0;border-radius:6px;background:#f4f7f5;color:#4a5f55;font-size:8px;font-weight:800;text-align:left;cursor:pointer}
+  .composer footer .hintToggle b{color:#176b4a}
+  .composer footer .fileHint[data-collapsible]:not([data-open]){display:none}
+}

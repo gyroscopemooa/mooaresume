@@ -6150,3 +6150,26 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 360·393·1280px `scrollWidth == viewport` 유지. 칩·배지·제목 좌표 측정 및 스크린샷 확인.
 - Rollback/recovery reference: 이 커밋 revert.
 - User decision: 사용자 요청(정정).
+
+### 2026-09-05 02:15 KST — 파일 안내 접기(모바일만·크리에이터만), PC는 옆 설명란 자리만 예약
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("pc는 파이프라인 길만 만들어놓고 예약, 모바일은 적용, 크리에이터만 일단").
+- Status: active (모바일). PC 옆 설명란은 **proposed — 미구현, 자리만 확보**.
+- Protected baseline: `122f0fa`. `AdditionalInfoInput`을 함께 쓰는 `pro-input-page`(PRO 상세 입력)와 `result-workspace-complete`(재첨삭)는 **아무 변화 없음**.
+- Change and reason:
+  - 파일 형식·ZIP 안내가 세 줄이라 모바일에서 입력칸보다 길었습니다. `AdditionalInfoInput`에 `fileHintLayout?: "inline" | "collapsible"` prop을 추가하고(기본값 `"inline"` = 기존 동작), `pro-create-wizard`에서만 `"collapsible"`을 넘깁니다. 다른 두 호출부는 prop을 안 넘기므로 그대로입니다.
+  - **모바일(≤760px)에서만** 토글(`▸ 어떤 파일을 올릴 수 있나요? 자세히`)을 띄우고 안내를 접습니다. **넓은 화면에서는 토글을 감추고 안내를 그대로 펼쳐 둬 기존과 동일**합니다.
+  - 안내문은 접힌 상태에서도 DOM에 남고 CSS로만 감춥니다 — 서버·클라이언트 렌더가 같아 hydration 불일치가 없고, PC에서는 상태와 무관하게 항상 보입니다. `aria-expanded`/`aria-controls`(`useId`)로 접근성 연결.
+  - **PC 예약분**: 안내를 별도 요소·별도 prop으로 떼어놨으므로, 나중에 `fileHintLayout`에 `"side"`를 더하고 입력칸 오른쪽 칼럼에 붙이면 됩니다. 쓰지 않는 분기를 미리 만들지 않으려고 이번엔 값 자체는 넣지 않았습니다.
+- Files/branch: `src/components/additional-info-input.tsx` + `.module.css`, `src/components/pro-create-wizard.tsx` — `claude/github-gui-sync-jfbyd5`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 브라우저 확인 — 393px: 토글 보임·안내 접힘·클릭 시 펼쳐짐. 1280px: 토글 숨김·안내 항상 펼쳐짐(기존과 동일).
+- Rollback/recovery reference: 이 커밋 revert. 또는 `pro-create-wizard.tsx`에서 `fileHintLayout="collapsible"` 한 줄만 지우면 모든 화면이 기존 동작으로 돌아갑니다.
+- User decision: 모바일·크리에이터만 적용은 사용자 지시. PC 옆 설명란은 사용자 확인 후 진행합니다.
+
+### 2026-09-05 02:15 KST — (기록) 작업 컨테이너 로컬 롤백 발생, 원격 커밋으로 복구
+
+- Agent/session: Claude (github-gui-sync-jfbyd5).
+- Status: 해결됨(정보 기록용).
+- 무슨 일이었나: 세션이 중단됐다 재개되면서 로컬 작업 트리와 브랜치 ref가 `8857282` 시점으로 되돌아갔습니다. 그 상태에서 커밋하니 소스 수정은 빠지고 변경 로그만 담긴 커밋(`46a45b7`)이 만들어졌고, 푸시는 non-fast-forward로 거절됐습니다.
+- 어떻게 처리했나: 거절을 강제 푸시로 넘기지 않고 `git fetch`로 원격 상태를 먼저 확인했습니다. 원격 `origin/main`에는 `1f1b15a`·`122f0fa`가 정상적으로 남아 있었습니다. `46a45b7`을 `recover/collapsible-hint-log` 브랜치로 보존한 뒤 로컬을 `origin/main`에 맞추고, 유실된 소스 수정만 다시 적용했습니다.
+- 교훈: 컨테이너 롤백 가능성이 있으므로 푸시 성공 여부를 작업 단위마다 확인하고, non-fast-forward 거절은 항상 `fetch` 후 원인을 확인한 다음 처리합니다(강제 푸시 금지).
