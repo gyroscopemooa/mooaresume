@@ -74,17 +74,17 @@ function CareerLoginForm() {
       <section className={styles.card}>
         <span>CAREER PROFILE</span>
         <h1>검사 결과, 계속 이어보기</h1>
-        <p>검사 결과를 내 프로필에 모아 두고, 다음 커리어 해설에서도 이어서 활용하세요.</p>
+        <p>검사 결과를 내 계정에 모아 두고, 다음 해설에서 이어서 씁니다.</p>
         <ul className={styles.benefits}>
-          <li><CheckCircle2 />완료한 탐색 결과 한곳에 보관</li>
-          <li><CheckCircle2 />AI 해설에 넣을 결과 직접 선택</li>
+          <li><CheckCircle2 />완료한 검사 결과 보관</li>
+          <li><CheckCircle2 />해설에 넣을 결과 직접 선택</li>
         </ul>
         <button type="button" className={styles.google} disabled={busy} onClick={() => void continueWithGoogle()}>Google로 계속하기 <ArrowRight /></button>
         <div className={styles.divider}><span>또는 이메일로 로그인</span></div>
         <label><Mail /><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소" /></label>
         <button type="button" className={styles.email} disabled={busy} onClick={() => void sendMagicLink()}>{busy ? "처리 중" : "로그인 링크 받기"}<ArrowRight /></button>
         {message && <p className={styles.message} aria-live="polite">{message}</p>}
-        <small><ShieldCheck />검사 결과와 자료는 내 계정에서만 확인합니다.</small>
+        <small><ShieldCheck />검사 결과는 내 계정에서만 확인합니다.</small>
       </section>
     </main>
   );

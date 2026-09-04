@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, Cloud, Info, RotateCcw, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, Cloud, Info, LockKeyhole, RotateCcw, ShieldCheck } from "lucide-react";
 import { Radar, RadarChart, PolarAngleAxis, PolarGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { INTEREST_DIMENSIONS, getInterestProfile, scoreCareerInterest, type InterestAnswer, type InterestScore } from "@/domain/career-interest";
 import { CareerAssessmentStorageNotice } from "./career-assessment-storage-notice";
@@ -60,7 +60,7 @@ export function CareerInterestResult() {
     <div className={styles.resultHero}><span><CheckCircle2 />{isSavedResult ? "저장 기록 불러옴" : "탐색 완료"}</span><h1>{profile.code} · {profile.typeName}</h1><p>{profile.headline}</p><small>상위 3개 RIASEC 영역을 순서대로 적은 탐색 코드입니다. {isSavedResult ? `${savedDate ? `${savedDate}에 ` : ""}계정에 저장한 결과입니다.` : "직업 적합성·능력·채용 결과를 판정하지 않습니다."}</small></div>
     <nav className={styles.resultNavigation} aria-label="결과 화면 이동">
       <span className={styles.resultNavigationCurrent}><small>01</small>기본 결과</span>
-      <Link href={`/career/character?code=${profile.code}`}><small>02</small>캐릭터 해설 <ArrowRight /></Link>
+      <Link href="/career/character"><small>02</small>캐릭터 해설 <LockKeyhole /></Link>
       <Link href="/career/ai/sample?scope=interest"><small>03</small>심층해설 예시 <ArrowRight /></Link>
     </nav>
     <CareerAssessmentStorageNotice assessmentCode="interest" assessmentVersion="mooa-riasec-exploration-kr-beta-v1" answersRaw={raw} resultPath="/career/interest/result" restored={isSavedResult} />

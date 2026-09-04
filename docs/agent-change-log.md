@@ -6273,3 +6273,20 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/career-ai-preparation.tsx`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run`, `npx eslint src` 통과. 이 화면은 로그인 상태에 따라 갈리므로 배포 후 실제 확인 필요.
 - Rollback: 이 커밋 revert.
+
+### 2026-09-05 KST — 캐릭터 해설(유료) 잠금 + 커리어 로그인 화면 정리
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("캐릭터해설이 사실상 유료인데 뚫려 있다 / 로그인창 글 끊김·미니멀하게").
+- Status: active. 마이그레이션 없음. 결제·AI 연동은 이번 변경에 없습니다.
+- Protected baseline: `career-character-result.tsx`, `career-assessment-closed.tsx`, `career-ai-sample-*`는 손대지 않았습니다. 잠금 화면은 새 파일로 추가했고, `career-assessment-closed.module.css`를 그대로 재사용합니다.
+- Change and reason:
+  - **캐릭터 해설이 주소만 알면 전부 열렸습니다.** `/career/character?code=아무거나`로 검사도 로그인도 없이 전문을 볼 수 있었습니다. 유료로 열 상품인데 결제(Polar)가 커리어 쪽에 아직 붙지 않아, 연동 전까지 `CareerCharacterLocked`("결제 준비 중")로 잠급니다.
+  - `example=1`만 열어 둡니다. 이 경로는 심층해설 예시 안에서 여는 카드입니다. 다만 **주소로 넘어온 `code`는 무시하고** 예시 리포트와 같은 코드(`getCareerAiSample("interest").code` = ISA)로만 그립니다. 그렇게 하지 않으면 `&example=1`을 붙이는 것만으로 잠금이 무력화됩니다.
+  - 기본 결과 화면의 02번 탭은 이름("캐릭터 해설")을 유지하되 화살표를 자물쇠 아이콘으로 바꾸고, 주소에서 `?code=`를 뺐습니다(잠금 화면은 코드를 쓰지 않고, URL에 결과 코드를 남길 이유도 없습니다).
+  - 참고로 캐릭터 해설은 **AI도 외부 API도 쓰지 않습니다.** `getRiasecCharacterProfile`이 RIASEC 세 글자로 미리 써 둔 문장을 조합할 뿐이라 호출 비용이 0입니다. 심층해설 예시는 사용자 결과와 무관한 고정 샘플 하나(`career-ai-sample.ts`)로, 둘은 서로 다른 경로입니다.
+  - **로그인 화면**: `.card h1`에 `white-space:nowrap`이 걸려 있었고 `.card`가 `overflow:hidden`이라, 데스크톱에서 "검사 결과, 계속 이어보기"가 카드 밖으로 나가 **잘려 보였습니다**. nowrap을 빼고 `word-break:keep-all`로 단어 단위로 줄바꿈되게 했습니다.
+  - 같은 화면을 토스처럼 작은 글자·왼쪽 정렬·여백 위주로 다시 잡았습니다. 제목 37px→22px, 본문 13px 이하, 카드 폭 520→392px, 가운데 정렬을 왼쪽 정렬로. 입체감은 색을 더 쓰지 않고 그림자 세 겹(1px 윤곽 + 가까운 그림자 + 멀고 넓은 그림자)과 버튼 세로 그라데이션, 누를 때 1px 내려앉는 동작으로 냈습니다.
+- Files: `src/components/career-character-locked.tsx`(신규), `src/app/career/character/page.tsx`, `src/components/career-interest-result.tsx`, `src/app/career/login/page.tsx`, `src/app/career/login/page.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx eslint src` 오류 0건. 로컬 dev에서 `/career/character?code=RIA`(잠김), `?code=RIA&example=1`(ISA 예시로 고정), `/career/login` 1280px·375px 렌더 확인.
+- Rollback: 이 커밋 revert. 캐릭터 해설을 다시 열려면 `src/app/career/character/page.tsx`의 `if (example !== "1")` 한 줄만 지우면 이전 동작으로 돌아갑니다.
+- Open decision: 02번 탭 이름을 "캐릭터 해설"로 둘지 "심층해설"로 바꿀지, 기본 결과를 로그인 필수로 할지는 사용자 확인 대기 중입니다.
