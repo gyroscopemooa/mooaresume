@@ -6049,3 +6049,16 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, CSS 전용), `npx next build` 성공. 로컬 dev 서버로 `/guide` 페이지는 스크린샷 확인 완료(그림자 정상 적용). `/examples` 페이지는 상단 대시보드까지는 확인했고, 이번에 고친 비교 카드·질문 박스·CTA 부분은 화면이 길어 정확한 텍스트 셀렉터를 못 찾아 스크린샷으로 직접 확인은 못 했습니다 — 다만 홈페이지에서 이미 여러 번 검증된 것과 완전히 같은 패턴(border-radius가 있는 요소에 box-shadow만 추가)이라 위험은 낮다고 판단했습니다.
 - Rollback: 이 커밋 revert. 되돌리면 두 페이지의 해당 박스들이 다시 평면으로 돌아갑니다.
 - **다음 결정이 필요한 것**: `result-workspace-*`·PRO/QUICK 입력 플로우·관리자 페이지까지 이어서 할지는 사용자 확인 후 진행하는 게 안전합니다(범위가 크고 결제 화면 포함).
+
+## 2026-09-04 — Claude: 제목이 <b>/<strong>로 렌더링되는 곳까지 keep-all 확장, 온보딩 카드 아이콘 축소, PRO 입력 안내문 축약
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자가 스크린샷 두 장으로 신고: (1) `/onboarding`에서 "아직 아무것도 못 썼어요"가 "…못 썼어" + "요"로 쪼개짐, (2) `/pro/create`에서 "최종본과 면접 리스크"가 "…리스" + "크"로 쪼개짐. "디자인보다 디테일 UI가 우선"이라는 의견과 함께 온보딩 아이콘도 작게 요청.
+- Status: completed. 마이그레이션 없음.
+- **왜 지난번 전역 수정(h1,h2,h3)으로 안 잡혔는지**: 이 코드베이스는 카드 제목을 실제로는 `<h1>`~`<h3>`가 아니라 `<b>`로 렌더링하는 곳이 매우 많습니다(온보딩 선택 카드 `<b>{title}</b>`, PRO 입력 단계 카드 `<b>{title}</b>` 등) — 의미상 제목인데 태그만 다른 경우입니다. 지난 전역 규칙은 h1/h2/h3만 짚어서 이런 곳은 그대로 뚫려 있었습니다.
+- **조치 1**: `globals.css`의 규칙을 `h1,h2,h3{...}`에서 `h1,h2,h3,b,strong{...}`으로 넓혔습니다. `<b>`/`<strong>`은 사이트 전체에 인라인 강조로도 쓰이지만, keep-all은 "이미 한 줄에 들어가는 글"에는 아무 영향이 없고 "줄바꿈이 필요할 때 어디서 끊을지"만 바꾸므로 부작용 없이 적용 가능하다고 판단했습니다.
+- **조치 2(온보딩 아이콘)**: `onboarding.module.css`의 압축 카드 레이아웃(모바일 전용)에서 아이콘을 22px+13px 여백(합 48px 상자)에서 18px+10px 여백(합 38px 상자)으로 줄였습니다.
+- **조치 3(같이 발견한 문제)**: 이 압축 카드 레이아웃은 `@media(max-width:640px)`에서만 켜지는데, 이 사이트의 다른 모바일 처리는 대부분 750~760px를 기준으로 삼습니다(guide 750px, community 760px 등). 640px는 유난히 좁은 기준이라, 그보다 조금 넓은(그러나 여전히 모바일인) 화면에서는 압축 레이아웃이 아예 안 켜지고 큰 데스크톱 스타일 카드로 떨어졌을 가능성이 있습니다 — 신고된 스크린샷의 레이아웃(제목 아래 설명이 항상 보이고 라디오가 오른쪽 위 고정)이 정확히 그 "큰 카드" 스타일과 일치합니다. 다른 모바일 기준과 맞춰 640px→760px로 넓혔습니다.
+- **조치 4(문구 축약)**: PRO 입력 화면의 "입력 방식만 다르고 첨삭·분석 수준은 동일합니다. 간편 입력에서는 자료를 한 번에 넣으면 자동으로 분류합니다."를 "…수준은 같습니다. 간편 입력은 자료를 한 번에 넣으면 자동 분류합니다."로 줄여 줄 수를 줄였습니다(뜻 변화 없음).
+- Files: `src/app/globals.css`, `src/app/onboarding/onboarding.module.css`, `src/components/pro-input-page.tsx`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint src/components/pro-input-page.tsx` clean, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공. 로컬 dev 서버(393px 뷰포트)로 `/onboarding`·`/pro/create` 스크린샷 확인 — 제목 줄바꿈이 단어 단위로 자연스러워지고 카드가 압축 레이아웃으로 표시됨을 확인.
+- Rollback: 이 커밋 revert. 되돌리면 `<b>` 제목의 조사 분리 문제와 640px 기준이 재발합니다.

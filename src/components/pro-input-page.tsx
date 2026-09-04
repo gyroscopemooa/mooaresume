@@ -330,7 +330,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
             <span className={inputMode === "SIMPLE" ? styles.modeOn : ""}>간편 입력</span>
             <span className={inputMode === "DETAILED" ? styles.modeOn : ""}>상세 입력</span>
           </button>
-          <small>입력 방식만 다르고 첨삭·분석 수준은 동일합니다. 간편 입력에서는 자료를 한 번에 넣으면 자동으로 분류합니다.</small>
+          <small>입력 방식만 다르고 첨삭·분석 수준은 같습니다. 간편 입력은 자료를 한 번에 넣으면 자동 분류합니다.</small>
         </div>
 
         {inputMode === "SIMPLE" && <>

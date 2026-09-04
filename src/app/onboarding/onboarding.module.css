@@ -25,7 +25,7 @@
    필요 없습니다, 아직 내 얘기가 아니니까), 고른 카드만 설명을 보여주고,
    "다음"은 화면 하단에 고정해 스크롤 안내 자체가 필요 없게 만듭니다.
    토스 같은 앱이 선택 화면마다 쓰는 방식입니다. */
-@media(max-width:640px){
+@media(max-width:760px){
   .hero{padding:30px 0 22px}
   /* 이 헤드라인은 이 폭에서 한 줄에 못 들어갑니다(계산상 필요 폭이
      컨테이너보다 넓음) — 두 줄은 피할 수 없으므로, 대신 각 줄이 폭을
@@ -36,7 +36,7 @@
   .options{grid-template-columns:1fr;gap:10px}
   .options>button{
     display:grid;
-    grid-template-columns:48px 1fr;
+    grid-template-columns:38px 1fr;
     column-gap:14px;
     align-items:center;
     min-height:auto;padding:16px 44px 16px 16px;
@@ -50,8 +50,8 @@
   .options button>svg{
     grid-row:1/-1;grid-column:1;align-self:center;
     box-sizing:content-box;flex:none;
-    width:22px;height:22px;margin:0;padding:13px;
-    border-radius:14px;color:#fff;
+    width:18px;height:18px;margin:0;padding:10px;
+    border-radius:12px;color:#fff;
     box-shadow:0 6px 14px -8px rgba(15,40,30,.4);
     transition:box-shadow 120ms ease;
   }
@@ -88,7 +88,7 @@
 }
 
 .stickyCta{display:none}
-@media(max-width:640px){
+@media(max-width:760px){
   .stickyCta{
     display:block;position:fixed;left:0;right:0;bottom:0;z-index:20;
     padding:14px 18px calc(14px + env(safe-area-inset-bottom));
