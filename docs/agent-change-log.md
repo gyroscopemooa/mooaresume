@@ -5978,3 +5978,20 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/community-lounge.tsx`.
 - Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 아이콘이 다시 보입니다.
+
+## 2026-09-04 — Claude: 메인 홈페이지에 토스 스타일 입체감(레이어드 섀도우) 1차 적용 — main 미배포, 검토 대기
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "나머지 모바일 최적화도 해줘 이어서 이번 커뮤뿐아니라 다른페이지도 토스처럼 입체감있게 디자인" → 어디부터 적용할지 물어봤고, 사용자가 "메인홈은 위험해서 롤백가능하게 테스트먼저보고"라고 답해 범위를 메인 홈페이지로 좁히고, 배포 전 스크린샷으로 먼저 확인받기로 함.
+- Status: **코드는 완성, main에는 아직 push하지 않음.** 사용자가 스크린샷을 보고 승인하면 그때 main에 push합니다(그래야 실제 배포됨). 마이그레이션 없음.
+- **범위를 왜 좁혔는지**: 홈페이지(`src/app/page.tsx`)는 섹션이 15개가 넘고 각각 별도 CSS 모듈(`landing-sections`, `landing-positioning`, `enterprise-promo`, `one-click`, `career-home-cta`, `field-credibility`, `creed`, `outcome-learning` 등)로 나뉘어 있습니다. 이걸 전부 한 번에 다시 디자인하면 되돌리기도 검증하기도 어려워집니다. 그래서 이번엔 **공용 컴포넌트(`globals.css`)와 요금제 카드(`pricing-comparison.module.css`)** 두 곳만 손댔고, 나머지 8개 섹션 전용 CSS 파일은 건드리지 않았습니다 — 구조·문구·색상 변경 없이 CSS 속성만 추가/수정해서 되돌리기가 이 커밋 하나만 revert하면 되도록 했습니다.
+- **적용한 것**:
+  - `:root`에 레이어드 섀도우 토큰 3개 추가(`--shadow-sm`, `--shadow-md`, `--shadow-lift`) — 이후 다른 페이지에도 같은 톤으로 재사용하기 위한 공용 값입니다.
+  - `.feature-grid article`(홈의 "01·CREATE/02·BUILD/03·POLISH" 카드, "왜 MOOA인가요" 카드): 기존엔 위쪽 테두리 선 하나뿐이던 것을 실제 카드(흰 배경·둥근 모서리 18px·은은한 그림자)로 바꾸고, 호버 시 3px 위로 뜨며 그림자가 진해지는 인터랙션 추가.
+  - `.icon-box`(작은 아이콘 정사각형): 살짝 대각선 그라디언트 + 안쪽 하이라이트(inset shadow) + 바깥 그림자 추가 — 눌린 게 아니라 살짝 튀어나온 느낌.
+  - `.button`(사이트 전역 주요 초록 버튼): 호버 시 1px 위로 뜨며 그림자가 진해지고, 클릭 시 눌리는 느낌(active 상태)을 추가.
+  - `pricing-comparison.module.css`의 `.cards article`(QUICK/PRO/FINAL 요금제 카드): 원래 "가장 많이 선택"(PRO) 카드에만 그림자가 있고 나머지 둘은 테두리만 있던 것을, 셋 다 은은한 그림자 + 호버 리프트를 갖도록 통일.
+- **확인 방법**: 이 세션에서 로컬 Next.js 개발 서버를 직접 띄우고(Chromium 헤드리스로 스크린샷) 모바일(390px)·데스크톱(1440px) 두 화면 모두에서 실제 렌더링을 확인했습니다 — mooaresume.com 실서비스가 아니라 이 컨테이너 안에서 코드를 직접 실행해 본 것입니다. 스크린샷을 사용자에게 전송해 승인을 기다리는 중입니다.
+- Files: `src/app/globals.css`(`:root` 토큰, `.feature-grid article`, `.icon-box`, `.button`/`.button:hover`/`.button:active`), `src/components/pricing-comparison.module.css`(`.cards article`).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, 순수 CSS 변경), `npx next build` 성공, 로컬 서버 시각 확인 완료(모바일·데스크톱).
+- Rollback: 이 커밋 revert. 되돌리면 카드들이 다시 테두리만 있는 평면 스타일로 돌아갑니다.
+- **다음 단계**: 사용자 승인 시 `main`에 push(실제 배포). 승인 후에는 나머지 섹션(전용 CSS 모듈 8개)·다른 페이지(분석 화면, career 등)로 같은 톤을 확장할지 이어서 논의합니다.
