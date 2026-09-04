@@ -5924,3 +5924,16 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/community-lounge.tsx`(`hotPostsList` 변수 추출, 모바일 전용 블록 추가), `src/components/community-lounge.module.css`(`.mobileHot` 신설, 모바일 `.hero` 크기 축소).
 - Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 모바일에서 인기글 카드가 다시 안 보이고, 히어로 글자 크기도 이전 크기로 돌아갑니다.
+
+## 2026-09-04 — Claude: [장애 긴급 조치] 커뮤니티 전체가 먹통되던 문제 — is_editorial 컬럼을 select에서 임시 제거
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 신고: "글 다 지워졋는데 무슨문제? 글을 불러오지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요 이렇게나옴".
+- Status: **completed(긴급 롤백). 데이터 유실 없음.** — 원인은 제 실수였습니다.
+- **원인**: 바로 전 작업(매일 자동 글 기능)에서 `community-publication.ts`의 `communityPostSelect`/`communityCommentSelect`와 `posts/[postId]/comments/route.ts`의 select 문자열에 `is_editorial` 컬럼을 추가해 커밋·배포했습니다. 그런데 그 컬럼을 실제로 만드는 마이그레이션(`20260904030000_community_daily_seed.sql`)은 **DB에는 아직 적용되지 않은 상태**였습니다(이 프로젝트는 코드 배포와 DB 마이그레이션 적용이 분리돼 있고, `npm run db:remote:push`로 사용자가 직접 승인 후 적용하는 절차입니다 — `package.json`/`docs/development-checkpoint-2026-08-16.md` 참고). 그 결과 `/api/community/posts`·`/community/[postId]`가 글을 조회할 때마다 PostgREST가 "없는 컬럼(`is_editorial`)"을 이유로 요청 자체를 거부했고, 화면에는 "글을 불러오지 못했어요"라는 일반 오류로만 보였습니다. **DB의 글 데이터는 전혀 건드리지 않았고, 실제로 지워진 글은 없습니다** — 목록을 못 가져왔을 뿐입니다.
+- **조치**: `communityPostSelect`·`communityCommentSelect`(`community-publication.ts`)와 `posts/[postId]/comments/route.ts`의 두 select 문자열에서 `is_editorial`을 뺐습니다. `toCommunityPost`/`toCommunityComment`(`community-repository.ts`)의 `booleanValue()`는 원래도 컬럼이 없으면 `false`를 반환하도록 짜여 있어(방어적으로 작성해 둔 것이 이번에 도움이 됐습니다) 타입 변경 없이 `isEditorial: false`로 안전하게 동작합니다 — "운영팀" 배지만 다시 안 보일 뿐, 코드가 깨지지는 않습니다.
+- `/api/community/seed`(자동 글 라우트) 자체는 여전히 `is_editorial`을 참조합니다 — 그 라우트는 아직 아무도 호출하지 않으므로(크론 미설정, `COMMUNITY_SEED_ENABLED` 꺼짐) 지금 당장 사용자에게 영향은 없지만, **마이그레이션 적용 전까지는 절대 켜면 안 됩니다.**
+- Files: `src/server/community/community-publication.ts`, `src/app/api/community/posts/[postId]/comments/route.ts`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공. **이 세션은 mooaresume.com 아웃바운드가 막혀 있어 실제 배포 후 화면이 복구됐는지 직접 확인은 못 했습니다** — 사용자 확인 필요.
+- Rollback: 이 커밋을 되돌리면 다시 `is_editorial`을 select해서 같은 장애가 재발합니다(마이그레이션 적용 전까지는 되돌리면 안 됨).
+- **재발 방지 교훈**: 이 프로젝트는 "코드 배포"와 "DB 마이그레이션 적용"이 분리돼 있는데, 이번에 그 경계를 무시하고 마이그레이션이 적용됐다고 가정한 채 select 문에 새 컬럼을 넣어 배포했습니다. **앞으로 새 컬럼을 쓰는 코드는, 그 마이그레이션이 실제로 원격 DB에 적용된 걸 확인(`npm run db:remote:list` 또는 Supabase 대시보드)한 뒤에만 커밋·배포합니다.**
+- **다음 단계(사용자)**: 지금 당장은 커뮤니티가 정상으로 돌아와야 합니다(이 커밋 배포 후). "운영팀" 배지·자동 글 기능을 마저 쓰려면, Supabase SQL 에디터에서 `alter table public.community_posts add column if not exists is_editorial boolean not null default false;`와 `alter table public.community_comments add column if not exists is_editorial boolean not null default false;`를 먼저 실행(또는 `npm run db:remote:push`로 전체 마이그레이션 적용)한 뒤, `community-publication.ts`·`comments/route.ts`의 select 문자열에 `is_editorial`을 다시 넣어달라고 요청해 주세요.
