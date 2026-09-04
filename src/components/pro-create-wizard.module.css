@@ -26,6 +26,10 @@
 @media(max-width:760px){
   /* 상단 진행 바에 5단계를 전부 늘어놓으면 가로 스크롤이 생기고 어지럽습니다.
      좁은 화면에서는 지금 단계 하나만 남깁니다. */
+  /* 1fr은 minmax(auto,1fr)이라 트랙이 콘텐츠 min-content 아래로 못 줄어듭니다.
+     문항 입력칸의 고유 너비(169px) 때문에 트랙이 441px로 부풀어 화면 밖으로
+     넘쳤습니다(가로 스크롤). minmax(0,1fr)로 줄어들 수 있게 합니다. */
+  .layout{grid-template-columns:minmax(0,1fr)}
   .layout aside{overflow:visible;padding:12px}
   .layout aside button:not([data-active=true]){display:none}
   .layout>section>footer button{padding:10px 12px}

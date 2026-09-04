@@ -63,3 +63,17 @@
 .chips button i{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#98a49e;font-style:normal;font-weight:600}
 .chips button[data-on=true] i{color:#4e8a70}
 .recommend{display:block;width:100%;margin:0 0 9px;padding:8px 11px;border:1px dashed #b7d6c5;border-radius:8px;background:#f4faf6;color:#176b4a;text-align:left;font-size:9px;font-weight:800;cursor:pointer}
+/* 그리드 아이템의 자동 최소 크기는 min-content라, 문항 입력칸이 줄어들지 못해
+   카드 밖으로 넘쳤습니다. 각 단계 그리드가 좁은 화면에서 줄어들 수 있게 합니다. */
+.stepBody>*,.questions>*,.assign>*,.fields>*{min-width:0}
+.questionsHead button{white-space:nowrap}
+/* 좁은 화면에서 [번호][문항][글자수][삭제]를 한 줄에 두면 정작 문항 입력칸이
+   75px까지 눌려 글자수 칸(93px)보다 좁아집니다. 문항은 첫 줄을 다 쓰고,
+   글자수와 삭제는 다음 줄로 내립니다. */
+@media(max-width:760px){
+  .questionRow{flex-wrap:wrap}
+  .questionRow>span{order:1}
+  .questionRow>input:not(.questionLength){order:2;flex:1 1 calc(100% - 30px)}
+  .questions .questionLength{order:3;margin-left:30px}
+  .questionRow>button{order:4}
+}

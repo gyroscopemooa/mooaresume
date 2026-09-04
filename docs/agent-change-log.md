@@ -6111,3 +6111,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 1280px·393px에서 1단계·3단계 스크린샷 확인 — PC 업로드 카드 1줄, 모바일 업로드 카드 1열 1줄, 모바일 상단 칩 1개, 이전/다음 11px 한 줄(계산값 확인).
 - Rollback/recovery reference: 이 커밋 revert. 2번만 되돌리려면 추가한 `.layout>section>footer button{font-size:11px}`를 지우면 됩니다(단, 전역 누수에 다시 기대게 되므로 권장하지 않습니다).
 - User decision: 사용자 요청. 긴 안내문을 사이드바 설명 UI로 옮기는 건은 사용자가 "검토해봐야겟노"라고 하여 **미착수**, 제안만 전달했습니다.
+
+### 2026-09-05 00:20 KST — 마법사 모바일 가로 넘침(grid blowout) 수정
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 스크린샷("모바일 헤더 기준 카드 본문 자체가 커서 다 튀어나온다").
+- Status: active.
+- Protected baseline: 직전 커밋 `055e331`. CSS만 조정했고 JSX·컴포넌트 구조는 그대로입니다.
+- Change and reason:
+  1. **가로 스크롤 발생** — 393px에서 `document.scrollWidth`가 464px였습니다(헤더는 393px라 카드만 화면 밖으로 튀어나와 보임). 원인은 `.layout`의 모바일 트랙 `1fr`입니다. `1fr`은 `minmax(auto,1fr)`이라 트랙이 콘텐츠의 min-content 아래로 줄어들지 못하는데, 문항 입력칸 `<input>`의 고유 너비(169px)가 `.questionRow`→`.questions`→`.stepBody`→`<section>`으로 전파돼 트랙을 441px까지 밀어 올렸습니다(전형적인 grid blowout). `minmax(0,1fr)`로 바꾸고, 중간 그리드들이 실제로 줄어들 수 있도록 `.stepBody>*,.questions>*,.assign>*,.fields>*{min-width:0}`을 넣었습니다.
+  2. **문항 입력칸이 글자수 칸보다 좁아짐** — 1번을 고치자 한 줄에 [번호][문항][글자수][삭제]가 다 들어가면서 정작 문항 입력칸이 75px로 눌리고 글자수 칸이 93px로 더 넓어졌습니다. 760px 이하에서 문항 입력칸이 첫 줄을 다 쓰고 글자수·삭제가 다음 줄로 내려가도록 `flex-wrap`과 `order`를 지정했습니다(문항 칸 75px → 217px).
+  3. **"문항 추가" 버튼이 두 줄** — `white-space:nowrap`을 넣어 한 줄로 고정했습니다.
+- Files/branch: `src/components/pro-create-wizard.module.css`, `src/components/guided-create-form.module.css` — `claude/github-gui-sync-jfbyd5`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 393px·360px·1280px에서 **1~5단계 전부** `document.scrollWidth == viewport`임을 측정으로 확인(수정 전 393px 4단계에서 464px). 4단계 스크린샷으로 문항 칸 전체 폭·글자수 줄바꿈·버튼 한 줄 확인.
+- Rollback/recovery reference: 이 커밋 revert. 1번만 되돌리려면 `minmax(0,1fr)`을 `1fr`로, 추가한 `min-width:0` 규칙을 삭제하면 됩니다(가로 스크롤이 되돌아옵니다).
+- User decision: 사용자 요청.
