@@ -1,9 +1,4 @@
 .guided{display:grid;gap:14px;padding:24px;border:1px solid #dfe6e2;border-radius:13px;background:#fff}
-/* globals.css의 전역 footer{}는 홈 하단 사이트 푸터용인데 태그 선택자라
-   모든 <footer>에 새어 들어옵니다(1000px 이하에서 flex-direction:column).
-   이 파일은 footer를 뒤로/다음 버튼이 있는 가로 줄로 씁니다 — 새는
-   규칙이 뭘 하든 이 세 속성이 항상 이기도록 명시합니다. */
-.stepBody footer{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:0}
 .guided>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .eyebrow{display:inline-flex;padding:4px 8px;border-radius:20px;background:#e7f3ec;color:#176b4a;font-size:8px;font-weight:800}
 .guided h3{margin:8px 0 5px;font-size:15px;letter-spacing:-.02em}
