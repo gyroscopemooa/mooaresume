@@ -56,3 +56,12 @@
   .layout>section>footer{flex-wrap:wrap;row-gap:10px}
   .status{order:-1;flex:1 0 100%}
 }
+/* 모바일 상단 진행 바에서 현재 단계 칩이 348px 중 165px만 쓰고 오른쪽 168px이
+   빈 채로 남아 왼쪽으로 치우쳐 보였습니다. 칩을 바 폭에 맞추면 번호 배지가
+   아래 카드 제목의 시작선과 같은 세로선에 서고, 오른쪽 진행 표시(1/10)도
+   카드 오른쪽 끝에 맞아떨어집니다. 제목은 두 줄이 될 때 한 줄만 길고 다음 줄이
+   짧게 남지 않도록 균형을 맞춥니다. */
+@media(max-width:760px){
+  .layout aside button{width:100%}
+  .layout h1{font-size:22px;text-wrap:balance}
+}

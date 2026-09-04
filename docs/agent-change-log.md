@@ -6139,3 +6139,14 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 360·393·1280px에서 `document.scrollWidth == viewport` 유지 확인, 문항 3개 열 좌표 일치 측정, 하단 버튼 줄 스크린샷 확인.
 - Rollback/recovery reference: 이 커밋 revert.
 - User decision: 사용자 요청. 사이드바/접기 UI는 "수정하지 말고 예시만"이라 하셔서 **코드 변경 없이 목업만** 만들었습니다(`docs/` 아님, 세션 스크래치패드).
+
+### 2026-09-05 01:30 KST — 모바일 상단 단계 칩 폭 정렬(사용자가 말한 "오와열" 재해석)
+
+- Agent/session: Claude (github-gui-sync-jfbyd5). 직전 커밋에서 "오와열"을 문항 줄 정렬로 해석했는데, 사용자가 스크린샷으로 **상단 단계 칩과 제목의 왼쪽 라인**을 뜻한 것이라고 정정해 주셨습니다.
+- Status: active.
+- Protected baseline: 직전 커밋 `1f1b15a`. CSS만 조정.
+- Change and reason: 393px에서 측정해 보니 진행 바(`aside`)는 23..371인데 안의 현재 단계 칩은 38..203뿐이라 **오른쪽 168px이 빈 채로 남아** 왼쪽으로 치우쳐 보였습니다. 칩을 바 폭에 맞춰(38..356, 좌우 여백 15px 대칭) 번호 배지가 아래 카드 제목의 시작선(48px vs 49px)과 같은 세로선에 서고, 오른쪽 진행 표시(`1/10`)가 카드 오른쪽 끝에 맞아떨어집니다. 제목은 두 줄이 될 때 한 줄만 길고 다음 줄이 짧게 남는 모양을 피하려고 모바일에서 `font-size:22px`와 `text-wrap:balance`를 줬습니다.
+- Files/branch: `src/components/pro-create-wizard.module.css` — `claude/github-gui-sync-jfbyd5`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 360·393·1280px `scrollWidth == viewport` 유지. 칩·배지·제목 좌표 측정 및 스크린샷 확인.
+- Rollback/recovery reference: 이 커밋 revert.
+- User decision: 사용자 요청(정정).
