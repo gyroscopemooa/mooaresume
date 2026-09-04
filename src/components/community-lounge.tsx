@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, X } from "lucide-react";
+import { ArrowRight, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, Trash2, X } from "lucide-react";
 import { communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
 import { HeaderAccount } from "@/components/header-account";
 import { createClient } from "@/lib/supabase/client";
@@ -24,6 +24,18 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
     // 새로고침해도 같은 배너가 또 뜨지 않게, 보여준 즉시 주소의 표시만 지웁니다.
     if (attachmentNotice) router.replace("/community");
   }, [attachmentNotice, router]);
+  // 화면 표시 여부만 결정합니다 — 실제 삭제 권한은 서버(/api/community/posts/[id])가
+  // 같은 이메일을 COMMUNITY_ADMIN_EMAILS와 다시 대조해 확인합니다. 여기서
+  // 틀려도(예: 세션 조회 실패) 버튼이 안 보일 뿐, 권한 없는 삭제가 되지 않습니다.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void createClient().auth.getUser().then(({ data }) => {
+      if (!cancelled) setIsAdmin(data.user?.email === "jeonmeensoo@gmail.com");
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const [sort, setSort] = useState<Sort>("latest");
   const [topic, setTopic] = useState<CommunityTopicId | "all">("all");
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -125,6 +137,15 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
     setMessage(response.ok ? "신고를 접수했어요. 운영 기준에 따라 검토합니다." : data.error ?? "신고를 접수하지 못했어요.");
   }
 
+  async function deletePost(postId: string) {
+    if (postId.startsWith("preview-") || !window.confirm("이 글을 삭제할까요? 되돌릴 수 없습니다.")) return;
+    const response = await fetch(`/api/community/posts/${postId}`, { method: "DELETE" });
+    const data = await responseJson(response);
+    if (!response.ok) { setMessage(data.error ?? "글을 삭제하지 못했어요."); return; }
+    setPosts((current) => current.filter((item) => item.id !== postId));
+    setMessage("글을 삭제했어요.");
+  }
+
   // 헤더의 계정 메뉴가 쓰는 것과 같은 로그인입니다. 첨부를 누르자마자
   // 새 탭이 아니라 이 배너에서 바로 로그인까지 끝낼 수 있게 여기서도
   // 직접 부릅니다.
@@ -163,7 +184,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
         <div className={styles.feedTop}><div className={styles.sortTabs}><button className={sort === "latest" ? styles.selected : ""} type="button" onClick={() => { setFeedStatus("loading"); setSort("latest"); }}>최신</button><button className={sort === "popular" ? styles.selected : ""} type="button" onClick={() => { setFeedStatus("loading"); setSort("popular"); }}>인기</button></div><button type="button" className={styles.writeButton} onClick={() => setComposerOpen(true)}><PenLine/> 고민 남기기</button></div>
         <div className={styles.topicTabs}><button className={topic === "all" ? styles.topicSelected : ""} type="button" onClick={() => setTopic("all")}>전체</button>{communityTopics.map((item) => <button className={topic === item ? styles.topicSelected : ""} type="button" key={item} onClick={() => { setFeedStatus("loading"); setTopic(item); }}>{communityTopicMeta[item].label}</button>)}</div>
         <p className={styles.feedHint}>{sort === "latest" ? "방금 올라온 고민부터 읽어보세요." : "추천과 대화가 이어진 글을 먼저 봐요."}</p>
-        <div className={styles.posts}>{topicPosts.map((post) => <PostCard key={post.id} post={post} comments={comments[post.id] ?? []} commentsOpen={activeComments === post.id} onRecommend={() => void toggleRecommend(post)} onToggleComments={() => void toggleComments(post)} onSubmitComment={submitComment} onReport={() => void reportPost(post.id)} />)}</div>
+        <div className={styles.posts}>{topicPosts.map((post) => <PostCard key={post.id} post={post} comments={comments[post.id] ?? []} commentsOpen={activeComments === post.id} onRecommend={() => void toggleRecommend(post)} onToggleComments={() => void toggleComments(post)} onSubmitComment={submitComment} onReport={() => void reportPost(post.id)} onDelete={isAdmin ? () => void deletePost(post.id) : undefined} />)}</div>
         {feedStatus === "ready" && hasMore && <button type="button" className={styles.loadMore} disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? <LoaderCircle/> : "더 보기"}</button>}
         {feedStatus === "loading" && <div className={styles.empty} aria-live="polite"><b>글을 불러오는 중이에요.</b><p>잠시만 기다려 주세요.</p></div>}
         {feedStatus === "error" && <div className={styles.empty} role="alert"><b>글을 불러오지 못했어요.</b><p>연결을 확인한 뒤 다시 시도해 주세요.</p><button type="button" onClick={() => { setFeedStatus("loading"); setReloadKey((value) => value + 1); }}>다시 불러오기</button></div>}
@@ -176,10 +197,10 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
   </main>;
 }
 
-function PostCard({ post, comments, commentsOpen, onRecommend, onToggleComments, onSubmitComment, onReport }: { post: CommunityPost; comments: CommunityComment[]; commentsOpen: boolean; onRecommend: () => void; onToggleComments: () => void; onSubmitComment: (postId: string, body: string) => Promise<boolean>; onReport: () => void }) {
+function PostCard({ post, comments, commentsOpen, onRecommend, onToggleComments, onSubmitComment, onReport, onDelete }: { post: CommunityPost; comments: CommunityComment[]; commentsOpen: boolean; onRecommend: () => void; onToggleComments: () => void; onSubmitComment: (postId: string, body: string) => Promise<boolean>; onReport: () => void; onDelete?: () => void }) {
   const [comment, setComment] = useState(""); const [sending, setSending] = useState(false);
   async function send() { if (!comment.trim()) return; setSending(true); if (await onSubmitComment(post.id, comment.trim())) setComment(""); setSending(false); }
-  return <article className={styles.post}><header><span className={styles.category}>{communityTopicMeta[post.topic].label}</span><span>{post.anonymousAlias}</span><i>·</i><time>{displayTime(post.createdAt)}</time><button type="button" onClick={onReport} aria-label="게시글 신고"><ShieldAlert/></button></header><h2><Link href={communityPostPath(post.id)}>{post.title}</Link></h2><p>{post.body}</p>{post.attachments.length > 0 && <div className={styles.attachments}>{post.attachments.map((file) => <a key={file.id} href={`/api/community/attachments/${file.id}`} target="_blank" rel="noreferrer"><FileText/>{file.filename}<small>로그인 후 열기</small></a>)}</div>}<footer><button type="button" onClick={onRecommend}><ThumbsUp/> 추천 <b>{post.recommendationCount}</b></button><button type="button" onClick={onToggleComments}><MessageCircle/> 댓글 <b>{post.commentCount}</b></button></footer>{commentsOpen && <div className={styles.comments}>{comments.map((item) => <div key={item.id}><b>{item.anonymousAlias}</b><time>{displayTime(item.createdAt)}</time><p>{item.body}</p></div>)}<div className={styles.commentForm}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={1000} placeholder="익명으로 댓글을 남겨보세요."/><button type="button" disabled={sending} onClick={() => void send()}>{sending ? <LoaderCircle/> : <Send/>}<span>등록</span></button></div></div>}</article>;
+  return <article className={styles.post}><header><span className={styles.category}>{communityTopicMeta[post.topic].label}</span><span>{post.anonymousAlias}</span><i>·</i><time>{displayTime(post.createdAt)}</time>{onDelete && <button type="button" onClick={onDelete} aria-label="게시글 삭제(관리자)"><Trash2/></button>}<button type="button" onClick={onReport} aria-label="게시글 신고"><ShieldAlert/></button></header><h2><Link href={communityPostPath(post.id)}>{post.title}</Link></h2><p>{post.body}</p>{post.attachments.length > 0 && <div className={styles.attachments}>{post.attachments.map((file) => <a key={file.id} href={`/api/community/attachments/${file.id}`} target="_blank" rel="noreferrer"><FileText/>{file.filename}<small>로그인 후 열기</small></a>)}</div>}<footer><button type="button" onClick={onRecommend}><ThumbsUp/> 추천 <b>{post.recommendationCount}</b></button><button type="button" onClick={onToggleComments}><MessageCircle/> 댓글 <b>{post.commentCount}</b></button></footer>{commentsOpen && <div className={styles.comments}>{comments.map((item) => <div key={item.id}><b>{item.anonymousAlias}</b><time>{displayTime(item.createdAt)}</time><p>{item.body}</p></div>)}<div className={styles.commentForm}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={1000} placeholder="익명으로 댓글을 남겨보세요."/><button type="button" disabled={sending} onClick={() => void send()}>{sending ? <LoaderCircle/> : <Send/>}<span>등록</span></button></div></div>}</article>;
 }
 
 function PostComposer({ onClose, onCreated, onError }: { onClose: () => void; onCreated: (post: CommunityPost) => void; onError: (message: string) => void }) {

@@ -5785,3 +5785,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx vitest run` 970 passed(회귀 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌려도 지금 주제 4개 기준으로는 동작이 같습니다(중복 제거일 뿐, 값 변경 없음) — 나중에 주제를 늘릴 때만 차이가 드러납니다.
 - **인수인계 문서의 1~7번 전부 처리 완료.** 남은 것은 문서 하단의 "매일 자동 글(글 3·댓글 3)" 기능(아직 미착수, 이번 요청 범위 밖 — 사용자가 "나머지 하나씩 체크 수정하고 API 자동 글/댓글도 할 예정"이라고 밝혀 별도로 진행 예정)과, 이번 요청에 함께 포함된 **관리자(jeonmeensoo@gmail.com) 글 삭제 기능**입니다. 다음 커밋에서 이어갑니다.
+
+## 2026-09-04 — Claude: 관리자(jeonmeensoo@gmail.com) 커뮤니티 글 삭제 기능
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "내 관리자 jeonmeensoo@gmail.com 기준 글삭제하는 기능넣어주고".
+- Status: completed. **마이그레이션 없음** — 스키마가 이미 `'REMOVED'` 상태값을 예비해 두고 있었습니다.
+- 설계: `community_posts.status`의 체크 제약(`check (status in ('PUBLISHED','HIDDEN','REMOVED'))`)에 `'REMOVED'`가 이미 있었는데 실제로 그 값을 쓰는 코드가 어디에도 없었습니다. `/meensoo` 신고 처리 기능이 쓰는 `'HIDDEN'`과 성격을 나눴습니다 — `HIDDEN`은 신고를 받아 검토 후 감추는 것, `REMOVED`는 신고 없이 관리자가 직접 지우는 것. 둘 다 **행을 실제로 지우지 않는 소프트 삭제**입니다(하드 삭제는 연쇄 삭제·되돌릴 수 없는 실수 위험이 있고, 이 프로젝트의 다른 커뮤니티 조정 기능도 전부 상태값 방식입니다).
+- **본인 글만 지울 수 있는 기존 RLS를 그대로 두고 우회하지 않았습니다.** `community_posts`의 update 정책은 `owner_user_id = auth.uid()`로 본인 글만 허용합니다(신고 없는 직접 삭제는 남의 글도 지울 수 있어야 하므로 이 정책으로는 부족합니다). 그래서: (1) 요청자의 이메일을 일반 세션 클라이언트로 먼저 확인하고, (2) 관리자로 확인되면 그때만 서비스 키 클라이언트(`/meensoo`가 신고 처리에 쓰는 것과 같은 `serviceClient()`)로 전환해 상태를 바꿉니다. `admin-repository.ts`의 `serviceClient()`를 새로 만들지 않고 `export`만 추가해 재사용했습니다.
+- 관리자 목록은 코드에 이메일을 박지 않고 `COMMUNITY_ADMIN_EMAILS`(쉼표 구분, 비어 있으면 아무도 삭제 불가) 환경변수로 받습니다. **사용자가 해야 할 것**: `.env.local`·Cloudflare 양쪽에 `COMMUNITY_ADMIN_EMAILS=jeonmeensoo@gmail.com` 추가.
+- 신규 라우트 `DELETE /api/community/posts/[postId]`. 로그인 안 됨(401) → 관리자 아님(403, 이메일이 목록에 없음) → 대상 없음/DB 오류(500) 순으로 실패하고, 성공하면 `{ok:true}`.
+- 화면: `community-lounge.tsx`가 마운트 시 현재 세션의 이메일을 한 번 확인해 `jeonmeensoo@gmail.com`이면(화면 표시 여부만 결정 — 실제 권한은 서버가 다시 확인) 각 글 헤더에 삭제 아이콘(🗑)을 추가로 보여줍니다. 클릭하면 기존 신고와 같은 방식의 확인창(`window.confirm`) 후 삭제 요청을 보내고, 성공하면 화면에서도 즉시 그 글을 제거합니다.
+- Files: `src/server/admin/admin-repository.ts`(`serviceClient` export), `src/app/api/community/posts/[postId]/route.ts`(신규), `src/components/community-lounge.tsx`(관리자 감지, 삭제 핸들러, `PostCard`에 삭제 버튼), `.env.example`(`COMMUNITY_ADMIN_EMAILS` 문서화).
+- Validation: `npx vitest run` 970 passed(회귀 없음, 이 라우트도 기존 관례대로 전용 테스트 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공(`/api/community/posts/[postId]` 라우트 등록 확인).
+- Rollback: 이 커밋 revert. `REMOVED`로 바뀐 글이 있었다면 `PUBLISHED`로 직접 되돌려야 화면에 다시 나타납니다(삭제가 소프트 삭제라 데이터 자체는 남아 있습니다).
+- **남은 일(사용자)**: `COMMUNITY_ADMIN_EMAILS` 환경변수 추가. 그 전까지는 삭제 버튼이 보여도 눌러도 403으로 거부됩니다(안전한 방향의 기본값).

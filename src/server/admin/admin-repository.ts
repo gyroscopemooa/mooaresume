@@ -33,7 +33,9 @@ const envSchema = z.object({
  * 화면을 비우는 동작은 그대로 둡니다(관리자 화면 하나 때문에 콘솔 전체가 멈추면
  * 더 나쁩니다). 대신 서버 로그에는 반드시 남깁니다.
  */
-function serviceClient() {
+// 커뮤니티 글 삭제 라우트(/api/community/posts/[postId])도 같은 서비스 키
+// 클라이언트가 필요해서 내보냅니다 — 두 번째로 만들지 않습니다.
+export function serviceClient() {
   const env = envSchema.parse({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
