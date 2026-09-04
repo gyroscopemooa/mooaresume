@@ -15,7 +15,7 @@ export type CreateCommunityPostInput = z.infer<typeof createCommunityPostSchema>
 export const createCommunityCommentSchema = z.object({ body: z.string().trim().min(2, "댓글을 두 글자 이상 입력해 주세요.").max(1000) });
 export const createCommunityReportSchema = z.object({ subjectType: z.enum(["POST", "COMMENT"]), subjectId: z.string().uuid(), reason: z.enum(["PERSONAL_INFORMATION", "HARASSMENT", "MISINFORMATION", "SPAM", "OTHER"]), note: z.string().trim().max(500).optional() });
 export type CommunityAttachment = CommunityAttachmentInput & { id: string };
-export type CommunityPost = { id: string; topic: CommunityTopicId; title: string; body: string; anonymousAlias: string; recommendationCount: number; commentCount: number; createdAt: string; updatedAt: string; attachments: CommunityAttachment[] };
+export type CommunityPost = { id: string; topic: CommunityTopicId; title: string; body: string; anonymousAlias: string; isEditorial: boolean; recommendationCount: number; commentCount: number; createdAt: string; updatedAt: string; attachments: CommunityAttachment[] };
 
 export function communityPostPath(postId: string) { return `/community/${postId}`; }
 
@@ -23,10 +23,10 @@ export function communitySearchDescription(value: string, limit = 160) {
   const normalized = value.replace(/\s+/g, " ").trim();
   return normalized.length <= limit ? normalized : `${normalized.slice(0, Math.max(0, limit - 1)).trimEnd()}…`;
 }
-export type CommunityComment = { id: string; body: string; anonymousAlias: string; createdAt: string };
+export type CommunityComment = { id: string; body: string; anonymousAlias: string; isEditorial: boolean; createdAt: string };
 export function isSameOrigin(request: Request) { const origin = request.headers.get("origin"); if (!origin) return true; try { return new URL(origin).host === new URL(request.url).host; } catch { return false; } }
 export const communityPreviewPosts: CommunityPost[] = [
-  { id: "preview-role", topic: "career", title: "첫 지원 직무를 어떻게 정해야 할지 모르겠어요", body: "관심 있는 분야는 여러 개인데 지금 가진 경험으로 어디부터 지원해야 할지 막막해요.", anonymousAlias: "익명 준비자", recommendationCount: 12, commentCount: 3, createdAt: "방금 전", updatedAt: "", attachments: [] },
-  { id: "preview-application", topic: "application", title: "자소서에 쓸 경험이 너무 평범한 것 같아요", body: "대단한 프로젝트는 없지만 일하면서 문제를 해결했던 과정은 있어요. 어떻게 꺼내야 할까요?", anonymousAlias: "익명 준비자", recommendationCount: 8, commentCount: 2, createdAt: "18분 전", updatedAt: "", attachments: [] },
-  { id: "preview-job-search", topic: "job-search", title: "전공과 다른 직무로 지원해도 괜찮을까요?", body: "관심은 확실하지만 관련 스펙이 많지 않아 처음부터 포기해야 하나 고민돼요.", anonymousAlias: "익명 준비자", recommendationCount: 6, commentCount: 4, createdAt: "42분 전", updatedAt: "", attachments: [] },
+  { id: "preview-role", topic: "career", title: "첫 지원 직무를 어떻게 정해야 할지 모르겠어요", body: "관심 있는 분야는 여러 개인데 지금 가진 경험으로 어디부터 지원해야 할지 막막해요.", anonymousAlias: "익명 준비자", isEditorial: false, recommendationCount: 12, commentCount: 3, createdAt: "방금 전", updatedAt: "", attachments: [] },
+  { id: "preview-application", topic: "application", title: "자소서에 쓸 경험이 너무 평범한 것 같아요", body: "대단한 프로젝트는 없지만 일하면서 문제를 해결했던 과정은 있어요. 어떻게 꺼내야 할까요?", anonymousAlias: "익명 준비자", isEditorial: false, recommendationCount: 8, commentCount: 2, createdAt: "18분 전", updatedAt: "", attachments: [] },
+  { id: "preview-job-search", topic: "job-search", title: "전공과 다른 직무로 지원해도 괜찮을까요?", body: "관심은 확실하지만 관련 스펙이 많지 않아 처음부터 포기해야 하나 고민돼요.", anonymousAlias: "익명 준비자", isEditorial: false, recommendationCount: 6, commentCount: 4, createdAt: "42분 전", updatedAt: "", attachments: [] },
 ];

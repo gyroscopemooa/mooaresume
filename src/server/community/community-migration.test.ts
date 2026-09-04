@@ -6,6 +6,7 @@ const rateLimitMigration = readFileSync("supabase/migrations/20260903090000_comm
 const lockedRateLimitMigration = readFileSync("supabase/migrations/20260903110000_lock_community_rate_limit_rules.sql", "utf8");
 const relaxedPostRateLimitMigration = readFileSync("supabase/migrations/20260903120000_relax_community_post_rate_limit.sql", "utf8");
 const attachmentPostRateLimitMigration = readFileSync("supabase/migrations/20260904020000_attachment_post_rate_limit.sql", "utf8");
+const dailySeedMigration = readFileSync("supabase/migrations/20260904030000_community_daily_seed.sql", "utf8");
 
 describe("community lounge migration", () => {
   it("keeps attachments private and readable only to signed-in members", () => {
@@ -45,5 +46,20 @@ describe("community rate limits", () => {
     expect(attachmentPostRateLimitMigration).toContain("when 'RECOMMEND' then v_limit := 60; v_window_seconds := 60");
     expect(attachmentPostRateLimitMigration).not.toContain("take_community_attachment_post_limit");
     expect(attachmentPostRateLimitMigration).toContain("grant execute on function public.take_community_rate_limit(text) to authenticated");
+  });
+});
+describe("community daily seed", () => {
+  it("adds the is_editorial flag both posts and comments need for the 운영팀 badge", () => {
+    expect(dailySeedMigration).toContain("alter table public.community_posts add column if not exists is_editorial boolean not null default false");
+    expect(dailySeedMigration).toContain("alter table public.community_comments add column if not exists is_editorial boolean not null default false");
+  });
+  it("schedules the seed route through the same private.app_config pattern as analysis advance, not a hardcoded secret", () => {
+    expect(dailySeedMigration).toContain("private.trigger_community_seed()");
+    expect(dailySeedMigration).toContain("community_seed_url");
+    expect(dailySeedMigration).toContain("community_seed_cron_secret");
+    expect(dailySeedMigration).toContain("cron.schedule(\n  'community-seed-daily'");
+    // 문서(handoff-community-mobile.md)에 미리 만들어 둔 실제 비밀값이 실수로
+    // 이 커밋된 마이그레이션에 그대로 박히지 않았는지 확인합니다.
+    expect(dailySeedMigration).not.toContain("Hgke-PVzZe2_1_FJUUFvUIhGj4YJ9jXfzfwQHH1IAhw");
   });
 });

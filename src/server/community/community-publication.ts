@@ -3,8 +3,8 @@ import type { CommunityComment, CommunityPost } from "@/domain/community";
 import { createClient } from "@/lib/supabase/server";
 import { toCommunityComment, toCommunityPost } from "./community-repository";
 
-export const communityPostSelect = "id, topic, title, body, anonymous_alias, recommendation_count, comment_count, created_at, updated_at, community_attachments(id, storage_path, filename, mime_type, byte_size)";
-const communityCommentSelect = "id, body, anonymous_alias, created_at";
+export const communityPostSelect = "id, topic, title, body, anonymous_alias, is_editorial, recommendation_count, comment_count, created_at, updated_at, community_attachments(id, storage_path, filename, mime_type, byte_size)";
+const communityCommentSelect = "id, body, anonymous_alias, is_editorial, created_at";
 
 export const getPublishedCommunityPost = cache(async (postId: string): Promise<CommunityPost | null> => {
   const supabase = await createClient();

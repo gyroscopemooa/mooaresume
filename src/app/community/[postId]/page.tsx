@@ -45,12 +45,12 @@ export default async function CommunityPostPage({ params }: PageProps) {
     <article className={styles.article}>
       <p className={styles.topic}>{communityTopicMeta[post.topic].label}</p>
       <h1>{post.title}</h1>
-      <p className={styles.meta}>익명 · <time dateTime={post.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "long" }).format(new Date(post.createdAt))}</time> · 추천 {post.recommendationCount}</p>
+      <p className={styles.meta}>{post.isEditorial && <span className={styles.editorialBadge}>운영팀</span>}익명 · <time dateTime={post.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "long" }).format(new Date(post.createdAt))}</time> · 추천 {post.recommendationCount}</p>
       <div className={styles.body}>{post.body}</div>
     </article>
     <section className={styles.comments} aria-labelledby="community-comments-title">
       <h2 id="community-comments-title">댓글 {comments.length}</h2>
-      {comments.length === 0 ? <p>아직 댓글이 없어요.</p> : <ol>{comments.map((comment) => <li key={comment.id}><p>{comment.body}</p><small>익명 · <time dateTime={comment.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(comment.createdAt))}</time></small></li>)}</ol>}
+      {comments.length === 0 ? <p>아직 댓글이 없어요.</p> : <ol>{comments.map((comment) => <li key={comment.id}><p>{comment.body}</p><small>{comment.isEditorial && <span className={styles.editorialBadge}>운영팀</span>}익명 · <time dateTime={comment.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(comment.createdAt))}</time></small></li>)}</ol>}
     </section>
     <footer className={styles.footer}><Link href="/community">다른 취업·진로 고민 읽기</Link></footer>
   </main>;
