@@ -5761,3 +5761,15 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx vitest run` 970 passed(회귀 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 다시 벌거벗은 401 JSON으로 돌아갑니다(깨지지 않음, 안내만 없어짐).
 - 다음: 인수인계 문서 6번(첨부 용량을 브라우저가 자기 신고)으로 이어갑니다.
+
+## 2026-09-04 — Claude: 커뮤니티 인수인계 6번 — 첨부 용량을 브라우저가 자기 신고하던 문제
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 인수인계 문서 6번.
+- Status: completed. 마이그레이션 없음.
+- 문서가 지적한 "전체 24MB 검사를 브라우저 신고값으로 통과할 수 있다"는 총합 검사 자체가 최신 코드엔 이제 없습니다(항목 2에서 이미 확인한 대로 화면·서버 규칙이 이미지/PDF 구분 없이 파일당 8MB·최대 3개로 단순화됨). 다만 문서의 핵심 지적은 여전히 유효합니다 — **`community_attachments.byte_size`에 저장되는 값이 실제 업로드된 파일 크기가 아니라, 두 번째 요청(`POST /api/community/posts`)에서 브라우저가 스스로 적어 보내는 값**입니다. 업로드 라우트(`/api/community/uploads`)는 실제 파일을 8MB 아래로 이미 막아 두었지만, 그 확인이 이 두 번째 요청까지 이어지지는 않습니다.
+- `posts/route.ts`에 `verifiedByteSize()`를 추가했습니다 — 첨부를 저장하기 직전에 그 `storagePath`가 실제로 스토리지에 올라간 객체의 크기를 `storage.list(폴더, {search: 파일명})`로 다시 확인하고, 신고값 대신 그 값을 저장합니다. 확인이 안 되면(네트워크 등 일시적 문제) 신고값을 그대로 씁니다 — 업로드 라우트가 이미 실제 파일을 막아 두었으므로 이건 침입을 막는 검사가 아니라 **기록용 숫자를 사실과 맞추는 것**이고, 확인 실패로 정상 첨부까지 거절할 이유는 없다고 판단했습니다.
+- `byteSize`는 현재 화면 어디에도 표시되지 않습니다(첨부 링크는 파일명만 보여줌) — 지금 당장 사용자에게 보이는 영향은 없지만, DB에 남는 기록이 사실과 다른 채로 쌓이는 것 자체가 문제라 고쳤습니다. 나중에 이 값을 화면에 노출하거나 총 용량 집계에 쓰게 되면 그때부터는 실제로 신뢰할 수 있는 값이 이미 준비돼 있습니다.
+- Files: `src/app/api/community/posts/route.ts`(`verifiedByteSize()` 추가, 첨부 insert 시 사용).
+- Validation: `npx vitest run` 970 passed(회귀 없음, 이 라우트도 기존 관례대로 전용 테스트 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 다시 신고값을 그대로 저장합니다(깨지지 않음, 기록 정확도만 낮아짐).
+- 다음: 인수인계 문서 7번(주제 목록이 두 군데에 따로 있음)으로 이어갑니다.

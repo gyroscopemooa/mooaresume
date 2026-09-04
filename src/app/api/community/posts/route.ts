@@ -36,6 +36,27 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ posts, hasMore, nextOffset: offset + posts.length });
 }
 
+/**
+ * `byteSize`는 이 요청의 JSON 본문에 브라우저가 직접 적어 보내는 값입니다.
+ * 업로드 라우트(`/api/community/uploads`)가 실제 파일 크기를 이미 한 번
+ * 확인했지만, 그 확인이 여기까지 강제로 이어지지는 않아 클라이언트가 두
+ * 요청 사이에 값을 바꿔 보낼 수 있습니다. 방금 올라간 실제 객체의 크기를
+ * 스토리지에서 다시 확인해 그 값으로 저장합니다.
+ *
+ * 확인이 안 되면(네트워크 등) 신고값을 그대로 씁니다 — 업로드 라우트가
+ * 이미 실제 파일을 8MB 아래로 막아 두었으므로, 이 확인은 침입을 막는
+ * 것이 아니라 표시·기록용 숫자를 사실과 맞추는 것입니다. 실패했다고
+ * 첨부를 통째로 거절할 이유는 아닙니다.
+ */
+async function verifiedByteSize(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string): Promise<number | null> {
+  const slash = storagePath.lastIndexOf("/");
+  if (slash < 0) return null;
+  const { data, error } = await supabase.storage.from("community-attachments").list(storagePath.slice(0, slash), { search: storagePath.slice(slash + 1), limit: 1 });
+  if (error || !data?.length) return null;
+  const size = (data[0] as { metadata?: { size?: number } }).metadata?.size;
+  return typeof size === "number" ? size : null;
+}
+
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "허용되지 않은 요청 출처입니다." }, { status: 403 });
   const supabase = await createClient();
@@ -52,7 +73,14 @@ export async function POST(request: NextRequest) {
   const { data: post, error: postError } = await supabase.from("community_posts").insert({ topic: parsed.data.topic, title: parsed.data.title, body: parsed.data.body }).select(communityPostSelect).single();
   if (postError || !post) return NextResponse.json({ error: "글을 저장하지 못했습니다. 데이터베이스 적용 상태를 확인해 주세요." }, { status: 500 });
   if (parsed.data.attachments.length) {
-    const { error: attachmentError } = await supabase.from("community_attachments").insert(parsed.data.attachments.map((file) => ({ post_id: post.id, storage_path: file.storagePath, filename: file.filename, mime_type: file.mimeType, byte_size: file.byteSize })));
+    const rows = await Promise.all(parsed.data.attachments.map(async (file) => ({
+      post_id: post.id,
+      storage_path: file.storagePath,
+      filename: file.filename,
+      mime_type: file.mimeType,
+      byte_size: (await verifiedByteSize(supabase, file.storagePath)) ?? file.byteSize,
+    })));
+    const { error: attachmentError } = await supabase.from("community_attachments").insert(rows);
     if (attachmentError) { await supabase.from("community_posts").delete().eq("id", post.id); return NextResponse.json({ error: "첨부파일 정보를 저장하지 못했습니다." }, { status: 500 }); }
   }
   const { data: saved, error: savedError } = await supabase.from("community_posts").select(communityPostSelect).eq("id", post.id).single();
