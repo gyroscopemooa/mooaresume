@@ -5773,3 +5773,15 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx vitest run` 970 passed(회귀 없음, 이 라우트도 기존 관례대로 전용 테스트 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 다시 신고값을 그대로 저장합니다(깨지지 않음, 기록 정확도만 낮아짐).
 - 다음: 인수인계 문서 7번(주제 목록이 두 군데에 따로 있음)으로 이어갑니다.
+
+## 2026-09-04 — Claude: 커뮤니티 인수인계 7번 — 주제 목록이 세 군데였던 문제
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 인수인계 문서 7번(마지막 항목).
+- Status: completed. 마이그레이션 없음.
+- 문서는 "두 군데"(`posts/route.ts`, `domain/community.ts`)라고 적었는데, 실제로 찾아보니 **`community-repository.ts`에도 같은 배열이 하드코딩**돼 있어 총 세 군데였습니다(도메인 원본 포함, 중복은 두 곳). 둘 다 도메인의 `communityTopics`를 import해서 쓰도록 바꿨습니다.
+  - `posts/route.ts`: GET의 topic 파라미터 검증이 `["job-search","career","application","work-life"].includes(topic)`으로 직접 적혀 있었습니다 → `(communityTopics as readonly string[]).includes(topic)`.
+  - `community-repository.ts`: `toCommunityPost`가 DB에서 읽은 topic 문자열이 유효한지 검사하는 `Set`을 직접 만들고 있었습니다(`new Set<CommunityTopicId>([...])`) → `new Set(communityTopics)`. **이쪽이 더 위험한 중복이었습니다** — 이 검사가 옛 목록에 머물러 있으면, 도메인에 새 주제를 추가해도 여기서 "모르는 주제"로 판정해 화면에 조용히 `career`로 잘못 표시됩니다.
+- Files: `src/app/api/community/posts/route.ts`, `src/server/community/community-repository.ts`.
+- Validation: `npx vitest run` 970 passed(회귀 없음), `npx tsc --noEmit` clean, `npx eslint` 클린, `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌려도 지금 주제 4개 기준으로는 동작이 같습니다(중복 제거일 뿐, 값 변경 없음) — 나중에 주제를 늘릴 때만 차이가 드러납니다.
+- **인수인계 문서의 1~7번 전부 처리 완료.** 남은 것은 문서 하단의 "매일 자동 글(글 3·댓글 3)" 기능(아직 미착수, 이번 요청 범위 밖 — 사용자가 "나머지 하나씩 체크 수정하고 API 자동 글/댓글도 할 예정"이라고 밝혀 별도로 진행 예정)과, 이번 요청에 함께 포함된 **관리자(jeonmeensoo@gmail.com) 글 삭제 기능**입니다. 다음 커밋에서 이어갑니다.

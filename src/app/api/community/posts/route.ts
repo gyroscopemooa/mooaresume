@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCommunityPostSchema, isSameOrigin } from "@/domain/community";
+import { communityTopics, createCommunityPostSchema, isSameOrigin } from "@/domain/community";
 import { createClient } from "@/lib/supabase/server";
 import { takeCommunityRateLimit } from "@/server/community/community-rate-limit";
 import { toCommunityPost } from "@/server/community/community-repository";
@@ -19,7 +19,9 @@ export async function GET(request: NextRequest) {
   const limit = Number.isInteger(rawLimit) && rawLimit > 0 && rawLimit <= PAGE_SIZE ? rawLimit : PAGE_SIZE;
   const supabase = await createClient();
   let query = supabase.from("community_posts").select(communityPostSelect).eq("status", "PUBLISHED");
-  if (topic && ["job-search", "career", "application", "work-life"].includes(topic)) query = query.eq("topic", topic);
+  // 도메인의 communityTopics를 그대로 씁니다 — 여기 따로 목록을 적어 두면
+  // 나중에 주제를 늘렸을 때 한쪽만 고쳐지고 이 필터만 옛 목록으로 남습니다.
+  if (topic && (communityTopics as readonly string[]).includes(topic)) query = query.eq("topic", topic);
   // ?window=7d 같은 형식만 받습니다. "이번 주 인기글"이 사실은 "지금 로드된
   // 20개 중 인기순"이었던 문제 — 기간을 두지 않으면 몇 달 전 인기글이
   // 계속 상단을 차지해 "이번 주"라는 이름과도 맞지 않습니다.
