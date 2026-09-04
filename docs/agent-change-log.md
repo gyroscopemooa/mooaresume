@@ -6096,3 +6096,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(128 파일, 회귀 없음), `npx next build` 성공, `npx eslint src` 오류 0건(경고 2건은 손대지 않은 파일의 기존 것). 로컬 브라우저 확인: **홈 푸터는 변경 전후 스크린샷이 1280px·393px 모두 픽셀 단위로 동일**(`cmp` 바이트 일치, 크기 1160×130 / 363×290 동일)해 전역 규칙 한정이 원래 대상에는 무영향임을 증명했습니다. `/pro/create` 1·3단계를 393px·360px·1280px에서 확인 — 헤더 한 줄, 안내문 겹침 없음, 이전/다음 가로 정렬. `/pro/polish`(상세·간편 토글 유지)와 홈 정상.
 - Rollback/recovery reference: 1번은 `src/app/pro/create/page.tsx`에서 `ProCreateWizard`를 `ProInputPage mode="CREATE"`로 되돌리면 끝입니다(분기 코드가 그대로 남아 있음). 3번만 되돌리려면 `globals.css`의 `footer.container` 3곳을 `footer`로 되돌리면 됩니다. 전체는 이 커밋 revert.
 - User decision: 사용자가 직접 요청했습니다. 2026-08-25의 "별도 비교 라우트로 두자"는 선택은 이번 요청으로 대체됩니다. `/pro/create-wizard` 라우트는 그대로 살아 있습니다.
+
+### 2026-09-04 23:55 KST — 마법사 디테일 UI 4건(업로드 카드 3줄, 모바일 스텝바, 버튼 글자 크기, 모바일 업로드 카드 줄바꿈)
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 스크린샷 피드백.
+- Status: active.
+- Protected baseline: 직전 커밋 `a927f8b`. 컴포넌트 구조·JSX는 건드리지 않았고 CSS만 조정했습니다.
+- Change and reason:
+  1. **PC 업로드 카드가 3줄을 차지** — `pro-create-wizard`의 `.layout label{display:grid}`(위저드 자신의 희망 회사·직무 입력용)이 **중첩된** `MaterialUpload`의 `<label>`까지 덮어써서, 가로 한 줄이어야 할 `⬆ 이력서(입사지원서) 선택`이 3줄로 쌓였습니다. footer와 같은 후손 선택자 누수입니다. `.layout>section>label`, `.layout>section>label input`으로 좁혔습니다.
+  2. **모바일 이전/다음 글자가 너무 큼** — 이 버튼들에는 `font-size`가 없어 `globals.css`의 전역 `footer{font-size:12px}`에 기대고 있었습니다. `a927f8b`에서 전역 규칙을 `footer.container`로 한정하면서 16px로 커졌고, 좁은 화면에서 "이전"·"다음"이 세로로 쪼개졌습니다(사용자 스크린샷). `font-size:11px;white-space:nowrap`을 직접 지정하고 모바일 패딩을 줄였습니다. 다른 footer(result-workspace 4종, community, guided-create-form, job-posting, additional-info)는 자체 `font-size`가 있어 영향이 없음을 확인했습니다.
+  3. **모바일 상단 진행 바가 어지러움** — 5단계를 전부 늘어놓아 가로 스크롤이 생겼습니다. 760px 이하에서는 현재 단계 하나만 남기고 패딩을 줄였습니다. 단계 이동은 이전/다음 버튼으로 하며, 카드 안 "처음부터 작성 · N단계 / 5단계"가 위치를 계속 알려줍니다.
+  4. **모바일 업로드 카드 글자 쪼개짐** — 1번을 고치자 3열 그리드에서 칸 너비가 105px밖에 안 돼 "이력서(입사지원서)"가 `이력/서(입/사지/원서)`로 쪼개졌습니다. 760px 이하에서 1열로 바꿔 한 줄에 하나씩 놓습니다.
+- Files/branch: `src/components/pro-create-wizard.module.css`, `src/components/material-upload.module.css` — `claude/github-gui-sync-jfbyd5`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 1280px·393px에서 1단계·3단계 스크린샷 확인 — PC 업로드 카드 1줄, 모바일 업로드 카드 1열 1줄, 모바일 상단 칩 1개, 이전/다음 11px 한 줄(계산값 확인).
+- Rollback/recovery reference: 이 커밋 revert. 2번만 되돌리려면 추가한 `.layout>section>footer button{font-size:11px}`를 지우면 됩니다(단, 전역 누수에 다시 기대게 되므로 권장하지 않습니다).
+- User decision: 사용자 요청. 긴 안내문을 사이드바 설명 UI로 옮기는 건은 사용자가 "검토해봐야겟노"라고 하여 **미착수**, 제안만 전달했습니다.

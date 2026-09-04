@@ -19,3 +19,6 @@
 .list li button svg{width:12px}
 .error{margin:0;color:#a34848;font-size:9px}
 .hint{margin:0;color:#8a968f;font-size:9px;line-height:1.55}
+/* 좁은 화면에서 3열로 두면 칸이 105px밖에 안 돼 "이력서(입사지원서)"가
+   글자 단위로 쪼개집니다. 모바일에서는 한 줄에 하나씩 놓습니다. */
+@media(max-width:760px){.buttons{grid-template-columns:1fr}}
