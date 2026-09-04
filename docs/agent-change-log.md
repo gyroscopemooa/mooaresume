@@ -6182,3 +6182,16 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/server/community/community-publication.ts`(`communityPostSelect`, `communityCommentSelect`), `src/app/api/community/posts/[postId]/comments/route.ts`(인라인 select 2곳).
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공.
 - Rollback: 이 커밋 revert(컬럼은 이미 있으므로 되돌려도 장애는 안 남).
+
+### 2026-09-05 KST — 운영팀 별명 고정 마이그레이션 + 간편 입력 모바일 정리
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청.
+- Status: 코드 active. **마이그레이션 `20260905010000_editorial_alias.sql`은 아직 미적용 — 사용자가 `npm run db:remote:push` 실행 필요.**
+- Change and reason:
+  1. **운영팀 별명 고정(마이그레이션 신규)** — `set_community_alias`가 `owner_user_id`의 md5 앞 4자로 `익명 XXXX`를 만들기 때문에, 자동 글을 한 계정으로 쓰면 (a) 매일 세 글이 같은 별명 (b) 그 글의 운영팀 댓글도 같은 별명이라 자기 글에 자기가 댓글 단 모양 (c) 그 계정 주인이 개인 자격으로 쓴 익명글까지 자동 글과 같은 별명이 됩니다. 전용 계정을 새로 파면 (c)만 막히고 (a)(b)는 남아서, `is_editorial` 행만 별명을 `운영팀`으로 박는 쪽을 택했습니다. 익명 사용자 동작은 불변. 기존 운영팀 행이 있으면 update로 맞춥니다(현재 0건).
+  2. **간편 입력 글자 수 칸(모바일)** — `grid-template-columns:auto minmax(0,1fr)`이라 숫자 입력칸이 남는 폭을 다 먹어 "700" 옆이 텅 비었습니다. 숫자 칸을 78px로 고정했습니다.
+  3. **테두리 세 겹(모바일)** — 카드 > `.box` > textarea로 테두리가 세 겹이라 정작 글 쓰는 칸이 좁았습니다. 640px 이하에서 `.box`의 테두리·그림자를 빼고 여백을 26px→12px/10px로 줄여 두 겹으로 만들었습니다. 은은한 배경 그라디언트는 남겨 원 작성자의 "한 판에 던져 넣는 곳" 의도는 유지.
+  4. **`/pro/polish` 가로 스크롤(기존 버그)** — 393px에서 `document.scrollWidth`가 642px이었습니다. 원인은 숨어 있는 도움말 말풍선(`.tooltip`)으로, 상자 오른쪽 끝에 있는 물음표 버튼 기준 `left:-12px`으로 걸려 있어 오른쪽으로 280px 삐져나갔습니다. 눈에 안 보이는 요소라 그동안 안 잡혔습니다. 버튼 오른쪽 끝 기준(`right:0`)으로 바꾸고 `box-sizing:border-box`를 줘서 393px로 정상화했습니다.
+- Files: `supabase/migrations/20260905010000_editorial_alias.sql`(신규), `src/components/simple-intake.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 393px에서 `/pro/polish` `scrollWidth == 393` 측정 확인(수정 전 642), 스크린샷 확인.
+- Rollback: 이 커밋 revert. 마이그레이션만 되돌리려면 `set_community_alias`를 `20260901050000_community_lounge.sql:13` 원본으로 되돌리는 마이그레이션을 새로 추가하면 됩니다.

@@ -75,16 +75,23 @@
 .sortedNote b { color: #0f4b33; }
 
 @media (max-width: 640px) {
-  .box { padding: 18px; }
+  /* 카드 > 이 상자 > 입력칸으로 테두리가 세 겹이라 좁은 화면에서 정작 글
+     쓰는 칸이 답답했습니다. 좁을 때는 이 상자의 테두리와 그림자를 빼고 여백을
+     줄여 두 겹으로 만듭니다 — 은은한 배경은 남겨 "한 판에 던져 넣는 곳"이라는
+     성격은 유지합니다. */
+  .box { padding: 12px 10px; border-color: transparent; box-shadow: none; }
   .boxHead h3 { font-size: 15px; }
   .boxHead p { font-size: 11.5px; }
   /* 16px so iOS Safari does not zoom the page in on focus and leave it there. */
   .box textarea { font-size: 16px; padding: 13px; }
   .boxFoot { flex-direction: column; align-items: stretch; gap: 9px; }
   .attach { justify-content: center; padding: 13px; font-size: 12.5px; }
-  /* Anchored left instead: at 258px wide a right-anchored bubble runs off a
-     375px screen. */
-  .tooltip { right: auto; left: -12px; width: min(280px, calc(100vw - 60px)); }
+  /* 왼쪽에 걸어 뒀더니 반대로 오른쪽으로 삐져나갔습니다 — 이 말풍선을 여는
+     물음표 버튼이 상자의 오른쪽 끝에 있어서, 거기서 오른쪽으로 280px을 그리면
+     화면 밖입니다(393px에서 문서 폭이 642px이 되어 페이지가 가로로 스크롤됐고,
+     숨어 있는 말풍선이라 눈에는 안 보였습니다). 버튼 오른쪽 끝에 맞춰 왼쪽으로
+     펼치고, padding까지 폭에 포함시킵니다. */
+  .tooltip { right: 0; left: auto; box-sizing: border-box; width: min(280px, calc(100vw - 56px)); }
   .sorted { padding: 16px; }
   /* Four columns do not fit a phone; the name takes its own row above the
      controls rather than being truncated to nothing. */
@@ -113,7 +120,9 @@
 .note button:hover { background: #fdf7e6; }
 
 @media (max-width: 640px) {
-  .limit { grid-template-columns: auto minmax(0, 1fr); }
+  /* 입력칸이 남는 폭을 다 먹어 "700" 세 글자 옆이 텅 비었습니다. 숫자 칸은
+     숫자 크기만큼만 두고, 라벨과 한 줄에 붙여 둡니다. */
+  .limit { grid-template-columns: auto 78px; justify-content: start; }
   .limit small { grid-column: 1 / -1; white-space: normal; }
   .limit input { width: 100%; font-size: 16px; }
   .limit .resolved { grid-column: 1 / -1; }
