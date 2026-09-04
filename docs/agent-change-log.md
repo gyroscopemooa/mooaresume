@@ -6233,3 +6233,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/domain/community.ts`, `src/components/community-lounge.tsx`, `src/server/community/community-seed-content.ts`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공.
 - Rollback: 이 커밋 revert(이미 50자로 올라간 글은 그대로 남습니다).
+
+### 2026-09-05 KST — 글 상세 페이지에 댓글 작성·삭제 추가
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("전체 글 읽기로 들어간 원본 페이지에 댓글 쓰는 기능이 없다").
+- Status: active. 마이그레이션 없음.
+- Protected baseline: 이 페이지의 SEO 자산(메타데이터, JSON-LD `DiscussionForumPosting`, 서버 렌더된 댓글 본문)은 그대로 유지했습니다.
+- Change and reason:
+  - `/community/[postId]`는 검색 유입용 서버 컴포넌트라 댓글을 **읽을 수만** 있었습니다. 라운지에서 글을 열어야만 댓글을 달 수 있었으니, 검색으로 들어온 사람에게는 답을 달 방법이 아예 없었습니다.
+  - 댓글 목록·입력창·삭제를 클라이언트 조각 `post-comments.tsx`로 분리했습니다. **클라이언트 컴포넌트도 첫 요청에서는 서버가 렌더하므로 댓글 본문은 그대로 HTML에 남습니다** — JSON-LD와 함께 이 페이지가 검색에서 갖는 값이라 잃으면 안 됩니다. 초기 목록은 서버가 이미 가져온 값을 props로 넘겨, 화면이 뜬 뒤 다시 요청하지 않습니다.
+  - 삭제 규칙은 라운지와 같습니다(본인 것 또는 관리자). 기존 `DELETE /api/community/posts/[postId]/comments/[commentId]`를 그대로 씁니다.
+  - 라운지는 한 줄 입력이지만 여기는 여러 줄 textarea입니다 — 검색으로 들어와 처음부터 길게 쓰는 쪽이 많다고 봤습니다.
+  - 관리자 판별용 이메일 문자열이 라운지에 하드코딩돼 있었는데, 이제 두 화면이 봐야 하므로 `COMMUNITY_ADMIN_DISPLAY_EMAIL`로 도메인에 올리고 라운지도 그걸 쓰게 했습니다(값·동작 불변). 화면 표시용일 뿐 실제 권한은 서버가 `COMMUNITY_ADMIN_EMAILS`로 다시 확인합니다.
+- Files: `src/app/community/[postId]/post-comments.tsx`(신규), `page.tsx`, `page.module.css`, `src/domain/community.ts`, `src/components/community-lounge.tsx`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공, `npx eslint src` 오류 0건. 이 화면은 Supabase 세션이 필요해 샌드박스에서 렌더 확인은 못 했습니다 — 배포 후 실제 확인 필요.
+- Rollback: 이 커밋 revert.

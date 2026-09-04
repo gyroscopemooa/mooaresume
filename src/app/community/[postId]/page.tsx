@@ -4,6 +4,7 @@ import { BadgeCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { communityPostPath, communitySearchDescription, communityTopicMeta } from "@/domain/community";
 import { getPublishedCommunityComments, getPublishedCommunityPost } from "@/server/community/community-publication";
+import { PostComments } from "./post-comments";
 import styles from "./page.module.css";
 
 type PageProps = { params: Promise<{ postId: string }> };
@@ -50,8 +51,10 @@ export default async function CommunityPostPage({ params }: PageProps) {
       <div className={styles.body}>{post.body}</div>
     </article>
     <section className={styles.comments} aria-labelledby="community-comments-title">
-      <h2 id="community-comments-title">댓글 {comments.length}</h2>
-      {comments.length === 0 ? <p>아직 댓글이 없어요.</p> : <ol>{comments.map((comment) => <li key={comment.id}><p>{comment.body}</p><small>익명{comment.isEditorial && <BadgeCheck className={styles.editorialBadge}/>} · <time dateTime={comment.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(comment.createdAt))}</time></small></li>)}</ol>}
+      {/* 목록과 입력창을 클라이언트 조각으로 옮겼습니다. 첫 요청에서는 서버가
+          렌더하므로 댓글 본문은 그대로 HTML에 남습니다 — 위 JSON-LD와 함께
+          이 페이지가 검색에서 갖는 값이라 잃으면 안 됩니다. */}
+      <PostComments postId={post.id} initialComments={comments} />
     </section>
     <footer className={styles.footer}><Link href="/community">다른 취업·진로 고민 읽기</Link></footer>
   </main>;

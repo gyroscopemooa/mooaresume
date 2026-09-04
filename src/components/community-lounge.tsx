@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, BadgeCheck, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, ThumbsUp, Trash2, X } from "lucide-react";
-import { communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
+import { COMMUNITY_ADMIN_DISPLAY_EMAIL, communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
 import { SiteNav } from "@/components/site-nav";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./community-lounge.module.css";
@@ -31,7 +31,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
   useEffect(() => {
     let cancelled = false;
     void createClient().auth.getUser().then(({ data }) => {
-      if (!cancelled) setIsAdmin(data.user?.email === "jeonmeensoo@gmail.com");
+      if (!cancelled) setIsAdmin(data.user?.email === COMMUNITY_ADMIN_DISPLAY_EMAIL);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);

@@ -10,6 +10,14 @@ export const communityTopicMeta: Record<CommunityTopicId, { label: string; descr
 };
 export const communityAttachmentSchema = z.object({ storagePath: z.string().min(1).max(500), filename: z.string().min(1).max(160), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]), byteSize: z.number().int().positive().max(8 * 1024 * 1024) });
 export type CommunityAttachmentInput = z.infer<typeof communityAttachmentSchema>;
+/**
+ * 화면에서 관리자 단추를 띄울지 정할 때만 쓰는 값입니다. 실제 삭제 권한은
+ * 서버가 환경변수 `COMMUNITY_ADMIN_EMAILS`로 다시 확인하므로, 이 값이 틀려도
+ * 단추가 안 보일 뿐 권한 없는 삭제가 되지는 않습니다. 라운지와 글 상세 두
+ * 화면이 같은 값을 봐야 해서 여기에 둡니다.
+ */
+export const COMMUNITY_ADMIN_DISPLAY_EMAIL = "jeonmeensoo@gmail.com";
+
 export const createCommunityPostSchema = z.object({ topic: z.enum(communityTopics), title: z.string().trim().min(2, "제목을 두 글자 이상 입력해 주세요.").max(50, "제목은 50자 이내로 적어주세요."), body: z.string().trim().min(5, "고민을 조금만 더 알려주세요.").max(5000), attachments: z.array(communityAttachmentSchema).max(3) });
 export type CreateCommunityPostInput = z.infer<typeof createCommunityPostSchema>;
 export const createCommunityCommentSchema = z.object({ body: z.string().trim().min(2, "댓글을 두 글자 이상 입력해 주세요.").max(1000) });
