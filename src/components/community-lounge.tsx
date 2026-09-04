@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, Trash2, X } from "lucide-react";
+import { ArrowRight, BadgeCheck, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, Trash2, X } from "lucide-react";
 import { communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
 import { HeaderAccount } from "@/components/header-account";
 import { createClient } from "@/lib/supabase/client";
@@ -95,7 +95,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
   const [hotPosts, setHotPosts] = useState<CommunityPost[]>([]);
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/community/posts?sort=popular&window=7d&limit=3").then(async (response) => {
+    void fetch("/api/community/posts?sort=popular&window=7d&limit=20").then(async (response) => {
       if (!response.ok) return;
       const data = await responseJson(response) as ApiError & { posts?: CommunityPost[] };
       if (!cancelled && Array.isArray(data.posts)) setHotPosts(data.posts);
@@ -156,7 +156,10 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
     });
   }
 
-  const hotPostsList = hotPosts.map((post, index) => <button type="button" className={styles.hotPost} key={post.id} onClick={() => setTopic(post.topic)}><span>{index + 1}</span><b>{post.title}</b><small>추천 {post.recommendationCount}</small></button>);
+  // 데스크톱 사이드바는 20개까지 다 보여주지만, 모바일은 페이지 맨 위에
+  // 붙여서 5개를 넘기면 본문(히어로·피드)이 너무 아래로 밀립니다.
+  const renderHotPost = (post: CommunityPost, index: number) => <button type="button" className={styles.hotPost} key={post.id} onClick={() => setTopic(post.topic)}><span>{index + 1}</span><b>{post.title}</b><small>추천 {post.recommendationCount}</small></button>;
+  const mobileHotPosts = hotPosts.slice(0, 5);
 
   return <main className={styles.page}>
     <header className={styles.topbar}>
@@ -167,9 +170,9 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
     {/* PC에서는 사이드바에만 보이던 인기글을, 모바일에서는 사이드바 자체가
         display:none이라 사라졌었습니다. 같은 데이터를 페이지 맨 위에도
         한 번 더(모바일에서만 보이게) 렌더링합니다. */}
-    {hotPosts.length > 0 && <section className={styles.mobileHot}>
+    {mobileHotPosts.length > 0 && <section className={styles.mobileHot}>
       <div className={styles.sideTitle}><Flame/><b>이번 주 많이 읽은 글</b></div>
-      {hotPostsList}
+      {mobileHotPosts.map(renderHotPost)}
     </section>}
 
     {showAttachmentNotice && <div className={styles.loginNotice} role="status">
@@ -186,7 +189,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
     <section className={styles.layout}>
       <aside className={styles.sidebar}>
         <div className={styles.sideTitle}><Flame/><b>이번 주 많이 읽은 글</b></div>
-        {hotPostsList}
+        {hotPosts.map(renderHotPost)}
         <div className={styles.sideGuide}><b>라운지 약속</b><p>실명·연락처·회사 내부정보는 쓰지 않아요. 합격 여부를 단정하는 답변보다 다음 행동을 함께 찾아요.</p><Link href="/career">내 방향 먼저 정리하기 <ArrowRight/></Link></div>
       </aside>
 
@@ -210,7 +213,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
 function PostCard({ post, comments, commentsOpen, onRecommend, onToggleComments, onSubmitComment, onReport, onDelete }: { post: CommunityPost; comments: CommunityComment[]; commentsOpen: boolean; onRecommend: () => void; onToggleComments: () => void; onSubmitComment: (postId: string, body: string) => Promise<boolean>; onReport: () => void; onDelete?: () => void }) {
   const [comment, setComment] = useState(""); const [sending, setSending] = useState(false);
   async function send() { if (!comment.trim()) return; setSending(true); if (await onSubmitComment(post.id, comment.trim())) setComment(""); setSending(false); }
-  return <article className={styles.post}><header><span className={styles.category}>{communityTopicMeta[post.topic].label}</span>{post.isEditorial && <span className={styles.editorialBadge}>운영팀</span>}<span>{post.anonymousAlias}</span><i>·</i><time>{displayTime(post.createdAt)}</time>{onDelete && <button type="button" onClick={onDelete} aria-label="게시글 삭제(관리자)"><Trash2/></button>}<button type="button" onClick={onReport} aria-label="게시글 신고"><ShieldAlert/></button></header><h2><Link href={communityPostPath(post.id)}>{post.title}</Link></h2><p>{post.body}</p>{post.attachments.length > 0 && <div className={styles.attachments}>{post.attachments.map((file) => <a key={file.id} href={`/api/community/attachments/${file.id}`} target="_blank" rel="noreferrer"><FileText/>{file.filename}<small>로그인 후 열기</small></a>)}</div>}<Link href={communityPostPath(post.id)} className={styles.readMore}>전체 글 보기 <ArrowRight/></Link><footer><button type="button" onClick={onRecommend}><ThumbsUp/> 추천 <b>{post.recommendationCount}</b></button><button type="button" onClick={onToggleComments}><MessageCircle/> 댓글 <b>{post.commentCount}</b></button></footer>{commentsOpen && <div className={styles.comments}>{comments.map((item) => <div key={item.id}><b>{item.anonymousAlias}</b>{item.isEditorial && <span className={styles.editorialBadge}>운영팀</span>}<time>{displayTime(item.createdAt)}</time><p>{item.body}</p></div>)}<div className={styles.commentForm}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={1000} placeholder="익명으로 댓글을 남겨보세요."/><button type="button" disabled={sending} onClick={() => void send()}>{sending ? <LoaderCircle/> : <Send/>}<span>등록</span></button></div></div>}</article>;
+  return <article className={styles.post}><header><span className={styles.category}>{communityTopicMeta[post.topic].label}</span><span>{post.anonymousAlias}</span>{post.isEditorial && <BadgeCheck className={styles.editorialBadge}/>}<i>·</i><time>{displayTime(post.createdAt)}</time>{onDelete && <button type="button" onClick={onDelete} aria-label="게시글 삭제(관리자)"><Trash2/></button>}<button type="button" onClick={onReport} aria-label="게시글 신고"><ShieldAlert/></button></header><h2><Link href={communityPostPath(post.id)}>{post.title}</Link></h2><p>{post.body}</p>{post.attachments.length > 0 && <div className={styles.attachments}>{post.attachments.map((file) => <a key={file.id} href={`/api/community/attachments/${file.id}`} target="_blank" rel="noreferrer"><FileText/>{file.filename}<small>로그인 후 열기</small></a>)}</div>}<Link href={communityPostPath(post.id)} className={styles.readMore}>전체 글 보기 <ArrowRight/></Link><footer><button type="button" onClick={onRecommend}><ThumbsUp/> 추천 <b>{post.recommendationCount}</b></button><button type="button" onClick={onToggleComments}><MessageCircle/> 댓글 <b>{post.commentCount}</b></button></footer>{commentsOpen && <div className={styles.comments}>{comments.map((item) => <div key={item.id}><b>{item.anonymousAlias}</b>{item.isEditorial && <BadgeCheck className={styles.editorialBadge}/>}<time>{displayTime(item.createdAt)}</time><p>{item.body}</p></div>)}<div className={styles.commentForm}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={1000} placeholder="익명으로 댓글을 남겨보세요."/><button type="button" disabled={sending} onClick={() => void send()}>{sending ? <LoaderCircle/> : <Send/>}<span>등록</span></button></div></div>}</article>;
 }
 
 function PostComposer({ onClose, onCreated, onError }: { onClose: () => void; onCreated: (post: CommunityPost) => void; onError: (message: string) => void }) {

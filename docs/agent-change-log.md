@@ -5937,3 +5937,22 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Rollback: 이 커밋을 되돌리면 다시 `is_editorial`을 select해서 같은 장애가 재발합니다(마이그레이션 적용 전까지는 되돌리면 안 됨).
 - **재발 방지 교훈**: 이 프로젝트는 "코드 배포"와 "DB 마이그레이션 적용"이 분리돼 있는데, 이번에 그 경계를 무시하고 마이그레이션이 적용됐다고 가정한 채 select 문에 새 컬럼을 넣어 배포했습니다. **앞으로 새 컬럼을 쓰는 코드는, 그 마이그레이션이 실제로 원격 DB에 적용된 걸 확인(`npm run db:remote:list` 또는 Supabase 대시보드)한 뒤에만 커밋·배포합니다.**
 - **다음 단계(사용자)**: 지금 당장은 커뮤니티가 정상으로 돌아와야 합니다(이 커밋 배포 후). "운영팀" 배지·자동 글 기능을 마저 쓰려면, Supabase SQL 에디터에서 `alter table public.community_posts add column if not exists is_editorial boolean not null default false;`와 `alter table public.community_comments add column if not exists is_editorial boolean not null default false;`를 먼저 실행(또는 `npm run db:remote:push`로 전체 마이그레이션 적용)한 뒤, `community-publication.ts`·`comments/route.ts`의 select 문자열에 `is_editorial`을 다시 넣어달라고 요청해 주세요.
+
+## 2026-09-04 — Claude: "운영팀" 텍스트 배지를 트위터 인증마크 스타일 체크 아이콘으로 교체
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 배지가 꼭 필요하냐는 질문에 "안 밝히면 신뢰도 리스크가 있다"고 답했으나, 사용자가 절충안 선택: "빼는데신 체크표시 그 트위터 인증계정처럼 체크표시해서 나만알아보고 나중조치가능하게".
+- Status: completed. 마이그레이션 없음(`is_editorial` 컬럼 용도는 그대로 — 화면 표현만 바뀜).
+- "운영팀"이라는 글자가 박힌 pill 배지 대신, 익명 별명 옆에 작은 파란 체크 아이콘(lucide `BadgeCheck`, 트위터 인증마크와 같은 색 계열 `#1d9bf0`)만 붙였습니다. 일반 방문자에게는 "인증된 계정인가 보다" 정도로 보이고, 이게 자동 글이라는 의미는 코드에만 있습니다 — 화면 어디에도 "운영팀"·"자동"·"AI" 같은 문구가 없습니다. 다만 접근성 라벨(`aria-label`)도 의도적으로 안 붙였습니다 — 스크린리더 사용자에게만 의미를 노출하는 것도 목적(눈에 띄지 않게)과 어긋난다고 판단했습니다.
+- 배지는 여전히 `post.isEditorial`/`comment.isEditorial` 조건에서만 렌더링되므로, 이 값을 DB에서 다시 확인하면(관리자 본인만) 나중에 어떤 글이 자동 글인지 구분할 수 있습니다. 요청하신 "나만 알아보고 나중조치 가능"은 화면상 아이콘으로도 되지만, 더 정확히는 DB에서 `is_editorial = true`로 직접 조회하는 쪽이 확실합니다.
+- Files: `src/components/community-lounge.tsx`(`BadgeCheck` import, 배지 마크업 교체, 배치를 별명 앞→뒤로 변경), `src/components/community-lounge.module.css`(`.editorialBadge`를 pill에서 아이콘 스타일로), `src/app/community/[postId]/page.tsx`(`BadgeCheck` import, 배지 마크업 교체), `src/app/community/[postId]/page.module.css`(`.editorialBadge` 아이콘 스타일).
+- Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 다시 "운영팀" 텍스트 배지로 돌아갑니다.
+
+## 2026-09-04 — Claude: 인기글 개수를 데스크톱 20개·모바일 5개로 분리
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "인기글목록 자체는 20개고 모바일은 기니까 5개만나오게". PC 쪽 댓글·추천 버튼 가로 배치·크기 축소는 이미 직전 커밋(모바일 요청 당시)에서 미디어쿼리 없이 공통 규칙으로 적용해 둔 상태라 이번엔 추가 변경 없음(이미 PC에도 적용돼 있음, 확인 필요하면 새로고침해서 봐주세요).
+- Status: completed. 마이그레이션 없음.
+- 서버(`/api/community/posts`)의 인기글 조회를 `limit=3`에서 `limit=20`(허용 최댓값)으로 올렸습니다. 데스크톱 사이드바는 이 20개를 그대로 다 보여주고, 모바일 상단 블록(방금 전에 새로 추가한 것)은 `hotPosts.slice(0, 5)`로 앞 5개만 보여주도록 나눴습니다 — 모바일은 페이지 맨 위에 붙어 있어 20개를 다 보여주면 히어로·피드 본문이 너무 아래로 밀리기 때문입니다. 같은 fetch 한 번으로 양쪽을 다 처리해 요청을 두 번 보내지 않습니다.
+- Files: `src/components/community-lounge.tsx`(`limit=20`, `renderHotPost` 헬퍼로 통합, `mobileHotPosts = hotPosts.slice(0,5)`).
+- Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 다시 양쪽 다 3개만 보입니다.
