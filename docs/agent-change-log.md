@@ -6195,3 +6195,15 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `supabase/migrations/20260905010000_editorial_alias.sql`(신규), `src/components/simple-intake.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 393px에서 `/pro/polish` `scrollWidth == 393` 측정 확인(수정 전 642), 스크린샷 확인.
 - Rollback: 이 커밋 revert. 마이그레이션만 되돌리려면 `set_community_alias`를 `20260901050000_community_lounge.sql:13` 원본으로 되돌리는 마이그레이션을 새로 추가하면 됩니다.
+
+### 2026-09-05 KST — 운영팀 별명 되돌림(체크 배지 결정 존중) + 헤더 라운지 링크 + 커뮤니티 CTA 글자색
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 지적.
+- Status: active. **마이그레이션 `20260905020000_revert_editorial_alias.sql` 적용 필요.**
+- Change and reason:
+  1. **`20260905010000_editorial_alias.sql` 되돌림** — 그 마이그레이션은 `is_editorial` 행의 별명을 `'운영팀'`으로 박았는데, 이 프로젝트는 앞선 논의에서 **"운영팀" 글자 배지 대신 트위터식 체크 표시**로 가기로 이미 정해 뒀습니다(`.editorialBadge` = `BadgeCheck` 아이콘). 별명 자리에 글자 라벨을 넣는 건 그 결정을 뒤집는 것이라 사용자가 지적했고, 되돌립니다. 앞 마이그레이션의 적용 여부를 모르므로 `create or replace` + `update ... where anonymous_alias = '운영팀'`로 써서 **적용됐든 안 됐든 같은 상태로 수렴**하게 했습니다.
+  2. **헤더에 라운지 단독 링크** — `site-nav.tsx` 바에 `/community` 링크 추가. 680px 아래에서는 바가 이미 빠듯해서(요금·CTA가 그래서 패널로 내려갔습니다) 감추고 메뉴 패널의 커뮤니티 항목이 받습니다.
+  3. **커뮤니티 헤더 CTA 글자색** — `community-lounge.module.css`의 `.topbar nav>a{color:#65726b}`(0,1,2)가 전역 `.button{color:#fff}`(0,1,0)을 이겨서, 진한 초록 버튼 위에 회색 글자가 찍혔습니다. `:not(:global(.button))`으로 버튼만 제외했습니다.
+- Files: `supabase/migrations/20260905020000_revert_editorial_alias.sql`(신규), `src/components/site-nav.tsx` + `.module.css`, `src/components/community-lounge.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공.
+- 남은 문제(기록): 별명이 계정 해시라 자동 글 3개가 같은 별명이고 그 글의 운영팀 댓글도 같은 별명입니다. 체크 배지로 구분은 되지만 "자기 글에 자기가 댓글" 모양은 남습니다. 사용자 판단 대기.

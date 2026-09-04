@@ -80,6 +80,7 @@ export function SiteNav() {
       <span className={styles.ctaShort}>무료 진단</span>
     </Link>
     <Link href="/career" className={styles.price}>커리어 검사</Link>
+    <Link href="/community" className={`${styles.price} ${styles.lounge}`}>라운지</Link>
     <HeaderAccount />
 
     <div className={styles.menuWrap} ref={wrapRef}>

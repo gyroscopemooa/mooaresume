@@ -72,3 +72,9 @@
   .ctaLong { display: none; }
   .ctaShort { display: inline; }
 }
+
+/* 라운지는 바에 단독으로 둡니다. 다만 좁은 화면의 바는 커리어 검사·계정·메뉴만
+   해도 빠듯해서(그 이유로 요금과 CTA가 이미 패널로 내려갔습니다), 680px 아래
+   에서는 감추고 메뉴 패널의 커뮤니티 항목이 대신 받습니다. `.nav .price.price`가
+   (0,3,0)이라 같은 무게로 맞추고 뒤에 두어 이깁니다. */
+@media (max-width: 680px) { .nav .lounge.lounge { display: none; } }
