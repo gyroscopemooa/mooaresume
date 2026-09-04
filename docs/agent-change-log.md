@@ -6026,3 +6026,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공. **로컬에서 `/community` 페이지 자체를 시각적으로 띄워 확인하지는 못했습니다** — 이 세션의 로컬 개발 서버에는 실제 Supabase 자격 증명이 없어서, 커뮤니티 페이지가 마운트 시 곧바로 호출하는 관리자 확인(`createClient().auth.getUser()`, 헤더와 무관한 기존 코드)에서 환경변수 오류로 렌더링 자체가 막힙니다(이 문제는 제 변경과 무관하게 이 로컬 환경의 원래 한계입니다 — 실제 배포본은 Cloudflare에 진짜 자격 증명이 있어 문제없이 동작합니다). 대신 SiteNav 자체가 홈페이지에서 이미 검증된 컴포넌트이고, 갈아 끼운 부분이 `<header>` 안의 `<nav>` 한 줄뿐이라 코드 리뷰로 충분히 확인 가능하다고 판단했습니다.
 - Rollback: 이 커밋 revert. 되돌리면 커뮤니티 헤더가 다시 자체 제작 nav(모바일에서 링크 하나 숨김)로 돌아갑니다.
 
+## 2026-09-04 — Claude: 한글 제목이 조사 하나만 다음 줄로 넘어가던 줄바꿈 문제(전역)
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자가 스크린샷으로 신고: 홈페이지 하단 CTA 카드 제목이 "내 지원서에서 놓친 근거" / "를" / "지금 확인해 보세요."로 갈라져, "를" 한 글자가 혼자 한 줄을 차지함.
+- Status: completed. 마이그레이션 없음.
+- **원인**: 브라우저 기본 줄바꿈 규칙은 한글에서 아무 글자 사이에서나 끊을 수 있어서, 좁은 화면에서 폭이 조금만 모자라도 "근거를"처럼 붙어 있어야 할 단어와 조사가 "근거" + "를"로 쪼개집니다. `field-credibility.module.css`의 `.head h2`에는 이미 이 문제를 막는 개별 수정(`word-break:keep-all`)이 있었지만, 나머지 제목들에는 없었습니다 — 이번에 신고된 `.cta-section h2`도 그중 하나였습니다.
+- **조치**: 개별 선택자를 하나씩 고치는 대신 `globals.css`에 `h1,h2,h3{word-break:keep-all;overflow-wrap:break-word}`를 전역으로 추가했습니다. 사이트 전체가 한국어 콘텐츠라 모든 제목에 적용해도 안전하다고 판단했습니다 — `keep-all`은 띄어쓰기 단위로만 줄을 바꾸고, `overflow-wrap:break-word`를 같이 둬서 정말 긴 단어(URL 등 예외적인 경우)는 그래도 필요하면 잘리도록 안전장치를 남겼습니다.
+- Files: `src/app/globals.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, CSS 전용), `npx next build` 성공. 로컬 dev 서버로 실제 렌더링 확인 — "내 지원서에서 놓친 근거를" / "지금 확인해 보세요."로 올바르게 줄바꿈되는 것을 스크린샷으로 확인.
+- Rollback: 이 커밋 revert. 되돌리면 다시 조사가 다음 줄에 혼자 남는 문제가 재발합니다(전역 h1/h2/h3 전체).
