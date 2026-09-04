@@ -5956,3 +5956,16 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/community-lounge.tsx`(`limit=20`, `renderHotPost` 헬퍼로 통합, `mobileHotPosts = hotPosts.slice(0,5)`).
 - Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 다시 양쪽 다 3개만 보입니다.
+
+## 2026-09-04 — Claude: 진짜 원인 발견 — 추천·댓글 버튼과 글쓰기 모달 버튼이 세로로 보이던 이유(globals.css의 footer 전역 규칙 누수)
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자가 스크린샷으로 재확인: "아직도 추천댓글 세로배치인데" / "익명으로올리기 버튼도 취소아래잇음 가로배치". 이전에 같은 증상을 두 번(글쓰기 모달 버튼, 이번 추천·댓글 버튼) "캐시 문제일 수도"라고 얼버무렸는데, 이번에 실제 원인을 찾았습니다.
+- Status: completed. 마이그레이션 없음.
+- **진짜 원인**: `src/app/globals.css`에 사이트 전체에 적용되는 **태그 선택자** 규칙이 있었습니다 — `footer{height:130px;display:flex;align-items:center;gap:30px;...}`(기본), 그리고 `@media(max-width:1000px)` 안에 `footer{height:auto;flex-direction:column;align-items:flex-start;padding:30px 0;...}`(홈페이지 맨 아래 사이트 푸터를 모바일에서 세로로 쌓으려고 만든 규칙). 이건 원래 홈페이지 하단 `<footer>`용이지만, `globals.css`는 루트 레이아웃에서 불러와 **모든 페이지의 모든 `<footer>` 태그에** 적용됩니다.
+  - `community-lounge.module.css`의 `.post footer`(추천·댓글)와 `.composer>footer`(취소·익명으로 올리기)는 둘 다 `display:flex`만 정의하고 **`flex-direction`·`align-items`·`padding`은 따로 정의하지 않았습니다.** CSS는 속성별로 우선순위를 따지기 때문에, `display`는 클래스 선택자(`.post footer`, 특이도 더 높음)가 이겨서 flex가 되지만, **`flex-direction`은 오직 전역 규칙만 정의하고 있어서 그대로 새어 들어와 `column`이 됐습니다.** 1000px 이하(즉 웬만한 모바일 전부, 일부 좁은 PC 창까지)에서 재현되는 이유이기도 합니다.
+  - 이게 지난번 "글쓰기 모달 버튼이 세로로 보인다"는 신고 때 원인을 못 찾고 "캐시 문제일 수도"라고 넘어갔던 바로 그 버그였습니다. 죄송합니다 — 그때 `globals.css`까지 확인했어야 했는데 컴포넌트 CSS만 보고 판단했습니다.
+- **조치**: `.post footer`·`.composer>footer` 둘 다 `flex-direction:row;align-items:center;padding:0`을 명시적으로 추가했습니다 — 전역 규칙이 무엇을 하든 이제 이 세 속성은 지역 규칙이 항상 이깁니다. 겸사겸사 `/community/[postId]` 상세 페이지의 `.footer`(글 하나만 있는 하단 링크)도 같은 전역 규칙 때문에 `display:flex;height:130px`를 물려받고 있어서 `display:block;height:auto`를 명시했습니다(육안으로 크게 티는 안 났지만 같은 원인이라 같이 고쳤습니다).
+- **범위 밖으로 남긴 것**: `<footer>` 태그를 쓰는 컴포넌트가 이 프로젝트에 20개 있습니다(`grep -rl "<footer" src`). 전부 같은 잠재 위험(전역 footer 규칙이 새어 들어올 수 있음)을 안고 있지만, 이번엔 사용자가 신고한 커뮤니티 관련 3곳만 고쳤습니다. 다른 파일들은 각자 이미 `flex-direction`/`padding`을 명시했을 수도 있고 아닐 수도 있어 확인이 필요합니다 — 전체 점검은 별도로 요청해 주세요.
+- Files: `src/components/community-lounge.module.css`(`.post footer`, `.composer>footer`), `src/app/community/[postId]/page.module.css`(`.footer`).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, CSS 전용 변경이라 원래도 테스트 대상 아님), `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 전역 `footer` 규칙이 다시 새어 들어와 두 버튼 묶음이 세로로 돌아갑니다.
