@@ -6062,3 +6062,21 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/app/globals.css`, `src/app/onboarding/onboarding.module.css`, `src/components/pro-input-page.tsx`.
 - Validation: `npx tsc --noEmit` clean, `npx eslint src/components/pro-input-page.tsx` clean, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공. 로컬 dev 서버(393px 뷰포트)로 `/onboarding`·`/pro/create` 스크린샷 확인 — 제목 줄바꿈이 단어 단위로 자연스러워지고 카드가 압축 레이아웃으로 표시됨을 확인.
 - Rollback: 이 커밋 revert. 되돌리면 `<b>` 제목의 조사 분리 문제와 640px 기준이 재발합니다.
+
+## 2026-09-04 — Claude: "다음 할 일" 추천으로 진행 — 전역 footer 누수 버그를 사이트 전체에서 감사·수정
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "다음할거 추천 ㄱㄱ". 지난번 커뮤니티에서 발견한 `globals.css`의 전역 `footer{}` 누수 버그(1000px 이하에서 `flex-direction:column`이 관계없는 `<footer>`에까지 새어 들어옴)가 커뮤니티만의 문제가 아니라 사이트 전체에 퍼져 있을 수 있다고 판단해, 실제로 감사했습니다.
+- Status: completed(발견된 것 중 사용자가 직접 마주치는 화면 위주로 수정). 마이그레이션 없음.
+- **감사 방법**: `grep -rl "<footer" src`로 `<footer>` 태그를 쓰는 파일 20개를 전부 나열하고, 각각의 CSS 모듈에 `flex-direction`이 명시돼 있는지 확인했습니다.
+- **실제로 새고 있던 곳(수정함)**:
+  - `guided-create-form.tsx`(QUICK/PRO "처음부터 작성" 단계별 입력 폼) — 이전/다음 버튼 줄에 스타일이 아예 없어 100% 전역 규칙에 의존하고 있었습니다. `.stepBody footer`에 명시적 `flex` 규칙 추가.
+  - `pro-create-wizard.tsx` — 같은 문제, 같은 이전/다음/상태 3분할 줄. `.layout footer` 추가. **로컬에서 실제로 재현·수정 확인**: 고치기 전엔 이전·다음 버튼이 세로로 쌓였고, 고친 뒤 스크린샷에서 가로 한 줄로 정상 표시됨을 확인했습니다.
+  - `job-posting-input.tsx`(채용공고 입력창의 파일첨부·글자수 줄) — 같은 문제. `.box footer`에 `flex-wrap` 포함해 추가. 스크린샷으로 확인 완료.
+  - `additional-info-input.tsx`(자료 첨부 화면의 안내문) — 안에 긴 문단이 섞여 있어 가로 한 줄보다 세로 쌓기가 맞다고 판단, `.composer footer{flex-direction:column}` 명시.
+  - `result-workspace-v2/complete/claude-restored/codex-restored`(4개 결과 화면 변형) — 이미 자체 `footer` 규칙이 있었지만 `display:flex`만 있고 `flex-direction`이 빠져 있어 똑같이 샜습니다. 문항별 "AI 수정본으로 되돌리기/직접 수정/복사" 줄과 "최종 첨삭본" 하단 안내 줄, 총 8곳(파일당 2곳)에 `flex-direction:row` 한 줄만 추가 — 기존 규칙을 건드리지 않는 최소 수정이라 위험이 거의 없습니다.
+  - `career-assessment-lab.module.css`의 `.sheetFooter`(커리어랩 시트 하단) — 역시 `flex-direction` 누락. 추가.
+- **확인했지만 문제 없던 곳**: `career-home-dashboard`, `career-ai-sample-report`, `career-ai-sample-overview`, `career-ai-preparation` — 전부 자체 `.footer` 규칙에 `flex-direction`을 이미 명시(모바일에서 의도적으로 `column`)하고 있어 새는 규칙에 영향받지 않습니다. 홈페이지·comingsoon·landing의 site-wide 하단 푸터(`<footer className="container">`)는애초에 전역 규칙이 겨냥한 대상 그 자체라 정상입니다.
+- **확인 못 한 것**: `meensoo/coupons/campaign-creator.tsx`(관리자 쿠폰 도구), `privacy/page.tsx`(약관 페이지) — grep으로 관련 CSS를 못 찾았습니다(운영자 전용/저트래픽 페이지라 이번엔 우선순위를 낮췄습니다). 필요하면 다음에 마저 확인하겠습니다.
+- Files: `src/components/guided-create-form.module.css`, `src/components/pro-create-wizard.module.css`, `src/components/job-posting-input.module.css`, `src/components/additional-info-input.module.css`, `src/components/result-workspace-v2.module.css`, `src/components/result-workspace-complete.module.css`, `src/components/result-workspace-claude-restored.module.css`, `src/components/result-workspace-codex-restored.module.css`, `src/components/career-assessment-lab.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, CSS 전용), `npx next build` 성공. 로컬 dev 서버로 `/pro/create-wizard`(이전/다음 버튼 가로 정렬 확인)와 채용공고 입력창(첨부·글자수 가로 정렬 확인) 스크린샷 확인 완료. `result-workspace-*` 4개 파일은 기존 규칙에 속성 하나만 추가하는 최소 수정이라 코드 리뷰로 충분하다고 판단했고, 결제 후 화면이라 직접 스크린샷까지는 이번엔 안 했습니다.
+- Rollback: 이 커밋 revert. 되돌리면 나열된 화면들에서 버튼·안내 줄이 다시 세로로 쌓입니다(특히 1000px 이하 모바일).
