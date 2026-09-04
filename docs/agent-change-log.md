@@ -6261,3 +6261,15 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/simple-intake.tsx`, `simple-intake.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공, `npx eslint src` 오류 0건. 393px·1280px 스크린샷으로 한 줄 렌더와 말풍선이 상자 안에 들어오는 것 확인, `scrollWidth == viewport` 유지.
 - Rollback: 이 커밋 revert.
+
+### 2026-09-05 KST — AI 심층해설 비로그인 화면 제목에 `\n`이 글자 그대로 보이던 문제
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 제보(`/career/ai?scope=interest` 비로그인 시 "결과를 안전하게 저장하고\n해설 범위를 골라 주세요."로 표시).
+- Status: active. 마이그레이션 없음.
+- Change and reason:
+  - `AiFrame`은 `title`을 `"\n"` 기준으로 잘라 두 줄로 그립니다. 그런데 이 화면만 `title="...\n..."`처럼 **JSX 속성 문자열**로 넘겼습니다. JSX 속성의 따옴표 안에서는 `\n`이 줄바꿈이 아니라 역슬래시와 n 두 글자라서, 줄이 안 나뉘고 화면에 그대로 찍혔습니다. 같은 파일의 다른 제목들은 모두 중괄호(`title={"..."}`) 안이라 정상이었습니다.
+  - `title={"..."}`로 바꿔 자바스크립트 문자열이 되게 했습니다. 문구 자체는 그대로 두었습니다.
+  - 같은 줄의 로그인 링크가 `?next=/career/ai?scope=${scope}`였습니다. 물음표가 두 번이라 로그인 페이지의 `searchParams.get("next")`는 `/career/ai`까지만 읽고 `scope`는 로그인 페이지 자신의 파라미터로 떨어져, 로그인 후 고른 범위가 사라졌습니다. `encodeURIComponent`로 감쌌습니다.
+- Files: `src/components/career-ai-preparation.tsx`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run`, `npx eslint src` 통과. 이 화면은 로그인 상태에 따라 갈리므로 배포 후 실제 확인 필요.
+- Rollback: 이 커밋 revert.
