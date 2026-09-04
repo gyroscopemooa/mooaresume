@@ -1,5 +1,9 @@
 -- 매일 자동 글(3) · 댓글(3) 기능. docs/handoff-community-mobile.md 118행 이하.
 --
+-- 하루 세 번 나눠 부릅니다 — 한 번에 3개를 다 만들면 같은 순간에 글 3개·
+-- 댓글 3개가 한꺼번에 올라와서 오히려 자동화 티가 납니다. 라우트가 호출당
+-- 1개씩만 만들도록 나눴습니다(src/app/api/community/seed/route.ts).
+--
 -- 글쓰기 트리거(set_community_alias)는 owner_user_id의 해시로 anonymous_alias를
 -- 강제로 덮어씁니다(운영팀 계정도 "익명 XXXX"로 보입니다) — 그래서 "운영팀"이라고
 -- 밝히려면 글/댓글 자체에 표시가 필요합니다. is_editorial이 그 표시입니다. 이
@@ -15,8 +19,8 @@ begin;
 alter table public.community_posts add column if not exists is_editorial boolean not null default false;
 alter table public.community_comments add column if not exists is_editorial boolean not null default false;
 
--- 그날 이미 운영팀 글을 썼는지 빠르게 확인하기 위한 색인. 전체 글 수 대비
--- 운영팀 글은 소수이므로 부분 색인으로 충분합니다.
+-- 그날 이미 운영팀 글을 몇 개 썼는지(0~3) 빠르게 세기 위한 색인. 전체 글
+-- 수 대비 운영팀 글은 소수이므로 부분 색인으로 충분합니다.
 create index if not exists community_posts_editorial_idx on public.community_posts (created_at) where is_editorial;
 
 create extension if not exists pg_cron;
@@ -65,16 +69,18 @@ $$;
 
 revoke all on function private.trigger_community_seed() from public, anon, authenticated;
 
--- 하루 한 번, 22:00 UTC(한국시간 오전 7시). 라우트 자체가 그날 이미 쓴
--- 운영팀 글이 있으면 아무 것도 안 하므로, 이 잡이 중복 호출돼도 안전합니다.
-select cron.unschedule('community-seed-daily')
-where exists (select 1 from cron.job where jobname = 'community-seed-daily');
+-- 하루 세 번, 서로 몇 시간씩 떨어뜨려서 호출합니다(한국시간 오전 9시·오후
+-- 1시·오후 6시 = 00:00·04:00·09:00 UTC). 라우트는 호출 한 번마다 글 1개 ·
+-- 댓글 1개만 만들고, 그날 이미 3개를 다 썼으면 아무 것도 안 합니다 — 그래서
+-- 이 잡이 중복 호출돼도 안전하고, 3개가 전부 같은 순간에 한꺼번에 올라오는
+-- 부자연스러운 모습도 생기지 않습니다.
+select cron.unschedule(jobname)
+from cron.job
+where jobname in ('community-seed-daily', 'community-seed-morning', 'community-seed-midday', 'community-seed-evening');
 
-select cron.schedule(
-  'community-seed-daily',
-  '0 22 * * *',
-  $$select private.trigger_community_seed()$$
-);
+select cron.schedule('community-seed-morning', '0 0 * * *', $$select private.trigger_community_seed()$$);
+select cron.schedule('community-seed-midday', '0 4 * * *', $$select private.trigger_community_seed()$$);
+select cron.schedule('community-seed-evening', '0 9 * * *', $$select private.trigger_community_seed()$$);
 
 commit;
 
@@ -87,5 +93,5 @@ commit;
 --   on conflict (key) do update set value = excluded.value, updated_at = timezone('utc', now());
 --
 -- 확인:
---   select * from cron.job where jobname = 'community-seed-daily';
+--   select * from cron.job where jobname like 'community-seed-%';
 --   select * from cron.job_run_details order by start_time desc limit 10;

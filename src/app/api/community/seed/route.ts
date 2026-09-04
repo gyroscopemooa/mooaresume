@@ -32,9 +32,13 @@ export async function POST(request: NextRequest) {
 
   const supabase = serviceClient();
 
-  // 하루 한 번만. 크론이 두 번 불려도 그날 이미 쓴 운영팀 글이 있으면
-  // 아무 것도 하지 않습니다(문서 143행). 날짜 경계는 UTC 자정 — 중복 실행을
-  // 막는 용도일 뿐이라 한국 시간과 맞출 필요가 없습니다.
+  // 하루 최대 3개. 이 라우트는 서로 떨어진 시각에 세 번 불립니다(마이그레이션의
+  // 세 cron.schedule) — 한 번에 3개를 다 만들면 같은 순간에 글 3·댓글 3이
+  // 한꺼번에 올라와 오히려 자동화 티가 나기 때문입니다. 그날 이미 3개를 다
+  // 썼으면(크론이 더 불려도) 아무 것도 하지 않습니다(문서 143행 "하루 한
+  // 번만"의 정신을 "하루 세 번, 그 이상은 안 됨"으로 확장한 것입니다).
+  // 날짜 경계는 UTC 자정 — 중복 실행을 막는 용도일 뿐이라 한국 시간과
+  // 맞출 필요가 없습니다.
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
   const { count, error: countError } = await supabase
@@ -47,11 +51,11 @@ export async function POST(request: NextRequest) {
     console.error("community_seed_count_failed", countError.message);
     return NextResponse.json({ error: "오늘 작성 여부를 확인하지 못했습니다." }, { status: 500 });
   }
-  if ((count ?? 0) > 0) return NextResponse.json({ skipped: "already_seeded_today" });
+  if ((count ?? 0) >= 3) return NextResponse.json({ skipped: "already_seeded_today", postsToday: count });
 
-  // 최근 제목과 겹치는 질문을 피하도록 프롬프트에 같이 넣습니다 — 주제
-  // 후보가 한정돼 있어 이 목록 없이는 며칠 안에 같은 질문이 반복될
-  // 위험이 있습니다.
+  // 최근 제목과 겹치는 질문을 피하도록 프롬프트에 같이 넣습니다(오늘 이미
+  // 쓴 것도 포함) — 주제 후보가 한정돼 있어 이 목록 없이는 하루 안에도
+  // 같은 질문이 반복될 위험이 있습니다.
   const { data: recentRows } = await supabase
     .from("community_posts")
     .select("title")
@@ -62,50 +66,44 @@ export async function POST(request: NextRequest) {
     .map((row) => (typeof row.title === "string" ? row.title : ""))
     .filter(Boolean);
 
-  let items;
+  let item;
   try {
-    items = await generateCommunitySeedContent({ apiKey, model, recentTitles });
+    item = await generateCommunitySeedContent({ apiKey, model, recentTitles });
   } catch (error) {
     console.error("community_seed_generation_failed", error instanceof Error ? error.message : "UNKNOWN_ERROR");
     return NextResponse.json({ error: "글 생성에 실패했습니다." }, { status: 502 });
   }
 
-  const results: { title: string; postId?: string; error?: string }[] = [];
-  for (const item of items) {
-    const parsedPost = createCommunityPostSchema.safeParse({ topic: item.topic, title: item.title, body: item.body, attachments: [] });
-    if (!parsedPost.success) {
-      console.error("community_seed_post_invalid", parsedPost.error.issues[0]?.message);
-      results.push({ title: item.title, error: parsedPost.error.issues[0]?.message ?? "invalid" });
-      continue;
-    }
-
-    // 서비스 키 클라이언트라 RLS를 우회하므로 owner_user_id를 직접 지정합니다.
-    // set_community_alias 트리거가 이 값의 해시로 anonymous_alias를 채우고,
-    // is_editorial=true가 화면에 "운영팀" 배지를 띄우는 유일한 근거입니다.
-    const { data: post, error: postError } = await supabase
-      .from("community_posts")
-      .insert({ owner_user_id: seedUserId, topic: parsedPost.data.topic, title: parsedPost.data.title, body: parsedPost.data.body, is_editorial: true })
-      .select("id")
-      .single();
-    if (postError || !post) {
-      console.error("community_seed_post_insert_failed", postError?.message);
-      results.push({ title: item.title, error: "insert_failed" });
-      continue;
-    }
-    results.push({ title: item.title, postId: post.id as string });
-
-    // 댓글은 그날 쓴 운영팀 글에만 답니다 — 다른 사용자 글에 AI가 답을
-    // 다는 것은 이 기능의 범위가 아닙니다(문서 145행).
-    const parsedComment = createCommunityCommentSchema.safeParse({ body: item.comment });
-    if (!parsedComment.success) {
-      console.error("community_seed_comment_invalid", parsedComment.error.issues[0]?.message);
-      continue;
-    }
-    const { error: commentError } = await supabase
-      .from("community_comments")
-      .insert({ post_id: post.id, owner_user_id: seedUserId, body: parsedComment.data.body, is_editorial: true });
-    if (commentError) console.error("community_seed_comment_insert_failed", commentError.message);
+  const parsedPost = createCommunityPostSchema.safeParse({ topic: item.topic, title: item.title, body: item.body, attachments: [] });
+  if (!parsedPost.success) {
+    console.error("community_seed_post_invalid", parsedPost.error.issues[0]?.message);
+    return NextResponse.json({ error: "생성된 글이 검증을 통과하지 못했습니다." }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, created: results.filter((row) => row.postId).length, results });
+  // 서비스 키 클라이언트라 RLS를 우회하므로 owner_user_id를 직접 지정합니다.
+  // set_community_alias 트리거가 이 값의 해시로 anonymous_alias를 채우고,
+  // is_editorial=true가 화면에 "운영팀" 배지를 띄우는 유일한 근거입니다.
+  const { data: post, error: postError } = await supabase
+    .from("community_posts")
+    .insert({ owner_user_id: seedUserId, topic: parsedPost.data.topic, title: parsedPost.data.title, body: parsedPost.data.body, is_editorial: true })
+    .select("id")
+    .single();
+  if (postError || !post) {
+    console.error("community_seed_post_insert_failed", postError?.message);
+    return NextResponse.json({ error: "글을 저장하지 못했습니다." }, { status: 500 });
+  }
+
+  // 댓글은 방금 쓴 그 운영팀 글에만 답니다 — 다른 사용자 글에 AI가 답을
+  // 다는 것은 이 기능의 범위가 아닙니다(문서 145행).
+  const parsedComment = createCommunityCommentSchema.safeParse({ body: item.comment });
+  if (!parsedComment.success) {
+    console.error("community_seed_comment_invalid", parsedComment.error.issues[0]?.message);
+    return NextResponse.json({ ok: true, postId: post.id, commentSkipped: true });
+  }
+  const { error: commentError } = await supabase
+    .from("community_comments")
+    .insert({ post_id: post.id, owner_user_id: seedUserId, body: parsedComment.data.body, is_editorial: true });
+  if (commentError) console.error("community_seed_comment_insert_failed", commentError.message);
+
+  return NextResponse.json({ ok: true, postId: post.id, postsToday: (count ?? 0) + 1 });
 }

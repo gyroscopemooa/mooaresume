@@ -57,9 +57,15 @@ describe("community daily seed", () => {
     expect(dailySeedMigration).toContain("private.trigger_community_seed()");
     expect(dailySeedMigration).toContain("community_seed_url");
     expect(dailySeedMigration).toContain("community_seed_cron_secret");
-    expect(dailySeedMigration).toContain("cron.schedule(\n  'community-seed-daily'");
     // 문서(handoff-community-mobile.md)에 미리 만들어 둔 실제 비밀값이 실수로
     // 이 커밋된 마이그레이션에 그대로 박히지 않았는지 확인합니다.
     expect(dailySeedMigration).not.toContain("Hgke-PVzZe2_1_FJUUFvUIhGj4YJ9jXfzfwQHH1IAhw");
+  });
+  it("spreads the 3 posts/comments across three separate calls instead of firing them all at once", () => {
+    // 한 번에 3개를 다 만들면 같은 순간에 글 3·댓글 3이 한꺼번에 올라와
+    // 자동화 티가 납니다 — 하루 세 번, 서로 떨어진 시각에 호출해야 합니다.
+    expect(dailySeedMigration).toContain("cron.schedule('community-seed-morning', '0 0 * * *'");
+    expect(dailySeedMigration).toContain("cron.schedule('community-seed-midday', '0 4 * * *'");
+    expect(dailySeedMigration).toContain("cron.schedule('community-seed-evening', '0 9 * * *'");
   });
 });

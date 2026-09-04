@@ -5902,3 +5902,15 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
   3. 준비가 끝나면 `COMMUNITY_SEED_ENABLED=1`로 켭니다. **이 값을 넣기 전까지는 배포돼 있어도 아무 글도 자동으로 안 올라갑니다** — 안전한 기본값입니다.
   4. 다음날 아침(07:00 KST 이후) `/community`에서 "운영팀" 배지가 붙은 글 3개·댓글 3개가 생겼는지, `select * from cron.job_run_details order by start_time desc limit 5;`로 크론이 실제로 돌았는지 확인.
 - **댓글도 SEO 검색되냐는 질문 답변**: 댓글은 서버 렌더링되는 상세 페이지 HTML에 그대로 포함되고, `DiscussionForumPosting` JSON-LD의 `comment` 배열에도 들어갑니다(기존 코드) — 그래서 댓글 텍스트도 그 게시글 페이지의 색인 대상 콘텐츠에 포함됩니다. 다만 댓글이 **독립된 별도 URL로 검색되는 건 아니고**, 어디까지나 그 게시글 페이지 하나의 일부로 색인됩니다.
+
+## 2026-09-04 — Claude: 자동 글·댓글이 같은 순간에 3개씩 한꺼번에 올라오던 설계를 하루 세 번으로 분산
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 질문: "설마 같은시간에 3개 댓글3 이래되버리는거?" — 바로 직전 커밋(`4b94b3d`)의 설계를 정확히 지적한 것이었습니다.
+- Status: completed. 마이그레이션 수정(아직 아무 데도 적용되지 않은 새 마이그레이션이라 새 파일을 추가하지 않고 `20260904030000_community_daily_seed.sql` 자체를 고쳤습니다 — `COMMUNITY_SEED_ENABLED`가 꺼져 있어 사용자가 아직 이 마이그레이션을 Supabase에 적용했을 가능성이 거의 없다고 판단했습니다).
+- **문제**: 바로 이전 구현은 크론이 하루 한 번만 불리고, 그 한 번의 호출 안에서 OpenAI에게 "3개를 한 번에" 만들게 한 뒤 반복문으로 전부 저장했습니다. 그러면 3개 글과 3개 댓글의 `created_at`이 전부 같은 초 단위로 찍혀 "방금 3개가 동시에 올라옴"처럼 보이고, 이건 핸드오프 문서가 가장 경계한 "대량 생산 콘텐츠로 보임"에 정확히 해당합니다.
+- **조치**: 크론을 세 번으로 나눴습니다(00:00·04:00·09:00 UTC = 한국시간 오전 9시·오후 1시·오후 6시). 라우트(`/api/community/seed`)는 호출 한 번에 **글 1개·댓글 1개만** 만들도록 바꾸고, "오늘 이미 3개를 다 썼으면 아무 것도 안 함" 기준으로 멱등성을 다시 짰습니다(이전엔 "오늘 1개라도 있으면 스킵"). 최근 제목 목록(중복 방지용)도 그날 이미 쓴 글을 자연히 포함하게 돼서, 하루 안에서도 같은 질문이 반복되지 않습니다.
+- `community-seed-content.ts`: OpenAI 호출·JSON 스키마·프롬프트를 "3개 배열"에서 "글 1개+댓글 1개" 단일 객체로 단순화했습니다.
+- Files: `supabase/migrations/20260904030000_community_daily_seed.sql`(cron 3개로 분리, 함수/색인 설명 주석 갱신), `src/app/api/community/seed/route.ts`(3개 상한 검사, 1개씩 생성·저장), `src/server/community/community-seed-content.ts`(배열→단일 객체), `src/server/community/community-migration.test.ts`(세 cron.schedule 존재 확인 테스트 추가).
+- Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(신규 1개 포함, 회귀 없음), `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 다시 하루 한 번에 3개씩 한꺼번에 올라오는 이전 설계로 돌아갑니다(아직 `COMMUNITY_SEED_ENABLED`가 꺼져 있어 실사용에는 영향 없음).
+
