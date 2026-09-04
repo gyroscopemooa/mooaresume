@@ -6222,3 +6222,14 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/domain/community.ts`, `src/server/community/community-repository.ts`, `community-publication.ts`, `src/app/api/community/posts/route.ts`, `posts/[postId]/route.ts`, `posts/[postId]/comments/route.ts`, `posts/[postId]/comments/[commentId]/route.ts`(신규), `src/components/community-lounge.tsx` + `.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공, `npx eslint src` 오류 0건.
 - Rollback: 이 커밋 revert.
+
+### 2026-09-05 KST — 커뮤니티 글 제목 길이 32자 → 50자
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("32자 왜 이리 타이트해졌노, 50자").
+- Status: active. 마이그레이션 없음(입력 검증만 바뀌므로 기존 글에 소급되지 않습니다).
+- Change and reason: 앞서 모바일에서 제목이 세 줄까지 늘어나는 걸 막으려고 110자 → 32자로 줄였는데, 실제로 써 보니 32자는 한 문장을 담기에도 빠듯했습니다. 50자로 올립니다. 목록 카드의 제목은 이미 `-webkit-line-clamp:2`로 두 줄에서 잘리므로 레이아웃이 무너지지는 않습니다.
+- 함께 맞춘 곳: 글쓰기 폼의 `maxLength`와 `n/50` 카운터, 자동 글 생성 프롬프트의 "제목은 N자 이내" 지시. 셋 중 하나만 바꾸면 서버 검증과 화면 안내가 어긋납니다.
+- 하지 않은 것: 글 수정 기능. 사용자가 요청했다가 곧바로 "수정은 막자"로 정정했습니다.
+- Files: `src/domain/community.ts`, `src/components/community-lounge.tsx`, `src/server/community/community-seed-content.ts`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공.
+- Rollback: 이 커밋 revert(이미 50자로 올라간 글은 그대로 남습니다).

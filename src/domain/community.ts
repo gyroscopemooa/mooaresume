@@ -10,7 +10,7 @@ export const communityTopicMeta: Record<CommunityTopicId, { label: string; descr
 };
 export const communityAttachmentSchema = z.object({ storagePath: z.string().min(1).max(500), filename: z.string().min(1).max(160), mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "application/pdf"]), byteSize: z.number().int().positive().max(8 * 1024 * 1024) });
 export type CommunityAttachmentInput = z.infer<typeof communityAttachmentSchema>;
-export const createCommunityPostSchema = z.object({ topic: z.enum(communityTopics), title: z.string().trim().min(2, "제목을 두 글자 이상 입력해 주세요.").max(32, "제목은 32자 이내로 적어주세요."), body: z.string().trim().min(5, "고민을 조금만 더 알려주세요.").max(5000), attachments: z.array(communityAttachmentSchema).max(3) });
+export const createCommunityPostSchema = z.object({ topic: z.enum(communityTopics), title: z.string().trim().min(2, "제목을 두 글자 이상 입력해 주세요.").max(50, "제목은 50자 이내로 적어주세요."), body: z.string().trim().min(5, "고민을 조금만 더 알려주세요.").max(5000), attachments: z.array(communityAttachmentSchema).max(3) });
 export type CreateCommunityPostInput = z.infer<typeof createCommunityPostSchema>;
 export const createCommunityCommentSchema = z.object({ body: z.string().trim().min(2, "댓글을 두 글자 이상 입력해 주세요.").max(1000) });
 export const createCommunityReportSchema = z.object({ subjectType: z.enum(["POST", "COMMENT"]), subjectId: z.string().uuid(), reason: z.enum(["PERSONAL_INFORMATION", "HARASSMENT", "MISINFORMATION", "SPAM", "OTHER"]), note: z.string().trim().max(500).optional() });
