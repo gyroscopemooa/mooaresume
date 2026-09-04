@@ -5982,7 +5982,7 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 ## 2026-09-04 — Claude: 메인 홈페이지에 토스 스타일 입체감(레이어드 섀도우) 1차 적용 — main 미배포, 검토 대기
 
 - Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "나머지 모바일 최적화도 해줘 이어서 이번 커뮤뿐아니라 다른페이지도 토스처럼 입체감있게 디자인" → 어디부터 적용할지 물어봤고, 사용자가 "메인홈은 위험해서 롤백가능하게 테스트먼저보고"라고 답해 범위를 메인 홈페이지로 좁히고, 배포 전 스크린샷으로 먼저 확인받기로 함.
-- Status: **코드는 완성, main에는 아직 push하지 않음.** 사용자가 스크린샷을 보고 승인하면 그때 main에 push합니다(그래야 실제 배포됨). 마이그레이션 없음.
+- Status: completed. 스크린샷 확인 후 사용자 승인("일단 배포 ㄱㄱ")받아 `main`에 push 완료(커밋 `e026706`). 마이그레이션 없음.
 - **범위를 왜 좁혔는지**: 홈페이지(`src/app/page.tsx`)는 섹션이 15개가 넘고 각각 별도 CSS 모듈(`landing-sections`, `landing-positioning`, `enterprise-promo`, `one-click`, `career-home-cta`, `field-credibility`, `creed`, `outcome-learning` 등)로 나뉘어 있습니다. 이걸 전부 한 번에 다시 디자인하면 되돌리기도 검증하기도 어려워집니다. 그래서 이번엔 **공용 컴포넌트(`globals.css`)와 요금제 카드(`pricing-comparison.module.css`)** 두 곳만 손댔고, 나머지 8개 섹션 전용 CSS 파일은 건드리지 않았습니다 — 구조·문구·색상 변경 없이 CSS 속성만 추가/수정해서 되돌리기가 이 커밋 하나만 revert하면 되도록 했습니다.
 - **적용한 것**:
   - `:root`에 레이어드 섀도우 토큰 3개 추가(`--shadow-sm`, `--shadow-md`, `--shadow-lift`) — 이후 다른 페이지에도 같은 톤으로 재사용하기 위한 공용 값입니다.
