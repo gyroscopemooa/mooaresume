@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BadgeCheck, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, Sparkles, ThumbsUp, Trash2, X } from "lucide-react";
+import { ArrowRight, BadgeCheck, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, ThumbsUp, Trash2, X } from "lucide-react";
 import { communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
 import { HeaderAccount } from "@/components/header-account";
 import { createClient } from "@/lib/supabase/client";
@@ -183,7 +183,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
 
     <section className={styles.hero}>
       <div><span className={styles.kicker}>MOOA COMMUNITY</span><h1>취업 고민을<br/><em>혼자 쌓아두지 마세요.</em></h1><p>지원, 직무, 자소서, 회사생활. 비슷한 고민을 읽고<br/>지금 내게 필요한 다음 행동을 찾아보세요.</p></div>
-      <div className={styles.heroCard}><Sparkles/><b>오늘의 시작 질문</b><p>지금 가장 막히는 건 경험 정리인가요, 직무 선택인가요?</p><button type="button" onClick={() => setComposerOpen(true)}>내 고민 정리하기 <ArrowRight/></button></div>
+      <div className={styles.heroCard}><b>오늘의 시작 질문</b><p>지금 가장 막히는 건 경험 정리인가요, 직무 선택인가요?</p><button type="button" onClick={() => setComposerOpen(true)}>내 고민 정리하기 <ArrowRight/></button></div>
     </section>
 
     <section className={styles.layout}>

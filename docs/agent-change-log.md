@@ -5969,3 +5969,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/community-lounge.module.css`(`.post footer`, `.composer>footer`), `src/app/community/[postId]/page.module.css`(`.footer`).
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, CSS 전용 변경이라 원래도 테스트 대상 아님), `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 전역 `footer` 규칙이 다시 새어 들어와 두 버튼 묶음이 세로로 돌아갑니다.
+
+## 2026-09-04 — Claude: "오늘의 시작 질문" 카드 위 반짝이 아이콘 제거
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "오늘의 시작질문 위 반짝이 로고 제거".
+- Status: completed. 마이그레이션 없음.
+- 히어로 우측 카드("오늘의 시작 질문") 제목 위에 있던 `Sparkles`(lucide) 아이콘을 제거했습니다. 다른 곳에서 쓰이지 않아 import도 같이 뺐습니다. 카드 안 다른 요소(제목·설명·버튼)는 그대로입니다. `.heroCard>svg`/`.heroCard svg` CSS 규칙은 이제 대상이 없어 죽은 규칙이 됐지만, 다른 곳에 영향 없어 그대로 뒀습니다.
+- Files: `src/components/community-lounge.tsx`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 아이콘이 다시 보입니다.
