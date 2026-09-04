@@ -6125,3 +6125,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 393px·360px·1280px에서 **1~5단계 전부** `document.scrollWidth == viewport`임을 측정으로 확인(수정 전 393px 4단계에서 464px). 4단계 스크린샷으로 문항 칸 전체 폭·글자수 줄바꿈·버튼 한 줄 확인.
 - Rollback/recovery reference: 이 커밋 revert. 1번만 되돌리려면 `minmax(0,1fr)`을 `1fr`로, 추가한 `min-width:0` 규칙을 삭제하면 됩니다(가로 스크롤이 되돌아옵니다).
 - User decision: 사용자 요청.
+
+### 2026-09-05 01:05 KST — 문항 줄·하단 버튼 줄 오와열 정렬
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("정렬 별론데 오와열 맞춤").
+- Status: active.
+- Protected baseline: 직전 커밋 `8857282`. CSS만 조정, JSX 불변.
+- Change and reason:
+  1. **문항 줄을 flex → grid** — flex라 문항마다 입력칸 너비가 제각각이 되고 번호·글자수·삭제가 세로로 안 맞았습니다. `grid-template-columns:24px minmax(0,1fr) 84px 26px`로 열을 고정해 문항이 몇 개든 같은 열에 섭니다. 이 프로젝트엔 전역 `border-box`가 없어 `.questionLength`의 `width:74px`가 실제 92px로 렌더되던 것도 `box-sizing:border-box`로 맞췄습니다. 검증: 문항 3개일 때 각 열의 left 좌표가 393px에서 `70/110/110/291`, 1280px에서 `390/430/1048/1163`으로 세 줄 모두 동일.
+  2. **모바일 문항 줄 배치** — 좁은 화면에서는 3열(`24px minmax(0,1fr) 26px`)로 두고 글자수만 2행 2열로 내려, 글자수 칸이 문항 칸 왼쪽 모서리에 정확히 맞습니다.
+  3. **하단 이전/상태/다음** — `min-width`가 content-box라 92px 지정이 실제 118px로 렌더돼 상태 문구 자리를 46px로 눌렀고, footer에 `align-items`가 없어 stretch가 걸려 상태가 두 줄이 되면 버튼까지 118px 높이로 늘어났습니다. `box-sizing:border-box`, `align-items:center`, 버튼 폭 통일(104px / 모바일 78px)로 정리했습니다. 420px 이하에서는 어떻게 줄여도 상태 자리가 70px뿐이라 상태를 윗줄로 올리고 이전/다음을 좌우 끝에 정확히 붙였습니다.
+- Files/branch: `src/components/guided-create-form.module.css`, `src/components/pro-create-wizard.module.css` — `claude/github-gui-sync-jfbyd5`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공. 360·393·1280px에서 `document.scrollWidth == viewport` 유지 확인, 문항 3개 열 좌표 일치 측정, 하단 버튼 줄 스크린샷 확인.
+- Rollback/recovery reference: 이 커밋 revert.
+- User decision: 사용자 요청. 사이드바/접기 UI는 "수정하지 말고 예시만"이라 하셔서 **코드 변경 없이 목업만** 만들었습니다(`docs/` 아님, 세션 스크래치패드).

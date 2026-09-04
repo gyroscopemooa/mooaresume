@@ -67,13 +67,20 @@
    카드 밖으로 넘쳤습니다. 각 단계 그리드가 좁은 화면에서 줄어들 수 있게 합니다. */
 .stepBody>*,.questions>*,.assign>*,.fields>*{min-width:0}
 .questionsHead button{white-space:nowrap}
-/* 좁은 화면에서 [번호][문항][글자수][삭제]를 한 줄에 두면 정작 문항 입력칸이
-   75px까지 눌려 글자수 칸(93px)보다 좁아집니다. 문항은 첫 줄을 다 쓰고,
-   글자수와 삭제는 다음 줄로 내립니다. */
+/* 오와열 맞춤. flex로 두면 문항마다 입력칸 너비가 제각각이라 번호·글자수·삭제가
+   세로로 안 맞습니다. grid로 열을 고정해 문항이 몇 개든 같은 열에 서게 합니다.
+   이 프로젝트엔 전역 border-box가 없어 input의 width가 padding을 빼고 계산되므로
+   여기서만 border-box로 맞춥니다. */
+.questionRow{display:grid;grid-template-columns:24px minmax(0,1fr) 84px 26px;align-items:center;gap:8px}
+.questionRow>span{width:100%;height:24px}
+.questionRow input{box-sizing:border-box;width:100%}
+.questionRow>button{width:26px;height:26px;padding:0}
+/* 좁은 화면에서는 네 열이 다 못 들어가 문항 칸이 글자수 칸보다 좁아집니다.
+   문항은 첫 줄을 다 쓰고 글자수는 문항 칸 왼쪽에 맞춰 아랫줄로 내립니다. */
 @media(max-width:760px){
-  .questionRow{flex-wrap:wrap}
-  .questionRow>span{order:1}
-  .questionRow>input:not(.questionLength){order:2;flex:1 1 calc(100% - 30px)}
-  .questions .questionLength{order:3;margin-left:30px}
-  .questionRow>button{order:4}
+  .questionRow{grid-template-columns:24px minmax(0,1fr) 26px}
+  .questionRow>span{grid-column:1;grid-row:1}
+  .questionRow>input:not(.questionLength){grid-column:2;grid-row:1}
+  .questionRow>button{grid-column:3;grid-row:1}
+  .questions .questionLength{grid-column:2;grid-row:2;width:84px}
 }

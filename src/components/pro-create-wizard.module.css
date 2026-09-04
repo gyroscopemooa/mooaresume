@@ -35,3 +35,24 @@
   .layout>section>footer button{padding:10px 12px}
   .layout>section>footer{gap:8px}
 }
+/* 이전 / 상태 / 다음 삼분할. 버튼 두 폭을 맞춰 좌우 끝에 고정하고, 상태 문구가
+   가운데 남는 자리를 다 쓰게 합니다. align-items를 주지 않으면 stretch라
+   상태 문구가 두 줄이 될 때 버튼까지 같이 늘어나 상자가 뭉툭해집니다.
+   이 프로젝트엔 전역 border-box가 없어 min-width가 padding 바깥으로 더해지므로
+   여기서만 border-box로 맞춥니다(안 그러면 92px 지정이 실제 118px이 됩니다). */
+.layout>section>footer{align-items:center}
+.layout>section>footer button{box-sizing:border-box;min-width:104px;justify-content:center}
+.status{flex:1;text-align:center}
+@media(max-width:760px){
+  /* 360px에서 상태 문구에 남는 자리가 70px뿐이라 "아직 비어 있어요"가 두 줄이
+     됐습니다. 버튼 좌우 여백과 간격을 조금 줄여 한 줄에 들어오게 합니다. */
+  .layout>section>footer{gap:6px}
+  .layout>section>footer button{min-width:78px;padding:10px 9px}
+}
+/* 360px대에서는 버튼 두 개를 빼고 나면 상태 문구 자리가 70px뿐이라 어떻게 줄여도
+   두 줄이 됩니다. 이 폭에서는 상태를 윗줄로 올려 한 줄로 두고, 이전/다음이
+   좌우 끝에 정확히 맞아떨어지게 합니다. */
+@media(max-width:420px){
+  .layout>section>footer{flex-wrap:wrap;row-gap:10px}
+  .status{order:-1;flex:1 0 100%}
+}
