@@ -156,11 +156,21 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
     });
   }
 
+  const hotPostsList = hotPosts.map((post, index) => <button type="button" className={styles.hotPost} key={post.id} onClick={() => setTopic(post.topic)}><span>{index + 1}</span><b>{post.title}</b><small>추천 {post.recommendationCount}</small></button>);
+
   return <main className={styles.page}>
     <header className={styles.topbar}>
       <Link className={styles.brand} href="/" aria-label="MOOA Resume 홈"><span>M</span><b>MOOA</b> Resume</Link>
       <nav aria-label="라운지 주요 메뉴"><Link href="/career">커리어 검사</Link><Link className={styles.activeLink} href="/community">라운지</Link><Link href="/#plans">요금</Link><HeaderAccount /></nav>
     </header>
+
+    {/* PC에서는 사이드바에만 보이던 인기글을, 모바일에서는 사이드바 자체가
+        display:none이라 사라졌었습니다. 같은 데이터를 페이지 맨 위에도
+        한 번 더(모바일에서만 보이게) 렌더링합니다. */}
+    {hotPosts.length > 0 && <section className={styles.mobileHot}>
+      <div className={styles.sideTitle}><Flame/><b>이번 주 많이 읽은 글</b></div>
+      {hotPostsList}
+    </section>}
 
     {showAttachmentNotice && <div className={styles.loginNotice} role="status">
       <ShieldAlert/> 첨부파일은 로그인 후에 볼 수 있어요.
@@ -176,7 +186,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
     <section className={styles.layout}>
       <aside className={styles.sidebar}>
         <div className={styles.sideTitle}><Flame/><b>이번 주 많이 읽은 글</b></div>
-        {hotPosts.map((post, index) => <button type="button" className={styles.hotPost} key={post.id} onClick={() => setTopic(post.topic)}><span>{index + 1}</span><b>{post.title}</b><small>추천 {post.recommendationCount}</small></button>)}
+        {hotPostsList}
         <div className={styles.sideGuide}><b>라운지 약속</b><p>실명·연락처·회사 내부정보는 쓰지 않아요. 합격 여부를 단정하는 답변보다 다음 행동을 함께 찾아요.</p><Link href="/career">내 방향 먼저 정리하기 <ArrowRight/></Link></div>
       </aside>
 

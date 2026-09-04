@@ -5914,3 +5914,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(신규 1개 포함, 회귀 없음), `npx next build` 성공.
 - Rollback: 이 커밋 revert. 되돌리면 다시 하루 한 번에 3개씩 한꺼번에 올라오는 이전 설계로 돌아갑니다(아직 `COMMUNITY_SEED_ENABLED`가 꺼져 있어 실사용에는 영향 없음).
 
+## 2026-09-04 — Claude: 모바일에서 사라졌던 "이번 주 인기글"을 페이지 맨 위에 노출, 모바일 히어로 글자 크기 축소
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "pc있는 인기글 카드세션 모바일에선 제일 상단에 보이게", 히어로 영역("커뮤니티 페이지 제목" 등) 글자 크기도 모바일에서 더 작게.
+- Status: completed. 마이그레이션 없음.
+- 확인한 것: `.sidebar{display:none}`이 모바일 미디어쿼리에 있어, PC에서 보이는 "이번 주 많이 읽은 글" 카드가 모바일에서는 "라운지 약속" 안내와 함께 통째로 사라져 있었습니다.
+- 같은 `hotPosts` 데이터(이미 있는 상태, 새 fetch 없음)를 헬퍼 변수(`hotPostsList`)로 한 번만 만들고, 페이지 맨 위(헤더 바로 아래, 히어로 섹션보다 위)에 모바일 전용 블록(`.mobileHot`, 데스크톱에서는 `display:none`)으로 한 번 더 렌더링했습니다. 데스크톱 사이드바 쪽 코드는 같은 리스트를 재사용하도록만 바꿨습니다(중복 제거). "라운지 약속" 카드는 이번 요청 범위 밖이라 그대로 모바일에서 숨김 상태를 유지했습니다.
+- 모바일 히어로(`.hero`) 글자 크기를 줄였습니다: 제목(h1) 42px→28px, 상단 배지(kicker) 11px(공용 기본값)→10px, 설명문(p) 13px→12px. 인기글 카드가 위에 새로 생겨 늘어난 세로 공간을 보완하도록 히어로 상하 여백도 줄였습니다(43px→26px 위, 28px→22px 아래).
+- Files: `src/components/community-lounge.tsx`(`hotPostsList` 변수 추출, 모바일 전용 블록 추가), `src/components/community-lounge.module.css`(`.mobileHot` 신설, 모바일 `.hero` 크기 축소).
+- Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 모바일에서 인기글 카드가 다시 안 보이고, 히어로 글자 크기도 이전 크기로 돌아갑니다.
