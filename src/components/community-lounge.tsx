@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, BadgeCheck, FileText, Flame, ImagePlus, LoaderCircle, MessageCircle, PenLine, Send, ShieldAlert, ThumbsUp, Trash2, X } from "lucide-react";
 import { communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
-import { HeaderAccount } from "@/components/header-account";
+import { SiteNav } from "@/components/site-nav";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./community-lounge.module.css";
 
@@ -164,7 +164,7 @@ export function CommunityLounge({ attachmentNotice = false }: { attachmentNotice
   return <main className={styles.page}>
     <header className={styles.topbar}>
       <Link className={styles.brand} href="/" aria-label="MOOA Resume 홈"><span>M</span><b>MOOA</b> Resume</Link>
-      <nav aria-label="라운지 주요 메뉴"><Link href="/career">커리어 검사</Link><Link className={styles.activeLink} href="/community">라운지</Link><Link href="/#plans">요금</Link><HeaderAccount /></nav>
+      <SiteNav/>
     </header>
 
     {/* PC에서는 사이드바에만 보이던 인기글을, 모바일에서는 사이드바 자체가

@@ -6015,3 +6015,14 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, 전부 CSS 변경), `npx next build` 성공, 로컬 렌더링 스크린샷 확인.
 - Rollback: 이 커밋 revert. 되돌리면 헤더에서 커뮤니티가 다시 사라지고, 이번에 고친 섹션들도 평면 스타일로 돌아갑니다.
 - **테스트 글 삭제를 못 한 이유**: 이 세션(샌드박스)은 `mooaresume.com`으로 나가는 아웃바운드가 네트워크 정책상 막혀 있고, Supabase에 직접 연결할 자격 증명(서비스 키 등)도 이 환경엔 없습니다. 그래서 관리자 삭제 API를 대신 호출해 드릴 방법이 없습니다 — **직접 로그인하신 상태에서 `/community`의 각 테스트 글(🗑 아이콘)을 눌러 지워주셔야 합니다.** 헤더는 이미 켜졌으니, 실제 방문자가 보기 전에 먼저 지우시는 걸 추천합니다.
+
+## 2026-09-04 — Claude: 커뮤니티 헤더를 홈페이지와 같은 SiteNav로 통일
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 신고: "커뮤니티 헤더도 통일 캬뮤니티 헤더는 로그인 메뉴만있는듯".
+- Status: completed. 마이그레이션 없음.
+- **확인한 것**: 커뮤니티 페이지(`community-lounge.tsx`)는 홈페이지가 쓰는 `SiteNav`(햄버거 메뉴 — 요금·첨삭 예시·커뮤니티·이용 안내를 패널로 묶고, 모바일에서도 안 사라짐)를 쓰지 않고 자체 `<nav>`를 직접 만들어 쓰고 있었습니다: `커리어 검사`·`라운지`(자기 자신으로 가는 의미 없는 링크)·`요금`·로그인 버튼. 게다가 `@media(max-width:760px){.topbar nav>a:first-child{display:none}}`로 모바일에서 첫 번째 링크(`커리어 검사`)를 숨기고 있었는데, 이건 `SiteNav`가 애초에 해결하려고 만들어진 바로 그 패턴입니다(SiteNav 주석: "phone rule hid every one of them... A row that hides what it cannot fit does not scale"). 그래서 모바일에서는 실제로 `요금`·로그인 정도만 남아 "로그인 메뉴만 있는" 것처럼 보였을 겁니다.
+- **조치**: 커뮤니티 페이지 자체 `<nav>`를 지우고 `<SiteNav/>`로 교체했습니다. `HeaderAccount` 개별 import는 필요 없어져 제거했습니다(SiteNav가 내부적으로 이미 포함). 커뮤니티만의 상단바 컨테이너(`.topbar` — sticky, 블러 배경)는 그대로 두고 안의 메뉴만 공용 컴포넌트로 바꿔서, 커뮤니티 특유의 헤더 룩(로고+메뉴가 sticky)은 유지하면서 실제 메뉴 내용/동작만 사이트 전체와 통일했습니다.
+- Files: `src/components/community-lounge.tsx`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint` 클린, `npx vitest run` 973 passed(회귀 없음), `npx next build` 성공. **로컬에서 `/community` 페이지 자체를 시각적으로 띄워 확인하지는 못했습니다** — 이 세션의 로컬 개발 서버에는 실제 Supabase 자격 증명이 없어서, 커뮤니티 페이지가 마운트 시 곧바로 호출하는 관리자 확인(`createClient().auth.getUser()`, 헤더와 무관한 기존 코드)에서 환경변수 오류로 렌더링 자체가 막힙니다(이 문제는 제 변경과 무관하게 이 로컬 환경의 원래 한계입니다 — 실제 배포본은 Cloudflare에 진짜 자격 증명이 있어 문제없이 동작합니다). 대신 SiteNav 자체가 홈페이지에서 이미 검증된 컴포넌트이고, 갈아 끼운 부분이 `<header>` 안의 `<nav>` 한 줄뿐이라 코드 리뷰로 충분히 확인 가능하다고 판단했습니다.
+- Rollback: 이 커밋 revert. 되돌리면 커뮤니티 헤더가 다시 자체 제작 nav(모바일에서 링크 하나 숨김)로 돌아갑니다.
+
