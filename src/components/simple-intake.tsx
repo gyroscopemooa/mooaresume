@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useId, useMemo, useRef, useState } from "react";
 import { AlertCircle, Check, FileText, HelpCircle, Link as LinkIcon, Loader2, Paperclip, Trash2, UploadCloud } from "lucide-react";
 import {
   CLASSIFIED_KIND_LABEL,
@@ -115,6 +115,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
     }
   }
 
+  const limitFieldId = useId();
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [rejections, setRejections] = useState<Array<{ name: string; reason: string }>>([]);
@@ -271,9 +272,24 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           application forms actually say. A question that prints its own limit
           keeps it — see applyDefaultTargetLength. Making this required would
           stop people who genuinely have no limit. */}
-      <label className={styles.limit}>
-        <span>문항별 글자 수</span>
+      {/* label이 아니라 div입니다. 안내를 여는 단추가 label 안에 있으면 그 클릭이
+          입력칸 포커스까지 같이 끌고 갑니다. htmlFor로 따로 묶습니다. */}
+      <div className={styles.limit}>
+        <span>
+          <label htmlFor={limitFieldId}>문항별 글자 수</label>
+          {/* 안내를 한 칸으로 깔면 라벨·입력칸과 합쳐 세 칸이 되는데, 좁은
+              화면에서 안내에 남는 폭이 117px뿐이라 어떻게 줄여도 두 줄이 됩니다.
+              이 파일이 위쪽 분류 안내에 이미 쓰는 말풍선을 그대로 씁니다. */}
+          <button type="button" className={styles.why} aria-label="글자 수를 어떻게 적는지">
+            <HelpCircle/>
+            <span role="tooltip" className={styles.tooltip}>
+              <b>문항마다 글자 수가 다르면</b>
+              제목 뒤에 <em>(800자)</em>처럼 적어 주세요. 그렇게 적힌 문항은 그 숫자를 쓰고, 나머지는 여기 값을 씁니다.
+            </span>
+          </button>
+        </span>
         <input
+          id={limitFieldId}
           inputMode="numeric"
           value={targetLength}
           maxLength={4}
@@ -287,9 +303,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
             difference between a trim and a thousand characters of filler. The
             marker comes back on its own in the shrink warning below, which is
             the moment it actually matters. */}
-        {resolvedLengths
-          ? <b className={styles.resolved}>{resolvedLengths}</b>
-          : <small>문항마다 다르면 제목 뒤에 <b>(800자)</b>라고 적어 주세요.</small>}
+        {resolvedLengths && <b className={styles.resolved}>{resolvedLengths}</b>}
 
         {/* 설정이 아니라 결과를 보여줍니다. 이 숫자가 없어서 완성된 자기소개서를
             올린 사람이 기본값 그대로 절반 가까이 잘렸습니다. */}
@@ -301,7 +315,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           </li>)}
         </ul>}
         {lengthLoss && <small className={styles.loss}>{lengthLoss}</small>}
-      </label>
+      </div>
 
       <div className={styles.boxFoot}>
         {/* 한도를 옆에 붙여 둡니다. 지금까지는 지금 몇 자인지만 말하고 몇 자까지

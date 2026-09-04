@@ -6248,3 +6248,16 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/app/community/[postId]/post-comments.tsx`(신규), `page.tsx`, `page.module.css`, `src/domain/community.ts`, `src/components/community-lounge.tsx`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공, `npx eslint src` 오류 0건. 이 화면은 Supabase 세션이 필요해 샌드박스에서 렌더 확인은 못 했습니다 — 배포 후 실제 확인 필요.
 - Rollback: 이 커밋 revert.
+
+### 2026-09-05 KST — 간편 입력 "문항별 글자 수"를 설명 포함 한 줄로(안내는 말풍선)
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("여기 한 줄 아님 — 설명 포함 한 줄이 맞는 듯, 펼치기하던가").
+- Status: active. 마이그레이션 없음.
+- Change and reason:
+  - 라벨·입력칸·안내문 세 칸인데 좁은 화면에서 안내에 남는 폭이 **117px**뿐이라(393px에서 상자 안쪽 319px − 라벨 84 − 입력 98 − 간격 20), 문구를 어떻게 줄여도 두 줄이 됐습니다. 안내를 줄에서 빼고 라벨 옆 물음표 말풍선으로 옮겨 **설명 포함 한 줄**로 만들었습니다. 이 파일이 위쪽 분류 안내에 이미 쓰는 `.why` 말풍선을 그대로 씁니다 — 새 패턴을 만들지 않았습니다.
+  - `<label>` 안에 단추를 두면 그 클릭이 입력칸 포커스까지 끌고 가므로, 바깥을 `<div>`로 바꾸고 `htmlFor`/`useId`로 라벨과 입력을 묶었습니다.
+  - `.resolved`(입력한 글에서 실제로 적용된 글자 수) 배지는 그대로 셋째 칸에 남습니다 — 안내문과 한 자리를 나눠 쓰던 구조였는데, 안내가 빠지면서 자리 다툼도 없어졌습니다.
+  - 공용 `.why` 규칙이 단추 기준 `left:0`이라, 줄 한가운데서 열리는 이 말풍선은 오른쪽으로 화면 밖까지 나갔습니다. 기준을 단추가 아니라 줄 전체(`.limit`)로 옮기고 폭을 줄 폭 안에 가뒀습니다. 터치에서 `:focus-visible`이 안 걸리는 브라우저가 있어 `:focus`도 함께 엽니다.
+- Files: `src/components/simple-intake.tsx`, `simple-intake.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공, `npx eslint src` 오류 0건. 393px·1280px 스크린샷으로 한 줄 렌더와 말풍선이 상자 안에 들어오는 것 확인, `scrollWidth == viewport` 유지.
+- Rollback: 이 커밋 revert.

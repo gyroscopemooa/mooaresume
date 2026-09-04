@@ -106,7 +106,8 @@
 /* 라벨·입력·결과를 한 줄에 눕힙니다. 세로로 쌓으니 다섯 줄이 되면서 칸이
    차지하는 높이의 대부분이 빈 공간이었습니다. */
 .limit { display: grid; grid-template-columns: auto 92px minmax(0, 1fr); align-items: center; gap: 7px 10px; margin-top: 13px; padding: 9px 13px; border: 1px solid #e2eae6; border-radius: 10px; background: #fbfdfc; }
-.limit > span { font-size: 12px; font-weight: 800; white-space: nowrap; }
+.limit > span { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.limit > span label { cursor: pointer; }
 .limit > span em { margin-left: 5px; padding: 2px 6px; border-radius: 8px; background: #eef2f0; color: #8a9690; font-style: normal; font-size: 10px; font-weight: 700; }
 .limit input { width: 100%; padding: 6px 9px; border: 1px solid #dbe6e0; border-radius: 7px; background: #fff; font: inherit; font-size: 13px; text-align: center; outline: 0; }
 .limit input:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.08); }
@@ -158,7 +159,7 @@
    투명한 채로 남습니다 — 처음에 그렇게 만들어 아무것도 안 나왔습니다.
    `right`/`top`도 그쪽 값이라 여기서 풀어 주어야 위로 떠오릅니다. */
 .why .tooltip { display: none; }
-.why:hover .tooltip, .why:focus-visible .tooltip {
+.why:hover .tooltip, .why:focus .tooltip, .why:focus-visible .tooltip {
   display: block; opacity: 1; visibility: visible; transform: none;
   position: absolute; right: auto; top: auto; left: 0; bottom: calc(100% + 8px); z-index: 5;
   width: min(320px, 78vw); padding: 12px 14px;
@@ -222,3 +223,11 @@
 }
 .scanNote:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, .12); }
 .scanNote::placeholder { color: #8fa7b4; }
+/* 이 말풍선은 줄 한가운데(물음표 단추)에서 열리는데, 공용 `.why` 규칙이
+   단추 기준 `left:0`이라 오른쪽으로 화면 밖까지 나갔습니다. 기준을 단추가
+   아니라 이 줄 전체로 옮기고 폭을 줄 폭 안에 가둡니다. */
+.limit { position: relative; }
+.limit .why { position: static; }
+.limit .why:hover .tooltip,
+.limit .why:focus .tooltip,
+.limit .why:focus-visible .tooltip { left: 0; right: auto; width: min(320px, 100%); }
