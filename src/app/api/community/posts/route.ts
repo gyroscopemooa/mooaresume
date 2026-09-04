@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
   const rawLimit = Number(request.nextUrl.searchParams.get("limit"));
   const limit = Number.isInteger(rawLimit) && rawLimit > 0 && rawLimit <= PAGE_SIZE ? rawLimit : PAGE_SIZE;
   const supabase = await createClient();
+  // 내 글에만 삭제 단추를 띄우기 위한 것입니다. owner_user_id는 화면으로
+  // 내려가지 않고 여기서 isMine 불리언으로만 바뀝니다.
+  const { data: auth } = await supabase.auth.getUser();
+  const viewerUserId = auth?.user?.id ?? null;
   let query = supabase.from("community_posts").select(communityPostSelect).eq("status", "PUBLISHED");
   // 도메인의 communityTopics를 그대로 씁니다 — 여기 따로 목록을 적어 두면
   // 나중에 주제를 늘렸을 때 한쪽만 고쳐지고 이 필터만 옛 목록으로 남습니다.
@@ -34,7 +38,7 @@ export async function GET(request: NextRequest) {
   if (error) return NextResponse.json({ error: "라운지를 불러오지 못했습니다." }, { status: 500 });
   const rows = data ?? [];
   const hasMore = rows.length > limit;
-  const posts = rows.slice(0, limit).map((row) => toCommunityPost(row as Record<string, unknown>));
+  const posts = rows.slice(0, limit).map((row) => toCommunityPost(row as Record<string, unknown>, viewerUserId));
   return NextResponse.json({ posts, hasMore, nextOffset: offset + posts.length });
 }
 

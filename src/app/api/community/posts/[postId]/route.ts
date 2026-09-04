@@ -16,7 +16,7 @@ function isCommunityAdmin(email: string | null | undefined): boolean {
 }
 
 /**
- * 글 삭제.
+ * 글 삭제. 관리자는 전부, 그 외에는 자기가 쓴 글만.
  *
  * `community_posts.status`는 이미 스키마에 `'REMOVED'`를 예비해 뒀지만
  * (`check (status in ('PUBLISHED','HIDDEN','REMOVED'))`) 실제로 그 값을
@@ -37,9 +37,19 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   const supabase = await createClient();
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
-  if (!isCommunityAdmin(auth.user.email)) return NextResponse.json({ error: "삭제 권한이 없습니다." }, { status: 403 });
   const { postId } = await context.params;
-  const { error } = await serviceClient().from("community_posts").update({ status: "REMOVED" }).eq("id", postId);
+
+  // 관리자는 남의 글도 지웁니다(RLS를 우회하는 서비스 키 클라이언트).
+  // 그 외에는 자기 글만 — `.eq("owner_user_id", ...)`를 명시해, 권한 판단이
+  // 이 줄 하나에 드러나게 둡니다(RLS도 같은 조건으로 막지만, 여기서
+  // 조용히 0행 업데이트가 되는 것보다 의도가 보이는 편이 낫습니다).
+  const admin = isCommunityAdmin(auth.user.email);
+  const query = admin
+    ? serviceClient().from("community_posts").update({ status: "REMOVED" }).eq("id", postId)
+    : supabase.from("community_posts").update({ status: "REMOVED" }).eq("id", postId).eq("owner_user_id", auth.user.id);
+  const { data, error } = await query.select("id");
   if (error) return NextResponse.json({ error: "글을 삭제하지 못했습니다." }, { status: 500 });
+  // 남의 글을 지우려 한 경우 RLS가 0행을 돌려줍니다 — 성공으로 보이면 안 됩니다.
+  if (!data?.length) return NextResponse.json({ error: "삭제 권한이 없습니다." }, { status: 403 });
   return NextResponse.json({ ok: true });
 }

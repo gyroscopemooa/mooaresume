@@ -8,21 +8,24 @@ import { toCommunityComment, toCommunityPost } from "./community-repository";
 // list에서 Remote 채워짐). 적용 전에 이 select에 넣었다가 PostgREST가 "없는
 // 컬럼"으로 요청 전체를 거부해 커뮤니티가 먹통이 된 적이 있으니(2026-09-04),
 // 앞으로도 새 컬럼은 적용을 확인한 뒤에만 여기에 넣습니다.
-export const communityPostSelect = "id, topic, title, body, anonymous_alias, is_editorial, recommendation_count, comment_count, created_at, updated_at, community_attachments(id, storage_path, filename, mime_type, byte_size)";
-const communityCommentSelect = "id, body, anonymous_alias, is_editorial, created_at";
+export const communityPostSelect = "id, owner_user_id, topic, title, body, anonymous_alias, is_editorial, recommendation_count, comment_count, created_at, updated_at, community_attachments(id, storage_path, filename, mime_type, byte_size)";
+const communityCommentSelect = "id, owner_user_id, body, anonymous_alias, is_editorial, created_at";
 
 export const getPublishedCommunityPost = cache(async (postId: string): Promise<CommunityPost | null> => {
   const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
   const { data, error } = await supabase.from("community_posts").select(communityPostSelect).eq("id", postId).eq("status", "PUBLISHED").maybeSingle();
   if (error || !data) return null;
-  return toCommunityPost(data as Record<string, unknown>);
+  return toCommunityPost(data as Record<string, unknown>, auth?.user?.id ?? null);
 });
 
 export const getPublishedCommunityComments = cache(async (postId: string): Promise<CommunityComment[]> => {
   const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
   const { data, error } = await supabase.from("community_comments").select(communityCommentSelect).eq("post_id", postId).eq("status", "PUBLISHED").order("created_at", { ascending: true });
   if (error) return [];
-  return (data ?? []).map((row) => toCommunityComment(row as Record<string, unknown>));
+  const viewerUserId = auth?.user?.id ?? null;
+  return (data ?? []).map((row) => toCommunityComment(row as Record<string, unknown>, viewerUserId));
 });
 
 export async function listPublishedCommunityPostsForSitemap() {

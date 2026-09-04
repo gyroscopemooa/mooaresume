@@ -6207,3 +6207,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `supabase/migrations/20260905020000_revert_editorial_alias.sql`(신규), `src/components/site-nav.tsx` + `.module.css`, `src/components/community-lounge.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공.
 - 남은 문제(기록): 별명이 계정 해시라 자동 글 3개가 같은 별명이고 그 글의 운영팀 댓글도 같은 별명입니다. 체크 배지로 구분은 되지만 "자기 글에 자기가 댓글" 모양은 남습니다. 사용자 판단 대기.
+
+### 2026-09-05 KST — 본인 글·댓글 삭제(관리자는 전부), 댓글 삭제 API 신설
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("자기가 쓴 글이나 댓글은 삭제 가능하게, 어드민은 다 가능하게, 지금 댓글은 삭제 못 하는 듯").
+- Status: active. 마이그레이션 없음.
+- Protected baseline: 기존 관리자 전용 글 삭제(`posts/[postId]/route.ts`)의 동작·소프트 삭제(`status='REMOVED'`) 방식은 그대로 두고 권한만 넓혔습니다.
+- Change and reason:
+  1. **`isMine` 도입** — 화면이 "내 것"을 알아야 삭제 단추를 띄울 수 있는데, `owner_user_id`를 그대로 내려보내면 누가 어떤 익명글을 썼는지 전부 이어붙일 수 있어 익명 라운지의 전제가 무너집니다. 서버에서만 비교해 `isMine` 불리언으로 바꿔 내보냅니다(`community-repository.ts`의 `isOwnedBy`). select에는 `owner_user_id`를 추가했지만 응답 JSON에는 들어가지 않습니다.
+  2. **글 삭제 권한 확대** — 관리자는 서비스 키로 전부, 그 외에는 `.eq("owner_user_id", auth.user.id)`로 자기 글만. RLS도 같은 조건으로 막지만 조용히 0행 업데이트가 되면 성공처럼 보이므로, `.select("id")` 결과가 비면 403을 돌려줍니다.
+  3. **댓글 삭제 API 신설** — `DELETE /api/community/posts/[postId]/comments/[commentId]`. 같은 규칙(관리자 전부 / 본인 것만). 글과 달리 행을 실제로 지웁니다 — `status`로 감춰도 되살릴 화면이 없고, RLS에 이미 "members remove own community comments" delete 정책이 있습니다. `comment_count`는 기존 트리거가 다시 셉니다.
+  4. **UI** — 라운지에서 내 글/내 댓글(그리고 관리자에게는 전부)에 🗑가 뜹니다. 삭제 단추 라벨을 "게시글 삭제(관리자)" → "게시글 삭제"로 바꿨습니다.
+- 범위 밖으로 둔 것: `/community/[postId]` 상세 페이지는 댓글 입력창도 없는 읽기·SEO 전용 서버 컴포넌트라 삭제 단추를 넣지 않았습니다. 삭제는 라운지에서 합니다. 필요하면 클라이언트 조각을 따로 만들어야 합니다.
+- Files: `src/domain/community.ts`, `src/server/community/community-repository.ts`, `community-publication.ts`, `src/app/api/community/posts/route.ts`, `posts/[postId]/route.ts`, `posts/[postId]/comments/route.ts`, `posts/[postId]/comments/[commentId]/route.ts`(신규), `src/components/community-lounge.tsx` + `.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공, `npx eslint src` 오류 0건.
+- Rollback: 이 커밋 revert.
