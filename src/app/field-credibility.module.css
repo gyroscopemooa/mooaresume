@@ -1,6 +1,6 @@
-.section{margin-bottom:105px;padding:54px;border:1px solid #dce5e0;border-radius:20px;background:linear-gradient(180deg,#f7faf8 0%,#fff 60%)}.head{max-width:760px}.head>span{color:#176b4a;font-size:10px;font-weight:900;letter-spacing:.12em}.head h2{margin:12px 0 17px;font-size:clamp(28px,3.4vw,42px);line-height:1.22;letter-spacing:-.05em;white-space:nowrap}.lead{margin:0;color:#17221d;font-size:17px;font-weight:800;line-height:1.7}.body{max-width:760px;margin:16px 0 0;color:#68756f;font-size:14px;line-height:1.9}.body b{color:#17221d}.points{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}.points article{padding:22px;border:1px solid #dbe7e1;border-radius:15px;background:#fff}.points span{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#f0f7f3;color:#176b4a}.points span svg{width:16px;height:16px}.points h3{margin:13px 0 7px;font-size:15px;line-height:1.4;letter-spacing:-.02em}.points p{margin:0;color:#68756f;font-size:12.5px;line-height:1.8}.closing{display:grid;gap:6px;margin-top:34px;padding:26px;border-radius:15px;background:#0f231b}.closing p{margin:0;color:#b6c9c0;font-size:13.5px;line-height:1.85}.closing strong{color:#fff;font-size:17px;font-weight:900;line-height:1.55;letter-spacing:-.02em}.closing small{margin-top:6px;color:#7d938a;font-size:10px;font-weight:900;letter-spacing:.1em}@media(max-width:1000px){.section{margin-bottom:75px;padding:34px 24px}.head h2{font-size:30px}.points{grid-template-columns:1fr}}@media(max-width:600px){.section{padding:28px 20px}.head h2{font-size:26px}.lead{font-size:15px}}
+.section{margin-bottom:105px;padding:54px;border:1px solid #dce5e0;border-radius:20px;background:linear-gradient(180deg,#f7faf8 0%,#fff 60%);box-shadow:0 14px 36px rgba(23,34,29,.04)}.head{max-width:760px}.head>span{color:#176b4a;font-size:10px;font-weight:900;letter-spacing:.12em}.head h2{margin:12px 0 17px;font-size:clamp(28px,3.4vw,42px);line-height:1.22;letter-spacing:-.05em;white-space:nowrap}.lead{margin:0;color:#17221d;font-size:17px;font-weight:800;line-height:1.7}.body{max-width:760px;margin:16px 0 0;color:#68756f;font-size:14px;line-height:1.9}.body b{color:#17221d}.points{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}.points article{padding:22px;border:1px solid #dbe7e1;border-radius:15px;background:#fff;box-shadow:0 8px 22px rgba(23,34,29,.05);transition:transform .18s ease,box-shadow .18s ease}.points article:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(23,34,29,.08)}.points span{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#f0f7f3;color:#176b4a}.points span svg{width:16px;height:16px}.points h3{margin:13px 0 7px;font-size:15px;line-height:1.4;letter-spacing:-.02em}.points p{margin:0;color:#68756f;font-size:12.5px;line-height:1.8}.closing{display:grid;gap:6px;margin-top:34px;padding:26px;border-radius:15px;background:#0f231b;box-shadow:0 18px 40px rgba(15,35,27,.2)}.closing p{margin:0;color:#b6c9c0;font-size:13.5px;line-height:1.85}.closing strong{color:#fff;font-size:17px;font-weight:900;line-height:1.55;letter-spacing:-.02em}.closing small{margin-top:6px;color:#7d938a;font-size:10px;font-weight:900;letter-spacing:.1em}@media(max-width:1000px){.section{margin-bottom:75px;padding:34px 24px}.head h2{font-size:30px}.points{grid-template-columns:1fr}}@media(max-width:600px){.section{padding:28px 20px}.head h2{font-size:26px}.lead{font-size:15px}}
 /* Expert network — who actually sets the standard. */
-.network{margin-top:26px;padding:22px 24px;border:1px solid #dbe7e1;border-radius:15px;background:#fff}
+.network{margin-top:26px;padding:22px 24px;border:1px solid #dbe7e1;border-radius:15px;background:#fff;box-shadow:0 8px 22px rgba(23,34,29,.05)}
 .networkLabel{display:block;color:#176b4a;font-size:10px;font-weight:900;letter-spacing:.1em;margin-bottom:12px}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chips span{padding:8px 13px;border:1px solid #d8e3dd;border-radius:20px;background:#f7faf8;color:#2c4438;font-size:12px;font-weight:800}
@@ -11,7 +11,7 @@
    Deliberately not green: the section above it is already a green card, and two
    in a row read as one long block nobody finishes. Warm paper with an ink
    headline separates the two chapters without shouting. */
-.loop{margin-bottom:105px;padding:54px;border:1px solid #e6dfcd;border-radius:20px;background:linear-gradient(180deg,#f6f2e7 0%,#fbf9f3 65%)}
+.loop{margin-bottom:105px;padding:54px;border:1px solid #e6dfcd;border-radius:20px;background:linear-gradient(180deg,#f6f2e7 0%,#fbf9f3 65%);box-shadow:0 14px 36px rgba(93,74,20,.05)}
 .loopHead{max-width:800px}
 .loopHead>span{color:#8a6218;font-size:10px;font-weight:900;letter-spacing:.12em}
 .loopHead h2{margin:12px 0 16px;font-size:clamp(28px,3.4vw,40px);line-height:1.26;letter-spacing:-.05em;color:#17221d}
@@ -20,7 +20,7 @@
 .loopHead p{margin:0;color:#6f6753;font-size:14px;line-height:1.9}
 .loopHead p b{color:#17221d}
 .assets{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}
-.assets article{padding:20px 22px;border:1px solid #e6dfcd;border-radius:14px;background:#fff}
+.assets article{padding:20px 22px;border:1px solid #e6dfcd;border-radius:14px;background:#fff;box-shadow:0 8px 22px rgba(93,74,20,.05);transition:transform .18s ease,box-shadow .18s ease}.assets article:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(93,74,20,.09)}
 .assets span{display:block;color:#8a6218;font-size:10px;font-weight:900;letter-spacing:.08em}
 .assets h3{margin:9px 0 7px;font-size:15px;letter-spacing:-.02em}
 .assets p{margin:0;color:#6f6753;font-size:12.5px;line-height:1.8}
@@ -29,14 +29,14 @@
 .cycle span{padding:10px 15px;border:1px solid #e0d8c2;border-radius:11px;background:#fff;font-size:12.5px;font-weight:800;color:#3d3a2f}
 .cycle i{color:#b0a488;font-style:normal;font-size:13px}
 .loopGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.loopGrid article{padding:20px 22px;border:1px solid #e6dfcd;border-radius:14px;background:#fff}
+.loopGrid article{padding:20px 22px;border:1px solid #e6dfcd;border-radius:14px;background:#fff;box-shadow:0 8px 22px rgba(93,74,20,.05);transition:transform .18s ease,box-shadow .18s ease}.loopGrid article:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(93,74,20,.09)}
 .loopGrid h3{margin:0 0 6px;font-size:14px;color:#17221d}
 .loopGrid p{margin:0;color:#6f6753;font-size:12.5px;line-height:1.8}
 .loopNote{display:flex;gap:10px;margin-top:20px;padding:16px 18px;border:1px solid #e0d8c2;border-radius:13px;background:rgba(255,255,255,.7)}
 .loopNote svg{width:16px;flex:none;color:#8a6218;margin-top:2px}
 .loopNote p{margin:0;color:#6f6753;font-size:12px;line-height:1.85}
 .loopNote p b{color:#17221d}
-.loopClose{margin:30px 0 0;padding:24px 26px;border-radius:15px;background:#17221d;color:#fff;font-size:18px;font-weight:900;line-height:1.6;letter-spacing:-.025em}
+.loopClose{margin:30px 0 0;padding:24px 26px;border-radius:15px;background:#17221d;color:#fff;font-size:18px;font-weight:900;line-height:1.6;letter-spacing:-.025em;box-shadow:0 18px 40px rgba(23,34,29,.18)}
 .loopClose em{font-style:normal;color:#d8b877}
 @media(max-width:1000px){.loop{margin-bottom:75px;padding:34px 24px}.loopGrid,.assets{grid-template-columns:1fr}}
 @media(max-width:600px){.loop{padding:28px 20px}.loopLead{font-size:14.5px}.loopClose{font-size:16px;padding:20px}}

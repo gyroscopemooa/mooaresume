@@ -5995,3 +5995,23 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, 순수 CSS 변경), `npx next build` 성공, 로컬 서버 시각 확인 완료(모바일·데스크톱).
 - Rollback: 이 커밋 revert. 되돌리면 카드들이 다시 테두리만 있는 평면 스타일로 돌아갑니다.
 - **다음 단계**: 사용자 승인 시 `main`에 push(실제 배포). 승인 후에는 나머지 섹션(전용 CSS 모듈 8개)·다른 페이지(분석 화면, career 등)로 같은 톤을 확장할지 이어서 논의합니다.
+
+## 2026-09-04 — Claude: 헤더에 "커뮤니티" 다시 노출(런칭), 홈페이지 나머지 섹션에도 입체감 확장
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자 요청: "나머지도 진행하고 커뮤니티 런칭안햇으면 피시 모바일 헤더넣고 런칭 대신 테스트 글 내역 다 지우고 ㄱㄱ".
+- Status: **헤더 노출 + 나머지 홈페이지 섹션 입체감은 완료. 테스트 글 삭제는 이 세션에서 실행 불가 — 아래 참고.** 마이그레이션 없음.
+- **헤더 공개(런칭)**: `site-nav.tsx`의 `SECTIONS` 배열에서 이전에 뺐던 "커뮤니티" 섹션을 다시 넣었습니다. `SiteNav`는 PC·모바일이 같은 컴포넌트(반응형 메뉴 패널)라 "PC만/모바일만"이 따로 없고, 한 번 넣으면 양쪽 다 노출됩니다.
+- **홈페이지 나머지 섹션 입체감**: 지난번엔 `globals.css`와 요금제 카드만 손댔는데, 이번엔 남은 8개 섹션 전용 CSS 모듈을 전부 확인해서 진짜 평면인 곳만 골라 고쳤습니다:
+  - `landing-positioning.module.css`: `.simple`(전체 감싸는 패널), `.simpleGrid article`(4개 카드, 호버 리프트 추가), `.ambitionBody`(진초록 카드)에 그림자 추가.
+  - `career-home-cta.module.css`: `.card`(전체 CTA 카드) 모서리를 8px→18px로 키우고 그림자 추가, `.cta` 버튼에 호버 리프트 추가.
+  - `field-credibility.module.css`: 가장 손댈 게 많던 파일 — `.section`/`.loop`(큰 패널 2개), `.points article`(3개, 호버), `.network`, `.assets article`(3개, 호버), `.loopGrid article`(4개, 호버), `.closing`/`.loopClose`(진초록·진남색 카드) 전부에 각 섹션 톤에 맞는 그림자를 추가.
+  - `enterprise-promo.module.css`: `.section`(전체 패널), `.scope`(오른쪽 체크리스트 박스, 안쪽 하이라이트 포함)에 그림자 추가.
+  - `landing-sections.module.css`: `.states article`에 있던 배경·테두리 중복 선언을 지웠습니다(전역 `.feature-grid article`가 이미 같은 요소를 스타일링하고 있어서 캐스케이드 순서에 기대는 대신 한쪽만 담당하도록 정리) + `.narrative`(진초록 카드)에 그림자 추가.
+  - `outcome-learning.module.css`: `.section`(패널)에 그림자 추가.
+  - **`creed.module.css`는 의도적으로 건드리지 않았습니다** — 파일 맨 위 주석에 "카드로 가두거나 아이콘을 붙이지 않는다"는 디자인 의도가 명시돼 있어서, 이 톤 확장 작업이 그 의도와 정면으로 충돌합니다. 이미 만들어져 있는 다른 사람의 디자인 결정을 존중해 제외했습니다.
+  - 이미 자체적으로 정교한 레이어드 섀도우가 있던 `one-click.module.css`(첫 화면 배너)는 손대지 않았습니다 — 이미 이 작업이 지향하는 수준 이상이었습니다.
+- **확인 방법**: 로컬 dev 서버 + 헤드리스 Chromium으로 모바일 화면에서 새로 고친 4개 구간(현장 검증 카드, 전문가 네트워크 카드, 대기업 지원 섹션, 커리어 CTA)을 스크린샷으로 직접 확인했습니다.
+- Files: `src/components/site-nav.tsx`, `src/app/landing-positioning.module.css`, `src/app/career-home-cta.module.css`, `src/app/field-credibility.module.css`, `src/app/enterprise-promo.module.css`, `src/app/landing-sections.module.css`, `src/app/outcome-learning.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed(회귀 없음, 전부 CSS 변경), `npx next build` 성공, 로컬 렌더링 스크린샷 확인.
+- Rollback: 이 커밋 revert. 되돌리면 헤더에서 커뮤니티가 다시 사라지고, 이번에 고친 섹션들도 평면 스타일로 돌아갑니다.
+- **테스트 글 삭제를 못 한 이유**: 이 세션(샌드박스)은 `mooaresume.com`으로 나가는 아웃바운드가 네트워크 정책상 막혀 있고, Supabase에 직접 연결할 자격 증명(서비스 키 등)도 이 환경엔 없습니다. 그래서 관리자 삭제 API를 대신 호출해 드릴 방법이 없습니다 — **직접 로그인하신 상태에서 `/community`의 각 테스트 글(🗑 아이콘)을 눌러 지워주셔야 합니다.** 헤더는 이미 켜졌으니, 실제 방문자가 보기 전에 먼저 지우시는 걸 추천합니다.

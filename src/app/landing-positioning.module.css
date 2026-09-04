@@ -4,6 +4,7 @@
   border: 1px solid #dce6e1;
   border-radius: 22px;
   background: linear-gradient(135deg, #f4faf7 0%, #fff 62%);
+  box-shadow: 0 12px 32px rgba(26, 74, 53, 0.05);
 }
 .simpleHead {
   display: grid;
@@ -45,6 +46,11 @@
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 8px 28px rgba(26, 74, 53, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.simpleGrid article:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(26, 74, 53, 0.1);
 }
 .simpleGrid span {
   display: grid;
@@ -104,6 +110,7 @@
   border-radius: 16px;
   background: #103c2c;
   color: #fff;
+  box-shadow: 0 20px 45px rgba(13, 53, 39, 0.18);
 }
 .ambitionBody > span {
   color: #9cc9b3;
