@@ -3,13 +3,13 @@ import type { CommunityComment, CommunityPost } from "@/domain/community";
 import { createClient } from "@/lib/supabase/server";
 import { toCommunityComment, toCommunityPost } from "./community-repository";
 
-// is_editorial은 20260904030000_community_daily_seed.sql이 추가하는
-// 컬럼입니다. 그 마이그레이션이 실제 DB에 적용되기 전까지는 이 select
-// 문자열에 넣으면 PostgREST가 "없는 컬럼"으로 거부해 커뮤니티 전체가
-// 먹통이 됩니다(2026-09-04 실제 장애). 마이그레이션 적용을 확인한 뒤에만
-// 다시 추가하세요.
-export const communityPostSelect = "id, topic, title, body, anonymous_alias, recommendation_count, comment_count, created_at, updated_at, community_attachments(id, storage_path, filename, mime_type, byte_size)";
-const communityCommentSelect = "id, body, anonymous_alias, created_at";
+// is_editorial은 20260904030000_community_daily_seed.sql이 추가하는 컬럼입니다.
+// 그 마이그레이션은 2026-09-05에 원격 DB에 적용 확인됐습니다(supabase migration
+// list에서 Remote 채워짐). 적용 전에 이 select에 넣었다가 PostgREST가 "없는
+// 컬럼"으로 요청 전체를 거부해 커뮤니티가 먹통이 된 적이 있으니(2026-09-04),
+// 앞으로도 새 컬럼은 적용을 확인한 뒤에만 여기에 넣습니다.
+export const communityPostSelect = "id, topic, title, body, anonymous_alias, is_editorial, recommendation_count, comment_count, created_at, updated_at, community_attachments(id, storage_path, filename, mime_type, byte_size)";
+const communityCommentSelect = "id, body, anonymous_alias, is_editorial, created_at";
 
 export const getPublishedCommunityPost = cache(async (postId: string): Promise<CommunityPost | null> => {
   const supabase = await createClient();

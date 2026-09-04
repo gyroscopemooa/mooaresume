@@ -6173,3 +6173,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 무슨 일이었나: 세션이 중단됐다 재개되면서 로컬 작업 트리와 브랜치 ref가 `8857282` 시점으로 되돌아갔습니다. 그 상태에서 커밋하니 소스 수정은 빠지고 변경 로그만 담긴 커밋(`46a45b7`)이 만들어졌고, 푸시는 non-fast-forward로 거절됐습니다.
 - 어떻게 처리했나: 거절을 강제 푸시로 넘기지 않고 `git fetch`로 원격 상태를 먼저 확인했습니다. 원격 `origin/main`에는 `1f1b15a`·`122f0fa`가 정상적으로 남아 있었습니다. `46a45b7`을 `recover/collapsible-hint-log` 브랜치로 보존한 뒤 로컬을 `origin/main`에 맞추고, 유실된 소스 수정만 다시 적용했습니다.
 - 교훈: 컨테이너 롤백 가능성이 있으므로 푸시 성공 여부를 작업 단위마다 확인하고, non-fast-forward 거절은 항상 `fetch` 후 원인을 확인한 다음 처리합니다(강제 푸시 금지).
+
+### 2026-09-05 KST — is_editorial select 복구(마이그레이션 적용 확인 후)
+
+- Agent/session: Claude (github-gui-sync-jfbyd5).
+- Status: active.
+- Change and reason: 사용자가 PC에서 `npm run db:remote:push`로 `20260904020000`·`20260904030000`을 원격 DB에 적용했고 `supabase migration list`에서 Remote 채워진 것을 확인했습니다(크론 3개 `community-seed-morning/midday/evening`도 `cron.job`에 존재 확인). 2026-09-04 장애 때 되돌려 뒀던 `is_editorial`을 select 문자열에 다시 넣습니다 — 이제 컬럼이 실제로 있으므로 안전하고, 이게 있어야 운영팀 체크 배지가 화면에 뜹니다.
+- Files: `src/server/community/community-publication.ts`(`communityPostSelect`, `communityCommentSelect`), `src/app/api/community/posts/[postId]/comments/route.ts`(인라인 select 2곳).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx next build` 성공.
+- Rollback: 이 커밋 revert(컬럼은 이미 있으므로 되돌려도 장애는 안 남).
