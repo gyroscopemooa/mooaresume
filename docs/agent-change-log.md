@@ -5811,3 +5811,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Rollback: 이 커밋 revert. 되돌리면 헤더 메뉴에 "커뮤니티" 섹션이 다시 나타납니다(코드만 되돌리면 되고, 데이터나 스키마 영향 없음).
 - 다음: 실사용자 테스트가 끝나면 이 커밋을 되돌리거나, `SECTIONS` 배열에 "커뮤니티" 섹션을 다시 추가하면 됩니다.
 
+
+## 2026-09-04 — Claude: 커뮤니티 글 본문이 화면 밖으로 튀어나가고, 목록에서 길게 안 잘리던 문제
+
+- Agent/session: Claude(모바일 GitHub 앱 GUI 세션). 사용자가 모바일 스크린샷 두 장으로 신고: (1) 공백 없는 긴 문자열(테스트성 낙서 글, 예: "jdjdjdjdjjdjdjdjdjdjdndndndnndndndndndnndndndn...")을 올리면 그 글이 카드 폭을 넘어 화면 오른쪽 바깥까지 밀려나가며 페이지 전체가 가로로 스크롤됨. (2) 목록(피드)에서 글 본문이 줄바꿈 없이 끝까지(최대 5000자) 그대로 다 보여서 글 하나가 화면 전체를 채움 — 인수인계 문서 1~7번에는 없던, 별도의 기존 버그였습니다.
+- Status: completed. 마이그레이션 없음.
+- 원인: `community-lounge.module.css`의 `.post h2`(글 제목)·`.post>p`(목록에서 보이는 본문 미리보기)와 `[postId]/page.module.css`의 `.article h1`(상세 페이지 제목)·`.body`(상세 페이지 본문)·`.comments li p`(상세 페이지 댓글)에 `overflow-wrap`/`word-break` 지정이 전혀 없었습니다. 브라우저 기본값은 공백이 있어야만 줄을 바꾸므로, 공백 없는 긴 문자열은 컨테이너 폭을 무시하고 한 줄로 그대로 그려지면서 부모 요소와 페이지 전체를 밀어냈습니다. 목록의 `.post>p`는 추가로 줄 수 제한(line-clamp) 자체가 없어 본문 전체(최대 5000자, `posts/route.ts`의 기존 글자 수 제한)가 다 보였습니다.
+- 조치:
+  - `overflow-wrap: anywhere; word-break: break-word;`를 다음 선택자에 추가했습니다 — `community-lounge.module.css`의 `.post h2`, `.post>p`, `.comments p`(피드 안에서 펼친 댓글); `[postId]/page.module.css`의 `.article h1`, `.body`, `.comments li p`(상세 페이지 댓글).
+  - 목록 미리보기(`.post>p`)에만 `display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;`을 추가해 4줄로 잘리고 말줄임(…) 처리되도록 했습니다. 상세 페이지(`.body`)와 상세 페이지 댓글은 전체 내용을 보여주는 게 맞는 화면이라 line-clamp를 넣지 않았습니다 — 줄바꿈 보호만 추가했습니다.
+  - 글 제목(`.post h2`, `.article h1`)에는 line-clamp를 넣지 않았습니다 — 제목은 원래도 한두 줄 정도로 짧고, 잘리면 오히려 어떤 글인지 알아보기 어려워지기 때문입니다. 공백 없는 극단적으로 긴 제목에 대비해 줄바꿈 보호만 추가했습니다.
+- Files: `src/components/community-lounge.module.css`, `src/app/community/[postId]/page.module.css`.
+- Validation: `npx tsc --noEmit` clean(CSS 모듈이라 타입 영향 없음, JS/TS 쪽 무변경 확인용), `npx vitest run` 970 passed(회귀 없음, CSS 전용 변경이라 원래도 테스트 대상 아님), `npx next build` 성공.
+- Rollback: 이 커밋 revert. 되돌리면 다시 공백 없는 긴 글이 화면 밖으로 튀어나가고, 목록 미리보기가 잘리지 않고 전체 다 보이는 이전 상태로 돌아갑니다(깨지지 않음, 이 두 가지 시각적 문제만 재발).
+- 참고(배포 상태 관련 사용자 질문에 대한 답): 인수인계 문서 1~7번과 관리자 삭제 기능은 전부 `origin/main`에 push되어 있었고, 이 프로젝트는 main에서 Cloudflare가 자동 배포하므로 정상적으로 배포되었어야 합니다. 사용자가 스크린샷으로 신고한 "튀어나감"·"안 잘림" 문제는 그 7개 항목 중 하나가 아니라 **이번에 새로 발견해 고친 별도의 버그**였습니다 — 즉 "커밋이 안 돼서 배포가 안 된 것"이 아니라 "애초에 아직 고쳐진 적 없던 버그"였습니다. 또한 스크린샷에 "더 보기" 버튼이 없던 것은 정상입니다 — 3번 항목의 페이지네이션은 21번째 글부터 버튼이 나타나는데, 스크린샷에는 글이 2개뿐이었습니다.
