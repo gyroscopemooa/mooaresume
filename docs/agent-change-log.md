@@ -6305,3 +6305,21 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/career-ai-sample-design-three.tsx`, `career-ai-sample-design-three.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx eslint src` 오류 0건. 로컬 dev 1280px·375px에서 잠금 카드 위치, 앞뒤 섹션이 흐려지지 않는 것, 가로 넘침 0 확인.
 - Rollback: 이 커밋 revert. 다시 전부 열려면 `lockedZone`/`lockedContent`/`lockedOverlay` 감싼 부분만 벗기면 됩니다.
+
+### 2026-09-06 KST — 출력 예산에 "생각하는 몫"을 따로 더함 (FINAL 검증 실패·자동 환불 대응)
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 신고("파이날 결제가 갑자기 안 된다 — AI_OUTPUT_VALIDATION_FAILED로 전액 자동 환불").
+- Status: active. 마이그레이션 없음. **원인 미확정 상태에서의 선제 조치입니다**(아래 참조).
+- Protected baseline: 검증 규칙(`validator.ts`)과 환불·재시도 정책은 건드리지 않았습니다. 예산 계산에 항을 하나 더한 것뿐입니다.
+- 관찰된 증상: FINAL 결제 건이 3회 시도 모두 `AI_OUTPUT_VALIDATION_FAILED`로 끝나 `MAX_ANALYSIS_ATTEMPTS` 소진 → 자동 환불.
+- 세운 가설(로그로 미확정): 9/2 `118875a`가 FINAL 전용 모델과 `reasoning.effort`를 켰고, 9/3 `83b2ecb`가 `ANSWER_TOO_SHORT`를 통과 불가 코드로 올렸습니다. **`max_output_tokens`는 모델이 속으로 생각한 토큰과 손님에게 나가는 답을 합쳐서 셉니다.** 강도를 올리면 생각이 예산의 상당 부분을 차지하고, 남은 자리에 맞춰 모델이 첨삭을 짧게 줄입니다. 그렇게 줄어든 답이 9/3에 생긴 규칙에 걸려 세 번 다 떨어지고 환불로 이어진 것으로 봅니다.
+- Change and reason:
+  - `resolveMaxOutputTokens(request, attemptNo, reasoningEffort?)`에 세 번째 인자를 더했습니다. 강도가 실제로 요청에 실릴 때만 `REASONING_HEADROOM_TOKENS`(minimal 4k / low 8k / medium 16k / high 32k, 모르는 값은 medium)를 **곱하지 않고 더합니다**. 생각의 길이는 자소서 길이가 아니라 시킨 일의 어려움에서 나오므로 곱셈이 맞지 않습니다.
+  - 재시도 배수는 이 몫에 걸지 않습니다. 답 쓸 자리가 모자란 것과 생각할 자리가 모자란 것은 다른 문제이고, 생각의 길이는 시도 횟수로 늘지 않습니다.
+  - 상한을 올려도 요금은 늘지 않습니다 — OpenAI는 상한이 아니라 실제로 쓴 토큰에 청구합니다(파일 주석이 이미 근거로 삼던 성질). `CEILING_TOKENS` 120,000은 그대로라 폭주 방어도 남습니다.
+  - 강도를 넘기지 않는 상품(QUICK·PRO)의 예산은 **한 토큰도 바뀌지 않습니다**. 테스트로 고정했습니다.
+  - 실제 값: FINAL·자소서 4,000자 기준 15,950 → 47,950(생각 몫 32,000 별도 확보). 짧은 글은 바닥값 12,000 → 44,000.
+- Files: `src/server/ai/quick/output-budget.ts`, `output-budget.test.ts`, `openai-responses-gateway.ts`(호출부 2곳에 강도 전달).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 978 passed(신규 5건), `npx eslint src` 오류 0건. **실제 FINAL 실행으로는 확인하지 못했습니다** — 유료 경로라 로컬에서 돌릴 수 없습니다.
+- Rollback: 이 커밋 revert. 세 번째 인자는 선택이라, 되돌려도 호출부는 그대로 동작합니다.
+- Open: 걸린 검증 코드가 정말 `ANSWER_TOO_SHORT`인지 확정 필요 — Cloudflare 로그의 `quick_analysis_validation_blocked:` 줄에만 남습니다. `INVALID_EVIDENCE`나 `NEW_NUMBER`였다면 원인이 다르므로 이 변경만으로는 낫지 않습니다. 실패 사유가 DB에 남지 않아 관리자 화면에서 볼 수 없는 것도 이번에 드러난 문제입니다(후속 과제).

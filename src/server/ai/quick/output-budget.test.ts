@@ -71,4 +71,36 @@ describe("출력 토큰 상한", () => {
   it("재시도로 올라간 상한도 천장은 넘지 않는다", () => {
     expect(resolveMaxOutputTokens(request("FINAL", 500_000), 3)).toBe(120_000);
   });
+  /*
+   * 생각하는 몫은 따로 더한다.
+   *
+   * `max_output_tokens`는 생각한 토큰과 손님에게 나가는 답을 합쳐서 셉니다.
+   * 이 몫이 없으면 생각이 그릇을 차지하고, 남은 자리에 맞춰 모델이 첨삭을
+   * 줄여 `ANSWER_TOO_SHORT`로 떨어집니다.
+   */
+  it("생각 강도를 넘기면 그만큼 자리를 더 준다", () => {
+    const withoutReasoning = resolveMaxOutputTokens(request("FINAL", 4_000));
+    expect(resolveMaxOutputTokens(request("FINAL", 4_000), 1, "high")).toBe(withoutReasoning + 32_000);
+    expect(resolveMaxOutputTokens(request("FINAL", 4_000), 1, "medium")).toBe(withoutReasoning + 16_000);
+  });
+
+  it("강도를 안 넘기면 예산은 예전 그대로다", () => {
+    expect(resolveMaxOutputTokens(request("QUICK", 4_000), 1, undefined)).toBe(resolveMaxOutputTokens(request("QUICK", 4_000)));
+  });
+
+  it("강도가 높을수록 자리도 넓다", () => {
+    const budget = (effort: string) => resolveMaxOutputTokens(request("FINAL", 4_000), 1, effort);
+    expect(budget("low")).toBeLessThan(budget("medium"));
+    expect(budget("medium")).toBeLessThan(budget("high"));
+  });
+
+  it("모르는 강도 값에도 생각할 자리는 준다", () => {
+    // 0을 주면 이 몫이 막으려던 실패가 그대로 납니다.
+    expect(resolveMaxOutputTokens(request("FINAL", 4_000), 1, "ultra"))
+      .toBe(resolveMaxOutputTokens(request("FINAL", 4_000), 1, "medium"));
+  });
+
+  it("생각 몫을 더해도 천장은 넘지 않는다", () => {
+    expect(resolveMaxOutputTokens(request("FINAL", 500_000), 3, "high")).toBe(120_000);
+  });
 });
