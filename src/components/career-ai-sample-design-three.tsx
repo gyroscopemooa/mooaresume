@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Brain, BriefcaseBusiness, CheckCircle2, ClipboardList, Download, FlaskConical, Link2, Share2, Target, TrendingUp, Users } from "lucide-react";
+import { ArrowLeft, Brain, BriefcaseBusiness, CheckCircle2, ClipboardList, Download, FlaskConical, Link2, LockKeyhole, Share2, Target, TrendingUp, Users } from "lucide-react";
 import { useState } from "react";
 import { getCareerAiSample, type CareerAiSampleScope } from "@/domain/career-ai-sample";
 import { getRiasecCharacterProfile } from "@/domain/career-interest";
@@ -61,6 +61,11 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
         <InsightCard icon={<TrendingUp />} tone="tertiary" title="성장 방향" items={growth} />
       </section>
 
+      {/* 여기부터 결제 영역입니다. 예시 화면이라 전문을 다 보여주면 실제 해설을 살 이유가 없어져
+          흐림 처리로 앞부분만 남깁니다. 흐림은 화면 효과라 개발자도구로 벗길 수 있습니다.
+          실제 사용자 해설을 붙일 때는 결제 전에는 서버가 본문을 아예 내려보내지 않아야 합니다. */}
+      <div className={styles.lockedZone}>
+      <div className={styles.lockedContent} aria-hidden="true">
       <section className={styles.deepCard}>
         <div className={styles.sectionHeading}><Brain /><h2>AI 심층 해설</h2></div>
         <div className={styles.deepCopy}><h3>{profile.code} · {profile.baseName}의 해석</h3><p>{profile.focusSummary} {sample.strengthGuide} 이 결과는 특정 직업을 확정하는 답이 아니라, 내가 해 본 경험과 지원할 환경을 더 정확하게 비교하기 위한 단서입니다.</p></div>
@@ -85,6 +90,17 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
       </section>
 
       <section className={styles.environment}><h2>나에게 맞는 업무 환경</h2><div>{environments.map((environment, index) => <article key={environment}><i>{index === 0 ? <ClipboardList /> : index === 1 ? <Users /> : index === 2 ? <FlaskConical /> : index === 3 ? <Users /> : <TrendingUp />}</i><p>{environment}</p></article>)}</div></section>
+      </div>
+      <div className={styles.lockedOverlay}>
+        <div className={styles.lockedCard}>
+          <i><LockKeyhole /></i>
+          <b>여기부터는 결제 후에 열립니다.</b>
+          <p>지금 보시는 건 예시 화면입니다. 실제 심층해설은 내 검사 결과와 내가 올린 자소서·공고를 함께 읽고 씁니다.</p>
+          <span>결제 준비 중</span>
+        </div>
+      </div>
+      </div>
+
       <section className={styles.shareCard}><h2>나의 진로 캐릭터를 공유해 보세요.</h2><p>지원되는 기기에서는 카드 이미지 파일을 바로 공유하고, 그 외에는 결과 링크를 공유합니다.</p><div><a href={profile.imagePath} download={`${profile.baseCode}-career-card.webp`}><Download />카드 이미지 저장</a><button type="button" onClick={() => void shareResult()}><Share2 />카드 이미지 공유</button><button type="button" onClick={() => void copyResultLink()}><Link2 />{copied ? "링크 복사됨" : "링크 복사"}</button></div></section>
       <p className={styles.disclaimer}>이 결과는 자기이해와 커리어 탐색을 위한 자료입니다. 직업 적합성, 채용 결과, 합격 가능성을 판단하거나 보장하지 않습니다.</p>
     </main>

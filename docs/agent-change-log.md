@@ -6290,3 +6290,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx eslint src` 오류 0건. 로컬 dev에서 `/career/character?code=RIA`(잠김), `?code=RIA&example=1`(ISA 예시로 고정), `/career/login` 1280px·375px 렌더 확인.
 - Rollback: 이 커밋 revert. 캐릭터 해설을 다시 열려면 `src/app/career/character/page.tsx`의 `if (example !== "1")` 한 줄만 지우면 이전 동작으로 돌아갑니다.
 - Open decision: 02번 탭 이름을 "캐릭터 해설"로 둘지 "심층해설"로 바꿀지, 기본 결과를 로그인 필수로 할지는 사용자 확인 대기 중입니다.
+
+### 2026-09-05 KST — 심층해설 예시 뒷부분 모자이크(결제 구역 표시)
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("모자이크 진행 ㄱ").
+- Status: active. 마이그레이션 없음. 결제·AI 연동은 여전히 없습니다.
+- Protected baseline: 예시 본문(`career-ai-sample.ts`)과 화면 구성은 그대로입니다. 섹션을 옮기거나 지우지 않고 감싸기만 했습니다.
+- Change and reason:
+  - 예시 화면이 처음부터 끝까지 다 열려 있어, 실제 심층해설을 살 이유가 남지 않았습니다. 앞부분(캐릭터 카드·요약·성격 키워드·일할 때 강점·성장 방향)은 그대로 두고, **AI 심층 해설 이후 네 개 섹션**(심층 해설, 맞춤형 커리어 코칭, 코칭 상세, 업무 환경)을 `lockedZone`으로 감쌌습니다.
+  - 감춘 방식: `max-height`로 잘라내고(데스크톱 620px·모바일 520px) 남은 부분에 흐림 + 아래로 갈수록 사라지는 마스크를 겁니다. **실제로 잘려서 화면에 그려지지도 않는 양이 데스크톱 1543px, 모바일 3789px**입니다. 그 위에 "여기부터는 결제 후에 열립니다" 카드를 띄웠습니다.
+  - 잘린 영역은 `aria-hidden="true"`, `pointer-events:none`, `user-select:none`입니다. 안에 링크·버튼이 없어(확인함: 0개) 스크린리더나 탭 이동으로 흘러 들어갈 곳이 없습니다.
+  - **한계를 분명히 합니다.** 흐림과 잘라내기는 화면 효과라 개발자도구로 벗기면 본문이 나옵니다. 지금은 예시(고정 더미)라 새어 나가도 잃을 것이 없어 이 정도로 둡니다. **실제 사용자 해설을 붙일 때는 결제 전에 서버가 본문을 아예 내려보내지 않아야 합니다.** 같은 취지를 코드 주석에도 남겼습니다.
+  - 공유 카드와 면책 문구는 잠금 밖에 두었습니다. 공유가 막히면 이 화면이 사람을 데려오는 통로까지 같이 막힙니다.
+- Files: `src/components/career-ai-sample-design-three.tsx`, `career-ai-sample-design-three.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 973 passed, `npx eslint src` 오류 0건. 로컬 dev 1280px·375px에서 잠금 카드 위치, 앞뒤 섹션이 흐려지지 않는 것, 가로 넘침 0 확인.
+- Rollback: 이 커밋 revert. 다시 전부 열려면 `lockedZone`/`lockedContent`/`lockedOverlay` 감싼 부분만 벗기면 됩니다.
