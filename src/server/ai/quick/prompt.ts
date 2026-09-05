@@ -365,6 +365,10 @@ polish: 위 여섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
     // The final tab is a view of these same revisions, so the only place a
     // whole-document pass can happen is here, after every question is written.
     "모든 문항의 revisedAnswer를 정한 뒤 전체를 다시 읽고 정리하세요. 문항 간에 같은 경험이 반복되면 한 문항에서만 자세히 쓰고 나머지 문항은 다른 경험이나 다른 측면으로 조정하세요. 이 화면의 문항별 첨삭본이 그대로 최종 제출본이 됩니다.",
+    // 위 지시는 예전부터 있었는데도, 실제 결제 건에서 130자짜리 한 문장이 두
+    // 문항에 글자 하나까지 똑같이 들어갔습니다. "반복하지 마세요"는 지킨
+    // 것인지 모델이 스스로 판정할 수 없습니다. 셀 수 있는 기준을 줍니다.
+    "마지막으로, 문항들의 revisedAnswer를 나란히 놓고 30자 이상 똑같이 겹치는 문장이 있는지 직접 확인하세요. 있으면 그 문장은 한 문항에만 남기고, 다른 문항은 그 경험의 다른 측면이나 아예 다른 소재로 다시 쓰세요. 문항마다 글자 수가 정해져 있으므로, 같은 말을 두 번 쓰면 그만큼을 통째로 버리는 것입니다.",
     ...(getUnansweredQuestions(request).length > 0
       ? ["아직 작성되지 않은 문항은 revisions에 넣지 마세요. 다만 지원서 전체 구성을 판단할 때 참고하고, 필요하면 verificationQuestions나 consultingAdvice에서 언급하세요."]
       : []),

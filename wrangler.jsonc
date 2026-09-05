@@ -14,6 +14,20 @@
 	// the right default for this project: the values are secrets, so they must
 	// be set in the dashboard rather than committed here.
 	"keep_vars": true,
+	// 로그를 남깁니다.
+	//
+	// 이것이 없으면 `console.error`는 `wrangler tail`을 **켜 두고 있는 동안에만**
+	// 보이고 지나가면 사라집니다. 실제로 14,900원짜리 FINAL 결제가 세 번 연속
+	// 실패해 자동 환불됐을 때, 어느 검증 규칙에 걸렸는지가 로그에만 있어서
+	// 원인을 못 읽었습니다. 결국 실패 사유를 DB 원장에 적어 넣고서야
+	// 알아냈습니다(`ANSWER_TOO_SHORT`).
+	//
+	// `head_sampling_rate`는 1(전부)입니다. 실패는 드물게 일어나는데, 표본을
+	// 줄이면 정작 필요한 그 한 건이 빠집니다.
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"

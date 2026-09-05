@@ -117,3 +117,43 @@ describe("껍데기 첨삭", () => {
       .some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(true);
   });
 });
+
+describe("문항 간 문장 중복", () => {
+  const sentence = "예비창업패키지와 초기창업사관학교를 준비하며 시장 분석과 수익모델을 직접 작성했습니다.";
+  const output = (first: string, second: string) => ({
+    readiness: { score: 50, label: "보통", summary: "요약", reasons: ["이유"] },
+    priorities: [], verificationQuestions: [],
+    revisions: [
+      { questionOrder: 1, revisedAnswer: first, highlightedPhrases: [], reasons: [] },
+      { questionOrder: 2, revisedAnswer: second, highlightedPhrases: [], reasons: [] },
+    ],
+  });
+  const questions = [
+    { id: "q1", title: "", prompt: "", answer: "가".repeat(400), order: 1, targetLength: 700 },
+    { id: "q2", title: "", prompt: "", answer: "나".repeat(400), order: 2, targetLength: 700 },
+  ];
+
+  it("같은 문장을 두 문항에 그대로 쓰면 짚어 준다", () => {
+    // 실제 결제 건에서 130자짜리 한 문장이 2번과 3번에 똑같이 들어갔습니다.
+    const issues = validateQuickAnalysis(questions, output(`앞 문장입니다. ${sentence}`, `다른 시작입니다. ${sentence}`) as never);
+    const duplicate = issues.find((issue) => issue.code === "DUPLICATE_ACROSS_QUESTIONS");
+    expect(duplicate?.message).toContain("문항 1·2");
+  });
+
+  it("막지는 않는다", () => {
+    // 겹쳐 쓴 것은 아쉬운 결과이지 거짓말이 아닙니다. 유료 건을 실패시켜
+    // 아무것도 못 받게 하는 쪽이 더 나쁩니다.
+    expect(BLOCKING_VALIDATION_CODES.has("DUPLICATE_ACROSS_QUESTIONS")).toBe(false);
+  });
+
+  it("짧은 관용구가 겹치는 것은 넘어간다", () => {
+    // "지원했습니다" 같은 말은 어느 문항에나 나옵니다.
+    const issues = validateQuickAnalysis(questions, output("저는 지원했습니다.", "저는 지원했습니다.") as never);
+    expect(issues.some((issue) => issue.code === "DUPLICATE_ACROSS_QUESTIONS")).toBe(false);
+  });
+
+  it("한 문항 안에서 같은 문장을 두 번 쓴 것은 이 검사 대상이 아니다", () => {
+    const issues = validateQuickAnalysis(questions, output(`${sentence} ${sentence}`, "완전히 다른 내용을 충분한 길이로 적었습니다.") as never);
+    expect(issues.some((issue) => issue.code === "DUPLICATE_ACROSS_QUESTIONS")).toBe(false);
+  });
+});

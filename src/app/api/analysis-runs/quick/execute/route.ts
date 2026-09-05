@@ -144,8 +144,14 @@ export async function POST(request: NextRequest) {
       // dropped it, letting fabricated numbers and unsupported evidence reach
       // the applicant unchecked. Only factuality issues block — see
       // BLOCKING_VALIDATION_CODES.
-      const blockingIssues = validateQuickAnalysis(step.request, background.result.output)
-        .filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
+      const validationIssues = validateQuickAnalysis(step.request, background.result.output);
+      // 막지 않는 흠도 적어 둡니다. 지금까지 이것들은 걸러진 뒤 그대로
+      // 사라져서, 문항 간 문장 중복처럼 "결과를 못 쓰게 만들지는 않지만
+      // 분량을 버리는" 문제가 얼마나 자주 나는지 셀 방법이 없었습니다.
+      for (const issue of validationIssues.filter((item) => !BLOCKING_VALIDATION_CODES.has(item.code))) {
+        console.warn(`quick_analysis_validation_note:${issue.code}`, body.analysisRunId, issue.message);
+      }
+      const blockingIssues = validationIssues.filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
       if (blockingIssues.length > 0) {
         await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true);
         // 여기까지 온 응답은 모델이 끝까지 만들어 낸 것입니다. 버려지지만

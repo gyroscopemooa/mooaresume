@@ -6427,3 +6427,19 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/app/career/character/page.tsx`, `src/components/career-character-gate.tsx`(신규), `career-character-locked.tsx`(삭제), `career-interest-result.tsx`, `simple-intake.tsx`, `simple-intake.module.css`, `src/domain/cover-letter-parser.ts`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 1002 passed, `npx eslint src` 오류 0건. 로컬 dev에서 `/career/character?code=ISA` 비로그인 시 로그인 화면과 `next` 인코딩 확인, 뭉침 경고는 600자·번호 없음에서 뜨고 200자에서는 안 뜨며 번호를 붙이면 사라지는 것 확인.
 - Rollback: 이 커밋 revert하면 캐릭터 해설이 다시 "결제 준비 중"으로 잠깁니다.
+
+### 2026-09-06 KST — 문항 간 문장 중복을 재고, 로그를 남긴다
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("안 한 것 전부 ㄱㄱ").
+- Status: active. 마이그레이션 없음.
+- Change and reason:
+  - **문항 간 문장 중복.** 실제 결제 건에서 130자짜리 한 문장이 2번과 3번 문항에 **글자 하나까지 똑같이** 들어갔습니다. 300자 문항 넷에서 전체 분량의 약 10%를 같은 말로 채운 셈입니다. 프롬프트에는 "문항 간 같은 경험을 반복하지 말라"가 **이미 두 군데** 있었습니다 — 지시가 없어서가 아니라 **아무도 확인하지 않아서** 지켜지지 않았습니다.
+  - 프롬프트에 **셀 수 있는 기준**을 더했습니다. "반복하지 마세요"는 지킨 것인지 모델이 스스로 판정할 수 없습니다. "문항들의 revisedAnswer를 나란히 놓고 30자 이상 똑같이 겹치는 문장이 있는지 직접 확인하라"로 바꿔, 판정 가능한 형태로 시킵니다.
+  - 검증기에 `DUPLICATE_ACROSS_QUESTIONS`를 더했습니다. 문장 단위로 자르고 공백·문장부호를 뗀 뒤, **30자 이상**인 문장이 둘 이상의 문항에 나오면 짚습니다. 30자는 관용구("지원했습니다")는 넘기고 통째로 복사한 문장은 잡는 선입니다.
+  - **막지 않습니다.** 겹쳐 쓴 것은 아쉬운 결과이지 거짓말이 아니고, 유료 건을 실패시켜 손님이 아무것도 못 받게 하는 쪽이 더 나쁩니다 — `ANSWER_TOO_SHORT`를 통과 불가로 올렸다가 전액 환불이 세 번 난 뒤에 배운 것입니다. 재시도 피드백과 기록에만 씁니다.
+  - **막지 않는 흠도 로그에 남깁니다.** 지금까지 이것들은 걸러진 뒤 그대로 사라져서, "결과를 못 쓰게 만들지는 않지만 분량을 버리는" 문제가 얼마나 자주 나는지 셀 방법이 없었습니다.
+  - **Cloudflare 로그 보존을 켰습니다**(`wrangler.jsonc`의 `observability`). 이것이 없으면 `console.error`는 `wrangler tail`을 켜 두고 있는 동안에만 보이고 지나가면 사라집니다. FINAL 결제가 세 번 연속 실패해 자동 환불됐을 때 어느 규칙에 걸렸는지가 로그에만 있어 읽지 못했고, 결국 실패 사유를 DB 원장에 적어 넣고서야 알아냈습니다. `head_sampling_rate`는 1(전부)입니다 — 실패는 드물게 일어나는데 표본을 줄이면 정작 필요한 그 한 건이 빠집니다.
+  - `src/evals/quick-eval.ts`의 실패 코드 목록에도 새 코드를 더했습니다(한 줄). 이 파일은 한 줄로 저장돼 있고 한국어 문자열이 이미 깨져 있어, 인코딩을 건드리지 않도록 ASCII 부분만 정확히 집어 바꿨습니다 — 깨진 문자열은 이번 변경 이전부터 그 상태입니다.
+- Files: `src/server/ai/quick/validator.ts`, `validator.test.ts`, `prompt.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`, `src/evals/quick-eval.ts`, `wrangler.jsonc`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1006 passed(신규 4건), `npx eslint src` 오류 0건. 검사 자체는 단위 테스트로 확인했고(겹치면 짚고, 관용구는 넘기고, 한 문항 안의 반복은 대상 아님, 막지 않음), **모델이 실제로 덜 겹쳐 쓰는지는 유료 실행 없이 확인할 수 없습니다** — 배포 후 로그의 `quick_analysis_validation_note:DUPLICATE_ACROSS_QUESTIONS` 빈도로 봐야 합니다.
+- Rollback: 이 커밋 revert. `observability`를 되돌리면 로그 보존만 꺼집니다.

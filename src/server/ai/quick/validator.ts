@@ -3,7 +3,7 @@ import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
 import { getAnalysisQuestions } from "./questions";
 import type { QuickAnalysisOutput } from "./schema";
 
-export type QuickValidationIssue = { code: "NEW_NUMBER" | "INVALID_EVIDENCE" | "INVALID_HIGHLIGHT" | "LENGTH_OVER" | "ANSWER_TOO_SHORT" | "QUESTION_MISMATCH"; message: string };
+export type QuickValidationIssue = { code: "NEW_NUMBER" | "INVALID_EVIDENCE" | "INVALID_HIGHLIGHT" | "LENGTH_OVER" | "ANSWER_TOO_SHORT" | "QUESTION_MISMATCH" | "DUPLICATE_ACROSS_QUESTIONS"; message: string };
 
 /**
  * Issues that must block a result from reaching the applicant, per the product
@@ -43,6 +43,26 @@ const MIN_REVISION_RATIO = 0.4;
  * 40자이고, 그 정도 차이는 문장 두엇을 다듬기만 해도 납니다.
  */
 const RATIO_FLOOR_CHARACTERS = 200;
+/**
+ * 문항 간에 같은 문장을 그대로 다시 쓴 것으로 보는 길이.
+ *
+ * 짧은 문구는 겹쳐도 됩니다 — "지원했습니다", "경험이 있습니다" 같은 말은
+ * 어느 문항에나 나옵니다. 실제로 문제가 된 판은 130자짜리 한 문장이 두 문항에
+ * **글자 하나까지 똑같이** 들어간 경우였습니다. 300자 문항 넷에서 그 한 번이
+ * 전체 분량의 10%를 같은 말로 채운 셈입니다.
+ *
+ * 30자는 그 사이입니다: 관용구는 넘기고, 통째로 복사한 문장은 잡습니다.
+ */
+const DUPLICATE_SENTENCE_MINIMUM = 30;
+
+/** 문장 단위로 자르고, 비교에 방해되는 것(공백·문장부호)을 뗍니다. */
+function sentenceKeys(text: string): string[] {
+  return text
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => sentence.replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase())
+    .filter((sentence) => sentence.length >= DUPLICATE_SENTENCE_MINIMUM);
+}
+
 const compactLength = (value: string) => value.replace(/\s/g, "").length;
 const numericTokens = (value: string) => new Set(value.match(/\d+(?:[.,]\d+)?%?/g) ?? []);
 const normalizeEvidence = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -125,6 +145,32 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
       issues.push({ code: "ANSWER_TOO_SHORT", message: `문항 ${question.order} 첨삭본이 기준 ${expectedLength}자(원문 ${originalLength}자·목표 ${question.targetLength}자)의 절반에도 못 미칩니다(${compactLength(revision.revisedAnswer)}자). 첨삭이 아니라 요약에 가깝습니다.` });
     }
   }
+  // 문항 간에 같은 문장을 그대로 다시 쓴 곳.
+  //
+  // 프롬프트는 이미 두 군데에서 "문항 간 같은 경험을 반복하지 말라"고 말합니다.
+  // 그런데도 실제 결제 건에서 130자짜리 한 문장이 2번과 3번 문항에 글자 하나까지
+  // 똑같이 들어갔습니다. 시키기만 하고 확인하지 않으면 이렇게 됩니다.
+  //
+  // 막지는 않습니다(`BLOCKING_VALIDATION_CODES`에 넣지 않음). 겹쳐 쓴 것은
+  // 아쉬운 결과이지 거짓말이 아니고, 유료 건을 실패시켜 아무것도 못 받게 하는
+  // 것이 더 나쁩니다 — `ANSWER_TOO_SHORT`를 막았다가 전액 환불이 세 번 난
+  // 뒤에 배운 것입니다. 재시도 피드백과 기록에만 씁니다.
+  const sentenceOwners = new Map<string, Set<number>>();
+  for (const [order, revision] of revisions) {
+    for (const key of new Set(sentenceKeys(revision.revisedAnswer))) {
+      const owners = sentenceOwners.get(key) ?? new Set<number>();
+      owners.add(order);
+      sentenceOwners.set(key, owners);
+    }
+  }
+  for (const [key, owners] of sentenceOwners) {
+    if (owners.size < 2) continue;
+    issues.push({
+      code: "DUPLICATE_ACROSS_QUESTIONS",
+      message: `문항 ${[...owners].sort((a, b) => a - b).join("·")}에 같은 문장이 그대로 들어갔습니다(${key.length}자). 한 문항에서만 자세히 쓰고 나머지는 다른 경험이나 다른 측면으로 바꾸세요.`,
+    });
+  }
+
   return issues;
 }
 /**
