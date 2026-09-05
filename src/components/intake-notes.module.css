@@ -1,0 +1,30 @@
+.notes { margin-top: 10px; border: 1px solid #e3eae6; border-radius: 14px; background: #fff; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 13px 15px; border: 0; border-radius: 14px; background: transparent; cursor: pointer; text-align: left; }
+.toggle:hover { background: #f8fbf9; }
+.toggle span { display: grid; gap: 2px; }
+.toggle b { color: #2b3a33; font-size: 13px; font-weight: 700; letter-spacing: -.01em; }
+.toggle small { color: #8b968f; font-size: 11px; font-weight: 500; }
+.toggle svg { width: 16px; flex-shrink: 0; color: #8b968f; transition: transform .16s ease; }
+.chevronOpen { transform: rotate(180deg); }
+
+.body { display: grid; gap: 16px; padding: 0 15px 15px; }
+/* PC는 두 칸을 나란히. 사실과 지시는 성격이 달라 위아래로 쌓으면 같은 칸의
+   이어지는 내용처럼 읽힙니다. */
+@media (min-width: 760px) { .body { grid-template-columns: 1fr 1fr; gap: 18px; } }
+
+.field { display: grid; gap: 7px; align-content: start; }
+.field > label { color: #41514a; font-size: 12px; font-weight: 700; }
+
+/* 가로 스크롤입니다. 좁은 화면에서 줄바꿈시키면 단추만 세 줄을 차지합니다. */
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips button { flex: 0 0 auto; border: 1px solid #dbe4df; border-radius: 999px; padding: 5px 11px; background: #f7faf8; color: #4e6058; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: border-color .16s ease, background .16s ease, color .16s ease; }
+.chips button:hover { border-color: #7fb499; background: #fff; color: #1d6b49; }
+
+.field textarea { width: 100%; min-height: 66px; border: 1px solid #dfe7e2; border-radius: 10px; padding: 10px 12px; background: #fbfcfb; color: #23302a; font: inherit; font-size: 12.5px; line-height: 1.65; resize: vertical; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+.field textarea:focus { border-color: #5d9e78; background: #fff; outline: 0; box-shadow: 0 0 0 3px rgb(58 143 94 / .1); }
+.field textarea::placeholder { color: #b0bab4; }
+.field small { color: #8b968f; font-size: 11px; font-weight: 500; line-height: 1.6; }
+.field small b { color: #41514a; font-weight: 700; }
+.factsNote b { color: #1d6b49; }

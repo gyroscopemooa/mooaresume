@@ -28,6 +28,7 @@ import {
 import { writingStyleConfig, type WritingStyle } from "@/domain/writing-style";
 import { editingStanceConfig, type EditingStance } from "@/domain/editing-stance";
 import { SimpleIntake, type SimpleIntakeFile } from "./simple-intake";
+import { IntakeNotes } from "./intake-notes";
 import { PRO_INCLUDED_LIMIT_CHARS } from "@/domain/usage-entitlement";
 import { DEFAULT_TARGET_LENGTH, describeLengthLoss, describeResolvedLengths, describeSimpleIntakeGap, describeSimpleIntakeGaps, mapSimpleIntake, planQuestionLengths } from "@/domain/simple-intake-mapping";
 import styles from "./pro-input-page.module.css";
@@ -114,6 +115,11 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   const [experiences, setExperiences] = useState<CandidateExperienceInput[]>([]);
   const [profileEntries, setProfileEntries] = useState<CandidateProfileEntry[]>([]);
   const [freeformNotes, setFreeformNotes] = useState("");
+  // 간편 입력 전용입니다. 상세 입력에는 같은 일을 하는 칸(추가 경험·정보,
+  // 요청사항)이 이미 있어, 한 상태를 나눠 쓰면 한쪽에서 지운 것이 다른 쪽에서
+  // 사라진 것처럼 보입니다.
+  const [simpleFacts, setSimpleFacts] = useState("");
+  const [simpleDirection, setSimpleDirection] = useState("");
   const [freeformAttachments, setFreeformAttachments] = useState<CandidateFreeformAttachment[]>([]);
   const [materialAttachments, setMaterialAttachments] = useState<CandidateMaterialAttachment[]>([]);
   const [companyName, setCompanyName] = useState("");
@@ -217,11 +223,14 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
       sourceFilename: effective.sourceFile?.filename,
       sourceFileExtension: effective.sourceFile?.extension,
       sourceFileSizeBytes: effective.sourceFile?.sizeBytes,
-      revisionRequest: carriedRequest.trim() || undefined,
+      // 이어서 진행 중인 요청과 이번에 적은 요청을 함께 보냅니다. 간편 입력은
+      // 이어받은 요청을 화면에 보여 주지 않으므로, 둘 중 하나를 고르게 하면
+      // 손님이 본 적도 없는 문장 때문에 방금 적은 것이 사라집니다.
+      revisionRequest: [carriedRequest.trim(), simpleDirection.trim()].filter(Boolean).join("\n") || undefined,
     });
     sessionStorage.setItem("mooa:guest-job-posting:v1", effective.posting);
     sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: inputMode === "SIMPLE" ? "" : postingUrl, text: effective.posting, filenames: effective.postingFilenames }));
-    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes: inputMode === "SIMPLE" ? "" : freeformNotes, freeformAttachments: effective.freeformAttachments, experiences: inputMode === "SIMPLE" ? [] : experiences, profileEntries: inputMode === "SIMPLE" ? [] : profileEntries, materialAttachments: effective.materialAttachments }));
+    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes: inputMode === "SIMPLE" ? simpleFacts : freeformNotes, freeformAttachments: effective.freeformAttachments, experiences: inputMode === "SIMPLE" ? [] : experiences, profileEntries: inputMode === "SIMPLE" ? [] : profileEntries, materialAttachments: effective.materialAttachments }));
     router.push("/analysis/prepare");
   }
 
@@ -337,6 +346,8 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
           <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} lengthPlans={simpleLengthPlans} lengthLoss={describeLengthLoss(simpleLengthPlans)} limitCharacters={PRO_INCLUDED_LIMIT_CHARS} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
+
+          <IntakeNotes facts={simpleFacts} onFactsChange={setSimpleFacts} direction={simpleDirection} onDirectionChange={setSimpleDirection}/>
 
           {/* 자료 목록 바로 아래입니다.
               처음에는 아래쪽 스타일 선택 자리에 두었는데, 그 자리는 간편

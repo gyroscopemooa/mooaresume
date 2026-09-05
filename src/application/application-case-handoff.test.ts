@@ -189,4 +189,47 @@ describe("지원자료 종류별 업로드", () => {
     expect(plan.documents.some((document) => document.kind === "RESUME")).toBe(false);
     expect(plan.documents.some((document) => document.kind === "COVER_LETTER")).toBe(true);
   });
+  /*
+   * 간편 입력의 "더 정확하게 써드릴게요" 두 칸이 실제로 분석까지 가는지.
+   *
+   * 두 칸은 성격이 다릅니다. 위 칸(사실)은 근거로 인용되어야 하고, 아래
+   * 칸(지시)은 인용되면 안 됩니다 — 검증기가 REVISION_REQUEST를 근거 원천에서
+   * 빼는 이유가 그것입니다. 그래서 한 문서로 합치면 안 되고, 여기서 갈라져
+   * 있는지를 고정합니다.
+   */
+  it("사실은 참고자료로, 요청은 요청사항 문서로 따로 간다", () => {
+    const input = guestApplicationHandoffSchema.parse({
+      ...base,
+      revisionRequest: "강조해 주세요: 직접 서비스를 만들어 운영한 경험",
+      candidateMaterials: {
+        ...base.candidateMaterials,
+        freeformNotes: "자격증: 정보처리기사 — 2024.05\n만든 것: 헬띠루틴 — 건강관리 앱",
+        freeformAttachments: [],
+      },
+    });
+    const documents = buildApplicationCasePlan(input).documents;
+
+    const request = documents.find((document) => document.kind === "REVISION_REQUEST");
+    expect(request?.normalizedText).toBe("강조해 주세요: 직접 서비스를 만들어 운영한 경험");
+
+    // 사실 쪽은 요청사항 문서에 섞이지 않습니다.
+    expect(request?.normalizedText).not.toContain("정보처리기사");
+
+    const notes = documents.find((document) => document.title === "추가 경험·정보");
+    expect(notes?.normalizedText).toContain("정보처리기사");
+    expect(notes?.normalizedText).toContain("헬띠루틴");
+    expect(notes?.normalizedText).not.toContain("강조해 주세요");
+  });
+
+  it("두 칸을 비우면 문서를 만들지 않는다", () => {
+    // 빈 문서가 하나 끼면 참고자료 예산을 먹고, 모델에게는 읽을 것 없는
+    // 자료가 하나 더 있는 것처럼 보입니다.
+    const input = guestApplicationHandoffSchema.parse({
+      ...base,
+      candidateMaterials: { ...base.candidateMaterials, freeformNotes: "", freeformAttachments: [] },
+    });
+    const documents = buildApplicationCasePlan(input).documents;
+    expect(documents.some((document) => document.kind === "REVISION_REQUEST")).toBe(false);
+    expect(documents.some((document) => document.title === "추가 경험·정보")).toBe(false);
+  });
 });
