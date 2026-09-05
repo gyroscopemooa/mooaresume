@@ -6443,3 +6443,34 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/server/ai/quick/validator.ts`, `validator.test.ts`, `prompt.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`, `src/evals/quick-eval.ts`, `wrangler.jsonc`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 1006 passed(신규 4건), `npx eslint src` 오류 0건. 검사 자체는 단위 테스트로 확인했고(겹치면 짚고, 관용구는 넘기고, 한 문항 안의 반복은 대상 아님, 막지 않음), **모델이 실제로 덜 겹쳐 쓰는지는 유료 실행 없이 확인할 수 없습니다** — 배포 후 로그의 `quick_analysis_validation_note:DUPLICATE_ACROSS_QUESTIONS` 빈도로 봐야 합니다.
 - Rollback: 이 커밋 revert. `observability`를 되돌리면 로그 보존만 꺼집니다.
+
+### 2026-09-06 KST — 휴대폰 헤더에도 라운지를 세운다 (메뉴 안에만 있던 것을 커리어 검사 옆으로)
+
+- Agent/session: Claude (desktop), 사용자 요청("모바일에서도 커뮤니티 헤더 나오게, 커리어 검사처럼. 지금은 드롭다운 형태").
+- Status: active. 마이그레이션 없음. 고친 파일은 `src/components/site-nav.module.css` 한 개입니다.
+- Protected baseline: `site-nav.tsx`(마크업·순서)와 메뉴 패널의 커뮤니티 항목은 그대로입니다. 바에서 보이게만 했고, 패널 항목을 빼지 않았습니다 — 힌트 문구("익명 고민을 읽고 다음 행동 찾기")는 패널에만 있고 바에는 들어갈 자리가 없습니다.
+- Change and reason:
+  - `@media (max-width: 680px) { .nav .lounge.lounge { display: none } }` → `display: inline`. 원래 감춘 이유는 "좁은 바가 빠듯해서"였는데, 방문의 대부분이 휴대폰입니다. 커뮤니티는 매일 새 글이 올라오는 유일한 화면인데 메뉴를 열어 본 사람만 존재를 아는 자리에 있었습니다. 커리어 검사와 같은 대우로 올립니다. 자리는 요금과 CTA가 이미 패널로 내려가며 비워 둔 만큼입니다.
+  - 특이도: `.nav .lounge.lounge`(0,3,0) > `home-mobile-header.module.css`의 `.site-header nav>a:not(.button)`(0,2,2). 클래스 3개가 2개를 이겨서 홈에서도 보입니다. 홈(`src/app/page.tsx`)과 라운지(`community-lounge.tsx`)가 `SiteNav`를 쓰는 유일한 두 곳입니다(`home-page-content.tsx`는 어디서도 import되지 않는 미사용 변형이라 `mobile-site-menu`의 `nav{display:none}`은 홈에 로드되지 않습니다).
+  - 400px·340px 압축 규칙 신설. 링크가 하나 늘었으므로 좁은 화면에서 브랜드와 부딪힐 수 있고, 이 헤더는 넘치면 **페이지 전체가 옆으로 끌리는** 곳입니다(이 파일에 같은 사고가 두 번 기록돼 있습니다). 간격 6px/4px, 글자 11.5px/11px로 줄입니다.
+  - `.nav.nav`(0,2,0)로 무게를 올린 이유: 라운지 페이지가 자기 스타일시트에서 `.topbar nav { gap: 11px }`(0,1,1)로 간격을 따로 정해 둡니다. 라운지야말로 이 링크가 보여야 하는 화면이라 거기서만 압축이 안 먹으면 뜻이 없습니다.
+  - 바 라벨은 "라운지" 그대로 두었습니다(패널에서는 "취업·진로 라운지"). 좁은 바에서 세 글자가 가장 안전합니다.
+- Files: `src/components/site-nav.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint src/components/site-nav.tsx` 오류 0건. **실제 휴대폰 폭에서 눈으로 보지는 못했습니다** — dev 서버·화면 확인은 사용자 담당입니다. 확인할 것: 360px에서 커리어 검사·라운지·계정·메뉴가 한 줄에 들어가는지, 가로 스크롤이 생기지 않는지(홈과 `/community` 두 곳).
+- Rollback: 이 커밋 revert. 되돌리면 680px 아래에서 라운지가 다시 메뉴 패널에만 남습니다.
+
+## 2026-09-06 — Claude: 개인정보처리방침 4번을 "설계도"에서 "수탁자·위탁업무"로 축소
+
+- 사용자 지적: 4번 표가 사실상 백엔드 구조도였습니다. "Supabase = 계정·지원 자료·분석 기록 저장, 로그인 처리"처럼 적으면 어떤 저장소에 무엇이 들어가고 인증을 무엇으로 하는지까지 드러납니다.
+- 법이 요구하는 것은 **수탁자와 위탁업무의 내용**(개인정보보호법 제26조)이지 그 수준의 설명이 아닙니다. 그래서 업무 설명을 일반화했습니다.
+  - `계정·지원 자료·분석 기록 저장, 로그인 처리` → `서비스 운영을 위한 데이터 보관`
+  - `자기소개서 첨삭 분석` → `AI 기반 자기소개서 분석`
+  - `웹사이트 제공과 트래픽 처리` → `서비스 제공 및 보안`
+  - 표 제목도 `처리를 맡기는 회사` → `처리업무의 위탁`, 관리·감독 문장을 앞에 두었습니다.
+- **Google·Microsoft를 4번에서 7번(쿠키·자동 수집 장치)으로 옮겼습니다.** 광고 성과 측정과 화면 흐름 분석은 우리가 맡긴 처리업무가 아니라 자동 수집 장치이고, 위탁으로 묶는 쪽이 오히려 부정확했습니다. 이름은 7번에 그대로 남습니다 — 숨긴 것이 아니라 맞는 자리로 옮긴 것입니다. Google 로그인 고지는 1번에 이미 있어 그대로 둡니다.
+- OpenAI 학습 미사용 문구는 표 밖 별도 안내로 뺐습니다(`AI 공급자`로 표현).
+- **하지 않은 것과 그 이유(사용자 요청 중 반려):** 글자 크기를 줄이거나 문서 맨 아래로 내리는 것. 법은 이 내용을 "정보주체가 **언제든지 쉽게 확인할 수 있도록**" 공개하라고 요구합니다. 읽기 어렵게 만드는 것은 공개하지 않은 것에 가까워, 줄이는 것과는 성격이 다릅니다. 사용자에게 이유를 설명했습니다.
+- **OpenAI는 표에서 뺄 수 없습니다.** 코드를 확인한 결과 `redactPersonalData`는 `research-capture.ts`(6번 선택 동의 사본)에서만 쓰이고, **분석 경로에는 적용되지 않습니다.** 자기소개서가 원문 그대로 OpenAI에 전달되므로 이름·연락처·학교가 포함될 수 있고, 그러면 OpenAI는 개인정보 처리 수탁자입니다. 마스킹을 분석 경로에도 넣으면 그때 재검토할 수 있습니다(별도 작업으로 제안).
+- 파일: `src/app/privacy/page.tsx` (4번·7번 및 문서 상단 주석). 판단 근거를 주석에 남겼습니다.
+- Validation: `tsc --noEmit` 통과, `eslint` 오류 0, `vitest run` 1,006건 통과, `next build` 통과.
+- 롤백: 이 커밋 하나만 되돌리면 이전 표로 복구됩니다.
