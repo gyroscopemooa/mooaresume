@@ -8,10 +8,10 @@
 .toggle svg { width: 16px; flex-shrink: 0; color: #8b968f; transition: transform .16s ease; }
 .chevronOpen { transform: rotate(180deg); }
 
+/* PC에서도 세로로 쌓습니다. 좌우로 나누면 각 칸의 폭이 절반이 되어 칩이
+   잘리는데(넓은 화면에서 "공백기"가 잘려 나갔습니다), 칩은 무엇을 적어야
+   하는지 알려 주는 유일한 장치라 잘리면 이 칸의 뜻이 사라집니다. */
 .body { display: grid; gap: 16px; padding: 0 15px 15px; }
-/* PC는 두 칸을 나란히. 사실과 지시는 성격이 달라 위아래로 쌓으면 같은 칸의
-   이어지는 내용처럼 읽힙니다. */
-@media (min-width: 760px) { .body { grid-template-columns: 1fr 1fr; gap: 18px; } }
 
 .field { display: grid; gap: 7px; align-content: start; }
 .field > label { color: #41514a; font-size: 12px; font-weight: 700; }

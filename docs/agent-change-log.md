@@ -6384,3 +6384,19 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 990 passed(신규 2건), `npx eslint src` 오류 0건. 로컬 dev `/final/build`에서 패널 펼침·칩 5+4개·틀 삽입·요약 라벨("사실 · 요청 입력함") 확인. 제출 후 흐름은 다른 조건에 막혀 브라우저로 끝까지 못 갔고, 대신 `buildApplicationCasePlan`이 두 칸을 서로 다른 문서로 내보내는지를 테스트로 고정했습니다.
 - Rollback: 이 커밋 revert. 되돌려도 상세 입력의 같은 칸들은 그대로 동작합니다.
 - 남은 문제(후속): 사실 쪽 문서는 `OTHER` 종류로 저장되어 모델에게 **`portfolio`라는 이름**으로 전달되고, `begin_quick_analysis`의 참고자료 예산에서 **우선순위 7(맨 뒤)**이라 자료가 많으면 가장 먼저 잘립니다. `CERTIFICATE`가 겪었던 문제와 같습니다(`20260903100100_certificate_evidence.sql` 참조). 제 이름과 자리를 주려면 enum 마이그레이션과 `begin_quick_analysis` 수정이 필요합니다.
+
+### 2026-09-06 KST — 지원자가 직접 알려준 사실에 제 이름과 자리를 준다 (+ 자격·증명서가 프롬프트에 아예 안 실리던 문제)
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("사실 재료가 포트폴리오로 소개되는 것 진행 ㄱㄱ", "PC에서도 세로 2단").
+- Status: active. **마이그레이션 2개 있음 — 코드 배포보다 먼저 적용해야 합니다(아래 참조).**
+- Change and reason:
+  - **`OTHER` → `APPLICANT_NOTE`.** 간편 입력의 "서류에 없는 사실" 칸이 만드는 문서가 `OTHER`로 저장돼 두 가지가 어긋나 있었습니다 — 모델에게 **'portfolio'** 라는 이름으로 전달됐고, 참고자료 예산에서 **맨 뒤**라 자료를 많이 낸 사람일수록 먼저 잘렸습니다. 지원자가 "이건 서류에 없어서 따로 적는다"고 넣어 준 사실이 작품집으로 소개되면 근거로 쓰라는 신호가 사라지고, 잘리면 그 칸의 뜻 자체가 없어집니다. `CERTIFICATE`가 겪었던 것과 같은 문제라 같은 방식으로 고쳤습니다(`20260903100100_certificate_evidence.sql` 참조).
+  - 예산 순서는 자격·증명서 **다음(4)**입니다. 앞의 셋(공고·이력서·자격증)은 대조의 기준이고 이 문서는 거기에 더해지는 보충입니다. **기존 갈래들의 서로 간 순서는 바뀌지 않습니다** — 뒤가 한 칸씩 밀릴 뿐입니다.
+  - **같이 드러난 문제: 자격·증명서가 프롬프트에 아예 실리지 않고 있었습니다.** `SUPPORTING_KINDS`가 `["resume", "career_description", "portfolio"]`뿐이라, 이 목록에 없는 종류는 요청에는 담겨 와도 `buildSupportingSections`가 건너뛰어 **모델이 한 글자도 보지 못합니다.** 자격·증명서는 DB와 요청까지는 제 이름을 갖게 됐는데 이 목록만 같이 고쳐지지 않았습니다 — 자격증을 올려도 대조에 쓰이지 않았다는 뜻입니다. `certificate`와 `applicant_note`를 함께 더했습니다.
+  - `applicant_note`를 목록 **맨 앞**에 둡니다. `buildSupportingSections`는 앞에서부터 30,000자를 나눠 쓰는데, 이 자료는 길어야 4,000자라 앞에 두어도 뒤가 굶지 않고, 잘리면 안 되는 유일한 자료입니다.
+  - 크론 복구 경로(`getRunningContext`)의 종류 변환에도 `CERTIFICATE`가 빠져 있어 `portfolio`로 떨어지고 있었습니다. 둘 다 더했습니다.
+  - **PC 2단 배치를 세로로 되돌렸습니다.** 좌우로 나누면 각 칸이 절반 폭이 되어 칩이 잘렸습니다(넓은 화면에서 "공백기"가 잘려 나갔습니다). 칩은 무엇을 적어야 하는지 알려 주는 유일한 장치라, 잘리면 이 칸의 뜻이 사라집니다. 1280px에서 칩 잘림 없음 확인(`scrollWidth === clientWidth`).
+- Files: `supabase/migrations/20260906010000_document_kind_applicant_note.sql`(신규), `20260906010100_applicant_note_evidence.sql`(신규), `src/application/analysis-contract.ts`, `application-case-handoff.ts`, `application-case-handoff.test.ts`, `src/server/ai/quick/questions.ts`, `prompt.ts`, `prompt.test.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/components/intake-notes.module.css`.
+- **배포 순서 주의:** 코드가 `APPLICANT_NOTE`로 문서를 넣으므로, **enum 마이그레이션이 먼저 적용되지 않으면 그 칸을 채운 손님의 지원서 생성이 실패합니다.** `npx supabase db push`(또는 `db:remote:push`)를 먼저 돌린 뒤 코드를 올려야 합니다. 그래서 이 커밋은 푸시하지 않고 사용자 확인을 기다립니다.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 992 passed(신규 2건), `npx eslint src` 오류 0건. 마이그레이션은 기존 `certificate_evidence.sql`에서 세 곳만 바꿔 생성했고(감추는 목록·우선순위·이름), **실제 DB에는 적용해 보지 못했습니다** — `db push`는 사용자 환경에서 돌아갑니다.
+- Rollback: 이 커밋 revert 후 `begin_quick_analysis`를 `20260903100100_certificate_evidence.sql` 버전으로 되돌리면 됩니다. enum 값은 남지만 쓰이지 않습니다(Postgres는 enum 값 삭제를 지원하지 않습니다).

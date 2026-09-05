@@ -5,7 +5,20 @@ import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
 // Documents beyond the cover letter and the posting. Lives here rather than in
 // prompt.ts because getAnalysisQuestions also needs to know whether they exist
 // — prompt.ts already imports from this file, and the reverse would cycle.
-export const SUPPORTING_KINDS = ["resume", "career_description", "portfolio"] as const;
+/**
+ * 자기소개서와 공고 밖에서 모델이 읽는 자료. **여기 없는 종류는 프롬프트에
+ * 아예 실리지 않습니다** — 요청에는 담겨 오지만 모델은 못 봅니다.
+ *
+ * `certificate`가 그렇게 빠져 있었습니다. DB와 요청은 자격·증명서를 제 이름으로
+ * 부르도록 고쳤는데(20260903100100_certificate_evidence.sql) 이 목록은 같이
+ * 고쳐지지 않아, 자격증을 올려도 모델은 한 글자도 보지 못했습니다.
+ *
+ * `applicant_note`가 맨 앞인 이유는 예산 때문입니다. 아래에서 앞에서부터
+ * 30,000자를 나눠 쓰는데, 이 자료는 지원자가 **"서류에 없다"고 일부러 적은
+ * 것**이라 잘리면 그 칸의 뜻 자체가 사라집니다. 길어야 4,000자라 앞에 두어도
+ * 뒤가 굶지 않습니다.
+ */
+export const SUPPORTING_KINDS = ["applicant_note", "resume", "certificate", "career_description", "portfolio"] as const;
 
 export function hasSupportingMaterials(request: AnalysisRequest) {
   return request.documents.some((document) => SUPPORTING_KINDS.includes(document.kind as (typeof SUPPORTING_KINDS)[number]));

@@ -18,7 +18,11 @@ export const QUICK_PROMPT_VERSION = "quick-3.3";
 // so every PRO promise that depends on them — 자료 간 충돌 검사, 근거 보완,
 // 더 적합한 경험 추천 — was impossible to deliver.
 const SUPPORTING_LABEL: Record<(typeof SUPPORTING_KINDS)[number], string> = {
+  // 지원자가 입력칸에 직접 적은 사실입니다. "포트폴리오"라고 부르면 근거로
+  // 쓰라는 신호가 사라집니다 — 자격·증명서가 겪었던 것과 같은 문제입니다.
+  applicant_note: "지원자가 직접 알려준 사실(서류에 없는 것)",
   resume: "이력서(입사지원서)",
+  certificate: "자격·증명서",
   career_description: "경력기술서",
   portfolio: "포트폴리오·추가 경험",
 };

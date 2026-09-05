@@ -215,7 +215,8 @@ describe("지원자료 종류별 업로드", () => {
     // 사실 쪽은 요청사항 문서에 섞이지 않습니다.
     expect(request?.normalizedText).not.toContain("정보처리기사");
 
-    const notes = documents.find((document) => document.title === "추가 경험·정보");
+    // 종류가 `OTHER`면 모델에게 "포트폴리오"로 소개되고 예산에서 맨 뒤에 섭니다.
+    const notes = documents.find((document) => document.kind === "APPLICANT_NOTE");
     expect(notes?.normalizedText).toContain("정보처리기사");
     expect(notes?.normalizedText).toContain("헬띠루틴");
     expect(notes?.normalizedText).not.toContain("강조해 주세요");

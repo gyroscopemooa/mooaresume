@@ -710,4 +710,40 @@ describe("오탈자 유형", () => {
     // Marking the whole clause hides whatever the clause's real problem was.
     expect(prompt).toContain("틀린 낱말 하나만 범위로 잡으세요");
   });
+  /*
+   * 프롬프트에 실리는 자료의 목록(`SUPPORTING_KINDS`)에 없는 종류는 **요청에는
+   * 담겨 오지만 모델은 한 글자도 보지 못합니다.** 자격·증명서가 실제로 그
+   * 상태였습니다 — DB와 요청은 제 이름을 갖게 됐는데 이 목록만 그대로였습니다.
+   */
+  it("자격·증명서와 지원자가 직접 알려준 사실을 제 이름으로 싣는다", () => {
+    const withNotes: AnalysisRequest = {
+      ...request,
+      documents: [
+        ...request.documents,
+        { kind: "certificate", text: "정보처리기사 2024.05 한국산업인력공단" },
+        { kind: "applicant_note", text: "만든 것: 헬띠루틴 — 건강관리 앱" },
+      ],
+    };
+    const input = buildQuickAnalysisInput(withNotes);
+
+    expect(input).toContain("[자격·증명서]");
+    expect(input).toContain("정보처리기사");
+    expect(input).toContain("[지원자가 직접 알려준 사실(서류에 없는 것)]");
+    expect(input).toContain("헬띠루틴");
+    // "포트폴리오"로 소개되면 근거로 쓰라는 신호가 사라집니다.
+    expect(input).not.toContain("[포트폴리오·추가 경험]");
+  });
+
+  it("지원자가 직접 알려준 사실은 예산에서 뒤로 밀리지 않는다", () => {
+    // 이 칸은 "자료에 없는 것"을 담는 자리라, 잘리면 뜻 자체가 없어집니다.
+    const heavy: AnalysisRequest = {
+      ...request,
+      documents: [
+        ...request.documents,
+        { kind: "portfolio", text: "가".repeat(SUPPORTING_CHARACTER_BUDGET) },
+        { kind: "applicant_note", text: "자격증: 정보처리기사 — 2024.05" },
+      ],
+    };
+    expect(buildQuickAnalysisInput(heavy)).toContain("자격증: 정보처리기사");
+  });
 });

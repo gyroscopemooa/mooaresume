@@ -85,7 +85,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     // Mirrors the mapping in begin_quick_analysis. REVISION_REQUEST must be
     // named explicitly: the trailing "portfolio" default would turn an
     // instruction into supporting material and quotable evidence at once.
-    const documentKind = (id: string) => { const value = kinds.get(id); if (value === "COVER_LETTER") return "cover_letter"; if (value === "JOB_POSTING") return "job_posting"; if (value === "RESUME") return "resume"; if (value === "CAREER_DOCUMENT") return "career_description"; if (value === "REVISION_REQUEST") return "revision_request"; return "portfolio"; };
+    const documentKind = (id: string) => { const value = kinds.get(id); if (value === "COVER_LETTER") return "cover_letter"; if (value === "JOB_POSTING") return "job_posting"; if (value === "RESUME") return "resume"; if (value === "CAREER_DOCUMENT") return "career_description"; if (value === "REVISION_REQUEST") return "revision_request"; if (value === "CERTIFICATE") return "certificate"; if (value === "APPLICANT_NOTE") return "applicant_note"; return "portfolio"; };
     // Supporting materials (이력서·경력기술서·포트폴리오·추가 경험) are a PRO
     // feature. begin_quick_analysis gates them in SQL; gate them identically
     // here so a run does not analyze a different document set depending on

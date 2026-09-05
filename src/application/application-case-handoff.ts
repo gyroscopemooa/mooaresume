@@ -48,7 +48,7 @@ export const guestApplicationHandoffSchema = z.object({
 export type GuestApplicationHandoff = z.infer<typeof guestApplicationHandoffSchema>;
 
 export type PlannedDocument = {
-  kind: "JOB_POSTING" | "COVER_LETTER" | "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "CERTIFICATE" | "REVISION_REQUEST" | "OTHER";
+  kind: "JOB_POSTING" | "COVER_LETTER" | "RESUME" | "CAREER_DOCUMENT" | "PORTFOLIO" | "CERTIFICATE" | "REVISION_REQUEST" | "APPLICANT_NOTE" | "OTHER";
   title: string;
   sourceType: "TEXT" | "FILE" | "URL";
   normalizedText: string;
@@ -161,7 +161,11 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
   const materials = input.candidateMaterials;
   if (materials.freeformNotes.trim() || materials.experiences.length || materials.profileEntries.length) {
     documents.push({
-      kind: "OTHER",
+      // `OTHER`였습니다. 그 이름은 모델에게 "포트폴리오"로 전달되고 참고자료
+      // 예산에서 맨 뒤에 서서, 자료를 많이 낸 사람일수록 먼저 잘렸습니다 —
+      // 자격·증명서가 겪었던 것과 같은 문제입니다. 지원자가 "서류에 없다"고
+      // 일부러 적어 준 사실이라, 잘리면 이 칸의 뜻 자체가 없어집니다.
+      kind: "APPLICANT_NOTE",
       title: "추가 경험·정보",
       sourceType: "TEXT",
       // Stored as readable prose rather than JSON.stringify: this text is fed
