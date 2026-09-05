@@ -68,6 +68,54 @@ type Props = {
   onError?: (message: string) => void;
 };
 
+/**
+ * 문항 하나의 목표 글자 수 칸.
+ *
+ * ------------------------------------------------------------------
+ * 왜 타이핑하는 동안에는 본문을 고치지 않는가
+ * ------------------------------------------------------------------
+ * 고친 숫자는 본문 제목 뒤의 `(700자)` 표시로 저장되는데, 그 표시가 읽히는
+ * 범위는 100~9999입니다. 글자를 칠 때마다 바로 쓰면 "3", "30"을 지나가는
+ * 순간마다 범위 밖이라 표시가 지워지고, 지워지면 값이 전체 기본값으로 되돌아
+ * 옵니다. **그래서 아무리 눌러도 숫자가 안 바뀌었습니다** — 치는 족족 되돌려
+ * 놓고 있었습니다.
+ *
+ * 치는 동안에는 화면에만 담아 두고, 칸을 벗어나거나 Enter를 칠 때 한 번
+ * 씁니다. 100 미만이면 표시를 지워 전체 기본값으로 되돌립니다.
+ */
+function TargetLengthField({ label, target, fallback, onCommit }: {
+  label: string;
+  target: number | null;
+  fallback: string;
+  onCommit: (value: number | null) => void;
+}) {
+  const [typing, setTyping] = useState<string | null>(null);
+  const shown = typing ?? (target ? String(target) : "");
+  const inRange = (value: string) => Boolean(value) && Number(value) >= 100 && Number(value) <= 9999;
+
+  return <input
+    aria-label={`${label} 목표 글자 수`}
+    inputMode="numeric"
+    maxLength={4}
+    value={shown}
+    placeholder={fallback || "기본"}
+    onChange={(event) => {
+      const digits = event.target.value.replace(/[^0-9]/g, "");
+      setTyping(digits);
+      // 범위에 들어오는 순간 바로 반영합니다. 칸을 벗어나야만 저장하면,
+      // 숫자를 고치고 곧장 다음 단추를 누른 사람의 값이 사라질 수 있습니다.
+      if (inRange(digits)) onCommit(Number(digits));
+    }}
+    onBlur={() => {
+      // 100 미만으로 두고 나가면 표시를 지워 전체 기본값으로 되돌립니다.
+      // 지우려고 비운 경우도 여기로 옵니다.
+      if (typing !== null && !inRange(typing)) onCommit(null);
+      setTyping(null);
+    }}
+    onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); } }}
+  />;
+}
+
 export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
   const [loadingLink, setLoadingLink] = useState(false);
   const [linkMessage, setLinkMessage] = useState("");
@@ -259,6 +307,24 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           자동으로 불러오지는 않습니다. 붙여넣는 중에 주소가 잠깐 완성되는
           순간마다 남의 서버를 두드리게 되고, 무엇보다 손님이 시키지 않은 일을
           하게 됩니다. 찾았다고 말하고 누를 것을 내밀기만 합니다. */}
+      {/* 붙여넣은 글이 첨부한 자기소개서를 밀어냅니다.
+          `mapSimpleIntake`가 "친 글이 이긴다"로 정해 두었기 때문입니다 — 새로
+          붙여넣은 원고와 예전 사본이 함께 있을 때는 그게 맞습니다. 그런데
+          이 칸에 참고사항이나 메모를 한 줄 적는 순간에도 같은 일이 벌어져,
+          **첨부한 자기소개서가 통째로 분석에서 빠집니다.** 조용히 일어나던
+          일이라 손님은 자기 자소서가 빠진 줄도 몰랐습니다.
+          고르는 것은 손님이 하도록 두고, 무슨 일이 벌어지는지만 말합니다. */}
+      {draft.trim() && files.some((file) => file.kind === "COVER_LETTER") && (
+        <div className={styles.letterOverride}>
+          <AlertCircle />
+          <span>
+            <b>붙여넣은 글을 자기소개서로 봅니다.</b>{" "}
+            첨부하신 {files.filter((file) => file.kind === "COVER_LETTER").map((file) => file.filename).join(", ")}는 이번 분석에 쓰이지 않습니다.
+            첨부한 쪽으로 하시려면 이 칸을 비워 주세요. 참고사항이나 추가 정보는 아래 <b>더 정확하게 써드릴게요</b>에 적어 주시면 자소서를 밀어내지 않습니다.
+          </span>
+        </div>
+      )}
+
       {postingUrl && (
         <div className={styles.linkFound}>
           <LinkIcon />
@@ -319,19 +385,11 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
                 되써넣습니다 — 실어 나르는 길은 그대로 두고 손잡이만 답니다. */}
             <em>
               →
-              <input
-                aria-label={`${plan.label} 목표 글자 수`}
-                inputMode="numeric"
-                maxLength={4}
-                value={plan.target ?? ""}
-                placeholder={targetLength || "기본"}
-                onChange={(event) => {
-                  const digits = event.target.value.replace(/[^0-9]/g, "");
-                  const next = Number(digits);
-                  // 표시가 읽어 주는 범위가 100~9999입니다. 벗어난 값을 써 두면
-                  // 본문에는 남는데 분석은 못 읽어, 화면과 결과가 어긋납니다.
-                  onDraftChange(writeQuestionTargetLength(draft, plan.index, next >= 100 && next <= 9999 ? next : null));
-                }}
+              <TargetLengthField
+                label={plan.label}
+                target={plan.target}
+                fallback={targetLength}
+                onCommit={(value) => onDraftChange(writeQuestionTargetLength(draft, plan.index, value))}
               />
               자{plan.shrink > 0 && ` (-${Math.round(plan.shrink * 100)}%)`}
             </em>

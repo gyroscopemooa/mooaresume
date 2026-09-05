@@ -6,6 +6,20 @@ function file(filename: string, kind: SimpleIntakeSource["kind"], text = "내용
 }
 
 describe("간편 입력 매핑", () => {
+  it("친 글이 첨부한 자기소개서를 밀어낸다 — 화면이 이 사실을 말해야 한다", () => {
+    // 새 원고를 붙여넣고 예전 사본이 함께 있을 때는 이 규칙이 맞습니다.
+    // 그런데 이 칸에 참고사항 한 줄을 적는 순간에도 같은 일이 벌어져,
+    // 첨부한 자기소개서가 통째로 분석에서 빠집니다. 조용히 일어나면 손님은
+    // 자기 자소서가 빠진 줄도 모릅니다 — 그래서 `simple-intake.tsx`가 이
+    // 상황을 화면에 알립니다. 규칙을 바꾸면 그 안내도 같이 손봐야 합니다.
+    const mapped = mapSimpleIntake("참고: 야간 근무 가능합니다.", [
+      file("자소서.docx", "COVER_LETTER", "1. 지원 동기\n첨부한 자기소개서 본문입니다."),
+    ]);
+    expect(mapped.questions.map((question) => question.answer).join("")).not.toContain("첨부한 자기소개서 본문");
+    expect(mapped.coverLetterFilenames).toEqual([]);
+    expect(mapped.sourceFile).toBeNull();
+  });
+
   it("종류별로 기존 저장 형태에 나눠 담는다", () => {
     const mapped = mapSimpleIntake("", [
       file("공고.pdf", "JOB_POSTING", "자격 요건"),
