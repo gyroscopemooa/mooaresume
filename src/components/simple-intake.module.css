@@ -231,3 +231,11 @@
 .limit .why:hover .tooltip,
 .limit .why:focus .tooltip,
 .limit .why:focus-visible .tooltip { left: 0; right: auto; width: min(320px, 100%); }
+
+/* 문항별 목표 글자 수. 보고 있던 숫자를 그 자리에서 고치는 칸이라, 입력칸처럼
+   생기기보다 원래의 텍스트에 가깝게 두고 눌렀을 때만 테두리를 보여 줍니다. */
+.plans em { display: inline-flex; align-items: baseline; gap: 2px; }
+.plans em input { width: 42px; padding: 1px 3px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: inherit; font: inherit; text-align: right; }
+.plans em input:hover { border-color: #dbe4df; background: #fff; }
+.plans em input:focus { border-color: #5d9e78; background: #fff; color: #2a3a33; outline: 0; box-shadow: 0 0 0 3px rgb(58 143 94 / .1); }
+.plans em input::placeholder { color: #b3bdb7; }

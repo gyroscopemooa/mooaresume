@@ -10,6 +10,7 @@ import {
   type ClassifiedKind,
   type ClassifiedItem,
 } from "@/domain/document-classify";
+import { writeQuestionTargetLength } from "@/domain/cover-letter-parser";
 import {
   ACCEPTED_UPLOAD_ACCEPT,
   MAX_TOTAL_UPLOAD_BYTES,
@@ -308,10 +309,32 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
         {/* 설정이 아니라 결과를 보여줍니다. 이 숫자가 없어서 완성된 자기소개서를
             올린 사람이 기본값 그대로 절반 가까이 잘렸습니다. */}
         {lengthPlans.length > 0 && <ul className={styles.plans}>
-          {lengthPlans.map((plan) => <li key={plan.label} data-shrink={plan.shrink >= 0.25 ? "big" : undefined}>
+          {lengthPlans.map((plan) => <li key={plan.index} data-shrink={plan.shrink >= 0.25 ? "big" : undefined}>
             <span>{plan.label}</span>
             <b>{plan.current.toLocaleString()}자</b>
-            {plan.target && <em>→ {plan.target.toLocaleString()}자{plan.shrink > 0 && ` (-${Math.round(plan.shrink * 100)}%)`}</em>}
+            {/* 문항마다 다른 글자 수를 넣을 칸이 지금까지 없었습니다. 기능은
+                있었지만 본문 제목 뒤에 "(700자)"라고 손님이 직접 타이핑해야
+                했고, 그 방법은 말풍선 안에만 적혀 있었습니다. 이미 보고 있는
+                숫자를 그 자리에서 고치게 하고, 고친 값은 그 표시로 본문에
+                되써넣습니다 — 실어 나르는 길은 그대로 두고 손잡이만 답니다. */}
+            <em>
+              →
+              <input
+                aria-label={`${plan.label} 목표 글자 수`}
+                inputMode="numeric"
+                maxLength={4}
+                value={plan.target ?? ""}
+                placeholder={targetLength || "기본"}
+                onChange={(event) => {
+                  const digits = event.target.value.replace(/[^0-9]/g, "");
+                  const next = Number(digits);
+                  // 표시가 읽어 주는 범위가 100~9999입니다. 벗어난 값을 써 두면
+                  // 본문에는 남는데 분석은 못 읽어, 화면과 결과가 어긋납니다.
+                  onDraftChange(writeQuestionTargetLength(draft, plan.index, next >= 100 && next <= 9999 ? next : null));
+                }}
+              />
+              자{plan.shrink > 0 && ` (-${Math.round(plan.shrink * 100)}%)`}
+            </em>
           </li>)}
         </ul>}
         {lengthLoss && <small className={styles.loss}>{lengthLoss}</small>}

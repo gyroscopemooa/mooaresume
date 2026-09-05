@@ -6352,3 +6352,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/server/ai/quick/validator.ts`, `validator.test.ts`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 981 passed(신규 3건), `npx eslint src` 오류 0건. **실제 FINAL 실행으로는 확인하지 못했습니다** — 유료 경로라 로컬에서 못 돌립니다. 배포 후 한 건 확인 필요.
 - Rollback: 이 커밋 revert하면 기준이 원문 길이로 돌아갑니다(= 환불 재발).
+
+### 2026-09-06 KST — 간편 입력에 문항별 목표 글자 수 칸 + 문항 이름이 "문항 2"로만 보이던 문제
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청("심플형은 문항별 글자 수 조절을 못한다") + 사용자 스크린샷에서 발견한 표시 결함.
+- Status: active. 마이그레이션 없음.
+- Change and reason:
+  - **문항 이름이 비어 보이던 문제.** `planQuestionLengths`가 `title`만 보고 있었습니다. 파서는 "~기술해 주십시오"처럼 질문으로 읽히는 줄을 `title`이 아니라 `prompt`에 넣으므로, 그런 문항은 전부 `문항 2`·`문항 3`으로만 표시됐습니다. 사용자 스크린샷에서 1번만 제목이 보이고 2~4번이 번호로만 나온 것이 이것입니다. **손님이 문항이 제대로 나뉘었는지 확인하는 유일한 목록**이라 그냥 보기 나쁜 문제가 아닙니다. `title || prompt || 문항 N` 순으로 고쳤습니다.
+  - **문항별 목표 글자 수 칸.** 기능은 있었습니다 — 제목 뒤에 `(700자)`라고 적으면 그 문항만 그 숫자를 씁니다. 그런데 **칸이 없어 본문에 직접 타이핑해야 했고**, 그 방법은 물음표 말풍선 안에만 적혀 있었습니다(코드 주석도 "The simple box has no per-question fields"라고 인정하고 있었습니다). 이미 화면에 떠 있던 `→ 700자`를 입력칸으로 바꾸고, 고친 값을 본문 제목의 표시로 되써넣습니다. **실어 나르는 길(제목 표시)은 그대로 두고 손잡이만 답니다** — 새 저장 구조를 만들면 분석 요청까지 바꿔야 합니다.
+  - `writeQuestionTargetLength(text, index, length)`를 파서에 추가했습니다. 문항을 자르는 자리는 `splitCoverLetterDraft`와 **같은 함수**(`readQuestionStarts`)에서 가져옵니다 — 규칙이 둘로 갈리면 고친 숫자가 옆 문항에 붙습니다.
+  - 100~9999 밖의 값은 표시를 지웁니다(전체 기본값으로 복귀). 표시를 읽는 정규식이 그 범위만 받으므로, 벗어난 값을 본문에 남기면 화면과 분석이 어긋납니다.
+  - `QuestionLengthPlan.index`는 **빈 문항을 포함한** 본문 순번입니다. 걸러낸 뒤의 순서를 쓰면 되써넣기가 옆 문항에 붙습니다(테스트로 고정).
+- Files: `src/domain/cover-letter-parser.ts`, `cover-letter-parser.test.ts`, `src/domain/simple-intake-mapping.ts`, `simple-intake-mapping.test.ts`, `src/components/simple-intake.tsx`, `simple-intake.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 988 passed(신규 7건), `npx eslint src` 오류 0건. 로컬 dev `/final/build`에서 4문항 초안을 넣어 확인 — 문항 이름 4개 모두 표시, 전체 700 적용, 2번만 300으로 고치자 본문이 `2.…기술해 주십시오. (300자)`로 바뀌고 나머지는 700 유지. 브라우저 패널 캡처가 계속 빈 화면으로 나와 스크린샷 대신 DOM으로 확인했습니다.
+- Rollback: 이 커밋 revert. 되돌려도 본문에 이미 적힌 `(300자)` 표시는 그대로 동작합니다(파서는 원래부터 읽고 있었습니다).
+- 후속 과제: `looksLikePrompt`의 낱말 목록에 "말씀"이 없어 "…말씀해 주십시오"가 질문이 아니라 **제목**으로 분류됩니다. 모델에게 소제목으로 전달되므로 결과 품질에 영향이 있을 수 있습니다. 전 상품의 프롬프트 경로를 건드리는 변경이라 이번에는 손대지 않았습니다.

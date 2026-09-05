@@ -46,15 +46,51 @@ function findLetterEnd(allLines: readonly string[], sectionStart: number): numbe
   return firstAfter === lastBefore + 1 ? allLines.length : cut;
 }
 
-export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
+/**
+ * 자기소개서 본문이 시작하는 줄과 문항 제목 줄들의 **본문 안 위치**.
+ *
+ * 나누는 규칙을 두 군데 두면 화면이 센 문항과 분석이 센 문항이 어긋납니다.
+ * 그래서 자르는 자리를 한 함수에서만 정하고, 아래 두 곳이 같이 씁니다.
+ */
+function readQuestionStarts(text: string): { lines: string[]; offset: number; starts: number[] } | null {
   const normalized = text.replace(/\r\n?/g, "\n").trim();
-  if (!normalized) return [createCoverLetterQuestion()];
+  if (!normalized) return null;
 
   const allLines = normalized.split("\n");
   const coverLetterHeading = allLines.findIndex((line) => compactHeading(line) === "자기소개서");
-  const sectionStart = coverLetterHeading >= 0 ? coverLetterHeading + 1 : 0;
-  const lines = allLines.slice(sectionStart, findLetterEnd(allLines, sectionStart));
-  const starts = lines.flatMap((line, index) => isQuestionLine(line) ? [index] : []);
+  const offset = coverLetterHeading >= 0 ? coverLetterHeading + 1 : 0;
+  const lines = allLines.slice(offset, findLetterEnd(allLines, offset));
+  return { lines, offset, starts: lines.flatMap((line, index) => isQuestionLine(line) ? [index] : []) };
+}
+
+/**
+ * 문항별 글자 수를 제목 줄의 표시로 되써넣습니다.
+ *
+ * 분석 요청은 문항마다 다른 숫자를 담을 자리가 없어, 제목 뒤의 `(700자)` 표시가
+ * 그 숫자를 실어 나르는 유일한 통로입니다. 지금까지 그 표시는 손님이 직접
+ * 타이핑해야만 생겼고, 그 방법은 말풍선 안에만 적혀 있었습니다.
+ *
+ * @param questionIndex `splitCoverLetterDraft`가 돌려준 문항의 순번.
+ * @param targetLength `null`이면 표시를 지워 전체 기본값으로 되돌립니다.
+ */
+export function writeQuestionTargetLength(text: string, questionIndex: number, targetLength: number | null): string {
+  const parsed = readQuestionStarts(text);
+  const start = parsed?.starts[questionIndex];
+  if (!parsed || start === undefined) return text;
+
+  const lineIndex = parsed.offset + start;
+  const allLines = text.replace(/\r\n?/g, "\n").trim().split("\n");
+  // 표시만 떼어 냅니다. 앞의 번호(`1.`)와 제목은 손님이 쓴 그대로 둡니다.
+  const { heading } = readTargetLengthMarker(allLines[lineIndex]);
+  allLines[lineIndex] = targetLength ? `${heading} (${targetLength}자)` : heading;
+  return allLines.join("\n");
+}
+
+export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
+  const parsed = readQuestionStarts(text);
+  if (!parsed) return [createCoverLetterQuestion()];
+
+  const { lines, starts } = parsed;
   if (starts.length === 0) return [{ ...createCoverLetterQuestion(), answer: lines.join("\n").trim() }];
 
   return starts.map((start, index) => {

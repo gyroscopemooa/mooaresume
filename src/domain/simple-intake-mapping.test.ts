@@ -189,6 +189,22 @@ describe("문항별 현재 분량", () => {
     expect(Math.round(plans[0].shrink * 100)).toBe(42);
   });
 
+  it("제목이 비어도 질문 문장을 이름으로 쓴다", () => {
+    // "~기술해 주십시오"처럼 질문으로 읽히는 줄은 title이 아니라 prompt로
+    // 들어갑니다. title만 보다가 그런 문항이 전부 "문항 2·3·4"로만 표시됐고,
+    // 손님은 이 목록으로 문항이 제대로 나뉘었는지를 확인합니다.
+    const plans = planQuestionLengths(mapping(["1. 성격의 장단점", "가나다", "", "2. 성취를 기술해 주십시오.", "라마바"].join("\n"), 700));
+    expect(plans.map((plan) => plan.label)).toEqual(["성격의 장단점", "성취를 기술해 주십시오."]);
+  });
+
+  it("빈 문항을 건너뛰어도 순번은 본문 기준으로 센다", () => {
+    // 이 순번으로 본문의 제목 줄을 찾아 글자 수를 되써넣습니다. 걸러낸 뒤의
+    // 순서를 쓰면 고친 숫자가 옆 문항에 붙습니다.
+    const plans = planQuestionLengths(mapping(["1. 첫 문항", "", "2. 둘째 문항", "내용 있음"].join("\n"), 700));
+    expect(plans).toHaveLength(1);
+    expect(plans[0].index).toBe(1);
+  });
+
   it("공백은 세지 않는다", () => {
     // 지원서 양식이 세는 방식과 같아야 비교가 됩니다.
     expect(planQuestionLengths(mapping("1. 지원 동기\n가 나 다\n라", 700))[0].current).toBe(4);

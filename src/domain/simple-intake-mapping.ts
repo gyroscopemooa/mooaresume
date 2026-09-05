@@ -204,21 +204,35 @@ export type QuestionLengthPlan = {
   target: number | null;
   /** 0.44 = 44% 줄어듦. 목표가 없거나 늘어나는 쪽이면 0. */
   shrink: number;
+  /**
+   * 본문에서 이 문항이 몇 번째인가(빈 문항 포함).
+   *
+   * 화면에서 글자 수를 고치면 그 숫자를 본문 제목 줄에 되써넣어야 하는데,
+   * 그때 필요한 것이 이 순번입니다. 답이 빈 문항을 걸러낸 뒤의 순서를 쓰면
+   * 고친 숫자가 옆 문항에 붙습니다.
+   */
+  index: number;
 };
 
 export function planQuestionLengths(mapping: SimpleIntakeMapping): QuestionLengthPlan[] {
   return mapping.questions
-    .filter((question) => question.answer.trim())
-    .map((question, index) => {
+    .map((question, index) => ({ question, index }))
+    .filter(({ question }) => question.answer.trim())
+    .map(({ question, index }) => {
       // 공백을 빼고 셉니다. 지원서 양식이 세는 방식과 결과 화면이 세는 방식이
       // 같아야 숫자를 비교할 수 있습니다.
       const current = question.answer.replace(/\s/g, "").length;
       const target = question.targetLength;
       return {
-        label: question.title.trim() || `문항 ${index + 1}`,
+        // 제목이 비어 있어도 질문 문장은 있습니다. 파서는 "~기술해 주십시오"처럼
+        // 질문으로 읽히는 줄을 title이 아니라 prompt에 넣는데, 여기서 title만
+        // 보는 바람에 그런 문항이 전부 "문항 2·3·4"로만 표시됐습니다. 손님은
+        // 문항이 제대로 나뉘었는지를 이 목록으로 확인하므로 치명적입니다.
+        label: question.title.trim() || question.prompt.trim().slice(0, 60) || `문항 ${index + 1}`,
         current,
         target,
         shrink: target && current > target ? (current - target) / current : 0,
+        index,
       };
     });
 }
