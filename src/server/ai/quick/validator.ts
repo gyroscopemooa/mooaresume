@@ -106,8 +106,23 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
     // 원문이 비어 있는 문항(CREATE·BUILD가 채워 주는 자리)은 견줄 것이 없으니
     // 건너뜁니다.
     const originalLength = compactLength(question.answer);
-    if (originalLength >= RATIO_FLOOR_CHARACTERS && compactLength(revision.revisedAnswer) < Math.floor(originalLength * MIN_REVISION_RATIO)) {
-      issues.push({ code: "ANSWER_TOO_SHORT", message: `문항 ${question.order} 첨삭본이 원문 ${originalLength}자의 절반에도 못 미칩니다(${compactLength(revision.revisedAnswer)}자). 첨삭이 아니라 요약에 가깝습니다.` });
+    // 견줄 기준은 원문 길이가 아니라 **이 문항에 부탁한 길이**입니다.
+    //
+    // 원문만 보면 정상적인 두 가지 일이 실패로 걸립니다. 첫째, 지원자가
+    // 원문보다 짧은 목표 글자 수를 지정한 경우 — 2,000자를 700자로 줄이는
+    // 것은 시킨 일인데 35%라서 걸렸습니다. 둘째, CREATE·BUILD에서 원문 자리에
+    // 오는 것은 완성된 글이 아니라 사실 메모입니다. 메모를 길게 적을수록
+    // 기준이 올라가, 잘 쓴 700자 답변이 메모 2,500자의 28%라며 걸립니다.
+    //
+    // 실제로 FINAL·내용 보완 결제 건이 이 두 경우로 세 번 연속 걸려 전액
+    // 환불됐습니다. 위쪽 한도(`LENGTH_OVER`)는 이미 목표 글자 수를 함께 보고
+    // 있었는데 아래쪽만 보지 않고 있었습니다.
+    //
+    // 목표가 원문보다 길면(BUILD가 채워 주는 경우) 원문을 기준으로 둡니다 —
+    // 아직 쓰지 않은 분량을 근거로 실패시킬 수는 없습니다.
+    const expectedLength = question.targetLength > 0 ? Math.min(question.targetLength, originalLength) : originalLength;
+    if (originalLength >= RATIO_FLOOR_CHARACTERS && compactLength(revision.revisedAnswer) < Math.floor(expectedLength * MIN_REVISION_RATIO)) {
+      issues.push({ code: "ANSWER_TOO_SHORT", message: `문항 ${question.order} 첨삭본이 기준 ${expectedLength}자(원문 ${originalLength}자·목표 ${question.targetLength}자)의 절반에도 못 미칩니다(${compactLength(revision.revisedAnswer)}자). 첨삭이 아니라 요약에 가깝습니다.` });
     }
   }
   return issues;

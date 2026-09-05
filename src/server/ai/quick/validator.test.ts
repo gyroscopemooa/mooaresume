@@ -89,4 +89,31 @@ describe("껍데기 첨삭", () => {
     const issues = validateQuickAnalysis(short, output("가".repeat(30)) as never, 700);
     expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
   });
+  /*
+   * 아래 세 개가 실제로 결제 환불을 낸 자리입니다.
+   *
+   * FINAL·내용 보완 건이 세 번 연속 ANSWER_TOO_SHORT로 걸려 전액 환불됐습니다.
+   * 원문 길이만 기준으로 삼으면, 시킨 대로 줄인 첨삭과 메모를 길게 적은 문항이
+   * 모두 "요약"으로 걸립니다.
+   */
+  it("원문보다 짧은 목표 글자 수를 지정했으면 그 목표를 기준으로 삼는다", () => {
+    // 2,500자를 700자로 줄여 달라고 했고 700자가 왔습니다. 시킨 일을 한 것인데
+    // 원문 기준(1,000자)으로는 걸렸습니다.
+    const issues = validateQuickAnalysis("가".repeat(2500), output("가".repeat(700)) as never, 700);
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
+  });
+
+  it("목표 글자 수 기준으로도 절반에 못 미치면 여전히 막는다", () => {
+    // 700자를 부탁했는데 100자가 왔습니다. 껍데기를 막는 원래 목적은 그대로입니다.
+    const issues = validateQuickAnalysis("가".repeat(2500), output("가".repeat(100)) as never, 700);
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(true);
+  });
+
+  it("목표가 원문보다 길어도 기준은 원문을 넘지 않는다", () => {
+    // BUILD가 채워 주기로 한 분량입니다. 아직 쓰지 않은 글을 근거로 실패시킬 수는 없습니다.
+    expect(validateQuickAnalysis(longAnswer, output("가".repeat(800)) as never, 3000)
+      .some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
+    expect(validateQuickAnalysis(longAnswer, output("가".repeat(300)) as never, 3000)
+      .some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(true);
+  });
 });
