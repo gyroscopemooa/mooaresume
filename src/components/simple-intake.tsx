@@ -10,7 +10,6 @@ import {
   type ClassifiedKind,
   type ClassifiedItem,
 } from "@/domain/document-classify";
-import { writeQuestionTargetLength } from "@/domain/cover-letter-parser";
 import {
   ACCEPTED_UPLOAD_ACCEPT,
   MAX_TOTAL_UPLOAD_BYTES,
@@ -60,6 +59,8 @@ type Props = {
   onTargetLengthChange: (value: string) => void;
   resolvedLengths: string;
   lengthPlans: QuestionLengthPlan[];
+  /** 문항별 목표 글자 수를 화면에서 고쳤을 때. `null`이면 전체 기본값으로 되돌립니다. */
+  onTargetOverride: (questionIndex: number, value: number | null) => void;
   lengthLoss: string | null;
   /** 이 상품이 포함하는 자기소개서 총 글자 수. */
   limitCharacters: number;
@@ -72,16 +73,15 @@ type Props = {
  * 문항 하나의 목표 글자 수 칸.
  *
  * ------------------------------------------------------------------
- * 왜 타이핑하는 동안에는 본문을 고치지 않는가
+ * 왜 치는 동안에는 저장하지 않는가
  * ------------------------------------------------------------------
- * 고친 숫자는 본문 제목 뒤의 `(700자)` 표시로 저장되는데, 그 표시가 읽히는
- * 범위는 100~9999입니다. 글자를 칠 때마다 바로 쓰면 "3", "30"을 지나가는
- * 순간마다 범위 밖이라 표시가 지워지고, 지워지면 값이 전체 기본값으로 되돌아
- * 옵니다. **그래서 아무리 눌러도 숫자가 안 바뀌었습니다** — 치는 족족 되돌려
- * 놓고 있었습니다.
+ * 값이 읽히는 범위는 100~9999입니다. 글자를 칠 때마다 그대로 저장하면 "3",
+ * "30"을 지나가는 순간마다 범위 밖이라 값이 지워지고, 지워지면 전체 기본값으로
+ * 되돌아옵니다. **그래서 아무리 눌러도 숫자가 안 바뀌었습니다** — 치는 족족
+ * 되돌려 놓고 있었습니다.
  *
- * 치는 동안에는 화면에만 담아 두고, 칸을 벗어나거나 Enter를 칠 때 한 번
- * 씁니다. 100 미만이면 표시를 지워 전체 기본값으로 되돌립니다.
+ * 치는 동안에는 화면에만 담아 두고, 범위에 들어오는 순간 저장합니다. 100
+ * 미만으로 두고 칸을 벗어나면 전체 기본값으로 되돌립니다.
  */
 function TargetLengthField({ label, target, fallback, onCommit }: {
   label: string;
@@ -116,7 +116,7 @@ function TargetLengthField({ label, target, fallback, onCommit }: {
   />;
 }
 
-export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
+export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, onTargetOverride, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
   const [loadingLink, setLoadingLink] = useState(false);
   const [linkMessage, setLinkMessage] = useState("");
   const postingUrl = findPostingUrl(draft);
@@ -389,7 +389,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
                 label={plan.label}
                 target={plan.target}
                 fallback={targetLength}
-                onCommit={(value) => onDraftChange(writeQuestionTargetLength(draft, plan.index, value))}
+                onCommit={(value) => onTargetOverride(plan.index, value)}
               />
               자{plan.shrink > 0 && ` (-${Math.round(plan.shrink * 100)}%)`}
             </em>

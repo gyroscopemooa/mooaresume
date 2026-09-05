@@ -30,7 +30,7 @@ function renderIntake() {
     <SimpleIntake
       draft="" onDraftChange={vi.fn()}
       targetLength="700" onTargetLengthChange={vi.fn()}
-      resolvedLengths="" lengthPlans={[]} lengthLoss={null}
+      resolvedLengths="" lengthPlans={[]} onTargetOverride={vi.fn()} lengthLoss={null}
       limitCharacters={10_000}
       files={files} onFilesChange={onFilesChange}
       onError={vi.fn()}

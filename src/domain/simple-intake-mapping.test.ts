@@ -116,6 +116,25 @@ describe("간편 입력 매핑", () => {
 });
 
 describe("간편 입력 글자 수", () => {
+  it("자소서를 파일로 낸 사람도 문항별 글자 수를 고칠 수 있다", () => {
+    // 예전에는 고친 값을 본문 제목 뒤 표시로 저장했습니다. 파일로 낸 사람은
+    // 본문이 비어 있어 적을 데가 없었고, 숫자를 고쳐도 그대로 사라졌습니다.
+    const letter = ["1. 지원 동기", "답변입니다.", "", "2. 직무 역량", "답변입니다."].join("\n");
+    const mapped = mapSimpleIntake("", [file("자소서.docx", "COVER_LETTER", letter)], 700, { 1: 300 });
+    expect(mapped.questions.map((question) => question.targetLength)).toEqual([700, 300]);
+  });
+
+  it("화면에서 고친 값이 본문에 적힌 표시를 이긴다", () => {
+    // 나중에 한 행동이 앞의 것을 덮는 것이 사람이 기대하는 순서입니다.
+    const mapped = mapSimpleIntake("1. 지원 동기 (800자)\n답변", [], 700, { 0: 300 });
+    expect(mapped.questions[0].targetLength).toBe(300);
+  });
+
+  it("고친 값을 지우면 전체 기본값으로 돌아간다", () => {
+    const mapped = mapSimpleIntake("1. 지원 동기\n답변", [], 700, {});
+    expect(mapped.questions[0].targetLength).toBe(700);
+  });
+
   it("한 번 적은 글자 수를 모든 문항에 채운다", () => {
     const mapped = mapSimpleIntake("1. 지원 동기\n답변\n\n2. 직무 역량\n답변", [], 600);
     expect(mapped.questions.every((question) => question.targetLength === 600)).toBe(true);

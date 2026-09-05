@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitCoverLetterDraft, writeQuestionTargetLength } from "./cover-letter-parser";
+import { splitCoverLetterDraft } from "./cover-letter-parser";
 
 describe("splitCoverLetterDraft", () => {
   it("splits numbered questions without an AI call", () => {
@@ -51,50 +51,5 @@ describe("splitCoverLetterDraft", () => {
     const result = splitCoverLetterDraft(text);
     expect(result).toHaveLength(2);
     expect(result[1].answer).toBe("둘째 답변");
-  });
-});
-
-describe("문항별 목표 글자 수 되써넣기", () => {
-  const draft = [
-    "1.본인 성격의 장단점을 말씀해 주십시오.",
-    "장점은 정리하는 것입니다.",
-    "",
-    "2.본인이 이룬 성취를 기술해 주십시오.",
-    "발표평가까지 진출했습니다.",
-  ].join("\n");
-
-  it("제목 뒤에 표시를 붙이고, 그 문항만 그 숫자를 쓴다", () => {
-    const next = writeQuestionTargetLength(draft, 1, 300);
-    expect(next).toContain("2.본인이 이룬 성취를 기술해 주십시오. (300자)");
-    // 손대지 않은 문항은 글자 하나 바뀌지 않습니다.
-    expect(next).toContain("1.본인 성격의 장단점을 말씀해 주십시오.\n장점은");
-    const questions = splitCoverLetterDraft(next);
-    expect(questions.map((question) => question.targetLength)).toEqual([null, 300]);
-  });
-
-  it("이미 있는 표시는 덮어쓴다 — 두 개가 붙지 않는다", () => {
-    const once = writeQuestionTargetLength(draft, 0, 500);
-    const twice = writeQuestionTargetLength(once, 0, 800);
-    expect(twice).toContain("(800자)");
-    expect(twice).not.toContain("500자");
-    expect(splitCoverLetterDraft(twice)[0].targetLength).toBe(800);
-  });
-
-  it("null이면 표시를 지워 전체 기본값으로 되돌린다", () => {
-    const cleared = writeQuestionTargetLength(writeQuestionTargetLength(draft, 0, 500), 0, null);
-    expect(cleared).toBe(draft);
-    expect(splitCoverLetterDraft(cleared)[0].targetLength).toBeNull();
-  });
-
-  it("없는 문항 번호에는 아무 일도 하지 않는다", () => {
-    expect(writeQuestionTargetLength(draft, 9, 300)).toBe(draft);
-    expect(writeQuestionTargetLength("", 0, 300)).toBe("");
-  });
-
-  it("번호 없는 글은 한 문항이므로 첫 줄을 건드리지 않는다", () => {
-    // 제목 줄이 없으면 되써넣을 자리도 없습니다. 본문을 제목으로 착각해
-    // 첫 문장 뒤에 (300자)를 붙이면 그 문장이 분석에서 사라집니다.
-    const plain = "번호 없이 쓴 자기소개서입니다.\n두 번째 줄입니다.";
-    expect(writeQuestionTargetLength(plain, 0, 300)).toBe(plain);
   });
 });

@@ -60,7 +60,22 @@ const MAX_ATTACHMENT_CHARACTERS = 50_000;
 // 가지만 예산에서 맨 뒤에 서고, 자료를 많이 넣을수록 먼저 잘립니다.
 const MATERIAL_KINDS: ReadonlySet<ClassifiedKind> = new Set(["RESUME", "CAREER_DOCUMENT", "PORTFOLIO", "CERTIFICATE"]);
 
-export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSource[], defaultTargetLength: number | null = null): SimpleIntakeMapping {
+/**
+ * 화면에서 문항별로 고친 목표 글자 수. 열쇠는 문항 순번(0부터)입니다.
+ *
+ * 예전에는 이 값을 본문 제목 뒤의 `(700자)` 표시로 저장했습니다. 그런데
+ * **자기소개서를 파일로 낸 사람은 본문이 비어 있어 적을 데가 없었습니다** —
+ * 숫자를 고쳐도 그대로 사라졌습니다. 붙여넣은 사람만 되고 첨부한 사람은 안
+ * 되는 기능이었습니다.
+ *
+ * 그래서 표시에 의존하지 않고 따로 받습니다. 지원자가 본문에 직접 적은
+ * `(800자)` 표시는 그대로 읽되(고용주가 문항 옆에 인쇄해 둔 숫자입니다),
+ * 화면에서 손으로 고친 값이 있으면 그쪽이 이깁니다 — 나중에 한 행동이
+ * 앞의 것을 덮는 것이 사람이 기대하는 순서입니다.
+ */
+export type QuestionTargetOverrides = Readonly<Record<number, number>>;
+
+export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSource[], defaultTargetLength: number | null = null, targetOverrides: QuestionTargetOverrides = {}): SimpleIntakeMapping {
   const byKind = (kind: ClassifiedKind) => files.filter((file) => file.kind === kind);
   const dropped: string[] = [];
 
@@ -85,7 +100,8 @@ export function mapSimpleIntake(draft: string, files: readonly SimpleIntakeSourc
   // the applicant typed one number for the whole form, the employer printed the
   // real one next to each question.
   const questions = applyDefaultTargetLength(
-    letterText ? splitCoverLetterDraft(letterText) : [createCoverLetterQuestion()],
+    (letterText ? splitCoverLetterDraft(letterText) : [createCoverLetterQuestion()])
+      .map((question, index) => index in targetOverrides ? { ...question, targetLength: targetOverrides[index] } : question),
     defaultTargetLength,
   );
 

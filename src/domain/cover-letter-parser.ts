@@ -63,29 +63,6 @@ function readQuestionStarts(text: string): { lines: string[]; offset: number; st
   return { lines, offset, starts: lines.flatMap((line, index) => isQuestionLine(line) ? [index] : []) };
 }
 
-/**
- * 문항별 글자 수를 제목 줄의 표시로 되써넣습니다.
- *
- * 분석 요청은 문항마다 다른 숫자를 담을 자리가 없어, 제목 뒤의 `(700자)` 표시가
- * 그 숫자를 실어 나르는 유일한 통로입니다. 지금까지 그 표시는 손님이 직접
- * 타이핑해야만 생겼고, 그 방법은 말풍선 안에만 적혀 있었습니다.
- *
- * @param questionIndex `splitCoverLetterDraft`가 돌려준 문항의 순번.
- * @param targetLength `null`이면 표시를 지워 전체 기본값으로 되돌립니다.
- */
-export function writeQuestionTargetLength(text: string, questionIndex: number, targetLength: number | null): string {
-  const parsed = readQuestionStarts(text);
-  const start = parsed?.starts[questionIndex];
-  if (!parsed || start === undefined) return text;
-
-  const lineIndex = parsed.offset + start;
-  const allLines = text.replace(/\r\n?/g, "\n").trim().split("\n");
-  // 표시만 떼어 냅니다. 앞의 번호(`1.`)와 제목은 손님이 쓴 그대로 둡니다.
-  const { heading } = readTargetLengthMarker(allLines[lineIndex]);
-  allLines[lineIndex] = targetLength ? `${heading} (${targetLength}자)` : heading;
-  return allLines.join("\n");
-}
-
 export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
   const parsed = readQuestionStarts(text);
   if (!parsed) return [createCoverLetterQuestion()];

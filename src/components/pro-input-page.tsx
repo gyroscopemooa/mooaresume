@@ -115,9 +115,15 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   const [experiences, setExperiences] = useState<CandidateExperienceInput[]>([]);
   const [profileEntries, setProfileEntries] = useState<CandidateProfileEntry[]>([]);
   const [freeformNotes, setFreeformNotes] = useState("");
-  // 간편 입력 전용입니다. 상세 입력에는 같은 일을 하는 칸(추가 경험·정보,
-  // 요청사항)이 이미 있어, 한 상태를 나눠 쓰면 한쪽에서 지운 것이 다른 쪽에서
-  // 사라진 것처럼 보입니다.
+  // 문항별로 화면에서 고친 목표 글자 수(문항 순번 → 글자 수).
+  //
+  // 예전에는 이 값을 본문 제목 뒤의 `(700자)` 표시로 저장했는데, 자기소개서를
+  // 파일로 낸 사람은 본문이 비어 있어 적을 데가 없었습니다 — 숫자를 고쳐도
+  // 그대로 사라졌습니다.
+  const [simpleTargets, setSimpleTargets] = useState<Record<number, number>>({});
+  // 아래 둘은 간편 입력 전용입니다. 상세 입력에는 같은 일을 하는 칸(추가
+  // 경험·정보, 요청사항)이 이미 있어, 한 상태를 나눠 쓰면 한쪽에서 지운 것이
+  // 다른 쪽에서 사라진 것처럼 보입니다.
   const [simpleFacts, setSimpleFacts] = useState("");
   const [simpleDirection, setSimpleDirection] = useState("");
   const [freeformAttachments, setFreeformAttachments] = useState<CandidateFreeformAttachment[]>([]);
@@ -196,7 +202,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     // downstream — checkout, analysis, the server — keeps receiving the same
     // shape, so there is one pipeline to keep correct rather than two.
     const effective = inputMode === "SIMPLE"
-      ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue)
+      ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue, simpleTargets)
       : {
           questions,
           posting,
@@ -264,7 +270,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   // Below 100 the saved question schema rejects it, and a typo of "50" should
   // not fail on save two screens later.
   const simpleTargetLengthValue = Number(simpleTargetLength) >= 100 ? Number(simpleTargetLength) : null;
-  const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue) : null;
+  const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue, simpleTargets) : null;
   const simpleLengthPlans = simpleMapping ? planQuestionLengths(simpleMapping) : [];
   const simpleGaps = simpleMapping ? describeSimpleIntakeGaps(simpleMapping) : [];
   // 고르지 못한 자료가 남아 있으면 진행하지 않습니다.
@@ -343,7 +349,11 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         </div>
 
         {inputMode === "SIMPLE" && <>
-          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} lengthPlans={simpleLengthPlans} lengthLoss={describeLengthLoss(simpleLengthPlans)} limitCharacters={PRO_INCLUDED_LIMIT_CHARS} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
+          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} lengthPlans={simpleLengthPlans} onTargetOverride={(index, value) => setSimpleTargets((current) => {
+            const next = { ...current };
+            if (value === null) delete next[index]; else next[index] = value;
+            return next;
+          })} lengthLoss={describeLengthLoss(simpleLengthPlans)} limitCharacters={PRO_INCLUDED_LIMIT_CHARS} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
 
