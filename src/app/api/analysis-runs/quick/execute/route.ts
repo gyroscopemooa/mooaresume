@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sendAnalysisCompleteEmail } from "@/server/notifications/analysis-complete-email";
 import { OpenAIResponsesGateway } from "@/server/ai/quick/openai-responses-gateway";
 import { createQuickAnalysisResult, QuickQuestionResultMissingError } from "@/server/ai/quick/provider";
-import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "@/server/ai/quick/validator";
+import { BLOCKING_VALIDATION_CODES, describeValidationFailure, validateQuickAnalysis } from "@/server/ai/quick/validator";
 import { advanceQuickBackgroundAnalysis } from "@/server/analysis/quick-background-execution";
 import { recordAnalysisAttempt } from "@/server/analysis/attempt-ledger";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
@@ -151,7 +151,11 @@ export async function POST(request: NextRequest) {
         // 여기까지 온 응답은 모델이 끝까지 만들어 낸 것입니다. 버려지지만
         // 요금은 이미 나갔으므로, 토큰을 적어 두지 않으면 그 비용이 어디에도
         // 남지 않습니다.
-        await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "VALIDATION_FAILED", failureCode: "AI_OUTPUT_VALIDATION_FAILED", source: "BROWSER", usage: background.result.execution });
+        // 어느 규칙에 걸렸는지까지 원장에 남깁니다 — 아래 console.error는
+        // 지나가면 없어지고, 그 이름이 없으면 환불된 유료 건의 이유를
+        // 나중에 알 길이 없습니다. 재시도·환불 판단이 보는 것은 위
+        // `repository.fail`이 적는 분석 런의 코드이지 이 원장이 아닙니다.
+        await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "VALIDATION_FAILED", failureCode: describeValidationFailure(blockingIssues), source: "BROWSER", usage: background.result.execution });
         const detail = blockingIssues.map((issue) => issue.message).join(" ");
         // The codes alone say which rule fired, not which quote or number
         // tripped it — and the detail never reaches the retry screen, so this

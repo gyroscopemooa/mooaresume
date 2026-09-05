@@ -6323,3 +6323,17 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 978 passed(신규 5건), `npx eslint src` 오류 0건. **실제 FINAL 실행으로는 확인하지 못했습니다** — 유료 경로라 로컬에서 돌릴 수 없습니다.
 - Rollback: 이 커밋 revert. 세 번째 인자는 선택이라, 되돌려도 호출부는 그대로 동작합니다.
 - Open: 걸린 검증 코드가 정말 `ANSWER_TOO_SHORT`인지 확정 필요 — Cloudflare 로그의 `quick_analysis_validation_blocked:` 줄에만 남습니다. `INVALID_EVIDENCE`나 `NEW_NUMBER`였다면 원인이 다르므로 이 변경만으로는 낫지 않습니다. 실패 사유가 DB에 남지 않아 관리자 화면에서 볼 수 없는 것도 이번에 드러난 문제입니다(후속 과제).
+
+### 2026-09-06 KST — 검증 실패의 "어느 규칙에 걸렸는지"를 원장에 남기고 관리자 화면에 표시
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 신고 후속(FINAL 3회 실패·자동 환불 원인 추적).
+- Status: active. 마이그레이션 없음(`analysis_run_attempts.failure_code`는 이미 자유 텍스트 칸입니다).
+- 이번에 드러난 문제: 실패 코드는 어느 검증 실패에나 똑같이 `AI_OUTPUT_VALIDATION_FAILED`라, 관리자 화면만 봐서는 **왜** 걸렸는지 알 수 없었습니다. 규칙 이름은 `console.error`에만 있었고 Cloudflare 로그는 보존 설정이 없어 지나가면 사라집니다. 그 결과 14,900원짜리 유료 건이 세 번 걸려 환불된 뒤 원인을 물었을 때 답할 자료가 없었습니다.
+- Change and reason:
+  - `describeValidationFailure(issues)`를 validator에 추가해 `AI_OUTPUT_VALIDATION_FAILED:NEW_NUMBER,INVALID_EVIDENCE` 형태로 만듭니다. 브라우저 경로와 크론 경로 **둘 다** 이 값을 원장에 적습니다.
+  - **분석 런(`analysis_runs.failure_code`)에는 넣지 않았습니다.** 그쪽은 `canRetryAnalysis`가 문자열이 정확히 같은지로 재시도 가능 여부를 판단하므로, 뒤에 무엇이 붙는 순간 재시도가 막히고 곧장 환불로 갑니다. 원장은 어떤 판단에도 쓰이지 않는 읽기 전용이라 안전합니다(확인함: 읽는 곳은 관리자 조회와 원가 집계뿐).
+  - 관리자 시도 목록이 토큰을 입력+출력 **합계**로만 보여 줘서, "출력 자리가 모자라 잘린 것"과 "참고 자료가 많아 입력이 큰 것"을 구분할 수 없었습니다. `입력 / 출력`으로 나눠 표시하고, 결과 라벨 옆에 걸린 규칙 이름을 붙였습니다(`검증 실패 · ANSWER_TOO_SHORT`). 칸 너비 148px → 210px.
+- Files: `src/server/ai/quick/validator.ts`, `src/app/api/analysis-runs/quick/execute/route.ts`, `src/app/api/analysis-runs/advance/route.ts`, `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/admin.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 978 passed, `npx eslint src` 오류 0건. 이미 쌓인 기록에는 규칙 이름이 없으므로(그때는 적지 않았습니다) **배포 이후 실패 건부터** 보입니다.
+- Rollback: 이 커밋 revert.
+- 진단 갱신: 사용자가 확인한 실제 기록은 FINAL·BUILD(내용 보완), 시도 1·2 모두 `검증 실패`(문항 누락 아님), 35.9k·38.1k 토큰. 토큰이 넉넉히 쓰였으므로 앞선 커밋 `fcb9490`의 가설(생각 몫이 예산을 잡아먹어 첨삭이 짧아짐)은 **주된 원인일 가능성이 낮아졌습니다**. 남은 후보는 `NEW_NUMBER`(BUILD에서 내용을 채우다 원문에 없는 수치를 씀)와 `INVALID_EVIDENCE`(FINAL이 공고를 대조하는데 공고는 근거 원천에서 제외됨). `fcb9490`은 그대로 두어도 해롭지 않으므로 되돌리지 않습니다.

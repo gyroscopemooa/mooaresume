@@ -43,6 +43,17 @@ function tokens(value: number | null): string {
   return value >= 1_000 ? `${(value / 1_000).toFixed(1)}k` : String(value);
 }
 
+/**
+ * 원장의 실패 코드에서 규칙 이름만 떼어 냅니다.
+ * `AI_OUTPUT_VALIDATION_FAILED:NEW_NUMBER` → `NEW_NUMBER`.
+ *
+ * 앞부분은 모든 검증 실패에 똑같이 붙어 아무것도 구분해 주지 않습니다.
+ * 뒤에 붙은 규칙 이름이 이 화면에서 유일하게 "왜 걸렸는지"를 말해 줍니다.
+ */
+function failureDetail(code: string | null): string | null {
+  return code?.split(":")[1]?.trim() || null;
+}
+
 /** 시도 한 줄씩. 몇 번째에서 무엇이 걸렸는지가 여기서만 보입니다. */
 function AttemptList({ attempts }: { attempts: AdminAnalysisAttempt[] }) {
   if (attempts.length === 0) return <span className={styles.mono}>기록 없음</span>;
@@ -51,8 +62,10 @@ function AttemptList({ attempts }: { attempts: AdminAnalysisAttempt[] }) {
       {attempts.map((attempt, index) => (
         <li key={`${attempt.createdAt}-${index}`} data-wasted={attempt.outcome !== "COMPLETED"}>
           <b>{index + 1}</b>
-          <span>{OUTCOME_LABEL[attempt.outcome] ?? attempt.outcome}</span>
-          <em>{tokens((attempt.inputTokens ?? 0) + (attempt.outputTokens ?? 0))}</em>
+          <span>{OUTCOME_LABEL[attempt.outcome] ?? attempt.outcome}{failureDetail(attempt.failureCode) ? ` · ${failureDetail(attempt.failureCode)}` : ""}</span>
+          {/* 입력과 출력을 나눠 보여 줍니다. 합쳐 놓으면 "출력 자리가 모자라
+              잘린 것"과 "참고 자료가 많아 입력이 큰 것"을 구분할 수 없습니다. */}
+          <em>{tokens(attempt.inputTokens)} / {tokens(attempt.outputTokens)}</em>
           <small>{attempt.source === "CRON" ? "스케줄러" : "브라우저"}</small>
         </li>
       ))}

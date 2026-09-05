@@ -112,4 +112,23 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
   }
   return issues;
 }
+/**
+ * 시도 원장(`analysis_run_attempts.failure_code`)에 적을 이름.
+ *
+ * `AI_OUTPUT_VALIDATION_FAILED:NEW_NUMBER,INVALID_EVIDENCE`처럼 **어느 규칙에
+ * 걸렸는지까지** 담습니다. 지금까지 규칙 이름은 서버 로그에만 있었고 로그는
+ * 지나가면 없어져서, 유료 건이 세 번 걸려 환불된 뒤에 이유를 물으면 답할
+ * 데가 없었습니다.
+ *
+ * **분석 런(`analysis_runs.failure_code`)에는 쓰지 마세요.** 그쪽은 재시도가
+ * 가능한지를 문자열이 정확히 같은지로 판단하므로(`canRetryAnalysis`), 뒤에
+ * 무엇이든 붙는 순간 재시도가 막히고 곧장 환불로 갑니다. 이 값은 아무 판단에도
+ * 쓰이지 않는 읽기 전용 원장 전용입니다.
+ */
+export const VALIDATION_FAILURE_CODE = "AI_OUTPUT_VALIDATION_FAILED";
+export function describeValidationFailure(issues: readonly QuickValidationIssue[]): string {
+  const codes = [...new Set(issues.map((issue) => issue.code))];
+  return codes.length ? `${VALIDATION_FAILURE_CODE}:${codes.join(",")}` : VALIDATION_FAILURE_CODE;
+}
+
 export class QuickAnalysisValidationError extends Error { constructor(public readonly issues: QuickValidationIssue[]) { super(issues.map((issue) => issue.message).join("\n")); this.name = "QuickAnalysisValidationError"; } }

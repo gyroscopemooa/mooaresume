@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { sendAnalysisCompleteEmail } from "@/server/notifications/analysis-complete-email";
 import { OpenAIResponsesGateway } from "@/server/ai/quick/openai-responses-gateway";
 import { createQuickAnalysisResult, QuickQuestionResultMissingError } from "@/server/ai/quick/provider";
-import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "@/server/ai/quick/validator";
+import { BLOCKING_VALIDATION_CODES, describeValidationFailure, validateQuickAnalysis } from "@/server/ai/quick/validator";
 import { advanceQuickBackgroundAnalysis } from "@/server/analysis/quick-background-execution";
 import { recordAnalysisAttempt } from "@/server/analysis/attempt-ledger";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
@@ -95,7 +95,12 @@ async function advanceOne(run: RunRow, origin: string) {
     await repository.fail(run.id, "AI_OUTPUT_VALIDATION_FAILED", true);
     // 버려지는 응답이지만 요금은 이미 나갔습니다. 여기서 적지 않으면
     // 그 비용은 어디에도 남지 않습니다.
-    await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "VALIDATION_FAILED", failureCode: "AI_OUTPUT_VALIDATION_FAILED", source: "CRON", usage: step.response.result.execution });
+    // 원장에는 어느 규칙에 걸렸는지까지 적습니다. 지금까지 그 이름은 서버
+    // 로그에만 있었고, 로그는 지나가면 없습니다 — 유료 건이 세 번 걸려
+    // 환불된 뒤에 이유를 물으면 답할 데가 없었습니다. 분석 런의 코드
+    // (`repository.fail`)는 재시도·환불 판단이 문자열로 맞춰 보므로 건드리지
+    // 않고, 읽기 전용인 이 원장에만 덧붙입니다.
+    await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "VALIDATION_FAILED", failureCode: describeValidationFailure(blocking), source: "CRON", usage: step.response.result.execution });
     for (const issue of blocking) console.error(`advance ${run.id} ${issue.code}: ${issue.message}`);
     return { analysisRunId: run.id, outcome: "VALIDATION_FAILED" as const };
   }
