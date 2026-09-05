@@ -239,3 +239,10 @@
 .plans em input:hover { border-color: #dbe4df; background: #fff; }
 .plans em input:focus { border-color: #5d9e78; background: #fff; color: #2a3a33; outline: 0; box-shadow: 0 0 0 3px rgb(58 143 94 / .1); }
 .plans em input::placeholder { color: #b3bdb7; }
+
+/* 문항이 하나로 뭉쳤을 때의 안내. 경고처럼 붉게 두지 않습니다 — 문항이 정말
+   하나인 자기소개서도 있어서, 틀렸다고 단정하면 맞는 입력에 겁을 줍니다. */
+.merged { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; border-radius: 9px; padding: 9px 11px; background: #fbf7ec; color: #7a6636; font-size: 11px; font-weight: 500; line-height: 1.65; }
+.merged svg { width: 14px; flex-shrink: 0; margin-top: 1px; color: #b08a2e; }
+.merged b { color: #5f5024; font-weight: 700; }
+.merged em { font-style: normal; border-radius: 4px; padding: 1px 4px; background: #f2e8d0; font-weight: 600; }

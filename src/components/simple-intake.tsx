@@ -338,6 +338,21 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           </li>)}
         </ul>}
         {lengthLoss && <small className={styles.loss}>{lengthLoss}</small>}
+
+        {/* 번호가 하나도 없으면 붙여넣은 글 전체가 한 문항이 됩니다. 그러면
+            목표 글자 수가 통째로 걸려, 네 문항 1,200자가 300자 하나로
+            압축됩니다. 위 목록에 줄이 하나만 뜨는 것이 그 신호인데, 그걸
+            읽으려면 이 화면이 문항을 어떻게 나누는지 알아야 합니다.
+
+            길이 조건을 두는 이유: 문항이 정말 하나뿐인 자기소개서도 있습니다.
+            짧은 글에까지 물으면 맞는 입력에 매번 경고가 뜹니다. */}
+        {lengthPlans.length === 1 && letterCharacters >= 500 && <small className={styles.merged}>
+          <AlertCircle />
+          <span>
+            <b>전체를 한 문항으로 읽었어요.</b> 문항이 하나뿐이면 이대로 괜찮습니다.
+            여러 문항이라면 각 문항 앞에 <em>1. 지원 동기</em>처럼 번호와 제목을 붙여 주세요.
+          </span>
+        </small>}
       </div>
 
       <div className={styles.boxFoot}>

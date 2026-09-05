@@ -102,7 +102,10 @@ export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
     const { heading, targetLength } = readTargetLengthMarker(match?.[2]?.trim() ?? "");
     const extractedBody = lines.slice(start + 1, end).join("\n").trim();
     const body = /^(?:주특기\s*)?업무\s*작성$/i.test(extractedBody.replace(/\s+/g, " ")) ? "" : extractedBody;
-    const looksLikePrompt = /(?:작성|기술|서술|설명|대해|주세요|하시오)/.test(heading);
+    // 질문으로 읽히는 줄은 제목이 아니라 질문 칸에 넣습니다. 낱말 목록에
+    // "말씀"과 "바랍니다"가 빠져 있어, "본인 성격의 장단점을 **말씀해**
+    // 주십시오"가 소제목으로 분류돼 모델에게 그렇게 전달됐습니다.
+    const looksLikePrompt = /(?:작성|기술|서술|설명|대해|주세요|하시오|말씀|바랍)/.test(heading);
     return {
       ...createCoverLetterQuestion(body, index),
       title: looksLikePrompt ? "" : heading.slice(0, 120),

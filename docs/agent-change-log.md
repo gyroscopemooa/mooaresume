@@ -6400,3 +6400,30 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - **배포 순서 주의:** 코드가 `APPLICANT_NOTE`로 문서를 넣으므로, **enum 마이그레이션이 먼저 적용되지 않으면 그 칸을 채운 손님의 지원서 생성이 실패합니다.** `npx supabase db push`(또는 `db:remote:push`)를 먼저 돌린 뒤 코드를 올려야 합니다. 그래서 이 커밋은 푸시하지 않고 사용자 확인을 기다립니다.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 992 passed(신규 2건), `npx eslint src` 오류 0건. 마이그레이션은 기존 `certificate_evidence.sql`에서 세 곳만 바꿔 생성했고(감추는 목록·우선순위·이름), **실제 DB에는 적용해 보지 못했습니다** — `db push`는 사용자 환경에서 돌아갑니다.
 - Rollback: 이 커밋 revert 후 `begin_quick_analysis`를 `20260903100100_certificate_evidence.sql` 버전으로 되돌리면 됩니다. enum 값은 남지만 쓰이지 않습니다(Postgres는 enum 값 삭제를 지원하지 않습니다).
+
+### 2026-09-06 KST — 커뮤니티 기능을 다른 서비스로 옮길 수 있게 "이식 킷"으로 뽑아 둔다
+
+- Agent/session: Claude (desktop), 사용자 요청("커뮤 파이프라인 그대로 transtream에 옮기려는데, GUI에 시키는 것보다 코드 주는 게 빠르지 않나").
+- Status: active. 마이그레이션 없음. **기존 소스는 한 줄도 고치지 않았습니다** — 새 폴더에 사본만 만들었습니다.
+- Protected baseline: `src/app/community/**`, `src/app/api/community/**`, `src/server/community/**`, `src/domain/community*.ts`, `src/components/community-lounge.*`, `supabase/migrations/*community*.sql` 전부 원본 그대로입니다. 킷 안의 파일은 `cp` 사본이라 원본과 바이트 단위로 같습니다(단, 새로 추가한 2개 파일 제외).
+- Change and reason: 커뮤니티는 무아레주메 나머지 기능과 거의 안 엮여 있어 통째로 떼어낼 수 있습니다(외부 의존이 `SiteNav`와 `admin-repository.serviceClient` 딱 둘). 다른 프로젝트의 에이전트에게 이 레포 전체를 읽히면 토큰이 몇 배로 드니, **필요한 파일 + 설명서만 담은 폴더**를 만들어 그것만 건네도록 했습니다. 다음 서비스에도 같은 폴더를 재사용합니다.
+  - 새로 쓴 파일 2개: `community-service-client.ts`(`admin-repository` 의존을 끊기 위해 serviceClient만 다시 담음), `00000000000000_prereq_set_updated_at.sql`(다른 마이그레이션에 있던 공용 트리거 함수를 킷 단독으로도 돌게).
+  - `README.md`에 전제·붙이는 순서·환경변수·검증 체크리스트·하드코딩 지점 표를, `TRANSTREAM-PORT.md`에 트랜스트림 전용 변경안(토픽 4종, 다국어 로테이션, 정보글 말투, 하루 3→1개 줄이는 법, 실존 인물 안전장치)을 적었습니다.
+- Files: `docs/portable/community-kit/**`(신규 폴더 전체).
+- Validation: 파일 목록·의존성 확인만 했습니다. **킷을 실제로 다른 프로젝트에 붙여서 빌드해 보지는 않았습니다** — 이식은 대상 프로젝트에서 이뤄집니다. 무아레주메 빌드에는 영향이 없습니다(`docs/` 아래 문서·사본이라 `src`에서 import되지 않음).
+- Rollback: `docs/portable/community-kit/` 폴더 삭제. 다른 파일에 영향 없습니다.
+
+### 2026-09-06 KST — 캐릭터 해설을 무료+로그인으로 열고, 문항 뭉침 경고와 질문 낱말 두 개를 더함
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 결정("캐릭터해설 일단 무료 로그인으로 열어") + 앞서 미룬 작은 항목들.
+- Status: active. 마이그레이션 없음.
+- Change and reason:
+  - **캐릭터 해설 잠금 해제(무료 + 로그인 필요).** 9/5에 "결제 준비 중"으로 잠갔던 것을 사용자 결정에 따라 엽니다. 이 카드는 파는 물건이 아니라 **퍼뜨리는 물건**입니다 — 공유 단추와 카드 이미지가 이미 붙어 있고, 유형 결과를 공짜로 뿌려서 사람이 들어오는 것이 이런 검사의 작동 방식입니다. 게다가 이 해설은 AI가 아니라 미리 써 둔 문장의 조합이라, 돈을 받으면 나중에 진짜 AI 심층해설이 나올 때 "이미 산 것 아니냐"가 됩니다. 대신 로그인은 걸립니다 — 공짜로 주는 대가로 계정을 받고, 결과가 계정에 저장되고, 심층해설을 팔 상대가 남습니다.
+  - 세션 확인은 **브라우저에서** 합니다(`career-character-gate.tsx`). 다른 커리어 화면이 모두 그렇게 하는데 한 화면만 서버에서 막으면, 로그인 직후 세션 반영 시점이 달라 방금 로그인한 사람이 다시 로그인 화면을 봅니다.
+  - `example=1`(심층해설 예시 안의 카드)은 로그인 없이 열리되, 주소로 넘어온 `code`는 계속 무시하고 예시와 같은 코드로만 그립니다 — 그러지 않으면 `&example=1`을 붙이는 것만으로 로그인 요구를 피할 수 있습니다.
+  - `career-character-locked.tsx`(9/5에 제가 추가한 잠금 화면)는 쓰이지 않게 되어 지웠습니다. 기본 결과 02번 탭도 자물쇠에서 화살표로 되돌리고 `?code=`를 복구했습니다.
+  - **문항 뭉침 경고.** 번호가 하나도 없으면 붙여넣은 글 전체가 한 문항이 되고, 목표 글자 수가 통째로 걸립니다(네 문항 1,200자가 300자 하나로 압축). 지금도 문항 목록에 줄이 하나만 뜨는 것이 신호였지만, 그걸 읽으려면 이 화면이 문항을 어떻게 나누는지 알아야 했습니다. **500자 이상**일 때만 묻습니다 — 문항이 정말 하나뿐인 자기소개서도 있어서, 짧은 글에까지 물으면 맞는 입력에 매번 경고가 뜹니다. 붉은 경고가 아니라 안내 색으로 둔 이유도 같습니다.
+  - **질문 낱말 두 개 추가(`말씀`, `바랍`).** 제목 줄이 질문으로 읽히면 `title`이 아니라 `prompt`에 들어가는데, 낱말 목록에 이 둘이 없어 "본인 성격의 장단점을 **말씀해** 주십시오"가 소제목으로 분류돼 모델에게 그렇게 전달됐습니다. 사용자 스크린샷에서 1번 문항만 다르게 표시된 것이 이것입니다.
+- Files: `src/app/career/character/page.tsx`, `src/components/career-character-gate.tsx`(신규), `career-character-locked.tsx`(삭제), `career-interest-result.tsx`, `simple-intake.tsx`, `simple-intake.module.css`, `src/domain/cover-letter-parser.ts`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1002 passed, `npx eslint src` 오류 0건. 로컬 dev에서 `/career/character?code=ISA` 비로그인 시 로그인 화면과 `next` 인코딩 확인, 뭉침 경고는 600자·번호 없음에서 뜨고 200자에서는 안 뜨며 번호를 붙이면 사라지는 것 확인.
+- Rollback: 이 커밋 revert하면 캐릭터 해설이 다시 "결제 준비 중"으로 잠깁니다.
