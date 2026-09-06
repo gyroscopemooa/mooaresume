@@ -6585,3 +6585,38 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/simple-intake.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed, `npx eslint src` 오류 0건. 파일 업로드가 필요한 화면이라, 실제 자소서 파일을 떨어뜨리는 동작을 브라우저에서 그대로 흉내내 320px·406px에서 측정했습니다. 스크린샷 캡처는 계속 빈 화면으로 나와 수치로만 확인했습니다.
 - Rollback: 이 커밋 revert.
+
+### 2026-09-06 KST — 입사지원 서류 드로어와 무료 이력서 메이커를 연다
+
+- Agent/session: Claude (desktop), 사용자 요청("드로어 라벨 취업서류/입사지원서류로, 커리어 검사처럼 사이드바 나오되 목록 리스트 형태. 거기서 이력서 메이커부터 무료로. 유료화는 나중"). 선택지 확인 결과: **메이커는 양식 채워 완성(AI 없음)**, **목록은 취업 서류만(법률·논문 제외)**.
+- Status: active. 마이그레이션 없음. DB·프롬프트·분석 파이프라인은 건드리지 않았습니다.
+- Protected baseline: `CareerAssessmentDrawer`는 **리스너 한 줄만** 더했습니다(아래). 자소서 흐름(`/final/*`, `/analyze`), 커뮤니티, 결과 렌더러는 손대지 않았습니다.
+- Change and reason:
+  - **왜 무아레주메 안인가.** 사용자가 서브도메인 분리를 물었고, 안에 두기를 권했습니다. ① 이름이 이미 `Resume`라 이력서는 브랜드와 정합입니다(지금까지 이름값의 절반만 쓰고 있었습니다). ② 서브도메인은 검색엔진이 어느 정도 별개 사이트로 보아 지금까지 쌓은 신뢰를 새 주소가 물려받지 못합니다. ③ 서브도메인은 Supabase 쿠키 도메인·리다이렉트를 다시 잡아야 하고, 이 프로젝트는 그것으로 이미 한 번 겪었습니다. 법률·논문은 손님이 달라 나중에 **별도 이름**으로 갑니다.
+  - **드로어는 형제 컴포넌트.** `application-docs-drawer.tsx` 신규. CSS도 커리어 것을 복사해 시작했습니다 — 공유하면 한쪽 폭 조정이 다른 쪽을 붙잡습니다. 담는 것도 다릅니다(저쪽 카드 격자, 이쪽 한 줄 목록).
+  - **두 드로어가 같은 가장자리를 씁니다.** 동시에 펼쳐지면 앞이 뒤를 덮으므로 `window` 커스텀 이벤트(`mooa:drawer-open`) 하나로 서로 배타적으로 열립니다. 서로를 import하면 두 컴포넌트가 한 몸이 되고 세 번째 드로어가 생길 때 셋이 서로를 알아야 합니다. 커리어 쪽 변경은 이 리스너 `useEffect` 하나뿐입니다.
+  - **새 마크는 커리어 마크 64px 아래, z-index는 커리어 패널보다 위.** 홈은 커리어 패널이 펼쳐진 채로 시작하는데, 아래에 두면 첫 화면에서 이 마크가 아예 보이지 않습니다. 위에 두면 패널 왼쪽에 붙은 탭처럼 보이고 누르면 커리어가 접히며 이쪽이 열립니다.
+  - **이력서 메이커에 AI를 넣지 않았습니다.** 이력서는 사실의 목록이라 문장을 지어낼 자리가 거의 없고, 실제로 막히는 곳은 "무엇을 어느 칸에 적나"입니다. 칸·미리보기·인쇄면 그 문제가 풀립니다. 토큰을 쓰지 않으니 로그인도 결제도 없이 열 수 있고, 나중에 "이 이력서 AI로 다듬기"를 유료로 얹으면 계단이 깔끔합니다.
+  - **값은 서버로 보내지 않습니다.** 이름·연락처·생년월일이 들어오는 자리라 localStorage에만 둡니다. 보관하지 않는 편이 지키기 쉽습니다.
+  - **내려받기는 브라우저 인쇄에 맡깁니다.** "PDF로 저장"이 이미 모든 브라우저에 있고, PDF 생성 라이브러리를 들이면 한글 폰트를 통째로 안고 가야 해 번들이 몇 배가 됩니다. `@media print`에서 편집기·상단바를 숨기고 종이만 남깁니다.
+  - **서버 렌더를 껐습니다(`ssr: false`).** 저장본을 첫 렌더에 바로 채우는데 서버가 그린 빈 칸과 어긋나면 hydration 경고가 나고 화면이 깜빡입니다. 색인에 필요한 것은 메타데이터에 있고 본문은 빈 입력 칸이라 크롤러에게 줄 것이 없습니다. `ssr:false`는 클라이언트 컴포넌트에서만 되므로 `resume-maker-frame.tsx`를 사이에 둡니다.
+  - 헤더 메뉴 패널에 "입사지원 서류" 섹션을 더했습니다 — 드로어는 760px 아래에서 접히므로 휴대폰에서 이 목록으로 가는 길은 그것뿐입니다. 사이트맵에도 `/resume`을 넣었습니다(로그인 없이 바로 쓰는 화면이라 검색 유입이 그대로 사용으로 이어집니다).
+- Files: `src/domain/application-document.ts`(신규), `src/domain/resume-draft.ts`(신규), `src/components/application-docs-drawer.tsx`·`.module.css`(신규), `src/components/resume-maker.tsx`·`.module.css`(신규), `src/components/resume-maker-frame.tsx`(신규), `src/app/resume/page.tsx`(신규), `src/components/career-assessment-drawer.tsx`(리스너 1개), `src/app/page.tsx`(드로어 1줄), `src/components/site-nav.tsx`(메뉴 섹션), `src/app/sitemap.ts`(1줄).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed(130 파일), `npx eslint src` 오류 0건(경고 2건은 기존 파일). **브라우저로 열어 보지는 못했습니다** — dev 서버·화면 확인은 사용자 담당입니다. 확인할 것: 홈에서 마크 두 개가 위아래로 겹치지 않는지, 서류 마크를 누르면 커리어가 접히는지, `/resume`에서 입력이 오른쪽 종이에 반영되는지, 인쇄 미리보기에 종이만 나오는지.
+- Rollback: 이 커밋 revert. 신규 파일뿐이고 기존 파일 변경은 4곳 모두 한두 줄이라, 되돌려도 자소서·커뮤니티 흐름에 영향이 없습니다.
+- 다음: 이력서 사진 칸, "이 이력서로 자소서 첨삭 이어가기" 연결, `/resume` 검색 유입용 소개 섹션. 유료화(AI 다듬기)는 그 뒤입니다.
+
+### 2026-09-06 KST — 좁은 화면에서 문항별 글자 수 목록이 상자 밖으로 나가던 문제
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 제보(작은 모바일에서 글자 수 부분이 잘림).
+- Status: active. 마이그레이션 없음.
+- 원인 둘:
+  1. `.limit`의 첫 칸이 `auto`였습니다. `auto` 트랙은 **내용의 최소 폭 아래로 줄지 않습니다.** 문항 목록이 이 칸을 가로질러 놓이는데(`grid-column: 1 / -1`), 그 목록의 최소 폭이 첫 칸을 422px까지 벌려 상자(211px) 밖으로 나갔습니다. 320px에서 화면이 174px 넘쳤습니다.
+  2. 칸을 줄이고 나서도 **한 줄에 셋이 들어가지 않았습니다.** 320px에서 쓸 수 있는 폭이 177px인데 현재 글자 수와 입력칸만으로 165px을 씁니다. 그대로 두면 문항 이름이 0px로 찌그러져 **어느 문항의 숫자인지 알 수 없게 됩니다.**
+- Change and reason:
+  - `.limit { grid-template-columns: minmax(0, auto) 78px }` + `.limit > * { min-width: 0 }` + `.limit .plans li { min-width: 0 }`. 칸과 항목이 줄어들 수 있게 합니다.
+  - 430px 이하에서는 줄을 접습니다: **윗줄에 이름과 현재 글자 수, 아랫줄에 목표 글자 수.** 이름에 `flex-basis: 0`을 주는 것이 핵심입니다 — `auto`로 두면 긴 이름의 기본 폭이 줄 폭을 넘어 이름이 통째로 한 줄을 차지하고, 현재 글자 수가 셋째 줄로 밀려 줄마다 높이가 달라집니다(49px과 71px이 섞였습니다).
+  - 목록 안의 입력칸 글자 크기를 12px로 고정했습니다. 아래쪽 `.limit input { font-size: 16px }`가 이 칸까지 키워 줄 높이가 두 배가 되고 있었습니다.
+- Files: `src/components/simple-intake.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed, `npx eslint src` 오류 0건. 6문항 초안을 넣고 320px·406px·1280px에서 측정 — 화면 넘침 174px → **0**, 좁은 화면에서 여섯 줄이 모두 49px로 균일하고 이름이 보이며, 1280px에서는 예전처럼 한 줄(25px)입니다.
+- Rollback: 이 커밋 revert.
