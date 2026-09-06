@@ -254,3 +254,19 @@
 .letterOverride { display: flex; align-items: flex-start; gap: 7px; margin: 8px 0 0; border-radius: 10px; padding: 10px 12px; background: #fbf7ec; color: #7a6636; font-size: 11.5px; font-weight: 500; line-height: 1.65; }
 .letterOverride svg { width: 15px; flex-shrink: 0; margin-top: 1px; color: #b08a2e; }
 .letterOverride b { color: #5f5024; font-weight: 700; }
+
+/* 자소서 파일이 있는데 칸에도 글이 있을 때, 무엇을 첨삭할지 고르는 자리.
+   기계가 알아맞히다 틀리면 엉뚱한 자소서를 첨삭하고 돈을 받게 됩니다. */
+.draftRole { margin: 8px 0 0; border: 1px solid #ecdfc2; border-radius: 12px; padding: 11px 12px; background: #fbf7ec; }
+.draftRole > p { display: flex; align-items: flex-start; gap: 7px; margin: 0 0 9px; color: #7a6636; font-size: 11.5px; font-weight: 500; line-height: 1.6; }
+.draftRole > p svg { width: 15px; flex-shrink: 0; margin-top: 1px; color: #b08a2e; }
+.draftRole b { color: #5f5024; font-weight: 700; }
+.draftRoleChoice { display: grid; gap: 7px; }
+@media (min-width: 560px) { .draftRoleChoice { grid-template-columns: 1fr 1fr; } }
+.draftRoleChoice button { display: grid; gap: 2px; border: 1px solid #e4dcc8; border-radius: 9px; padding: 9px 11px; background: #fff; text-align: left; cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease, background .16s ease; }
+.draftRoleChoice button:hover { border-color: #c9ab6b; }
+.draftRoleChoice button b { color: #4a3f1e; font-size: 12px; font-weight: 700; }
+.draftRoleChoice button small { color: #8b7c55; font-size: 10.5px; font-weight: 500; line-height: 1.5; }
+.draftRoleChoice button[data-on] { border-color: #176b4a; background: #f2f9f5; box-shadow: 0 0 0 2px rgb(23 107 74 / .12); }
+.draftRoleChoice button[data-on] b { color: #12563b; }
+.draftRoleChoice button[data-on] small { color: #4b7a63; }

@@ -61,6 +61,14 @@ type Props = {
   lengthPlans: QuestionLengthPlan[];
   /** 문항별 목표 글자 수를 화면에서 고쳤을 때. `null`이면 전체 기본값으로 되돌립니다. */
   onTargetOverride: (questionIndex: number, value: number | null) => void;
+  /**
+   * 자소서 파일이 함께 있을 때, 이 칸에 친 글을 무엇으로 볼지.
+   *
+   * `LETTER`가 기본이자 지금까지의 동작입니다(친 글이 파일을 밀어냅니다).
+   * `NOTE`면 파일을 첨삭하고 이 글은 참고 자료로만 넘깁니다.
+   */
+  draftRole: "LETTER" | "NOTE";
+  onDraftRoleChange: (role: "LETTER" | "NOTE") => void;
   lengthLoss: string | null;
   /** 이 상품이 포함하는 자기소개서 총 글자 수. */
   limitCharacters: number;
@@ -116,7 +124,7 @@ function TargetLengthField({ label, target, fallback, onCommit }: {
   />;
 }
 
-export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, onTargetOverride, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
+export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, onTargetOverride, draftRole, onDraftRoleChange, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
   const [loadingLink, setLoadingLink] = useState(false);
   const [linkMessage, setLinkMessage] = useState("");
   const postingUrl = findPostingUrl(draft);
@@ -307,21 +315,40 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           자동으로 불러오지는 않습니다. 붙여넣는 중에 주소가 잠깐 완성되는
           순간마다 남의 서버를 두드리게 되고, 무엇보다 손님이 시키지 않은 일을
           하게 됩니다. 찾았다고 말하고 누를 것을 내밀기만 합니다. */}
-      {/* 붙여넣은 글이 첨부한 자기소개서를 밀어냅니다.
-          `mapSimpleIntake`가 "친 글이 이긴다"로 정해 두었기 때문입니다 — 새로
-          붙여넣은 원고와 예전 사본이 함께 있을 때는 그게 맞습니다. 그런데
-          이 칸에 참고사항이나 메모를 한 줄 적는 순간에도 같은 일이 벌어져,
-          **첨부한 자기소개서가 통째로 분석에서 빠집니다.** 조용히 일어나던
-          일이라 손님은 자기 자소서가 빠진 줄도 몰랐습니다.
-          고르는 것은 손님이 하도록 두고, 무슨 일이 벌어지는지만 말합니다. */}
+      {/* 자소서 파일이 있는데 이 칸에도 글이 있으면, 둘 중 무엇을 첨삭할지
+          손님에게 묻습니다.
+
+          `mapSimpleIntake`는 "친 글이 이긴다"로 정해 두었습니다 — 새 원고와
+          예전 사본이 함께 있을 때는 맞는 규칙입니다. 그런데 이 칸에 참고사항
+          한 줄을 적는 순간에도 같은 일이 벌어져 첨부한 자기소개서가 통째로
+          분석에서 빠집니다.
+
+          기계가 알아맞히게 하지 않는 이유: 틀리면 **엉뚱한 자소서를 첨삭하고
+          돈을 받습니다.** "300자 미만이면 메모" 같은 규칙은 짧게 쓴 자소서
+          문항에서 반드시 틀립니다. 대신 파일 이름을 눈앞에 두고 한 번 고르게
+          합니다 — 그 자리에서는 헷갈릴 것이 없습니다.
+
+          기본값은 지금까지의 동작(친 글이 자소서)이라, 아무것도 누르지 않은
+          사람에게는 달라지는 것이 없습니다. */}
       {draft.trim() && files.some((file) => file.kind === "COVER_LETTER") && (
-        <div className={styles.letterOverride}>
-          <AlertCircle />
-          <span>
-            <b>붙여넣은 글을 자기소개서로 봅니다.</b>{" "}
-            첨부하신 {files.filter((file) => file.kind === "COVER_LETTER").map((file) => file.filename).join(", ")}는 이번 분석에 쓰이지 않습니다.
-            첨부한 쪽으로 하시려면 이 칸을 비워 주세요. 참고사항이나 추가 정보는 아래 <b>더 정확하게 써드릴게요</b>에 적어 주시면 자소서를 밀어내지 않습니다.
-          </span>
+        <div className={styles.draftRole}>
+          <p>
+            <AlertCircle />
+            <span>
+              <b>{files.filter((file) => file.kind === "COVER_LETTER").map((file) => file.filename).join(", ")}</b>를 넣으셨네요.
+              이 칸에 쓰신 글은 무엇인가요?
+            </span>
+          </p>
+          <div className={styles.draftRoleChoice}>
+            <button type="button" data-on={draftRole === "LETTER" || undefined} onClick={() => onDraftRoleChange("LETTER")}>
+              <b>새 자기소개서</b>
+              <small>파일 대신 이 글을 첨삭합니다</small>
+            </button>
+            <button type="button" data-on={draftRole === "NOTE" || undefined} onClick={() => onDraftRoleChange("NOTE")}>
+              <b>참고 정보</b>
+              <small>파일을 첨삭하고, 이 글은 참고만 합니다</small>
+            </button>
+          </div>
         </div>
       )}
 

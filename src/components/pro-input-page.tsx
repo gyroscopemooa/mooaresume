@@ -124,6 +124,10 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   // 아래 둘은 간편 입력 전용입니다. 상세 입력에는 같은 일을 하는 칸(추가
   // 경험·정보, 요청사항)이 이미 있어, 한 상태를 나눠 쓰면 한쪽에서 지운 것이
   // 다른 쪽에서 사라진 것처럼 보입니다.
+  // 자소서 파일이 함께 있을 때, 간편 입력 칸에 친 글을 무엇으로 볼지.
+  // 기본은 지금까지의 동작이라, 아무것도 누르지 않은 사람에게는 달라지는
+  // 것이 없습니다.
+  const [simpleDraftRole, setSimpleDraftRole] = useState<"LETTER" | "NOTE">("LETTER");
   const [simpleFacts, setSimpleFacts] = useState("");
   const [simpleDirection, setSimpleDirection] = useState("");
   const [freeformAttachments, setFreeformAttachments] = useState<CandidateFreeformAttachment[]>([]);
@@ -197,12 +201,22 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     return () => window.clearTimeout(timeout);
   }, []);
 
+  /**
+   * 간편 입력에서 사실 자료로 넘어가는 글.
+   *
+   * "참고 정보"를 고른 경우 본문 칸에 친 글이 여기 함께 실립니다 — 자소서
+   * 자리에서 뺐다고 버리면, 손님은 분명히 적었는데 아무 데도 쓰이지 않습니다.
+   */
+  const simpleNoteText = [simpleFacts.trim(), simpleDraftRole === "NOTE" ? simpleDraft.trim() : ""]
+    .filter(Boolean)
+    .join("\n\n");
+
   function continueFlow() {
     // The simple box saves exactly what the detailed screen saves. Everything
     // downstream — checkout, analysis, the server — keeps receiving the same
     // shape, so there is one pipeline to keep correct rather than two.
     const effective = inputMode === "SIMPLE"
-      ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue, simpleTargets)
+      ? mapSimpleIntake(simpleLetterDraft, simpleFiles, simpleTargetLengthValue, simpleTargets)
       : {
           questions,
           posting,
@@ -236,7 +250,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     });
     sessionStorage.setItem("mooa:guest-job-posting:v1", effective.posting);
     sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: inputMode === "SIMPLE" ? "" : postingUrl, text: effective.posting, filenames: effective.postingFilenames }));
-    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes: inputMode === "SIMPLE" ? simpleFacts : freeformNotes, freeformAttachments: effective.freeformAttachments, experiences: inputMode === "SIMPLE" ? [] : experiences, profileEntries: inputMode === "SIMPLE" ? [] : profileEntries, materialAttachments: effective.materialAttachments }));
+    sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes: inputMode === "SIMPLE" ? simpleNoteText : freeformNotes, freeformAttachments: effective.freeformAttachments, experiences: inputMode === "SIMPLE" ? [] : experiences, profileEntries: inputMode === "SIMPLE" ? [] : profileEntries, materialAttachments: effective.materialAttachments }));
     router.push("/analysis/prepare");
   }
 
@@ -270,7 +284,10 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   // Below 100 the saved question schema rejects it, and a typo of "50" should
   // not fail on save two screens later.
   const simpleTargetLengthValue = Number(simpleTargetLength) >= 100 ? Number(simpleTargetLength) : null;
-  const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleDraft, simpleFiles, simpleTargetLengthValue, simpleTargets) : null;
+    // 참고 정보로 고르면 이 글은 자소서 자리에서 빠지고 첨부 파일이 첨삭
+  // 대상이 됩니다. 글 자체는 아래에서 사실 자료로 함께 넘어갑니다.
+  const simpleLetterDraft = simpleDraftRole === "NOTE" && simpleFiles.some((file) => file.kind === "COVER_LETTER") ? "" : simpleDraft;
+  const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleLetterDraft, simpleFiles, simpleTargetLengthValue, simpleTargets) : null;
   const simpleLengthPlans = simpleMapping ? planQuestionLengths(simpleMapping) : [];
   const simpleGaps = simpleMapping ? describeSimpleIntakeGaps(simpleMapping) : [];
   // 고르지 못한 자료가 남아 있으면 진행하지 않습니다.
@@ -349,7 +366,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         </div>
 
         {inputMode === "SIMPLE" && <>
-          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} lengthPlans={simpleLengthPlans} onTargetOverride={(index, value) => setSimpleTargets((current) => {
+          <SimpleIntake draft={simpleDraft} onDraftChange={setSimpleDraft} targetLength={simpleTargetLength} onTargetLengthChange={setSimpleTargetLength} resolvedLengths={simpleMapping ? describeResolvedLengths(simpleMapping) : ""} lengthPlans={simpleLengthPlans} draftRole={simpleDraftRole} onDraftRoleChange={setSimpleDraftRole} onTargetOverride={(index, value) => setSimpleTargets((current) => {
             const next = { ...current };
             if (value === null) delete next[index]; else next[index] = value;
             return next;

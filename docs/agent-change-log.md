@@ -6534,3 +6534,16 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 파일: `src/app/privacy/page.tsx`(4·5·8번 및 상단 주석), `src/components/research-consent-gate.test.ts`(문구 검사 → 세 절 구조 검사로 갱신. 업체 7곳이 모두 문서에 남아 있는지 확인하는 기존 검사는 그대로).
 - Validation: `tsc --noEmit` 통과, `eslint` 오류 0, `vitest run` 1,005건 통과, `next build` 통과.
 - 롤백: 이 커밋과 `322ff6f`를 되돌리면 원래 표로 복구됩니다.
+
+### 2026-09-06 KST — 자소서 파일과 본문 칸이 함께 있을 때 무엇을 첨삭할지 묻는다
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청.
+- Status: active. 마이그레이션 없음.
+- Change and reason:
+  - `mapSimpleIntake`는 "친 글이 이긴다"로 정해 두었습니다 — 새 원고와 예전 사본이 함께 있을 때는 맞는 규칙입니다. 그런데 이 칸에 참고사항 한 줄을 적는 순간에도 같은 일이 벌어져 첨부한 자기소개서가 통째로 빠집니다. 앞 커밋에서는 그 사실을 안내로만 알렸는데, 이제 **고르게** 합니다.
+  - **기계가 알아맞히게 하지 않았습니다.** 틀리면 엉뚱한 자소서를 첨삭하고 돈을 받습니다. "300자 미만이면 메모" 같은 규칙은 짧게 쓴 자소서 문항에서 반드시 틀립니다. 대신 파일 이름을 눈앞에 두고 한 번 고르게 합니다 — 그 자리에서는 헷갈릴 것이 없고, 추상적인 규칙을 미리 정할 필요도 없습니다.
+  - 기본값은 `LETTER`(지금까지의 동작)라, 아무것도 누르지 않은 사람에게는 달라지는 것이 없습니다.
+  - `NOTE`를 고르면 그 글은 자소서 자리에서 빠지고 **사실 자료로 함께 넘어갑니다**. 빼기만 하고 버리면 손님은 분명히 적었는데 아무 데도 쓰이지 않습니다.
+- Files: `src/components/simple-intake.tsx`, `simple-intake.module.css`, `simple-intake.test.tsx`, `src/components/pro-input-page.tsx`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed, `npx eslint src` 오류 0건. 선택 UI는 자소서 파일 업로드가 있어야 나타나 브라우저로는 확인하지 못했습니다 — 배포 후 확인이 필요합니다.
+- Rollback: 이 커밋 revert하면 안내 문구만 있던 상태로 돌아갑니다.
