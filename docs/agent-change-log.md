@@ -6677,3 +6677,23 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/resume-maker.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx eslint src` 오류 0건(경고 2건은 기존 파일). 브라우저 확인은 사용자 담당입니다 — 1280px과 900px 사이에서 단추가 한 줄에 남는지 봐 주세요.
 - Rollback: 이 커밋 revert.
+
+### 2026-09-06 KST — 이력서 메이커 아래에 유료 "AI로 이력서 제작"을 연다
+
+- Agent/session: Claude (desktop), 사용자 요청("이력서 메이커 페이지 하단에 유료버전 도입 ㄱ / 입력칸에 첨부·드래그앤드롭·서술형 입력 다 되고 자동으로 경력·학력·자격 채워주는 느낌 / 상단 헤더 버튼 누르면 하단 유료 칸으로 이동"). 과금 방식은 사용자가 **Polar 단품 상품 신설**로, 결과 보관은 **서버 저장 없이 메이커 칸에 채우기**로 결정.
+- Status: active. **마이그레이션 1건 신규**(`20260906020000_resume_builds.sql`) — 아직 적용 전. 자소서 첨삭의 분석·프롬프트·결제 코드는 **한 줄도 고치지 않았습니다.**
+- Change and reason:
+  - **파는 것이 글솜씨가 아니라 옮겨 적는 30분입니다.** 무료 메이커는 칸을 나눠 줄 뿐이고, 경력증명서를 열어 놓고 회사·기간·업무를 옮기는 일은 여전히 본인 몫이었습니다. 유료 칸은 그 일을 대신합니다 — 파일(경력증명서·재직증명서·예전 이력서·경력기술서, PDF·DOCX·TXT·ZIP)과 **줄글**("2021년 3월부터 2년 반 OO에서 품질관리")을 **함께** 받습니다. 서류가 아예 없는 사람이 더 흔합니다(아르바이트·단기 근무).
+  - **값은 1건 3,900원 정액.** 자소서는 글자 수로 값을 매기지만(`createCheckoutQuote`) 이력서에는 글자 수 축이 없고, 파는 것이 판단이 아니라 정리라 QUICK(5,900)보다 아래에 둡니다.
+  - **지어내지 않습니다.** 프롬프트의 첫 줄이 그것이고(`resume-build-gateway.ts`), 자료로 확인되지 않는 칸은 비운 채 `notes`로 무엇이 없는지 말합니다. 자소서의 "하고 싶다"를 경력으로 옮기지 말라는 규칙을 따로 넣었습니다 — 이 기능이 가장 크게 틀리는 방식입니다. 이력서에서의 창작은 도움이 아니라 서류 위조입니다.
+  - **결과는 사람이 적은 것을 이기지 않습니다**(`applyResumeBuildOutput`). 인적사항은 빈 칸만 채우고(본인이 적은 전화번호를 자료 속 옛 번호로 덮으면 연락이 오지 않습니다), 목록은 사람이 적어 둔 줄을 그대로 두고 뒤에 붙이되 같은 회사·기간이면 건너뜁니다. 사진은 손대지 않습니다.
+  - **결제 코드를 건드리지 않는 길을 골랐습니다.** 웹훅(`polar-webhook.ts`)은 `applicationCaseId`를 요구하고 이용권을 "지원 건 하나"에 붙입니다 — 이력서 제작에는 지원 건도 이용권도 없습니다. 그래서 표 하나(`resume_builds`)를 따로 두고, **실행하는 순간 Polar에 직접 물어봅니다**(`checkouts.get` → status·상품·외부고객·건 id 넷 다 확인). 한 번 산 것을 두 번 쓰는 것은 조건부 update 한 번으로 막습니다(`CHECKOUT → RUNNING`). 웹훅이 늦거나 유실돼도 결제한 사람이 기다리지 않는 장점도 있습니다.
+  - **모델이 실패하면 결제를 돌려줍니다.** 세 번까지 되돌리고(`attempt_count`), 그 뒤에는 FAILED로 두고 화면이 환불 문의를 안내합니다. 무한히 되돌리면 한 번 결제로 모델을 계속 부를 수 있습니다.
+  - **이력서 내용은 서버에 저장하지 않습니다.** 무료 메이커가 "서버로 보내지 않습니다"라고 약속한 값(이름·생년월일·연락처)이라, 자료는 실행 요청에만 실려 갔다가 응답과 함께 사라집니다. 표에 남는 것은 "누가 언제 한 건을 사고 썼는가"뿐입니다.
+  - 상단바에 **"AI로 제작"** 단추를 더해 하단 유료 칸(`#resume-ai-build`)으로 내려보냅니다. 아래에만 두면 스크롤하지 않는 사람은 있는 줄도 모릅니다.
+  - 결제 왕복 동안 적어 둔 자료는 이 브라우저에 남겨 두었다가(`mooa.resume-build.sources.v1`) 돌아오면 **자동으로 실행**합니다. 단추를 한 번 더 누르게 하면 결제하고 나간 사람의 절반은 그 단추를 못 찾습니다.
+- Files: `src/domain/resume-build.ts`(신규), `src/domain/resume-build.test.ts`(신규), `src/server/ai/resume/resume-build-gateway.ts`(신규), `src/server/billing/resume-build-checkout.ts`(신규), `src/server/resume/resume-build-repository.ts`(신규), `src/app/api/resume-builds/route.ts`(신규), `src/app/api/resume-builds/[buildId]/execute/route.ts`(신규), `src/components/resume-build-panel.tsx`·`.module.css`(신규), `supabase/migrations/20260906020000_resume_builds.sql`(신규), `src/components/resume-maker.tsx`·`.module.css`(단추와 수신부 추가), `src/app/resume/page.tsx`(칸 배치), `.env.example`.
+- **배포 순서 주의:** ① `npx supabase db push`로 `resume_builds`를 만들고 ② Polar 대시보드에 "AI 이력서 제작" 상품을 만든 뒤 `POLAR_RESUME_PRODUCT_ID`를 환경변수에 넣어야 결제가 열립니다. 둘 다 없어도 **무료 메이커와 자소서 첨삭은 그대로 돕니다** — 유료 칸의 결제 단추만 "결제 설정이 아직 준비되지 않았습니다"로 실패합니다(아무것도 청구되지 않습니다).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1020 passed(132 파일, 신규 11건), `npx eslint src` 오류 0건, `npx next build` 통과. **실제 결제·모델 호출은 아직 한 번도 돌려 보지 못했습니다** — 상품 id와 마이그레이션이 사용자 환경에 들어간 뒤에야 확인할 수 있습니다. 브라우저 확인도 아직입니다.
+- Rollback: 이 커밋 revert. 표는 남지만 아무도 쓰지 않습니다(`drop table public.resume_builds;`로 지울 수 있습니다). 되돌려도 무료 메이커와 자소서 첨삭에는 영향이 없습니다 — 그쪽 파일은 단추 한 개와 결과 수신부 외에 고친 것이 없습니다.
+- 다음: 실제 결제 1건으로 끝까지 돌려 보기(sandbox), 스캔본(글자 없는 PDF) 안내 문구 확인, 결과 품질 몇 건 보고 모델 등급 정하기.

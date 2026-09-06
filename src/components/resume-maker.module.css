@@ -23,6 +23,12 @@
    없는지 알 방법이 없습니다(제목 속성에 이유를 적어 뒀습니다). */
 .ghostButton:disabled { opacity: .45; cursor: not-allowed; }
 .ghostButton:disabled:hover { border-color: #dbe4de; color: #55645c; }
+/* 아래 유료 칸으로 내려보내는 단추. 인쇄(초록 채움)와 보조 단추(흰 바탕)
+   사이의 한 단계입니다 — 유료 기능이라 눈에 띄어야 하지만, 이 화면에서 가장
+   많이 눌리는 인쇄보다 앞서면 안 됩니다. */
+.aiButton { display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 8px 11px; border: 1px solid #b6ddc6; border-radius: 8px; background: #e9f7ee; color: #146045; font-size: 11.5px; font-weight: 800; cursor: pointer; text-decoration: none; }
+.aiButton:hover { border-color: #176b4a; background: #ddf1e5; }
+.aiButton svg { width: 13px; flex: none; }
 .printButton { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 9px 13px; border: 0; border-radius: 8px; background: #176b4a; color: #fff; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 7px 15px rgb(23 107 74 / .18); }
 .printButton:hover { background: #115738; }
 .ghostButton svg, .printButton svg { width: 13px; flex: none; }

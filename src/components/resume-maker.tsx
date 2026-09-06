@@ -14,6 +14,7 @@ import {
   type ResumeCareer, type ResumeCertificate, type ResumeDraft, type ResumeEducation, type ResumeExtra,
 } from "@/domain/resume-draft";
 import { GUEST_CANDIDATE_MATERIALS_KEY, mergeResumeIntoMaterials } from "@/domain/resume-handoff";
+import { applyResumeBuildOutput, type ResumeBuildOutput } from "@/domain/resume-build";
 import styles from "./resume-maker.module.css";
 
 /**
@@ -92,6 +93,26 @@ export function ResumeMaker() {
     }
   }, [draft]);
 
+  /**
+   * 아래 유료 칸(AI 이력서 제작)이 결과를 보내옵니다.
+   *
+   * 그쪽이 이력서 상태를 직접 들고 있지 않은 이유는, 같은 값을 두 곳에서
+   * 고치면 어느 한쪽이 반드시 옛 값을 덮어쓰기 때문입니다. 얹는 규칙은
+   * `applyResumeBuildOutput` 하나에만 있습니다 — 사람이 적은 것을 이기지
+   * 않습니다.
+   */
+  useEffect(() => {
+    const onFilled = (event: Event) => {
+      const output = (event as CustomEvent<ResumeBuildOutput>).detail;
+      if (!output) return;
+      setDraft((current) => applyResumeBuildOutput(current, output));
+      setTab("edit");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("mooa:resume-build-filled", onFilled);
+    return () => window.removeEventListener("mooa:resume-build-filled", onFilled);
+  }, []);
+
   const skills = useMemo(() => splitSkills(draft.skills), [draft.skills]);
   const filledEducations = draft.educations.filter((item) => hasContent([item.school, item.major, item.period, item.note]));
   const filledCareers = draft.careers.filter((item) => hasContent([item.company, item.role, item.period, item.duties]));
@@ -165,6 +186,9 @@ export function ResumeMaker() {
       <span className={styles.spacer} />
       <span className={styles.savedNote}>이 브라우저에 자동 저장됩니다</span>
       <a className={styles.ghostButton} href="#resume-guide"><CircleHelp /><span className={styles.buttonLabel}>소개</span></a>
+      {/* 아래 유료 칸으로 내려보냅니다. 그 칸은 화면 아래에 있어서, 자료를
+          던지면 채워 준다는 것을 스크롤하지 않으면 아무도 모릅니다. */}
+      <a className={styles.aiButton} href="#resume-ai-build"><Sparkles /><span className={styles.buttonLabel}>AI로 제작</span></a>
       {/* 아래쪽 카드와 같은 일을 합니다. 카드는 다 적고 난 자리에 있어서
           스크롤을 끝까지 내리지 않으면 있는 줄도 모릅니다. 조건을 못 채웠을
           때 감추지 않고 비활성으로 두는 이유는 아래 카드와 같습니다. */}

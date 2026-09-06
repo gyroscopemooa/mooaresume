@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ResumeMakerFrame } from "@/components/resume-maker-frame";
+import { ResumeBuildPanel } from "@/components/resume-build-panel";
 import { ResumeGuide } from "./resume-guide";
 
 /**
@@ -32,6 +33,10 @@ export default function ResumePage() {
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
     <ResumeMakerFrame />
+    {/* 무료 도구 바로 아래에 유료 칸을 둡니다. 다 적고 지친 자리가 아니라,
+        빈 칸을 마주한 직후가 "자료 던지면 채워 준다"는 말이 가장 크게 들리는
+        자리입니다. 상단바의 "AI로 제작"이 여기로 내려옵니다. */}
+    <ResumeBuildPanel />
     <ResumeGuide />
   </>;
 }
