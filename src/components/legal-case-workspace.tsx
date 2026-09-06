@@ -7,9 +7,10 @@ import {
 import { ARCHIVE_DOCUMENT_ACCEPT, extractLocalDocuments } from "@/lib/local-document";
 import { checkUploads, describeRejections, formatBytes } from "@/domain/upload-limits";
 import {
-  countLegalCaseSourceCharacters, findLegalDocumentDefinition, hasEnoughLegalCaseSource, orderLegalDocuments,
-  LEGAL_CASE_MAX_MATERIALS, LEGAL_CASE_MIN_SOURCE_CHARS, LEGAL_CASE_TYPE_LABEL, LEGAL_DISCLAIMER,
-  LEGAL_DOCUMENT_BUILD_PRICE_KRW, LEGAL_DOCUMENT_STAGE_LABEL, LEGAL_DOCUMENT_STAGE_ORDER,
+  countLegalCaseSourceCharacters, findLegalDocumentDefinition, hasEnoughLegalCaseSource, measureLegalCaseCoverage, orderLegalDocuments,
+  LEGAL_CASE_MAX_MATERIALS, LEGAL_CASE_MAX_MATERIAL_CHARS, LEGAL_CASE_MIN_SOURCE_CHARS, LEGAL_CASE_TYPE_LABEL,
+  LEGAL_CHARS_PER_PAGE, LEGAL_DISCLAIMER,
+  LEGAL_DOCUMENT_STAGE_LABEL, LEGAL_DOCUMENT_STAGE_ORDER, legalDocumentPriceKrw,
   LEGAL_MATERIAL_KIND_LABEL, LEGAL_MATERIAL_KIND_ORDER, LEGAL_PARTY_ROLE_LABEL,
   legalCaseTypeSchema, legalPartyRoleSchema,
   type LegalCase, type LegalCaseDocument, type LegalCaseMaterial, type LegalDocumentOutput, type LegalDocumentType,
@@ -136,10 +137,12 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
   const [dragging, setDragging] = useState(false);
   const [message, setMessage] = useState("");
   const [uploadKind, setUploadKind] = useState<LegalMaterialKind>("CONTRACT");
+  const [truncated, setTruncated] = useState<string[]>([]);
   const restored = useRef(false);
 
   const characters = countLegalCaseSourceCharacters({ summary: legalCase.summary, materials });
   const enough = hasEnoughLegalCaseSource({ summary: legalCase.summary, materials });
+  const coverage = measureLegalCaseCoverage({ summary: legalCase.summary, materials });
   const activeDocument = documents.find((document) => document.id === activeDocumentId) ?? null;
   const ordered = orderLegalDocuments(legalCase.myRole);
 
@@ -164,6 +167,10 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
         setMessage("결과를 읽지 못했습니다. 결제는 그대로 남아 있으니 다시 시도해 주세요.");
         return;
       }
+      // 다 읽지 못한 자료가 있으면 결과와 함께 반드시 말합니다. 조용히 넘기면
+      // 값을 치른 사람이 자기 자료의 일부만 반영된 문서를 전부인 줄 압니다.
+      const cut = (body as { truncated?: unknown }).truncated;
+      setTruncated(Array.isArray(cut) ? (cut as string[]) : []);
       setDocuments((current) => [created, ...current]);
       setActiveDocumentId(created.id);
       setPhase("idle");
@@ -219,6 +226,8 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
 
     setReading(true);
     const payload: Array<{ kind: LegalMaterialKind; filename: string; text: string; sizeBytes: number }> = [];
+    /** 상한을 넘어 앞부분만 저장한 파일. 끝나고 한 번에 말합니다. */
+    const oversized: string[] = [];
     for (const file of accepted) {
       try {
         const batch = await extractLocalDocuments(file);
@@ -227,13 +236,25 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
             setMessage(`${document.filename}은(는) 글자가 없는 스캔본이라 읽지 못했습니다. 그 내용을 사건 경위에 직접 적어 주세요.`);
             continue;
           }
-          payload.push({ kind: uploadKind, filename: document.filename, text: document.text, sizeBytes: document.sizeBytes });
+          // 한 파일이 저장 상한을 넘으면 **앞부분만 잘라 저장하고 그렇다고
+          // 말합니다.** 그대로 보내면 서버가 형식 오류(400)로 막는데, 그 문구는
+          // 파일이 크다는 뜻으로 읽히지 않습니다 — 1심 기록 전체처럼 큰 자료를
+          // 올린 사람이 "형식이 올바르지 않습니다"를 보면 파일을 고치려 듭니다.
+          const full = document.text;
+          const kept = full.slice(0, LEGAL_CASE_MAX_MATERIAL_CHARS);
+          if (kept.length < full.length) {
+            oversized.push(`${document.filename}(약 ${Math.ceil(full.length / LEGAL_CHARS_PER_PAGE).toLocaleString()}쪽 중 ${Math.ceil(kept.length / LEGAL_CHARS_PER_PAGE).toLocaleString()}쪽)`);
+          }
+          payload.push({ kind: uploadKind, filename: document.filename, text: kept, sizeBytes: document.sizeBytes });
         }
       } catch (error) {
         setMessage(error instanceof Error ? error.message : `${file.name}을(를) 읽지 못했습니다.`);
       }
     }
     setReading(false);
+    if (oversized.length) {
+      setMessage(`큰 파일은 앞부분만 저장했습니다 — ${oversized.join(", ")}. 지금은 사건당 읽는 양에 상한이 있습니다. 쟁점과 관련이 큰 부분만 따로 잘라 올리시면 그 부분이 온전히 반영됩니다.`);
+    }
     if (!payload.length) return;
 
     try {
@@ -320,13 +341,33 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
 
   const busy = phase !== "idle";
   const selected = findLegalDocumentDefinition(selectedType);
+  const selectedPrice = legalDocumentPriceKrw(selectedType);
+
+  /**
+   * 사건 현황.
+   *
+   * 만든 적 있는 사건 분석에서 쟁점·증거 수를 읽어 옵니다. 없는 숫자를 지어내지
+   * 않습니다 — 분석 전에는 자료 쪽수와 문서 수만 보입니다. 화면이 "쟁점 8개"라고
+   * 말하려면 그 8개를 눌러서 볼 수 있어야 합니다.
+   */
+  const analysis = documents.find((document) => document.docType === "CASE_ANALYSIS");
+  const stats = [
+    { label: "자료", value: `${coverage.approxTotalPages.toLocaleString()}쪽` },
+    { label: "자료 개수", value: `${materials.length}개` },
+    ...(analysis ? [
+      { label: "주요쟁점", value: `${analysis.output.issues.length}개` },
+      { label: "증거", value: `${analysis.output.evidenceItems.length}개` },
+    ] : []),
+    { label: "작성 문서", value: `${documents.length}건` },
+  ];
 
   return <section className={styles.page} aria-labelledby="legal-case-title">
     <div className={styles.head}>
       <h1 id="legal-case-title">{legalCase.title}</h1>
       <p>자료를 한 번 넣어 두면 이 사건에서 만드는 모든 문서가 같은 자료를 씁니다. 문서를 만들 때마다 다시 올리지 않으셔도 됩니다.</p>
-      <div className={styles.priceRow}>
-        <span className={styles.priceTag}><b>{LEGAL_DOCUMENT_BUILD_PRICE_KRW.toLocaleString()}원</b><small>&nbsp;· 문서 1건 · 부가세 포함</small></span>
+      {/* 사건 현황. 실제로 가진 값만 셉니다 — 분석 전에는 쟁점·증거 칸이 아예 없습니다. */}
+      <div className={styles.stats}>
+        {stats.map((stat) => <span key={stat.label}><b>{stat.value}</b><small>{stat.label}</small></span>)}
       </div>
     </div>
 
@@ -457,10 +498,23 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
           <ul><li>{selected.whenToUse}</li></ul>
         </div>
 
+        {/* 결제 앞에 서는 경고입니다.
+            자료가 상한을 넘으면 뒤쪽은 읽지 못합니다. 값을 치른 뒤에 알게 되면
+            그건 기능의 한계가 아니라 사고입니다. 의료기록처럼 1,000쪽이 넘는
+            자료가 실제로 들어오는 자리라, 결제 단추 바로 위에 둡니다. */}
+        {!coverage.coversEverything && <p className={styles.message}>
+          <AlertCircle />
+          올리신 자료가 약 {coverage.approxTotalPages.toLocaleString()}쪽 분량인데, 지금은 <b>앞부분 약 {coverage.approxReadablePages.toLocaleString()}쪽까지만</b> 읽습니다.
+          나머지 {coverage.droppedChars.toLocaleString()}자는 이번 문서에 반영되지 않습니다.
+          쟁점과 관련이 큰 자료만 남기고 나머지는 빼 주시는 편이 결과가 낫습니다.
+        </p>}
+
         <footer className={styles.footer}>
           <div className={styles.summary}>
             <b>{selected.label}</b>
-            <small>{enough ? "지금 자료로 만들 수 있습니다." : `사건 경위나 자료가 조금 더 필요합니다(최소 ${LEGAL_CASE_MIN_SOURCE_CHARS}자).`}</small>
+            <small>{enough
+              ? coverage.coversEverything ? "지금 자료로 만들 수 있습니다." : "자료 일부만 반영됩니다. 위 안내를 확인해 주세요."
+              : `사건 경위나 자료가 조금 더 필요합니다(최소 ${LEGAL_CASE_MIN_SOURCE_CHARS}자).`}</small>
           </div>
           <div className={styles.actions}>
             <button
@@ -470,10 +524,10 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
               title={enough ? undefined : "사건 경위를 조금 더 적어 주세요."}
               onClick={() => void startCheckout()}
             >
-              {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "문서를 만드는 중" : "결제 페이지로 이동 중"}</> : <>{LEGAL_DOCUMENT_BUILD_PRICE_KRW.toLocaleString()}원 · 이 문서 만들기<ArrowRight /></>}
+              {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "문서를 만드는 중" : "결제 페이지로 이동 중"}</> : <>{selectedPrice.toLocaleString()}원 · 이 문서 만들기<ArrowRight /></>}
             </button>
           </div>
-          <p className={styles.terms}>문서 1건 정액 {LEGAL_DOCUMENT_BUILD_PRICE_KRW.toLocaleString()}원(부가세 포함). 사건을 만들고 자료를 올리는 것은 무료입니다. 결과가 나오지 않으면 결제한 건이 그대로 남아 다시 시도할 수 있고, 그래도 실패하면 환불해 드립니다.</p>
+          <p className={styles.terms}>{selected.label} 1건 {selectedPrice.toLocaleString()}원(부가세 포함). 사건을 만들고 자료를 올리는 것은 무료입니다. 결과가 나오지 않으면 결제한 건이 그대로 남아 다시 시도할 수 있고, 그래도 실패하면 환불해 드립니다.</p>
         </footer>
 
         {documents.length > 0 && <>
@@ -502,6 +556,10 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
             <p className={styles.sectionLabel}>{activeDocument.title}</p>
             <span className={styles.doneBadge}><CheckCircle2 />내 결과</span>
           </div>
+          {truncated.length > 0 && <p className={styles.message}>
+            <AlertCircle />
+            자료가 많아 다 읽지 못한 것이 있습니다: {truncated.join(", ")}. 이 문서에는 그 내용이 반영되지 않았습니다.
+          </p>}
           <DocumentPreview output={activeDocument.output} />
           <div className={styles.downloadRow}>
             <button type="button" className={styles.download} onClick={downloadDocx}><Download />DOCX로 저장</button>

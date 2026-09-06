@@ -27,8 +27,23 @@ import { z } from "zod";
  * 영역이라, 결과물마다 그 문장이 함께 나가야 합니다(`LEGAL_DISCLAIMER`).
  */
 
-/** 값은 아직 정해지지 않았습니다. 미정값은 `builder-pricing.ts` 한 곳에 모아 둡니다. */
-export { LEGAL_DOCUMENT_BUILD_PRICE_KRW } from "./builder-pricing";
+import { LEGAL_CASE_ANALYSIS_PRICE_KRW, LEGAL_DOCUMENT_BUILD_PRICE_KRW } from "./builder-pricing";
+
+export { LEGAL_CASE_ANALYSIS_PRICE_KRW, LEGAL_DOCUMENT_BUILD_PRICE_KRW };
+
+/**
+ * 이 문서의 값.
+ *
+ * 사건자료 분석만 다른 상품입니다 — 자료 전체를 읽어 사건의 뼈대를 세우는
+ * 일이고, 나머지 문서들이 그 위에 섭니다. 서면 작성은 종류와 무관하게 한 값입니다.
+ *
+ * 값을 여기서 정하는 이유는 **결제 때 정한 값을 나중에 화면이 못 바꾸게**
+ * 하기 위해서입니다. 결제 건에 적힌 문서 종류로 이 함수를 다시 부르므로,
+ * 싼 문서를 사서 비싼 문서를 만드는 길이 없습니다.
+ */
+export function legalDocumentPriceKrw(docType: LegalDocumentType): number {
+  return docType === "CASE_ANALYSIS" ? LEGAL_CASE_ANALYSIS_PRICE_KRW : LEGAL_DOCUMENT_BUILD_PRICE_KRW;
+}
 
 export const LEGAL_DISCLAIMER = "이 문서는 제출용 초안입니다. 법률 자문이 아니며, AI는 승소를 장담하지 않습니다. 제출 여부와 그 결과에 대한 책임은 전적으로 이용자 본인에게 있습니다. 제출 전에 변호사 등 전문가의 검토를 받으시고, 제소기간·항소기간처럼 놓치면 되돌릴 수 없는 기한은 반드시 직접 확인해 주세요.";
 
@@ -118,13 +133,19 @@ export const legalDocumentTypeSchema = z.enum([
 ]);
 export type LegalDocumentType = z.infer<typeof legalDocumentTypeSchema>;
 
-export type LegalDocumentStage = "ANALYZE" | "START" | "FIGHT" | "APPEAL";
+/**
+ * 소송이 실제로 흘러가는 순서입니다.
+ *
+ * 문서 이름으로 묶지 않고 **사람이 서 있는 자리**로 묶습니다. 소장을 받은
+ * 사람은 "답변서"라는 낱말을 모를 수 있어도 자기가 1심에 있다는 것은 압니다.
+ */
+export type LegalDocumentStage = "UNDERSTAND" | "PRE_SUIT" | "FIRST_TRIAL" | "POST_JUDGMENT";
 
 export const LEGAL_DOCUMENT_STAGE_LABEL: Record<LegalDocumentStage, string> = {
-  ANALYZE: "1. 사건 정리",
-  START: "2. 소송 전 · 소송 시작",
-  FIGHT: "3. 공방",
-  APPEAL: "4. 판결 뒤",
+  UNDERSTAND: "사건부터 이해하기",
+  PRE_SUIT: "소송 전",
+  FIRST_TRIAL: "1심",
+  POST_JUDGMENT: "판결 후",
 };
 
 export type LegalDocumentDefinition = {
@@ -146,7 +167,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "CASE_ANALYSIS",
     label: "사건 분석 · 주요쟁점 정리",
     summary: "사실관계와 쟁점, 유리한 증거와 불리한 부분을 먼저 정리합니다.",
-    stage: "ANALYZE",
+    stage: "UNDERSTAND",
     whenToUse: "무엇부터 해야 할지 모를 때. 다른 문서를 만들기 전에 이것부터 하시길 권합니다.",
     wants: ["CASE_NARRATIVE", "OPPONENT_CLAIM", "CONTRACT", "MESSAGE"],
     guide: [
@@ -161,7 +182,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "DEMAND_LETTER",
     label: "내용증명",
     summary: "소송 전에 무엇을 언제까지 요구하는지 빠짐없이 적습니다.",
-    stage: "START",
+    stage: "PRE_SUIT",
     whenToUse: "아직 소송 전이고, 돈을 받아야 하거나 계약 해지·환불·손해배상을 요구할 때.",
     wants: ["CASE_NARRATIVE", "CONTRACT", "MESSAGE"],
     guide: [
@@ -175,7 +196,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "COMPLAINT",
     label: "소장",
     summary: "청구취지와 청구원인을 갖춘 소장 초안을 만듭니다.",
-    stage: "START",
+    stage: "FIRST_TRIAL",
     whenToUse: "내가 소송을 제기하려고 할 때. (소송장이 아니라 '소장'이 맞는 이름입니다.)",
     wants: ["CASE_NARRATIVE", "CONTRACT", "MESSAGE"],
     guide: [
@@ -189,7 +210,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "ANSWER",
     label: "답변서",
     summary: "소장을 받았을 때 청구원인 각 사실을 인정·부인으로 정리합니다.",
-    stage: "START",
+    stage: "FIRST_TRIAL",
     whenToUse: "소장을 받았을 때. 다투려면 정해진 기간 안에 답변서를 내야 합니다.",
     wants: ["OPPONENT_CLAIM", "CASE_NARRATIVE", "CONTRACT"],
     guide: [
@@ -203,7 +224,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "BRIEF",
     label: "준비서면",
     summary: "내 주장과 증거를 정리해 재판부에 내는 서면입니다.",
-    stage: "FIGHT",
+    stage: "FIRST_TRIAL",
     whenToUse: "재판이 진행되는 동안 내 주장을 보태거나 정리해 낼 때.",
     wants: ["CASE_NARRATIVE", "EXISTING_BRIEF", "CONTRACT", "MESSAGE"],
     guide: [
@@ -216,7 +237,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "EVIDENCE_INDEX",
     label: "증거 · 입증취지 정리",
     summary: "올린 자료를 갑 제1호증 식으로 번호와 입증취지를 붙여 정리합니다.",
-    stage: "FIGHT",
+    stage: "FIRST_TRIAL",
     whenToUse: "증거를 제출할 때. 무엇을 무엇 때문에 내는지 정리해야 할 때.",
     wants: ["CONTRACT", "MESSAGE", "RECORDING", "OTHER"],
     guide: [
@@ -230,7 +251,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "REBUTTAL",
     label: "상대방 서면 반박",
     summary: "상대가 낸 서면을 읽고 항목별로 반박 논리를 만듭니다.",
-    stage: "FIGHT",
+    stage: "FIRST_TRIAL",
     whenToUse: "상대방이 준비서면이나 답변서를 냈을 때.",
     wants: ["OPPONENT_CLAIM", "EXISTING_BRIEF", "CONTRACT", "MESSAGE"],
     guide: [
@@ -244,7 +265,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "JUDGMENT_ANALYSIS",
     label: "판결문 분석",
     summary: "이긴 부분·진 부분과 법원이 인정한 사실을 갈라 봅니다.",
-    stage: "APPEAL",
+    stage: "POST_JUDGMENT",
     whenToUse: "판결문을 받았을 때. 항소할지 정하기 전에.",
     wants: ["JUDGMENT", "EXISTING_BRIEF"],
     guide: [
@@ -259,7 +280,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "APPEAL_NOTICE",
     label: "항소장",
     summary: "항소한다는 의사와 범위를 밝히는 짧은 서면입니다.",
-    stage: "APPEAL",
+    stage: "POST_JUDGMENT",
     whenToUse: "판결에 불복해 항소할 때. 기간이 짧으니 먼저 내는 문서입니다.",
     wants: ["JUDGMENT"],
     guide: [
@@ -272,7 +293,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     type: "APPEAL_REASONS",
     label: "항소이유서",
     summary: "1심 판단 중 무엇을 왜 다투는지 유형별로 정리합니다.",
-    stage: "APPEAL",
+    stage: "POST_JUDGMENT",
     whenToUse: "항소장을 낸 뒤. 실제로 다투는 내용은 이 문서에 담깁니다.",
     wants: ["JUDGMENT", "EXISTING_BRIEF", "CONTRACT", "MESSAGE"],
     guide: [
@@ -293,7 +314,7 @@ export function findLegalDocumentDefinition(type: LegalDocumentType): LegalDocum
   return found;
 }
 
-export const LEGAL_DOCUMENT_STAGE_ORDER: readonly LegalDocumentStage[] = ["ANALYZE", "START", "FIGHT", "APPEAL"];
+export const LEGAL_DOCUMENT_STAGE_ORDER: readonly LegalDocumentStage[] = ["UNDERSTAND", "PRE_SUIT", "FIRST_TRIAL", "POST_JUDGMENT"];
 
 /**
  * 내 지위에 맞는 문서를 먼저 보여 줍니다.
@@ -508,4 +529,42 @@ export function hasEnoughLegalCaseSource(input: {
   materials: readonly Pick<LegalCaseMaterial, "text">[];
 }): boolean {
   return countLegalCaseSourceCharacters(input) >= LEGAL_CASE_MIN_SOURCE_CHARS;
+}
+
+/**
+ * 올린 자료 중 실제로 읽히는 양.
+ *
+ * 상한을 넘는 자료는 뒤에서부터 잘립니다. 그 사실을 **결제 전에** 말해야
+ * 합니다 — 의료기록처럼 1,000쪽이 넘는 자료를 올린 사람이 값을 치르고 나서
+ * "앞부분만 읽었습니다"를 보게 되면, 그건 기능의 한계가 아니라 사고입니다.
+ *
+ * 대략 한 쪽을 1,500자로 잡아 쪽수도 함께 돌려줍니다. 사람은 글자 수보다
+ * 쪽수로 자기 자료를 셉니다.
+ */
+export const LEGAL_CHARS_PER_PAGE = 1_500;
+
+export type LegalCaseCoverage = {
+  totalChars: number;
+  readableChars: number;
+  /** 상한을 넘어 읽지 못하는 글자 수. 0이면 전부 읽습니다. */
+  droppedChars: number;
+  coversEverything: boolean;
+  approxTotalPages: number;
+  approxReadablePages: number;
+};
+
+export function measureLegalCaseCoverage(input: {
+  summary: string;
+  materials: readonly Pick<LegalCaseMaterial, "text">[];
+}): LegalCaseCoverage {
+  const totalChars = countLegalCaseSourceCharacters(input);
+  const readableChars = Math.min(totalChars, LEGAL_CASE_MAX_PROMPT_CHARS);
+  return {
+    totalChars,
+    readableChars,
+    droppedChars: Math.max(0, totalChars - LEGAL_CASE_MAX_PROMPT_CHARS),
+    coversEverything: totalChars <= LEGAL_CASE_MAX_PROMPT_CHARS,
+    approxTotalPages: Math.ceil(totalChars / LEGAL_CHARS_PER_PAGE),
+    approxReadablePages: Math.ceil(readableChars / LEGAL_CHARS_PER_PAGE),
+  };
 }

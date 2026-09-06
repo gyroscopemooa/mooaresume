@@ -5,6 +5,7 @@ import {
   findLegalDocumentDefinition,
   hasEnoughLegalCaseSource,
   legalDocumentDefinitions,
+  measureLegalCaseCoverage,
   normalizeLegalDocumentOutput,
   orderLegalDocuments,
   orderMaterialsForDocument,
@@ -109,6 +110,35 @@ describe("자료 양", () => {
 
   it("자료가 너무 적으면 막는다", () => {
     expect(hasEnoughLegalCaseSource({ summary: "짧습니다", materials: [] })).toBe(false);
+  });
+});
+
+describe("읽히는 양", () => {
+  it("상한 안이면 전부 읽는다고 말한다", () => {
+    const coverage = measureLegalCaseCoverage({ summary: "가".repeat(1_000), materials: [] });
+    expect(coverage.coversEverything).toBe(true);
+    expect(coverage.droppedChars).toBe(0);
+  });
+
+  it("상한을 넘으면 얼마가 빠지는지 센다 — 결제 전에 말해야 하는 값이다", () => {
+    const coverage = measureLegalCaseCoverage({
+      summary: "",
+      materials: [material({ text: "가".repeat(LEGAL_CASE_MAX_PROMPT_CHARS + 40_000) })],
+    });
+    expect(coverage.coversEverything).toBe(false);
+    expect(coverage.droppedChars).toBe(40_000);
+    expect(coverage.readableChars).toBe(LEGAL_CASE_MAX_PROMPT_CHARS);
+  });
+
+  it("의료기록 1,400쪽 규모는 지금 구조가 거의 못 읽는다", () => {
+    // 한 쪽 1,500자로 잡으면 1,400쪽은 210만 자입니다. 상한은 6만 자입니다.
+    const coverage = measureLegalCaseCoverage({
+      summary: "",
+      materials: [material({ text: "가".repeat(1_400 * 1_500) })],
+    });
+    expect(coverage.approxTotalPages).toBe(1_400);
+    expect(coverage.approxReadablePages).toBe(40);
+    expect(coverage.coversEverything).toBe(false);
   });
 });
 
