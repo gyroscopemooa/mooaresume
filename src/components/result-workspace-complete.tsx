@@ -556,11 +556,28 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
           const answer = answers[question.id] ?? question.revisedAnswer;
           const isEditing = editing === question.id;
           const changed = answer !== question.revisedAnswer;
+          // 목표까지 남은 글자 수.
+          //
+          // 프롬프트는 근거 없이 분량을 채우는 것을 금지합니다 — 일반론으로
+          // 채운 100자는 점수를 올리는 것이 아니라 깎습니다. 그래서 짧게
+          // 돌아오는 것은 결함이 아니라 의도인데, 그 사실을 말해 주지 않으면
+          // "AI가 대충 했다"로 읽힙니다. 남은 양과 **무엇을 알려주면 채울 수
+          // 있는지**를 함께 보여 주고, 손님이 그 정보를 주고 다시 받게 합니다.
+          //
+          // 10% 안쪽으로 모자란 것은 말하지 않습니다. 700자에 30자 모자란
+          // 것까지 짚으면 매 문항이 경고처럼 보입니다.
+          const remaining = question.targetLength - countCompactCharacters(answer);
+          const showLengthGap = remaining > question.targetLength * 0.1;
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
+            {showLengthGap && <div className={styles.lengthGap}>
+              <div><b>{remaining.toLocaleString()}자 남음</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
+              <p>{question.lengthNote ?? "원문에서 확인되는 사실만 써서 여기까지 왔습니다. 근거 없이 채우면 오히려 감점이라 늘리지 않았어요."}</p>
+              <span>알려주시면 그 내용으로 채워 다시 첨삭해 드립니다.</span>
+            </div>}
             <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
         })}

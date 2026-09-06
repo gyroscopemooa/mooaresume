@@ -68,3 +68,13 @@
 .annotatedText mark[data-type=typo]{background:#fdeef0;color:#9a3f52;text-decoration:underline wavy;text-decoration-thickness:1px;text-underline-offset:3px}
 .annotationList article[data-type=typo]{border-left-color:#9a3f52}
 .annotationList article[data-type=typo] b{color:#9a3f52}
+
+/* 목표 글자 수까지 남은 양과, 왜 못 채웠는지.
+   짧게 돌아온 것은 결함이 아니라 의도(근거 없이 채우지 않음)라서, 경고가
+   아니라 안내 색으로 둡니다. */
+.lengthGap { display: grid; gap: 5px; margin-top: 10px; border: 1px solid #e6ebf0; border-radius: 12px; padding: 12px 14px; background: #f7f9fb; }
+.lengthGap > div { display: flex; align-items: baseline; gap: 8px; }
+.lengthGap b { color: #2b3f52; font-size: 13px; font-weight: 700; }
+.lengthGap small { color: #8a97a3; font-size: 11px; font-variant-numeric: tabular-nums; }
+.lengthGap p { margin: 0; color: #52616f; font-size: 12.5px; font-weight: 500; line-height: 1.65; word-break: keep-all; }
+.lengthGap span { color: #8a97a3; font-size: 11px; font-weight: 500; }

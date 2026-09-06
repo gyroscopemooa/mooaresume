@@ -56,6 +56,19 @@ export const resultQuestionSchema = z.object({
   // before the answer is read. Optional because every result stored before this
   // existed has to keep parsing.
   subheading: z.string().min(1).optional(),
+  /**
+   * 목표 글자 수를 채우지 못했을 때, 무엇을 알려주면 채울 수 있는지.
+   *
+   * 프롬프트는 근거 없이 분량을 채우는 것을 금지합니다 — "많은 것을
+   * 배웠습니다" 같은 문장으로 채운 100자는 점수를 올리는 것이 아니라
+   * 깎습니다. 그래서 짧게 돌아오는 것은 결함이 아니라 의도인데, 그 사실을
+   * 손님에게 말하지 않으면 "AI가 대충 했다"로 읽힙니다.
+   *
+   * 남은 글자 수는 화면이 직접 셉니다. 이 칸은 **왜 못 채웠는지**만 담습니다.
+   * 없으면(충분히 채웠거나 모델이 짚지 못했으면) 화면에 아무것도 나오지
+   * 않습니다.
+   */
+  lengthNote: z.string().min(1).optional(),
   revisedAnswer: z.string().min(1),
   highlightedPhrases: z.array(z.string().min(1)),
   originalAnnotations: z.array(resultOriginalAnnotationSchema).optional(),

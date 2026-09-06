@@ -6547,3 +6547,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/simple-intake.tsx`, `simple-intake.module.css`, `simple-intake.test.tsx`, `src/components/pro-input-page.tsx`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed, `npx eslint src` 오류 0건. 선택 UI는 자소서 파일 업로드가 있어야 나타나 브라우저로는 확인하지 못했습니다 — 배포 후 확인이 필요합니다.
 - Rollback: 이 커밋 revert하면 안내 문구만 있던 상태로 돌아갑니다.
+
+### 2026-09-06 KST — 목표 글자 수까지 "몇 자 남았고 왜 못 채웠는지"를 결과 화면에 말한다
+
+- Agent/session: Claude (github-gui-sync-jfbyd5), 사용자 요청. 배경: "500자로 해놨는데 500자를 꽉 안 채워준다".
+- Status: active. 마이그레이션 없음. AI 출력 스키마가 한 칸 늘어납니다.
+- Change and reason:
+  - **최소 글자 수 설정을 넣지 않은 이유.** 프롬프트는 근거 없이 분량을 채우는 것을 이미 금지합니다 — "많은 것을 배웠습니다" 같은 문장으로 채운 100자는 점수를 올리는 것이 아니라 깎습니다. 하한을 설정으로 주면 그 금지를 정면으로 어기게 됩니다. **짧게 돌아오는 것은 결함이 아니라 의도인데, 그 사실을 말해 주지 않으니 "AI가 대충 했다"로 읽혔습니다.**
+  - 그래서 억지로 채우는 대신 **채울 재료를 받아오는 쪽**으로 만들었습니다. 남은 글자 수는 화면이 직접 세고, **왜 못 채웠는지**는 모델이 문항별로 적습니다(`lengthNote`). 손님이 그 정보를 주면 다시 받을 수 있고, 마침 앞서 만든 "더 정확하게 써드릴게요"가 그 재료를 받는 자리입니다.
+  - 프롬프트에는 "이 문항에서만 나올 수 있는 것을 물어라, 일반적인 조언은 넣지 마라"를 함께 넣었습니다. `finalChecklist`에 일반 면접 조언이 채워지던 것과 같은 실패를 막습니다.
+  - **10% 안쪽으로 모자란 것은 말하지 않습니다.** 700자에 30자 모자란 것까지 짚으면 매 문항이 경고처럼 보입니다. 샘플 결과에서 실제로 3문항 중 94자(15.7%) 모자란 하나만 표시되고 46자·23자짜리는 조용히 넘어갑니다.
+  - `lengthNote`가 없는 결과(이 변경 전에 저장된 것, 또는 모델이 짚지 못한 경우)에는 기본 문장을 보여 줍니다 — 빈 상자를 남기면 무엇을 해야 할지 알 수 없습니다.
+  - 스키마는 `subheading`과 같은 방식입니다: AI 쪽은 `nullable`(OpenAI strict 모드가 모든 칸을 required로 요구합니다), 저장 문서 쪽은 `optional`(예전 결과가 계속 열려야 합니다).
+- Files: `src/server/ai/quick/schema.ts`, `prompt.ts`, `provider.ts`, `src/domain/result-document.ts`, `src/components/result-workspace-complete.tsx`, `result-workspace-complete.module.css`, 테스트 fixture 4개.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed, `npx eslint src` 오류 0건. 로컬 `/result` 샘플에서 문항별 첨삭 화면 확인 — 506/600자 문항에만 "94자 남음"이 뜨고 454/500·477/500은 뜨지 않습니다. **모델이 `lengthNote`를 실제로 잘 적는지는 유료 실행 없이 확인할 수 없습니다.**
+- Rollback: 이 커밋 revert. 되돌려도 이미 저장된 결과는 그대로 열립니다(칸이 optional이라).

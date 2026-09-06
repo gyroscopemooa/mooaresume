@@ -104,6 +104,8 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
         // Dropped when the model returns null, which is what it is told to do
         // when the question's own format leaves no room for a title.
         subheading: revision.subheading?.trim() || undefined,
+        // 목표를 채우지 못한 이유. 충분히 채웠으면 모델이 null을 줍니다.
+        lengthNote: revision.lengthNote?.trim() || undefined,
         revisedAnswer: revision.revisedAnswer,
         highlightedPhrases: revision.highlightedPhrases.map((phrase) => recoverHighlight(revision.revisedAnswer, phrase)).filter((phrase): phrase is string => phrase !== null),
         originalAnnotations: resolveOriginalAnnotations(question.answer, revision.originalAnnotations, `${questionId}-annotation`),
