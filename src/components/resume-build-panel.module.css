@@ -1,101 +1,150 @@
-/* 유료 칸. 위의 무료 도구와 **다르게 생겨야** 합니다 — 같은 흰 카드로 이어지면
-   무료 도구의 일부로 읽히고, 결제 단추가 갑자기 튀어나온 것처럼 보입니다.
-   그래서 짙은 바탕으로 한 번 끊습니다. */
+/* 유료 칸.
+ *
+ * 짙은 초록 바탕에 알약 모양 라벨("AI RESUME BUILD · 유료")을 얹었던 것을
+ * 걷어냈습니다. 그 조합은 광고 배너처럼 읽혀서, 정작 무엇을 하는 칸인지가
+ * 뒤로 밀렸습니다.
+ *
+ * 대신 옅은 파랑 바닥 위에 흰 카드를 하나 띄웁니다. 위쪽 무료 도구가 초록·흰
+ * 계열이라 색만으로 "여기서부터 다른 것"이 읽히고, 카드에 옅은 그림자를 줘
+ * 떠 있게 하면 라벨 없이도 눈이 먼저 갑니다. 글자는 한 단계씩 작게, 간격은
+ * 좁게 — 입력 칸이 많은 화면이라 여백이 크면 한 화면에 안 들어옵니다.
+ */
 .panel {
   box-sizing: border-box;
-  padding: 44px max(18px, calc((100vw - 1120px) / 2)) 48px;
-  background: #10241b;
-  color: #dcece3;
-  font-size: 13px;
+  padding: 40px max(16px, calc((100vw - 1120px) / 2)) 44px;
+  background: linear-gradient(180deg, #f2f6fd 0%, #eef3fb 100%);
+  color: #191f28;
+  font-size: 12.5px;
 }
 
-.head { max-width: 760px; }
-.kicker { display: inline-block; margin-bottom: 10px; padding: 4px 9px; border-radius: 999px; background: rgb(109 240 181 / .14); color: #6df0b5; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; }
-.head h2 { margin: 0 0 10px; color: #fff; font-size: 21px; line-height: 1.35; letter-spacing: -.03em; }
-.head p { margin: 0; color: #a8c3b6; font-size: 12.5px; line-height: 1.8; }
-.head b { color: #dcece3; }
+.card {
+  padding: 24px 26px 22px;
+  border: 1px solid #e8edf5;
+  border-radius: 18px;
+  background: #fff;
+  /* 두 겹입니다. 가까운 그림자는 테두리를 또렷하게, 먼 그림자는 카드를
+     바닥에서 띄웁니다. 하나만 쓰면 번지거나 딱딱해집니다. */
+  box-shadow: 0 1px 2px rgb(23 32 45 / .05), 0 18px 40px -24px rgb(20 45 90 / .35);
+}
 
-.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 24px; }
-.field { display: grid; gap: 7px; min-width: 0; align-content: start; }
-.field label, .fieldLabel { color: #bcd6c9; font-size: 11.5px; font-weight: 700; }
-.fieldLabel small { margin-left: 6px; color: #7d968a; font-size: 10.5px; font-weight: 600; }
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.headText { min-width: 0; max-width: 640px; }
+.headText h2 { margin: 0 0 7px; color: #191f28; font-size: 18px; line-height: 1.4; letter-spacing: -.035em; }
+.headText p { margin: 0; color: #4e5968; font-size: 12px; line-height: 1.75; }
+.headText b { color: #1b64da; font-weight: 700; }
+
+/* 값은 라벨이 아니라 값입니다. 네모난 칩 하나로 오른쪽 위에 고정해 두면
+   "얼마인지"를 찾으러 아래까지 내려가지 않아도 됩니다. */
+.priceTag {
+  display: grid; gap: 1px; flex: none; padding: 9px 13px;
+  border: 1px solid #dbe6f8; border-radius: 10px;
+  background: linear-gradient(180deg, #fff 0%, #f5f9ff 100%);
+  box-shadow: 0 1px 2px rgb(23 32 45 / .05);
+  text-align: right;
+}
+.priceTag b { color: #1b64da; font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+.priceTag small { color: #8b95a1; font-size: 10px; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 20px; }
+.field { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.field label, .fieldLabel { color: #333d4b; font-size: 11.5px; font-weight: 700; }
+.fieldLabel small { margin-left: 5px; color: #8b95a1; font-size: 10.5px; font-weight: 500; }
 .field textarea {
-  box-sizing: border-box; width: 100%; padding: 13px 14px;
-  border: 1px solid #2c463a; border-radius: 12px; background: #0b1a13; color: #e8f4ee;
-  font: inherit; font-size: 13px; line-height: 1.75; resize: vertical;
+  box-sizing: border-box; width: 100%; padding: 12px 13px;
+  border: 1px solid #e5e8eb; border-radius: 12px; background: #f9fafb; color: #191f28;
+  font: inherit; font-size: 12.5px; line-height: 1.75; resize: vertical;
+  transition: border-color .12s, background .12s, box-shadow .12s;
 }
-.field textarea::placeholder { color: #5f7a6c; }
-.field textarea:focus { outline: 2px solid #2f7c58; outline-offset: 0; border-color: #6df0b5; }
-.field > small { color: #7d968a; font-size: 10.5px; line-height: 1.6; }
+.field textarea::placeholder { color: #b0b8c1; }
+.field textarea:focus { outline: none; border-color: #3182f6; background: #fff; box-shadow: 0 0 0 3px rgb(49 130 246 / .12); }
+.field > small { color: #8b95a1; font-size: 10.5px; line-height: 1.6; }
 
 .dropzone {
-  display: grid; justify-items: center; gap: 5px;
-  padding: 26px 18px; border: 1px dashed #35564a; border-radius: 12px; background: #0b1a13;
-  text-align: center; cursor: pointer;
+  display: grid; justify-items: center; gap: 4px;
+  padding: 22px 16px; border: 1px dashed #cdd8e6; border-radius: 12px; background: #f9fbff;
+  text-align: center; cursor: pointer; transition: border-color .12s, background .12s;
 }
-.dropzoneOn { border-color: #6df0b5; background: #102a1e; }
-.dropzone svg { width: 22px; color: #6df0b5; }
-.dropzone b { color: #e8f4ee; font-size: 12.5px; }
-.dropzone small { color: #7d968a; font-size: 10.5px; line-height: 1.6; }
+.dropzoneOn { border-color: #3182f6; background: #eef5ff; }
+.dropzone:hover { border-color: #a9c2e8; }
+.dropzone svg { width: 19px; color: #3182f6; }
+.dropzone b { color: #333d4b; font-size: 12px; }
+.dropzone small { color: #8b95a1; font-size: 10.5px; line-height: 1.6; }
 .dropzone input { display: none; }
 
-.fileList { display: grid; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
-.fileList li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid #2c463a; border-radius: 10px; background: #0b1a13; }
-.fileList svg { width: 15px; color: #6df0b5; }
-.fileList b { display: block; overflow: hidden; color: #e8f4ee; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.fileList small { color: #7d968a; font-size: 10px; }
-.fileList select { max-width: 130px; padding: 5px 7px; border: 1px solid #2c463a; border-radius: 7px; background: #10241b; color: #bcd6c9; font: inherit; font-size: 10.5px; }
-.fileList li > button { display: grid; place-items: center; padding: 5px; border: 0; border-radius: 7px; background: transparent; color: #7d968a; cursor: pointer; }
-.fileList li > button:hover { color: #ff9b9b; }
-
-.result { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 11px; margin-top: 20px; padding: 15px 17px; border: 1px solid #2f7c58; border-radius: 12px; background: #0f2c1f; }
-.result svg { width: 17px; color: #6df0b5; }
-.result b { display: block; margin-bottom: 7px; color: #fff; font-size: 13px; }
-.result ul { display: grid; gap: 4px; margin: 0 0 8px; padding-left: 16px; color: #a8c3b6; font-size: 12px; line-height: 1.7; }
-.truncated { margin: 0 0 6px; color: #e2c58a; font-size: 11.5px; }
-.resultFoot { margin: 0; color: #7d968a; font-size: 11px; line-height: 1.6; }
-
-.message { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0 0; padding: 12px 14px; border: 1px solid #5a4630; border-radius: 11px; background: #23190d; color: #f0d6a8; font-size: 12px; line-height: 1.7; }
-.message svg { width: 15px; flex: none; margin-top: 1px; }
-
-.login { margin-top: 18px; padding: 16px 17px; border: 1px solid #2c463a; border-radius: 12px; background: #0b1a13; }
-.login b { display: flex; align-items: center; gap: 7px; color: #fff; font-size: 13px; }
-.login b svg { width: 15px; color: #6df0b5; }
-.login p { margin: 6px 0 12px; color: #7d968a; font-size: 11.5px; }
-.loginRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.loginRow input { flex: 1 1 160px; min-width: 0; padding: 9px 11px; border: 1px solid #2c463a; border-radius: 9px; background: #10241b; color: #e8f4ee; font: inherit; font-size: 12px; }
-.loginRow button { display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 9px 13px; border: 1px solid #35564a; border-radius: 9px; background: #163426; color: #dcece3; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-.loginRow button:hover { border-color: #6df0b5; }
-.loginRow svg { width: 13px; }
-.googleButton { background: #fff !important; color: #17221d !important; border-color: #fff !important; }
-.or { color: #5f7a6c; font-size: 11px; }
-
-.footer { display: grid; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #24382e; }
-.summary { display: flex; align-items: baseline; gap: 9px; }
-.summary b { color: #6df0b5; font-size: 14px; }
-.summary small { color: #7d968a; font-size: 11.5px; }
-.actions { display: flex; flex-wrap: wrap; gap: 9px; }
-.buy {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 13px 20px; border: 0; border-radius: 11px; background: #6df0b5; color: #08251a;
-  font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer;
+.fileList { display: grid; gap: 6px; margin: 9px 0 0; padding: 0; list-style: none; }
+.fileList li {
+  display: grid; grid-template-columns: 15px minmax(0, 1fr) auto auto; align-items: center; gap: 8px;
+  padding: 8px 10px; border: 1px solid #eef1f5; border-radius: 10px; background: #fff;
+  box-shadow: 0 1px 2px rgb(23 32 45 / .04);
 }
-.buy:hover { background: #55e3a4; }
-.buy:disabled { opacity: .4; cursor: not-allowed; }
-.buy svg { width: 16px; }
-.ghost { padding: 13px 16px; border: 1px solid #35564a; border-radius: 11px; background: transparent; color: #bcd6c9; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-.ghost:disabled { opacity: .4; cursor: not-allowed; }
-.terms { margin: 0; max-width: 760px; color: #6f887b; font-size: 11px; line-height: 1.75; }
+.fileList svg { width: 14px; color: #6b7684; }
+.fileList b { display: block; overflow: hidden; color: #333d4b; font-size: 11.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.fileList small { color: #8b95a1; font-size: 10px; }
+.fileList select { max-width: 122px; padding: 5px 6px; border: 1px solid #e5e8eb; border-radius: 7px; background: #f9fafb; color: #4e5968; font: inherit; font-size: 10.5px; }
+.fileList li > button { display: grid; place-items: center; padding: 4px; border: 0; border-radius: 7px; background: transparent; color: #b0b8c1; cursor: pointer; }
+.fileList li > button:hover { background: #fff1f1; color: #f04452; }
 
-.scanNote { display: flex; align-items: center; gap: 7px; margin: 14px 0 0; color: #e2c58a; font-size: 11.5px; }
-.scanNote svg { width: 13px; flex: none; }
+.result {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px;
+  margin-top: 16px; padding: 14px 16px; border: 1px solid #d6e6ff; border-radius: 12px; background: #f4f8ff;
+}
+.result svg { width: 15px; color: #3182f6; }
+.result b { display: block; margin-bottom: 6px; color: #191f28; font-size: 12.5px; }
+.result ul { display: grid; gap: 3px; margin: 0 0 7px; padding-left: 15px; color: #4e5968; font-size: 11.5px; line-height: 1.7; }
+.truncated { margin: 0 0 5px; color: #c2842a; font-size: 11px; }
+.resultFoot { margin: 0; color: #8b95a1; font-size: 10.5px; line-height: 1.6; }
+
+.message { display: flex; align-items: flex-start; gap: 7px; margin: 14px 0 0; padding: 11px 13px; border: 1px solid #fbe2c0; border-radius: 11px; background: #fff9ef; color: #99671a; font-size: 11.5px; line-height: 1.7; }
+.message svg { width: 14px; flex: none; margin-top: 1px; }
+
+.login { margin-top: 16px; padding: 14px 15px; border: 1px solid #e8edf5; border-radius: 12px; background: #f9fbff; }
+.login b { display: flex; align-items: center; gap: 6px; color: #191f28; font-size: 12.5px; }
+.login b svg { width: 14px; color: #3182f6; }
+.login p { margin: 5px 0 11px; color: #8b95a1; font-size: 11px; }
+.loginRow { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.loginRow input { flex: 1 1 150px; min-width: 0; padding: 9px 11px; border: 1px solid #e5e8eb; border-radius: 9px; background: #fff; color: #191f28; font: inherit; font-size: 11.5px; }
+.loginRow input:focus { outline: none; border-color: #3182f6; box-shadow: 0 0 0 3px rgb(49 130 246 / .12); }
+.loginRow button { display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 9px 12px; border: 1px solid #e5e8eb; border-radius: 9px; background: #fff; color: #4e5968; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgb(23 32 45 / .04); }
+.loginRow button:hover { border-color: #cdd8e6; color: #191f28; }
+.loginRow svg { width: 13px; }
+.googleButton { background: #fff; color: #333d4b; }
+.or { color: #b0b8c1; font-size: 10.5px; }
+
+.footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #f1f4f8; }
+.summary { display: grid; gap: 1px; margin-right: auto; }
+.summary b { color: #191f28; font-size: 12.5px; }
+.summary small { color: #8b95a1; font-size: 10.5px; }
+.actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.buy {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 12px 20px; border: 0; border-radius: 11px; background: #3182f6; color: #fff;
+  font: inherit; font-size: 13px; font-weight: 700; letter-spacing: -.02em; cursor: pointer;
+  box-shadow: 0 1px 2px rgb(23 32 45 / .08), 0 10px 20px -12px rgb(49 130 246 / .9);
+  transition: background .12s, transform .06s, box-shadow .12s;
+}
+.buy:hover { background: #1b64da; }
+/* 눌리는 느낌은 1px이면 충분합니다. 더 주면 장난감처럼 보입니다. */
+.buy:active { transform: translateY(1px); box-shadow: 0 1px 2px rgb(23 32 45 / .1); }
+.buy:disabled { background: #e5e8eb; color: #b0b8c1; box-shadow: none; cursor: not-allowed; }
+.buy svg { width: 15px; }
+.ghost { padding: 12px 15px; border: 1px solid #e5e8eb; border-radius: 11px; background: #fff; color: #4e5968; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgb(23 32 45 / .04); }
+.ghost:hover { border-color: #cdd8e6; color: #191f28; }
+.ghost:disabled { opacity: .45; cursor: not-allowed; }
+.terms { flex: 1 1 100%; margin: 0; color: #8b95a1; font-size: 10.5px; line-height: 1.7; }
+
+.scanNote { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; color: #c2842a; font-size: 11px; }
+.scanNote svg { width: 12px; flex: none; }
 
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 820px) {
+  .panel { padding: 28px 14px 32px; }
+  .card { padding: 20px 17px 18px; border-radius: 16px; }
   .grid { grid-template-columns: minmax(0, 1fr); }
-  .head h2 { font-size: 18px; }
+  .head { flex-direction: column; gap: 12px; }
+  .priceTag { text-align: left; }
+  .headText h2 { font-size: 16.5px; }
 }
 
 /* 이력서를 인쇄할 때 이 칸이 따라 나가면 안 됩니다. 종이에는 이력서만

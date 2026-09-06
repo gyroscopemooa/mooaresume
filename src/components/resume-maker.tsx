@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight, Award, BriefcaseBusiness, CircleHelp, Eye, FileText, GraduationCap, ImagePlus, Mail, MapPin, Phone,
-  Plus, Printer, RotateCcw, Sparkles, Trash2, UserRound, X,
+  Plus, Printer, RotateCcw, Trash2, UserRound, Wrench, X,
 } from "lucide-react";
 import {
   emptyCareer, emptyCertificate, emptyEducation, emptyExtra, emptyResumeDraft, hasContent,
@@ -188,7 +188,12 @@ export function ResumeMaker() {
       <a className={styles.ghostButton} href="#resume-guide"><CircleHelp /><span className={styles.buttonLabel}>소개</span></a>
       {/* 아래 유료 칸으로 내려보냅니다. 그 칸은 화면 아래에 있어서, 자료를
           던지면 채워 준다는 것을 스크롤하지 않으면 아무도 모릅니다. */}
-      <a className={styles.aiButton} href="#resume-ai-build"><Sparkles /><span className={styles.buttonLabel}>AI로 제작</span></a>
+      <a className={styles.aiButton} href="#resume-ai-build">
+        {/* 아이콘 없이 글자만 둡니다. 좁은 화면에서 글자를 감추는 다른 단추와
+            달리 이것만 짧은 글자로 바꿉니다 — 반짝이 아이콘 하나만 남으면
+            무엇을 하는 단추인지 아무도 모릅니다. */}
+        <span className={styles.buttonLabel}>AI로 제작</span><span className={styles.buttonShort}>AI</span>
+      </a>
       {/* 아래쪽 카드와 같은 일을 합니다. 카드는 다 적고 난 자리에 있어서
           스크롤을 끝까지 내리지 않으면 있는 줄도 모릅니다. 조건을 못 채웠을
           때 감추지 않고 비활성으로 두는 이유는 아래 카드와 같습니다. */}
@@ -310,7 +315,7 @@ export function ResumeMaker() {
         </section>
 
         <section className={styles.section}>
-          <div className={styles.sectionHead}><Sparkles /><h2>기술 · 역량</h2><small>선택</small></div>
+          <div className={styles.sectionHead}><Wrench /><h2>기술 · 역량</h2><small>선택</small></div>
           <div className={styles.field}>
             <label htmlFor="resume-skills">쉼표로 나눠 적으세요</label>
             <textarea id="resume-skills" value={draft.skills} onChange={(event) => setDraft((current) => ({ ...current, skills: event.target.value }))} placeholder="SPC 관리, MES, Excel(피벗·VLOOKUP), 사출 공정, 지게차 운전" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, FileText, Loader2, LogIn, Mail, Sparkles, Trash2, UploadCloud, X } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, FileText, Loader2, LogIn, Mail, Trash2, UploadCloud, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ARCHIVE_DOCUMENT_ACCEPT, extractLocalDocuments } from "@/lib/local-document";
 import { CLASSIFIED_KIND_LABEL, CLASSIFIED_KIND_ORDER, classifyDocument, type ClassifiedKind } from "@/domain/document-classify";
@@ -268,10 +268,16 @@ export function ResumeBuildPanel() {
   const busy = phase === "creating" || phase === "running";
 
   return <section className={styles.panel} id="resume-ai-build" aria-labelledby="resume-ai-build-title">
+    <div className={styles.card}>
+    {/* 알약 모양 라벨("AI RESUME BUILD · 유료")을 걷어냈습니다. 광고 배너처럼
+        읽혀서 정작 무엇을 하는 칸인지가 뒤로 밀렸습니다. 값은 라벨이 아니라
+        값이므로, 오른쪽 위에 네모 칩 하나로 고정해 둡니다. */}
     <header className={styles.head}>
-      <span className={styles.kicker}>AI RESUME BUILD · 유료</span>
-      <h2 id="resume-ai-build-title">자료를 던져 두면, 칸은 이쪽에서 채웁니다</h2>
-      <p>경력증명서·재직증명서·예전 이력서를 올리거나, 기억나는 대로 줄글로 적어 주세요. 위 이력서의 경력·학력·자격 칸으로 옮겨 적어 드립니다. <b>없는 경력을 지어내지 않습니다</b> — 자료로 확인되지 않는 칸은 비워 두고 무엇이 없는지 알려 드립니다.</p>
+      <div className={styles.headText}>
+        <h2 id="resume-ai-build-title">자료를 던져 두면, 칸은 이쪽에서 채웁니다</h2>
+        <p>경력증명서·재직증명서·예전 이력서를 올리거나, 기억나는 대로 줄글로 적어 주세요. 위 이력서의 경력·학력·자격 칸으로 옮겨 적어 드립니다. <b>없는 경력은 지어내지 않습니다</b> — 자료로 확인되지 않는 칸은 비워 두고 무엇이 없는지 알려 드립니다.</p>
+      </div>
+      <div className={styles.priceTag}><b>{RESUME_BUILD_PRICE_KRW.toLocaleString()}원</b><small>1건 · 부가세 포함</small></div>
     </header>
 
     <div className={styles.grid}>
@@ -366,12 +372,13 @@ export function ResumeBuildPanel() {
           title={!signedIn ? "로그인 후 결제할 수 있습니다." : enough ? undefined : "자료가 조금 더 필요합니다."}
           onClick={() => void startCheckout()}
         >
-          {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "이력서를 만드는 중" : "결제 페이지로 이동 중"}</> : <><Sparkles />{RESUME_BUILD_PRICE_KRW.toLocaleString()}원 · AI로 이력서 만들기</>}
+          {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "이력서를 만드는 중" : "결제 페이지로 이동 중"}</> : <>{RESUME_BUILD_PRICE_KRW.toLocaleString()}원 · AI로 이력서 만들기<ArrowRight /></>}
         </button>
       </div>
       <p className={styles.terms}>1건 정액 {RESUME_BUILD_PRICE_KRW.toLocaleString()}원(부가세 포함). 올린 자료는 이력서를 만드는 데만 쓰이고 서버에 저장하지 않습니다. 결과가 나오지 않으면 결제한 건이 그대로 남아 다시 시도할 수 있고, 그래도 실패하면 환불해 드립니다.</p>
     </footer>
 
     {sources.some((source) => source.unreadable) && <p className={styles.scanNote}><X />글자가 없는 스캔본은 읽지 못합니다. 사진으로 된 증명서라면 그 내용을 위 칸에 직접 적어 주세요.</p>}
+    </div>
   </section>;
 }

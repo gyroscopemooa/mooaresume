@@ -26,9 +26,11 @@
 /* 아래 유료 칸으로 내려보내는 단추. 인쇄(초록 채움)와 보조 단추(흰 바탕)
    사이의 한 단계입니다 — 유료 기능이라 눈에 띄어야 하지만, 이 화면에서 가장
    많이 눌리는 인쇄보다 앞서면 안 됩니다. */
-.aiButton { display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 8px 11px; border: 1px solid #b6ddc6; border-radius: 8px; background: #e9f7ee; color: #146045; font-size: 11.5px; font-weight: 800; cursor: pointer; text-decoration: none; }
-.aiButton:hover { border-color: #176b4a; background: #ddf1e5; }
-.aiButton svg { width: 13px; flex: none; }
+.aiButton { display: inline-flex; align-items: center; flex: none; padding: 8px 12px; border: 1px solid #d6e3f6; border-radius: 8px; background: linear-gradient(180deg, #fff 0%, #f2f7ff 100%); color: #1b64da; font-size: 11.5px; font-weight: 800; cursor: pointer; text-decoration: none; box-shadow: 0 1px 2px rgb(23 32 45 / .05); }
+.aiButton:hover { border-color: #3182f6; background: #eaf3ff; }
+/* 좁은 화면에서 다른 단추는 글자를 감추고 아이콘만 남기는데, 이 단추에는
+   아이콘이 없습니다. 대신 짧은 글자로 바뀝니다. */
+.buttonShort { display: none; }
 .printButton { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 9px 13px; border: 0; border-radius: 8px; background: #176b4a; color: #fff; font-size: 11.5px; font-weight: 800; cursor: pointer; box-shadow: 0 7px 15px rgb(23 107 74 / .18); }
 .printButton:hover { background: #115738; }
 .ghostButton svg, .printButton svg { width: 13px; flex: none; }
@@ -171,6 +173,7 @@
      이 화면에서 가장 많이 눌리는 것이고, 프린터 아이콘만으로는 "PDF로
      저장"이 읽히지 않습니다. */
   .buttonLabel { display: none; }
+  .buttonShort { display: inline; }
   .ghostButton { padding: 8px; }
 }
 
