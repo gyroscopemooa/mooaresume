@@ -178,7 +178,13 @@ describe("개인정보처리방침", () => {
     for (const vendor of ["Supabase", "OpenAI", "Polar", "Cloudflare", "Resend", "Google", "Microsoft"]) {
       expect(policy, vendor).toContain(vendor);
     }
-    expect(policy).toContain("국외 이전 안내");
+    // 한 표에 몰아 적으면 개인정보 고지가 아니라 기술 스택 목록으로 읽힙니다.
+    // 그래서 법이 나눠 둔 대로 세 곳에 나눠 적습니다 — 숨기는 것이 아니라
+    // 분류를 맞추는 것이고, 공개량은 오히려 늘었습니다(국외 이전은 항목·목적·
+    // 보유기간까지 요구합니다).
+    expect(policy).toContain("개인정보 처리업무의 위탁");
+    expect(policy).toContain("개인정보의 국외 이전");
+    expect(policy).toContain("자동 수집 장치 및 행태정보");
   });
 
   it("찾아갈 수 있어야 의미가 있다", () => {
