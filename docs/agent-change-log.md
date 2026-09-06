@@ -6620,3 +6620,60 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/simple-intake.module.css`.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed, `npx eslint src` 오류 0건. 6문항 초안을 넣고 320px·406px·1280px에서 측정 — 화면 넘침 174px → **0**, 좁은 화면에서 여섯 줄이 모두 49px로 균일하고 이름이 보이며, 1280px에서는 예전처럼 한 줄(25px)입니다.
 - Rollback: 이 커밋 revert.
+
+### 2026-09-06 KST — 사진 켜고 끄기, 자소서로 이어가기, 그리고 법률·논문을 이 사이트 안으로
+
+- Agent/session: Claude (desktop), 사용자 요청("별도 도메인 여력 없음 — 법률 등 서류 첨삭 다 여기서", "사진 칸 활성/비활성", "자소서 이어가기 ㄱㄱ").
+- Status: active. 마이그레이션 없음. 분석 파이프라인·프롬프트·DB 변경 없음.
+- Change and reason:
+  - **별도 브랜드 계획을 접고 목록 안으로 들였습니다.** 앞선 문서에는 법률·논문을 나중에 별도 도메인으로 빼자고 적었는데, 도메인을 하나 더 감당할 여력이 없다면 그것은 선택지가 아닙니다. 대신 **묶음을 나눕니다** — `group: "application" | "other"`로 목록에서부터 갈라, 자소서를 보러 온 사람이 준비서면 사이에서 길을 잃지 않게 했습니다. 드로어 마크도 "취업서류"에서 **"서류 첨삭"**으로, 제목은 "서류 만들기 · 첨삭"으로 바꿨습니다 — 법률·논문이 들어온 목록에 "취업서류"라고 써 두면 그 항목들이 잘못 든 것처럼 보입니다.
+  - 그 밖의 서류로 **내용증명·진정서 / 법률 서면 / 논문·연구 글** 세 줄을 준비 중으로 넣었습니다. 목록 맨 아래에 범위를 한 줄 적었습니다: "사실관계를 지어내지 않는 범위(구조·근거 연결·읽히는 문장)에서만". 이 선은 `docs/multi-document-expansion-plan.md` 6절과 같습니다 — 도메인을 합쳤다고 다루는 범위까지 넓어지는 것은 아닙니다.
+  - **증명사진을 켜고 끄게 했습니다.** 붙이는 곳이 여전히 많지만 블라인드 채용은 받지 않아, 어느 한쪽으로 정해 두면 절반은 지워야 합니다. 끄면 종이에서 자리까지 사라지고, 다시 켜면 넣어 둔 사진이 돌아옵니다. **저장 전에 폭 240px JPEG로 다시 굽습니다** — localStorage는 5MB 남짓인데 요즘 휴대폰 사진은 3~8MB라, 원본을 넣으면 저장이 통째로 실패해 사진뿐 아니라 이력서 전체가 사라집니다. 인쇄 크기는 3×4cm(mm 단위)로 규격을 맞췄습니다.
+  - **자소서로 이어가기.** 이력서를 글로 만들어 게스트 지원자료에 담고 `/onboarding`으로 보냅니다. 자유 메모가 아니라 **`materialAttachments`에 `RESUME`로** 넣는 것이 핵심입니다 — 이름 없는 첨부로 들어가면 프롬프트가 포트폴리오로 읽고, PRO·FINAL이 파는 이력서 × 자소서 교차검증이 켜지지 않습니다(`analysis-preparation.tsx`의 `hasResumeMaterial`). 병합 규칙은 두 가지: 손님이 이미 올린 파일·경험·자격은 건드리지 않고, 같은 이름의 옛 이력서는 갈아 끼웁니다(두 장이 남으면 서로 어긋나는 이력서를 대조하게 됩니다). 저장에 실패하면 이동하지 않고 알립니다 — 그냥 넘기면 손님은 이력서를 들고 간 줄 알고 첨삭을 받습니다.
+  - 이름만 적힌 이력서에는 이어가기 단추를 띄우지 않습니다(`isResumeWorthCarrying`). 넘겨도 대조할 것이 없습니다.
+- Files: `src/domain/application-document.ts`(그룹 추가·항목 3개), `src/domain/resume-draft.ts`(photo·`resumeDraftToText`·`isResumeWorthCarrying`), `src/domain/resume-handoff.ts`(신규), `src/domain/resume-handoff.test.ts`(신규), `src/components/resume-maker.tsx`·`.module.css`, `src/components/application-docs-drawer.tsx`·`.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1009 passed(131 파일, 신규 4건), `npx eslint src` 오류 0건. **브라우저 확인은 아직입니다** — 사진 업로드·리사이즈와 인쇄 레이아웃은 눈으로 봐야 합니다.
+- Rollback: 이 커밋 revert. `photo`는 저장본에서 없으면 기본값으로 채우므로(`parseResumeDraft`) 옛 임시본과 서로 호환됩니다.
+- 다음: `/resume` 소개 섹션(검색 유입), 파일 올려 이력서 자동 채우기, 그 밖의 서류 1종 실제 구현.
+
+### 2026-09-06 KST — 이력서를 소개와 도구로 나눈다 (+ 이어가기 단추를 바에도 둔다)
+
+- Agent/session: Claude (desktop), 사용자 요청("소개 페이지 메인홈 / 취업 서류 / 나중에 법률·기타 이렇게 나누는 게 낫지", "자소서 이어가기 단추 어디 나오는 거?"). 사용자 화면 확인 결과 앞 작업(드로어 두 개·사진·인쇄·이어가기)은 모두 정상.
+- Status: active. 마이그레이션 없음.
+- Change and reason:
+  - **`/resume`를 소개로, `/resume/write`를 도구로 나눴습니다.** 두 사람이 다릅니다 — "이력서 양식"으로 검색해 들어온 사람에게 빈 입력 칸부터 내밀면 무엇을 하는 곳인지 모른 채 나가고, 이미 쓰기로 한 사람에게 소개를 다시 읽히면 한 번 더 누르게 합니다. 지금까지 `/resume`는 도구뿐이라 검색 유입을 받을 화면이 아예 없었습니다.
+  - 색인은 소개만 받습니다(도구는 `robots: index:false`, canonical은 소개). 도구 쪽 본문은 빈 칸이라 크롤러에게 줄 것이 없고, 같은 낱말로 두 주소가 경쟁하면 둘 다 약해집니다.
+  - 내부 링크는 갈라 둡니다: **드로어는 도구 직행**(이미 사이트 안에 있는 사람에게 소개를 다시 읽힐 이유가 없습니다), **헤더 메뉴는 소개**(둘러보는 자리이고, 소개로 가는 내부 링크가 하나는 있어야 색인이 붙습니다).
+  - 소개에는 FAQ 구조화 데이터(JSON-LD)를 넣었습니다. 회원가입·저장 위치·PDF·사진은 실제로 가장 많이 묻는 것이고, 검색 결과에서 그 답이 바로 보이면 들어오기 전에 안심합니다.
+  - **이어가기 단추를 상단바에도 뒀습니다.** 지금까지는 입력 칸 맨 아래 카드뿐이라 스크롤을 끝까지 내리지 않으면 있는 줄도 몰랐습니다(사용자가 "어디 나오냐"고 물은 것이 그 증거입니다). 조건은 그대로입니다 — 이름만 적힌 이력서에는 뜨지 않습니다.
+  - 좁은 바에서는 보조 단추의 글자를 숨기고 아이콘만 남깁니다. 인쇄 단추의 글자는 남깁니다 — 이 화면에서 가장 많이 눌리고, 프린터 아이콘만으로는 "PDF로 저장"이 읽히지 않습니다.
+- Files: `src/app/resume/page.tsx`(소개로 재작성), `src/app/resume/write/page.tsx`(신규), `src/app/resume/intro.module.css`(신규), `src/components/resume-maker.tsx`·`.module.css`, `src/domain/application-document.ts`(드로어 링크).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1009 passed, `npx eslint src` 오류 0건. 앞 작업분은 사용자가 브라우저에서 확인 완료. 이번 소개 페이지는 아직 눈으로 보지 않았습니다.
+- Rollback: 이 커밋 revert. 되돌리면 `/resume`가 다시 도구가 되고 `/resume/write`는 사라집니다 — 그 주소를 아직 밖에 알린 적이 없으므로 끊기는 링크는 없습니다.
+- 다음: 서류 허브 페이지 2개(취업 / 그 밖의 서류), 파일 올려 이력서 자동 채우기.
+
+### 2026-09-06 KST — 소개를 별도 주소에서 도구 아래로 되돌린다 (+ 이어가기 단추가 왜 없는지 말한다)
+
+- Agent/session: Claude (desktop), 사용자 요청("/resume 바로 이력서 메이커 나오는 게 맞는 것 같다, 소개는 따로 못 빼나 / 입력 칸 맨 아래 아무것도 없음" + 스크린샷).
+- Status: active. 마이그레이션 없음. 바로 앞 커밋(소개/도구 주소 분리)을 부분적으로 되돌립니다.
+- Change and reason:
+  - **주소를 다시 하나로 합쳤습니다.** 직전에 소개를 `/resume`, 도구를 `/resume/write`로 나눴는데, 이 주소로 오는 사람 대부분은 이미 이력서를 쓰러 온 것이라 소개를 먼저 만나면 한 번 더 누르게 됩니다. 그렇다고 소개를 없애면 검색에 걸릴 글이 사라집니다 — 도구는 브라우저에서만 그리므로(`ssr: false`) 크롤러가 받는 HTML이 비어 있고, 아래 소개만이 이 주소에 실리는 유일한 글입니다.
+  - 그래서 **한 주소에 둘 다**: 도구가 먼저 나오고 그 아래에 소개가 서버에서 그려집니다. 도구가 `min-height:100vh`라 쓰러 온 사람은 소개를 만나지 않고, 크롤러와 검색 방문자는 읽습니다. 상단바의 "소개" 단추가 그 자리로 내려갑니다(`#resume-guide`).
+  - `/resume/write`는 `/resume`로 리다이렉트만 남깁니다. 밖에 알린 적 없는 주소지만 그 사이 즐겨찾기한 경우를 위해 둡니다.
+  - 소개를 인쇄에서 숨기는 규칙을 `intro.module.css`에 따로 뒀습니다 — 도구 쪽 인쇄 규칙은 자기 스타일시트의 클래스만 숨길 수 있어, 이력서를 인쇄할 때 소개가 따라 나올 뻔했습니다.
+  - **이어가기 단추가 조건을 못 채우면 감추던 것을 비활성으로 바꿨습니다.** 사용자가 "입력 칸 맨 아래 아무것도 없다"고 한 것이 정확히 이 문제입니다 — 칸이 전부 예시글(placeholder)뿐이라 조건이 안 맞았고, 카드가 통째로 사라져서 **왜 없는지 알 방법이 없었습니다.** 이제 자리를 지키고 이유를 적습니다("경력·학력·자격·활동 중 하나라도 적으면 넘길 수 있습니다"). 상단바 단추도 같은 방식(비활성 + 제목 속성에 이유)입니다.
+- Files: `src/app/resume/page.tsx`(도구+소개), `src/app/resume/resume-guide.tsx`(신규), `src/app/resume/write/page.tsx`(리다이렉트), `src/app/resume/intro.module.css`, `src/components/resume-maker.tsx`·`.module.css`, `src/domain/application-document.ts`(드로어 링크 원복).
+- Validation: `npx tsc --noEmit` clean, `npx vitest run` 1009 passed, `npx eslint src` 오류 0건. 사용자 확인 완료(앞 작업분): 드로어 두 개·사진·인쇄·미리보기 정상.
+- Rollback: 이 커밋 revert하면 소개가 다시 `/resume`, 도구가 `/resume/write`로 갈립니다.
+
+### 2026-09-06 KST — 이력서 상단바가 두 줄로 터지던 것을 고친다
+
+- Agent/session: Claude (desktop), 사용자 요청("헤더 최적화 글자 작게 차라리" + 스크린샷 — 단추 글자가 "소 개", "처음부 터"처럼 줄바꿈되어 바가 두 줄이 됨).
+- Status: active. 고친 파일은 `src/components/resume-maker.module.css` 한 개입니다.
+- Change and reason:
+  - 상단바에 단추가 넷이 됐습니다(소개·이어가기·처음부터·인쇄). 글자가 줄바꿈되면 바가 두 줄로 터지므로 **줄 전체에 `white-space: nowrap`**을 걸고, 단추·브랜드·화면 이름의 글자 크기를 한 단계씩 낮췄습니다(12px→11.5px, 브랜드 14→13px). 바 높이도 62px→58px.
+  - 모든 요소에 `flex: none`을 줬습니다. 이것이 없으면 좁아질 때 단추가 줄어들다가 다시 글자를 접습니다.
+  - **자리가 모자랄 때 덜어 내는 순서를 정했습니다**: 1180px에서 저장 안내 → 900px에서 화면 이름과 보조 단추의 글자(아이콘만 남김) → 560px에서 간격·여백. **인쇄 단추의 글자는 끝까지 남깁니다** — 이 화면에서 가장 많이 눌리는 것이고, 프린터 아이콘만으로는 "PDF로 저장"이 읽히지 않습니다.
+- Files: `src/components/resume-maker.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint src` 오류 0건(경고 2건은 기존 파일). 브라우저 확인은 사용자 담당입니다 — 1280px과 900px 사이에서 단추가 한 줄에 남는지 봐 주세요.
+- Rollback: 이 커밋 revert.

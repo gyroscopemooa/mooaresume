@@ -59,7 +59,7 @@
      `.site-header nav>a:not(.button)` — two classes and two elements. Three
      classes outweighs it — 커리어 검사 is meant to stay in the
      bar on a phone, which is the whole reason 요금 moved into the panel. */
-  .nav .price.price { display: inline; font-size: 12px; }
+  .nav .price.price { display: inline; font-size: 12px; white-space: nowrap; }
   .panelCta { display: flex; }
   /* The phone bar drops the CTA entirely — it crowded the brand and the menu,
      and the panel now ends with the same button. */
@@ -73,8 +73,31 @@
   .ctaShort { display: inline; }
 }
 
-/* 라운지는 바에 단독으로 둡니다. 다만 좁은 화면의 바는 커리어 검사·계정·메뉴만
-   해도 빠듯해서(그 이유로 요금과 CTA가 이미 패널로 내려갔습니다), 680px 아래
-   에서는 감추고 메뉴 패널의 커뮤니티 항목이 대신 받습니다. `.nav .price.price`가
-   (0,3,0)이라 같은 무게로 맞추고 뒤에 두어 이깁니다. */
-@media (max-width: 680px) { .nav .lounge.lounge { display: none; } }
+/* 라운지는 바에 단독으로 둡니다. 좁은 화면에서도 마찬가지입니다.
+   한동안은 680px 아래에서 감추고 메뉴 패널의 커뮤니티 항목에 맡겼는데, 방문의
+   대부분이 휴대폰입니다 — 커뮤니티는 매일 새 글이 올라오는 유일한 곳인데
+   그 자리에서는 메뉴를 열어 본 사람만 존재를 압니다. 커리어 검사와 같은
+   대우로 바에 세웁니다. 자리는 요금과 CTA가 이미 패널로 내려가며 비워 둔
+   만큼입니다. `.nav .price.price`가 (0,3,0)이라 같은 무게로 맞추고 뒤에 두어
+   이깁니다(home-mobile-header의 링크 감추기 규칙도 함께 이깁니다). */
+@media (max-width: 680px) { .nav .lounge.lounge { display: inline; } }
+
+/* 커리어 검사·라운지·계정·메뉴가 한 줄에 같이 서는 폭입니다. 360px 같은
+   화면에서는 글자와 간격을 조금 줄여야 왼쪽 브랜드와 부딪히지 않습니다 —
+   부딪히면 헤더가 페이지를 옆으로 밀어 가로 스크롤이 생깁니다. */
+@media (max-width: 400px) {
+  /* `.nav.nav`(0,2,0)로 무게를 올립니다. 커뮤니티 라운지의 헤더가 자기
+     스타일시트에서 `.topbar nav { gap: 11px }`(0,1,1)로 간격을 따로 정해
+     두었는데, 라운지야말로 이 링크가 꼭 보여야 하는 화면이라 그곳에서만
+     압축이 안 먹으면 뜻이 없습니다. */
+  .nav.nav { gap: 6px; }
+  .nav .price.price { font-size: 11.5px; }
+}
+
+/* 320~340px(구형 아이폰 폭)에서는 위 압축으로도 몇 px가 모자랍니다. 이
+   헤더는 넘치면 페이지 전체가 옆으로 끌리는 곳이라(이 파일의 다른 주석들이
+   같은 사고를 기록하고 있습니다) 한 단계 더 줄여 둡니다. */
+@media (max-width: 340px) {
+  .nav.nav { gap: 4px; }
+  .nav .price.price { font-size: 11px; }
+}

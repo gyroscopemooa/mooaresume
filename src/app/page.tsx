@@ -4,6 +4,7 @@ import { ArrowRight, Briefcase, Check, FileSearch, FileUp, ListChecks, ScanSearc
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
+import { ApplicationDocsDrawer } from "@/components/application-docs-drawer";
 import { LandingEntry } from "@/components/landing-entry";
 import { PricingComparison } from "@/components/pricing-comparison";
 import landingStyles from "./landing-sections.module.css";
@@ -87,6 +88,8 @@ export default function HomePage() {
           50vw panel rendered at 62.5% of the screen. Nothing about its own CSS
           was wrong — only where it hung. */}
       <CareerAssessmentDrawer />
+      {/* 같은 가장자리에 두 번째 마크. 커리어 마크 바로 아래에 붙습니다. */}
+      <ApplicationDocsDrawer />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>

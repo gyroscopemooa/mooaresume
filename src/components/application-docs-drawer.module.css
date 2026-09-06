@@ -1,0 +1,111 @@
+/* 입사지원 서류 드로어.
+ *
+ * career-assessment-drawer.module.css를 복사해 시작했습니다. 공유하지 않은
+ * 이유는, 커리어 쪽 폭이나 여백을 조정할 때 이쪽이 같이 움직이면 두 목록이
+ * 서로를 붙잡기 때문입니다. 지금은 닮았지만 담는 것이 다릅니다 — 저쪽은
+ * 카드 격자, 이쪽은 한 줄짜리 목록입니다. */
+
+.layer { position: fixed; z-index: 61; inset: 0; pointer-events: none; }
+
+/* 커리어 쪽은 50vw입니다. 그쪽은 카드가 격자로 깔리지만 이쪽은 한 줄 목록이라
+   같은 폭을 쓰면 오른쪽이 통째로 빕니다. */
+.drawer {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: min(420px, 92vw); min-width: 0;
+  background: #fbfcfa; border-right: 1px solid #dce5dd;
+  box-shadow: 24px 0 60px rgb(23 42 30 / .17);
+  pointer-events: auto;
+}
+
+.drawerHead {
+  position: sticky; z-index: 4; top: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 74px; padding: 0 22px;
+  border-bottom: 1px solid #e0e7e0; background: rgb(251 252 250 / .96); backdrop-filter: blur(13px);
+}
+.drawerHead div { display: grid; gap: 3px; }
+.drawerHead small { color: #667a6e; font-size: 9px; font-weight: 900; letter-spacing: .11em; }
+.drawerHead b { color: #1d2f24; font-size: 14px; letter-spacing: -.03em; }
+.actions { display: flex; align-items: center; gap: 8px; }
+.actions button { display: grid; place-items: center; width: 33px; height: 33px; border: 1px solid #d5e0d6; border-radius: 50%; background: #fff; color: #315442; cursor: pointer; }
+.actions button:hover { background: #edf5ef; }
+.actions svg { width: 17px; }
+
+.content { height: calc(100vh - 74px); overflow: auto; padding: 22px 18px 60px; }
+.lead { margin: 0 4px 16px; color: #61706a; font-size: 12px; line-height: 1.7; }
+
+/* 입사지원 서류와 그 밖의 서류를 갈라 놓습니다. 한 화면에 있어도 서로 다른
+   일로 보여야, 자소서를 보러 온 사람이 준비서면 사이에서 헤매지 않습니다. */
+.group + .group { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e6ece8; }
+.group > h3 { margin: 0 4px 10px; color: #667a6e; font-size: 10.5px; font-weight: 900; letter-spacing: .09em; }
+
+.list { display: grid; gap: 8px; }
+
+/* 카드가 아니라 목록 줄입니다. 고르는 데 필요한 것은 이름과 한 줄 설명뿐이고,
+   설명이 길어지면 다섯 개를 한눈에 훑지 못합니다. */
+.item {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
+  padding: 15px 16px; border: 1px solid #e0e8e2; border-radius: 13px; background: #fff;
+  text-align: left;
+}
+.item b { display: block; color: #17221d; font-size: 14px; letter-spacing: -.02em; }
+.item p { margin: 5px 0 0; color: #6b7a73; font-size: 11.5px; line-height: 1.6; }
+.item svg { width: 16px; color: #9aa8a1; }
+
+a.item:hover { border-color: #b6d7c4; background: #f7fcf9; }
+a.item:hover svg { color: #176b4a; }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 900; letter-spacing: .02em; }
+.free { background: #e6f6ec; color: #176b4a; }
+.inUse { background: #eef2f0; color: #5c6b64; }
+.soon { background: #f4f1e7; color: #8a7a4c; }
+
+.head { display: flex; align-items: center; gap: 7px; }
+
+/* 준비 중인 줄. 눌리지 않으므로 button도 a도 아닌 그냥 블록입니다 — 누를 수
+   없는 것을 누를 수 있게 생기게 두면, 눌러 보고 나서야 알게 됩니다. */
+.locked { background: #f7f9f8; border-style: dashed; }
+.locked b { color: #6a7972; }
+.locked p { color: #8b978f; }
+
+.footNote { margin: 18px 4px 0; padding-top: 14px; border-top: 1px solid #e6ece8; color: #8b978f; font-size: 11px; line-height: 1.7; }
+
+/* 접힌 상태의 마크.
+ *
+ * 커리어 마크는 화면 세로 정중앙(top:50%)에 있습니다. 이것은 그 바로 아래에
+ * 붙습니다 — 두 개가 위아래로 나란히 서야 한 벌로 보입니다. 64px은 커리어
+ * 마크의 높이(약 58px)에 6px 틈을 더한 값입니다.
+ *
+ * z-index가 커리어 패널(60)보다 높습니다. 홈에 들어오면 커리어 패널이 펼쳐진
+ * 채로 시작하는데, 그 아래에 두면 첫 화면에서 이 마크가 아예 보이지 않습니다.
+ * 위에 두면 패널 왼쪽 가장자리에 붙은 탭처럼 보이고, 누르면 커리어가 접히며
+ * 이쪽이 열립니다. */
+.reopen {
+  position: fixed; z-index: 62; left: 0; top: 50%;
+  display: flex; align-items: center; gap: 7px;
+  transform: translateY(calc(-50% + 64px));
+  padding: 10px 7px 10px 10px;
+  border: 1px solid #2a4a3a; border-left: 0; border-radius: 0 10px 10px 0;
+  background: #1d3a2b; box-shadow: 8px 10px 25px rgb(20 70 46 / .25);
+  color: #fff; font-size: 9px; font-weight: 900; line-height: 1.25; text-align: left; cursor: pointer;
+}
+.reopen:hover { background: #16301f; }
+.reopen > svg:first-child { width: 16px; }
+.reopen > svg:last-child { width: 14px; margin-left: 1px; }
+
+.edgeToggle {
+  position: absolute; z-index: 6; top: 50%; right: 0;
+  display: grid; place-items: center; width: 38px; height: 58px;
+  transform: translate(50%, -50%);
+  border: 1px solid #2a4a3a; border-radius: 9px; background: #1d3a2b;
+  box-shadow: -7px 10px 22px rgb(20 70 46 / .23); color: #fff; cursor: pointer;
+}
+.edgeToggle:hover { background: #16301f; }
+.edgeToggle svg { width: 18px; }
+
+/* 커리어 드로어와 같은 기준(760px)에서 접습니다. 좁은 화면에서 가장자리 탭
+   두 개는 본문을 가리기만 합니다. 휴대폰에서는 헤더 메뉴의 "입사지원 서류"
+   항목이 같은 목록으로 갑니다. */
+@media (max-width: 760px) {
+  .layer, .reopen { display: none; }
+}

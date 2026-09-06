@@ -25,6 +25,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // 이미 있던 줄을 못 보고 하나 더 적은 것입니다. 같은 주소가 두 번 있으면
     // 크롤러가 그 사이트맵을 덜 믿습니다.
     { url: `${siteUrl}/community`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
+    // 이력서 메이커. 로그인도 결제도 없는 화면이라 검색으로 들어와 바로 쓸 수
+    // 있습니다("이력서 양식", "이력서 만들기"로 찾아오는 사람들입니다).
+    { url: `${siteUrl}/resume`, lastModified: launchedAt, changeFrequency: "monthly", priority: 0.8 },
     ...communityPosts.map((post) => ({
       url: `${siteUrl}${communityPostPath(post.id)}`,
       lastModified: post.updatedAt ? new Date(post.updatedAt) : new Date(),
