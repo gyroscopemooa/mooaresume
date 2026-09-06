@@ -16,7 +16,7 @@ import {
 } from "@/domain/career-description-build";
 import { careerDescriptionSampleOutput } from "@/fixtures/career-description-sample";
 import { buildDocx, DOCX_MIME_TYPE, type DocxBlock } from "@/lib/docx";
-import styles from "./career-description-build-panel.module.css";
+import styles from "./document-build-tool.module.css";
 
 /**
  * 경력기술서를 자료에서 만드는 유료 도구.

@@ -64,10 +64,11 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
   {
     id: "portfolio-note",
     label: "포트폴리오 설명글",
-    summary: "작업물마다 붙는 문제·과정·결과 설명을 다듬습니다.",
-    badge: "준비 중",
-    status: "coming-soon",
+    summary: "프로젝트를 적으면 문제·실행·성과 설명과 목차를 만듭니다.",
+    badge: "유료",
+    status: "available",
     group: "application",
+    href: "/portfolio",
   },
   {
     id: "study-plan",
@@ -78,20 +79,17 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
     group: "application",
   },
   {
-    id: "formal-letter",
-    label: "내용증명 · 진정서",
-    summary: "무엇을 언제까지 요구하는지 빠짐없이 적혔는지 봅니다.",
-    badge: "준비 중",
-    status: "coming-soon",
+    // 법률은 문서 하나가 아니라 사건 하나로 들어갑니다. 목록에 여덟 줄을
+    // 늘어놓으면 지금 자기에게 필요한 것이 무엇인지 고를 수 없습니다 —
+    // 내용증명을 쓰러 온 사람도, 소장을 받은 사람도 같은 문으로 들어가
+    // 안에서 고르게 합니다.
+    id: "legal-case",
+    label: "법률 서면 (내 사건)",
+    summary: "쟁점 정리부터 내용증명·소장·답변서·준비서면·항소이유서까지.",
+    badge: "유료",
+    status: "available",
     group: "other",
-  },
-  {
-    id: "legal-brief",
-    label: "법률 서면",
-    summary: "준비서면·쟁점요약서의 구조와 주장-근거 연결을 정리합니다.",
-    badge: "준비 중",
-    status: "coming-soon",
-    group: "other",
+    href: "/legal",
   },
   {
     id: "academic",

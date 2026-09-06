@@ -8,52 +8,11 @@ import {
   type CareerDescriptionBuildOutput,
   type CareerDescriptionBuildRequest,
 } from "@/domain/career-description-build";
+import { callDocumentBuildModel, type DocumentBuildModelOptions } from "@/server/ai/document-build-model";
 
-/**
- * AI 경력기술서 제작의 모델 호출. 이력서 제작(`resume-build-gateway.ts`)과
- * 같은 이유로 첨삭 게이트웨이를 고쳐 쓰지 않고 따로 둡니다.
- */
+/** AI 경력기술서 제작의 모델 호출. 응답 봉투·strict 스키마 처리는 `document-build-model.ts`가 합니다. */
 
 export const CAREER_DESCRIPTION_BUILD_PROMPT_VERSION = "career-description-build-2026-09-06";
-
-const responsesEnvelopeSchema = z.object({
-  id: z.string().min(1),
-  model: z.string().min(1),
-  output_text: z.string().optional(),
-  output: z.array(z.object({
-    type: z.string(),
-    content: z.array(z.object({ type: z.string(), text: z.string().optional() }).passthrough()).optional(),
-  }).passthrough()).optional(),
-  usage: z.object({
-    input_tokens: z.number().int().nonnegative().optional(),
-    output_tokens: z.number().int().nonnegative().optional(),
-  }).passthrough().nullable().optional(),
-});
-
-function extractOutputText(envelope: z.infer<typeof responsesEnvelopeSchema>) {
-  if (envelope.output_text) return envelope.output_text;
-  for (const item of envelope.output ?? []) {
-    for (const content of item.content ?? []) {
-      if (content.type === "output_text" && content.text) return content.text;
-    }
-  }
-  throw new Error("모델 응답에서 결과 JSON을 찾지 못했습니다.");
-}
-
-function toOpenAIStrictSchema(input: unknown): Record<string, unknown> {
-  const visit = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(visit);
-    if (!value || typeof value !== "object") return value;
-    const record = value as Record<string, unknown>;
-    const next = Object.fromEntries(Object.entries(record).map(([key, child]) => [key, visit(child)]));
-    if (next.type === "object" && next.properties && typeof next.properties === "object" && !Array.isArray(next.properties)) {
-      next.required = Object.keys(next.properties as Record<string, unknown>);
-      next.additionalProperties = false;
-    }
-    return next;
-  };
-  return visit(input) as Record<string, unknown>;
-}
 
 /**
  * 지시문. 한 문장으로 줄이면 "여러 자료를 합치되 자료에 없는 것은 만들지
@@ -95,59 +54,22 @@ export type CareerDescriptionBuildGatewayResult = {
   truncated: string[];
 };
 
-export type CareerDescriptionBuildGatewayOptions = {
-  apiKey: string;
-  model: string;
-  fetchImplementation?: typeof fetch;
-};
-
 export class OpenAICareerDescriptionBuildGateway {
-  private readonly fetchImplementation: typeof fetch;
-
-  constructor(private readonly options: CareerDescriptionBuildGatewayOptions) {
-    this.fetchImplementation = options.fetchImplementation ?? fetch;
-  }
+  constructor(private readonly options: DocumentBuildModelOptions) {}
 
   async build(request: CareerDescriptionBuildRequest): Promise<CareerDescriptionBuildGatewayResult> {
     const { input, truncated } = buildCareerDescriptionBuildInput(request);
-    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(180_000),
-      body: JSON.stringify({
-        model: this.options.model,
-        max_output_tokens: 8_000,
-        instructions: buildCareerDescriptionBuildInstructions(),
-        input,
-        text: {
-          format: {
-            type: "json_schema",
-            name: "career_description_build",
-            strict: true,
-            schema: toOpenAIStrictSchema(z.toJSONSchema(careerDescriptionBuildOutputSchema)),
-          },
-        },
-      }),
+    const called = await callDocumentBuildModel(this.options, {
+      schemaName: "career_description_build",
+      schema: z.toJSONSchema(careerDescriptionBuildOutputSchema),
+      instructions: buildCareerDescriptionBuildInstructions(),
+      input,
     });
-
-    if (!response.ok) {
-      const requestId = response.headers.get("x-request-id");
-      const detail = (await response.text()).slice(0, 500).replace(/\s+/g, " ").trim();
-      throw new Error(`OpenAI Responses API 호출에 실패했습니다. status=${response.status}${requestId ? ` request_id=${requestId}` : ""}${detail ? ` detail=${detail}` : ""}`);
-    }
-
-    const envelope = responsesEnvelopeSchema.parse(await response.json());
-    const output = normalizeCareerDescriptionBuildOutput(careerDescriptionBuildOutputSchema.parse(JSON.parse(extractOutputText(envelope)) as unknown));
+    const output = normalizeCareerDescriptionBuildOutput(careerDescriptionBuildOutputSchema.parse(JSON.parse(called.outputText) as unknown));
     return {
       output,
       truncated,
-      execution: {
-        responseId: envelope.id,
-        model: envelope.model,
-        promptVersion: CAREER_DESCRIPTION_BUILD_PROMPT_VERSION,
-        inputTokens: envelope.usage?.input_tokens ?? null,
-        outputTokens: envelope.usage?.output_tokens ?? null,
-      },
+      execution: { ...called.execution, promptVersion: CAREER_DESCRIPTION_BUILD_PROMPT_VERSION },
     };
   }
 }

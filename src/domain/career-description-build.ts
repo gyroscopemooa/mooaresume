@@ -21,13 +21,8 @@ import { CLASSIFIED_KIND_LABEL, classifiedKindSchema, type ClassifiedKind } from
  * 게이트웨이 요청 모양과 결제 경로가 자연히 갈라집니다.
  */
 
-/**
- * 1건 정액. 이력서 제작(3,900원)보다 위, QUICK 첨삭(5,900원)보다 위에 둡니다.
- * 이력서 제작은 "옮겨 적기"이지만 이것은 여러 자료를 종합해 방향까지 반영해
- * 새 문서를 짜는 일이라 원가가 더 듭니다. 실제 판매 데이터가 없는 첫 가격이므로
- * 출시 전 조정 대상입니다(`docs/agent-change-log.md` 참고).
- */
-export const CAREER_DESCRIPTION_BUILD_PRICE_KRW = 7_900;
+/** 값은 아직 정해지지 않았습니다. 미정값은 `builder-pricing.ts` 한 곳에 모아 둡니다. */
+export { CAREER_DESCRIPTION_BUILD_PRICE_KRW } from "./builder-pricing";
 
 export const CAREER_DESCRIPTION_BUILD_MAX_SOURCE_CHARS = 40_000;
 export const CAREER_DESCRIPTION_BUILD_MAX_NARRATIVE_CHARS = 12_000;

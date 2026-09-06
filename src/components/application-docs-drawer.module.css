@@ -59,6 +59,10 @@ a.item:hover svg { color: #176b4a; }
 .free { background: #e6f6ec; color: #176b4a; }
 .inUse { background: #eef2f0; color: #5c6b64; }
 .soon { background: #f4f1e7; color: #8a7a4c; }
+/* 유료. 무료(초록)와 준비 중(모래색) 사이에서 구별되되 튀지는 않는 파랑입니다
+   — 값이 붙는다는 사실은 알려야 하지만, 목록에서 유료가 제일 먼저 보이면
+   가격표를 늘어놓은 화면이 됩니다. */
+.paid { background: #eaf1fd; color: #1b5fc4; }
 
 .head { display: flex; align-items: center; gap: 7px; }
 

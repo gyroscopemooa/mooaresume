@@ -1,11 +1,15 @@
-/* 경력기술서 제작 도구.
+/* 문서 제작 도구들의 공통 스타일 — 경력기술서·포트폴리오·법률 문서.
  *
- * 이 서류에는 무료로 칸만 나눠 주는 도구가 없습니다 — 파는 것 자체가 여러
- * 자료를 종합해 새 문서를 짜는 일이라, 화면 하나를 반으로 갈라 왼쪽은 입력,
- * 오른쪽은 완성본(자리)입니다. 오른쪽은 만들기 전에는 예시를, 만든 뒤에는
- * 실제 결과를 보여 줍니다 — "무엇이 나오는지"를 입력 전에 알아야 빈 칸만 보고
- * 돌아가지 않습니다.
- */
+ * 이 서류들에는 무료로 칸만 나눠 주는 도구가 없습니다. 파는 것 자체가 자료를
+ * 종합해 새 문서를 짜는 일이라, 화면 하나를 반으로 갈라 왼쪽은 입력, 오른쪽은
+ * 완성본(자리)입니다. 오른쪽은 만들기 전에는 예시를, 만든 뒤에는 실제 결과를
+ * 보여 줍니다 — "무엇이 나오는지"를 입력 전에 알아야 빈 칸만 보고 돌아가지
+ * 않습니다.
+ *
+ * 드로어 두 개는 스타일시트를 복사해 나눠 뒀는데(폭을 조정할 때 서로를 끌고
+ * 가면 안 되니까), 이쪽은 반대로 **한 파일을 같이 씁니다.** 세 도구는 같은
+ * 제품군이라 서로 달라지면 안 되는 쪽입니다 — 복사해 두면 한 곳만 고친 날
+ * 세 화면이 조금씩 다른 서비스처럼 보입니다. */
 .page {
   box-sizing: border-box;
   min-height: 100vh;
@@ -45,14 +49,17 @@
 .field + .field { margin-top: 16px; }
 .field label, .fieldLabel { color: #333d4b; font-size: 11.5px; font-weight: 700; }
 .fieldLabel small { margin-left: 5px; color: #8b95a1; font-size: 10.5px; font-weight: 500; }
-.field textarea, .field input[type="text"] {
+.field textarea, .field input[type="text"], .field input[type="email"], .field select {
   box-sizing: border-box; width: 100%; padding: 12px 13px;
   border: 1px solid #e5e8eb; border-radius: 12px; background: #f9fafb; color: #191f28;
   font: inherit; font-size: 12.5px; line-height: 1.75; resize: vertical;
   transition: border-color .12s, background .12s, box-shadow .12s;
 }
 .field textarea::placeholder, .field input::placeholder { color: #b0b8c1; }
-.field textarea:focus, .field input:focus { outline: none; border-color: #3182f6; background: #fff; box-shadow: 0 0 0 3px rgb(49 130 246 / .12); }
+.field textarea:focus, .field input:focus, .field select:focus { outline: none; border-color: #3182f6; background: #fff; box-shadow: 0 0 0 3px rgb(49 130 246 / .12); }
+/* select는 resize가 없고 줄 높이가 다릅니다. 위 묶음과 같은 테두리를 쓰되
+   높이만 맞춰 둡니다 — 안 맞추면 입력 칸과 나란히 놓였을 때 한 칸만 큽니다. */
+.field select { padding: 11px 12px; line-height: 1.4; resize: none; }
 .field > small { color: #8b95a1; font-size: 10.5px; line-height: 1.6; }
 
 .dropzone {
@@ -164,6 +171,71 @@
 
 .emptyState { display: grid; justify-items: center; gap: 8px; padding: 40px 10px; text-align: center; color: #8b95a1; }
 .emptyState svg { width: 26px; color: #b0b8c1; }
+
+/* 프로젝트 반복 칸(포트폴리오).
+ *
+ * 프로젝트 세 개를 한 칸에 몰아 적게 하면 모델이 A의 성과를 B에 붙입니다.
+ * 그래서 입력부터 프로젝트 단위로 나눠 두고, 칸마다 테두리를 줘서 어디까지가
+ * 한 프로젝트인지 눈으로 보이게 합니다. */
+.projectList { display: grid; gap: 10px; }
+.projectCard { padding: 14px 15px; border: 1px solid #e8edf5; border-radius: 13px; background: #fbfcfe; }
+.projectHead { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.projectHead b { flex: none; color: #1b64da; font-size: 11px; font-weight: 800; }
+.projectHead input { flex: 1 1 auto; min-width: 0; }
+.projectHead > button { display: grid; place-items: center; flex: none; padding: 5px; border: 0; border-radius: 7px; background: transparent; color: #b0b8c1; cursor: pointer; }
+.projectHead > button:hover { background: #fff1f1; color: #f04452; }
+.projectHead svg { width: 14px; }
+.projectRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.addProject {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+  margin-top: 10px; padding: 11px 14px; border: 1px dashed #cdd8e6; border-radius: 11px; background: #f9fbff;
+  color: #1b64da; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.addProject:hover { border-color: #a9c2e8; background: #eef5ff; }
+.addProject:disabled { opacity: .5; cursor: not-allowed; }
+.addProject svg { width: 14px; }
+
+/* 목차(포트폴리오 완성본 맨 위). */
+.toc { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #eef1f5; border-radius: 11px; background: #fafbfc; }
+.toc b { display: block; margin-bottom: 7px; color: #333d4b; font-size: 11.5px; }
+.toc ol { margin: 0; padding-left: 17px; color: #4e5968; font-size: 11.5px; line-height: 1.8; }
+
+/* 사건 목록·사건 상세(법률). */
+.caseList { display: grid; gap: 10px; }
+.caseCard {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 15px 16px; border: 1px solid #e8edf5; border-radius: 13px; background: #fff; text-align: left;
+}
+.caseCard:hover { border-color: #b8cdf0; background: #fafcff; }
+.caseCard b { display: block; color: #191f28; font-size: 13.5px; letter-spacing: -.02em; }
+.caseCard small { color: #8b95a1; font-size: 11px; }
+.caseCard svg { width: 16px; color: #b0b8c1; }
+
+.docGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.docTile {
+  display: grid; gap: 4px; padding: 13px 14px; border: 1px solid #e8edf5; border-radius: 12px;
+  background: #fff; text-align: left; cursor: pointer; font: inherit;
+}
+.docTile:hover { border-color: #b8cdf0; background: #fafcff; }
+.docTile[aria-pressed="true"] { border-color: #3182f6; background: #f4f8ff; box-shadow: 0 0 0 3px rgb(49 130 246 / .1); }
+.docTile b { color: #191f28; font-size: 12.5px; letter-spacing: -.02em; }
+.docTile small { color: #8b95a1; font-size: 10.5px; line-height: 1.55; }
+.docTileDone { display: inline-flex; align-items: center; gap: 4px; color: #176b4a; font-size: 10px; font-weight: 800; }
+.docTileDone svg { width: 11px; }
+
+.stageLabel { margin: 16px 0 8px; color: #8b95a1; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; }
+.stageLabel:first-child { margin-top: 0; }
+
+/* 법률 고지. 이력서와 달리 여기서는 이 문장이 화면에 반드시 있어야 합니다. */
+.disclaimer {
+  margin: 16px 0 0; padding: 12px 14px; border: 1px solid #e5e8eb; border-radius: 11px;
+  background: #fafbfc; color: #6b7684; font-size: 11px; line-height: 1.75;
+}
+.disclaimer b { color: #4e5968; }
+
+@media (max-width: 620px) {
+  .docGrid { grid-template-columns: minmax(0, 1fr); }
+}
 
 @media (max-width: 960px) {
   .layout { grid-template-columns: minmax(0, 1fr); }

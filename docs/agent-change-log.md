@@ -6730,3 +6730,55 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx eslint src ...`(신규 파일 전체) 오류 0건, `npx vitest run` 133 files · 1032 tests passed(신규 12건 포함), `npx next build`(Turbopack) 성공 — `/career-description`이 정적 페이지로, `/api/career-description-builds`·`/api/career-description-builds/[buildId]/execute`가 동적 라우트로 정상 생성됨을 확인. **브라우저 확인과 실제 결제 흐름 확인은 사용자 담당입니다** — Supabase 마이그레이션 적용과 Polar 상품 생성이 필요합니다.
 - Rollback: 이 커밋들을 revert. 드로어 항목은 `application-document.ts`에서 `career-description`을 `status: "coming-soon"`, href 삭제로 되돌리면 이전 상태와 같습니다. 새 테이블은 별도 마이그레이션으로 drop해야 합니다(자동 롤백 없음).
 - User decision: pending. 확인 필요 사항 — (1) "직무기술서"를 기존 "경력기술서" 항목으로 처리한 것이 맞는지, (2) 가격 7,900원, (3) 출력 항목 구성(회사·소속·직무·기간·담당업무·성과·근거)이 원하는 표준 양식과 맞는지. 배포 여부는 이 브랜치를 `main`에 병합하기 전까지 보류합니다.
+
+## 2026-09-06 — Claude: 포트폴리오·법률(내 사건)을 열고, 제작 기능의 공통 뼈대를 뺀다
+
+- Agent/session: Claude, 사용자 요청(ChatGPT 자문 내역을 근거로 "쭉 완성형으로" + 가격은 나중에 + 기본형은 입력+첨부=미리보기).
+- Status: active(브랜치 `claude/job-description-input-attach-cx44pf`에만 존재. `main` 병합·배포 없음).
+- Protected baseline: **이력서 제작(`resume-build*`)은 손대지 않았습니다.** 이미 팔고 있는 결제 경로라, 아래의 공통화 이득만으로 건드리지 않았습니다. 옮길지는 사용자가 정합니다. 자소서 첨삭(QUICK/PRO/FINAL) 경로도 그대로입니다.
+
+### 1) 직무기술서 ≠ 경력기술서 — 이름을 갈랐습니다
+
+- 사용자 자문 내역대로 둘을 한 메뉴로 묶지 않습니다. **경력기술서**는 지원자가 쓰는 문서(우리 기능), **직무기술서(JD)**는 회사가 공고에 붙이는 문서(채용공고 분석 = PRO)입니다.
+- 앞 커밋에서 `title`에 "경력기술서 · 직무기술서 만들기"로 병기했던 것을 "경력기술서 만들기"로 되돌리고, FAQ를 "같은 것"에서 "다른 문서이며 JD 분석은 이쪽"으로 고쳐 `/analyze`로 링크했습니다. 검색어로서의 "직무기술서"는 FAQ 본문에 남아 있어 유입은 유지됩니다.
+- Files: `src/app/career-description/page.tsx`, `career-description-guide.tsx`, `docs/career-document-builder-plan.md`(상태를 "구현됨"으로 갱신하고 이름 혼동을 정정).
+
+### 2) 포트폴리오 설명글 — 새 유료 기능
+
+- 파는 것은 **서식이 아니라 글**입니다. PPT를 만들지 않습니다. 프로젝트마다 소개·담당 역할·문제·실행·성과·사용 기술과 전체 목차를 냅니다.
+- **입력 모양이 앞의 빌더들과 다릅니다.** 저쪽은 자료를 한 덩이로 받으면 됐지만 포트폴리오는 프로젝트가 먼저라, 왼쪽이 큰 칸 하나가 아니라 **프로젝트 카드 반복**입니다. 셋을 한 칸에 몰아 적게 하면 모델이 A의 성과를 B에 붙이고, 그건 면접에서 바로 걸립니다. 프롬프트도 `[프로젝트 N]`으로 번호를 붙여 보내고 결과의 `index`로 대조합니다.
+- 목차는 모델이 적은 것을 쓰지 않고 **결과의 프로젝트 목록에서 다시 만듭니다**(`normalizePortfolioBuildOutput`). 목차와 본문이 어긋난 문서는 신뢰를 잃습니다.
+- Files: `src/domain/portfolio-build.ts`(+test), `src/server/ai/portfolio/portfolio-build-gateway.ts`, `src/app/api/portfolio-builds/**`, `supabase/migrations/20260906220000_portfolio_builds.sql`, `src/components/portfolio-build-panel.tsx`, `src/fixtures/portfolio-sample.ts`, `src/app/portfolio/**`.
+
+### 3) 법률 "내 사건" — 문서 열 개가 아니라 사건 하나
+
+- 사용자 지적("내사건 카테고리로 연속성 있게")을 구조로 받았습니다. 사건에 자료가 쌓이고, 같은 자료로 문서를 하나씩 만듭니다. 소장을 쓸 때 넣은 계약서가 석 달 뒤 준비서면에도, 다시 항소이유서에도 그대로 쓰입니다.
+- 문서 10종을 **설정표 하나**로 둡니다(`legalDocumentDefinitions`): 사건분석·내용증명·소장·답변서·준비서면·증거정리·상대서면반박·판결문분석·항소장·항소이유서. 종류마다 게이트웨이를 두면 새 문서를 더할 때마다 갈래가 늘고 공통 규칙을 한 곳에서 못 고칩니다. 출력 스키마도 하나를 같이 씁니다(안 쓰는 배열은 빈 채로 옵니다).
+- **내 지위로 순서가 바뀝니다.** 소송을 걸려는 사람에게는 소장이, 소장을 받은 사람에게는 답변서가 앞에 옵니다(`orderLegalDocuments`). 사용자는 문서 이름이 아니라 자기 상황으로 고릅니다.
+- 용어 정정: 소송장이 아니라 **소장**. 항소는 **항소장 → 항소이유서** 두 단계로 나눠 두었습니다(사용자 자문 내역과 같습니다).
+- **위험 관리 — 취업 문서와 다르게 잡았습니다.** ① 기한을 모델이 계산하지 못하게 금지했습니다(항소기간을 산수에 맡길 수 없습니다). 기준만 적고 날짜는 본인이 확인하게 합니다. ② 승소 가능성·확률 표시 금지. ③ 조문·판례를 기억으로 지어내지 못하게 금지. ④ 고지 문구(`LEGAL_DISCLAIMER`)를 모델이 아니라 **코드가** 결과에 붙입니다 — 모델에 맡기면 어떤 문서에는 빠집니다.
+- **여기서는 자료를 저장합니다 — 앞의 기능들과 반대입니다.** 이력서·경력기술서·포트폴리오는 "서버에 저장하지 않는다"가 약속이었지만 사건은 저장이 곧 기능입니다. 대신 표마다 `owner_user_id`를 따로 두고 RLS로 본인만, 사건을 지우면 자료·문서·결제기록이 함께 지워지게(cascade) 했고, 화면에서 저장된다는 사실과 지우는 방법을 말합니다. 사건 화면은 `noindex`이며 서버 로그에 사건 내용을 남기지 않습니다.
+- 결제 구멍 하나를 막았습니다: 만들 문서 종류를 **화면이 보낸 값이 아니라 결제 건에 적힌 값**으로 읽고, 결제 건이 가리키는 사건과 주소의 사건이 다르면 거부합니다. 지금은 종류별 값이 같지만, 값을 나누는 순간 열릴 구멍입니다.
+- 돈이 오가는 순서 버그 하나도 미리 막았습니다: 사건 경위를 적어 놓고 저장을 누르지 않은 채 결제하면 결제 후 "자료가 적다"로 막혔습니다. 결제로 나가기 전에 사건 정보를 먼저 저장합니다.
+- Files: `src/domain/legal-case.ts`(+test), `src/server/legal/legal-case-repository.ts`, `src/server/ai/legal/legal-document-gateway.ts`, `src/app/api/legal-cases/**`, `supabase/migrations/20260906230000_legal_cases.sql`, `src/components/legal-case-workspace.tsx`·`legal-case-starter.tsx`, `src/app/legal/**`.
+
+### 4) 네 번째 복사본을 만들 차례에 공통 뼈대를 뺐습니다
+
+- 이력서·경력기술서·포트폴리오·법률이 같은 모양("1건 사서 1건 만든다")을 요구했습니다. 두 번째까지는 우연이고 네 번째는 패턴이라, 이번에 함수로 뺐습니다.
+  - `src/server/document-builds/build-lifecycle.ts` — 표 이름만 다른 상태 전이(PENDING→CHECKOUT→RUNNING→USED/FAILED).
+  - `src/server/billing/document-build-checkout.ts` — Polar 결제 생성·확인. 상품 id는 환경변수 **이름**으로 받아, 상품 하나를 아직 안 만들었다고 나머지가 멈추지 않습니다.
+  - `src/server/document-builds/products.ts` — 표 이름과 상품 환경변수를 한 곳에.
+  - `src/server/ai/document-build-model.ts` — Responses 호출·strict 스키마 변환·응답 봉투 파싱.
+  - `src/server/http/request-guards.ts` — 출처·로그인 확인(법률이 라우트를 5개 더 만들면서 필요해졌습니다).
+  - `src/components/document-build-tool.module.css` — 세 도구가 **한 스타일시트를 같이** 씁니다. 드로어 둘은 복사해 나눴지만(서로 폭을 끌면 안 되니까) 이쪽은 반대입니다 — 같은 제품군이라 달라지면 안 됩니다.
+- 경력기술서(이번 세션에 제가 쓴 코드)를 이 뼈대로 옮기면서 전용 repository·checkout 파일 2개를 지웠습니다. **이력서 제작은 옮기지 않았습니다**(위 Protected baseline).
+- 가격 미정값은 `src/domain/builder-pricing.ts` 한 파일에 모았습니다. 사용자가 "가격은 다 만들고 정한다"고 했으므로, 정할 때 **이 파일 숫자만** 고치면 됩니다. 이미 팔고 있는 값(QUICK·PRO·FINAL·이력서)은 옮기지 않았습니다 — 확정값과 미정값을 같은 서랍에 두면 어느 것이 확정인지 알 수 없습니다.
+
+### 그 밖의 결정
+
+- **사이트맵에 넣지 않았습니다.** `app/sitemap.ts`의 기존 규칙("제품 경로는 뺀다" — 로그인·결제가 필요한 화면 제외, `/resume`처럼 무료·비로그인만 등재)을 따랐고, "런칭 배포하지 말라"는 앞선 지시와도 맞습니다. 세 화면 모두 메타데이터·FAQ 구조화 데이터·서버 렌더링 소개 글은 갖췄으므로, 열 때 사이트맵에 세 줄만 더하면 됩니다.
+- 드로어 꼬리표 스타일을 `id === "resume"`가 아니라 꼬리표 글자로 고르게 고쳤습니다. "무료 서류는 하나뿐"이라는 가정이 그 줄에 숨어 있었고, 유료가 셋이 되며 깨졌습니다. `.paid`(파랑) 추가.
+- 법률 드로어 항목은 문서별로 늘어놓지 않고 "법률 서면 (내 사건)" 한 줄로 뒀습니다. 여덟 줄을 늘어놓으면 지금 자기에게 필요한 것을 고를 수 없습니다.
+- Validation: `npx tsc --noEmit` clean, `npx eslint src` 오류 0건(경고 2건은 기존 파일), `npx vitest run` 135 files · 1053 tests passed(신규 21건), `npx next build` 성공 — `/portfolio`·`/career-description` 정적, `/legal`·`/legal/[caseId]`와 신규 API 7개 동적 생성 확인. **브라우저 확인과 실제 결제·마이그레이션 적용은 사용자 담당입니다.**
+- Rollback: 이 커밋 revert. 드로어는 `application-document.ts`에서 해당 항목을 `coming-soon`으로 되돌리면 숨겨집니다. 새 표 4개(portfolio_builds, legal_cases, legal_case_materials, legal_case_documents, legal_document_builds)는 별도 마이그레이션으로 drop해야 합니다.
+- User decision: pending — (1) 가격 4종(`builder-pricing.ts`), (2) Polar 상품 3개 생성 후 env 3개 입력, (3) 이력서 제작도 공통 뼈대로 옮길지, (4) 사이트맵 등재 시점.

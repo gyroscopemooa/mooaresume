@@ -1,7 +1,7 @@
 # 직무기술서 만들어주기 — 다음 할 일
 
 - 출처: 사용자 대화, 2026-08-31.
-- 상태: **결정 전. 코드로 존재하는 것은 없습니다.** 지금 만들지 않기로 했습니다.
+- 상태: **구현됨(2026-09-06).** 이 문서가 "직무기술서"라고 부르던 것은 실제로는 **경력기술서**(지원자가 자기 경력을 정리해 내는 문서)입니다. 직무기술서(JD)는 회사가 채용공고에 붙이는 문서라 주체가 반대이고, 그쪽은 채용공고 분석(PRO)이 다룹니다. 구현은 `/career-description`, 코드는 `src/domain/career-description-build.ts`부터 보세요. 아래 4~6절의 위험·원칙은 그대로 유효합니다. 5절의 "정하지 않은 것" 중 양식과 출력은 정해졌고(회사·소속·직무·기간·담당업무·성과 + DOCX), 가격은 아직 미정입니다(`src/domain/builder-pricing.ts`).
 - 같이 볼 것: [`pro-candidate-materials-and-experience-bank.md`](./pro-candidate-materials-and-experience-bank.md), [`create-mode-and-pricing-decision.md`](./create-mode-and-pricing-decision.md), [`positioning-and-differentiation.md`](./positioning-and-differentiation.md)
 
 ---

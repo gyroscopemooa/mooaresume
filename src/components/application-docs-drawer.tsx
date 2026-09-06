@@ -68,7 +68,13 @@ export function ApplicationDocsDrawer() {
             <h3>{APPLICATION_DOCUMENT_GROUP_LABEL[group]}</h3>
             <div className={styles.list}>
               {items.map((document) => {
-                const badgeClass = document.status === "coming-soon" ? styles.soon : document.id === "resume" ? styles.free : styles.inUse;
+                // 꼬리표의 생김새는 꼬리표가 정합니다. 한때 `id === "resume"`로
+                // 무료를 골랐는데, 무료 서류가 하나뿐이라는 가정이 그 줄에
+                // 숨어 있었습니다. 유료 서류가 셋이 되면서 그 가정이 깨졌습니다.
+                const badgeClass = document.status === "coming-soon" ? styles.soon
+                  : document.badge === "무료" ? styles.free
+                  : document.badge === "유료" ? styles.paid
+                  : styles.inUse;
                 const body = <>
                   <div>
                     <span className={styles.head}>
