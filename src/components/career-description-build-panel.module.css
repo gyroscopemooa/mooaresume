@@ -1,0 +1,177 @@
+/* 경력기술서 제작 도구.
+ *
+ * 이 서류에는 무료로 칸만 나눠 주는 도구가 없습니다 — 파는 것 자체가 여러
+ * 자료를 종합해 새 문서를 짜는 일이라, 화면 하나를 반으로 갈라 왼쪽은 입력,
+ * 오른쪽은 완성본(자리)입니다. 오른쪽은 만들기 전에는 예시를, 만든 뒤에는
+ * 실제 결과를 보여 줍니다 — "무엇이 나오는지"를 입력 전에 알아야 빈 칸만 보고
+ * 돌아가지 않습니다.
+ */
+.page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 32px max(16px, calc((100vw - 1180px) / 2)) 48px;
+  background: linear-gradient(180deg, #f2f6fd 0%, #eef3fb 100%);
+  color: #191f28;
+  font-size: 12.5px;
+}
+
+.head { max-width: 720px; margin: 0 auto 22px; text-align: center; }
+.head h1 { margin: 0 0 9px; font-size: 25px; letter-spacing: -.04em; }
+.head p { margin: 0; color: #4e5968; font-size: 13px; line-height: 1.75; }
+.priceRow { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
+.priceTag {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 8px 14px;
+  border: 1px solid #dbe6f8; border-radius: 999px;
+  background: linear-gradient(180deg, #fff 0%, #f5f9ff 100%);
+  box-shadow: 0 1px 2px rgb(23 32 45 / .05);
+}
+.priceTag b { color: #1b64da; font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+.priceTag small { color: #8b95a1; font-size: 10.5px; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; max-width: 1180px; margin: auto; align-items: start; }
+
+.card {
+  padding: 24px 26px 22px;
+  border: 1px solid #e8edf5;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(23 32 45 / .05), 0 18px 40px -24px rgb(20 45 90 / .35);
+}
+
+.sectionLabel { display: flex; align-items: center; gap: 7px; margin: 0 0 14px; color: #333d4b; font-size: 12px; font-weight: 800; letter-spacing: -.01em; }
+.sectionLabel svg { width: 15px; color: #1b64da; }
+
+.field { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.field + .field { margin-top: 16px; }
+.field label, .fieldLabel { color: #333d4b; font-size: 11.5px; font-weight: 700; }
+.fieldLabel small { margin-left: 5px; color: #8b95a1; font-size: 10.5px; font-weight: 500; }
+.field textarea, .field input[type="text"] {
+  box-sizing: border-box; width: 100%; padding: 12px 13px;
+  border: 1px solid #e5e8eb; border-radius: 12px; background: #f9fafb; color: #191f28;
+  font: inherit; font-size: 12.5px; line-height: 1.75; resize: vertical;
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.field textarea::placeholder, .field input::placeholder { color: #b0b8c1; }
+.field textarea:focus, .field input:focus { outline: none; border-color: #3182f6; background: #fff; box-shadow: 0 0 0 3px rgb(49 130 246 / .12); }
+.field > small { color: #8b95a1; font-size: 10.5px; line-height: 1.6; }
+
+.dropzone {
+  display: grid; justify-items: center; gap: 4px;
+  padding: 22px 16px; border: 1px dashed #cdd8e6; border-radius: 12px; background: #f9fbff;
+  text-align: center; cursor: pointer; transition: border-color .12s, background .12s;
+}
+.dropzoneOn { border-color: #3182f6; background: #eef5ff; }
+.dropzone:hover { border-color: #a9c2e8; }
+.dropzone svg { width: 19px; color: #3182f6; }
+.dropzone b { color: #333d4b; font-size: 12px; }
+.dropzone small { color: #8b95a1; font-size: 10.5px; line-height: 1.6; }
+.dropzone input { display: none; }
+
+.fileList { display: grid; gap: 6px; margin: 9px 0 0; padding: 0; list-style: none; }
+.fileList li {
+  display: grid; grid-template-columns: 15px minmax(0, 1fr) auto auto; align-items: center; gap: 8px;
+  padding: 8px 10px; border: 1px solid #eef1f5; border-radius: 10px; background: #fff;
+  box-shadow: 0 1px 2px rgb(23 32 45 / .04);
+}
+.fileList svg { width: 14px; color: #6b7684; }
+.fileList b { display: block; overflow: hidden; color: #333d4b; font-size: 11.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.fileList small { color: #8b95a1; font-size: 10px; }
+.fileList select { max-width: 122px; padding: 5px 6px; border: 1px solid #e5e8eb; border-radius: 7px; background: #f9fafb; color: #4e5968; font: inherit; font-size: 10.5px; }
+.fileList li > button { display: grid; place-items: center; padding: 4px; border: 0; border-radius: 7px; background: transparent; color: #b0b8c1; cursor: pointer; }
+.fileList li > button:hover { background: #fff1f1; color: #f04452; }
+
+.message { display: flex; align-items: flex-start; gap: 7px; margin: 14px 0 0; padding: 11px 13px; border: 1px solid #fbe2c0; border-radius: 11px; background: #fff9ef; color: #99671a; font-size: 11.5px; line-height: 1.7; }
+.message svg { width: 14px; flex: none; margin-top: 1px; }
+
+.login { margin-top: 16px; padding: 14px 15px; border: 1px solid #e8edf5; border-radius: 12px; background: #f9fbff; }
+.login b { display: flex; align-items: center; gap: 6px; color: #191f28; font-size: 12.5px; }
+.login b svg { width: 14px; color: #3182f6; }
+.login p { margin: 5px 0 11px; color: #8b95a1; font-size: 11px; }
+.loginRow { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.loginRow input { flex: 1 1 150px; min-width: 0; padding: 9px 11px; border: 1px solid #e5e8eb; border-radius: 9px; background: #fff; color: #191f28; font: inherit; font-size: 11.5px; }
+.loginRow input:focus { outline: none; border-color: #3182f6; box-shadow: 0 0 0 3px rgb(49 130 246 / .12); }
+.loginRow button { display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 9px 12px; border: 1px solid #e5e8eb; border-radius: 9px; background: #fff; color: #4e5968; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgb(23 32 45 / .04); }
+.loginRow button:hover { border-color: #cdd8e6; color: #191f28; }
+.loginRow svg { width: 13px; }
+.googleButton { background: #fff; color: #333d4b; }
+.or { color: #b0b8c1; font-size: 10.5px; }
+
+.footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #f1f4f8; }
+.summary { display: grid; gap: 1px; margin-right: auto; }
+.summary b { color: #191f28; font-size: 12.5px; }
+.summary small { color: #8b95a1; font-size: 10.5px; }
+.actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.buy {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 12px 20px; border: 0; border-radius: 11px; background: #3182f6; color: #fff;
+  font: inherit; font-size: 13px; font-weight: 700; letter-spacing: -.02em; cursor: pointer;
+  box-shadow: 0 1px 2px rgb(23 32 45 / .08), 0 10px 20px -12px rgb(49 130 246 / .9);
+  transition: background .12s, transform .06s, box-shadow .12s;
+}
+.buy:hover { background: #1b64da; }
+.buy:active { transform: translateY(1px); box-shadow: 0 1px 2px rgb(23 32 45 / .1); }
+.buy:disabled { background: #e5e8eb; color: #b0b8c1; box-shadow: none; cursor: not-allowed; }
+.buy svg { width: 15px; }
+.ghost { padding: 12px 15px; border: 1px solid #e5e8eb; border-radius: 11px; background: #fff; color: #4e5968; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgb(23 32 45 / .04); }
+.ghost:hover { border-color: #cdd8e6; color: #191f28; }
+.ghost:disabled { opacity: .45; cursor: not-allowed; }
+.terms { flex: 1 1 100%; margin: 0; color: #8b95a1; font-size: 10.5px; line-height: 1.7; }
+
+.scanNote { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; color: #c2842a; font-size: 11px; }
+.scanNote svg { width: 12px; flex: none; }
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 오른쪽 완성본 칸 */
+.previewCard { position: sticky; top: 18px; }
+.previewHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.sampleBadge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; background: #f4f1e7; color: #8a7a4c; font-size: 10px; font-weight: 800; }
+.doneBadge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; background: #e6f6ec; color: #176b4a; font-size: 10px; font-weight: 800; }
+.doneBadge svg { width: 12px; }
+
+.previewHeadline { margin: 0 0 16px; padding: 10px 13px; border-radius: 11px; background: #f4f8ff; color: #1b64da; font-size: 12.5px; font-weight: 700; }
+
+.entries { display: grid; gap: 14px; }
+.entry { padding-bottom: 14px; border-bottom: 1px dashed #e5e8eb; }
+.entry:last-child { border-bottom: 0; padding-bottom: 0; }
+.entryHead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
+.entryHead b { color: #191f28; font-size: 13.5px; font-weight: 800; letter-spacing: -.02em; }
+.entryHead span { color: #6b7684; font-size: 11px; }
+.entrySub { margin: 3px 0 8px; color: #6b7684; font-size: 11.5px; }
+.entry ul { display: grid; gap: 4px; margin: 0; padding-left: 16px; color: #333d4b; font-size: 12px; line-height: 1.65; }
+.entry .achievement { margin: 4px 0 0; padding-left: 16px; color: #176b4a; font-size: 12px; }
+.evidence { margin: 6px 0 0; color: #9aa4af; font-size: 10px; }
+
+.supportTitle { margin: 18px 0 8px; color: #333d4b; font-size: 11.5px; font-weight: 800; }
+.support { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.support li { padding: 9px 11px; border: 1px solid #eef1f5; border-radius: 10px; background: #fafbfc; font-size: 11.5px; }
+.support b { color: #191f28; }
+.support span { color: #8b95a1; font-size: 10.5px; }
+
+.notes { margin: 16px 0 0; padding: 12px 14px; border: 1px solid #fbe2c0; border-radius: 11px; background: #fff9ef; }
+.notes b { display: block; margin-bottom: 6px; color: #99671a; font-size: 11.5px; }
+.notes ul { margin: 0; padding-left: 15px; color: #8a6a2f; font-size: 11px; line-height: 1.7; }
+
+.downloadRow { margin-top: 18px; }
+.download {
+  display: inline-flex; align-items: center; gap: 7px; width: 100%; justify-content: center;
+  padding: 12px 16px; border: 1px solid #176b4a; border-radius: 11px; background: #176b4a; color: #fff;
+  font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.download:hover { background: #125a3d; }
+.download svg { width: 15px; }
+
+.emptyState { display: grid; justify-items: center; gap: 8px; padding: 40px 10px; text-align: center; color: #8b95a1; }
+.emptyState svg { width: 26px; color: #b0b8c1; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .previewCard { position: static; }
+}
+
+@media (max-width: 620px) {
+  .page { padding: 24px 14px 36px; }
+  .card { padding: 20px 17px 18px; border-radius: 16px; }
+  .head h1 { font-size: 21px; }
+}

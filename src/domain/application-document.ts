@@ -55,10 +55,11 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
   {
     id: "career-description",
     label: "경력기술서",
-    summary: "프로젝트 단위로 무엇을 했고 무엇이 달라졌는지 정리합니다.",
-    badge: "준비 중",
-    status: "coming-soon",
+    summary: "이력서·자소서·자격증을 올리면 회사별 경력으로 정리합니다.",
+    badge: "유료",
+    status: "available",
     group: "application",
+    href: "/career-description",
   },
   {
     id: "portfolio-note",

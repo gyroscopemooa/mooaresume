@@ -6710,3 +6710,23 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/components/resume-build-panel.module.css`(전면 재작성), `src/components/resume-build-panel.tsx`(머리말 구조·아이콘), `src/components/resume-maker.tsx`·`.module.css`(단추 아이콘 제거·짧은 글자).
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 1020 passed, `npx eslint src` 오류 0건. **브라우저 확인은 사용자 담당입니다** — 1280px과 900px 사이에서 상단바가 한 줄에 남는지, 하단 카드가 위 도구와 구분되어 보이는지 봐 주세요.
 - Rollback: 이 커밋 revert하면 짙은 초록 + 알약 라벨로 돌아갑니다.
+
+## 2026-09-06 — Claude: 경력기술서(직무기술서) 자동 제작을 유료 기능으로 연다
+
+- Agent/session: Claude, 사용자 요청("나머지 직무기술서도 드로우라벨에서나오는 직무기술서 클릭하면...").
+- Status: active(브랜치 `claude/job-description-input-attach-cx44pf`에만 존재. `main`에 병합하거나 배포하지 않음 — 사용자가 명시적으로 "런칭 배포하지 말라"고 지시함).
+- Protected baseline: 이 기능은 새 항목이며 기존 구현을 지우거나 바꾸지 않았다. 서류 드로어(`application-docs-drawer.tsx`)의 "경력기술서" 항목만 `coming-soon`(href 없음)에서 `available`(href `/career-description`, badge "유료")로 바꿨다 — 다른 항목·다른 서류는 그대로다.
+- Change and reason: `docs/career-document-builder-plan.md`("직무기술서 만들어주기", 상태: 결정 전·미구현)에서 다루던 기능을 실제로 만들었다. 사용자 표현으로는 "직무기술서"이지만 코드/드로어의 기존 이름인 "경력기술서" 항목을 완성하는 것으로 처리했다 — 같은 문서(회사별 소속·직무·기간·담당업무 정리)를 가리키는 다른 이름이라 판단했고, 이 판단은 위 계획 문서의 예시 양식과 일치한다. 별도 항목을 새로 만들지, 이 판단이 틀렸는지는 사용자 확인이 필요하다.
+  - 구조는 AI 이력서 제작 유료 기능(`resume-build.ts`/`resume-build-panel.tsx`/2026-09-06 커밋 `ae7cd5c`)을 그대로 본떴다: 결제 전에는 자료를 서버로 보내지 않고, 결제 확인은 웹훅이 아니라 실행 시점에 Polar에 직접 확인하며, 실행 자료는 저장하지 않는다.
+  - 다른 점: 이력서 제작은 결과를 기존 무료 폼에 얹지만, 이 기능은 얹을 폼이 없다 — 결과 자체가 완성 문서다. 그래서 화면을 반으로 나눠 왼쪽은 입력(줄글+파일+"만들 방향" 선택 입력), 오른쪽은 완성본을 둔다. 만들기 전에는 정적 예시(`fixtures/career-description-sample.ts`)를, 만든 뒤에는 실제 결과를 같은 자리에 보여준다. 파일을 올려도 왼쪽 줄글 칸은 계속 편집할 수 있다(사용자가 요청한 "첨부해도 입력창 추가로 정보작성").
+  - 계획 문서 4절이 지목한 가장 큰 위험(여러 자료를 합칠 때 근거를 잃어버리는 것)에 대응해, 결과의 각 경력 항목에 `evidence`(어느 자료에서 왔는지)를 모델이 함께 반환하게 하고 화면에 그대로 보여준다.
+  - 방향 지정("+@ 방향", 예: "심리상담사 쪽으로")은 순서·분량만 바꾸고 사실을 새로 만들지 못하게 프롬프트에 명시했다(계획 문서 3절).
+  - 재직 개월 수는 모델이 계산하지 않는다. period 문자열("2021.03 ~ 2023.05")을 그대로 받고, `formatCareerDescriptionDuration`이라는 순수 함수가 파싱 가능한 형태만 계산한다 — 계획 문서의 "개월 수를 사람이 세게 만들면 안 된다"는 원칙을, 모델의 산수도 못 믿는다는 방향으로 한 단계 더 지켰다.
+  - 출력은 화면 표시 + 기존 `lib/docx.ts`(의존성 없는 DOCX 작성기, `result-workspace-complete.tsx`가 이미 씀)로 만든 DOCX 다운로드. 서버에는 저장하지 않는다(계획 문서 4-1절 "출력은 DOCX가 기본이어야 한다"를 만족).
+  - **가격(7,900원)은 실제 판매 데이터가 없는 가정값이다.** 이력서 제작(3,900원, "옮겨 적기")보다 위, QUICK 첨삭(5,900원)보다 위로 잡았다 — 여러 자료를 종합하고 방향까지 반영하는 일이 단순 옮겨 적기보다 원가가 높다고 판단했지만, 사용자 확인 후 조정이 필요할 수 있다.
+  - **실제 결제는 아직 켜지지 않는다.** `POLAR_CAREER_DESCRIPTION_PRODUCT_ID` 환경변수가 비어 있으면 결제 생성이 그 자리에서 이름을 붙여 실패한다(이력서 제작과 같은 안전장치). 운영자가 Polar 대시보드에서 상품을 만들고 값을 채우기 전까지는, 화면과 드로어 링크가 있어도 결제할 수 없다. "런칭 배포하지 말라"는 지시를 코드 차원에서도 지키는 장치다.
+  - 사이트맵(`app/sitemap.ts`)에는 추가하지 않았다. 그 파일의 기존 규칙("제품 경로는 뺀다" — 로그인·결제가 필요한 화면은 사이트맵에서 제외하고 `/resume`처럼 무료·비로그인 화면만 올림)을 따른 것이다. 이 화면은 로그인과 결제가 필요하므로 검색엔진에 능동적으로 알리지 않는다. 다만 페이지 자체는 SEO 메타데이터·FAQ 구조화 데이터·서버 렌더링되는 소개 글(`career-description-guide.tsx`)을 갖추고 있어, 사용자가 필요할 때 사이트맵에 올리거나 다른 페이지에서 링크만 걸면 된다.
+- Files: `src/domain/career-description-build.ts`(+test), `src/server/career-description/career-description-build-repository.ts`, `src/server/billing/career-description-build-checkout.ts`, `src/server/ai/career-description/career-description-build-gateway.ts`, `src/app/api/career-description-builds/route.ts`, `src/app/api/career-description-builds/[buildId]/execute/route.ts`, `supabase/migrations/20260906213838_career_description_builds.sql`(신규 테이블, `resume_builds`와 같은 RLS 구조), `src/fixtures/career-description-sample.ts`, `src/components/career-description-build-panel.tsx`+`.module.css`, `src/app/career-description/page.tsx`·`career-description-guide.tsx`·`intro.module.css`, `src/domain/application-document.ts`(경력기술서 항목을 `available`로 전환), `.env.example`(`OPENAI_MODEL_CAREER_DESCRIPTION_BUILD`, `POLAR_CAREER_DESCRIPTION_PRODUCT_ID` 추가).
+- Validation: `npx tsc --noEmit` clean, `npx eslint src ...`(신규 파일 전체) 오류 0건, `npx vitest run` 133 files · 1032 tests passed(신규 12건 포함), `npx next build`(Turbopack) 성공 — `/career-description`이 정적 페이지로, `/api/career-description-builds`·`/api/career-description-builds/[buildId]/execute`가 동적 라우트로 정상 생성됨을 확인. **브라우저 확인과 실제 결제 흐름 확인은 사용자 담당입니다** — Supabase 마이그레이션 적용과 Polar 상품 생성이 필요합니다.
+- Rollback: 이 커밋들을 revert. 드로어 항목은 `application-document.ts`에서 `career-description`을 `status: "coming-soon"`, href 삭제로 되돌리면 이전 상태와 같습니다. 새 테이블은 별도 마이그레이션으로 drop해야 합니다(자동 롤백 없음).
+- User decision: pending. 확인 필요 사항 — (1) "직무기술서"를 기존 "경력기술서" 항목으로 처리한 것이 맞는지, (2) 가격 7,900원, (3) 출력 항목 구성(회사·소속·직무·기간·담당업무·성과·근거)이 원하는 표준 양식과 맞는지. 배포 여부는 이 브랜치를 `main`에 병합하기 전까지 보류합니다.

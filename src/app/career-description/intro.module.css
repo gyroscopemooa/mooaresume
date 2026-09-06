@@ -1,0 +1,41 @@
+/* 경력기술서 도구 아래에 붙는 소개(career-description-guide.tsx).
+ *
+ * 이력서 소개(resume/intro.module.css)를 복사해 시작했습니다. 공유하지 않는
+ * 이유도 같습니다 — 폭이나 여백을 조정할 때 두 화면이 같이 움직이면 안 됩니다. */
+
+.guide { border-top: 1px solid #e2e9e4; background: #f6f8f7; color: #17221d; padding-top: 46px; }
+
+.kicker { display: block; margin-bottom: 8px; color: #1b64da; font-size: 11px; font-weight: 900; letter-spacing: .13em; }
+
+.section { max-width: 980px; margin: auto; padding: 0 24px 52px; }
+.sectionHead { margin: 0 0 20px; font-size: 21px; letter-spacing: -.04em; }
+
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.card { padding: 20px; border: 1px solid #e2e9e4; border-radius: 15px; background: #fff; }
+.card svg { width: 19px; color: #1b64da; }
+.card b { display: block; margin: 11px 0 6px; font-size: 14.5px; letter-spacing: -.02em; }
+.card p { margin: 0; color: #61706a; font-size: 12.5px; line-height: 1.75; }
+
+.faq { display: grid; gap: 10px; }
+.faqItem { padding: 17px 19px; border: 1px solid #e2e9e4; border-radius: 13px; background: #fff; }
+.faqItem b { display: block; margin-bottom: 7px; font-size: 13.5px; }
+.faqItem p { margin: 0; color: #61706a; font-size: 12.5px; line-height: 1.75; }
+
+.closing { max-width: 980px; margin: 0 auto 60px; padding: 34px 24px; border-radius: 18px; background: #173a2b; color: #e8f5ed; text-align: center; }
+.closing b { display: block; font-size: 19px; letter-spacing: -.03em; }
+.closing p { max-width: 560px; margin: 10px auto 20px; color: #c3d8cb; font-size: 13px; line-height: 1.8; }
+.closing a { display: inline-flex; align-items: center; gap: 7px; padding: 13px 20px; border-radius: 11px; background: #bff174; color: #14351f; font-size: 14px; font-weight: 800; }
+.closing svg { width: 16px; }
+
+.seoLead { max-width: 980px; margin: auto; padding: 0 24px 70px; color: #77857e; font-size: 12.5px; line-height: 1.95; }
+.seoLead p + p { margin-top: 12px; }
+.seoLead b { color: #4e5d55; }
+.seoLead a { color: #176b4a; text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .guide { padding-top: 34px; }
+  .section { padding: 0 20px 40px; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .closing { margin: 0 20px 46px; padding: 28px 20px; }
+  .seoLead { padding: 0 20px 50px; }
+}
