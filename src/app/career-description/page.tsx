@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { CareerDescriptionBuildPanel } from "@/components/career-description-build-panel";
+import { DocumentToolHeader } from "@/components/document-tool-header";
+import { previewRobots } from "@/domain/application-document";
 import { CareerDescriptionGuide } from "./career-description-guide";
 
 /**
@@ -13,6 +15,9 @@ export const metadata: Metadata = {
   title: "경력기술서 만들기 — 자료를 모으면 AI가 정리",
   description: "이력서·자기소개서·자격증·경력증명서를 올리면 회사별 소속·직무·기간·담당업무를 정리한 경력기술서로 만들어 드립니다. 없는 경력은 지어내지 않습니다.",
   alternates: { canonical: "/career-description" },
+  // 확인 전까지는 색인하지 않습니다. `application-document.ts`에서 이 서류를
+  // `available`로 바꾸면 함께 열립니다.
+  robots: previewRobots("career-description"),
 };
 
 const structuredData = {
@@ -29,6 +34,7 @@ const structuredData = {
 export default function CareerDescriptionPage() {
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
+    <DocumentToolHeader />
     <CareerDescriptionBuildPanel />
     <CareerDescriptionGuide />
   </>;

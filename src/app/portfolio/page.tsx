@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { PortfolioBuildPanel } from "@/components/portfolio-build-panel";
+import { DocumentToolHeader } from "@/components/document-tool-header";
+import { previewRobots } from "@/domain/application-document";
 import { PortfolioGuide } from "./portfolio-guide";
 
 /**
@@ -9,6 +11,7 @@ export const metadata: Metadata = {
   title: "포트폴리오 설명글 만들기 — 프로젝트만 적으면 AI가 정리",
   description: "프로젝트를 적으면 소개·담당 역할·문제·실행·성과·사용 기술과 전체 목차를 만들어 드립니다. 서식이 아니라 글을 씁니다. 없는 성과는 지어내지 않습니다.",
   alternates: { canonical: "/portfolio" },
+  robots: previewRobots("portfolio-note"),
 };
 
 const structuredData = {
@@ -25,6 +28,7 @@ const structuredData = {
 export default function PortfolioPage() {
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
+    <DocumentToolHeader />
     <PortfolioBuildPanel />
     <PortfolioGuide />
   </>;

@@ -73,7 +73,7 @@ export class OpenAILegalDocumentGateway {
     legalCase: Pick<LegalCase, "title" | "caseType" | "myRole" | "summary">;
     materials: readonly Pick<LegalCaseMaterial, "kind" | "filename" | "text">[];
   }): Promise<LegalDocumentGatewayResult> {
-    const prompt = buildLegalCasePrompt({ legalCase: input.legalCase, materials: input.materials });
+    const prompt = buildLegalCasePrompt({ legalCase: input.legalCase, materials: input.materials, docType: input.docType });
     const called = await callDocumentBuildModel(this.options, {
       schemaName: "legal_document",
       schema: z.toJSONSchema(legalDocumentOutputSchema),

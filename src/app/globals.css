@@ -229,3 +229,21 @@ body{zoom:var(--app-scale)}
   .hero-aura i:nth-child(3){background:radial-gradient(circle,rgba(125,211,252,.30),transparent 70%)}
   .trust-row{margin-top:22px;flex-direction:column;align-items:center;gap:9px;font-size:12.5px}
 }
+
+/* 좁은 화면에서 헤더가 페이지를 옆으로 미는 것을 막습니다.
+ *
+ * 로고 글자("MOOA Resume")를 빼고 마크(M)만 남깁니다. 그 자리가 90px 남짓인데,
+ * 360px 화면에서는 그 90px이 메뉴 단추를 화면 밖으로 밀어냅니다 — 눌러야 하는
+ * 것이 안 보이는 것보다, 이미 아는 이름이 안 보이는 편이 낫습니다. 마크는
+ * 남고 링크의 aria-label도 그대로라 홈으로 가는 길과 읽어 주는 이름은 유지됩니다.
+ *
+ * 바닥글의 로고는 건드리지 않습니다. 그쪽은 자리가 넉넉하고, 이름을 한 번은
+ * 제대로 보여 줘야 합니다. */
+@media(max-width:430px){
+  .site-header .brand>span:not(.brand-mark),
+  .app-header .brand>span:not(.brand-mark){display:none}
+  /* 마크와 메뉴가 양 끝을 잡고, 가운데 링크들만 줄어들게 합니다. 단추가
+     줄어들면 다시 잘립니다. */
+  .site-header .brand,.app-header .brand{flex:none}
+  .site-header nav,.app-header nav{min-width:0;flex-wrap:nowrap}
+}

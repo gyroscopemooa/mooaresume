@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, FileStack, LockKeyhole, X } from "lucide-react";
-import { APPLICATION_DOCUMENT_GROUP_LABEL, applicationDocuments, type ApplicationDocumentGroup } from "@/domain/application-document";
+import { APPLICATION_DOCUMENT_GROUP_LABEL, listedApplicationDocuments, type ApplicationDocumentGroup } from "@/domain/application-document";
 import styles from "./application-docs-drawer.module.css";
 
 /**
@@ -62,7 +62,7 @@ export function ApplicationDocsDrawer() {
       <div className={styles.content}>
         <p className={styles.lead}>쓰려는 서류를 고르세요. 이력서는 로그인 없이 무료로 쓸 수 있습니다.</p>
         {(["application", "other"] as ApplicationDocumentGroup[]).map((group) => {
-          const items = applicationDocuments.filter((document) => document.group === group);
+          const items = listedApplicationDocuments().filter((document) => document.group === group);
           if (!items.length) return null;
           return <div key={group} className={styles.group}>
             <h3>{APPLICATION_DOCUMENT_GROUP_LABEL[group]}</h3>

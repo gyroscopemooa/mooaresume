@@ -9,7 +9,18 @@
  * 대신 **묶음을 나눕니다** — 입사지원 서류와 그 밖의 서류를 목록에서부터 갈라
  * 두면, 자소서를 보러 온 사람이 준비서면 사이에서 길을 잃지 않습니다.
  */
-export type ApplicationDocumentStatus = "available" | "coming-soon";
+/**
+ * `preview`는 **만들어졌지만 아직 내보내지 않은** 서류입니다.
+ *
+ * `coming-soon`과 다릅니다. 저쪽은 코드가 없어서 못 여는 것이고, 이쪽은 코드는
+ * 다 됐는데 운영자가 아직 확인하지 않은 것입니다. 목록에 나오지 않고 검색에도
+ * 걸리지 않지만, 주소를 직접 치면 열립니다 — 그래야 배포하지 않고도 확인할 수
+ * 있습니다.
+ *
+ * 확인이 끝나 공개할 때는 이 값만 `available`로 바꾸면 됩니다. 목록 노출과
+ * 검색 색인이 함께 열립니다(`previewRobots`를 각 화면이 읽습니다).
+ */
+export type ApplicationDocumentStatus = "available" | "preview" | "coming-soon";
 
 /** 목록에서 갈라 놓는 묶음. 한 화면에 있어도 서로 다른 일로 보여야 합니다. */
 export type ApplicationDocumentGroup = "application" | "other";
@@ -57,7 +68,7 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
     label: "경력기술서",
     summary: "이력서·자소서·자격증을 올리면 회사별 경력으로 정리합니다.",
     badge: "유료",
-    status: "available",
+    status: "preview",
     group: "application",
     href: "/career-description",
   },
@@ -66,7 +77,7 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
     label: "포트폴리오 설명글",
     summary: "프로젝트를 적으면 문제·실행·성과 설명과 목차를 만듭니다.",
     badge: "유료",
-    status: "available",
+    status: "preview",
     group: "application",
     href: "/portfolio",
   },
@@ -87,7 +98,7 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
     label: "법률 서면 (내 사건)",
     summary: "쟁점 정리부터 내용증명·소장·답변서·준비서면·항소이유서까지.",
     badge: "유료",
-    status: "available",
+    status: "preview",
     group: "other",
     href: "/legal",
   },
@@ -100,3 +111,25 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
     group: "other",
   },
 ];
+
+/** 목록에 내보낼 서류. `preview`는 빠집니다 — 확인 전에는 아무도 마주치면 안 됩니다. */
+export function listedApplicationDocuments(): ApplicationDocument[] {
+  return applicationDocuments.filter((document) => document.status !== "preview");
+}
+
+export function isPreviewDocument(id: string): boolean {
+  return applicationDocuments.some((document) => document.id === id && document.status === "preview");
+}
+
+/**
+ * 미리보기 서류 화면의 로봇 규칙.
+ *
+ * 목록에서 감추는 것만으로는 부족합니다 — 크롤러는 목록을 거치지 않고 주소를
+ * 물어 옵니다. 공개 전에 색인되면 검색 결과에 남아 지우기 어렵습니다.
+ *
+ * 위 목록의 `status`를 `available`로 바꾸면 이 함수가 `undefined`를 돌려주고,
+ * 그때부터 색인이 열립니다. 스위치는 한 곳뿐입니다.
+ */
+export function previewRobots(id: string): { index: false; follow: false } | undefined {
+  return isPreviewDocument(id) ? { index: false, follow: false } : undefined;
+}

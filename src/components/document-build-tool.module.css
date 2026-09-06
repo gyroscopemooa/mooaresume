@@ -231,7 +231,8 @@
   margin: 16px 0 0; padding: 12px 14px; border: 1px solid #e5e8eb; border-radius: 11px;
   background: #fafbfc; color: #6b7684; font-size: 11px; line-height: 1.75;
 }
-.disclaimer b { color: #4e5968; }
+.disclaimer b { display: block; margin-bottom: 6px; color: #4e5968; }
+.disclaimer ul { display: grid; gap: 5px; margin: 0; padding-left: 16px; }
 
 @media (max-width: 620px) {
   .docGrid { grid-template-columns: minmax(0, 1fr); }

@@ -6,7 +6,7 @@ import { AlertCircle, ArrowRight, FolderPlus, Loader2, LogIn, Mail, Scale } from
 import { createClient } from "@/lib/supabase/client";
 import {
   legalCaseTypeSchema, legalPartyRoleSchema,
-  LEGAL_CASE_TYPE_LABEL, LEGAL_DISCLAIMER, LEGAL_PARTY_ROLE_LABEL,
+  LEGAL_CASE_TYPE_LABEL, LEGAL_CAUTIONS, LEGAL_PARTY_ROLE_LABEL,
   type LegalCase, type LegalCaseType, type LegalPartyRole,
 } from "@/domain/legal-case";
 import styles from "./document-build-tool.module.css";
@@ -159,7 +159,12 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
           </div>
         </footer>
 
-        <p className={styles.disclaimer}>{LEGAL_DISCLAIMER}</p>
+        {/* 사건을 만들기 전에 읽는 자리입니다. 한 줄짜리 고지는 만들어진 문서에
+            따라붙지만, 시작하기 전에 알아야 하는 것은 목록으로 보여 줍니다. */}
+        <div className={styles.disclaimer}>
+          <b>쓰시기 전에 꼭 읽어 주세요</b>
+          <ul>{LEGAL_CAUTIONS.map((caution, index) => <li key={index}>{caution}</li>)}</ul>
+        </div>
       </div>
 
       <div className={`${styles.card} ${styles.previewCard}`}>

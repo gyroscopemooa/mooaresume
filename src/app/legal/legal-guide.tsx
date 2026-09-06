@@ -1,6 +1,6 @@
 import { ArrowRight, FileStack, ListChecks, Scale, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { legalDocumentDefinitions, LEGAL_DOCUMENT_STAGE_LABEL, LEGAL_DOCUMENT_STAGE_ORDER } from "@/domain/legal-case";
+import { legalDocumentDefinitions, LEGAL_CAUTIONS, LEGAL_DOCUMENT_STAGE_LABEL, LEGAL_DOCUMENT_STAGE_ORDER } from "@/domain/legal-case";
 import styles from "./intro.module.css";
 
 /**
@@ -63,6 +63,13 @@ export function LegalGuide() {
       </div>
     </section>
 
+    <section className={styles.section}>
+      <h2 className={styles.sectionHead}>쓰시기 전에 꼭 읽어 주세요</h2>
+      <div className={styles.faq}>
+        {LEGAL_CAUTIONS.map((caution, index) => <div key={index} className={styles.faqItem}><p>{caution}</p></div>)}
+      </div>
+    </section>
+
     <section className={styles.closing}>
       <b>취업 서류를 찾아오셨나요?</b>
       <p>이력서·자기소개서·경력기술서·포트폴리오는 다른 화면에서 다룹니다.</p>
@@ -70,9 +77,10 @@ export function LegalGuide() {
     </section>
 
     <section className={styles.seoLead}>
-      <p><b>법률 서면을 직접 쓰려는 사람이 가장 먼저 막히는 곳은 양식이 아닙니다.</b> 내 사건에서 무엇이 쟁점인지, 어떤 증거가 어느 주장을 받치는지, 지금 단계에서 무슨 서류를 내야 하는지를 모르는 상태에서 양식만 받으면 빈칸을 채울 수 없습니다.</p>
-      <p>그래서 이 화면은 서면 양식을 먼저 주지 않고 <b>사건을 먼저 정리</b>합니다. 사실관계와 쟁점, 다툼 없는 사실과 다투는 사실, 가진 증거와 없는 증거를 갈라 놓은 다음, 그 정리를 바탕으로 내용증명·소장·답변서·준비서면·증거목록·항소이유서를 만듭니다. 나홀로소송, 셀프소송으로 찾아오셨다면 필요한 것이 결국 이 순서입니다.</p>
-      <p>다시 한번 말씀드립니다. 여기서 나오는 것은 <b>초안</b>입니다. 제출 전 전문가 검토를 권하고, 제소기간·항소기간처럼 놓치면 되돌릴 수 없는 기한은 반드시 직접 확인해 주세요.</p>
+      <p><b>나홀로 소송을 준비하는 사람이 가장 먼저 막히는 곳은 양식이 아닙니다.</b> 내 사건에서 무엇이 쟁점인지, 어떤 증거가 어느 주장을 받치는지, 지금 단계에서 무슨 서류를 내야 하는지를 모르는 상태에서 양식만 받으면 빈칸을 채울 수 없습니다.</p>
+      <p>그래서 이 화면은 서면 양식을 먼저 주지 않고 <b>사건을 먼저 정리</b>합니다. 사실관계와 쟁점, 다툼 없는 사실과 다투는 사실, 가진 증거와 없는 증거를 갈라 놓은 다음, 그 정리를 바탕으로 내용증명·소장·답변서·준비서면·증거목록·항소이유서를 만듭니다. <b>나홀로소송 도우미</b>, <b>법률행정도우미</b>, <b>소송 어시스턴트</b>, 셀프소송 같은 말로 찾아오셨다면 필요한 것이 결국 이 순서입니다.</p>
+      <p>민사 소장 양식, 답변서 쓰는 법, 준비서면 예시, 내용증명 보내는 법, 항소이유서 작성처럼 서류 이름으로 찾아오셨더라도 마찬가지입니다. 양식은 인터넷에 이미 많습니다 — 어려운 것은 <b>내 사건의 사실을 그 칸에 어떻게 넣느냐</b>이고, 그 일을 자료에서 뽑아 정리해 드립니다.</p>
+      <p>다시 한번 말씀드립니다. 여기서 나오는 것은 <b>초안</b>이고, <b>AI는 승소를 장담하지 않습니다.</b> 제출 여부와 그 결과에 대한 책임은 전적으로 이용자 본인에게 있습니다. 제출 전 변호사 등 전문가의 검토를 권하고, 제소기간·항소기간처럼 놓치면 되돌릴 수 없는 기한은 반드시 직접 확인해 주세요.</p>
     </section>
   </div>;
 }

@@ -6782,3 +6782,23 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, `npx eslint src` 오류 0건(경고 2건은 기존 파일), `npx vitest run` 135 files · 1053 tests passed(신규 21건), `npx next build` 성공 — `/portfolio`·`/career-description` 정적, `/legal`·`/legal/[caseId]`와 신규 API 7개 동적 생성 확인. **브라우저 확인과 실제 결제·마이그레이션 적용은 사용자 담당입니다.**
 - Rollback: 이 커밋 revert. 드로어는 `application-document.ts`에서 해당 항목을 `coming-soon`으로 되돌리면 숨겨집니다. 새 표 4개(portfolio_builds, legal_cases, legal_case_materials, legal_case_documents, legal_document_builds)는 별도 마이그레이션으로 drop해야 합니다.
 - User decision: pending — (1) 가격 4종(`builder-pricing.ts`), (2) Polar 상품 3개 생성 후 env 3개 입력, (3) 이력서 제작도 공통 뼈대로 옮길지, (4) 사이트맵 등재 시점.
+
+## 2026-09-06 — Claude: 좁은 화면 머리줄을 고치고, 새 서류를 확인 전까지 감춘다
+
+- Agent/session: Claude, 사용자 요청(모바일 헤더 넘침 · 확인 전 노출 금지 · 법률 면책 보강).
+- Status: active(같은 브랜치. `main` 병합·배포 없음).
+
+- **좁은 화면에서 머리줄이 페이지를 옆으로 밀던 것**: 430px 아래에서 로고 글자("MOOA Resume")를 빼고 마크(M)만 남깁니다. 눌러야 하는 메뉴 단추가 화면 밖으로 나가는 것보다, 이미 아는 이름이 안 보이는 편이 낫습니다. 링크의 `aria-label`과 마크는 그대로라 홈으로 가는 길과 읽어 주는 이름은 유지됩니다. 바닥글 로고는 건드리지 않았습니다. 사용자가 말한 커리어 검사·라운지 묶기는 하지 않았습니다 — 이 조치만으로 자리가 남습니다.
+  - 검증: Playwright로 360·412px에서 확인. 가로 넘침 0px, 메뉴 단추 오른쪽 끝이 350/398px(각 화면 안), 패널을 열어도 넘침 0px. 스크린샷으로 단추 테두리가 잘리지 않는 것까지 확인했습니다.
+- **확인 전 노출 금지**: `ApplicationDocumentStatus`에 `preview`를 더했습니다. `coming-soon`(코드가 없어 못 엶)과 다릅니다 — 코드는 다 됐는데 운영자가 아직 확인하지 않은 상태입니다. 경력기술서·포트폴리오·법률 셋을 `preview`로 두었고, 그 결과 ① 드로어 목록에서 빠지고 ② 화면이 `noindex, nofollow`가 되며 ③ 주소를 직접 치면 열립니다. **배포하지 않고 확인할 수 있는 길**이 그 세 번째입니다. 공개할 때는 `application-document.ts`의 `status`만 `available`로 바꾸면 목록과 색인이 함께 열립니다(스위치 한 곳).
+  - 검증: 브라우저로 드로어에 세 서류가 없음을 확인하고, 세 주소가 200 + `noindex, nofollow`로 열리는 것을 확인했습니다.
+- **법률 면책 보강**(사용자 지시): `LEGAL_DISCLAIMER`에 "AI는 승소를 장담하지 않는다 · 제출 여부와 결과의 책임은 전적으로 이용자에게 있다"를 넣었고, 결제 전에 읽는 목록 `LEGAL_CAUTIONS`(5개)를 새로 만들어 사건 시작 화면과 소개 글에 함께 실었습니다. 한 줄 고지는 만들어진 문서에 따라붙고, 목록은 시작 전에 읽는 것이라 자리를 나눴습니다.
+- **법률 소개 글 검색어**(사용자 지시): 나홀로 소송 · 나홀로소송 도우미 · 법률행정도우미 · 소송 어시스턴트 · 셀프소송을 본문과 `keywords`에 넣고, 제목을 "나홀로 소송 어시스턴트 —"로 바꿨습니다.
+- **자료 순서를 문서에 맞춥니다**: `orderMaterialsForDocument`. 상한(6만 자)에 걸리면 뒤가 잘리는데, 잘려도 되는 자료가 문서마다 다릅니다 — 판결문 분석에서 판결문이 잘리면 그 문서는 아무것도 아닙니다. 각 문서 정의에 이미 있던 `wants`를 이 정렬에 씁니다(그전까지 선언만 되고 쓰이지 않던 값이었습니다). **순서만 바꾸고 자료를 버리지는 않습니다.**
+- **고친 두 가지(둘 다 실제로 깨져 있었습니다)**:
+  1. `/legal`이 로그인 조회 실패에 500으로 죽었습니다. 이 주소의 아래 절반은 크롤러가 읽는 소개 글인데, 인증 한 번이 실패하면 그 글까지 사라집니다. 실패를 "로그인 안 됨"으로 취급하고 목록 자리만 비웁니다. (브라우저 확인 중 발견 — Supabase 환경변수가 없는 환경에서 재현됐습니다.)
+  2. 제작 화면 셋에 머리줄이 아예 없어 사이트의 다른 곳으로 갈 길이 없었습니다. `DocumentToolHeader`를 더했습니다. 미리보기 서류끼리는 서로 링크하지 않습니다 — 한 화면을 아는 사람이 나머지를 찾아가면 감춘 뜻이 없습니다. 자소서 첨삭은 단추로 두었습니다(홈의 전역 모바일 규칙이 머리줄의 평범한 링크를 전부 감춥니다).
+- Files: `src/app/globals.css`, `src/domain/application-document.ts`, `src/components/application-docs-drawer.tsx`, `src/components/document-tool-header.tsx`(신규), `src/app/{career-description,portfolio,legal}/page.tsx`, `src/app/legal/[caseId]/page.tsx`, `src/app/legal/legal-guide.tsx`, `src/domain/legal-case.ts`(+test), `src/components/legal-case-starter.tsx`, `src/server/ai/legal/legal-document-gateway.ts`, `src/components/document-build-tool.module.css`.
+- Validation: `npx tsc --noEmit` clean, `npx eslint src` 오류 0건, `npx vitest run` 135 files · 1057 tests passed(신규 4건), `npx next build` 성공. 여기에 더해 **이번에는 브라우저로 실제 확인했습니다**(dev 서버 + Playwright): 360/390/412/1280px 스크린샷, 가로 넘침 0px, 드로어 노출 여부, 세 주소의 robots 메타.
+- Rollback: 이 커밋 revert. 미리보기만 되돌리려면 `application-document.ts`의 `status`를 `available`로 바꾸면 됩니다.
+- User decision: pending — 확인 후 세 서류를 공개할 시점, 가격, Polar 상품 3개.

@@ -7,6 +7,7 @@ import {
   legalDocumentDefinitions,
   normalizeLegalDocumentOutput,
   orderLegalDocuments,
+  orderMaterialsForDocument,
   LEGAL_CASE_MAX_PROMPT_CHARS,
   type LegalCaseMaterial,
   type LegalDocumentOutput,
@@ -68,6 +69,34 @@ describe("사건 프롬프트", () => {
     const prompt = buildLegalCasePrompt({ legalCase, materials: [material({ text: "   " }), material({ id: "m2", filename: "카톡.txt", kind: "MESSAGE" })] });
     expect(prompt.text).toContain("[자료 1 · 문자 · 카톡 · 메일 · 카톡.txt]");
     expect(prompt.text).not.toContain("[자료 2");
+  });
+});
+
+describe("문서에 맞춘 자료 순서", () => {
+  it("판결문 분석에서는 판결문이 앞으로 온다 — 상한에 걸려도 잘리면 안 되는 자료다", () => {
+    const ordered = orderMaterialsForDocument(
+      [material({ kind: "CONTRACT" }), material({ id: "m2", kind: "JUDGMENT" })],
+      "JUDGMENT_ANALYSIS",
+    );
+    expect(ordered[0].kind).toBe("JUDGMENT");
+  });
+
+  it("답변서에서는 상대방 주장이 앞으로 온다", () => {
+    const ordered = orderMaterialsForDocument(
+      [material({ kind: "CONTRACT" }), material({ id: "m2", kind: "OPPONENT_CLAIM" })],
+      "ANSWER",
+    );
+    expect(ordered[0].kind).toBe("OPPONENT_CLAIM");
+  });
+
+  it("순서만 바꾸고 자료를 버리지 않는다", () => {
+    const materials = [material({ kind: "RECORDING" }), material({ id: "m2", kind: "JUDGMENT" }), material({ id: "m3", kind: "OTHER" })];
+    expect(orderMaterialsForDocument(materials, "JUDGMENT_ANALYSIS")).toHaveLength(3);
+  });
+
+  it("문서를 고르지 않으면 올린 순서 그대로 둔다", () => {
+    const materials = [material({ kind: "OTHER" }), material({ id: "m2", kind: "JUDGMENT" })];
+    expect(orderMaterialsForDocument(materials).map((item) => item.kind)).toEqual(["OTHER", "JUDGMENT"]);
   });
 });
 

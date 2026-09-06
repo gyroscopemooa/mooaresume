@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LegalCaseWorkspace } from "@/components/legal-case-workspace";
+import { DocumentToolHeader } from "@/components/document-tool-header";
 import { listLegalCaseDocuments, listLegalCaseMaterials, loadLegalCase } from "@/server/legal/legal-case-repository";
 
 /**
@@ -31,5 +32,8 @@ export default async function LegalCasePage({ params }: { params: Promise<{ case
     listLegalCaseDocuments(caseId, data.user.id),
   ]);
 
-  return <LegalCaseWorkspace initialCase={legalCase} initialMaterials={materials} initialDocuments={documents} />;
+  return <>
+    <DocumentToolHeader />
+    <LegalCaseWorkspace initialCase={legalCase} initialMaterials={materials} initialDocuments={documents} />
+  </>;
 }

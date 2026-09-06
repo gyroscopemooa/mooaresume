@@ -30,7 +30,22 @@ import { z } from "zod";
 /** 값은 아직 정해지지 않았습니다. 미정값은 `builder-pricing.ts` 한 곳에 모아 둡니다. */
 export { LEGAL_DOCUMENT_BUILD_PRICE_KRW } from "./builder-pricing";
 
-export const LEGAL_DISCLAIMER = "이 문서는 제출용 초안입니다. 법률 자문이 아니며, 제출 전에 변호사 등 전문가의 검토를 받으시길 권합니다. 제소기간·항소기간처럼 놓치면 되돌릴 수 없는 기한은 반드시 직접 확인해 주세요.";
+export const LEGAL_DISCLAIMER = "이 문서는 제출용 초안입니다. 법률 자문이 아니며, AI는 승소를 장담하지 않습니다. 제출 여부와 그 결과에 대한 책임은 전적으로 이용자 본인에게 있습니다. 제출 전에 변호사 등 전문가의 검토를 받으시고, 제소기간·항소기간처럼 놓치면 되돌릴 수 없는 기한은 반드시 직접 확인해 주세요.";
+
+/**
+ * 화면 여러 곳에 나가는 주의사항.
+ *
+ * 한 문장짜리 `LEGAL_DISCLAIMER`는 만들어진 문서마다 따라붙는 꼬리표이고,
+ * 이쪽은 사람이 결제를 누르기 전에 읽어야 하는 목록입니다. 둘을 한 곳에 두면
+ * 문서 끝에 다섯 줄이 붙거나, 화면에 한 줄만 남습니다.
+ */
+export const LEGAL_CAUTIONS: readonly string[] = [
+  "AI는 승소를 장담하지 않습니다. 이 서비스는 승소 가능성이나 확률을 계산하지 않으며, 그런 값을 보여 주지도 않습니다.",
+  "여기서 만들어지는 것은 초안입니다. 법률 자문이 아니며, 변호사·법무사의 검토를 대신하지 않습니다.",
+  "작성한 서류의 제출 여부, 그 내용, 그로 인한 모든 결과에 대한 책임은 전적으로 이용자 본인에게 있습니다.",
+  "제소기간·항소기간·답변서 제출기한처럼 놓치면 되돌릴 수 없는 기한은 AI가 계산하지 않습니다. 받으신 서류와 법원 안내로 반드시 직접 확인해 주세요.",
+  "올려 주신 자료에 없는 사실은 만들어 넣지 않습니다. 반대로, 자료가 부족하면 문서도 그만큼 비어 있습니다.",
+];
 
 export const legalCaseTypeSchema = z.enum(["CIVIL", "LABOR", "ADMIN", "CRIMINAL", "OTHER"]);
 export type LegalCaseType = z.infer<typeof legalCaseTypeSchema>;
@@ -415,10 +430,36 @@ export type LegalCaseDocument = {
   createdAt: string;
 };
 
+/**
+ * 이 문서가 특히 기대는 자료를 앞으로 옮깁니다.
+ *
+ * 상한(`LEGAL_CASE_MAX_PROMPT_CHARS`)에 걸리면 뒤쪽이 잘립니다. 그때 잘려도
+ * 되는 것과 잘리면 안 되는 것이 문서마다 다릅니다 — 판결문 분석에서 판결문이
+ * 잘리면 그 문서는 아무것도 아니고, 반대로 그 자리에 계약서는 없어도 됩니다.
+ *
+ * 순서만 바꿉니다. 빼지는 않습니다 — 어느 자료가 결정적인지는 결국 사건마다
+ * 다르고, 우리가 지레 버리면 사용자는 자기가 올린 자료가 안 쓰인 줄도 모릅니다.
+ */
+export function orderMaterialsForDocument<T extends Pick<LegalCaseMaterial, "kind">>(
+  materials: readonly T[],
+  docType?: LegalDocumentType,
+): T[] {
+  if (!docType) return [...materials];
+  const wants = findLegalDocumentDefinition(docType).wants;
+  const rank = (material: T) => {
+    const index = wants.indexOf(material.kind);
+    return index === -1 ? wants.length : index;
+  };
+  // 같은 순위끼리는 원래 순서(올린 순서)를 지킵니다.
+  return [...materials].sort((left, right) => rank(left) - rank(right));
+}
+
 /** 사건 자료를 모델이 읽을 한 덩이로 만듭니다. 자료마다 무엇인지 이름표를 답니다. */
 export function buildLegalCasePrompt(input: {
   legalCase: Pick<LegalCase, "title" | "caseType" | "myRole" | "summary">;
   materials: readonly Pick<LegalCaseMaterial, "kind" | "filename" | "text">[];
+  /** 주면 이 문서가 기대는 자료를 앞으로 보냅니다. */
+  docType?: LegalDocumentType;
 }): { text: string; truncated: string[] } {
   const blocks: string[] = [];
   const truncated: string[] = [];
@@ -440,7 +481,7 @@ export function buildLegalCasePrompt(input: {
   }
 
   let index = 0;
-  for (const material of input.materials) {
+  for (const material of orderMaterialsForDocument(input.materials, input.docType)) {
     const text = material.text.trim();
     if (!text) continue;
     index += 1;
