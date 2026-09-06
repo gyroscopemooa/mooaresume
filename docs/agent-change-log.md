@@ -6562,3 +6562,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/server/ai/quick/schema.ts`, `prompt.ts`, `provider.ts`, `src/domain/result-document.ts`, `src/components/result-workspace-complete.tsx`, `result-workspace-complete.module.css`, 테스트 fixture 4개.
 - Validation: `npx tsc --noEmit` clean, `npx vitest run` 1005 passed, `npx eslint src` 오류 0건. 로컬 `/result` 샘플에서 문항별 첨삭 화면 확인 — 506/600자 문항에만 "94자 남음"이 뜨고 454/500·477/500은 뜨지 않습니다. **모델이 `lengthNote`를 실제로 잘 적는지는 유료 실행 없이 확인할 수 없습니다.**
 - Rollback: 이 커밋 revert. 되돌려도 이미 저장된 결과는 그대로 열립니다(칸이 optional이라).
+
+## 2026-09-06 — Claude: 처리방침 4·5·8번을 표에서 문장으로
+
+- 사용자 지적: 앞 커밋에서 국외 이전을 업체별 표로 만들었더니 **"내부 스택을 더 상세하게 적어 준 꼴"**이 되었습니다. 맞는 지적입니다 — 항목·목적·기간을 칸에 나눠 담으면 법정 기재사항을 다 채우고도 결국 더 잘 정리된 스펙시트가 됩니다. 눈이 세로로 훑고, 무엇을 무엇으로 만들었는지가 한눈에 들어옵니다.
+- 4번(위탁), 5번(국외 이전), 8번(자동 수집·행태정보)의 표와 목록을 **서술형 문단**으로 바꿨습니다.
+  - **기재사항은 하나도 빼지 않았습니다.** 업체↔항목↔목적↔보유기간의 대응도 문장 안에 그대로 유지했습니다("입력하신 문서는 AI 기반 콘텐츠 분석을 목적으로 미국에 소재한 OpenAI에 이전되며 요청 처리 후 삭제됩니다").
+  - 이전 시기·방법, 거부 방법과 효과, 연락처 안내, AI 학습 미사용 문구도 문단 안으로 합쳤습니다.
+- 글자 크기를 줄이거나 아래로 내리는 방식은 여전히 쓰지 않았습니다. 문장으로 잇는 것은 **같은 내용을 빠짐없이 적으면서 훑어 읽히지 않게** 하는 것이고, 작게 만드는 것과는 다릅니다.
+- 파일: `src/app/privacy/page.tsx`(4·5·8번 및 상단 주석). 기존 테스트(절 제목과 업체명 존재 확인)는 그대로 통과합니다.
+- Validation: `tsc --noEmit` 통과, `eslint` 오류 0, `vitest run` 1,005건 통과, `next build` 통과.
