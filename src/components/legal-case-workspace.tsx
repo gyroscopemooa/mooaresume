@@ -10,12 +10,13 @@ import {
   countLegalCaseSourceCharacters, findLegalDocumentDefinition, hasEnoughLegalCaseSource, measureLegalCaseCoverage, orderLegalDocuments,
   LEGAL_CASE_MAX_MATERIALS, LEGAL_CASE_MAX_MATERIAL_CHARS, LEGAL_CASE_MIN_SOURCE_CHARS, LEGAL_CASE_TYPE_LABEL,
   LEGAL_CHARS_PER_PAGE, LEGAL_DISCLAIMER,
-  LEGAL_DOCUMENT_STAGE_LABEL, LEGAL_DOCUMENT_STAGE_ORDER, legalDocumentPriceKrw,
+  LEGAL_DOCUMENT_STAGE_LABEL, LEGAL_DOCUMENT_STAGE_ORDER, legalDocumentPriceKrw, measureLegalCaseVolume,
   LEGAL_MATERIAL_KIND_LABEL, LEGAL_MATERIAL_KIND_ORDER, LEGAL_PARTY_ROLE_LABEL,
   legalCaseTypeSchema, legalPartyRoleSchema,
   type LegalCase, type LegalCaseDocument, type LegalCaseMaterial, type LegalDocumentOutput, type LegalDocumentType,
   type LegalMaterialKind,
 } from "@/domain/legal-case";
+import { BASIC_CASE_PLAN, describeCasePlanDecision, resolveCasePlan } from "@/domain/case-intake-limits";
 import { buildDocx, DOCX_MIME_TYPE, type DocxBlock } from "@/lib/docx";
 import styles from "./document-build-tool.module.css";
 
@@ -341,7 +342,11 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
 
   const busy = phase !== "idle";
   const selected = findLegalDocumentDefinition(selectedType);
-  const selectedPrice = legalDocumentPriceKrw(selectedType);
+  // 플랜은 저장된 자료의 분량이 정합니다. 결제할 때 서버가 같은 계산을 다시
+  // 하므로, 여기 숫자는 안내일 뿐 값을 정하지 않습니다.
+  const volume = measureLegalCaseVolume({ summary: legalCase.summary, materials });
+  const planDecision = resolveCasePlan(volume);
+  const selectedPrice = legalDocumentPriceKrw(selectedType, planDecision.plan ?? BASIC_CASE_PLAN);
 
   /**
    * 사건 현황.
@@ -352,7 +357,7 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
    */
   const analysis = documents.find((document) => document.docType === "CASE_ANALYSIS");
   const stats = [
-    { label: "자료", value: `${coverage.approxTotalPages.toLocaleString()}쪽` },
+    { label: "자료", value: `${volume.pages.toLocaleString()}쪽` },
     { label: "자료 개수", value: `${materials.length}개` },
     ...(analysis ? [
       { label: "주요쟁점", value: `${analysis.output.issues.length}개` },
@@ -498,6 +503,15 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
           <ul><li>{selected.whenToUse}</li></ul>
         </div>
 
+        {!planDecision.fits && <p className={styles.message}>
+          <AlertCircle />
+          {describeCasePlanDecision(volume, planDecision)}
+        </p>}
+        {planDecision.fits && planDecision.plan.tier !== "BASIC" && selectedType === "CASE_ANALYSIS" && <p className={styles.message}>
+          <AlertCircle />
+          총 {volume.pages.toLocaleString()}페이지가 확인되어 <b>{planDecision.plan.label} 분석</b>(최대 {planDecision.plan.maxPages.toLocaleString()}페이지, {planDecision.plan.priceKrw.toLocaleString()}원)으로 계산됩니다.
+        </p>}
+
         {/* 결제 앞에 서는 경고입니다.
             자료가 상한을 넘으면 뒤쪽은 읽지 못합니다. 값을 치른 뒤에 알게 되면
             그건 기능의 한계가 아니라 사고입니다. 의료기록처럼 1,000쪽이 넘는
@@ -520,7 +534,7 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
             <button
               type="button"
               className={styles.buy}
-              disabled={busy || !enough}
+              disabled={busy || !enough || !planDecision.fits}
               title={enough ? undefined : "사건 경위를 조금 더 적어 주세요."}
               onClick={() => void startCheckout()}
             >

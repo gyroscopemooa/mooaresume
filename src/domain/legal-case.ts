@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BASIC_CASE_PLAN, estimatePagesFromChars, type CasePlan, type CaseVolume } from "./case-intake-limits";
 
 /**
  * 법률 서면 — 문서 열 개가 아니라 **사건 하나**입니다.
@@ -34,15 +35,36 @@ export { LEGAL_CASE_ANALYSIS_PRICE_KRW, LEGAL_DOCUMENT_BUILD_PRICE_KRW };
 /**
  * 이 문서의 값.
  *
- * 사건자료 분석만 다른 상품입니다 — 자료 전체를 읽어 사건의 뼈대를 세우는
- * 일이고, 나머지 문서들이 그 위에 섭니다. 서면 작성은 종류와 무관하게 한 값입니다.
+ * 두 갈래입니다.
+ *
+ * - **서면 작성**(소장·준비서면·항소이유서…)은 종류와 분량에 관계없이 정액입니다.
+ *   이미 정리된 사건 위에서 한 장을 쓰는 일이라 품이 크게 다르지 않습니다.
+ * - **사건자료 분석**은 자료를 전부 읽는 일이라 분량이 곧 원가입니다. 그래서
+ *   플랜(300/700/1,500쪽)이 값을 정합니다.
  *
  * 값을 여기서 정하는 이유는 **결제 때 정한 값을 나중에 화면이 못 바꾸게**
- * 하기 위해서입니다. 결제 건에 적힌 문서 종류로 이 함수를 다시 부르므로,
- * 싼 문서를 사서 비싼 문서를 만드는 길이 없습니다.
+ * 하기 위해서입니다. 서버가 저장된 자료를 재서 플랜을 고르고, 결제 건에 적힌
+ * 문서 종류로 이 함수를 다시 부릅니다 — 화면이 보낸 금액은 쓰지 않습니다.
  */
-export function legalDocumentPriceKrw(docType: LegalDocumentType): number {
-  return docType === "CASE_ANALYSIS" ? LEGAL_CASE_ANALYSIS_PRICE_KRW : LEGAL_DOCUMENT_BUILD_PRICE_KRW;
+export function legalDocumentPriceKrw(docType: LegalDocumentType, plan: CasePlan = BASIC_CASE_PLAN): number {
+  return docType === "CASE_ANALYSIS" ? plan.priceKrw : LEGAL_DOCUMENT_BUILD_PRICE_KRW;
+}
+
+/**
+ * 저장된 자료의 분량.
+ *
+ * 압축 크기가 아니라 **푼 뒤 실제 분량**입니다. 자료는 이미 텍스트로 풀려
+ * 저장돼 있으므로, 여기서 세는 값이 곧 우리가 읽어야 할 양입니다.
+ */
+export function measureLegalCaseVolume(input: {
+  summary: string;
+  materials: readonly Pick<LegalCaseMaterial, "text" | "sizeBytes">[];
+}): CaseVolume {
+  return {
+    pages: estimatePagesFromChars(countLegalCaseSourceCharacters(input)),
+    files: input.materials.length,
+    unzippedBytes: input.materials.reduce((total, material) => total + material.sizeBytes, 0),
+  };
 }
 
 export const LEGAL_DISCLAIMER = "이 문서는 제출용 초안입니다. 법률 자문이 아니며, AI는 승소를 장담하지 않습니다. 제출 여부와 그 결과에 대한 책임은 전적으로 이용자 본인에게 있습니다. 제출 전에 변호사 등 전문가의 검토를 받으시고, 제소기간·항소기간처럼 놓치면 되돌릴 수 없는 기한은 반드시 직접 확인해 주세요.";

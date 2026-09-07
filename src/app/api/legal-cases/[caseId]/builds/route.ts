@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import { legalDocumentPriceKrw, legalDocumentTypeSchema } from "@/domain/legal-case";
+import { legalDocumentPriceKrw, legalDocumentTypeSchema, measureLegalCaseVolume } from "@/domain/legal-case";
+import { describeCasePlanDecision, resolveCasePlan } from "@/domain/case-intake-limits";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
 import { createDocumentBuildCheckout } from "@/server/billing/document-build-checkout";
 import { attachBuildCheckout, BuildStoreError, createBuild } from "@/server/document-builds/build-lifecycle";
 import { legalDocumentBuild } from "@/server/document-builds/products";
-import { loadLegalCase } from "@/server/legal/legal-case-repository";
+import { listLegalCaseMaterials, loadLegalCase } from "@/server/legal/legal-case-repository";
 import { guardMemberRequest, readJsonBody } from "@/server/http/request-guards";
 
 export const runtime = "nodejs";
@@ -37,8 +38,23 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ca
   const legalCase = await loadLegalCase(caseId, guard.userId);
   if (!legalCase) return NextResponse.json({ error: "사건을 찾지 못했습니다.", code: "NOT_FOUND" }, { status: 404 });
 
-  // 값은 고른 문서에서 나옵니다. 화면이 보낸 금액을 쓰지 않습니다.
-  const priceKrw = legalDocumentPriceKrw(parsed.docType);
+  /**
+   * 값은 **저장된 자료를 서버가 직접 재서** 정합니다.
+   *
+   * 화면이 보낸 금액이나 쪽수를 믿으면, 1,400쪽 사건을 300쪽이라고 보내
+   * 기본가로 살 수 있습니다. 그래서 여기서 다시 셉니다 — 이것이 마지막 문입니다.
+   */
+  const materials = await listLegalCaseMaterials(caseId, guard.userId);
+  const volume = measureLegalCaseVolume({ summary: legalCase.summary, materials });
+  const decision = resolveCasePlan(volume);
+  if (!decision.fits) {
+    return NextResponse.json({
+      error: describeCasePlanDecision(volume, decision),
+      code: "OVER_LARGEST_PLAN",
+      volume,
+    }, { status: 409 });
+  }
+  const priceKrw = legalDocumentPriceKrw(parsed.docType, decision.plan);
 
   const siteUrl = getCheckoutReturnOrigin(request.nextUrl);
   let buildId: string | null = null;

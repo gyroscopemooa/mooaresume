@@ -6819,3 +6819,22 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/domain/builder-pricing.ts`, `src/domain/legal-case.ts`(+test), `src/components/legal-case-workspace.tsx`, `src/components/document-build-tool.module.css`, `src/app/api/legal-cases/[caseId]/builds/route.ts`.
 - Validation: tsc clean, eslint 오류 0건, vitest 135 files · 1060 tests(신규 3건 — 1,400쪽이 40쪽으로 잘린다는 것을 테스트가 못박고 있습니다), 브라우저로 법률 홈의 단계 구성 확인.
 - 다음(사용자 결정 필요): ① 대용량 사건 처리(OCR + 페이지 보존 + RAG + 청킹 분석) ② 이미지 입력 ③ 사건자료 분석을 별도 탭으로 올릴지 ④ 취업 쪽 가격.
+
+## 2026-09-07 — Claude: 자료 한도·원가 차단기·읽기 엔진 정책을 넣고, 문서 두 개를 남긴다
+
+- Agent/session: Claude, 사용자 지시(안전장치 · 300쪽 기본 · Upstage OCR 조건부 채택 · md 문서).
+- Status: active(같은 브랜치, 여전히 `preview`). **법률은 아직 출시 불가** — 아래 5절 이유.
+
+- **자료 한도**(`case-intake-limits.ts`): 기본 300쪽 / 100파일 / 해제 후 1GB, 대용량 700쪽, 초대용량 1,500쪽. **판정은 AND** — 하나라도 넘으면 그 플랜을 벗어납니다(파일 50개라도 320쪽이면 초과). 압축파일 자체 200MB, ZIP 안의 ZIP은 1단계까지.
+  - **ZIP은 압축 크기로 판정하지 않습니다.** 18MB가 풀리면 2,800쪽일 수 있습니다. 순서를 "해제 → 계산 → 플랜 확정 → 그다음 호출"로 못박았고, 그 전에는 돈 나가는 일을 하나도 하지 않습니다.
+- **값**: 서면 작성은 99,000원 정액, 사건자료 분석만 분량제(99,000/149,000/199,000). 앞 커밋에서 분석을 149,000 정액으로 뒀던 것을 분량제로 바꿨습니다. **값은 서버가 저장된 자료를 다시 재서 정합니다** — 화면이 보낸 쪽수·금액은 쓰지 않습니다(1,400쪽을 300쪽이라 보내 기본가로 사는 길을 막음).
+- **원가 차단기**(`api-cost-budget.ts`): 주문당 8,000원. 호출 **전에** 예상 원가(출력은 상한으로 최악 계산)를 재고 넘길 것 같으면 호출하지 않습니다. 7,000원을 넘으면 비싼 경로부터 닫습니다 — 거친 결과와 결과 없음은 다른 일입니다. 단가를 모르면 막지 않되 그 사실을 함께 돌려줍니다(차단기가 고장이 되면 안 됩니다).
+- **읽기 엔진 정책**(`document-reading.ts`): 텍스트 있는 쪽은 공짜 추출 → 스캔은 Upstage OCR → 흐리면 Parse Standard 승격 → Enhanced는 기본 닫힘(예산 넉넉할 때만) → 사진 증거는 OpenAI Vision.
+  - **한 쪽은 한 엔진만.** 사용자가 지시한 "중복돼서 비용 2배 안 나오게"를 불변식으로 못박고 테스트로 고정했습니다. 표가 복잡한 쪽은 처음부터 Parse로 보냅니다 — OCR 후 재시도하면 두 번 냅니다.
+  - **갈아타는 스위치 하나**: `READING_PROVIDER=OPENAI`. 키가 없으면 설정과 무관하게 OpenAI로 내려갑니다. 사용자 조건("OpenAI가 더 나아지거나 Upstage가 떨어지면 경고 후 제거/통일")을 코드 주석과 문서에 점검 기준으로 적어 두었습니다.
+  - 단가는 코드에 박지 않고 `READING_PRICE_*` 환경변수로 받습니다(이 저장소가 이미 정한 규칙 — 틀린 단가는 없는 것보다 나쁩니다).
+- **문서 두 개**(사용자 요청): `docs/document-builders.md`(취업), `docs/legal-case-workspace.md`(법률). 값·한도·안전장치·읽기 엔진·남은 일을 한 곳에 모았습니다.
+- Files: `src/domain/case-intake-limits.ts`·`api-cost-budget.ts`·`document-reading.ts`(각 +test), `src/domain/legal-case.ts`, `src/domain/builder-pricing.ts`, `src/server/ai/reading-policy.ts`, `src/app/api/legal-cases/[caseId]/builds/route.ts`, `src/components/legal-case-workspace.tsx`, `.env.example`, 문서 2개.
+- Validation: tsc clean, eslint 오류 0건, vitest 137 files · 1089 tests(신규 29건), next build 성공.
+- **출시 전 필수(여전히 막힘)**: 프롬프트 상한이 6만 자(약 40쪽)라 300쪽 기본 플랜도 실제로는 40쪽만 읽습니다. 한도·값·차단기를 다 넣어도 **읽는 양 자체**는 대용량 파이프라인(페이지 분해 → 읽기 → 쪽번호 보존 저장 → 색인 → 필요한 쪽만 재검토)이 있어야 풀립니다. 그 전에는 법률을 공개하면 안 됩니다.
+- User decision: pending — Upstage 키·단가 입력, 취업 쪽 값, 대용량 파이프라인 착수 시점.
