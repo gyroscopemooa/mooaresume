@@ -6863,3 +6863,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - **`docs/setup-checklist.md`**: 마이그레이션 4개, 값 정할 곳, Polar 상품 3개, Upstage 키·단가, 공개 스위치 위치, 배포 순서를 순서대로 적었습니다. 맨 위에 "지금 팔면 안 되는 이유"(법률은 실제로 40쪽만 읽음)를 두었습니다.
 - Files: `src/domain/builder-pricing.ts`, `src/domain/legal-case.ts`, `docs/setup-checklist.md`.
 - Validation: tsc clean, eslint 오류 0건, vitest 138 files · 1102 tests, next build 성공.
+
+## 2026-09-07 — Claude: 인수인계 체크포인트를 새로 세우고 포인터를 옮긴다
+
+- Agent/session: Claude, 사용자 요청("완성도는 얼마정돈지 뭐남앗는지도 인수인계").
+- Status: active(같은 브랜치).
+- `docs/development-checkpoint-2026-09-07.md` 신규. AGENTS.md의 "living checkpoint" 포인터를 08-21에서 09-07로 옮겼습니다.
+- **08-21 체크포인트를 죽이지 않았습니다.** 그 문서의 미해결 항목(QUICK 입력 확인 버튼·실제 결제 분석 복구·결과 비교 선택)은 `main` 쪽 일이고 이 브랜치가 건드리지 않았습니다. 새 문서와 AGENTS.md 양쪽에 "둘 다 보라"고 적고, 08-21 문서 맨 위에도 안내를 달았습니다 — 포인터만 옮기면 그 항목들이 조용히 사라집니다.
+- 체크포인트에 적은 것: 영역별 완성도(취업 90% / 법률 65%), **가장 큰 미검증 위험 — AI 생성을 한 번도 실제로 돌려보지 않았다는 것**, 법률을 팔면 안 되는 이유(40쪽만 읽음), 남은 일 5개의 우선순위, 로컬 확인법, 보호해야 할 것.
+- Files: `docs/development-checkpoint-2026-09-07.md`(신규), `docs/development-checkpoint-2026-08-21.md`(안내 추가), `AGENTS.md`(포인터).

@@ -181,7 +181,7 @@ Do not rewrite unrelated files.
 
 ## Living checkpoint
 
-Treat `docs/development-checkpoint-2026-08-21.md` as the current living handoff document until it is explicitly replaced by a newer checkpoint file.
+Treat `docs/development-checkpoint-2026-09-07.md` as the current living handoff document until it is explicitly replaced by a newer checkpoint file. The previous checkpoint `docs/development-checkpoint-2026-08-21.md` still holds open `main`-side items (QUICK 입력 확인 버튼, 실제 결제 분석 복구, 결과 비교 선택) that the 09-07 checkpoint does not supersede — read both.
 
 Whenever the user asks to save an intermediate state, record tomorrow's work, record the next task, pause for the day, or update the checkpoint:
 
