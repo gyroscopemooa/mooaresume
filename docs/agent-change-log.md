@@ -6854,3 +6854,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/domain/analysis-pipeline.ts`(+test), `src/server/ai/legal-model-tiers.ts`, `src/server/ai/legal/legal-document-gateway.ts`, `src/server/legal/legal-case-repository.ts`, `src/app/api/legal-cases/[caseId]/builds/[buildId]/execute/route.ts`, `supabase/migrations/20260907010000_legal_build_cost.sql`, `.env.example`.
 - Validation: tsc clean, eslint 오류 0건, vitest 138 files · 1102 tests(신규 13건), next build 성공.
 - **정정**: 앞 답변에서 "Upstage 부분은 안 했다"고 말했는데 틀렸습니다. 읽기 정책·승격·비용가드는 앞 커밋에 들어가 있습니다. 안 된 것은 **실제 Upstage HTTP 클라이언트와 이미지 업로드**입니다(키가 없어 정책까지만).
+
+## 2026-09-07 — Claude: 죽은 가격 상수를 걷어내고, 집에서 할 일 목록을 남긴다
+
+- Agent/session: Claude, 사용자 요청("집가서 내가 해야할것 정리").
+- Status: active(같은 브랜치, `preview` 유지).
+- **정리**: `LEGAL_CASE_ANALYSIS_PRICE_KRW`(149,000 정액)를 지웠습니다. 사건자료 분석을 분량제로 바꾸면서 쓰이지 않게 됐는데, 플랜 표(`CASE_PLANS`의 99/149/199k) 옆에 죽은 값이 남아 있으면 어느 것이 진짜인지 알 수 없습니다 — 같은 값을 두 곳에 두지 않는다는 이 파일의 원칙 그대로입니다. 자리에는 "값은 플랜 표에 있다"는 안내만 남겼습니다.
+- **`docs/setup-checklist.md`**: 마이그레이션 4개, 값 정할 곳, Polar 상품 3개, Upstage 키·단가, 공개 스위치 위치, 배포 순서를 순서대로 적었습니다. 맨 위에 "지금 팔면 안 되는 이유"(법률은 실제로 40쪽만 읽음)를 두었습니다.
+- Files: `src/domain/builder-pricing.ts`, `src/domain/legal-case.ts`, `docs/setup-checklist.md`.
+- Validation: tsc clean, eslint 오류 0건, vitest 138 files · 1102 tests, next build 성공.

@@ -28,9 +28,9 @@ import { BASIC_CASE_PLAN, estimatePagesFromChars, type CasePlan, type CaseVolume
  * 영역이라, 결과물마다 그 문장이 함께 나가야 합니다(`LEGAL_DISCLAIMER`).
  */
 
-import { LEGAL_CASE_ANALYSIS_PRICE_KRW, LEGAL_DOCUMENT_BUILD_PRICE_KRW } from "./builder-pricing";
+import { LEGAL_DOCUMENT_BUILD_PRICE_KRW } from "./builder-pricing";
 
-export { LEGAL_CASE_ANALYSIS_PRICE_KRW, LEGAL_DOCUMENT_BUILD_PRICE_KRW };
+export { LEGAL_DOCUMENT_BUILD_PRICE_KRW };
 
 /**
  * 이 문서의 값.
