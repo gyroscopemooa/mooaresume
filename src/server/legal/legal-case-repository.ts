@@ -239,3 +239,34 @@ export async function deleteLegalCaseDocument(documentId: string, ownerUserId: s
     .eq("owner_user_id", ownerUserId);
   if (error) throw new LegalCaseStoreError(error.message, "DOCUMENT_DELETE_FAILED");
 }
+
+/**
+ * 이 건에 실제로 든 원가를 결제 건에 적어 둡니다.
+ *
+ * 실패해도 문서 생성을 되돌리지 않습니다 — 손님은 이미 결과를 받았고,
+ * 원가 기록은 우리 쪽 장부입니다. 장부를 못 적었다고 결과를 물리면 안 됩니다.
+ */
+export async function recordLegalBuildCost(input: {
+  buildId: string;
+  ownerUserId: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  costKrw: number | null;
+  modelTier: string | null;
+  model: string | null;
+  pages: number | null;
+}): Promise<void> {
+  const { error } = await serviceClient()
+    .from("legal_document_builds")
+    .update({
+      input_tokens: input.inputTokens,
+      output_tokens: input.outputTokens,
+      cost_krw: input.costKrw,
+      model_tier: input.modelTier,
+      model: input.model,
+      pages: input.pages,
+    })
+    .eq("id", input.buildId)
+    .eq("owner_user_id", input.ownerUserId);
+  if (error) console.error("legal_build_cost_record_failed", JSON.stringify({ buildId: input.buildId, detail: error.message.slice(0, 200) }));
+}

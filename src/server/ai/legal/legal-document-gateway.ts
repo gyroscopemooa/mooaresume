@@ -10,6 +10,9 @@ import {
   type LegalCase, type LegalCaseMaterial, type LegalDocumentOutput, type LegalDocumentType,
 } from "@/domain/legal-case";
 import { callDocumentBuildModel, type DocumentBuildModelOptions } from "@/server/ai/document-build-model";
+import { checkCorpusFit, planAnalysisStage, type AnalysisStage, type StageUsageRecord } from "@/domain/analysis-pipeline";
+import { estimateCallCostKrw, estimateTokensFromChars, OrderApiBudget } from "@/domain/api-cost-budget";
+import { readLegalModelTiersFromEnv, readTierPricingFromEnv } from "@/server/ai/legal-model-tiers";
 
 /**
  * 법률 문서 생성의 모델 호출.
@@ -63,10 +66,22 @@ export type LegalDocumentGatewayResult = {
   output: LegalDocumentOutput;
   execution: { responseId: string; model: string; promptVersion: string; inputTokens: number | null; outputTokens: number | null };
   truncated: string[];
+  /** 이 건에 실제로 쓴 원가. 관리자 화면이 그대로 읽습니다. */
+  usage: StageUsageRecord[];
+  spentKrw: number | null;
 };
 
+/** 사건 분석은 훑는 일이고, 나머지는 쓰는 일입니다. 급이 갈리는 자리입니다. */
+function stageFor(docType: LegalDocumentType): AnalysisStage {
+  return docType === "CASE_ANALYSIS" ? "EXTRACT_ISSUES" : "DRAFT_DOCUMENT";
+}
+
 export class OpenAILegalDocumentGateway {
-  constructor(private readonly options: DocumentBuildModelOptions) {}
+  constructor(
+    private readonly options: DocumentBuildModelOptions,
+    private readonly tiers = readLegalModelTiersFromEnv(),
+    private readonly budget = new OrderApiBudget(),
+  ) {}
 
   async build(input: {
     docType: LegalDocumentType;
@@ -74,7 +89,26 @@ export class OpenAILegalDocumentGateway {
     materials: readonly Pick<LegalCaseMaterial, "kind" | "filename" | "text">[];
   }): Promise<LegalDocumentGatewayResult> {
     const prompt = buildLegalCasePrompt({ legalCase: input.legalCase, materials: input.materials, docType: input.docType });
-    const called = await callDocumentBuildModel(this.options, {
+
+    // 급을 고르고(예산이 빠듯하면 한 급 내려), 부르기 전에 원가를 잽니다.
+    const stage = stageFor(input.docType);
+    const stagePlan = planAnalysisStage(stage, this.budget.snapshot().verdict);
+    const model = this.tiers[stagePlan.tier];
+    const pricing = readTierPricingFromEnv(stagePlan.tier);
+    const inputTokens = estimateTokensFromChars(prompt.text.length);
+
+    // 추려서 넣었는지, 한 요청이 너무 길지 않은지. 여기서 막히면 돈이 나가기
+    // 전입니다 — 서면 작성 단계에 자료 전체를 밀어 넣는 실수가 여기서 걸립니다.
+    const fit = checkCorpusFit({ stage, inputTokens, wholeCorpus: stage !== "DRAFT_DOCUMENT" });
+    if (!fit.ok) throw new Error(fit.message);
+
+    const estimate = estimateCallCostKrw({ inputTokens, maxOutputTokens: 12_000, pricing });
+    const allowance = this.budget.canSpend(estimate);
+    if (!allowance.allowed) {
+      throw new Error(`이 주문의 API 예산(${allowance.snapshot.budgetKrw.toLocaleString()}원)을 넘길 호출이라 중단했습니다.`);
+    }
+
+    const called = await callDocumentBuildModel({ ...this.options, model }, {
       schemaName: "legal_document",
       schema: z.toJSONSchema(legalDocumentOutputSchema),
       instructions: buildLegalDocumentInstructions(input.docType),
@@ -86,8 +120,22 @@ export class OpenAILegalDocumentGateway {
       maxOutputTokens: 12_000,
     });
 
+    const costKrw = this.budget.record(
+      { inputTokens: called.execution.inputTokens, outputTokens: called.execution.outputTokens },
+      pricing,
+    );
+
     const parsed = normalizeLegalDocumentOutput(legalDocumentOutputSchema.parse(JSON.parse(called.outputText) as unknown));
     return {
+      usage: [{
+        stage,
+        tier: stagePlan.tier,
+        model: called.execution.model,
+        inputTokens: called.execution.inputTokens,
+        outputTokens: called.execution.outputTokens,
+        costKrw,
+      }],
+      spentKrw: this.budget.snapshot().spentKrw,
       // 고지 문구는 모델이 아니라 우리가 붙입니다. 모델이 빠뜨릴 수 있는 자리에
       // 두면 어떤 문서에는 없게 됩니다.
       output: { ...parsed, notes: [...parsed.notes, LEGAL_DISCLAIMER] },

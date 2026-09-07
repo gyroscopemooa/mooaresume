@@ -4,7 +4,8 @@ import { checkDocumentBuildPayment } from "@/server/billing/document-build-check
 import { createLegalDocumentGatewayFromEnv } from "@/server/ai/legal/legal-document-gateway";
 import { claimBuildRun, finishBuildRun, loadBuild, releaseBuildRun, MAX_BUILD_ATTEMPTS } from "@/server/document-builds/build-lifecycle";
 import { legalDocumentBuild } from "@/server/document-builds/products";
-import { listLegalCaseMaterials, loadLegalBuildTarget, loadLegalCase, saveLegalCaseDocument } from "@/server/legal/legal-case-repository";
+import { listLegalCaseMaterials, loadLegalBuildTarget, loadLegalCase, recordLegalBuildCost, saveLegalCaseDocument } from "@/server/legal/legal-case-repository";
+import { measureLegalCaseVolume } from "@/domain/legal-case";
 import { guardMemberRequest, readJsonBody } from "@/server/http/request-guards";
 
 export const runtime = "nodejs";
@@ -91,6 +92,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ca
       docType,
       title: result.output.title || findLegalDocumentDefinition(docType).label,
       output: result.output,
+    });
+    // 장부를 먼저 적고 건을 닫습니다. 원가를 모르면 null로 남습니다 —
+    // 0으로 적으면 "공짜였다"가 되어 합계가 조용히 낮아집니다.
+    const spent = result.usage[0] ?? null;
+    await recordLegalBuildCost({
+      buildId: build.id,
+      ownerUserId: guard.userId,
+      inputTokens: spent?.inputTokens ?? null,
+      outputTokens: spent?.outputTokens ?? null,
+      costKrw: result.spentKrw,
+      modelTier: spent?.tier ?? null,
+      model: spent?.model ?? null,
+      pages: measureLegalCaseVolume({ summary: legalCase.summary, materials }).pages,
     });
     await finishBuildRun(legalDocumentBuild.table, build.id);
     return NextResponse.json({ document: saved, truncated: result.truncated }, { status: 200 });

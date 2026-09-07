@@ -6838,3 +6838,19 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: tsc clean, eslint 오류 0건, vitest 137 files · 1089 tests(신규 29건), next build 성공.
 - **출시 전 필수(여전히 막힘)**: 프롬프트 상한이 6만 자(약 40쪽)라 300쪽 기본 플랜도 실제로는 40쪽만 읽습니다. 한도·값·차단기를 다 넣어도 **읽는 양 자체**는 대용량 파이프라인(페이지 분해 → 읽기 → 쪽번호 보존 저장 → 색인 → 필요한 쪽만 재검토)이 있어야 풀립니다. 그 전에는 법률을 공개하면 안 됩니다.
 - User decision: pending — Upstage 키·단가 입력, 취업 쪽 값, 대용량 파이프라인 착수 시점.
+
+## 2026-09-07 — Claude: 분석 매커니즘(모델 단계 승격)을 넣고, 건당 원가를 장부에 남긴다
+
+- Agent/session: Claude, 사용자 지시(Luna→Terra→Sol 단계 승격 · 전체를 최상위 모델에 넣지 말 것 · 관리자 원가 기록).
+- Status: active(같은 브랜치, `preview` 유지).
+
+- **모델 급을 역할로 나눴습니다**(`analysis-pipeline.ts`). 벤더 모델명이 아니라 SCAN(훑기)·REVIEW(검토)·FINAL(작성)입니다 — 모델은 바뀌고 역할은 남습니다. 이름은 환경변수로 받습니다(`OPENAI_MODEL_LEGAL_SCAN/REVIEW/FINAL`, 비우면 층층이 폴백).
+- **가장 비싼 실수를 코드가 막습니다.** 서면 작성 단계에 자료 전체를 밀어 넣으면 `checkCorpusFit`이 호출 전에 거부합니다. 훑는 단계(CLASSIFY·INDEX)만 전체를 받고, 나머지는 추려진 근거만 받습니다.
+- **요청 하나가 길면 단가가 뛰는 선**(272K 토큰)을 상수로 두고, 안전선(200K) 기준으로 몇 번에 나눌지 계산합니다. 1,400쪽은 한 번에 못 들어간다는 것이 테스트로 고정돼 있습니다.
+- **예산이 빠듯하면 급을 한 단계 내립니다**(`planAnalysisStage`). 거친 결과와 결과 없음은 손님에게 다른 일입니다. 예산을 다 쓰면 내리는 것으로도 안 되므로 호출 자체를 막습니다.
+- **게이트웨이에 실제로 물렸습니다.** 부르기 전에 ① 급 선택 ② 전체 자료 여부 검사 ③ 예상 원가(출력은 상한으로 최악) 계산 ④ 예산 초과면 중단. 부른 뒤에 실제 사용량을 예산에 기록합니다.
+- **건당 원가를 남깁니다**(마이그레이션 `20260907010000_legal_build_cost.sql`): `legal_document_builds`에 input_tokens·output_tokens·cost_krw·model_tier·model·pages. 사건 내용은 없습니다. 원가를 모르면 null로 둡니다 — 0으로 적으면 "공짜였다"가 되어 합계가 조용히 낮아집니다. 장부 기록이 실패해도 문서 생성을 되돌리지 않습니다(손님은 이미 결과를 받았고, 장부는 우리 쪽 사정입니다).
+- 이 데이터가 50~100건 쌓이면 300쪽 상한·벤더 선택·값을 감이 아니라 숫자로 다시 봅니다.
+- Files: `src/domain/analysis-pipeline.ts`(+test), `src/server/ai/legal-model-tiers.ts`, `src/server/ai/legal/legal-document-gateway.ts`, `src/server/legal/legal-case-repository.ts`, `src/app/api/legal-cases/[caseId]/builds/[buildId]/execute/route.ts`, `supabase/migrations/20260907010000_legal_build_cost.sql`, `.env.example`.
+- Validation: tsc clean, eslint 오류 0건, vitest 138 files · 1102 tests(신규 13건), next build 성공.
+- **정정**: 앞 답변에서 "Upstage 부분은 안 했다"고 말했는데 틀렸습니다. 읽기 정책·승격·비용가드는 앞 커밋에 들어가 있습니다. 안 된 것은 **실제 Upstage HTTP 클라이언트와 이미지 업로드**입니다(키가 없어 정책까지만).
