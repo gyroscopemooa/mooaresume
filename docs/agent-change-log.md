@@ -6939,13 +6939,23 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: `src/domain/builder-pricing.ts`, `src/domain/legal-case.ts`, `docs/setup-checklist.md`.
 - Validation: tsc clean, eslint 오류 0건, vitest 138 files · 1102 tests, next build 성공.
 
+## 2026-09-07 — Claude: 인수인계 체크포인트를 새로 세우고 포인터를 옮긴다
+
+- Agent/session: Claude, 사용자 요청("완성도는 얼마정돈지 뭐남앗는지도 인수인계").
+- Status: active(같은 브랜치).
+- `docs/development-checkpoint-2026-09-07.md` 신규. AGENTS.md의 "living checkpoint" 포인터를 08-21에서 09-07로 옮겼습니다.
+- **08-21 체크포인트를 죽이지 않았습니다.** 그 문서의 미해결 항목(QUICK 입력 확인 버튼·실제 결제 분석 복구·결과 비교 선택)은 `main` 쪽 일이고 이 브랜치가 건드리지 않았습니다. 새 문서와 AGENTS.md 양쪽에 "둘 다 보라"고 적고, 08-21 문서 맨 위에도 안내를 달았습니다 — 포인터만 옮기면 그 항목들이 조용히 사라집니다.
+- 체크포인트에 적은 것: 영역별 완성도(취업 90% / 법률 65%), **가장 큰 미검증 위험 — AI 생성을 한 번도 실제로 돌려보지 않았다는 것**, 법률을 팔면 안 되는 이유(40쪽만 읽음), 남은 일 5개의 우선순위, 로컬 확인법, 보호해야 할 것.
+- Files: `docs/development-checkpoint-2026-09-07.md`(신규), `docs/development-checkpoint-2026-08-21.md`(안내 추가), `AGENTS.md`(포인터).
+
 ## 2026-09-09 — Claude: 메인 화면 푸터에 사업자 정보(전자상거래법 표기)를 접이식으로 넣는다
 
 - Agent/session: Claude, 사용자 요청("푸터에 상호/대표/사업자등록번호/통신판매업신고번호/주소/이메일 넣고 전화번호는 없애고, 닫힌 상태의 'Business Information ▼' 로").
-- Status: active, local/uncommitted (커밋 요청 없음).
+- Status: active, 커밋·push 완료.
 - Protected baseline: 기존 푸터 브랜드/링크/카피(`이용방법`, `친구 추천`, `개인정보처리방침`, `제휴·협업 문의` 메일, `© 2026 MOOA Resume`)는 그대로 두었습니다. `src/app/home-page-content.tsx`(어디서도 import되지 않는 미사용 파일)의 동일한 구식 푸터는 건드리지 않았습니다 — 라이브 라우트가 아니라서 판단을 미룹니다.
 - Change and reason: 실사용 홈(`/`, `src/app/page.tsx`)의 `<footer>` 끝에 `<details className="footer-business">`(기본 닫힘, 네이티브 `<summary>` 삼각형이 열림·닫힘 표시를 겸함)로 상호(gyroscope)·대표(전민수)·사업자등록번호(696-55-00795)·통신판매업신고번호(2023-울산남구-0547)·주소(울산광역시 남구 번영로 124번길 21 울산비즈니스센터 307호)·이메일(support@transtream.app)을 넣었습니다. 전화번호는 사용자 지시대로 제외했습니다. `globals.css`의 `footer.container`는 `height:130px` 정지값이 접이식 내용과 충돌해 `min-height:130px`+`flex-wrap:wrap`으로 바꾸고, `.footer-business`에 `flex-basis:100%;order:10`을 줘서 열렸을 때 항상 새 줄로 내려가게 했습니다(패딩·정렬 변경 없음 — `landing`·`comingsoon` 페이지가 같은 `footer.container` 클래스를 공유하지만 그 페이지들엔 `.footer-business`가 없어 시각적으로 그대로입니다).
 - Files: `src/app/page.tsx`, `src/app/globals.css`.
-- Validation: `npx tsc --noEmit -p .` clean. 브라우저 육안 확인은 아직 안 함(사용자 몫 — dev 서버·화면 확인).
+- Validation: `npx tsc --noEmit -p .` clean, vitest 138 files · 1102 tests 통과. 브라우저 육안 확인은 아직 안 함(사용자 몫 — dev 서버·화면 확인).
 - **남은 일**: `src/app/landing/page.tsx`, `src/app/comingsoon/page.tsx`도 같은 구식 푸터 마크업을 갖고 있어 사업자 정보가 빠져 있습니다. 전자상거래법상 결제 페이지로 이어지는 모든 화면에 필요하면 다음에 같이 넣어야 합니다. 원하시면 바로 이어서 처리하겠습니다.
-- User decision: n/a — 요청대로 즉시 반영, 커밋은 보류.
+- 같은 커밋에 함께 push된 것(이전 세션에서 이미 로컬에 있던 작업, 이번 대화에서 작성하지 않음): 나홀로소송 도구 드로어(`src/components/legal-tools-drawer.tsx`/`.module.css`, `src/app/page.tsx`에 연결), 항소이유서 "다투는 지점" 이용자 직접 선택으로 전환(`src/domain/legal-case.ts`, `src/components/legal-case-starter.tsx`, `src/components/legal-case-workspace.tsx`) — 변호사법 리스크([[project_legal_feature_attorney_act_risk]] 메모 참고) 완화 목적.
+- User decision: n/a — 요청대로 즉시 반영 후 커밋·push.
