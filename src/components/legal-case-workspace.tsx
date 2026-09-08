@@ -7,13 +7,14 @@ import {
 import { ARCHIVE_DOCUMENT_ACCEPT, extractLocalDocuments } from "@/lib/local-document";
 import { checkUploads, describeRejections, formatBytes } from "@/domain/upload-limits";
 import {
-  countLegalCaseSourceCharacters, findLegalDocumentDefinition, hasEnoughLegalCaseSource, measureLegalCaseCoverage, orderLegalDocuments,
+  countLegalCaseSourceCharacters, findLegalDocumentDefinition, formatAppealPointsAsMaterialText, hasEnoughLegalCaseSource, measureLegalCaseCoverage, orderLegalDocuments,
+  LEGAL_APPEAL_POINT_CATEGORY_LABEL, LEGAL_APPEAL_POINT_CATEGORY_ORDER, LEGAL_APPEAL_POINTS_FILENAME,
   LEGAL_CASE_MAX_MATERIALS, LEGAL_CASE_MAX_MATERIAL_CHARS, LEGAL_CASE_MIN_SOURCE_CHARS, LEGAL_CASE_TYPE_LABEL,
   LEGAL_CHARS_PER_PAGE, LEGAL_DISCLAIMER,
   LEGAL_DOCUMENT_STAGE_LABEL, LEGAL_DOCUMENT_STAGE_ORDER, legalDocumentPriceKrw, measureLegalCaseVolume,
   LEGAL_MATERIAL_KIND_LABEL, LEGAL_MATERIAL_KIND_ORDER, LEGAL_PARTY_ROLE_LABEL,
-  legalCaseTypeSchema, legalPartyRoleSchema,
-  type LegalCase, type LegalCaseDocument, type LegalCaseMaterial, type LegalDocumentOutput, type LegalDocumentType,
+  legalCaseTypeSchema, legalDocumentTypeSchema, legalPartyRoleSchema,
+  type LegalAppealPointCategory, type LegalCase, type LegalCaseDocument, type LegalCaseMaterial, type LegalDocumentOutput, type LegalDocumentType,
   type LegalMaterialKind,
 } from "@/domain/legal-case";
 import { BASIC_CASE_PLAN, describeCasePlanDecision, resolveCasePlan } from "@/domain/case-intake-limits";
@@ -141,6 +142,14 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
   const [truncated, setTruncated] = useState<string[]>([]);
   const restored = useRef(false);
 
+  // 항소이유서: "AI가 사실오인/법리오해를 판정"하지 않고, 이용자가 직접 고른
+  // 분류·설명을 자료로 저장해 두면 AI는 그걸 그대로 정리만 합니다.
+  const [appealPoints, setAppealPoints] = useState<{ category: LegalAppealPointCategory; description: string }[]>([]);
+  const [appealCategoryDraft, setAppealCategoryDraft] = useState<LegalAppealPointCategory>("FACT_MISTAKE");
+  const [appealDescriptionDraft, setAppealDescriptionDraft] = useState("");
+  const [savingAppealPoints, setSavingAppealPoints] = useState(false);
+  const savedAppealPointsMaterial = materials.find((material) => material.filename === LEGAL_APPEAL_POINTS_FILENAME);
+
   const characters = countLegalCaseSourceCharacters({ summary: legalCase.summary, materials });
   const enough = hasEnoughLegalCaseSource({ summary: legalCase.summary, materials });
   const coverage = measureLegalCaseCoverage({ summary: legalCase.summary, materials });
@@ -182,18 +191,33 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
     }
   }, [initialCase.id]);
 
-  /** 결제를 마치고 돌아온 길이면 바로 만듭니다. 여기서 단추를 한 번 더 누르게 하면 절반은 그 단추를 못 찾습니다. */
+  /**
+   * 결제를 마치고 돌아온 길이면 바로 만듭니다. 여기서 단추를 한 번 더 누르게
+   * 하면 절반은 그 단추를 못 찾습니다.
+   *
+   * `doc`는 나홀로소송 드로어에서 문서 하나를 골라 들어온 경우입니다. 결제
+   * 완료 복귀 주소에도 이미 같은 값이 실려 있으므로(`builds/route.ts`의
+   * successUrl) 새 규칙을 만들지 않고 여기서 함께 읽습니다.
+   */
   useEffect(() => {
     if (restored.current) return;
     restored.current = true;
     const params = new URLSearchParams(window.location.search);
+    const docParam = legalDocumentTypeSchema.safeParse(params.get("doc"));
     const buildId = params.get("legal_build");
-    if (!buildId || params.get("checkout") !== "success") return;
+    const isCheckoutSuccess = params.get("checkout") === "success";
     void (async () => {
       // 사건 화면을 한 번 그린 뒤에 시작합니다. 효과 본문에서 곧바로 상태를
       // 바꾸면 그리기가 겹치고, 결제하고 돌아온 사람은 자기 사건을 보기도 전에
       // 로딩만 마주합니다.
       await Promise.resolve();
+      if (docParam.success) {
+        setSelectedType(docParam.data);
+        requestAnimationFrame(() => {
+          document.getElementById(`legal-doc-tile-${docParam.data}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+      if (!buildId || !isCheckoutSuccess) return;
       await runBuild(buildId);
     })();
   }, [runBuild]);
@@ -289,6 +313,52 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
     }
   }
 
+  function addAppealPoint() {
+    if (!appealDescriptionDraft.trim()) return;
+    setAppealPoints((current) => [...current, { category: appealCategoryDraft, description: appealDescriptionDraft.trim() }]);
+    setAppealDescriptionDraft("");
+  }
+
+  function removeAppealPoint(index: number) {
+    setAppealPoints((current) => current.filter((_, position) => position !== index));
+  }
+
+  /**
+   * 다투는 지점을 사건 자료로 저장합니다.
+   *
+   * 새 표나 새 API를 만들지 않습니다 — 이미 있는 "자료 올리기" 경로를 그대로
+   * 씁니다. AI는 사건 자료를 읽을 때 이 글도 함께 읽고, 마커 문장을 보고
+   * 자기가 다시 판정하지 않아야 한다는 것을 압니다.
+   */
+  async function saveAppealPoints() {
+    if (!appealPoints.length) return;
+    setSavingAppealPoints(true);
+    setMessage("");
+    const text = formatAppealPointsAsMaterialText(appealPoints);
+    try {
+      if (savedAppealPointsMaterial) await removeMaterial(savedAppealPointsMaterial.id);
+      const response = await fetch(`/api/legal-cases/${legalCase.id}/materials`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          materials: [{ kind: "OTHER", filename: LEGAL_APPEAL_POINTS_FILENAME, text, sizeBytes: new TextEncoder().encode(text).length }],
+        }),
+      });
+      const body: unknown = await response.json();
+      setSavingAppealPoints(false);
+      if (!response.ok) {
+        setMessage(body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "다투는 지점을 저장하지 못했습니다.");
+        return;
+      }
+      const created = (body as { materials?: LegalCaseMaterial[] }).materials ?? [];
+      setMaterials((current) => [...current, ...created]);
+      setAppealPoints([]);
+    } catch {
+      setSavingAppealPoints(false);
+      setMessage("다투는 지점을 저장하지 못했습니다.");
+    }
+  }
+
   async function startCheckout() {
     // 결제로 나가기 전에 사건 정보를 먼저 저장합니다.
     //
@@ -342,6 +412,9 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
 
   const busy = phase !== "idle";
   const selected = findLegalDocumentDefinition(selectedType);
+  // 권장 자료입니다. 없다고 막지 않습니다 — 없어도 진행할 수 있고, 그 대신
+  // AI가 알아서 "자료 없음"을 판단해 빈 자리를 notes로 남깁니다.
+  const missingWantedKinds = selected.wants.filter((kind) => !materials.some((material) => material.kind === kind));
   // 플랜은 저장된 자료의 분량이 정합니다. 결제할 때 서버가 같은 계산을 다시
   // 하므로, 여기 숫자는 안내일 뿐 값을 정하지 않습니다.
   const volume = measureLegalCaseVolume({ summary: legalCase.summary, materials });
@@ -484,6 +557,7 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
                 const made = documents.some((document) => document.docType === definition.type);
                 return <button
                   key={definition.type}
+                  id={`legal-doc-tile-${definition.type}`}
                   type="button"
                   className={styles.docTile}
                   aria-pressed={selectedType === definition.type}
@@ -502,6 +576,56 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
           <b>{selected.label}</b>
           <ul><li>{selected.whenToUse}</li></ul>
         </div>
+
+        {/* 권장 자료 안내. 막지 않습니다 — 없어도 "이 문서 만들기"는 그대로 눌립니다. */}
+        {missingWantedKinds.length > 0 && <p className={styles.notes}>
+          이 문서는 보통 <b>{missingWantedKinds.map((kind) => LEGAL_MATERIAL_KIND_LABEL[kind]).join("·")}</b> 자료가 있으면 더 정확합니다. 지금은 없어도 진행할 수 있습니다.
+        </p>}
+
+        {/* 항소이유서: AI가 사실오인/법리오해를 스스로 판정하지 않습니다.
+            이용자가 다투는 지점을 직접 고르면, 그 판단을 자료로 저장해 두고
+            AI는 그 내용을 서면 형식으로 정리만 합니다. */}
+        {selectedType === "APPEAL_REASONS" && <div className={styles.field} style={{ marginTop: 16 }}>
+          <span className={styles.fieldLabel}>어떤 점을 다투고 싶습니까?</span>
+          <small>여기서 고른 분류는 AI가 다시 판정하지 않고 그대로 씁니다.</small>
+
+          {savedAppealPointsMaterial && <p className={styles.notes}>
+            <CheckCircle2 style={{ width: 14, verticalAlign: "-2px" }} /> 이미 저장된 다투는 지점이 있습니다. 새로 고르고 저장하면 그 내용으로 바뀝니다.
+          </p>}
+
+          {appealPoints.length > 0 && <ul className={styles.fileList}>
+            {appealPoints.map((point, index) => <li key={index}>
+              <FileText />
+              <div>
+                <b>{LEGAL_APPEAL_POINT_CATEGORY_LABEL[point.category]}</b>
+                <small>{point.description}</small>
+              </div>
+              <span />
+              <button type="button" aria-label="이 지점 지우기" onClick={() => removeAppealPoint(index)}><Trash2 /></button>
+            </li>)}
+          </ul>}
+
+          <select
+            aria-label="다투는 지점의 분류"
+            value={appealCategoryDraft}
+            onChange={(event) => setAppealCategoryDraft(event.target.value as LegalAppealPointCategory)}
+          >
+            {LEGAL_APPEAL_POINT_CATEGORY_ORDER.map((category) => <option key={category} value={category}>{LEGAL_APPEAL_POINT_CATEGORY_LABEL[category]}</option>)}
+          </select>
+          <textarea
+            rows={3}
+            value={appealDescriptionDraft}
+            maxLength={1_000}
+            placeholder="왜 이 판단이 잘못됐다고 생각하시는지 적어 주세요. 예) 차용증에 원금만 갚기로 적혀 있는데도 이자까지 인정했습니다."
+            onChange={(event) => setAppealDescriptionDraft(event.target.value)}
+          />
+          <div className={styles.actions}>
+            <button type="button" className={styles.ghost} onClick={addAppealPoint} disabled={!appealDescriptionDraft.trim()}>지점 추가</button>
+            <button type="button" className={styles.ghost} onClick={() => void saveAppealPoints()} disabled={!appealPoints.length || savingAppealPoints}>
+              {savingAppealPoints ? <Loader2 className={styles.spin} /> : <Save style={{ width: 14, verticalAlign: "-2px" }} />} 다투는 지점 저장
+            </button>
+          </div>
+        </div>}
 
         {!planDecision.fits && <p className={styles.message}>
           <AlertCircle />

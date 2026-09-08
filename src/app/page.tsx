@@ -5,6 +5,7 @@ import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
 import { ApplicationDocsDrawer } from "@/components/application-docs-drawer";
+import { LegalToolsDrawer } from "@/components/legal-tools-drawer";
 import { LandingEntry } from "@/components/landing-entry";
 import { PricingComparison } from "@/components/pricing-comparison";
 import landingStyles from "./landing-sections.module.css";
@@ -90,6 +91,8 @@ export default function HomePage() {
       <CareerAssessmentDrawer />
       {/* 같은 가장자리에 두 번째 마크. 커리어 마크 바로 아래에 붙습니다. */}
       <ApplicationDocsDrawer />
+      {/* 같은 가장자리에 세 번째 마크. 서류첨삭 마크 바로 아래에 붙습니다. */}
+      <LegalToolsDrawer />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
         <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
@@ -338,7 +341,7 @@ export default function HomePage() {
             빠른 방법은 설명이 아니라 그 화면입니다. */}
         <Link href="/result/sample" className="cta-secondary">첨삭 완성본 샘플 예시 보기 <ArrowRight size={16}/></Link>
       </div></div></section>
-      <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><Link href="/privacy">개인정보처리방침</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a><span>© 2026 MOOA Resume</span></footer>
+      <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><Link href="/privacy">개인정보처리방침</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a><span>© 2026 MOOA Resume</span><details className="footer-business"><summary>Business Information</summary><ul><li>상호: gyroscope</li><li>대표: 전민수</li><li>사업자등록번호: 696-55-00795</li><li>통신판매업신고번호: 2023-울산남구-0547</li><li>주소: 울산광역시 남구 번영로 124번길 21 울산비즈니스센터 307호</li><li>이메일: support@transtream.app</li></ul></details></footer>
     </main></>
   );
 }

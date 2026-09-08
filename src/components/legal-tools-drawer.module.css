@@ -1,0 +1,89 @@
+/* 나홀로소송 도구 드로어.
+ *
+ * application-docs-drawer.module.css를 복사해 시작했습니다(둘 다 카드가 아니라
+ * 한 줄짜리 목록입니다). 공유하지 않은 이유는 그 파일과 같습니다 — 한쪽 폭이나
+ * 여백을 조정할 때 다른 쪽까지 같이 움직이면 안 됩니다.
+ *
+ * z-index와 .reopen 위치만 커리어(60/59) · 서류첨삭(61/62) 다음 자리(63/64)로
+ * 한 칸씩 밀었습니다. 세 번째 탭이 앞의 두 드로어가 열려 있어도 항상 눌립니다. */
+
+.layer { position: fixed; z-index: 63; inset: 0; pointer-events: none; }
+
+.drawer {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: min(420px, 92vw); min-width: 0;
+  background: #fbfcfa; border-right: 1px solid #dce5dd;
+  box-shadow: 24px 0 60px rgb(23 42 30 / .17);
+  pointer-events: auto;
+}
+
+.drawerHead {
+  position: sticky; z-index: 4; top: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 74px; padding: 0 22px;
+  border-bottom: 1px solid #e0e7e0; background: rgb(251 252 250 / .96); backdrop-filter: blur(13px);
+}
+.drawerHead div { display: grid; gap: 3px; }
+.drawerHead small { color: #667a6e; font-size: 9px; font-weight: 900; letter-spacing: .11em; }
+.drawerHead b { color: #1d2f24; font-size: 14px; letter-spacing: -.03em; }
+.actions { display: flex; align-items: center; gap: 8px; }
+.actions button { display: grid; place-items: center; width: 33px; height: 33px; border: 1px solid #d5e0d6; border-radius: 50%; background: #fff; color: #315442; cursor: pointer; }
+.actions button:hover { background: #edf5ef; }
+.actions svg { width: 17px; }
+
+.content { height: calc(100vh - 74px); overflow: auto; padding: 22px 18px 60px; }
+.lead { margin: 0 4px 16px; color: #61706a; font-size: 12px; line-height: 1.7; }
+
+.group + .group { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e6ece8; }
+.group > h3 { margin: 0 4px 10px; color: #667a6e; font-size: 10.5px; font-weight: 900; letter-spacing: .09em; }
+
+.list { display: grid; gap: 8px; }
+
+.item {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
+  padding: 15px 16px; border: 1px solid #e0e8e2; border-radius: 13px; background: #fff;
+  text-align: left;
+}
+.item b { display: block; color: #17221d; font-size: 14px; letter-spacing: -.02em; }
+.item p { margin: 5px 0 0; color: #6b7a73; font-size: 11.5px; line-height: 1.6; }
+.item svg { width: 16px; color: #9aa8a1; }
+
+a.item:hover { border-color: #b6d7c4; background: #f7fcf9; }
+a.item:hover svg { color: #176b4a; }
+
+.head { display: flex; align-items: center; gap: 7px; }
+
+/* 사건 만들기 한 항목만 다르게 보입니다 — 나머지 아홉 개가 낱장이라면,
+   이것만 "묶음"입니다. 처음 오는 사람에게는 이 줄이 먼저 읽혀야 합니다. */
+.flagship { border-color: #176b4a; background: #f2faf5; }
+a.flagship:hover { background: #e6f6ec; }
+.flagshipBadge { display: inline-flex; align-items: center; padding: 3px 7px; border-radius: 999px; font-size: 9.5px; font-weight: 900; letter-spacing: .02em; background: #176b4a; color: #fff; margin-left: 7px; }
+
+.footNote { margin: 18px 4px 0; padding-top: 14px; border-top: 1px solid #e6ece8; color: #8b978f; font-size: 11px; line-height: 1.7; }
+
+.reopen {
+  position: fixed; z-index: 64; left: 0; top: 50%;
+  display: flex; align-items: center; gap: 7px;
+  transform: translateY(calc(-50% + 128px));
+  padding: 10px 7px 10px 10px;
+  border: 1px solid #2a4a3a; border-left: 0; border-radius: 0 10px 10px 0;
+  background: #1d3a2b; box-shadow: 8px 10px 25px rgb(20 70 46 / .25);
+  color: #fff; font-size: 9px; font-weight: 900; line-height: 1.25; text-align: left; cursor: pointer;
+}
+.reopen:hover { background: #16301f; }
+.reopen > svg:first-child { width: 16px; }
+.reopen > svg:last-child { width: 14px; margin-left: 1px; }
+
+.edgeToggle {
+  position: absolute; z-index: 6; top: 50%; right: 0;
+  display: grid; place-items: center; width: 38px; height: 58px;
+  transform: translate(50%, -50%);
+  border: 1px solid #2a4a3a; border-radius: 9px; background: #1d3a2b;
+  box-shadow: -7px 10px 22px rgb(20 70 46 / .23); color: #fff; cursor: pointer;
+}
+.edgeToggle:hover { background: #16301f; }
+.edgeToggle svg { width: 18px; }
+
+@media (max-width: 760px) {
+  .layer, .reopen { display: none; }
+}

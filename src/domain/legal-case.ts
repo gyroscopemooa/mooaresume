@@ -108,6 +108,54 @@ export const LEGAL_PARTY_ROLE_LABEL: Record<LegalPartyRole, string> = {
   UNDECIDED: "아직 소송 전입니다",
 };
 
+/**
+ * 항소이유서에서 무엇을 다투는지의 갈래를 이용자가 직접 고릅니다.
+ *
+ * "이 판단이 사실오인인지 법리오해인지"는 법률적 성격 규정이라 AI가 대신
+ * 정하지 않습니다. 대신 이용자가 고른 갈래와 이유를 자료로 저장해 두면,
+ * AI는 그 판단을 정리·서식화만 합니다 — 판단 자체를 만들어내지 않습니다.
+ */
+export const legalAppealPointCategorySchema = z.enum([
+  "FACT_MISTAKE",
+  "EVIDENCE_MISTAKE",
+  "DAMAGES_MISTAKE",
+  "PROCEDURE_ISSUE",
+  "OTHER",
+]);
+export type LegalAppealPointCategory = z.infer<typeof legalAppealPointCategorySchema>;
+
+export const LEGAL_APPEAL_POINT_CATEGORY_LABEL: Record<LegalAppealPointCategory, string> = {
+  FACT_MISTAKE: "사실관계 인정이 잘못됨",
+  EVIDENCE_MISTAKE: "증거 평가가 잘못됨",
+  DAMAGES_MISTAKE: "손해액 판단이 잘못됨",
+  PROCEDURE_ISSUE: "절차상 문제가 있었음",
+  OTHER: "직접 입력",
+};
+
+export const LEGAL_APPEAL_POINT_CATEGORY_ORDER: readonly LegalAppealPointCategory[] = [
+  "FACT_MISTAKE", "EVIDENCE_MISTAKE", "DAMAGES_MISTAKE", "PROCEDURE_ISSUE", "OTHER",
+];
+
+export const legalAppealPointSchema = z.object({
+  category: legalAppealPointCategorySchema,
+  description: z.string().min(1).max(1_000),
+});
+export type LegalAppealPoint = z.infer<typeof legalAppealPointSchema>;
+
+/** 이 문장으로 시작하는 자료를 AI가 "이용자가 이미 내린 판단"으로 읽습니다. */
+export const LEGAL_APPEAL_POINTS_MARKER = "[사용자가 직접 고른 항소이유 다투는 지점]";
+export const LEGAL_APPEAL_POINTS_FILENAME = "항소이유서 - 다투는 지점 (사용자 작성)";
+
+/** 이용자가 고른 다투는 지점을 사건 자료로 저장할 텍스트로 만듭니다. */
+export function formatAppealPointsAsMaterialText(points: readonly LegalAppealPoint[]): string {
+  return [
+    LEGAL_APPEAL_POINTS_MARKER,
+    "아래 분류와 설명은 이용자가 스스로 정한 것입니다. 문서를 쓸 때 이 분류를 다시 판정하지 말고 그대로 사용하세요.",
+    "",
+    ...points.map((point, index) => `${index + 1}. [${LEGAL_APPEAL_POINT_CATEGORY_LABEL[point.category]}] ${point.description}`),
+  ].join("\n");
+}
+
 export const legalMaterialKindSchema = z.enum([
   "CASE_NARRATIVE",
   "OPPONENT_CLAIM",
@@ -292,7 +340,7 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     wants: ["JUDGMENT", "EXISTING_BRIEF"],
     guide: [
       "sections는 '결론 요약', '인정된 사실', '인정되지 않은 사실', '법원이 판단한 쟁점', '내가 주장했으나 판단되지 않은 부분', '항소에서 다툴 후보' 순으로 만듭니다.",
-      "'항소에서 다툴 후보'는 사실오인·법리오해·절차 문제 중 어디에 해당하는지 함께 적습니다.",
+      "'항소에서 다툴 후보'에는 법적 성격(사실오인·법리오해·절차 문제 등)을 당신이 판정하지 마세요. 대신 이용자가 자료에서 주장한 사실·쟁점과 법원이 실제로 인정·판단한 내용이 어떻게 다른지만 객관적으로 나란히 대조해 적습니다. 그 차이가 어떤 항소 사유에 해당하는지는 이용자가 직접 정하도록 남겨 둡니다.",
       "판결문이 자료에 없으면 sections를 비우고 notes에 '판결문을 올려 주세요'라고만 적습니다. 판결 내용을 추측하지 마세요.",
       "승소 가능성이나 확률을 적지 마세요.",
       "deadlines에 항소 기간이 있다는 사실을 안내하되, 구체적 날짜는 계산하지 말고 판결문 송달일을 기준으로 직접 확인하도록 적습니다.",
@@ -319,8 +367,9 @@ export const legalDocumentDefinitions: readonly LegalDocumentDefinition[] = [
     whenToUse: "항소장을 낸 뒤. 실제로 다투는 내용은 이 문서에 담깁니다.",
     wants: ["JUDGMENT", "EXISTING_BRIEF", "CONTRACT", "MESSAGE"],
     guide: [
-      "sections는 '항소이유의 요지'로 시작해, 다투는 지점마다 하나씩 만듭니다.",
-      "각 지점은 사실오인 / 법리오해 / 절차상 문제 / 판결 이유의 불비 중 무엇인지 heading에 밝히고, 1심 판결의 어느 판단을 다투는지 구체적으로 지목합니다.",
+      `자료에 "${LEGAL_APPEAL_POINTS_MARKER}"로 시작하는 자료가 있으면, 그 목록의 분류(사실오인/법리오해/절차상 문제 등)와 설명을 그대로 사용해 다투는 지점마다 sections를 하나씩 만듭니다. 그 분류를 당신이 다시 판정하거나 바꾸지 마세요 — 이미 이용자가 정한 것입니다.`,
+      "sections는 '항소이유의 요지'로 시작합니다. 각 지점의 heading에는 이용자가 고른 분류를 그대로 적고, 1심 판결의 어느 판단을 다투는지 자료(판결문)에서 확인해 구체적으로 지목합니다.",
+      `그 자료가 없으면 다투는 지점의 sections를 비우고 notes에 "다투실 지점을 먼저 골라 주세요"라고 적습니다. 당신이 임의로 사실오인·법리오해를 지어내 판정하지 마세요.`,
       "1심에서 이미 낸 주장과 새로 하는 주장을 구분해 적습니다.",
       "판결문이 자료에 없으면 sections를 비우고 notes에 판결문을 올려 달라고 적습니다.",
       "deadlines에 항소이유서에도 제출 기한이 있다는 안내를 넣되, 날짜를 계산하지 말고 항소기록 접수통지를 받은 날을 기준으로 직접 확인하도록 적습니다.",

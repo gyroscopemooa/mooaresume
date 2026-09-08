@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowRight, FolderPlus, Loader2, LogIn, Mail, Scale } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
-  legalCaseTypeSchema, legalPartyRoleSchema,
+  legalCaseTypeSchema, legalDocumentTypeSchema, legalPartyRoleSchema, findLegalDocumentDefinition,
   LEGAL_CASE_TYPE_LABEL, LEGAL_CAUTIONS, LEGAL_PARTY_ROLE_LABEL,
-  type LegalCase, type LegalCaseType, type LegalPartyRole,
+  type LegalCase, type LegalCaseType, type LegalDocumentType, type LegalPartyRole,
 } from "@/domain/legal-case";
 import styles from "./document-build-tool.module.css";
 
@@ -31,6 +31,20 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  // 나홀로소송 드로어에서 문서 하나를 골라 들어온 경우입니다("/legal?doc=...").
+  // 사건은 그대로 하나로 열되, 어느 사건을 고르거나 만들든 그 문서로 이어서
+  // 갈 수 있게 caseId 뒤에 이 값을 그대로 붙여 보냅니다.
+  const [docType, setDocType] = useState<LegalDocumentType | null>(null);
+
+  useEffect(() => {
+    const parsed = legalDocumentTypeSchema.safeParse(new URLSearchParams(window.location.search).get("doc"));
+    if (!parsed.success) return;
+    void Promise.resolve().then(() => setDocType(parsed.data));
+  }, []);
+
+  function caseHref(caseId: string): string {
+    return docType ? `/legal/${caseId}?doc=${docType}` : `/legal/${caseId}`;
+  }
 
   async function createCase() {
     if (!title.trim()) { setMessage("사건 이름을 적어 주세요. 나중에 목록에서 찾을 이름입니다."); return; }
@@ -50,7 +64,7 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
       }
       const created = (body as { case?: LegalCase }).case;
       if (!created) { setBusy(false); setMessage("사건을 만들지 못했습니다."); return; }
-      router.push(`/legal/${created.id}`);
+      router.push(caseHref(created.id));
     } catch {
       setBusy(false);
       setMessage("사건을 만들지 못했습니다.");
@@ -92,6 +106,7 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
     <div className={styles.head}>
       <h1 id="legal-home-title">사건 하나를 열면, 서면은 이어서 만듭니다</h1>
       <p>계약서·문자·녹취록·판결문을 한 번 넣어 두면 <b>주요쟁점 정리부터 내용증명·소장·답변서·준비서면·항소이유서까지</b> 같은 자료로 만듭니다. 문서마다 자료를 새로 올리지 않으셔도 됩니다.</p>
+      {docType && <p><b>{findLegalDocumentDefinition(docType).label}</b>을(를) 고르고 들어오셨습니다. 아래에서 사건을 만들거나 고르면 그 문서로 이어집니다.</p>}
     </div>
 
     <div className={styles.layout}>
@@ -175,7 +190,7 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
 
         {cases.length > 0
           ? <div className={styles.caseList}>
-            {cases.map((item) => <button key={item.id} type="button" className={styles.caseCard} onClick={() => router.push(`/legal/${item.id}`)}>
+            {cases.map((item) => <button key={item.id} type="button" className={styles.caseCard} onClick={() => router.push(caseHref(item.id))}>
               <div>
                 <b>{item.title}</b>
                 <small>{LEGAL_CASE_TYPE_LABEL[item.caseType]} · {new Date(item.updatedAt).toLocaleDateString("ko-KR")} 수정</small>
