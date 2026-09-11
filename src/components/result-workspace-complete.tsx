@@ -23,10 +23,11 @@ import { CandidateProfileCard } from "@/components/candidate-profile-card";
 import styles from "./result-workspace-complete.module.css";
 import { FinalVerification } from "./final-verification";
 import { FinalWrapUp } from "./final-wrap-up";
+import { InteractiveInterview } from "./interactive-interview";
 import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
 
-type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "final";
+type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "final";
 
 const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
   good: "좋은 표현",
@@ -498,6 +499,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         {/* 검증 옆에 둡니다. 순서가 곧 읽는 순서입니다 — 무엇이 문제인지 본
             다음에 그래서 무엇을 할지가 옵니다. */}
         {result.product === "FINAL" && <button onClick={() => setView("wrapup")} className={view === "wrapup" ? styles.active : ""}>제출 전 마무리<small>FINAL</small></button>}
+        {/* 정적 "면접 준비" 탭(PRO도 공유)과 분리한 새 탭 — 실제 턴 주고받기는
+            FINAL만 판다. 가격표가 약속한 기능이라 여기 있어야 한다. */}
+        {result.product === "FINAL" && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
       </nav>
 
       {view === "verification" && result.product === "FINAL" && (
@@ -505,6 +509,10 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
       )}
 
       {view === "wrapup" && result.product === "FINAL" && <FinalWrapUp result={result} analysisRunId={analysisRunId} />}
+
+      {view === "mockInterview" && result.product === "FINAL" && (
+        <InteractiveInterview result={result} analysisRunId={analysisRunId} />
+      )}
 
       {view === "overview" && <section className={styles.overview}>
         <div className={styles.score}><div>{/* Said "· 샘플" on every result, paid ones included — telling a customer

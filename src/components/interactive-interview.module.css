@@ -1,0 +1,44 @@
+/* AI 모의면접. FINAL 검증·제출 전 마무리와 같은 종이 위에 있어야 해서
+   final-wrap-up.module.css와 색·여백을 맞춘다. */
+.wrap { display: grid; gap: 18px; }
+
+.head { padding: 26px 30px; border: 1px solid #d7e4db; border-radius: 14px; background: #f4f9f5; }
+.head > span { display: block; color: #176b4a; font-size: 10px; font-weight: 900; letter-spacing: 0.14em; }
+.head h2 { margin: 10px 0 8px; font-size: 22px; letter-spacing: -0.045em; line-height: 1.4; }
+.head > p { margin: 0; max-width: 620px; color: #52655a; font-size: 13px; line-height: 1.85; }
+
+.block { padding: 20px 24px; border: 1px solid #dce6df; border-radius: 14px; background: #fff; }
+.block h3 { margin: 0 0 10px; font-size: 15px; letter-spacing: -0.03em; }
+.block ul { margin: 0; padding-left: 18px; color: #33463b; font-size: 13px; line-height: 1.8; }
+
+.weakList { list-style: none; padding: 0; display: grid; gap: 11px; }
+.weakList li { padding: 14px 16px; border: 1px solid #e2ebe5; border-radius: 10px; background: #fbfdfb; }
+.weakList b { display: block; font-size: 13.5px; letter-spacing: -0.02em; }
+.quote { margin: 8px 0 0; padding-left: 11px; border-left: 2px solid #c7dccf; color: #55655c; font-size: 12px; line-height: 1.75; }
+
+.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.history li { padding: 16px 18px; border: 1px solid #e2ebe5; border-radius: 10px; background: #fbfdfb; }
+.history b { display: block; font-size: 13px; letter-spacing: -0.02em; color: #33463b; }
+.answerText { margin: 8px 0 0; color: #3c4c42; font-size: 13px; line-height: 1.75; white-space: pre-wrap; }
+.strength { margin: 8px 0 0; color: #176b4a; font-size: 12px; line-height: 1.7; }
+.gap { margin: 4px 0 0; color: #8a6a2a; font-size: 12px; line-height: 1.7; }
+
+.answerBox { width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid #d7e2da; border-radius: 8px; background: #fff; color: #20211e; font: inherit; font-size: 13px; line-height: 1.7; resize: vertical; outline: 0; }
+.answerBox:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.12); }
+.answerBox::placeholder { color: #93a099; }
+.answerBox:disabled { background: #f4f6f4; color: #93a099; }
+
+.message { margin: 0; color: #a53d3d; font-size: 12px; line-height: 1.7; }
+
+.actions { display: flex; gap: 9px; flex-wrap: wrap; }
+.primaryButton { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 8px; padding: 13px 20px; background: #176b4a; color: #fff; font: inherit; font-size: 13px; font-weight: 900; cursor: pointer; }
+.primaryButton:disabled { background: #aab9af; cursor: default; }
+.ghostButton { border: 1px solid #c8d5cc; border-radius: 8px; padding: 12px 18px; background: #fff; color: #3c4c42; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+
+.footnote { margin: 0; color: #7b8a81; font-size: 11px; line-height: 1.8; }
+
+@media (max-width: 760px) {
+  .head { padding: 22px 20px; }
+  .head h2 { font-size: 19px; }
+  .block { padding: 18px 18px; }
+}
