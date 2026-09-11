@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ResultDocument } from "@/domain/result-document";
 import type { InterviewEvaluation, InterviewReport } from "@/domain/interview";
+import { isGooglePlayBillingAvailable, purchaseInterviewRetryViaGooglePlay } from "@/lib/google-play/purchase";
 import styles from "./interactive-interview.module.css";
 
 /**
@@ -19,12 +20,19 @@ import styles from "./interactive-interview.module.css";
  * 페이지에 갔다 와서 "시작하기"를 다시 눌러도 처음 질문으로 되돌아가지
  * 않는다 — /api/interview/start가 이미 답한 턴 기록과 다음 질문을 같이
  * 돌려준다.
+ *
+ * "처음부터 다시"와 "약점만 다시"는 각각 1회 무료다. 두 번째부터는
+ * /api/interview/start가 PAYMENT_REQUIRED를 돌려주고, 3,000원 결제 후에만
+ * 다시 열린다(Polar 웹 결제 또는 Play 인앱결제 — 기존 결제 버튼과 같은
+ * getDigitalGoodsService 분기).
  */
 
 type Turn = { question: string; answer: string; evaluation: InterviewEvaluation };
-type Phase = "idle" | "active" | "busy" | "report";
+type Phase = "idle" | "active" | "busy" | "report" | "payment";
 
 type SessionState = { sessionId: string; maxTurns: number };
+
+const RETRY_FOCUS_STORAGE_KEY = "mooa:interview-retry-focus";
 
 export function InteractiveInterview({ result, analysisRunId }: { result: ResultDocument; analysisRunId: string | null }) {
   const [phase, setPhase] = useState<Phase>("idle");
@@ -34,6 +42,47 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
   const [history, setHistory] = useState<Turn[]>([]);
   const [finalReport, setFinalReport] = useState<InterviewReport | null>(null);
   const [message, setMessage] = useState("");
+  const [pendingFocusQuestionIds, setPendingFocusQuestionIds] = useState<string[] | undefined>(undefined);
+
+  // Polar 결제 후 돌아온 자리. 저장해 둔 재시도 종류(전체/약점만)를 읽어
+  // 결제를 서버에서 확인하고, 성공하면 그 종류로 바로 세션을 시작한다.
+  useEffect(() => {
+    if (!analysisRunId) return;
+    const url = new URL(window.location.href);
+    const checkoutId = url.searchParams.get("interviewRetryCheckout");
+    if (!checkoutId) return;
+
+    const storedFocus = sessionStorage.getItem(RETRY_FOCUS_STORAGE_KEY);
+    const focusQuestionIds = storedFocus ? (JSON.parse(storedFocus) as string[]) : undefined;
+    sessionStorage.removeItem(RETRY_FOCUS_STORAGE_KEY);
+    url.searchParams.delete("interviewRetryCheckout");
+    window.history.replaceState({}, "", url.toString());
+
+    queueMicrotask(() => {
+      setPhase("busy");
+      setMessage("결제를 확인하는 중입니다...");
+    });
+    void (async () => {
+      try {
+        const response = await fetch("/api/interview/retry/confirm", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ analysisRunId, checkoutId }),
+        });
+        const body = await response.json().catch(() => ({})) as { paid?: boolean; error?: string };
+        if (!response.ok || !body.paid) {
+          setMessage(body.error ?? "결제 확인이 아직 끝나지 않았습니다. 잠시 후 다시 시도해 주세요.");
+          setPhase("idle");
+          return;
+        }
+        await start(focusQuestionIds);
+      } catch {
+        setMessage("결제 확인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        setPhase("idle");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysisRunId]);
 
   if (!analysisRunId || result.interviewQuestions.length === 0) return null;
 
@@ -53,8 +102,14 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
         pendingQuestion?: string | null;
         history?: Turn[];
         error?: string;
+        code?: string;
       };
       if (!response.ok || !body.sessionId || !body.seedQuestions?.length) {
+        if (body.code === "PAYMENT_REQUIRED") {
+          setPendingFocusQuestionIds(focusQuestionIds);
+          setPhase("payment");
+          return;
+        }
         setMessage(body.error ?? "모의면접을 시작하지 못했습니다.");
         setPhase("idle");
         return;
@@ -70,6 +125,47 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
     } catch {
       setMessage("모의면접을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       setPhase("idle");
+    }
+  }
+
+  async function buyRetry(focusQuestionIds?: string[]) {
+    setPhase("busy");
+    setMessage("");
+    try {
+      if (isGooglePlayBillingAvailable()) {
+        const { purchaseToken, productId } = await purchaseInterviewRetryViaGooglePlay();
+        const response = await fetch("/api/interview/retry/google-play/verify", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ analysisRunId, purchaseToken, productId }),
+        });
+        const body = await response.json().catch(() => ({})) as { paid?: boolean; error?: string };
+        if (!response.ok || !body.paid) {
+          setMessage(body.error ?? "구매를 확인하지 못했습니다.");
+          setPhase("payment");
+          return;
+        }
+        await start(focusQuestionIds);
+        return;
+      }
+
+      const response = await fetch("/api/interview/retry/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ analysisRunId }),
+      });
+      const body = await response.json().catch(() => ({})) as { checkoutUrl?: string; error?: string };
+      if (!response.ok || !body.checkoutUrl) {
+        setMessage(body.error ?? "결제 페이지로 연결하지 못했습니다.");
+        setPhase("payment");
+        return;
+      }
+      if (focusQuestionIds) sessionStorage.setItem(RETRY_FOCUS_STORAGE_KEY, JSON.stringify(focusQuestionIds));
+      else sessionStorage.removeItem(RETRY_FOCUS_STORAGE_KEY);
+      window.location.assign(body.checkoutUrl);
+    } catch {
+      setMessage("결제를 진행하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setPhase("payment");
     }
   }
 
@@ -138,6 +234,30 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
 
   const weakQuestionIds = [...new Set((finalReport?.weakAreas ?? []).flatMap((area) => area.relatedQuestionIds))]
     .filter((id) => result.interviewQuestions.some((question) => question.id === id));
+
+  if (phase === "payment") {
+    return (
+      <section className={styles.wrap}>
+        <div className={styles.head}>
+          <span>AI 모의면접</span>
+          <h2>무료 재시도를 모두 사용했습니다</h2>
+          <p>
+            {pendingFocusQuestionIds ? "약점만 다시 연습하기" : "처음부터 다시 연습하기"}는 각각 1회 무료로 제공됩니다.
+            추가로 진행하려면 3,000원을 결제해 주세요.
+          </p>
+        </div>
+        {message && <p className={styles.message}>{message}</p>}
+        <div className={styles.actions}>
+          <button type="button" className={styles.primaryButton} onClick={() => void buyRetry(pendingFocusQuestionIds)}>
+            3,000원 결제하고 다시하기
+          </button>
+          <button type="button" className={styles.ghostButton} onClick={() => { setMessage(""); setPhase("idle"); }}>
+            취소
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   if (phase === "report" && finalReport) {
     return (

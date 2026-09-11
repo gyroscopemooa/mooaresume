@@ -92,6 +92,34 @@ export function createAndroidPublisherClientFromEnv() {
 }
 
 /**
+ * 3,000원 "모의면접 재시도 1회" — Google Play 쪽. 같은 서비스 계정·패키지명을
+ * 쓰지만 QUICK/PRO/FINAL 사다리와는 무관한 별도 상품 하나라, 그 사다리
+ * 타입에 억지로 끼워 넣지 않고 독립된 함수로 둔다.
+ */
+export function getInterviewRetryGooglePlayConfig() {
+  const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME;
+  const serviceAccountJson = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
+  const productId = process.env.GOOGLE_PLAY_INTERVIEW_RETRY_PRODUCT_ID;
+  if (!packageName || !serviceAccountJson || !productId) {
+    throw new Error("GOOGLE_PLAY_PACKAGE_NAME, GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, GOOGLE_PLAY_INTERVIEW_RETRY_PRODUCT_ID가 필요합니다.");
+  }
+  const { email, privateKey } = parseServiceAccountJson(serviceAccountJson);
+  return { packageName, serviceAccountEmail: email, serviceAccountPrivateKey: privateKey, productId };
+}
+
+export function createAndroidPublisherClientForInterviewRetry() {
+  const config = getInterviewRetryGooglePlayConfig();
+  const auth = new google.auth.GoogleAuth({
+    credentials: {
+      client_email: config.serviceAccountEmail,
+      private_key: config.serviceAccountPrivateKey,
+    },
+    scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+  });
+  return { client: google.androidpublisher({ version: "v3", auth }), config };
+}
+
+/**
  * Shape of the Google Play configuration, with no values in it. Same
  * reasoning as describePolarConfigShape (polar-checkout.ts): a wrong or
  * truncated value should be diagnosable from a log line without ever

@@ -49,14 +49,17 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    // 무료 몫(처음부터 다시/약점만 다시 각 1회)을 다 썼다는 뜻 — 에러가
+    // 아니라 결제로 안내해야 하는 정상적인 상태라 별도 code로 구분한다.
+    if (error.message.includes("PAYMENT_REQUIRED")) {
+      return NextResponse.json({ error: "무료 재시도를 모두 사용했습니다.", code: "PAYMENT_REQUIRED" }, { status: 402 });
+    }
     const status = error.code === "P0002" ? 404 : error.code === "55000" ? 409 : 400;
     const message = error.message.includes("INTERVIEW_NOT_AVAILABLE")
       ? "이 분석 결과는 모의면접을 시작할 수 없습니다."
-      : error.message.includes("SESSION_LIMIT_REACHED")
-        ? "이 분석에서는 모의면접을 더 시작할 수 없습니다."
-        : error.message.includes("NO_SEED_QUESTIONS")
-          ? "이 분석에는 면접 질문이 없어 모의면접을 시작할 수 없습니다."
-          : "모의면접을 시작하지 못했습니다.";
+      : error.message.includes("NO_SEED_QUESTIONS")
+        ? "이 분석에는 면접 질문이 없어 모의면접을 시작할 수 없습니다."
+        : "모의면접을 시작하지 못했습니다.";
     return NextResponse.json({ error: message, code: error.code }, { status });
   }
 

@@ -42,6 +42,9 @@ function getGooglePlayProductId(tier: GooglePlayProductTier, extraBlocks: number
   return GOOGLE_PLAY_PRODUCT_ID_LADDERS[tier][extraBlocks] ?? null;
 }
 
+/** 3,000원 "모의면접 재시도 1회" — QUICK/PRO/FINAL 사다리와 무관한 별도 상품. */
+const INTERVIEW_RETRY_PRODUCT_ID = process.env.NEXT_PUBLIC_GOOGLE_PLAY_INTERVIEW_RETRY_PRODUCT_ID;
+
 /**
  * True only inside a Trusted Web Activity launched from an app installed via
  * Google Play — the Digital Goods API does not exist in a normal browser tab,
@@ -81,7 +84,18 @@ export async function purchaseProductViaGooglePlay(
         : `이 상품(${tier})은 아직 Play 결제로 열리지 않았습니다.`,
     );
   }
+  return purchaseGooglePlayProduct(productId);
+}
 
+/** 모의면접 재시도 1회 구매 — 같은 Digital Goods API 흐름, 고정가 단일 상품. */
+export async function purchaseInterviewRetryViaGooglePlay(): Promise<{ purchaseToken: string; productId: string }> {
+  if (!INTERVIEW_RETRY_PRODUCT_ID) {
+    throw new Error("이 상품은 아직 Play 결제로 열리지 않았습니다.");
+  }
+  return purchaseGooglePlayProduct(INTERVIEW_RETRY_PRODUCT_ID);
+}
+
+async function purchaseGooglePlayProduct(productId: string): Promise<{ purchaseToken: string; productId: string }> {
   const getService = (window as unknown as {
     getDigitalGoodsService?: (paymentMethod: string) => Promise<DigitalGoodsService>;
   }).getDigitalGoodsService;
