@@ -73,10 +73,18 @@ describe("모의면접 live eval", () => {
           evaluation: turn2.output.evaluation,
         },
       ],
+      interviewRisks: [{
+        topic: "성과 수치",
+        risk: "생산성 개선 수치의 근거가 불명확함",
+        evidenceQuote: "생산 공정 개선으로 효율을 크게 높였습니다.",
+      }],
     }, { apiKey, model, reasoningEffort });
 
     console.info(JSON.stringify({ step: "report", output: report.output, usage: report.usage }));
     expect(report.output.summary.length).toBeGreaterThan(0);
+    for (const area of report.output.weakAreas) {
+      expect(area.reason.length).toBeGreaterThan(0);
+    }
     expect(report.output.recommendedNextSteps.length).toBeGreaterThan(0);
   }, 120_000);
 });

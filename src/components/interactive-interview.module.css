@@ -15,6 +15,8 @@
 .weakList li { padding: 14px 16px; border: 1px solid #e2ebe5; border-radius: 10px; background: #fbfdfb; }
 .weakList b { display: block; font-size: 13.5px; letter-spacing: -0.02em; }
 .quote { margin: 8px 0 0; padding-left: 11px; border-left: 2px solid #c7dccf; color: #55655c; font-size: 12px; line-height: 1.75; }
+.reason { margin: 6px 0 0; color: #33463b; font-size: 12.5px; font-weight: 650; line-height: 1.8; }
+.reason::before { content: "→ "; color: #176b4a; font-weight: 900; }
 
 .history { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .history li { padding: 16px 18px; border: 1px solid #e2ebe5; border-radius: 10px; background: #fbfdfb; }

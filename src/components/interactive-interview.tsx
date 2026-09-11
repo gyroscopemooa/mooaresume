@@ -14,6 +14,11 @@ import styles from "./interactive-interview.module.css";
  *
  * 숫자 점수·합격확률은 어디에도 없습니다. 평가는 항상 강점/부족한 점 목록과
  * 짧은 근거 문장으로만 옵니다.
+ *
+ * 진행 상태는 서버(interview_sessions.pending_question)에 저장되므로 다른
+ * 페이지에 갔다 와서 "시작하기"를 다시 눌러도 처음 질문으로 되돌아가지
+ * 않는다 — /api/interview/start가 이미 답한 턴 기록과 다음 질문을 같이
+ * 돌려준다.
  */
 
 type Turn = { question: string; answer: string; evaluation: InterviewEvaluation };
@@ -42,7 +47,12 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
         body: JSON.stringify({ analysisRunId, ...(focusQuestionIds ? { focusQuestionIds } : {}) }),
       });
       const body = await response.json().catch(() => ({})) as {
-        sessionId?: string; maxTurns?: number; seedQuestions?: Array<{ question: string }>; error?: string;
+        sessionId?: string;
+        maxTurns?: number;
+        seedQuestions?: Array<{ question: string }>;
+        pendingQuestion?: string | null;
+        history?: Turn[];
+        error?: string;
       };
       if (!response.ok || !body.sessionId || !body.seedQuestions?.length) {
         setMessage(body.error ?? "모의면접을 시작하지 못했습니다.");
@@ -50,8 +60,10 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
         return;
       }
       setSession({ sessionId: body.sessionId, maxTurns: body.maxTurns ?? 5 });
-      setCurrentQuestion(body.seedQuestions[0].question);
-      setHistory([]);
+      // 이어받은 세션이면 pendingQuestion이 이미 답한 다음 질문이고,
+      // 새 세션이면 첫 시드 질문이다 — 둘 다 서버가 정해서 내려준다.
+      setCurrentQuestion(body.pendingQuestion ?? body.seedQuestions[0].question);
+      setHistory(body.history ?? []);
       setFinalReport(null);
       setAnswer("");
       setPhase("active");
@@ -72,9 +84,16 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
         body: JSON.stringify({ sessionId: session.sessionId, question: currentQuestion, answer: answer.trim() }),
       });
       const body = await response.json().catch(() => ({})) as {
-        evaluation?: InterviewEvaluation; nextQuestion?: string; isReadyToFinish?: boolean; error?: string;
+        evaluation?: InterviewEvaluation; nextQuestion?: string; isReadyToFinish?: boolean; error?: string; shouldFinish?: boolean;
       };
       if (!response.ok || !body.evaluation || !body.nextQuestion) {
+        // 같은 턴이 3번 실패하면 서버가 shouldFinish를 보낸다 — 더 붙잡고
+        // 재시도시키지 않고 지금까지 답한 턴으로 마무리한다.
+        if (body.shouldFinish) {
+          setMessage("이 질문은 계속 처리되지 않아 넘어갑니다. 지금까지 답한 내용으로 리포트를 만듭니다.");
+          await finish(session.sessionId);
+          return;
+        }
         setMessage(body.error ?? "답변을 평가하지 못했습니다.");
         setPhase("active");
         return;
@@ -144,6 +163,22 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
                 <li key={index}>
                   <b>{area.topic}</b>
                   <p className={styles.quote}>{area.evidence}</p>
+                  <p className={styles.reason}>{area.reason}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {finalReport.likelyInterviewRisks.length > 0 && (
+          <div className={styles.block}>
+            <h3>실제 면접에서 나올 수 있는 상황</h3>
+            <ul className={styles.weakList}>
+              {finalReport.likelyInterviewRisks.map((risk, index) => (
+                <li key={index}>
+                  <b>{risk.situation}</b>
+                  <p className={styles.reason}>{risk.reason}</p>
+                  <p className={styles.quote}>{risk.evidence}</p>
                 </li>
               ))}
             </ul>
@@ -181,7 +216,7 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
           <h2>AI와 직접 연습하기</h2>
           <p>
             방금 나온 면접 예상질문으로 실제 텍스트 면접을 진행합니다. 답변마다 평가와 꼬리질문이 이어지고,
-            끝나면 리포트로 정리해 드립니다.
+            끝나면 리포트로 정리해 드립니다. 중간에 다른 화면에 갔다 와도 이어서 진행됩니다.
           </p>
         </div>
         {message && <p className={styles.message}>{message}</p>}

@@ -31,6 +31,7 @@ const sessionRowSchema = z.object({
   max_turns: z.number().int().positive(),
   turns_used: z.number().int().nonnegative(),
   seed_questions: z.array(z.object({ question: z.string() }).loose()),
+  turn_failure_count: z.number().int().nonnegative(),
 });
 
 export async function POST(request: Request) {
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   // RLS가 남의 세션을 걸러 준다 — 없으면 본인 것이 아니거나 존재하지 않는 것.
   const { data: sessionRow } = await supabase
     .from("interview_sessions")
-    .select("id, analysis_run_id, status, max_turns, turns_used, seed_questions")
+    .select("id, analysis_run_id, status, max_turns, turns_used, seed_questions, turn_failure_count")
     .eq("id", parsed.data.sessionId)
     .maybeSingle();
   const session = sessionRowSchema.safeParse(sessionRow);
@@ -56,6 +57,17 @@ export async function POST(request: Request) {
   }
   if (session.data.turns_used >= session.data.max_turns) {
     return NextResponse.json({ error: "이번 모의면접의 질문을 모두 진행했습니다." }, { status: 409 });
+  }
+  // 같은 턴이 이미 3번 실패했으면 더 시도하지 않는다 — 실패한 시도도 비용이
+  // 나가므로(interview_turn_attempts에 기록됨), 안 풀리는 턴을 붙잡고
+  // 무한정 재시도하게 두지 않는다. 지금까지 답한 턴이 있으면 그걸로
+  // 마무리하도록 클라이언트에 신호를 보낸다.
+  if (session.data.turn_failure_count >= 3) {
+    return NextResponse.json({
+      error: "이 질문을 계속 처리하지 못하고 있습니다.",
+      code: "TURN_FAILURE_LIMIT_REACHED",
+      shouldFinish: session.data.turns_used >= 1,
+    }, { status: 422 });
   }
 
   const { data: resultRow } = await supabase
@@ -106,8 +118,15 @@ export async function POST(request: Request) {
       outcome: "PROVIDER_FAILED",
       failureCode: error instanceof Error ? error.message.slice(0, 200) : "UNKNOWN_ERROR",
     });
+    const { data: failureCount } = await supabase.rpc("record_interview_turn_failure", {
+      p_session_id: session.data.id,
+    });
     console.error("interview_turn_failed", error instanceof Error ? error.message : "UNKNOWN_ERROR");
-    return NextResponse.json({ error: "답변을 평가하지 못했습니다. 잠시 후 다시 시도해 주세요." }, { status: 502 });
+    return NextResponse.json({
+      error: "답변을 평가하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      code: "PROVIDER_FAILED",
+      shouldFinish: (failureCount as number | null) === 3 && session.data.turns_used >= 1,
+    }, { status: 502 });
   }
 
   void recordInterviewTurnAttempt({
@@ -124,6 +143,7 @@ export async function POST(request: Request) {
     p_question: parsed.data.question,
     p_answer: parsed.data.answer,
     p_evaluation: turnResult.output.evaluation,
+    p_next_question: turnResult.output.nextQuestion,
     p_model: model,
   });
   if (recordError) {

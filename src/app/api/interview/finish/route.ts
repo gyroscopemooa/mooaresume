@@ -78,7 +78,12 @@ export async function POST(request: Request) {
   let reportResult: Awaited<ReturnType<typeof runInterviewReport>>;
   try {
     reportResult = await runInterviewReport(
-      { company: result.data.company, role: result.data.role, turns },
+      {
+        company: result.data.company,
+        role: result.data.role,
+        turns,
+        interviewRisks: result.data.interviewRisks.map((risk) => ({ topic: risk.topic, risk: risk.risk, evidenceQuote: risk.evidenceQuote })),
+      },
       { apiKey, model, reasoningEffort },
     );
   } catch (error) {

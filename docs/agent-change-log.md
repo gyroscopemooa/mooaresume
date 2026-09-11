@@ -7070,3 +7070,18 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Status: 이로써 DB push·커밋·live eval 검증·POLAR_SERVER 전환까지 FINAL 실결제를 막던 항목이 전부 끝남. **아직 안 된 것 — 실제 브라우저에서 FINAL 결제 1건을 처음부터 끝까지(결제 → 분석 → 결과 화면 → 모의면접 탭) 돌려본 적은 없음.** live eval은 AI 호출 계층만 검증했고, 결제~DB~UI 전체 연결은 미검증.
 - Validation/Rollback/Files: 해당 없음(Claude가 관여하지 않은 대시보드 설정 변경).
 - User decision: 사용자가 직접 완료.
+
+## 2026-09-12 — Claude: 모의면접 리포트 깊이·세션 복원·턴 실패 상한 보완
+
+- Agent/session: Claude, 같은 세션. 사용자 피드백: (1) 컨설턴트다운 이유 설명을 리포트에 더 넣어달라(FINAL 검증 같은 느낌으로), (2) 다른 페이지 갔다 오면 진행 상황이 저장 안 되고 새로 시작되는 버그, (3) 같은 턴이 계속 실패할 때 3번 시도하고 안 되면 넘어가기.
+- Status: active. `supabase/migrations/20260912010000_interview_resilience.sql` 원격 반영 완료. 코드는 커밋 예정.
+- Protected baseline: 기존 정적 면접질문 경로(`quick/schema.ts`, `final-verification.tsx`)와 09-11에 만든 다른 파일들(Google Play Billing 쪽) 무수정. `record_interview_turn`은 시그니처가 바뀌어(새 `p_next_question` 파라미터) 이전 6-인자 버전을 명시적으로 drop하고 새 7-인자 버전으로 교체 — 같은 이름의 함수가 두 버전으로 공존하지 않게 함.
+- Change and reason:
+  - **리포트 깊이**: `interview-report-gateway.ts`의 `weakAreas`에 `reason`(왜 이게 문제이고 왜 실제 면접에서도 계속 나올 만한지) 추가, 새 필드 `likelyInterviewRisks`(situation/reason/evidence — "~이유로 ~한 면접 상황이 발생할 수 있다") 추가. 원래 FINAL 분석의 `interviewRisks`를 리포트 프롬프트에도 넘겨서 근거로 쓰게 함(`/api/interview/finish`에서 전달). 페르소나를 "면접관"에서 "대학 취업지원센터 컨설턴트 역할의 면접관"으로 조정 — 판정만 하지 않고 이유를 설명하는 톤. **live eval로 실제 확인**: 새 스키마로 실제 호출해 근거 있는 reason·likelyInterviewRisks가 정상적으로 나오는 것 확인(원장에 실제 응답 남김).
+  - **세션 복원**: `interview_sessions`에 `pending_question`(다음에 물어야 할 질문) 컬럼 추가, `begin_interview_session`/`record_interview_turn` RPC가 이를 읽고 씀. `/api/interview/start`가 이제 기존 턴 기록(`interview_turns` select)과 `pendingQuestion`을 같이 돌려주고, `interactive-interview.tsx`가 이걸로 진행 상태를 복원 — 다른 페이지 갔다 와서 "시작하기"를 다시 눌러도 처음 질문으로 안 돌아감.
+  - **턴 실패 상한**: `interview_sessions.turn_failure_count`(0~3) 추가, 신규 RPC `record_interview_turn_failure`. `/api/interview/turn`이 AI 호출 전에 실패 횟수가 3 이상이면 AI를 다시 부르지 않고 `shouldFinish` 신호를 보냄 — 클라이언트가 지금까지 답한 턴만으로 자동으로 리포트 마무리로 넘어감(턴이 0개면 그냥 에러). 성공한 턴은 실패 카운트를 0으로 리셋.
+  - **의도적으로 안 한 것**: 사용자가 제안한 "3,000원 내고 추가 모의면접 다시하기" 결제 기능은 새 상품 라인(Polar+Google Play 양쪽 상품, `billing_orders`/`analysis_entitlements`의 `product in ('QUICK','PRO','FINAL')` 제약 확장 등)이 필요한 별도 스코프라 이번엔 안 만들고 다음 작업으로 남김 — 사용자에게 별도 확인 필요.
+- Files: 신규 `supabase/migrations/20260912010000_interview_resilience.sql`. 수정 — `src/server/ai/interview/interview-report-gateway.ts`(+`.test.ts`), `interview-turn-gateway.ts`(persona만), `src/domain/interview.ts`, `src/app/api/interview/{start,turn,finish}/route.ts`, `src/components/interactive-interview.tsx`(+`.module.css`), `src/evals/interview-live-eval.live.test.ts`.
+- Validation: `npx tsc --noEmit`, eslint, `npx vitest run` 143 files·1129 tests 통과(회귀 없음). `supabase db push --dry-run` 후 실제 push 완료. live eval 재실행 2회(수정 전/후) 모두 통과, 새 필드 실제 출력 확인.
+- Rollback/recovery reference: 신규 컬럼·함수 추가라 기존 데이터 무영향. `record_interview_turn` 구버전(6-인자)은 명시적으로 drop됐으므로 되돌리려면 별도 down-migration 필요(단, 세션이 아직 0건에 가까워 실질적 위험 낮음).
+- User decision: 사용자가 직접 세 가지(리포트 깊이, 복원 버그, 턴 실패 상한) 요청. "4번 턴 방지도 ㄱㄱ"로 명시 승인. 유료 재시작 기능은 스코프 아웃 — 다음에 별도로 논의.
