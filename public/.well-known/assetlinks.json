@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.mooaresume.twa",
+      "sha256_cert_fingerprints": [
+        "47:B0:71:A2:B6:28:87:40:04:E1:33:E0:25:4F:B3:E0:18:17:D2:AB:ED:D3:37:9A:DB:D9:82:36:E2:49:F6:74"
+      ]
+    }
+  }
+]

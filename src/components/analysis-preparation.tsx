@@ -360,7 +360,7 @@ export function AnalysisPreparation() {
                 </li>
               ))}
             </ul>
-            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)}/>
+            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)} extraBlocks={quote.extraBlocks}/>
             {/* /result/sample rather than /result: with no id, /result falls
                 back to the visitor's most recent analysis, so a returning
                 customer pressing "샘플 보기" was shown their own past result. And

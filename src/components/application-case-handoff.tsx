@@ -11,6 +11,7 @@ import Link from "next/link";
 import { ResearchConsentGate } from "./research-consent-gate";
 import styles from "./application-case-handoff.module.css";
 import { onCreditChange } from "@/lib/credit-events";
+import { isGooglePlayBillingAvailable, purchaseProductViaGooglePlay } from "@/lib/google-play/purchase";
 
 type Props = {
   guest: GuestDraft | null;
@@ -25,6 +26,14 @@ type Props = {
    * is exactly why it reads as if it might.
    */
   runActive?: boolean;
+  /**
+   * 이 지원 건이 지금 필요로 하는 추가 블록 수 (analysis-preparation.tsx가
+   * 이미 계산해 화면에 값을 보여주고 있는 그 quote.extraBlocks). Google Play
+   * 결제에서만 씁니다 — 어느 Play 상품(quick_1/quick_extra_1/...)을 열지
+   * 고르는 데만 쓰이고, 실제 지급 금액/글자수는 서버가 분석 실행 기록에서
+   * 다시 계산하므로 여기 값을 그대로 믿지 않습니다.
+   */
+  extraBlocks?: number;
 };
 
 const emptyMaterials = {
@@ -40,7 +49,7 @@ const subscribeToNothing = () => () => {};
 const readNoAuthError = () => null;
 const readAuthError = () => new URLSearchParams(window.location.search).get("auth_error");
 
-export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = false }: Props) {
+export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = false, extraBlocks = 0 }: Props) {
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -241,6 +250,45 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     if (product === "FINAL" && !isFinalEnabled()) {
       throw new Error("FINAL은 아직 결제를 열지 않았습니다. 입력하신 내용은 저장되어 있습니다.");
     }
+
+    // Play Store에서 설치된 TWA 안에서 실행 중일 때만 Google Play Billing으로
+    // 분기합니다. getDigitalGoodsService는 일반 브라우저 탭에는 존재하지
+    // 않으므로 이 분기 자체가 안전한 판단 기준입니다. 아래의 기존 Polar
+    // 결제 흐름은 이 블록 밖에서 손대지 않고 그대로 둡니다.
+    if (isGooglePlayBillingAvailable()) {
+      const { purchaseToken, productId } = await purchaseProductViaGooglePlay(product, extraBlocks);
+      const verifyResponse = await fetch("/api/billing/google-play/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysisRunId, purchaseToken, productId }),
+      });
+      const verifyResult: unknown = await verifyResponse.json().catch(() => null);
+      if (!verifyResponse.ok) {
+        const errorMessage = verifyResult && typeof verifyResult === "object" && "error" in verifyResult && typeof verifyResult.error === "string"
+          ? verifyResult.error
+          : "구매를 확인하지 못했습니다.";
+        const code = verifyResult && typeof verifyResult === "object" && "code" in verifyResult && typeof verifyResult.code === "string" ? verifyResult.code : null;
+        throw new Error(code ? `${errorMessage} (원인 코드: ${code})` : errorMessage);
+      }
+
+      // Play 결제는 Polar처럼 결제 페이지로 리다이렉트했다가 돌아오는 구조가
+      // 아니라 이 자리에서 구매가 바로 끝나므로, 무료 이용권 사용
+      // (startWithCredit, 위쪽)과 같은 방식으로 곧바로 분석을 실행합니다.
+      const executed = await fetch("/api/analysis-runs/quick/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysisRunId }),
+      });
+      if (!executed.ok && executed.status !== 202) throw new Error("분석을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      const executedPayload: unknown = await executed.json().catch(() => null);
+      if (executedPayload && typeof executedPayload === "object" && "resultUrl" in executedPayload && typeof executedPayload.resultUrl === "string") {
+        window.location.replace(executedPayload.resultUrl);
+        return;
+      }
+      onCreditRunStarted?.(analysisRunId);
+      return;
+    }
+
     const response = await fetch(`/api/checkouts/${product.toLowerCase()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
