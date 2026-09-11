@@ -59,6 +59,11 @@ const dimensionDetails: Record<WorkStyleDimension, Omit<WorkStyleScore, "score" 
   },
 };
 
+/** AI 심층해설이 점수를 라벨과 함께 보내야 할 때 쓰는 조회표. */
+export const WORK_STYLE_DIMENSION_LABELS: Record<WorkStyleDimension, string> = Object.fromEntries(
+  (Object.keys(dimensionDetails) as WorkStyleDimension[]).map((dimension) => [dimension, dimensionDetails[dimension].label]),
+) as Record<WorkStyleDimension, string>;
+
 // Korean wording supplied on the official IPIP translation page by In-Sue Oh.
 // The 50-item selection is the first 10 markers from each factor used by the
 // official 50-item representation. Presentation is interleaved so adjacent

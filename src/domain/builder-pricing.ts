@@ -35,6 +35,15 @@ export const PORTFOLIO_BUILD_PRICE_KRW = 7_900;
 export const LEGAL_DOCUMENT_BUILD_PRICE_KRW = 99_000;
 
 /**
+ * AI 심층해설 — 개별 결과 1건. **사용자 결정(2026-09-12): 5,900원.**
+ * "가격 조금씩 나줄 거임"이라 자리표시값이 아니라 사용자가 정한 시작값입니다.
+ */
+export const CAREER_AI_SINGLE_PRICE_KRW = 5_900;
+
+/** AI 심층해설 — 종합(3종 검사) 1건. **사용자 결정(2026-09-12): 9,900원.** */
+export const CAREER_AI_COMBINED_PRICE_KRW = 9_900;
+
+/**
  * 사건자료 분석의 값은 **여기 없습니다.**
  *
  * 한때 149,000원 정액으로 뒀다가 분량제로 바꿨습니다 — 자료를 전부 읽는 일이라

@@ -10,6 +10,27 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 4. Validate each variant independently and present the differences to the user.
 5. Integrate or remove a variant only after the user explicitly chooses it.
 
+## 2026-09-12 — Legal launch audit and isolated design variant
+
+### 2026-09-12 — End-of-day handoff
+
+- Agent/session: Codex, user requested quick wrap-up for tomorrow.
+- Status: saved locally; no source changes or combined commit in this closing turn.
+- Files: `docs/development-checkpoint-2026-09-07.md` and this log.
+- Reason: update the existing living checkpoint with legal design completion, actual validation limits, current branch, tomorrow's priorities and unresolved launch blockers; supersede stale branch/migration/menu guidance.
+- Preservation: additional career AI changes appeared in the shared working tree after the legal review. They were not edited, validated or staged; recorded in the checkpoint to prevent overwrite or mixed commits.
+- Validation: read both checkpoints and current Git status; documentation diff check only. Earlier test/build results apply to the legal review state, not subsequent career AI work.
+- Recovery: changes are scoped to this checkpoint update; prior checkpoint content remains recoverable from Git. No deployment, paid settings or provider changes.
+
+- Agent/session: Codex; Astra delegated official Korean legal and Polar policy research at the user's request.
+- Status: variant; local implementation and code validation complete; browser visual/E2E review blocked by unavailable browser. Not merged or deployed.
+- Protected baseline: clean `feature/google-play-billing` at `19f8e89a17a54c1633550e0c959d2f4e3f1cd12c`. That branch remains unchanged.
+- Change and reason: user requested launch readiness review and a modern legal-service design. Work on separate `codex/legal-launch-design-20260912`; scope visual hierarchy, readable typography, mobile controls and legal-specific navigation. Preserve business logic, legal warnings, prices, provider configuration and shared employment UI.
+- Files/branch: `src/app/legal/page.tsx`, `src/app/legal/[caseId]/page.tsx`, `src/app/legal/intro.module.css`, `src/components/legal-case-starter.tsx`, `src/components/legal-case-workspace.tsx`; new `legal-service-header.tsx`, `legal-service-chrome.module.css`, `legal-tool-design.module.css`, `legal-case-starter.test.tsx` under components; this log and `docs/legal-launch-review-2026-09-12.md`. Changes remain uncommitted on the isolated branch.
+- Validation: baseline 143 files/1,129 tests passed; added starter tests 4/4 passed with mocked APIs; final typecheck passed; lint 0 errors/2 pre-existing warnings; production build passed. HTTP legal home 200/noindex, unauthenticated POST 401, cross-origin POST 403, unauthenticated detail redirect 307. `git diff --check` clean. Browser inventory returned no available browsers; IAB and Chrome both failed. No visual or real payment success is claimed. Build-required Wrangler cache permission was granted; no deployment or paid calls. Build-generated next-env route-type import restored to its pre-build development path.
+- Rollback/recovery reference: original branch and commit above; no production data or settings changed.
+- User decision: design improvement authorized; selection/merge of this alternative remains with the user under AGENTS.md.
+
 ## 2026-09-07 19:45 KST — Pushed 4 pending Supabase migrations that blocked /legal, /portfolio, /career-description
 
 - Agent/session: Claude, current session, at the user's explicit request to browser-test `/legal`, `/portfolio`, `/career-description` end to end.
@@ -7101,3 +7122,37 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit -p .` clean, eslint 0건(setState-in-effect 경고 한 번 걸려서 `queueMicrotask`로 고침), `npx vitest run` 143 files·1129 tests 통과(회귀 없음). `supabase db push --dry-run` 후 실제 push 완료. **`npm run build`는 이번엔 못 돌림 — 사용자 dev 서버가 `.next`를 계속 쓰고 있어 파일 충돌(내 코드 문제 아님, `tsc --noEmit`은 깨끗함). 배포 전에 빌드로 한 번 더 확인 필요.** 실결제 검증은 당연히 아직 — Polar/Google Play 상품이 없다.
 - Rollback/recovery reference: 전부 신규 파일/신규 표라 기존 결제·분석 흐름 무영향. 되돌릴 땐 나열된 신규 파일 삭제 + `begin_interview_session`을 이전 버전으로 `CREATE OR REPLACE`.
 - User decision: AskUserQuestion 두 개 모두 "지금 바로/버튼별로"로 명시 답변. 가격 3,000원은 사용자가 먼저 제안한 값 그대로 사용 — 다시 확인 안 받음(원하면 나중에 env var 값만 바꾸면 됨, 코드에 하드코딩 안 함).
+
+## 2026-09-12 — Claude: AI 심층해설(career/ai) 실제 결제+AI 생성 연결 — 지금까지 순수 목업이었음
+
+- Agent/session: Claude, 같은 세션. 사용자가 "검사도 결제 붙은거제?" → "아니 ai 심층해설말야" → "ㄱㄱㄱ"로 진행 지시. 가격은 AskUserQuestion 대신 사용자가 직접 지정: "5900원 9900원임 가격 조금씩 나줓긴할거임".
+- Status: done(코드), 커밋 전. `/career/ai` 화면에 `현재는 결제·AI 호출이 진행되지 않습니다`라는 문구와 함께 영구 비활성 버튼만 있던 것을 실제 결제+AI 해설 생성으로 교체. **DB 마이그레이션 아직 원격 push 안 함. Polar 상품 `polar_c_test`/`polar_3_all_test`는 사용자가 이미 대시보드에 만들어 뒀고 Cloudflare 변수로도 확인됨(2026-09-12 배포 로그).**
+- Protected baseline: 자소서 첨삭 결제 경로(`polar-checkout.ts`/`polar-webhook.ts`, `analysis_entitlements`/`billing_orders`)와 무료 규칙 기반 해설(`career-interpretation.ts`의 `interpretWorkStyle`, `career-assessment.ts`의 채점 로직)은 전부 무수정. 기존 "1건 사서 1건 만든다" 공용 배관(`build-lifecycle.ts`, `document-build-checkout.ts`, `document-build-model.ts`)을 그대로 재사용하고 그 파일들 자체는 손대지 않음 — `career_description_build`/`portfolio_build`/`legal_document_build` 네 번째 사례를 더한 것.
+- Change and reason:
+  - **가격 상수**: `builder-pricing.ts`에 `CAREER_AI_SINGLE_PRICE_KRW`(5,900)·`CAREER_AI_COMBINED_PRICE_KRW`(9,900) 추가 — "가격 조금씩 나줄 거임" 대비 한 곳에 모음.
+  - **DB**: `supabase/migrations/20260912030000_career_ai_builds.sql`(신규) — `career_description_builds`와 동일한 상태기계(PENDING→CHECKOUT→RUNNING→USED/FAILED), 검사 점수는 이미 `career_assessment_results`에 있으므로 여기엔 `scope`(interest/work_style/work_values/combined)만 추가로 저장. 해설 결과 텍스트는 저장 안 함(다른 문서 제작 기능과 동일하게 응답과 함께 사라짐).
+  - **상품 정의**: `products.ts`에 `careerAiSingleBuild`/`careerAiCombinedBuild`(둘 다 같은 표 `career_ai_builds`, 상품만 다름) 추가. env 이름은 사용자가 이미 만들어 둔 그대로 `polar_c_test`(단일)/`polar_3_all_test`(종합) 사용 — 대문자 관례와 다르지만 대시보드 상품을 다시 만들게 하지 않으려 그대로 씀.
+  - **점수→요청 변환**: `src/server/career/career-ai-request-builder.ts`(신규) — 저장된 `{code, score}`만 있는 결과를 각 검사 도메인의 라벨 조회표(work_style은 `career-assessment.ts`에 새로 추가한 `WORK_STYLE_DIMENSION_LABELS` export, interest/work_values는 이미 있던 `INTEREST_DIMENSIONS`/`WORK_VALUE_DIMENSIONS`)로 채워 `career-ai-contract.ts`의 기존 요청 스키마에 맞춤. 등급 경계(높음≥67/낮음≤33)는 업무성향 무료 채점이 이미 쓰는 값 그대로 재사용 — 검사마다 "높음"의 뜻이 달라지지 않게.
+  - **AI 게이트웨이**: `src/server/ai/career-interpretation/career-interpretation-gateway.ts`(신규) — `document-build-model.ts`(경력기술서 제작과 같은 배관, final-patch류 독립 fetch 아님)를 재사용해 `career-ai-contract.ts`에 이미 있던 `careerInterpretationOutputSchema`/`validateCareerInterpretationOutput`(합격확률·진단 등 금지 표현 정규식)을 그대로 적용. 지시문에서 판정 금지·근거 필수·경험은 사용자가 직접 확인하는 질문으로만 제시하도록 명시(AGENTS.md 원칙 상속).
+  - **API**: `src/app/api/career-ai-builds/route.ts`(체크아웃 생성, body는 `{scope}`뿐 — 점수는 서버가 이미 갖고 있어 클라이언트가 다시 안 보냄), `src/app/api/career-ai-builds/[buildId]/execute/route.ts`(결제 확인 → RUNNING 선점 → 필요한 검사 결과가 있는지 확인(없으면 시도 소모 없이 409) → AI 호출 → 실패 시 `releaseBuildRun`으로 최대 3회 재시도 허용).
+  - **UI**: `career-ai-preparation.tsx` — 영구 비활성 버튼을 실제 "N원 · 심층해설 받기" 버튼으로 교체, Polar 결제 후 `?career_ai_build=<id>&checkout=success`로 돌아오면 자동으로 execute 호출(`queueMicrotask`로 setState-in-effect 회피, `interactive-interview.tsx`와 같은 패턴), 완료되면 결과를 화면에 바로 렌더링(`CareerAiReportView`, 기존에 안 쓰이고 있던 `.sampleReport`/`.sampleGrid`/`.sampleFoot` CSS 재사용).
+  - **의도적으로 안 한 것**: 사용자가 직접 이력서·자소서·공고 텍스트를 붙여넣는 입력 UI는 이번에 안 만듦 — `career-ai-contract.ts`의 요청 스키마엔 그 필드가 있지만(`resumeText` 등) 지금 화면 흐름엔 넣을 자리가 없어 검사 점수만으로 해설을 만듦. 나중에 자료 업로드를 추가하려면 게이트웨이는 이미 그 필드를 받게 돼 있으니 UI+API 입력란만 추가하면 됨. Google Play(TWA 앱용) 결제 경로도 이번엔 안 만듦 — 이 기능은 웹에서 먼저 검증 후 필요하면 모의면접 재시도와 같은 패턴으로 추가.
+- Files: 신규 — `supabase/migrations/20260912030000_career_ai_builds.sql`, `src/server/career/career-ai-request-builder.ts`(+`.test.ts`), `src/server/ai/career-interpretation/career-interpretation-gateway.ts`, `src/app/api/career-ai-builds/route.ts`, `src/app/api/career-ai-builds/[buildId]/execute/route.ts`. 수정 — `src/domain/builder-pricing.ts`(상수 2개 추가), `src/domain/career-assessment.ts`(`WORK_STYLE_DIMENSION_LABELS` export 추가만), `src/server/document-builds/products.ts`(정의 2개+헬퍼 추가), `src/components/career-ai-preparation.tsx`(+`.module.css`, 결제·실행·결과 표시 연결).
+- Validation: `npx tsc --noEmit` clean, eslint 0건(신규/수정 파일 전부), `npx vitest run` 145 files·**1137 tests** 통과(신규 8건, 회귀 없음). **아직 안 한 것**: `supabase db push`(마이그레이션 원격 미반영), 실제 OpenAI 호출 live eval, 브라우저에서 결제 1건 처음부터 끝까지. FINAL 모의면접 때와 같은 이유로 — 코드 완성이 검증 완료가 아님.
+- Rollback/recovery reference: 전부 신규 파일 + 기존 파일에 순수 추가(export/정의 추가, 기존 로직 무수정)라 되돌릴 땐 나열된 신규 파일 삭제 + 추가된 export/정의만 제거하면 됨. 마이그레이션은 아직 원격에 없으므로 파일만 지우면 DB엔 흔적 없음.
+- User decision: "ㄱㄱㄱ"로 진행 승인. 가격은 사용자가 직접 지정(5,900/9,900원), "조금씩 나줄 거임"이라 상수로 분리. DB push·live eval·실결제 테스트는 다음 확인 필요.
+
+## 2026-09-12 — Claude: AI 심층해설에 이력서·자소서·공고 텍스트 입력란 추가
+
+- Agent/session: Claude, 같은 세션. 바로 위 항목("AI 심층해설 실제 결제+AI 생성 연결")에서 스코프 아웃했던 4번("사용자가 직접 이력서·자소서·공고를 붙여넣는 입력 UI")을 사용자가 "4번은 개발 ㄱㄱ"로 지시.
+- Status: done(코드), 커밋 전. 나머지 검사 1개(캐릭터 이미지)는 사용자가 자산을 나중에 준다고 해서 이번 작업 범위 아님.
+- Protected baseline: 위 항목과 동일 기조 — 결제 경로·무료 해설 로직 무수정. `career-ai-contract.ts`는 매직넘버(24,000)를 named export로 바꾼 것 외에 스키마 동작 변화 없음(같은 값).
+- Change and reason:
+  - `career-ai-contract.ts`에 `CAREER_AI_MATERIAL_MAX_CHARS`(24,000) export 추가, 기존 세 필드의 `.max(24_000)`을 이 상수로 교체(값 동일, 자리표시값 관례만 맞춤).
+  - `execute/route.ts`가 이제 선택적 body(`resumeText`/`coverLetterText`/`jobPostingText`)를 받아 점수 기반 요청에 얹음 — 셋 다 비어 있으면 기존과 동일하게 점수만으로 해설.
+  - `career-ai-preparation.tsx`: 경력기술서 제작 패널(`career-description-build-panel.tsx`)과 같은 패턴 — 자료는 **결제 전에 이 브라우저 localStorage에만** 저장(`mooa.career-ai-build.material.v1`)되고, 서버에는 결제 확인 뒤 실행 요청에만 실려 감. 결제창 갔다 와도 입력한 자료가 안 지워짐. 실행 로직을 `runExecute` 콜백으로 뽑아 자동 실행(결제 복귀)과 수동 재시도(실패 시 "결제한 건으로 다시 시도" 버튼, 경력기술서 제작과 동일한 안전장치) 둘 다에서 재사용. 성공하면 localStorage 비움.
+  - CSS: `.packageCard button`이 예전엔 항상 반투명·not-allowed였던 걸(원래 영구 비활성 버튼용) `:disabled`에만 걸리게 고침 — 안 고치면 이번에 추가한 실제 동작 버튼들도 클릭 안 되는 것처럼 보였을 것.
+- Files: 수정만 — `src/domain/career-ai-contract.ts`, `src/app/api/career-ai-builds/[buildId]/execute/route.ts`, `src/components/career-ai-preparation.tsx`(+`.module.css`). 신규 파일 없음.
+- Validation: `npx tsc --noEmit` clean, eslint 0건(처음에 setState-in-effect 2건 걸려서 기존 패턴대로 `queueMicrotask`로 고침), `npx vitest run` 145 files·1137 tests 통과(회귀 없음). **아직 안 함**: live eval로 자료 있는 경우 실제 프롬프트 출력 확인, 브라우저 실결제 테스트.
+- Rollback/recovery reference: 전부 기존 신규 파일에 대한 추가 수정이라 되돌릴 땐 이 항목에 나열된 파일만 이전 커밋으로 되돌리면 됨(DB 변경 없음).
+- User decision: "4번은 개발 ㄱㄱ"로 명시 승인. 캐릭터 이미지 관련 언급은 이 기능과 무관 — 사용자가 별도로 나중에 자산 제공 예정이라는 안내였음, 액션 없음.

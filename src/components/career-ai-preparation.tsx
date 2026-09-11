@@ -1,11 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { ArrowRight, BrainCircuit, CheckCircle2, FileText, LayoutDashboard, LoaderCircle, LockKeyhole, ShieldCheck, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CAREER_AI_SAMPLE_SCOPES, getCareerAiSample } from "@/domain/career-ai-sample";
+import { CAREER_AI_COMBINED_PRICE_KRW, CAREER_AI_SINGLE_PRICE_KRW } from "@/domain/builder-pricing";
+import { CAREER_AI_MATERIAL_MAX_CHARS, type CareerInterpretationOutput } from "@/domain/career-ai-contract";
 import styles from "./career-ai-preparation.module.css";
+
+const MATERIAL_STORAGE_KEY = "mooa.career-ai-build.material.v1";
+type Material = { resumeText: string; coverLetterText: string; jobPostingText: string };
+const EMPTY_MATERIAL: Material = { resumeText: "", coverLetterText: "", jobPostingText: "" };
+
+function readStoredMaterial(): Material {
+  try {
+    const raw = window.localStorage.getItem(MATERIAL_STORAGE_KEY);
+    if (!raw) return EMPTY_MATERIAL;
+    const value = JSON.parse(raw) as Partial<Material>;
+    return {
+      resumeText: typeof value.resumeText === "string" ? value.resumeText : "",
+      coverLetterText: typeof value.coverLetterText === "string" ? value.coverLetterText : "",
+      jobPostingText: typeof value.jobPostingText === "string" ? value.jobPostingText : "",
+    };
+  } catch {
+    return EMPTY_MATERIAL;
+  }
+}
 
 const subscribe = () => () => undefined;
 const assessments = [
@@ -21,10 +42,17 @@ function isAssessmentKey(value: string): value is AssessmentKey {
   return assessments.some((assessment) => assessment.key === value);
 }
 
+type ExecutionPhase = "idle" | "creating_checkout" | "generating" | "done" | "error";
+
 export function CareerAiPreparation({ scope }: { scope: Scope }) {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [accountCompleted, setAccountCompleted] = useState<AssessmentKey[]>([]);
   const [accountLoading, setAccountLoading] = useState(true);
+  const [phase, setPhase] = useState<ExecutionPhase>("idle");
+  const [report, setReport] = useState<CareerInterpretationOutput | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingBuildId, setPendingBuildId] = useState<string | null>(null);
+  const [material, setMaterial] = useState<Material>(EMPTY_MATERIAL);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +86,81 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
     return () => { active = false; };
   }, []);
 
+  // 자료 칸은 결제 전에도 계속 쓸 수 있어야 하므로(결제창 갔다 와도 지워지면 안 됨) 이 브라우저에만 저장한다.
+  useEffect(() => { queueMicrotask(() => setMaterial(readStoredMaterial())); }, []);
+  useEffect(() => {
+    if (!material.resumeText && !material.coverLetterText && !material.jobPostingText) return;
+    try {
+      window.localStorage.setItem(MATERIAL_STORAGE_KEY, JSON.stringify(material));
+    } catch {
+      // 저장이 안 돼도 화면 입력은 계속 유지된다.
+    }
+  }, [material]);
+
+  // Polar 결제 창에서 돌아온 경우: URL에 건 id가 실려 있으면 바로 실행을 건다.
+  useEffect(() => {
+    if (signedIn !== true) return;
+    const params = new URLSearchParams(window.location.search);
+    const buildId = params.get("career_ai_build");
+    if (!buildId || params.get("checkout") !== "success") return;
+    queueMicrotask(() => { setPendingBuildId(buildId); setPhase("generating"); });
+  }, [signedIn]);
+
+  const runExecute = useCallback(async (buildId: string, requestMaterial: Material) => {
+    setPhase("generating");
+    setErrorMessage(null);
+    try {
+      const body: Partial<Material> = {};
+      if (requestMaterial.resumeText.trim()) body.resumeText = requestMaterial.resumeText;
+      if (requestMaterial.coverLetterText.trim()) body.coverLetterText = requestMaterial.coverLetterText;
+      if (requestMaterial.jobPostingText.trim()) body.jobPostingText = requestMaterial.jobPostingText;
+      const response = await fetch(`/api/career-ai-builds/${buildId}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => null) as { output?: CareerInterpretationOutput; error?: string } | null;
+      if (!response.ok || !payload?.output) {
+        setErrorMessage(payload?.error ?? "심층해설을 만들지 못했습니다.");
+        setPhase("error");
+        return;
+      }
+      setReport(payload.output);
+      setPhase("done");
+      try { window.localStorage.removeItem(MATERIAL_STORAGE_KEY); } catch { /* 다음 구매 때 새로 덮어씁니다 */ }
+    } catch {
+      setErrorMessage("네트워크 오류로 심층해설을 만들지 못했습니다.");
+      setPhase("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!pendingBuildId) return;
+    queueMicrotask(() => { void runExecute(pendingBuildId, readStoredMaterial()); });
+  }, [pendingBuildId, runExecute]);
+
+  async function startCheckout() {
+    setErrorMessage(null);
+    setPhase("creating_checkout");
+    try {
+      const response = await fetch("/api/career-ai-builds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope }),
+      });
+      const body = await response.json().catch(() => null) as { checkoutUrl?: string; error?: string } | null;
+      if (!response.ok || !body?.checkoutUrl) {
+        setErrorMessage(body?.error ?? "결제 페이지를 열지 못했습니다.");
+        setPhase("error");
+        return;
+      }
+      window.location.href = body.checkoutUrl;
+    } catch {
+      setErrorMessage("네트워크 오류로 결제 페이지를 열지 못했습니다.");
+      setPhase("error");
+    }
+  }
+
   const interestRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem(assessments[0].storage), () => null);
   const workStyleRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem(assessments[1].storage), () => null);
   const valuesRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem(assessments[2].storage), () => null);
@@ -83,7 +186,10 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
     [FileText, "다음 지원에서 볼 기준", "직무와 공고에서 확인하면 좋을 업무와 조건을 정리합니다."],
   ] as const;
 
-  return <AiFrame eyebrow="AI CAREER INSIGHTS" title={title} description={description} status="출시 준비 중">
+  const priceKrw = isCombined ? CAREER_AI_COMBINED_PRICE_KRW : CAREER_AI_SINGLE_PRICE_KRW;
+  const busy = phase === "creating_checkout" || phase === "generating";
+
+  return <AiFrame eyebrow="AI CAREER INSIGHTS" title={title} description={description} status={phase === "done" ? "해설 완료" : "결제 가능"}>
     <section className={styles.analysisGrid}>
       <div className={styles.analysisColumn}>
         <section className={styles.choiceSection} aria-label="심층해설 범위 선택">
@@ -93,19 +199,71 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
             {complete.map((assessment) => <Link key={assessment.key} className={scope === assessment.key ? styles.choiceActive : ""} href={`/career/ai?scope=${assessment.key}`}><CheckCircle2 /><span><b>{assessment.label} 해설</b><small>{assessment.hint}를 중심으로 살펴봅니다.</small></span><ArrowRight /></Link>)}
           </div>
         </section>
+        <section className={styles.choiceSection} aria-label="추가 자료 입력">
+          <div className={styles.sectionTitle}><small>OPTIONAL MATERIAL</small><b>자료를 더하면 더 구체적으로 해설해요</b></div>
+          <div className={styles.materialGrid}>
+            <div className={styles.materialField}>
+              <label htmlFor="career-ai-resume">이력서 <small>선택</small></label>
+              <textarea id="career-ai-resume" rows={4} maxLength={CAREER_AI_MATERIAL_MAX_CHARS} value={material.resumeText} disabled={busy} placeholder="이력서 내용을 붙여넣으면 실제 경력과 연결해서 해설합니다." onChange={(event) => setMaterial((current) => ({ ...current, resumeText: event.target.value }))} />
+              <small>{material.resumeText.length.toLocaleString()} / {CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자</small>
+            </div>
+            <div className={styles.materialField}>
+              <label htmlFor="career-ai-cover-letter">자기소개서 <small>선택</small></label>
+              <textarea id="career-ai-cover-letter" rows={4} maxLength={CAREER_AI_MATERIAL_MAX_CHARS} value={material.coverLetterText} disabled={busy} placeholder="자소서를 붙여넣으면 실제로 쓴 표현과 결과를 대조합니다." onChange={(event) => setMaterial((current) => ({ ...current, coverLetterText: event.target.value }))} />
+              <small>{material.coverLetterText.length.toLocaleString()} / {CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자</small>
+            </div>
+            <div className={styles.materialField}>
+              <label htmlFor="career-ai-job-posting">채용 공고 <small>선택</small></label>
+              <textarea id="career-ai-job-posting" rows={4} maxLength={CAREER_AI_MATERIAL_MAX_CHARS} value={material.jobPostingText} disabled={busy} placeholder="지원하려는 공고를 붙여넣으면 그 공고에서 확인할 질문을 함께 정리합니다." onChange={(event) => setMaterial((current) => ({ ...current, jobPostingText: event.target.value }))} />
+              <small>{material.jobPostingText.length.toLocaleString()} / {CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자</small>
+            </div>
+          </div>
+          <span className={styles.materialNote}><ShieldCheck />붙여넣은 자료는 해설을 만드는 데만 쓰이고 서버에 저장하지 않습니다. 비워 두면 검사 결과만으로 해설합니다.</span>
+        </section>
         <section className={styles.featureList}>{featureCopy.map(([Icon, titleText, body]) => <article key={titleText}><span><Icon /></span><div><b>{titleText}</b><p>{body}</p></div></article>)}</section>
       </div>
       <aside className={styles.packageCard}>
-        <div className={styles.packageHead}><small>AI DEEP INTERPRETATION</small><h2>{isCombined ? "종합 심층해설" : "개별 심층해설"}</h2><p>출시 후 선택한 결과와 사용자가 직접 제공한 자료를 바탕으로 해설을 준비합니다.</p></div>
+        <div className={styles.packageHead}><small>AI DEEP INTERPRETATION</small><h2>{isCombined ? "종합 심층해설" : "개별 심층해설"}</h2><p>결제하면 선택한 검사 결과를 바탕으로 AI가 바로 해설과 확인 질문을 만듭니다.</p></div>
         <ul>{["검사 결과 핵심 요약", isCombined ? "세 결과의 공통점·차이점" : "해당 결과의 의미와 확인 질문", "실제 경험과 공고를 볼 기준"].map((item) => <li key={item}><CheckCircle2 />{item}</li>)}</ul>
         <Link className={styles.sampleButton} href={`/career/ai/sample?scope=${scope}`}>심층해설 예시 보기 <ArrowRight /></Link>
-        <button type="button" disabled>심층해설 준비 중 <ArrowRight /></button>
-        <span className={styles.packageFoot}><ShieldCheck />현재는 결제·AI 호출이 진행되지 않습니다.</span>
+        {phase === "done"
+          ? <span className={styles.packageFoot}><ShieldCheck />아래에서 해설을 확인하세요.</span>
+          : <>
+            <button type="button" onClick={() => void startCheckout()} disabled={busy}>
+              {phase === "creating_checkout" ? "결제 페이지 여는 중..." : phase === "generating" ? "AI가 해설 만드는 중..." : <>{priceKrw.toLocaleString("ko-KR")}원 · 심층해설 받기 <ArrowRight /></>}
+            </button>
+            <span className={styles.packageFoot}><ShieldCheck />결제 확인 후에만 AI를 호출합니다.</span>
+          </>}
+        {phase === "error" && errorMessage && <span className={styles.packageFoot} role="alert">{errorMessage}</span>}
+        {phase === "error" && pendingBuildId && <button type="button" onClick={() => void runExecute(pendingBuildId, material)}>결제한 건으로 다시 시도 <ArrowRight /></button>}
       </aside>
     </section>
+    {phase === "generating" && <div className={styles.loading} aria-live="polite"><LoaderCircle /><span><b>AI가 심층해설을 만들고 있어요.</b><small>보통 1분 안팎으로 끝나요. 창을 닫지 말아 주세요.</small></span></div>}
+    {phase === "done" && report && <CareerAiReportView output={report} />}
     <SampleReportGallery activeScope={scope} />
     <Link className={styles.ghostLink} href="/career/profile">종합 커리어 프로필로</Link>
   </AiFrame>;
+}
+
+function CareerAiReportView({ output }: { output: CareerInterpretationOutput }) {
+  return <section className={styles.sampleReport} aria-label="AI 심층해설 결과">
+    <div className={styles.sampleHead}><span>AI DEEP INTERPRETATION · 완료</span><h2>{output.profileSummary}</h2></div>
+    <div className={styles.sampleGrid}>
+      {output.workEnvironmentHypotheses.map((hypothesis) => (
+        <article key={hypothesis.title}>
+          <small>WORK ENVIRONMENT</small>
+          <h3>{hypothesis.title}</h3>
+          <p>{hypothesis.description}</p>
+          <ul>{hypothesis.evidence.map((evidence, index) => <li key={index}><b>근거</b> {evidence.quote}</li>)}</ul>
+        </article>
+      ))}
+    </div>
+    <div className={styles.sampleGrid}>
+      <article><small>실제 경험 확인 질문</small><ul>{output.experiencePrompts.map((prompt) => <li key={prompt}>{prompt}</li>)}</ul></article>
+      <article><small>공고·면접에서 확인할 질문</small><ul>{output.jobPostingQuestions.map((question) => <li key={question}>{question}</li>)}</ul></article>
+    </div>
+    <div className={styles.sampleFoot}><ShieldCheck /><p>{output.limitations.join(" ")}</p></div>
+  </section>;
 }
 
 function AiFrame({ eyebrow, title, description, status, children }: { eyebrow: string; title: string; description: string; status: string; children: React.ReactNode }) {

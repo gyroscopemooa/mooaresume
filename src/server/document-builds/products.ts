@@ -44,3 +44,36 @@ export const legalDocumentBuild: DocumentBuildDefinition = {
     label: "법률 문서 작성",
   },
 };
+
+/**
+ * AI 심층해설(커리어 검사) — 범위별로 상품이 갈립니다. 종합(3종)이 개별보다
+ * 비싸므로 표 하나에 상품 둘을 묶지 않고 정의를 둘로 나눕니다. env 이름은
+ * 사용자가 Polar 대시보드에 이미 만들어 둔 그대로입니다(대문자 관례와 다르지만
+ * 대시보드 상품을 다시 만들게 하지 않기 위해 그대로 씀).
+ */
+/** 둘 다 같은 표를 씁니다 — 상품(가격)만 범위에 따라 갈립니다. */
+export const careerAiBuildTable: BuildTable = { table: "career_ai_builds", label: "AI 심층해설" };
+
+export const careerAiSingleBuild: DocumentBuildDefinition = {
+  table: careerAiBuildTable,
+  product: {
+    productIdEnv: "polar_c_test",
+    kind: "CAREER_AI_BUILD_SINGLE",
+    buildIdKey: "careerAiBuildId",
+    label: "AI 심층해설",
+  },
+};
+
+export const careerAiCombinedBuild: DocumentBuildDefinition = {
+  table: careerAiBuildTable,
+  product: {
+    productIdEnv: "polar_3_all_test",
+    kind: "CAREER_AI_BUILD_COMBINED",
+    buildIdKey: "careerAiBuildId",
+    label: "AI 심층해설(종합)",
+  },
+};
+
+export function getCareerAiBuildDefinition(scope: "interest" | "work_style" | "work_values" | "combined"): DocumentBuildDefinition {
+  return scope === "combined" ? careerAiCombinedBuild : careerAiSingleBuild;
+}

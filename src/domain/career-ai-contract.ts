@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** 이력서·자소서·공고 각 칸의 글자수 상한. UI·실행 라우트가 같은 값을 씁니다. */
+export const CAREER_AI_MATERIAL_MAX_CHARS = 24_000;
+
 const scoreSchema = z.object({ label: z.string().min(1), score: z.number().int().min(0).max(100), level: z.enum(["높음", "보통", "낮음"]) });
 
 export const careerInterpretationRequestSchema = z.object({
@@ -8,9 +11,9 @@ export const careerInterpretationRequestSchema = z.object({
   workStyleScores: z.array(scoreSchema).length(5).optional(),
   interestScores: z.array(scoreSchema).length(6).optional(),
   workValueScores: z.array(scoreSchema).length(6).optional(),
-  resumeText: z.string().min(1).max(24_000).optional(),
-  coverLetterText: z.string().min(1).max(24_000).optional(),
-  jobPostingText: z.string().min(1).max(24_000).optional(),
+  resumeText: z.string().min(1).max(CAREER_AI_MATERIAL_MAX_CHARS).optional(),
+  coverLetterText: z.string().min(1).max(CAREER_AI_MATERIAL_MAX_CHARS).optional(),
+  jobPostingText: z.string().min(1).max(CAREER_AI_MATERIAL_MAX_CHARS).optional(),
 }).refine((request) => request.workStyleScores || request.interestScores || request.workValueScores, { message: "최소 한 종류의 검사 결과가 필요합니다." });
 
 const evidenceSchema = z.object({ source: z.enum(["work_style", "interest", "work_value", "resume", "cover_letter", "job_posting"]), quote: z.string().min(1).max(300) });
