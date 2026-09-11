@@ -7063,3 +7063,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: 위 ①②③ 각 항목에 기록된 그대로. `npx tsc --noEmit`/lint/vitest(unit) 재확인 통과.
 - Rollback/recovery reference: DB push는 신규 마이그레이션 적용이라 되돌리려면 별도 down-migration 필요(테이블에 아직 데이터 없음, 드롭은 비파괴적). 커밋은 로컬에만 있어 `git reset`으로 되돌릴 수 있음(원격 push 전).
 - User decision: "1~4 전부 ㄱㄱ"로 일괄 승인. ④는 진행 못 하는 이유를 설명하고 사용자 몫으로 남김.
+
+## 2026-09-12 — 사용자: Cloudflare 대시보드에서 POLAR_SERVER를 production으로 전환
+
+- Agent/session: 사용자가 직접("런칭 변수도 넣엇다"). Claude는 대시보드 접근 권한이 없어 이 작업은 못 함(위 09-11 항목 참고) — 사용자가 안내대로 처리.
+- Status: 이로써 DB push·커밋·live eval 검증·POLAR_SERVER 전환까지 FINAL 실결제를 막던 항목이 전부 끝남. **아직 안 된 것 — 실제 브라우저에서 FINAL 결제 1건을 처음부터 끝까지(결제 → 분석 → 결과 화면 → 모의면접 탭) 돌려본 적은 없음.** live eval은 AI 호출 계층만 검증했고, 결제~DB~UI 전체 연결은 미검증.
+- Validation/Rollback/Files: 해당 없음(Claude가 관여하지 않은 대시보드 설정 변경).
+- User decision: 사용자가 직접 완료.
