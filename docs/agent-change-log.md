@@ -7047,3 +7047,19 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
   - **아직 검증 안 된 것**: 실제 OpenAI 호출로 턴 1개 이상 돌려본 적 없음. 09-06 FINAL 환불 사고("고쳤지만 실결제로 재검증 안 함")와 같은 함정을 피하려면, DB push + 배포 후 반드시 실제 FINAL 결과에서 모의면접 1턴 이상을 직접 진행해 확인해야 함. 특히 `interview-turn-gateway.ts`의 프롬프트가 실제로 "지어내지 않는 평가"·"자연스러운 꼬리질문"을 만드는지는 코드 리뷰만으로 보장 못 함.
 - Rollback/recovery reference: 전부 신규 파일(기존 분석 파이프라인·정적 면접질문 로직 무수정)이라 되돌릴 때는 나열된 파일만 지우면 됨. 마이그레이션은 원격에 push 안 했으므로 파일만 지우면 DB엔 흔적 없음.
 - User decision: 사용자가 계획을 승인(ExitPlanMode)한 뒤 구현 지시. DB 마이그레이션 push, 실제 배포, 실결제 검증 진행 여부는 아직 확인 안 받음 — 다음 메시지에서 안내.
+
+## 2026-09-11 — Claude: "1~4 전부 ㄱㄱ" — DB push·커밋·live eval 마무리 (배포·POLAR_SERVER 전환은 남음)
+
+- Agent/session: Claude, 같은 세션. 사용자가 이전 메시지의 남은 일 목록(①DB push ②커밋 ③실제 OpenAI 검증 ④FINAL 런칭)을 한 번에 승인.
+- Status: 아래 넷 중 셋 완료, 하나(④)는 이 세션이 할 수 없는 일이라 안내만 남김.
+- **① DB push**: `supabase db push` 실행, `20260911020000_interview_sessions.sql` 원격 반영 확인(`migration list`에서 local/remote 모두 `20260911020000`).
+- **② 커밋**: 같은 작업트리에 섞여 있던 두 기능을 파일 단위로 분리해 커밋 2개로 나눔 — `6e07170`(Google Play Billing), `883406b`(FINAL 모의면접). `docs/agent-change-log.md`는 두 기능 항목을 순서대로 담고 있어 `883406b`에 같이 실림. 원격에는 push 안 함(요청받지 않음).
+- **③ live eval로 실제 OpenAI 검증**: `src/evals/interview-live-eval.live.test.ts` 신규(quick-live-eval.live.test.ts와 같은 관례, `RUN_LIVE_EVAL=1`일 때만 동작). `.env.local`의 실제 키로 두 번 실행:
+  - **1차 실행에서 실제 버그 발견**: `interview-report-gateway.ts`가 `questionId`가 없는 턴(대부분의 꼬리질문 턴)에 `questionId=unknown`이라는 자리표시자 문자열을 프롬프트에 넣었는데, 모델이 이걸 **진짜 id처럼 그대로 `relatedQuestionIds`에 돌려줬다** — 리뷰만으로는 안 보였던 문제. 코드 리뷰로는 못 잡고 실제 호출에서만 드러난다는 게 바로 이 원장이 강조해 온 이유였다.
+  - **수정**: `questionId`가 없는 턴은 그 줄 자체를 프롬프트에서 뺌, `relatedQuestionIds`의 zod `.min(1)` 제거(빈 배열 허용 — 없는 id를 지어내게 강제하지 않음), 회귀 테스트 추가(`interview-report-gateway.test.ts`).
+  - **2차 실행으로 수정 확인**: 재실행 결과 `relatedQuestionIds`에 실제 턴 1의 `q1`만 들어오고 자리표시자는 사라짐. 두 번의 턴 평가·최종 리포트 전부 근거 인용·"지어내지 않음"·숫자 점수 없음 확인(육안 확인, 실제 응답 로그를 원장에 남김).
+- **④ FINAL 런칭(POLAR_SERVER sandbox→production)은 이 세션이 못 함**: `wrangler.jsonc`에 `keep_vars: true`(코멘트: "the values are secrets, so they must be set in the dashboard rather than committed here") — 이 프로젝트는 프로덕션 환경변수를 저장소가 아니라 Cloudflare 대시보드에서만 관리하도록 의도적으로 설계돼 있음. Claude에게 대시보드 접근 권한이 없어 직접 못 바꿈. **사용자가 직접**: Cloudflare 대시보드 → Workers & Pages → mooaresume → Settings → Variables에서 `POLAR_SERVER`를 `sandbox`에서 `production`으로 바꾸고, `POLAR_FINAL_PRODUCT_ID`가 프로덕션 Polar 상품 id로 맞게 설정돼 있는지 같이 확인 필요.
+- Files/branch: 신규 — `src/evals/interview-live-eval.live.test.ts`. 수정 — `src/server/ai/interview/interview-report-gateway.ts`, `interview-report-gateway.test.ts`, `src/domain/interview.ts`(relatedQuestionIds 스키마). 전부 `883406b` 커밋 이전에 만들어 같은 커밋에 포함됨(커밋 시점에 이미 반영).
+- Validation: 위 ①②③ 각 항목에 기록된 그대로. `npx tsc --noEmit`/lint/vitest(unit) 재확인 통과.
+- Rollback/recovery reference: DB push는 신규 마이그레이션 적용이라 되돌리려면 별도 down-migration 필요(테이블에 아직 데이터 없음, 드롭은 비파괴적). 커밋은 로컬에만 있어 `git reset`으로 되돌릴 수 있음(원격 push 전).
+- User decision: "1~4 전부 ㄱㄱ"로 일괄 승인. ④는 진행 못 하는 이유를 설명하고 사용자 몫으로 남김.
