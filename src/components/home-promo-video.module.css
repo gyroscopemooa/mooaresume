@@ -1,0 +1,61 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 15px auto 0;
+  padding: 10px 14px;
+  border: 1px solid #cce0d0;
+  border-radius: 999px;
+  background: #f0f7ee;
+  color: #176b4a;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.trigger:hover { background: #e4f1e3; }
+.trigger:focus-visible, .close:focus-visible, .error button:focus-visible { outline: 3px solid #70cba0; outline-offset: 3px; }
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: min(420px, calc(100vw - 32px), calc((100dvh - 172px) * 9 / 16));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #325440;
+  border-radius: 18px;
+  background: #081e13;
+  color: #eff6eb;
+  box-shadow: 0 30px 100px #0006;
+  text-align: left;
+}
+
+.dialog::backdrop { background: rgb(3 15 10 / 75%); backdrop-filter: blur(6px); }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; min-height: 68px; }
+.eyebrow { display: block; color: #9bc7ab; font-size: 10px; letter-spacing: 1.5px; }
+.dialog .title { margin: 5px 0 0; color: #eff6eb; font-size: 16px; font-weight: 700; line-height: 1.35; letter-spacing: -.3px; }
+.close { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; padding: 0; border: 1px solid #3a5a46; border-radius: 50%; color: #eff6eb; background: #193c27; cursor: pointer; }
+.close:hover { background: #2a5238; }
+.stage { width: 100%; aspect-ratio: 9 / 16; background: #061610; }
+.video { display: block; width: 100%; height: 100%; aspect-ratio: 9 / 16; object-fit: contain; }
+.hint { padding: 12px 10px; color: #aac9b4; font-size: 12px; line-height: 1.5; text-align: center; }
+.error { display: flex; height: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; }
+.dialog .error p { margin: 0 0 8px; color: #d9e9dc; font-size: 16px; line-height: 1.6; }
+.error button { padding: 11px 14px; border: 1px solid #52805f; border-radius: 9px; color: #e9f5e8; background: #214932; font-size: 14px; cursor: pointer; }
+
+@media (max-width: 480px) {
+  .dialog { border-radius: 15px; }
+  .header { padding: 10px 12px; }
+  .dialog .title { font-size: 15px; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .dialog { width: min(620px, calc(100vw - 32px)); }
+  .stage { height: calc(100dvh - 155px); aspect-ratio: auto; }
+  .hint { padding: 8px; }
+}

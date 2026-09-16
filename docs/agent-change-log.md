@@ -7156,3 +7156,62 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `npx tsc --noEmit` clean, eslint 0건(처음에 setState-in-effect 2건 걸려서 기존 패턴대로 `queueMicrotask`로 고침), `npx vitest run` 145 files·1137 tests 통과(회귀 없음). **아직 안 함**: live eval로 자료 있는 경우 실제 프롬프트 출력 확인, 브라우저 실결제 테스트.
 - Rollback/recovery reference: 전부 기존 신규 파일에 대한 추가 수정이라 되돌릴 땐 이 항목에 나열된 파일만 이전 커밋으로 되돌리면 됨(DB 변경 없음).
 - User decision: "4번은 개발 ㄱㄱ"로 명시 승인. 캐릭터 이미지 관련 언급은 이 기능과 무관 — 사용자가 별도로 나중에 자산 제공 예정이라는 안내였음, 액션 없음.
+
+## 2026-09-17 — Codex: isolated 60-second MOOA Resume promotional film
+
+- Agent/session: Codex with parallel product fact-check, original audio, and image-generation agents; explicitly requested by user.
+- Status: in progress; standalone local creative artifact, no integration or deployment.
+- Protected baseline: branch `codex/legal-launch-design-20260912`, HEAD `b60494a3f6fa5002dc6b4e025bb97edc45259da4`; all pre-existing dirty legal design/checkpoint/next-env files preserved.
+- Files: new `artifacts/mooa-promo-20260917/` (editable renderer, scene copy, generated hero art, original music, QA frames, 60-second MP4 and preview); this append-only log.
+- Reason: produce a premium Korean commercial covering beginner/CREATE, QUICK, PRO and FINAL using implementation-grounded feature claims. The existing source is reference only. UI visuals are illustrative product reconstructions, with fictional demonstration content labeled as examples.
+- Decisions: full-HD 16:9 master, restrained emerald/ivory brand palette, motion typography, original instrumental score. No customer documents, fake outcome numbers, prices, expert marketplace, or unverified voice/video interview claims. FINAL shown as text-based AI interview.
+- Validation: pending render, copy verification, scene-level visual QA, duration/frame/audio checks. No product logic changes; product checks to be reported separately if run.
+- Rollback/recovery reference: standalone new artifact directory only; production implementation remains at the protected baseline plus its untouched prior working changes. No original assets replaced.
+
+### 2026-09-17 — Promotional film completed and validated
+
+- Agent/session: Codex; independent product/copy review, original sound composition, and generated hero image checks completed by delegated agents.
+- Status: complete; local standalone creative artifact, not published or integrated into product.
+- Files: `artifacts/mooa-promo-20260917/mooa-resume-60s-1080p.mp4`, `poster.png`, `preview.html`, `README.md`, `source/film.json`, `source/render.mjs`, `assets/hero-glass.png`, `assets/hero-glass-prompt.txt`, `audio/` generator/WAV/provenance/measurement files, and `qa/` scene frames/contact sheet/encoded frame/ffprobe report; this log.
+- Result: 60.000 seconds, 1920x1080, 60 fps, 3,600 H.264 frames, 48kHz AAC stereo; approximately 10.6 MB. Eight scenes cover beginner PRO CREATE, QUICK refinement, PRO materials/experience matching, FINAL text AI interview, truthful brand promise and public-domain CTA. No narration; original instrumental score plus animated Korean copy. Image generated through built-in imagegen; original output 1672x941, scaled in 1080p composition. Full prompt saved with asset.
+- Validation: 12 scene PNGs/contact sheet visually inspected; final encoded endcard inspected; separate read-only agent checked feature claims and example-fact preservation; FFmpeg full decode returned no errors; ffprobe verified both streams at exactly 60 seconds. Soundtrack -16.08 LUFS, -1.29 dBTP, no clipped samples. Local preview HTTP 200 verified. Typecheck passed; lint 0 errors/2 existing unrelated warnings. Initial repository test run passed 139 files/1,079 tests but 6 worker-start timeouts occurred during concurrent video encoding; those exact 6 files rerun with 2 workers passed all 58 tests (145 files/1,137 tests covered across the two runs). No application source was changed. `git diff --check` clean.
+- Preservation/recovery: all pre-existing legal design/checkpoint/next-env changes left intact; isolated new artifact directory is the only creative addition. No dependency installation, production deployment, paid API, remote DB change, or private applicant data use. Preview server is loopback-only, serving the artifact directory.
+
+## 2026-09-17 — Codex: 9:16 Shorts/TikTok variant of promotional film
+
+- Agent/session: Codex, user explicitly requested portrait Shorts/TikTok ratio after reviewing landscape ad.
+- Status: in progress, local variant only.
+- Protected baseline: existing landscape MP4, renderer, poster and preview under `artifacts/mooa-promo-20260917/` remain intact; branch and all pre-existing product changes preserved.
+- Files planned: additive `source/render-vertical.mjs`, `mooa-resume-60s-vertical-1080x1920.mp4`, `poster-vertical.png`, `preview-vertical.html`, `README-vertical.md`, `qa/vertical/`; this log.
+- Reason: recompose headlines above product UI for mobile readability at 1080x1920, retaining all eight scenes, original 60-second music and truthful claims. Text/UI are re-laid out for portrait. Keep conservative edge/bottom margins for social interface overlays without claiming universal platform safe-zone certification.
+- Validation: pending visual still review, encoding, duration/stream/full-decode checks and relevant source checks.
+- Rollback/recovery: independent new portrait files; original landscape variant stays available. No product edits, publication, paid calls or new dependencies.
+
+### 2026-09-17 — Portrait promotional film completed
+
+- Agent/session: Codex; separate agent built the additive preview and performed read-only portrait visual QA.
+- Status: complete; local 9:16 version delivered alongside unchanged landscape original.
+- Files: `artifacts/mooa-promo-20260917/source/render-vertical.mjs`, `mooa-resume-60s-vertical-1080x1920.mp4`, `poster-vertical.png`, `preview-vertical.html`, `README-vertical.md`, `qa/vertical/` source frames/contact sheet/encoded FINAL frame/media report; this log.
+- Result: 1080x1920, 60fps, exactly 60.000 seconds / 3,600 frames; H.264 video, 48kHz stereo AAC; 8,945,226 bytes. Same original music, eight scenes and verified product story, dedicated vertically stacked typography and enlarged product panels. FINAL explicitly retains answer evaluation, follow-up questions and report benefits. Conservative side/bottom margins; no platform publishing or safe-zone certification claimed.
+- Validation: 12 portrait stills reviewed; QUICK and FINAL enlarged frames independently reviewed; answer-bubble padding corrected; encoded FINAL frame checked. ffprobe assertions passed for dimensions/frame count/frame rate/both stream durations; complete FFmpeg decode passed. Renderer ESLint and Node syntax checks passed; preview script syntax and HTTP 200 verified; `git diff --check` clean. Application source did not change, so prior product typecheck/test results were not represented as a new run.
+- Preservation/recovery: landscape MP4 remains 10,594,282 bytes and its source/preview/poster were not edited. All pre-existing product changes remain protected. Portrait files are independent additions; no dependency, paid service, remote database, deployment or publication change.
+
+## 2026-09-17 — Codex: dismissible portrait video introduction on homepage
+
+- Agent/session: Codex; user requested the current portrait promo on the real homepage as a dismissible popup.
+- Status: implementation in progress; production deployment remains a separate final approval under AGENTS.md.
+- Protected baseline: `codex/legal-launch-design-20260912` at `b60494a3f6fa5002dc6b4e025bb97edc45259da4`; existing dirty legal/checkpoint/next-env edits and all prior landscape/portrait artifacts preserved. `src/app/page.tsx` was clean before this feature; only an additive import/mount is planned.
+- Files planned: new `src/components/home-promo-video.tsx`, `.module.css`, `.test.tsx`; additive mount in `src/app/page.tsx`; public marketing assets under `public/videos/`; this log.
+- Reason/behavior: show the 60-second portrait introduction once per tab visit, allow close button/Escape/backdrop dismissal and a manual reopen action. Native modal dialog supplies focus containment/inert background. Muted inline playback with native controls, reduced-motion preference respected, playback/source removed on dismissal. Use optimized self-hosted marketing video and poster; no third-party embed/tracker, personal data, or credentials.
+- Validation: pending interaction tests, lint/typecheck, browser desktop/mobile review, media checks and build. Read installed Next.js server/client, video, and public-folder guides before implementation.
+- Rollback/recovery: remove the two additive homepage lines and new feature/assets only; original home content and all prior agent work stay intact. No deployment, DB changes or paid action at this stage.
+
+### 2026-09-17 — Homepage portrait introduction ready for deployment approval
+
+- Agent/session: Codex; parallel agent authored nine interaction tests and performed an independent final read-only review.
+- Status: local implementation and verification complete. Not deployed; production approval is the remaining step required by AGENTS.md.
+- Files: `src/app/page.tsx` (one import and one mount); new `src/components/home-promo-video.tsx`, `home-promo-video.module.css`, `home-promo-video.test.tsx`; `public/videos/mooa-intro-vertical-20260917.mp4`, `.webp`, `.vtt`; this log.
+- Behavior: first arrival opens a native dismissible modal; X, Escape and backdrop close it. Closing removes the video source and stops playback. Session storage suppresses another automatic opening in the same tab, with an explicit replay button. Muted inline video, native playback controls, Korean captions, reduced-motion handling, retry/exit on media failure, focus containment/return and scroll restoration are included. The existing drawer coordination event folds the career drawer while the video opens.
+- Media: self-hosted H.264/AAC, 720x1280, 30 fps, 60.000-second video stream (60.010-second AAC/container duration), 2,902,516 bytes; 44,172-byte WebP poster. Both original 1080p advertisements remain intact.
+- Validation: 146 test files / 1,146 tests passed, including nine popup tests; typecheck passed; full ESLint passed with only two pre-existing unused-variable warnings. Production `next build` passed, including TypeScript and all 107 generated pages. The first sandboxed build could not fetch the existing Google font; retry with network permission passed without source/font changes. FFmpeg full decode and ffprobe stream checks passed. Browser QA confirmed automatic muted playback, X/Escape/backdrop close, source removal, session suppression, manual replay and focus return. Layout checked at 1280x720, 390x844 and 844x390 with visible close controls and no modal clipping. Responsive browser automation required screenshot-coordinate clicks for the zoomed replay button; actual replay and keyboard activation were verified. Independent source review found no definite defect.
+- Preservation/deployment: pre-existing legal/checkpoint work was not edited. Next.js regenerated its standard `next-env.d.ts` type import paths during dev/build verification. No deployment, credentials, database, paid service, tracking or dependency changes. Do not deploy unrelated uncommitted legal work as part of a popup-only release; review the release baseline first. Rollback scope is the two homepage additions and these new component/media files only, against baseline `b60494a3f6fa5002dc6b4e025bb97edc45259da4`.

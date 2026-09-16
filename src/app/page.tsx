@@ -7,6 +7,7 @@ import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
 import { ApplicationDocsDrawer } from "@/components/application-docs-drawer";
 import { LegalToolsDrawer } from "@/components/legal-tools-drawer";
 import { LandingEntry } from "@/components/landing-entry";
+import { HomePromoVideo } from "@/components/home-promo-video";
 import { PricingComparison } from "@/components/pricing-comparison";
 import landingStyles from "./landing-sections.module.css";
 import outcomeStyles from "./outcome-learning.module.css";
@@ -143,6 +144,7 @@ export default function HomePage() {
             읽는 사람은 자기가 할 일보다 구경거리를 먼저 권받게 됩니다. 볼
             사람은 버튼을 지나쳐 내려오면서 봅니다. */}
         <Link href="/result/sample" className="hero-sample">첨삭 예시 보기 <ArrowRight size={18}/></Link>
+        <HomePromoVideo />
         <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
       </section>
 
