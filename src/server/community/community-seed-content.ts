@@ -28,9 +28,7 @@ const seedItemSchema = z.object({
 });
 export type CommunitySeedItem = z.infer<typeof seedItemSchema>;
 
-// 호출 하나당 글 1개 · 댓글 1개만 만듭니다. 하루 세 번(마이그레이션의 세
-// cron.schedule) 서로 떨어진 시각에 이 함수가 불려서, 결과적으로 하루
-// 3개·댓글 3개가 되지만 전부 같은 순간에 한꺼번에 올라오지는 않습니다.
+// 하루 한 번 호출해 글 1개와 그 글의 운영팀 댓글 1개만 만듭니다.
 const SEED_JSON_SCHEMA = {
   type: "object",
   properties: {

@@ -3,7 +3,7 @@ import { createCommunityCommentSchema, createCommunityPostSchema } from "@/domai
 import { serviceClient } from "@/server/admin/admin-repository";
 import { generateCommunitySeedContent } from "@/server/community/community-seed-content";
 
-// docs/handoff-community-mobile.md 118행 이하: 매일 자동 글 3 · 댓글 3.
+// 매일 자동 글 1개와 해당 글의 운영팀 댓글 1개를 발행합니다.
 // Supabase pg_cron이 하루 한 번 이 라우트를 부릅니다(마이그레이션
 // 20260904030000_community_daily_seed.sql). 사람이 직접 배포·수동 호출할
 // 일이 없으므로 GET은 두지 않습니다.
@@ -32,13 +32,9 @@ export async function POST(request: NextRequest) {
 
   const supabase = serviceClient();
 
-  // 하루 최대 3개. 이 라우트는 서로 떨어진 시각에 세 번 불립니다(마이그레이션의
-  // 세 cron.schedule) — 한 번에 3개를 다 만들면 같은 순간에 글 3·댓글 3이
-  // 한꺼번에 올라와 오히려 자동화 티가 나기 때문입니다. 그날 이미 3개를 다
-  // 썼으면(크론이 더 불려도) 아무 것도 하지 않습니다(문서 143행 "하루 한
-  // 번만"의 정신을 "하루 세 번, 그 이상은 안 됨"으로 확장한 것입니다).
-  // 날짜 경계는 UTC 자정 — 중복 실행을 막는 용도일 뿐이라 한국 시간과
-  // 맞출 필요가 없습니다.
+  // 하루 최대 1개. 오전 9시(KST)에 한 번 호출하며, 같은 발행일에 이미
+  // 작성했다면 재호출에도 AI 생성 없이 종료합니다. 기존 UTC 자정 경계는
+  // 한국시간 오전 9시이므로 예약 발행 시각과 일치합니다.
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
   const { count, error: countError } = await supabase
@@ -51,7 +47,7 @@ export async function POST(request: NextRequest) {
     console.error("community_seed_count_failed", countError.message);
     return NextResponse.json({ error: "오늘 작성 여부를 확인하지 못했습니다." }, { status: 500 });
   }
-  if ((count ?? 0) >= 3) return NextResponse.json({ skipped: "already_seeded_today", postsToday: count });
+  if ((count ?? 0) >= 1) return NextResponse.json({ skipped: "already_seeded_today", postsToday: count });
 
   // 최근 제목과 겹치는 질문을 피하도록 프롬프트에 같이 넣습니다(오늘 이미
   // 쓴 것도 포함) — 주제 후보가 한정돼 있어 이 목록 없이는 하루 안에도
