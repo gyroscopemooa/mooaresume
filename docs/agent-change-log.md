@@ -7483,3 +7483,19 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - **한계(중요)**: 앱 안 삭제 버튼과 자동 삭제 로직은 아직 없습니다. 실제 삭제는 운영자가 수동으로 합니다. Play는 계정 생성 앱에 앱 안 삭제 경로도 요구할 수 있어 심사에서 걸릴 수 있습니다.
 - Validation: 루트 `tsc --noEmit`·`eslint src/app/account-deletion` 오류 없음. 로컬 3001 개발 서버에서 페이지 렌더 확인. 배포 후 `https://mooaresume.com/account-deletion` 확인 필요.
 - Rollback: `src/app/account-deletion/` 폴더 삭제.
+
+### 2026-09-19 — Claude: 계정 삭제 기능(스위치 OFF) — 앱 안 삭제 버튼 + 결제 기록 5년 보존 — 사용자 지시("만들되 스위치 OFF")
+
+- Agent: Claude. Play 데이터 보안 양식이 앱 안 삭제 경로를 요구할 수 있어 요청. 사용자가 "만들되 스위치 OFF로"를 선택.
+- **조사에서 찾은 위험(중요)**: (1) 거의 모든 표가 `auth.users` 삭제 시 cascade인데 `billing_orders`·`analysis_entitlements`·`interview_retry_orders`도 포함돼, 그대로 지우면 **방침이 약속한 5년 결제 기록 보관을 어깁니다.** (2) `billing_orders`/`analysis_entitlements`→`application_cases`, `analysis_entitlements`→`analysis_runs`, `analysis_runs`→`submission_snapshots`, `submission_snapshot_items`→`document_versions`, `reward_credits`→`billing_orders`가 `on delete restrict`라 cascade 순서에 따라 **삭제가 실패할 수 있습니다.** (3) 커뮤니티 첨부는 Storage에 있어 cascade로 지워지지 않습니다.
+- **추가(전부 신규 파일, 기존 결제·분석 코드는 건드리지 않음)**:
+  - `supabase/migrations/20260919020000_account_deletion.sql` — `billing_records_retained`(사용자 연결 열 없음, 5년 보관) + `delete_account_preserving_billing(uuid)`(security definer, service_role만 실행). 결제 기록을 복사한 뒤 restrict 순서대로 직접 지우고 마지막에 계정을 지우는 **단일 트랜잭션**(하나라도 실패하면 전부 되돌아감). 같은 날 다른 세션의 `20260919010000_*`와 접두사가 겹쳐 번호를 `...020000`으로 잡음.
+  - `src/server/account/delete-account.ts` — Storage(`community-attachments`, `application-documents`의 `<user id>/`)를 먼저 지우고, 실패하면 DB는 건드리지 않은 채 재시도 가능하게 중단한 뒤 RPC 호출.
+  - `src/app/api/account/delete/route.ts` — 스위치·Origin 필수 일치·로그인·확인 문구("계정 삭제") 검사 후 실행.
+  - `src/components/account-delete-form.tsx`(+css) — 삭제 버튼과 확인 UI. `app-my-page.tsx`(내 정보 탭)와 `/account-deletion` 페이지에 삽입.
+  - `src/lib/account-deletion.ts` — 스위치(`NEXT_PUBLIC_ACCOUNT_DELETION_ENABLED`, 기본 꺼짐)와 확인 문구. `.env.example`에 항목 추가.
+  - 테스트 8개(`delete-account.test.ts`, `account-deletion.test.ts`).
+- **스위치가 꺼져 있는 동안**: 버튼이 보이지 않고 API는 404입니다. 지금까지의 이메일 요청 방식이 그대로 동작합니다.
+- **한계·미검증(반드시 읽을 것)**: **DB 함수는 이 컴퓨터에서 실행해 보지 못했습니다**(Docker·Postgres 없음). restrict 목록은 마이그레이션 파일을 읽고 정리한 것이라 원격 DB와 다르면 함수가 오류를 내며 전부 되돌아갑니다. 켜기 전에 테스트 계정으로 확인해야 합니다. 빌드류(이력서·경력기술서·포트폴리오·AI 심층해설) 결제 내역은 Polar/Google 쪽 기록이 원장이라 `billing_records_retained`에 복사하지 않았습니다. `analysis_feedback`은 user_id만 null로 남고 내용은 유지됩니다. 5년이 지난 `billing_records_retained` 행을 지우는 작업은 만들지 않았습니다. `reward_credits.recipient_email`은 미수령 쿠폰이 계정과 무관하게 남습니다.
+- Validation: `tsc --noEmit` 오류 없음, ESLint 오류·경고 없음(수정 파일), Vitest 157 파일 / 1,229 테스트 통과. 로컬 3001에서 `/account-deletion` 렌더·콘솔 오류 없음 확인. 삭제 흐름 자체는 실행 검증 못 함.
+- Rollback: 신규 파일 삭제 + `app-my-page.tsx`·`account-deletion/page.tsx`의 `AccountDeleteForm` 두 줄 제거. 마이그레이션을 적용했다면 `drop function public.delete_account_preserving_billing(uuid); drop table public.billing_records_retained;`.

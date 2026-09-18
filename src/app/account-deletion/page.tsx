@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AccountDeleteForm } from "@/components/account-delete-form";
 import styles from "../privacy/page.module.css";
 
 export const metadata: Metadata = {
@@ -44,12 +45,16 @@ export default function AccountDeletionPage() {
           </p>
         </section>
 
+        <AccountDeleteForm showSignInHint />
+
         <section className={styles.section}>
           <h2>삭제되는 데이터</h2>
           <ul>
             <li>계정 정보(이메일 주소, 로그인 식별자)</li>
             <li>올려 주신 지원 자료(자기소개서, 채용공고, 이력서, 경력기술서, 포트폴리오와 그 밖의 첨부 문서에서 추출한 텍스트)</li>
             <li>분석 요청과 결과, 결과 화면에서 직접 고치신 내용</li>
+            <li>커뮤니티에 쓰신 글, 댓글, 첨부 파일</li>
+            <li>보유 중인 이용권(쓰지 않은 이용권은 삭제와 함께 사라집니다)</li>
           </ul>
         </section>
 

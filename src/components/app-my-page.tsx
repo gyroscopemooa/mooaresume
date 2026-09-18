@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CircleUser, Gift, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { AccountDeleteForm } from "./account-delete-form";
 import styles from "./app-my-page.module.css";
 
 /**
@@ -142,6 +143,8 @@ export function AppMyPage() {
         <li><Link href="/privacy">개인정보 처리방침 <ArrowRight/></Link></li>
       </ul>
     </section>
+
+    <AccountDeleteForm/>
 
     <p className={styles.privacy}><ShieldCheck/> <span>입력한 지원서는 비공개이며, 결제와 분석은 확인 화면을 거쳐서만 진행됩니다.</span></p>
   </div>;

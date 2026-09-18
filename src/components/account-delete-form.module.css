@@ -1,0 +1,16 @@
+.box { margin: 24px 0 0; padding: 20px; border: 1px solid #f0d4d0; border-radius: 12px; background: #fffaf9; }
+.box h2 { margin: 0 0 12px; font-size: 16px; color: #17221d; }
+.hint { margin: 24px 0 0; padding: 14px 16px; border-radius: 10px; background: #eef4f1; color: #4f6459; font-size: 13px; line-height: 1.8; }
+.hint a { color: #176b4a; text-decoration: underline; }
+.panel { display: grid; gap: 14px; }
+.panel ul { display: grid; gap: 8px; margin: 0; padding-left: 18px; }
+.panel li { color: #5f6d66; font-size: 13px; line-height: 1.8; }
+.panel b { color: #17221d; }
+.panel label { display: grid; gap: 8px; color: #41514a; font-size: 13px; }
+.panel input { min-height: 44px; padding: 0 12px; border: 1px solid #d8dfdb; border-radius: 8px; font-size: 16px; }
+.error { margin: 0; color: #b3261e; font-size: 13px; line-height: 1.7; }
+.actions { display: flex; gap: 10px; }
+.danger, .cancel { min-height: 44px; padding: 0 18px; border-radius: 8px; border: 0; font-size: 14px; font-weight: 700; cursor: pointer; }
+.danger { background: #b3261e; color: #fff; }
+.danger:disabled { background: #d9b4b0; cursor: not-allowed; }
+.cancel { background: #e8edea; color: #17221d; }
