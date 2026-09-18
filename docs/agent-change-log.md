@@ -7499,3 +7499,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - **한계·미검증(반드시 읽을 것)**: **DB 함수는 이 컴퓨터에서 실행해 보지 못했습니다**(Docker·Postgres 없음). restrict 목록은 마이그레이션 파일을 읽고 정리한 것이라 원격 DB와 다르면 함수가 오류를 내며 전부 되돌아갑니다. 켜기 전에 테스트 계정으로 확인해야 합니다. 빌드류(이력서·경력기술서·포트폴리오·AI 심층해설) 결제 내역은 Polar/Google 쪽 기록이 원장이라 `billing_records_retained`에 복사하지 않았습니다. `analysis_feedback`은 user_id만 null로 남고 내용은 유지됩니다. 5년이 지난 `billing_records_retained` 행을 지우는 작업은 만들지 않았습니다. `reward_credits.recipient_email`은 미수령 쿠폰이 계정과 무관하게 남습니다.
 - Validation: `tsc --noEmit` 오류 없음, ESLint 오류·경고 없음(수정 파일), Vitest 157 파일 / 1,229 테스트 통과. 로컬 3001에서 `/account-deletion` 렌더·콘솔 오류 없음 확인. 삭제 흐름 자체는 실행 검증 못 함.
 - Rollback: 신규 파일 삭제 + `app-my-page.tsx`·`account-deletion/page.tsx`의 `AccountDeleteForm` 두 줄 제거. 마이그레이션을 적용했다면 `drop function public.delete_account_preserving_billing(uuid); drop table public.billing_records_retained;`.
+
+### 2026-09-19 — Claude: 개인정보처리방침에 Google Play 결제·Google 애널리틱스·삭제 안내 추가 — 사용자 지시
+
+- Agent: Claude. Play Console 제출에서 방침과 실제 결제 방식이 다르면 심사에서 지적될 수 있어 요청.
+- **수정**: `src/app/privacy/page.tsx` 문구 5곳만. (1) 결제 항목에 "Google Play에서 설치한 앱에서는 Google Play에서 결제" 추가. (2) 국외 이전에 Google(구매 토큰·상품 번호 전달, 보관은 Google 정책과 법령) 추가. (3) 자동 수집에 Google 애널리틱스(GA4)를 명시 — 코드에 이미 있는 `G-XF0JRSBBZX`. (4) 보관 기간에 `/account-deletion` 링크. (5) 시행일 2026-08-31 → 2026-09-19.
+- 이용자에게 불리한 변경이 아니라 추가 고지라 방침 12번의 "7일 전 고지"는 적용하지 않았습니다. 이 판단은 법률 검토를 받은 것이 아닙니다.
+- **미확인**: Google에 전달하는 정보가 구매 토큰·상품 번호뿐인지는 검증 코드(`google-play-verify-route.ts`)만 보고 적었습니다. 법률 문구라서 변호사·운영자 최종 확인이 필요합니다.
+- Validation: `tsc`·ESLint 오류 없음, `research-consent-gate.test.ts` 27개 통과(방침 소스를 읽는 테스트), 로컬 렌더·콘솔 오류 없음.
+- Rollback: 해당 5곳을 이전 문구로 되돌림.
