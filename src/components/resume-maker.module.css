@@ -180,7 +180,9 @@
 @media (max-width: 560px) {
   .grid { grid-template-columns: 1fr; }
   .body { padding: 16px 14px 60px; }
-  .topbar { gap: 6px; padding: 0 12px; }
+  /* 폭이 모자라면 옆으로 밀리지 않고 두 줄로 접습니다(단추가 flex: none이라
+     한 줄에 두면 화면 밖으로 넘칩니다). */
+  .topbar { flex-wrap: wrap; gap: 6px; height: auto; min-height: 58px; padding: 8px 12px; white-space: normal; }
   .printButton { padding: 9px 11px; }
 }
 

@@ -7508,3 +7508,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - **미확인**: Google에 전달하는 정보가 구매 토큰·상품 번호뿐인지는 검증 코드(`google-play-verify-route.ts`)만 보고 적었습니다. 법률 문구라서 변호사·운영자 최종 확인이 필요합니다.
 - Validation: `tsc`·ESLint 오류 없음, `research-consent-gate.test.ts` 27개 통과(방침 소스를 읽는 테스트), 로컬 렌더·콘솔 오류 없음.
 - Rollback: 해당 5곳을 이전 문구로 되돌림.
+
+### 2026-09-19 — Claude: 이력서 만들기 헤더가 좁은 폰에서 옆으로 밀리는 문제 — 두 줄로 접기 — 사용자 요청
+
+- Agent: Claude. 사용자 보고: 앱 이력서 화면 헤더가 너무 길어 오른쪽으로 밀리고 "인쇄 · PDF 저장" 단추가 튀어나옴.
+- 원인: `.topbar`가 `height: 58px; white-space: nowrap`이고 단추가 전부 `flex: none`이라 폭이 모자라면 줄지 않고 화면 밖으로 넘침.
+- 변경: `src/components/resume-maker.module.css`의 `@media (max-width: 560px)` 블록의 `.topbar` 한 줄만 수정(`flex-wrap: wrap; height: auto; min-height: 58px; white-space: normal`). 다른 규칙·데스크톱 레이아웃은 그대로.
+- Validation: 360px 뷰포트(개발 서버 3001, `/resume`)에서 가로 넘침 0(문서 폭 360=화면 360), 헤더 2줄, 인쇄 · PDF 저장 단추 전체 표시 확인. 실기기 확인은 못 함. `/career` 첫 페이지는 넘침 없음 확인; 그 외 커리어 하위 화면은 미확인.
+- Rollback: 위 `.topbar` 줄을 `.topbar { gap: 6px; padding: 0 12px; }`로 되돌림.
