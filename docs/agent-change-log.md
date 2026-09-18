@@ -7434,3 +7434,52 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Protected worktree: `src/components/career-ai-sample-design-three.module.css`, `src/components/career-ai-sample-design-three.tsx`, and `artifacts/` were already modified/untracked and will not be edited or staged.
 - Validation/rollback: pending. Rollback will be the resulting focused commit; the database policy change will require a compensating migration if ever intentionally restored.
 
+
+## 2026-09-19 — 직업가치 캐릭터 카드 이미지 30장 연결, 예시 페이지 뒤로가기 변경
+
+- Agent/session: Claude, requested by the user.
+- Status: 로컬 검증 완료, 미커밋.
+- 변경: 사용자가 `이미지/`(저장소 루트, 미추적)에 넣은 PNG 30장을 카드 내용으로 코드를 확인해 `public/images/career-work-value-examples/{code}.webp`(30장, quality 90)로 변환. 단일 문자 6장(`career-work-value-characters/`)은 원본이 없어 아직 비어 있음. `career-ai-sample-design-three.tsx`의 상단 "뒤로가기"를 고정 링크에서 브라우저 뒤로가기(`router.back()`, 기록 없으면 대체 링크)로 변경, `.module.css`에 `.backButton` 추가.
+- 참고: `이미지/`의 `02_25_36~40` 4장은 AI 카드 중복. CL 카드 상단 문구가 "RIASEC 캐릭터 예시"로 되어 있음(원본 이미지 문제).
+- Validation: `tsc` 통과, 브라우저(3001)에서 AS 카드 표시·뒤로가기 동작 확인.
+- Rollback: 위 파일/이미지 삭제·되돌리기.
+
+## 2026-09-19 — 심층해설 받기 버튼 상단 고정, 직업가치 결과 계정 복원
+
+- Agent/session: Claude, requested by the user.
+- 변경: `career-ai-cta-bar.tsx/.module.css`(신규) — 상단 고정(sticky) "심층해설 받기" 버튼. 직업흥미·직업가치의 결과/캐릭터 해설 화면과 심층해설 예시 화면(interest·work_values)에 추가. `career-values-result.tsx` — 브라우저 임시 기록이 없으면 `/api/career-assessments/latest?assessmentCode=work_values`로 계정 저장본을 불러오도록 복원 로직 추가(직업흥미 결과 화면과 동일).
+- Validation: `tsc` 통과, 브라우저(3001)에서 캐릭터 예시·심층해설 예시 화면의 버튼이 스크롤해도 상단에 고정되는 것 확인.
+- Rollback: 위 파일 되돌리기.
+
+## 2026-09-19 — 결제 후 심층해설 결과를 예시 디자인의 새 페이지로
+
+- Agent/session: Claude, requested by the user.
+- 변경: `/career/ai/report?build=` 신규 라우트 + `career-ai-report-page.tsx`(예시 화면 CSS 재사용, 실제 AI 출력 필드로 구성). `career-ai-preparation.tsx`의 `runExecute` 성공 시 결과를 이 탭 sessionStorage에 담고 새 페이지로 `router.replace`(저장이 막히면 기존처럼 하단 표시). `career-report-hero.ts`로 히어로 계산 분리. 서버 저장 없음(기존 정책 유지).
+- Validation: `tsc`·eslint 통과, 샘플 데이터를 sessionStorage에 넣어 3001에서 렌더 확인(실제 결제·AI 호출은 안 함).
+- Rollback: `runExecute`의 sessionStorage/`router.replace` 블록 제거 + 신규 파일 삭제.
+
+## 2026-09-19 — 심층해설 결과 저장·다시 보기, 예시와 같은 구성으로 확장
+
+- Agent/session: Claude, requested by the user ("기록 저장돼서 다시 볼 수 있어야", "예시처럼 내용 많아야").
+- 변경: (1) `career-ai-contract.ts` 출력 스키마에 deepInterpretation·personalityKeywords·workStrengths·growthDirections·idealEnvironments·coreValue·decisionStyle·communicationPattern·teamSynergy·coaching(3) 추가(필수), `career-interpretation-gateway.ts` 지시문 9~12 추가·PROMPT_VERSION 2026-09-19 → 응답이 길어져 토큰 비용 증가. (2) 마이그레이션 `20260919010000_career_ai_builds_output.sql`(output jsonb) — **미적용**. `saveBuildOutput`(build-lifecycle) + execute 라우트가 결과 저장(저장 실패해도 응답은 돌려줌). (3) `GET /api/career-ai-builds/[buildId]`, `GET /api/career-ai-builds/history` 신규. (4) `career-ai-report-page.tsx`를 예시와 같은 섹션 구성으로 재작성, 이 탭에 없으면 서버에서 불러옴. (5) `career-ai-report-history.tsx` — `/career/profile` 하단 "내 심층해설 기록". (6) 결과 요약 문장이 h2로 렌더돼 글자가 컸던 문제 수정.
+- 개인정보: 결과에 이력서·자소서 인용문이 섞일 수 있고 이제 서버(본인만 읽는 RLS)에 남는다.
+- Validation: tsc·eslint·전체 테스트 1221개 통과, 브라우저에서 전체 필드 샘플로 렌더 확인. 실제 결제·AI 호출·DB 저장/복원은 미검증.
+- Rollback: 스키마/프롬프트 되돌리고 신규 파일 삭제. 마이그레이션은 적용 전이면 삭제.
+
+### 2026-09-19 — Claude: TWA 재빌드(`/app` 시작 주소) + 아이콘 URL 수정 — 사용자 지시
+
+- Agent: Claude. 대상 저장소는 `C:\6.mooaresume-android`(별도 git). 웹은 `82db904`로 main에 push·배포 완료(`/app` 200 확인) 후 진행.
+- **수정**: `C:\6.mooaresume-android\twa-manifest.json`의 `iconUrl`/`maskableIconUrl`을 `https://mooaresume.com/icon-512` → `/icons/icon-512.png`, `/icons/icon-maskable-512.png`로 변경. 웹 아이콘이 `public/icons/*`로 옮겨지며 옛 `/icon-512` 라우트가 삭제(404)돼 `bubblewrap update`가 "Failed to download icon"으로 실패했기 때문입니다.
+- 실행: `npx @bubblewrap/cli update --skipVersionUpgrade`(성공, `app/build.gradle`의 `launchUrl: '/app?source=twa'` 반영 확인) → `gradlew.bat assembleRelease bundleRelease`(성공) → apksigner(APK)·jarsigner(AAB) 서명 성공.
+- 산출물(git 미추적): `app-release-bundle.aab`(약 3.5MB), `app-release-signed.apk`(약 3.2MB). versionCode는 1 그대로.
+- **미검증**: 실기기 설치·실행, Play Console 업로드, 실구매. 안드로이드 저장소 변경(`twa-manifest.json`, README, 생성된 `app/`)은 아직 커밋하지 않았습니다.
+- Rollback: `twa-manifest.json`의 두 아이콘 URL·`startUrl`을 되돌리고 `bubblewrap update` 후 다시 빌드.
+
+### 2026-09-19 — Claude: 계정·데이터 삭제 요청 안내 페이지 `/account-deletion` 추가 — Play 데이터 보안 양식용
+
+- Agent: Claude. 사용자가 Play Console 데이터 보안 설문에서 "계정 삭제 URL"을 요구받아 요청.
+- **추가**: `src/app/account-deletion/page.tsx`(신규 1개). 개인정보처리방침의 스타일(`../privacy/page.module.css`)을 그대로 재사용. 기존 파일은 건드리지 않았습니다.
+- 내용은 방침에 이미 적힌 사실만 옮겼습니다: 삭제는 `support@mooaresume.com` 이메일 요청, 10일 이내 처리, 지원 자료 개별 삭제 가능, 결제·환불 5년·접속 기록 3개월 보관. 삭제 대상에 커뮤니티 글·댓글은 넣지 않았습니다(삭제되는지 코드로 확인하지 못함).
+- **한계(중요)**: 앱 안 삭제 버튼과 자동 삭제 로직은 아직 없습니다. 실제 삭제는 운영자가 수동으로 합니다. Play는 계정 생성 앱에 앱 안 삭제 경로도 요구할 수 있어 심사에서 걸릴 수 있습니다.
+- Validation: 루트 `tsc --noEmit`·`eslint src/app/account-deletion` 오류 없음. 로컬 3001 개발 서버에서 페이지 렌더 확인. 배포 후 `https://mooaresume.com/account-deletion` 확인 필요.
+- Rollback: `src/app/account-deletion/` 폴더 삭제.
