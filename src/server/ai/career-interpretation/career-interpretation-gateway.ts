@@ -11,7 +11,7 @@ import { callDocumentBuildModel, type DocumentBuildModelOptions } from "@/server
 
 /** AI 심층해설 모델 호출. 응답 봉투·strict 스키마 처리는 `document-build-model.ts`가 합니다. */
 
-export const CAREER_INTERPRETATION_PROMPT_VERSION = "career-interpretation-2026-09-12";
+export const CAREER_INTERPRETATION_PROMPT_VERSION = "career-interpretation-2026-09-19";
 
 /**
  * 지시문. 검사 점수는 성격·적성 "판정"이 아니라 "응답 경향"이라는 선을
@@ -30,6 +30,10 @@ export function buildCareerInterpretationInstructions(): string {
     "5. experiencePrompts는 사용자가 스스로 답할 수 있는 실제 경험 질문으로 쓰세요(예: '~한 경험이 있나요?'). AI가 경험을 대신 지어내면 안 됩니다.",
     "6. jobPostingQuestions는 채용 공고나 면접에서 사용자가 직접 확인할 수 있는 조건·질문으로 쓰세요.",
     "7. limitations에는 이 해설이 직무 적합도나 채용 결과를 판정하지 않는다는 점을 반드시 포함하세요.",
+    "9. deepInterpretation은 검사 결과 전체를 3~5문장으로 풀어 쓴 해석입니다. 점수 나열이 아니라 여러 축이 함께 나타난 의미와, 실제 경험·공고로 확인할 점을 쓰세요.",
+    "10. personalityKeywords·workStrengths·growthDirections·idealEnvironments는 각각 정확히 5개, 짧은 명사구/문장으로 쓰세요. 성격 판정이 아니라 '응답 경향'과 '확인해 볼 점' 어조를 지키고, growthDirections는 약점 지적이 아니라 시도해 볼 방향으로 쓰세요.",
+    "11. coreValue·decisionStyle·communicationPattern·teamSynergy는 각각 1~2문장, 검사 결과에서 읽히는 경향을 가설로 쓰세요.",
+    "12. coaching은 정확히 3개: '취업 코칭'(지원서·면접), '진로 코칭'(직무·산업 탐색), '커리어 코칭'(성장·기록). 각각 summary 1개와 items 3개(제목+2문장 이내 실행 제안)를 쓰세요. 합격·성과를 보장하는 표현은 금지입니다.",
     "8. resumeText/coverLetterText/jobPostingText가 주어지면 그 안에 실제로 적힌 내용만 근거로 쓰고, 없는 경험이나 자격을 만들지 마세요.",
   ].join("\n");
 }

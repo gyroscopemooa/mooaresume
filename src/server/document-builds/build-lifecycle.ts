@@ -120,6 +120,12 @@ export async function finishBuildRun(target: BuildTable, buildId: string): Promi
   if (error) throw new BuildStoreError(error.message, "FINISH_FAILED");
 }
 
+/** 만든 결과를 본인이 다시 볼 수 있게 저장한다(career_ai_builds.output). 실패해도 결제한 결과는 응답으로 돌려주므로 호출자가 잡는다. */
+export async function saveBuildOutput(target: BuildTable, buildId: string, output: unknown): Promise<void> {
+  const { error } = await serviceClient().from(target.table).update({ output }).eq("id", buildId);
+  if (error) throw new BuildStoreError(error.message, "FINISH_FAILED");
+}
+
 /**
  * 실패했으니 되돌려 줍니다. 결제한 사람이 모델 오류 한 번으로 빈손이 되면 안
  * 됩니다. 세 번까지 되돌리고 그다음에는 FAILED로 둡니다 — 계속 되돌리면 한 번

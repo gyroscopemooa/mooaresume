@@ -7,6 +7,7 @@ import { useState } from "react";
 import { getCareerAiSample, type CareerAiSampleScope } from "@/domain/career-ai-sample";
 import { getRiasecCharacterProfile } from "@/domain/career-interest";
 import { getWorkValueCharacterProfile } from "@/domain/career-work-values";
+import { CareerAiCtaBar } from "./career-ai-cta-bar";
 import styles from "./career-ai-sample-design-three.module.css";
 
 type HeroCharacter = { code: string; topLabel: string; subHeading: string; descriptor: string; imagePath: string; badge: string; comboSummary: string; supportLine?: string; focusSummary: string; backHref: string; isSpecialTheme?: boolean };
@@ -169,6 +170,7 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
 
   return <main className={`${styles.page} ${hero?.isSpecialTheme ? styles.isTheme : ""}`}>
     <header className={styles.topbar}><button type="button" className={styles.backButton} onClick={goBack}><ArrowLeft />뒤로가기</button><h1>Career Insight</h1><button type="button" onClick={() => void shareResult()} aria-label="결과 공유"><Share2 /></button></header>
+    {(scope === "interest" || scope === "work_values") && <CareerAiCtaBar scope={scope} top={75} />}
     <main className={styles.container}>
       <section className={styles.heroCard}>
         <div className={styles.heroCopy}>

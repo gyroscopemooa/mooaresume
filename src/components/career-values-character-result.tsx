@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Copy, ImageOff, Mail, Share2 } from "lucide-react";
 import { useState } from "react";
 import type { WorkValueCharacterProfile } from "@/domain/career-work-values";
+import { CareerAiCtaBar } from "./career-ai-cta-bar";
 import styles from "./career-values-character-result.module.css";
 
 /**
@@ -41,6 +42,7 @@ export function CareerValuesCharacterResult({ profile, example = false }: { prof
   };
 
   return <main className={styles.page}>
+    <CareerAiCtaBar scope="work_values" />
     <header className={styles.topbar}>
       <Link href={resultHref}><ArrowLeft />결과로 돌아가기</Link>
       <span>MOOA CAREER · WORK VALUE CHARACTER</span>

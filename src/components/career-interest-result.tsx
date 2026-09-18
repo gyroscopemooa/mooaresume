@@ -7,6 +7,7 @@ import { ArrowRight, CheckCircle2, Cloud, Info, RotateCcw, ShieldCheck } from "l
 import { Radar, RadarChart, PolarAngleAxis, PolarGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { INTEREST_DIMENSIONS, getInterestProfile, scoreCareerInterest, type InterestAnswer, type InterestScore } from "@/domain/career-interest";
 import { CareerAssessmentStorageNotice } from "./career-assessment-storage-notice";
+import { CareerAiCtaBar } from "./career-ai-cta-bar";
 import styles from "./work-style-assessment.module.css";
 
 const storageKey = "mooa-career-interest-answers-v1";
@@ -57,6 +58,7 @@ export function CareerInterestResult() {
   const savedDate = saved?.completedAt ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(saved.completedAt)) : null;
 
   return <main className={styles.result}>
+    <CareerAiCtaBar scope="interest" />
     <div className={styles.resultHero}><span><CheckCircle2 />{isSavedResult ? "저장 기록 불러옴" : "탐색 완료"}</span><h1>{profile.code} · {profile.typeName}</h1><p>{profile.headline}</p><small>상위 3개 RIASEC 영역을 순서대로 적은 탐색 코드입니다. {isSavedResult ? `${savedDate ? `${savedDate}에 ` : ""}계정에 저장한 결과입니다.` : "직업 적합성·능력·채용 결과를 판정하지 않습니다."}</small></div>
     <nav className={styles.resultNavigation} aria-label="결과 화면 이동">
       <span className={styles.resultNavigationCurrent}><small>01</small>기본 결과</span>

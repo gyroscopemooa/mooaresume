@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ChangeEvent } from "react";
 import { ArrowRight, BrainCircuit, CheckCircle2, FileText, LayoutDashboard, LoaderCircle, LockKeyhole, ShieldCheck, Target, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -9,37 +10,10 @@ import { CAREER_AI_SAMPLE_SCOPES, getCareerAiSample } from "@/domain/career-ai-s
 import { CAREER_AI_COMBINED_PRICE_KRW, CAREER_AI_SINGLE_PRICE_KRW } from "@/domain/builder-pricing";
 import { CAREER_AI_MATERIAL_MAX_CHARS, type CareerInterpretationOutput } from "@/domain/career-ai-contract";
 import { LOCAL_DOCUMENT_ACCEPT } from "@/lib/local-document";
-import { scoreCareerInterest, getInterestProfile, getRiasecCharacterProfile, type InterestAnswer } from "@/domain/career-interest";
-import { scoreWorkValues, getWorkValueProfile, getWorkValueCharacterProfile, type WorkValueAnswer } from "@/domain/career-work-values";
+import { computeReportHero, type ReportHero } from "@/domain/career-report-hero";
+import { CAREER_AI_REPORT_STORAGE_PREFIX } from "@/domain/career-report-hero";
 import styles from "./career-ai-preparation.module.css";
 import { AppPaidToolNotice, useInstalledApp } from "@/components/app-paid-tool-gate";
-
-type ReportHero = { code: string; title: string; descriptor: string; imagePath: string; badge: string };
-
-/**
- * 실제 결제 후 리포트(`CareerAiReportView`)에 캐릭터 포스터를 붙이기 위한
- * 히어로 카드 — 직업흥미·직업가치처럼 캐릭터 카드 체계가 있는 scope만
- * 만든다. 업무성향·종합은 카드 체계가 없어 항상 null이다.
- */
-function computeReportHero(scope: Scope, interestRaw: string | null, valuesRaw: string | null): ReportHero | null {
-  try {
-    if (scope === "interest" && interestRaw) {
-      const scores = scoreCareerInterest(JSON.parse(interestRaw) as Record<string, InterestAnswer>);
-      const profile = getInterestProfile(scores);
-      const character = getRiasecCharacterProfile(profile.code);
-      return { code: character.code, title: character.cardTitle, descriptor: character.descriptor, imagePath: character.imagePath, badge: "RIASEC 캐릭터" };
-    }
-    if (scope === "work_values" && valuesRaw) {
-      const scores = scoreWorkValues(JSON.parse(valuesRaw) as Record<string, WorkValueAnswer>);
-      const profile = getWorkValueProfile(scores);
-      const character = getWorkValueCharacterProfile(profile.code);
-      return { code: character.code, title: character.title, descriptor: character.descriptor, imagePath: character.imagePath, badge: "WORK VALUES 캐릭터" };
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
 
 const MATERIAL_LABEL: Record<MaterialField, string> = { resumeText: "이력서", coverLetterText: "자기소개서", jobPostingText: "채용 공고" };
 const MATERIAL_FIELD_CONFIG: Array<{ field: MaterialField; id: string; placeholder: string }> = [
@@ -84,6 +58,7 @@ function isAssessmentKey(value: string): value is AssessmentKey {
 type ExecutionPhase = "idle" | "creating_checkout" | "generating" | "done" | "error";
 
 export function CareerAiPreparation({ scope }: { scope: Scope }) {
+  const router = useRouter();
   // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
   // 정책이 앱 안에서의 외부 결제를 금지합니다.
   const inApp = useInstalledApp();
@@ -175,14 +150,20 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
         setPhase("error");
         return;
       }
+      try { window.localStorage.removeItem(MATERIAL_STORAGE_KEY); } catch { /* 다음 구매 때 새로 덮어씁니다 */ }
+      // 결과는 서버에 저장하지 않으므로, 이 탭에만 담아 두고 예시와 같은 디자인의 새 페이지로 보냅니다.
+      try {
+        window.sessionStorage.setItem(`${CAREER_AI_REPORT_STORAGE_PREFIX}${buildId}`, JSON.stringify({ scope, output: payload.output }));
+        router.replace(`/career/ai/report?build=${encodeURIComponent(buildId)}`);
+        return;
+      } catch { /* 저장이 막힌 브라우저는 아래처럼 이 화면에 그대로 보여 줍니다 */ }
       setReport(payload.output);
       setPhase("done");
-      try { window.localStorage.removeItem(MATERIAL_STORAGE_KEY); } catch { /* 다음 구매 때 새로 덮어씁니다 */ }
     } catch {
       setErrorMessage("네트워크 오류로 심층해설을 만들지 못했습니다.");
       setPhase("error");
     }
-  }, []);
+  }, [router, scope]);
 
   useEffect(() => {
     if (!pendingBuildId) return;

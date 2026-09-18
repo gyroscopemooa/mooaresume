@@ -6,7 +6,7 @@ import { checkDocumentBuildPayment } from "@/server/billing/document-build-check
 import { createCareerInterpretationGatewayFromEnv } from "@/server/ai/career-interpretation/career-interpretation-gateway";
 import { buildCareerInterpretationRequest, type CareerAiScope } from "@/server/career/career-ai-request-builder";
 import { selectLatestAssessments, type AssessmentSessionRow } from "@/server/career/assessment-history";
-import { claimBuildRun, finishBuildRun, loadBuild, releaseBuildRun, MAX_BUILD_ATTEMPTS } from "@/server/document-builds/build-lifecycle";
+import { claimBuildRun, finishBuildRun, saveBuildOutput, loadBuild, releaseBuildRun, MAX_BUILD_ATTEMPTS } from "@/server/document-builds/build-lifecycle";
 import { careerAiBuildTable, getCareerAiBuildDefinition } from "@/server/document-builds/products";
 
 export const runtime = "nodejs";
@@ -109,6 +109,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ bu
 
   try {
     const result = await createCareerInterpretationGatewayFromEnv().interpret(interpretationRequest);
+    try { await saveBuildOutput(careerAiBuildTable, build.id, result.output); }
+    catch (saveError) { console.error("career_ai_build_output_save_failed", JSON.stringify({ buildId: build.id, detail: saveError instanceof Error ? saveError.message.slice(0, 200) : "UNKNOWN" })); }
     await finishBuildRun(careerAiBuildTable, build.id);
     return NextResponse.json({ output: result.output }, { status: 200 });
   } catch (error) {

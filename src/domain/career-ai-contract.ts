@@ -16,6 +16,12 @@ export const careerInterpretationRequestSchema = z.object({
   jobPostingText: z.string().min(1).max(CAREER_AI_MATERIAL_MAX_CHARS).optional(),
 }).refine((request) => request.workStyleScores || request.interestScores || request.workValueScores, { message: "최소 한 종류의 검사 결과가 필요합니다." });
 
+const coachingSchema = z.object({
+  area: z.enum(["취업 코칭", "진로 코칭", "커리어 코칭"]),
+  summary: z.string().min(1).max(300),
+  items: z.array(z.object({ title: z.string().min(1).max(30), text: z.string().min(1).max(240) })).min(3).max(3),
+});
+
 const evidenceSchema = z.object({ source: z.enum(["work_style", "interest", "work_value", "resume", "cover_letter", "job_posting"]), quote: z.string().min(1).max(300) });
 export const careerInterpretationOutputSchema = z.object({
   schemaVersion: z.literal("1.0"),
@@ -24,6 +30,17 @@ export const careerInterpretationOutputSchema = z.object({
   experiencePrompts: z.array(z.string().min(1).max(240)).max(5),
   jobPostingQuestions: z.array(z.string().min(1).max(240)).max(5),
   limitations: z.array(z.string().min(1).max(240)).min(1).max(3),
+  // 2026-09-19: 심층해설 예시 화면과 같은 구성을 채우기 위해 늘린 항목. 모두 검사 결과·제공 자료에서 나온 "가설"이며 직업·합격을 단정하지 않는다.
+  deepInterpretation: z.string().min(1).max(700),
+  personalityKeywords: z.array(z.string().min(1).max(60)).min(5).max(5),
+  workStrengths: z.array(z.string().min(1).max(80)).min(5).max(5),
+  growthDirections: z.array(z.string().min(1).max(80)).min(5).max(5),
+  idealEnvironments: z.array(z.string().min(1).max(80)).min(5).max(5),
+  coreValue: z.string().min(1).max(240),
+  decisionStyle: z.string().min(1).max(240),
+  communicationPattern: z.string().min(1).max(240),
+  teamSynergy: z.string().min(1).max(240),
+  coaching: z.array(coachingSchema).min(3).max(3),
 });
 
 export type CareerInterpretationRequest = z.infer<typeof careerInterpretationRequestSchema>;
@@ -31,6 +48,6 @@ export type CareerInterpretationOutput = z.infer<typeof careerInterpretationOutp
 
 const forbiddenClaims = [/합격\s*확률/, /취업\s*확률/, /당신에게\s*맞는\s*직업은/, /진단/, /장애/, /질환/];
 export function validateCareerInterpretationOutput(output: CareerInterpretationOutput) {
-  const text = [output.profileSummary, ...output.workEnvironmentHypotheses.flatMap((item) => [item.title, item.description]), ...output.experiencePrompts, ...output.jobPostingQuestions, ...output.limitations].join(" ");
+  const text = [output.profileSummary, ...output.workEnvironmentHypotheses.flatMap((item) => [item.title, item.description]), ...output.experiencePrompts, ...output.jobPostingQuestions, ...output.limitations, output.deepInterpretation, ...output.personalityKeywords, ...output.workStrengths, ...output.growthDirections, ...output.idealEnvironments, output.coreValue, output.decisionStyle, output.communicationPattern, output.teamSynergy, ...output.coaching.flatMap((item) => [item.summary, ...item.items.flatMap((entry) => [entry.title, entry.text])])].join(" ");
   return forbiddenClaims.filter((pattern) => pattern.test(text)).map((pattern) => `금지된 결론 또는 표현: ${pattern}`);
 }
