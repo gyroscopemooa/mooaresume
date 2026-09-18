@@ -7426,3 +7426,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
   - `src/components/career-ai-sample-design-three.tsx`, `src/components/career-values-reflection.tsx`, `src/components/career-values-result.tsx`, `src/domain/career-work-values.test.ts`(신규) — 위 변경에 맞춘 연동 수정과 테스트 추가.
 - Validation(배포 세션이 재확인): 루트 `npm run typecheck` 통과, `npm run lint` 오류 0/기존 무관 경고 2(위 항목과 동일한 경고), `npm run test` 155개 파일 / 1,221개 테스트 전부 통과.
 - Rollback: 이 커밋에서 위 파일들만 되돌리면 원상복구(대시보드 버그 수정 전 상태로 돌아가면 직업가치/업무성향 중 하나만 완료 시 상태표 오표시가 재현됨).
+## 2026-09-19 — Community seed topic diversification and comment deletion removal
+
+- Agent/session: Codex, requested by the user.
+- Status: in progress.
+- Intended change: retain the existing one-editorial-post-per-KST-day guard and 09:00 KST cron schedule; diversify automatic lounge posts across job search, career, application, and work-life/transition topics rather than the production-job-heavy prompt. Remove comment deletion from both lounge UIs and its server route, and add a forward-only migration that revokes the comment-delete RLS policy. Existing comments are preserved.
+- Protected worktree: `src/components/career-ai-sample-design-three.module.css`, `src/components/career-ai-sample-design-three.tsx`, and `artifacts/` were already modified/untracked and will not be edited or staged.
+- Validation/rollback: pending. Rollback will be the resulting focused commit; the database policy change will require a compensating migration if ever intentionally restored.
+

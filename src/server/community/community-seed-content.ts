@@ -97,3 +97,19 @@ export async function generateCommunitySeedContent(options: GenerateCommunitySee
   const envelope = responsesEnvelopeSchema.parse(await response.json());
   return seedItemSchema.parse(JSON.parse(extractOutputText(envelope)) as unknown);
 }
+const topicGuides = {
+  "job-search": "취업 준비: 지원 일정, 첫 취업, 채용 탐색, 공백기, 지원 전략",
+  career: "진로·직무 고민: 직무 탐색, 전공과 다른 진로, 강점 정리, 커리어 방향",
+  application: "지원서 고민: 경험 정리, 이력서·자기소개서 표현, 포트폴리오, 면접 준비",
+  "work-life": "이직·직장생활 고민: 이직 판단, 적응, 업무 관계, 번아웃, 커리어 전환",
+} as const satisfies Record<(typeof communityTopics)[number], string>;
+
+export function selectCommunitySeedTopic(recentTopics: readonly string[]) {
+  const counts = new Map(communityTopics.map((topic) => [topic, 0]));
+  for (const topic of recentTopics) {
+    if (counts.has(topic as (typeof communityTopics)[number])) {
+      counts.set(topic as (typeof communityTopics)[number], (counts.get(topic as (typeof communityTopics)[number]) ?? 0) + 1);
+    }
+  }
+  return communityTopics.reduce((selected, topic) => (counts.get(topic)! < counts.get(selected)! ? topic : selected), communityTopics[0]);
+}

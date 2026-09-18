@@ -1,0 +1,13 @@
+{
+  "file": "original-score.wav",
+  "duration_seconds": 60.0,
+  "sample_frames": 2880000,
+  "sample_rate": 48000,
+  "channels": 2,
+  "encoding": "pcm_s24le",
+  "integrated_loudness_lufs": -16.08,
+  "true_peak_dbtp": -1.29,
+  "loudness_range_lu": 4.2,
+  "clipping": false,
+  "validation": "Independent ffprobe metadata inspection and FFmpeg loudnorm measurement of final mastered WAV."
+}

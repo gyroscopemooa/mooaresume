@@ -1,0 +1,12 @@
+Use case: ads-marketing
+Asset type: 16:9 cinematic hero backdrop for opening and ending of a premium Korean AI resume-service brand film.
+Primary request: Generate ONE exquisitely polished cinematic abstract luxury technology advertising frame at 3840x2160, 16:9 landscape.
+Scene/backdrop: Very dark forest emerald-black studio environment, approximately #061610. Soft seamless depth, dark reflective studio floor. Left 45 percent is almost entirely clean dark negative space for titles that will be added later.
+Subject: A single elegant sculptural floating sheet or broad ribbon of frosted architectural glass, gently folded and curled into a graceful smooth open loop. It evokes a blank page transformed into possibility without any literal document marks. The complete sculpture occupies primarily the RIGHT 55 percent of the image and stays comfortably inside frame. Asymmetrical poised form with a broad translucent plane and one exquisite curved edge; elevated just above the floor with a soft reflection.
+Style/medium: Ultra-refined physically based 3D luxury product-film render, tactile premium glass, cinematic microcontrast, impeccable optical realism, sophisticated premium technology launch-film art direction.
+Lighting/mood: Restrained luminous jade and warm ivory edge lighting, beautiful realistic internal refractions and delicate caustics, subtle rim light separated from deep shadows, quiet confident and aspirational. Elegantly concentrated highlights rather than bright bloom.
+Color palette: Near-black emerald, deep jade, pale translucent frosted glass, warm ivory highlights. Very restrained.
+Materials/textures: Glass transitions between satin frost and clear polished bevels; immaculate surfaces; convincingly substantial but delicate material.
+Composition/framing: Wide cinematic 16:9 frame, sculpture centered near x=74%, y=49%, gently angled in three-quarter view. Left side clean title-safe dark gradient, no bright highlights in left half. Right-side sculptural object at large scale with purposeful breathing room. No letterbox bars.
+Text: None.
+Constraints: ONE image. No text, letters, numbers, words, watermark, signature, logos, people, hands, UI, literal resume pages, icons, frames, charts, heavy fog, scattered decorative objects. No gaudy RGB, no cyberpunk neon, no excessive particles. It must feel like a real expensive international brand film still, not stock illustration.

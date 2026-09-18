@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Brain, BriefcaseBusiness, CheckCircle2, ClipboardList, Download, FlaskConical, Link2, LockKeyhole, Share2, Target, TrendingUp, Users } from "lucide-react";
 import { useState } from "react";
 import { getCareerAiSample, type CareerAiSampleScope } from "@/domain/career-ai-sample";
@@ -129,6 +129,7 @@ const SAMPLE_COPY: Record<CareerAiSampleScope, { personalityKeywords: string[]; 
 };
 
 export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScope }) {
+  const router = useRouter();
   const sample = getCareerAiSample(scope);
   const hero = getHeroCharacter(scope, sample.code);
   const copy = SAMPLE_COPY[scope];
@@ -156,10 +157,18 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
     if (navigator.share) { await navigator.share(shareData); return; }
     await copyResultLink();
   };
-  const backHref = hero?.backHref ?? `/career/ai?scope=${scope}`;
+  // 진짜 브라우저 "뒤로가기"입니다. 캐릭터 해설에서 여기로 왔으면 캐릭터
+  // 해설로, 기본 결과의 "심층해설 예시" 링크로 왔으면 그쪽으로 돌아갑니다.
+  // 예전엔 항상 정해진 페이지로 보내서(예: 항상 캐릭터 해설), 거기서 다시
+  // 이 페이지로 돌아오는 화면들끼리 핑퐁이 생겼습니다(민수오빠 지적).
+  const fallbackBackHref = hero?.backHref ?? `/career/ai?scope=${scope}`;
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) { router.back(); return; }
+    router.push(fallbackBackHref);
+  };
 
   return <main className={`${styles.page} ${hero?.isSpecialTheme ? styles.isTheme : ""}`}>
-    <header className={styles.topbar}><Link href={backHref}><ArrowLeft />{hero ? "캐릭터 해설로" : "심층해설 선택으로"}</Link><h1>Career Insight</h1><button type="button" onClick={() => void shareResult()} aria-label="결과 공유"><Share2 /></button></header>
+    <header className={styles.topbar}><button type="button" className={styles.backButton} onClick={goBack}><ArrowLeft />뒤로가기</button><h1>Career Insight</h1><button type="button" onClick={() => void shareResult()} aria-label="결과 공유"><Share2 /></button></header>
     <main className={styles.container}>
       <section className={styles.heroCard}>
         <div className={styles.heroCopy}>

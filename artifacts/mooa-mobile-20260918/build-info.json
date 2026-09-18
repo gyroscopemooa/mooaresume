@@ -1,0 +1,15 @@
+{
+  "version": "0.1.0",
+  "package": "com.mooaresume.app",
+  "bytes": 49614944,
+  "sha256": "7D043149751A59E1DD2146720853B168B26DFA1087166B44F60B33C91E4CF0EC",
+  "signatureVerified": true,
+  "signing": "Expo-generated debug key; review only",
+  "architectures": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "backendConfigured": false,
+  "nativeDeviceTested": false,
+  "sourceBaseline": "c020b5967e9ec596cf63fcedc4a3bfb63b00e075"
+}

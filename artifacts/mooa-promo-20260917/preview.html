@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MOOA Resume — 60초 브랜드 필름</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#061610;color:#f2f6ee;font-family:"Malgun Gothic",system-ui,sans-serif}main{max-width:1400px;margin:0 auto;padding:38px 28px 60px}header{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:26px}.brand{font-size:21px;font-weight:700}.mark{display:inline-grid;place-items:center;background:#a4e5c5;color:#061610;border-radius:9px;width:34px;height:34px;margin-right:10px}.meta{font-size:12px;letter-spacing:2px;color:#90ad9a}video{width:100%;display:block;aspect-ratio:16/9;background:#031009;border:1px solid #294d37;border-radius:15px;box-shadow:0 30px 90px #0005}h1{font-weight:600;letter-spacing:-1px;font-size:28px;margin:28px 0 10px}p{color:#a0bda9;font-size:15px;line-height:1.8;margin:0}.footer{display:flex;align-items:center;justify-content:space-between;gap:24px}a{display:inline-block;padding:14px 24px;background:#c8eacf;color:#092417;text-decoration:none;border-radius:30px;font-size:15px;font-weight:700;white-space:nowrap}.chapters{display:flex;gap:9px;flex-wrap:wrap;margin-top:28px}button{background:#112b1c;color:#bed6c2;border:1px solid #305039;border-radius:22px;padding:10px 16px;cursor:pointer;font:inherit;font-size:13px}button:hover{background:#254d32}.note{margin-top:25px;font-size:12px;color:#789382}@media(max-width:680px){main{padding:22px 16px}.meta{display:none}h1{font-size:24px}.footer{align-items:flex-start;flex-direction:column}header{margin-bottom:18px}}
+  </style>
+</head>
+<body>
+  <main>
+    <header><div class="brand"><span class="mark">M</span>MOOA Resume</div><div class="meta">BRAND FILM / 60 SECONDS</div></header>
+    <video controls playsinline preload="metadata" poster="poster.png" id="film"><source src="mooa-resume-60s-1080p.mp4" type="video/mp4">이 브라우저에서는 동영상을 지원하지 않습니다.</video>
+    <div class="footer"><div><h1>나의 다음을 준비하는 방법.</h1><p>무아레쥬메 · 60초 브랜드 필름</p></div><a href="mooa-resume-60s-1080p.mp4" download>영상 다운로드 ↓</a></div>
+    <div class="chapters" aria-label="장면 바로가기"><button data-time="0">오프닝</button><button data-time="9.6">아무것도 몰라요</button><button data-time="19.2">QUICK</button><button data-time="28.8">PRO</button><button data-time="38.4">FINAL</button><button data-time="48">MOOA의 약속</button><button data-time="55.2">브랜드</button></div>
+    <p class="note">1920 × 1080 · 60 fps · 오리지널 음악과 한국어 모션 타이포그래피</p>
+  </main>
+  <script>document.querySelectorAll('[data-time]').forEach(button=>button.addEventListener('click',()=>{const video=document.getElementById('film');video.currentTime=Number(button.dataset.time);video.play().catch(()=>{});}));</script>
+</body>
+</html>

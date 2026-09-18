@@ -1,0 +1,18 @@
+{
+  "title": "MOOA Resume — 나의 다음을 준비하는 방법",
+  "duration": 60,
+  "width": 1920,
+  "height": 1080,
+  "fps": 60,
+  "language": "ko-KR",
+  "scenes": [
+    { "start": 0, "end": 4.8, "id": "opening", "headline": ["막막한 시작을,", "나를 보여줄 기회로."], "caption": "MOOA Resume · AI 취업 지원서 코치" },
+    { "start": 4.8, "end": 9.6, "id": "connection", "headline": ["자소서만 보지 않습니다."], "caption": "공고와 이력서, 내 경험을 함께." },
+    { "start": 9.6, "end": 19.2, "id": "beginner", "headline": ["아무것도 몰라요?", "그 시작부터 함께."], "caption": "질문에 답하며, 내 경험과 소재부터 정리해요.", "label": "처음 시작 · PRO 작성 흐름" },
+    { "start": 19.2, "end": 28.8, "id": "quick", "headline": ["이미 쓴 글,", "더 또렷하게."], "caption": "핵심 개선점과 수정 이유를 한눈에.", "label": "QUICK" },
+    { "start": 28.8, "end": 38.4, "id": "pro", "headline": ["내 경험을,", "공고에 맞는 이야기로."], "caption": "쓸 소재부터 지원서 완성까지.", "label": "PRO" },
+    { "start": 38.4, "end": 48, "id": "final", "headline": ["지원서 다음은,", "면접입니다."], "caption": "제출 전 검수부터 AI 모의면접까지.", "label": "FINAL" },
+    { "start": 48, "end": 55.2, "id": "promise", "headline": ["없는 경험은 만들지 않고.", "내 경험이 전해지도록."], "caption": "입력은 간단하게. 분석은 섬세하게." },
+    { "start": 55.2, "end": 60, "id": "endcard", "headline": ["나의 다음을", "준비하는 방법."], "caption": "무아레쥬메", "url": "mooaresume.com" }
+  ]
+}
