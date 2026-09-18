@@ -7233,3 +7233,196 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Verification limitation: automatic approval review rejected an unauthenticated production seed POST probe because misconfigured authentication could generate a public post and incur AI charges. It was not executed or retried. Used the passing mocked authorization tests and read-only/video UI checks instead; no manual paid generation occurred.
 - Outstanding optional scheduler cleanup: Supabase CLI has no platform access token and the dashboard is at its login screen. Migration `20260917010000_community_seed_once_daily.sql` is committed but NOT remotely applied. The existing three scheduled invocations may remain; the deployed application guard skips further generation after one editorial post in the publication-day window, so actual scheduled publication is limited to one successful post (plus its existing editorial reply). User was asked asynchronously to log in if they want the invocation schedule itself reduced to the single 09:00 KST job. Do not claim remote cron migration completion until applied/read back.
 - Rollback reference: prior Cloudflare production version `2cbfa44f-51bd-4594-8d77-113d0cf129ae`; source baseline `b60494a`. No existing posts, comments, user documents, secrets or database records were removed or changed by this release.
+
+## 2026-09-18 — Codex: standalone native MOOA Resume app
+
+- Status: in progress; user requested implementation using attached native-app brief.
+- Protected baseline: `codex/legal-launch-design-20260912` at `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`. Existing legal UX, checkpoint, next-env and artifacts changes preserved.
+- Planned files: new `apps/mobile/`, native-only `src/server/mobile/` and `/api/mobile/` routes/tests; minimal root tsconfig exclusion for standalone Expo dependencies. Existing execution route will gain an optional authenticated-client entry point while its web POST retains cookie authentication and origin guard; no analysis/business logic replacement.
+- Reason: native five-tab UI, private auth/history, existing Korean analysis service reuse, independent result comparison, local resume export and career exploration, ko/en UI. Community excluded. English-market paid analysis remains unavailable until engine localization is validated; never silently send it to the Korean engine.
+- Billing: native account/run-bound Google Play verification added alongside protected TWA/Polar flows. No purchase, paid AI call, remote migration or deployment authorized/performed. Store configuration and physical-device release checks remain external requirements.
+- Validation: pending strict app/web typecheck, lint, unit/auth/schema tests and local app preview/export.
+- Recovery: new directories are additive; recover the execution route and tsconfig from baseline above to remove only this integration. No old implementation/variant removed.
+
+### Native app isolation detail
+
+- Added Expo build-output ignores to root ESLint and the new app's Git ignore so generated native/web artifacts are not treated as product source. Root TypeScript excludes the independent native project; it has its own strict typecheck. Existing cookie execution is retained; only `/api/mobile/execute` explicitly selects verified Bearer auth. No arbitrary route exports were introduced.
+- Native forms remain mounted while result/purchase screens open, so unsaved text is preserved when navigating back. Account sign-out/switch resets all private screen state; stale in-flight responses are discarded by session generation.
+
+### 2026-09-18 — Native app validation progress
+
+- Added root Vitest excludes for generated Android/Gradle/dist directories only; no existing tests excluded. Full regression suite passed: 149 files / 1,172 tests, including 20 new mobile boundary/schema tests.
+- App and web strict typechecks passed. Full ESLint passed with 0 errors and the same two existing unrelated warnings.
+- Expo web production export passed. Browser checked at 390×844 and 844×390: five tabs, input preservation after visiting results, original/revised copy, English UI/unsupported-market guard, résumé preview, 30-question career flow and tied-score message; no browser console errors observed.
+- New `apps/mobile/README.md` explicitly lists native-only features, local run instructions, environment needs, and unimplemented global/AI résumé/store-release items. No real candidate document was used for verification.
+- Next.js production build and local Android APK compilation are still in progress; no release approval requested because the build is not yet a concrete store-ready artifact.
+
+- Privacy follow-up: imported native TXT cache files are removed even when their extension/size is rejected. Removed the unused new template `gitignore` (the actual `.gitignore` remains). These are changes only to the new app, not protected files.
+
+- UX follow-up: pending analysis cannot be started until the server-read history contains the case/product entitlement. Successful native purchase/recovery refreshes that server state before enabling execution. Existing running/failed runs retain check/retry behavior. Server enforcement remains authoritative.
+
+- Final Android manifest review found Expo template declarations for broad legacy external storage and overlay access. Blocked READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE and SYSTEM_ALERT_WINDOW in app config, in addition to microphone/contacts. This app uses the system document picker and app-private temporary files. Regenerated only the new Android project and rebuilding the APK with those declarations removed.
+
+### 2026-09-18 — Native app first implementation and review APK delivered
+
+- Status: local first implementation complete; **not a production/store-ready release**. English AI, AI résumé/native builder billing, global billing, signup/deletion/legal onboarding and live device/payment checks remain explicitly documented in `apps/mobile/README.md`.
+- Deliverables: independent `apps/mobile/` Expo SDK 57 / React Native 0.86 app and lockfile; five authenticated `/api/mobile/*` routes plus mobile boundary tests; `artifacts/mooa-mobile-20260918/mooa-resume-preview.apk`, Korean README and `build-info.json`. Live loopback-only UI preview at `http://127.0.0.1:8089` using `apps/mobile/scripts/serve-preview.mjs`.
+- APK: 0.1.0 / versionCode 1, `com.mooaresume.app`, Android minSdk 24 / targetSdk 36, arm64-v8a and x86_64, 49,614,944 bytes. SHA-256 `7D043149751A59E1DD2146720853B168B26DFA1087166B44F60B33C91E4CF0EC`. APK v2 signature verified; generated debug signing identity, for review only. Final manifest confirmed no microphone, contacts, broad legacy external-storage or overlay permissions. Native device installation/runtime was not performed.
+- Checks: app/web strict typechecks passed; full ESLint 0 errors / 2 pre-existing unrelated warnings; full Vitest 149 files / 1,172 tests passed. Next.js production build passed (112 generated pages and new mobile routes). Final Expo web export passed; Android release compilation including final source/permission changes passed. Focused lint/typecheck repeated after the final native input/purchase UI fixes; whitespace diff check clean. Web bundle scan found no OpenAI/Supabase-elevated/Google-service-account environment key references.
+- UI evidence: Korean/English tabs; 390×844 portrait and 844×390 landscape; result original/revision copy and reason display; draft survives result/back navigation; English-market save disabled; manual résumé preview; 30 interest questions completed and six-way tie correctly reported. No observed browser console errors. No native auth, native PDF share, store purchase/refund, paid AI or remote RLS end-to-end verification is claimed.
+- Operational state: the APK contains no backend connection settings and supports local/free/sample review only until configured. New backend routes are local source, not deployed. Existing Polar/TWA behavior, protected legal/checkpoint changes and all older result variants preserved. The only existing runtime source edit is the explicit Bearer branch for `/api/mobile/execute` in the existing analysis route; root TS/ESLint/Vitest changes isolate the new app and generated outputs. Next.js regenerated standard `next-env.d.ts` paths during validation.
+- No production deployment, remote DB migration, real payment, paid AI call, credentials rotation, user-data deletion, Git commit or merge performed. Recover existing-source changes from baseline `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`; new app/API/artifact directories are additive and no protected implementation was removed.
+
+### 2026-09-18 — Hybrid direction confirmed; intermediate handoff saved
+
+- Agent: Codex. Status: paused at user's request due to usage limits; resume next week. Hybrid implementation has not been completed or started in source.
+- User decision: reuse existing web features, optimize app launch into immediate spacious input, combine Home/Review, retain bottom tabs, expose QUICK/PRO/FINAL and writing types, preserve attachment classification/question/character-count flows, avoid mandatory application naming at entry. User explicitly selected Google Play billing integration. Actual paid tests, deployment and store publication remain separate approvals.
+- Files changed for this save: `docs/development-checkpoint-2026-09-07.md` and this log. Updated the living checkpoint's date/current state and replaced stale next-priority guidance with hybrid implementation/billing steps; retained the unresolved legal work and older main-side items. Existing native app, APK, API integration and every protected legal change remain intact.
+- Inspection: existing shared simple intake/document parsing and TWA/native billing code reviewed. `npm install react-native-webview` was attempted in the new mobile app, then interrupted on user pause; inspected package.json and lockfile root contain no such dependency. No successful installation or new wrapper is claimed. Final wrapper architecture remains to be chosen during implementation.
+- Validation: checkpoint and dependency-root readback, Git status/branch/HEAD inspection and `git diff --check` passed (line-ending warnings only). No product source edits in this direction/save, so earlier native test/build results were recorded as historical and not rerun or claimed for a hybrid app.
+- Recovery: documentation-only save against HEAD `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`; remove only this entry/new hybrid checkpoint guidance if undoing the handoff, preserving pre-existing log/checkpoint content. No Git commit, branch switch, deployment, database operation or paid call performed.
+
+### 2026-09-18 — Claude handoff document
+
+- Agent: Codex. Status: documentation complete at user request; implementation remains paused.
+- Files: new `docs/claude-hybrid-app-handoff-2026-09-18.md`, additive link in the current living checkpoint, this log.
+- Reason: provide a compact entry point for Claude with confirmed hybrid UX/Google Play scope, actual implementation state, relevant files, authorization limits, protected changes, validation and resume order. Does not replace the living checkpoint or select an unimplemented wrapper architecture.
+- Validation: current Git status/branch/HEAD and checkpoint/log inspected; documentation whitespace check. No runtime code, dependencies, model settings, deployment or paid action changed. Recovery: remove only the new handoff/link/this entry, preserving earlier checkpoint and source work.
+
+## 2026-09-18 — Claude: 하이브리드 앱 구현 착수 (TWA + 앱 전용 웹 셸 `/app`, Play 결제 보강) — 착수 기록
+
+- Agent/session: Claude, 사용자 지시 "docs/claude-hybrid-app-handoff-2026-09-18.md를 읽고 멈춘 부분부터 구현". 인계 문서·AGENTS.md·09-07 체크포인트·최근 모바일/Play 결제 기록을 읽고 시작.
+- Status: active, 착수. 브랜치 `codex/legal-launch-design-20260912`, HEAD `c020b5967e9ec596cf63fcedc4a3bfb63b00e075` 재확인(인계와 동일). `apps/mobile`에 `react-native-webview` 의존성·설치 흔적 없음 확인(package.json/node_modules 모두 없음).
+- Wrapper 결정: **기존 TWA 저장소 `C:\6.mooaresume-android`(`com.mooaresume.twa`, playBilling 활성) 재사용 + 같은 Next.js 웹에 앱 전용 셸 `/app` 추가.** 이유: (1) TWA는 실제 Chrome이라 기존 웹 쿠키 로그인·Google OAuth(임베디드 WebView는 Google이 `disallowed_useragent`로 차단)·파일 선택·다운로드/인쇄가 그대로 동작해 쿠키↔Bearer 브리지가 필요 없음, (2) Play 결제는 이미 구현된 Digital Goods API 경로 + 쿠키 인증 서버 검증을 그대로 씀, (3) 새 네이티브 의존성·두 번째 인증 체계를 만들지 않음. `react-native-webview` 방식은 채택하지 않으며 설치하지 않는다. Expo 네이티브 시안 `apps/mobile`(`com.mooaresume.app`)과 `/api/mobile/*`는 이전 variant로 무수정 보존.
+- 겹치는 보호 파일에 대한 사전 기록(모두 HEAD 기준 clean 상태 확인):
+  - `src/app/quick/page.tsx` → 본문을 `src/components/quick-input-page.tsx`로 그대로 옮기고 페이지는 위임만. 웹 렌더링 동일, 앱용 `variant="app"` 선택 prop 추가.
+  - `src/components/pro-input-page.tsx` → 선택 prop `variant`(기본 `"web"`, 웹 동작 불변). `"app"`일 때만 웹 헤더/이전으로/진행순서 카드 숨김, 입력 자동 보존(sessionStorage)과 복원.
+  - `src/app/layout.tsx` → 앱 컨텍스트에서만 보이는 하단 탭바 컴포넌트 한 줄 추가(웹에서는 아무것도 렌더링하지 않음).
+  - `src/components/application-case-handoff.tsx` → Play 분기 블록만 교체(구매 후 서버 검증 통과 시에만 consume, 미완료 구매 재사용/복구, KRW 외 차단) + 앱 안에서 Play 결제를 못 쓰면 Polar로 우회하지 않고 멈춤. Polar fetch 이하 무수정.
+  - `src/server/billing/google-play-verification.ts`(+test), `google-play-verify-route.ts`, `supabase-google-play-entitlement-repository.ts` → 대기(pending)/취소 구분, KR 외 거절, 같은 토큰의 다른 지원 건 재사용 거절, consume 가능 여부 응답. Polar 파일·마이그레이션 무수정, 새 마이그레이션 없음.
+- Rollback/recovery reference: 위 파일은 HEAD `c020b59`에서 복구. 신규 파일(`src/app/app/`, `src/lib/app-*`, `src/components/app-*`, `quick-input-page.tsx`, `src/lib/google-play/app-checkout*`)은 삭제로 되돌림.
+- 승인 경계: 실구매·유료 AI·배포·스토어 업로드·원격 DB 변경 하지 않음.
+
+### 2026-09-18 — Claude: 하이브리드 앱 1차 구현 완료 (로컬), 실기기·실구매는 미검증
+
+- Agent: Claude, 같은 세션. Status: 로컬 구현 완료. 커밋·배포·스토어 업로드·실구매·유료 AI 호출·원격 DB 변경 **없음**.
+- 상세 구조·검증·남은 일: 새 문서 [하이브리드 앱 구조와 현재 상태](hybrid-app-2026-09-18.md).
+- **신규 파일**: `src/app/app/page.tsx`, `src/app/app/my/page.tsx`(둘 다 `robots: noindex` — 같은 기능의 웹 화면이 이미 색인됨), `src/components/app-home.tsx`(+`.module.css`, `+.test.tsx`), `src/components/app-tab-bar.tsx`(+`.module.css`), `src/components/app-my-page.tsx`(+`.module.css`), `src/components/quick-input-page.tsx`, `src/lib/app-context.ts`(+test), `src/lib/app-intake-draft.ts`, `src/lib/google-play/app-checkout.ts`(+test).
+- **기존 파일 수정(모두 착수 기록의 사전 계획대로, 웹 동작 불변)**:
+  - `src/app/quick/page.tsx` — 본문을 `components/quick-input-page.tsx`로 이동하고 위임. 앱용 `variant` prop 추가, 앱에서만 입력 자동 저장(기존 게스트 초안과 같은 모양/같은 보관 범위).
+  - `src/components/pro-input-page.tsx` — 선택 prop `variant`(기본 `"web"`). `"app"`에서만 사이트 헤더·이전으로·진행 순서 카드·큰 제목을 감추고, 입력을 `sessionStorage`에 자동 저장·복원. 초기화 버튼이 앱에서는 모든 유형에서 보이고 앱 초안도 지웁니다. 웹 렌더링·검증·저장 로직은 그대로.
+  - `src/app/layout.tsx` — `<AppTabBar/>` 한 줄. 앱 셸이 아니면 아무것도 렌더링하지 않음.
+  - `src/components/application-case-handoff.tsx` — Play 분기 블록 교체(구매 → 서버 검증 → 검증 통과 시에만 consume, 보유 구매 재사용, 미완료 구매 복구 안내, 대기 안내), 앱 안에서 Play 결제 불가 시 Polar 우회 금지. **Polar `fetch` 이하 기존 경로 무수정.**
+  - `src/server/billing/google-play-verification.ts`(+test 재작성), `google-play-verify-route.ts`, `supabase-google-play-entitlement-repository.ts`, `src/app/api/mobile/billing/route.ts` — 이미 지급된 토큰을 먼저 확인해 `ALREADY_GRANTED`로 답하기(재시도가 `ACTIVE_ENTITLEMENT_EXISTS`로 영구 실패하던 문제), 다른 지원 건 재사용 409 거절, pending/취소 구분, KR 외 스토어 승인 전 거절, `consumable` 응답, 원장 metadata에 `purchaseTokenSha256`(토큰 원문 아님) 기록. Polar 파일·기존 마이그레이션·RPC **무수정, 새 마이그레이션 없음**.
+  - `src/lib/google-play/purchase.ts` — `openDigitalGoodsService`/`requestGooglePlayPayment`/`resolveGooglePlayProductId` 추가. 기존 `purchaseProductViaGooglePlay`·모의면접 재시도 경로는 그대로 남겨 둠.
+- **Android 저장소 `C:\6.mooaresume-android`**: `twa-manifest.json`의 `startUrl` `/` → `/app?source=twa`, README에 이유·순서 추가. **빌드하지 않음**(`/app`이 실서버에 없으면 앱 첫 화면이 404). 커밋 없음.
+- Validation: 타입 검사 통과, ESLint 오류 0/기존 무관 경고 2, Vitest **152 파일 / 1,200 테스트 통과**(신규 28개), `next build` 통과(`/app`·`/app/my` 생성 확인). 로컬 dev 실제 화면 390px 상당에서 앱 첫 화면·탭 왕복 입력 보존·결제 화면 왕복 보존·QUICK 전환·`/app/my`·키보드 시 탭바 숨김 확인, 콘솔 오류 없음. 기존 `/quick`·`/pro/polish`에 탭바 없음과 헤더·진행 순서 카드 유지 확인.
+- **미검증(주장하지 않음)**: 실기기 TWA 실행, 실제 Play 구매·환불·복구, 실제 유료 AI 호출, 원격 RLS E2E. 이전 네이티브 시안의 과거 결과를 이 구현의 검증으로 쓰지 않습니다.
+- Rollback/recovery: 신규 파일 삭제 + 위 기존 파일을 HEAD `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`에서 복구. Android 저장소는 `84a99c4`에서 두 파일 복구. `apps/mobile` 네이티브 시안·`/api/mobile/*`·법률 변경·다른 에이전트 작업은 손대지 않았습니다.
+- 알려진 후속: 모의면접 재시도(3,000원) Play 구매에도 같은 consume 누락이 남아 있음(이번 범위 밖, 문서에 기록).
+
+### 2026-09-18 — Claude: 앱 화면 UI 정리(테두리 네 겹 → 한 겹), 커리어 탭 목적지, QUICK 앱 입력
+
+- Agent: Claude, 같은 세션. 사용자 피드백: "헤더·메뉴바 빼고 테두리가 사실상 4개, 낭비다 / 설명은 아래로 몰거나 터치 말풍선으로 / 걍 넓게 / 커리어탐색 UI 깨짐, 커리어 탭 홈은 검사 목록이 맞다 / 입력창 예시글 두 배 작게 / QUICK도 PRO처럼 테두리 최소화".
+- Status: 로컬 반영 완료. **모두 `variant="app"`(앱 셸) 안에서만 적용**되고 웹 화면은 픽셀 단위로 그대로입니다(아래 검증).
+- 변경:
+  - `src/components/simple-intake.tsx`(+`.module.css`) — 선택 prop `variant` 추가. 앱에서는 상자의 테두리·그라디언트·그림자를 벗고 입력칸을 주인공으로(최소 46vh, 16px), 긴 설명("자기소개서를 붙여넣고, 나머지 파일은…")을 **물음표를 눌러 여는 말풍선**으로 옮김(손가락에는 hover가 없어 클릭 토글 + 바깥 탭·Esc로 닫힘). 예시글(placeholder)만 11px로 축소 — 치는 글자는 16px 유지(그보다 작으면 iOS가 화면을 확대하고 되돌리지 않음).
+  - `src/components/pro-input-page.tsx`(+`.module.css`) — 앱에서 폼 카드의 테두리·배경 제거, 좌우 14px로 폭 확보, 스위치 설명 한 줄로 축약, 중복되던 스타일 안내 줄 숨김, 결과 포함·안내 상자를 선(border-top)으로 바꿔 화면 아래로 몰았음.
+  - `src/components/quick-input-page.tsx`, `src/app/quick/quick.module.css` — QUICK도 같은 방식으로: 앱에서 큰 제목 숨김(상단 셸이 이미 상품·가격·유형을 들고 있음), 폼 카드 제거, 입력칸 42vh·16px·예시글 11px, 사용량 상자를 선으로. 자식 입력칸이 다른 CSS 모듈(resume-intake)에 있어 `.appPage textarea` 요소 선택자로 짚음(그 파일은 무수정).
+  - `src/components/app-tab-bar.tsx` — 커리어 탭 목적지를 `/career` → `/career/assessments`. 이유: `/career` 종합 대시보드가 좁은 화면에서 워터마크·잠긴 패널·떠 있는 로그인 버튼이 겹쳐 읽히지 않고, 앱에서 커리어를 누르는 사람이 찾는 것은 검사 목록입니다. 대시보드로 들어와도 탭이 켜지도록 `match`에는 `/career` 전체를 유지.
+- Validation: 타입 검사 통과, ESLint 오류 0/기존 무관 경고 2, Vitest 152 파일 / 1,200 테스트 통과. 실제 화면(375×812): 앱 PRO·QUICK 입력에서 테두리가 입력칸 하나로 줄고 폭이 화면을 쓰는 것, 말풍선이 탭으로 열리고 바깥 탭으로 닫히는 것, 커리어 탭이 검사 목록으로 가는 것 확인. 웹은 `/pro/polish`에 진행 순서 카드·긴 설명 3종이 그대로, `/quick`에 큰 제목과 PRO 비교 카드가 그대로 있는 것을 HTML로 확인.
+- Rollback/recovery: 위 파일을 HEAD `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`에서 복구(신규 앱 파일은 삭제). CSS 변경은 모두 파일 끝에 앱 전용 블록으로 붙여 두어 그 블록만 지워도 됩니다.
+- 남은 UI 항목(사용자 지적, 이번에 하지 않음): `/career` 종합 대시보드 자체의 모바일 레이아웃(이용 가능한 검사 → 종합 커리어 프로필 → 검사 결과 → 결과 해석 기준 순서로 세로 1열). 웹에서도 보이는 화면이라 별도 작업으로 두고 사용자 확인 후 진행.
+
+### 2026-09-18 — Claude: 앱 "시작" 메뉴 신설(5탭), 결과 헤더 버튼 이름 복원, 로그인 복귀 경로 보존
+
+- Agent: Claude, 같은 세션. 사용자 피드백: "하단메뉴 첨삭을 중앙에, 맨 왼쪽에 '시작' 추가 — 누르면 단계 선택(어떤 단계인지 모르겠어요 포함) → 상품 선택 → 첨삭 홈으로. 유형 선택 시스템을 메뉴로 계속 제공 / 앱 입력의 두 줄도 더 작게 / 결과판 헤더 버튼 이름이 안 보임 / 로그인하니 웹 홈으로 감".
+- 변경:
+  - **신규** `src/app/app/start/page.tsx`, `src/components/app-start-wizard.tsx`(+`.module.css`, `+.test.tsx`) — 앱 "시작" 메뉴. 단계 판정은 웹 온보딩과 같은 `decideWritingMode`를 그대로 쓰고(중복 구현 없음), 상품 추천 규칙도 온보딩과 동일(POLISH→QUICK 추천, 그 외 PRO 추천, CREATE는 QUICK 이용 불가, FINAL은 기존 플래그 게이트). "어떤 단계인지 모르겠어요"는 붙여넣기·파일에서 분량만 보고 임시 추천하며, 파일은 브라우저 안에서만 읽습니다(결제 전 서버 전송·AI 호출 없음). 고른 값은 첨삭 홈의 선택으로 저장되고, 확인용으로 붙여넣은 글은 입력칸으로 넘깁니다(이미 쓰고 있던 글이 있으면 건드리지 않음 — `carryDraftTextIntoAppIntake`).
+  - `src/components/app-tab-bar.tsx`(+`.module.css`) — 탭 5개로: 시작 · 이력서 · **첨삭(가운데, 홈)** · 커리어 · 내 정보. 활성 탭 판정을 "가장 길게 맞는 경로"로 바꿈(`/app/start`·`/app/my`가 첨삭의 `/app`에도 걸려 세 탭이 동시에 켜지던 문제).
+  - `src/components/pro-input-page.module.css`, `src/components/simple-intake.module.css` — 앱에서 스위치 설명 10.5px, "자료를 한 번에 넣어주세요" 11.5px로 축소.
+  - `src/components/result-workspace-complete.module.css` — 700px 이하에서 헤더 버튼의 `font-size:0`을 9px 이름 표시로 교체. 복사·DOCX·TXT가 똑같은 아이콘 세 개로 보여 무엇을 누르는지 알 수 없었고, 잘못 누르면 파일이 내려갑니다. 웹 모바일에도 같이 적용됩니다(같은 결함).
+  - `src/components/header-account.tsx` — 사이트 헤더 로그인의 복귀 주소에 쿼리스트링 포함. `/result?analysisRunId=...`에서 경로만 넘겨 돌아오면 "가장 최근 결과"가 열려, 보고 있던 결과가 아닌 다른 것을 보여 줬습니다.
+- Validation: 타입 검사 통과, ESLint 오류 0/기존 무관 경고 2, Vitest **1,205 테스트 통과**(시작 마법사 5개 신규: 단계 미선택 차단, POLISH→QUICK 추천·저장·홈 이동, CREATE에서 QUICK 미판매, 모르겠어요→임시 추천·초안 이관, FINAL 닫힘). 실제 화면에서 시작 1/2·2/2 화면과 5탭 확인. 로그인 복귀는 dev 로그로 `/auth/callback?next=%2Fapp%2Fmy` → `/app/my` 확인.
+- Rollback: 신규 파일 삭제 + 위 기존 파일을 HEAD `c020b59`에서 복구.
+- 하지 않은 것: 앱에 "웹에서 보기" 버튼(TWA는 같은 Chrome·같은 모바일 레이아웃이라 눌러도 달라지는 것이 없고, 앱 밖으로 유도하는 안내는 Play 정책상 피함), 결과 화면의 모바일 재설계(범위가 커서 사용자 확인 후 진행), `/career` 종합 대시보드 모바일 레이아웃.
+
+### 2026-09-18 — Claude: Google Play 결제 연결 순서 문서화 + `.env.example`에 Play 변수 자리 추가
+
+- Agent: Claude, 같은 세션. 사용자 질문("구글빌링 연결 단계만 정리, 마이그레이션이랑 환경변수만 추가하면 되나?").
+- Files: 신규 `docs/google-play-billing-setup.md`, 수정 `.env.example`(Play 변수 이름만 추가, 값 없음 — 시크릿 미포함). 런타임 코드·설정 변경 없음.
+- 내용: ①`20260911010000_google_play_billing.sql` 원격 적용 확인이 최우선(미적용이면 결제는 되고 이용권 지급만 실패 → 환불 사태). 이 세션에서는 Supabase 토큰이 없어 확인 불가. ②Play Console 앱/인앱상품 사다리/서비스 계정/내부테스트 트랙. 상품 가격표는 `domain/usage-entitlement.ts`의 기본가·블록가로 실제 계산해 기재(QUICK 5,900+2,900/블록, PRO·FINAL 12,900·19,900+3,900/블록) — 서버가 원장에 적는 금액이 카탈로그 기대가라 Console 가격이 어긋나면 매출 원장이 틀어짐. ③환경변수: 서버는 Cloudflare 대시보드(`keep_vars:true`), `NEXT_PUBLIC_*`은 빌드 시점 주입이라 로컬 `.env.local` + 재배포 필요. ④배포 → `bubblewrap update`·재빌드 → 내부테스트 업로드 → App Signing 지문 `assetlinks.json`에 추가 → 실기기 실구매 1건(확인 항목 5개 명시).
+- 남은 코드 항목 명시: 모의면접 재시도 consume 누락, 환불·취소(voided purchase) 자동 회수 미구현, FINAL 플래그.
+- Validation: 문서·예시 파일만 변경(런타임 영향 없음). 가격 숫자는 `usage-entitlement.ts`의 상수·견적 함수와 대조해 검산. 실구매·배포·스토어 업로드·원격 DB 변경은 하지 않았습니다.
+
+### 2026-09-18 — Claude: 모의면접 재시도(3,000원) Play 구매 소비 누락 수정 + 구매 종류 분리
+
+- Agent: Claude, 같은 세션. 사용자 요청("구글빌링 상품 목록" 질문과 함께 진행). 자소서 쪽에서 고친 것과 같은 결함이 재시도 상품에도 있었습니다 — 소비하지 않아 **앱에서 두 번째 재시도를 영구히 살 수 없는** 상태.
+- 변경:
+  - `src/components/interactive-interview.tsx` — Play 분기를 `completeGooglePlayPurchase`로 교체(구매 → 서버 검증 → 검증 통과 뒤에만 소비, 보유 구매 재사용, 대기 구분). `analysisRunId`가 없으면 결제창을 열지 않습니다. Polar 분기는 무수정.
+  - `src/app/api/interview/retry/google-play/verify/route.ts` — 대기(purchaseState 2)를 409 `GOOGLE_PLAY_PENDING`으로 분리(승인·소비하지 않음), KR 외 스토어는 승인 전 거절(자동 환불 유도), 응답에 `consumable` 추가, `DUPLICATE_ORDER`일 때 `interview_retry_orders`에서 그 주문의 `analysis_run_id`를 확인해 **다른 분석 건에 쓰려는 재사용을 409로 거절**(같은 건의 재시도·복구는 정상 통과).
+  - `src/lib/google-play/app-checkout.ts`(+test) — 미완료 구매 기록에 `kind`("analysis" | "interviewRetry") 추가, 복구가 자기 종류만 확인. 검증 라우트가 둘인데 목록은 하나라, 종류를 안 가리면 재시도 토큰이 분석 검증으로 가서 거절당하고 그 구매가 영영 정리되지 않았습니다.
+  - `src/lib/google-play/purchase.ts` — `resolveInterviewRetryProductId()` 추가(기존 `purchaseInterviewRetryViaGooglePlay`는 남겨 둠).
+  - `src/components/application-case-handoff.tsx` — 복구 호출에 `kind: "analysis"` 명시.
+- Validation: 타입 검사 통과, ESLint 오류 0/기존 무관 경고 2, Vitest **153 파일 / 1,207 테스트 통과**(app-checkout 신규 2개: 종류 필터, 기록에 종류 저장). 실구매 검증은 하지 않았습니다(Play 설정 없음).
+- Rollback: 위 파일을 HEAD `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`에서 복구.
+- **발견(미해결, 사용자 결정 필요)**: 앱에 Polar 전용 결제 진입점이 남아 있습니다 — 이력서 AI 제작 3,900 / 경력기술서 7,900 / 포트폴리오 7,900 / AI 심층해설 5,900·9,900 / 법률 99,000. 앱 안에서 누르면 외부 결제가 열려 Play 정책 위반입니다. (A) 앱에서 그 결제 진입점만 숨기기(추천) 또는 (B) Play 상품 6개 + 검증 경로 구현. 상세는 `docs/google-play-billing-setup.md`.
+
+### 2026-09-18 — Claude: 앱에서 외부 결제(Polar) 진입점 차단 — 사용자가 (A) 선택
+
+- Agent: Claude, 같은 세션. 사용자 결정: "a로 해줘"(앱에서 Polar 결제 진입점을 숨기는 쪽).
+- 배경: 자소서 첨삭(QUICK/PRO/FINAL)과 모의면접 재시도에만 Play 결제 경로가 있습니다. 나머지 유료 기능은 Polar 전용이라 **앱 안에서 누르면 외부 결제창이 열려 Play 정책 위반**이었습니다.
+- **신규**: `src/components/app-paid-tool-gate.tsx`(+`.module.css`, `+.test.tsx`) — `useInstalledApp()`(마운트 뒤 판정이라 hydration 불일치 없음)과 `AppPaidToolNotice`. 문구는 웹으로 유도하지 않습니다(외부 결제 유도 금지).
+- **수정(결제 버튼 자리만, 각 파일 국소)**: `resume-build-panel.tsx`(AI 이력서 3,900), `career-description-build-panel.tsx`(7,900), `portfolio-build-panel.tsx`(7,900), `career-ai-preparation.tsx`(5,900/9,900), `legal-case-workspace.tsx`(99,000). 각 파일에 (1) 훅 한 줄, (2) 결제 버튼을 앱에서 안내로 교체, (3) `startCheckout()` 첫 줄에 `if (inApp) return;` 안전망. 나머지 로직·웹 렌더링은 무수정이며 무료 기능(수동 이력서·PDF 저장·커리어 검사·예시)은 그대로입니다.
+- Validation: 타입 검사 통과, ESLint 오류 0/기존 무관 경고 2, Vitest **154 파일 / 1,209 테스트 통과**(신규 2: 웹은 결제 버튼 유지, 앱은 안내로 교체되고 "웹에서 결제" 유도 문구가 없음). 실제 화면(375×812, dev): `?source=twa`로 연 탭에서 `/resume`·`/portfolio`·`/career-description` 모두 결제 버튼 사라지고 안내 표시, 앱 표시가 같은 탭의 다음 화면까지 유지됨. 표시 없는 새 탭에서는 결제 버튼 그대로.
+- Rollback: 신규 파일 삭제 + 위 5개 파일을 HEAD `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`에서 복구.
+- 남은 것: 앱에서 이 기능들까지 팔려면 Play 상품 6개 + 기능별 검증 경로 구현(B안). 문서 `docs/google-play-billing-setup.md`에 기록.
+
+### 2026-09-18 — Claude: 경력기술서·포트폴리오를 서류 목록(드로어)에 공개 — 사용자 결정
+
+- Agent: Claude, 같은 세션. 사용자 지시: "기능은 다 있는데 드로어 사이드바에 없는 거네, 메뉴에 추가해줘".
+- 배경: 두 도구는 입력·업로드·분류·AI 생성·결과·결제 코드가 모두 완성돼 있었지만 `application-document.ts`에서 `status: "preview"`라 목록에서 빠져 있었습니다(주소로 직접 들어가야 보임). 09-07 체크포인트의 "새 서류 3종의 preview를 임의로 available로 바꾸지 않는다 — 사용자가 확인 후 결정"에 따라 이번에 **사용자 결정으로** 엽니다.
+- Files: `src/domain/application-document.ts` — `career-description`, `portfolio-note`의 `status`를 `preview` → `available`. **법률(`legal-case`)은 사용자 지시대로 `preview` 유지**(웹은 개발중, 앱에서는 결제 진입점도 가려져 있음).
+- 부수 효과(의도됨): 같은 스위치가 `previewRobots()`도 함께 풉니다 — `/career-description`, `/portfolio`가 이제 검색 색인 대상이 됩니다.
+- **주의(미해결)**: `POLAR_CAREER_DESCRIPTION_PRODUCT_ID`, `POLAR_PORTFOLIO_PRODUCT_ID`가 아직 없으면 결제 단추가 502(`CONFIG_MISSING`)로 답합니다. 메뉴에 올라왔으므로 상품 생성 전까지는 그 경로로 들어온 사람이 결제에서 막힙니다. 상품 생성은 사용자 몫.
+- Validation: 타입 검사 통과, Vitest 154 파일 / 1,209 테스트 통과. 실제 화면에서 드로어 목록 확인 — 이력서·자기소개서·경력기술서·포트폴리오 설명글 노출, 법률 미노출.
+- Rollback: 같은 파일에서 두 항목의 `status`를 `"preview"`로 되돌리면 목록과 색인이 함께 닫힙니다.
+- 이번 세션이 만들지 않은 변경 발견: `artifacts/play-store/generate-screenshots.js`(19:38 생성, 다른 세션/사용자 작업)가 `require()` 사용으로 루트 ESLint 오류 2건을 냅니다. 손대지 않았습니다 — `artifacts/`를 ESLint 무시 목록에 넣을지 사용자 확인 필요.
+
+### 2026-09-18 — Claude: 앱 아이콘을 사용자가 준 무아레쥬메(핑크)로 교체 — 사용자 결정
+
+- Agent: Claude, 같은 세션. 사용자가 512×512 PNG 아이콘 이미지를 주고 "내 앱아이콘으로 적용해줘". 적용 범위는 물어서 **"전부 교체"**(설치 앱·PWA·iOS 홈 화면·브라우저 탭), 스플래시 색은 **"지금 그대로(초록)"**로 결정받았습니다.
+- 배경: 지금까지 아이콘은 코드로 그린 초록 사각형 + 흰 M(`icon-mark.tsx`의 `ImageResponse`)이었습니다. 새 아이콘은 비트맵이라 같은 방식으로 그릴 수 없어, 정적 파일로 바꾸고 매니페스트·메타데이터가 그 파일을 가리키게 했습니다.
+- **신규**: `public/icons/` — `icon-192.png`, `icon-512.png`, `apple-icon-180.png`, `icon-maskable-192.png`, `icon-maskable-512.png`. maskable은 원본을 80%로 줄이고 바깥을 아이콘 모서리 색(`#f7dde7`)으로 채운 별도 판입니다. **원본 그대로 쓰면 런처의 원형 마스크에 아래쪽 "무아레쥬메" 글자가 잘립니다.**
+- **수정**: `src/app/manifest.ts` — `icons`가 `/icon-192`·`/icon-512` 라우트 대신 위 정적 파일을 가리키고, maskable은 전용 파일로 분리. `name`·`theme_color`(#176b4a)·`background_color`(#f7f9f7)는 **사용자 결정대로 무수정**(스플래시는 초록 유지).
+- **수정**: `src/app/layout.tsx` — `icons`를 `/icon.svg` → `/icons/icon-192.png`(+`apple`: `/icons/apple-icon-180.png`). 같은 파일의 미커밋 변경(AppTabBar)과는 다른 줄이라 겹치지 않습니다.
+- **삭제(사용자 승인)**: `src/app/icon.svg`, `src/app/apple-icon.tsx`, `src/app/icon-mark.tsx`, `src/app/icon-192/route.tsx`, `src/app/icon-512/route.tsx` — 초록 M을 그리던 구현 일체. 남겨 두면 탭·iOS에서 초록 M이 계속 나와 교체가 반만 됩니다.
+- Validation: 타입 검사 — 남은 오류는 `.next/types/validator.ts`가 지워진 두 라우트를 참조하는 스테일 항목뿐(빌드 시 재생성). `next build` 통과 확인. 실기기·실제 Play 설치 아이콘은 미검증(아래 참조).
+- Rollback: 위 5개 파일을 HEAD `c020b5967e9ec596cf63fcedc4a3bfb63b00e075`에서 복구하고, `manifest.ts`/`layout.tsx`의 icons를 되돌린 뒤 `public/icons/` 삭제.
+- **남은 것(사용자 몫)**:
+  1. **설치된 Play 앱 아이콘은 이 변경으로 바뀌지 않습니다.** TWA(`com.mooaresume.twa`)는 빌드 시점에 아이콘을 APK/AAB 안에 굽습니다 — 웹 배포 후 bubblewrap으로 **재빌드·재업로드**해야 런처 아이콘이 바뀝니다.
+  2. Play Console 등록정보의 512×512 앱 아이콘은 별도 업로드: `artifacts/play-store/play-app-icon-512.png`.
+  3. 사이트 전체는 초록 브랜드(#176b4a)인데 아이콘만 핑크입니다. 로고·헤더까지 맞출지는 결정되지 않았습니다.
+
+### 2026-09-18 — Claude: 업무성향·직업가치 검사 로컬 즉시 공개(잠금 해제) — 사용자 지시
+
+- Agent: Claude, 같은 세션. 사용자 지시: "나머지 직업[가치], 업무성향 열어주고 즉시 런칭해줘."
+- 배경: 두 검사 모두 문항·채점·결과 화면(레이더 차트, `CareerAssessmentStorageNotice` 저장 연동)이 이미 완성돼 있었고, 막혀 있던 건 두 개의 독립된 잠금 스위치뿐이었습니다.
+- **수정**:
+  - `src/domain/career-assessment-openness.ts` — `OPEN` 배열에 `"work-style"`, `"values"` 추가(기존 `["interest"]`만 → 셋 다). 이 스위치 하나로 `/career/work-style`·`/career/values` 페이지의 실제 검사 노출과 SEO(`robots`/`canonical`)가 함께 풀립니다(파일 자체의 기존 설계).
+  - `src/domain/career-assessment-catalog.ts` — `mooa-work-style-ko`, `mooa-values-ko`의 `availability`를 `coming-soon` → `available`로, `route`를 각각 `/career/work-style`·`/career/values`로 추가. 이건 `/career/assessments` 목록 화면이 참조하는 **별개의 데이터**라, 앞의 스위치만으로는 목록에서 여전히 "결과지 준비 중"으로 잠긴 채였습니다(카드에 링크도 없었음) — 이 파일도 같이 바꿔야 실제로 찾아 들어올 수 있었습니다.
+- 캐릭터 카드는 아직 반영하지 않았습니다 — 직업흥미(RIASEC)만 30+6장 있고, 업무성향·직업가치는 0장입니다. 점수·레이더차트만으로 먼저 열렸습니다.
+- **직업가치 기준 불일치, 명시적으로 보류**: 사용자가 별도로 자율성/성장/안정/여유/의미/보상 6기준 캐릭터 카드 30장을 만들어 뒀지만, 지금 열린 실제 18문항은 기존 6기준(성취/독립성/인정/관계/지원/근무조건)을 그대로 씁니다. 두 기준은 다르고, **이미 검사를 마친 사람의 저장 결과가 지금 기준을 기준으로 남습니다** — 기준을 나중에 새 6가지로 바꾸면 그 결과들과 어긋납니다. 문항·채점 교체는 사용자 확인 후 별도 작업으로 진행하기로 하고 이번에는 손대지 않았습니다.
+- Validation: 타입 검사 통과, ESLint 오류 0/기존 무관 경고 2, Vitest 154 파일 / 1,209 테스트 통과(이 게이트에 의존하는 기존 테스트 없음 확인). 실제 화면에서 `/career/work-style`·`/career/values`가 준비중 안내 대신 실제 검사 인트로를 보여주는 것, `/career/assessments` 목록에서 3개 다 "지금 이용 가능"으로 뜨고 COMING SOON 0개인 것 확인.
+- Rollback: `career-assessment-openness.ts`의 `OPEN`을 `["interest"]`로, `career-assessment-catalog.ts`의 두 항목 `availability`를 `"coming-soon"`으로(및 `route` 제거) 되돌리면 원상복구.
+
+### 2026-09-18 — Claude: 직업가치 캐릭터 카드 연결, AI 심층해설 리포트 히어로, 대시보드 상태표 위치 매칭 버그 수정
+
+- Agent: Claude(별도 동시 세션), 같은 작업 트리. 이 항목은 그 세션이 자체 기록을 남기기 전에, 배포를 진행한 세션이 대신 정리했습니다 — 세부 판단 근거는 diff와 해당 세션이 채팅에 남긴 진행 로그를 근거로 요약한 것이며, 원 세션이 이후 더 상세한 항목을 추가할 수 있습니다.
+- **수정**:
+  - `src/domain/career-work-values.ts`, `src/components/career-values-character-gate.tsx`(신규), `src/components/career-values-character-result.tsx`(신규)/`.module.css`(신규) — 직업가치 검사 결과에 캐릭터 카드를 연결. 앞서(같은 날짜, 위 항목) "기준 불일치로 보류"했던 캐릭터 카드 작업의 후속.
+  - `src/components/career-ai-preparation.tsx`/`.module.css` — AI 심층해설 리포트 화면에 `.reportHero`/`.reportVisual`/`.reportHeroCopy`/`.reportBadge`/`.reportCode` 히어로 영역 추가, 기존 다크 리포트 카드 테마에 맞춤.
+  - `src/components/career-public-home.tsx` — 대시보드 "검사 기록" 상태표 버그 수정: 기존 코드는 완료한 검사만 순서대로 채운 `charts` 배열을 `assessments` 배열의 **고정 인덱스**로 대응시켜, 중간 검사 하나를 건너뛰면 다른 검사 결과가 엉뚱한 줄에 "COMPLETED"로 표시됐습니다(예: 업무성향 미완료 상태에서 직업가치만 완료해도 위치가 밀려 잘못 표시). `assessment.key`로 직접 찾는 `resultsByKey` 맵으로 바꿔 인덱스 의존을 없앴습니다.
+  - `src/components/career-ai-sample-design-three.tsx`, `src/components/career-values-reflection.tsx`, `src/components/career-values-result.tsx`, `src/domain/career-work-values.test.ts`(신규) — 위 변경에 맞춘 연동 수정과 테스트 추가.
+- Validation(배포 세션이 재확인): 루트 `npm run typecheck` 통과, `npm run lint` 오류 0/기존 무관 경고 2(위 항목과 동일한 경고), `npm run test` 155개 파일 / 1,221개 테스트 전부 통과.
+- Rollback: 이 커밋에서 위 파일들만 되돌리면 원상복구(대시보드 버그 수정 전 상태로 돌아가면 직업가치/업무성향 중 하나만 완료 시 상태표 오표시가 재현됨).

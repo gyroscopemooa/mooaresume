@@ -1,16 +1,55 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { ArrowRight, BrainCircuit, CheckCircle2, FileText, LayoutDashboard, LoaderCircle, LockKeyhole, ShieldCheck, Target } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ChangeEvent } from "react";
+import { ArrowRight, BrainCircuit, CheckCircle2, FileText, LayoutDashboard, LoaderCircle, LockKeyhole, ShieldCheck, Target, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CAREER_AI_SAMPLE_SCOPES, getCareerAiSample } from "@/domain/career-ai-sample";
 import { CAREER_AI_COMBINED_PRICE_KRW, CAREER_AI_SINGLE_PRICE_KRW } from "@/domain/builder-pricing";
 import { CAREER_AI_MATERIAL_MAX_CHARS, type CareerInterpretationOutput } from "@/domain/career-ai-contract";
+import { LOCAL_DOCUMENT_ACCEPT } from "@/lib/local-document";
+import { scoreCareerInterest, getInterestProfile, getRiasecCharacterProfile, type InterestAnswer } from "@/domain/career-interest";
+import { scoreWorkValues, getWorkValueProfile, getWorkValueCharacterProfile, type WorkValueAnswer } from "@/domain/career-work-values";
 import styles from "./career-ai-preparation.module.css";
+import { AppPaidToolNotice, useInstalledApp } from "@/components/app-paid-tool-gate";
 
+type ReportHero = { code: string; title: string; descriptor: string; imagePath: string; badge: string };
+
+/**
+ * 실제 결제 후 리포트(`CareerAiReportView`)에 캐릭터 포스터를 붙이기 위한
+ * 히어로 카드 — 직업흥미·직업가치처럼 캐릭터 카드 체계가 있는 scope만
+ * 만든다. 업무성향·종합은 카드 체계가 없어 항상 null이다.
+ */
+function computeReportHero(scope: Scope, interestRaw: string | null, valuesRaw: string | null): ReportHero | null {
+  try {
+    if (scope === "interest" && interestRaw) {
+      const scores = scoreCareerInterest(JSON.parse(interestRaw) as Record<string, InterestAnswer>);
+      const profile = getInterestProfile(scores);
+      const character = getRiasecCharacterProfile(profile.code);
+      return { code: character.code, title: character.cardTitle, descriptor: character.descriptor, imagePath: character.imagePath, badge: "RIASEC 캐릭터" };
+    }
+    if (scope === "work_values" && valuesRaw) {
+      const scores = scoreWorkValues(JSON.parse(valuesRaw) as Record<string, WorkValueAnswer>);
+      const profile = getWorkValueProfile(scores);
+      const character = getWorkValueCharacterProfile(profile.code);
+      return { code: character.code, title: character.title, descriptor: character.descriptor, imagePath: character.imagePath, badge: "WORK VALUES 캐릭터" };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+const MATERIAL_LABEL: Record<MaterialField, string> = { resumeText: "이력서", coverLetterText: "자기소개서", jobPostingText: "채용 공고" };
+const MATERIAL_FIELD_CONFIG: Array<{ field: MaterialField; id: string; placeholder: string }> = [
+  { field: "resumeText", id: "career-ai-resume", placeholder: "이력서 내용을 붙여넣거나, 위에서 PDF·DOCX 파일을 올려 채우세요." },
+  { field: "coverLetterText", id: "career-ai-cover-letter", placeholder: "자소서를 붙여넣거나 파일을 올리면 실제로 쓴 표현과 결과를 대조합니다." },
+  { field: "jobPostingText", id: "career-ai-job-posting", placeholder: "지원하려는 공고를 붙여넣거나 파일을 올리면 그 공고에서 확인할 질문을 함께 정리합니다." },
+];
 const MATERIAL_STORAGE_KEY = "mooa.career-ai-build.material.v1";
 type Material = { resumeText: string; coverLetterText: string; jobPostingText: string };
+type MaterialField = keyof Material;
 const EMPTY_MATERIAL: Material = { resumeText: "", coverLetterText: "", jobPostingText: "" };
 
 function readStoredMaterial(): Material {
@@ -45,6 +84,9 @@ function isAssessmentKey(value: string): value is AssessmentKey {
 type ExecutionPhase = "idle" | "creating_checkout" | "generating" | "done" | "error";
 
 export function CareerAiPreparation({ scope }: { scope: Scope }) {
+  // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
+  // 정책이 앱 안에서의 외부 결제를 금지합니다.
+  const inApp = useInstalledApp();
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [accountCompleted, setAccountCompleted] = useState<AssessmentKey[]>([]);
   const [accountLoading, setAccountLoading] = useState(true);
@@ -53,6 +95,14 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingBuildId, setPendingBuildId] = useState<string | null>(null);
   const [material, setMaterial] = useState<Material>(EMPTY_MATERIAL);
+  // 파일 업로드 상태(이력서·자기소개서·공고 세 칸 공용). 모두 이 브라우저
+  // 안에서만 읽어 같은 텍스트박스에 채웁니다 — 서버나 API를 하나도 늘리지 않고,
+  // 붙여넣은 것과 토큰 비용이 같습니다.
+  const [fileState, setFileState] = useState<Record<MaterialField, { busy: boolean; error: string; filename: string }>>({
+    resumeText: { busy: false, error: "", filename: "" },
+    coverLetterText: { busy: false, error: "", filename: "" },
+    jobPostingText: { busy: false, error: "", filename: "" },
+  });
 
   useEffect(() => {
     let active = true;
@@ -139,7 +189,40 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
     queueMicrotask(() => { void runExecute(pendingBuildId, readStoredMaterial()); });
   }, [pendingBuildId, runExecute]);
 
+  /**
+   * 이력서·자기소개서·공고 중 하나를 이 브라우저 안에서만 읽어 해당 칸에
+   * 채웁니다.
+   *
+   * extractLocalDocument는 PDF/DOCX/TXT/MD를 서버 없이 해독합니다(이미
+   * 이력서 첨삭 화면이 쓰는 것과 같은 함수). 결과는 이 텍스트박스에
+   * 그대로 들어가므로, 직접 붙여넣은 것과 토큰 비용이 같습니다 — 입력
+   * 단계가 하나 줄었을 뿐입니다. 분량이 상한을 넘으면 잘라내고, 잘린
+   * 사실을 그대로 알립니다.
+   */
+  async function handleMaterialFile(field: MaterialField, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setFileState((current) => ({ ...current, [field]: { ...current[field], busy: true, error: "" } }));
+    try {
+      const { extractLocalDocument } = await import("@/lib/local-document");
+      const result = await extractLocalDocument(file);
+      const truncated = result.text.slice(0, CAREER_AI_MATERIAL_MAX_CHARS);
+      setMaterial((current) => ({ ...current, [field]: truncated }));
+      const overflowError = result.text.length > CAREER_AI_MATERIAL_MAX_CHARS
+        ? `분량이 많아 앞부분 ${CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자만 채웠습니다. 필요하면 직접 다듬어 주세요.`
+        : "";
+      setFileState((current) => ({ ...current, [field]: { busy: false, error: overflowError, filename: result.filename } }));
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : "파일을 읽지 못했어요.";
+      setFileState((current) => ({ ...current, [field]: { ...current[field], busy: false, error: message } }));
+    }
+  }
+
   async function startCheckout() {
+    // 앱에서는 외부 결제창을 열지 않습니다. 버튼도 가려져 있지만, 다른 경로로
+    // 불려도 여기서 멈춥니다.
+    if (inApp) return;
     setErrorMessage(null);
     setPhase("creating_checkout");
     try {
@@ -168,6 +251,7 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
   const required = scope === "combined" ? assessments : assessments.filter((assessment) => assessment.key === scope);
   const missing = required.filter((assessment) => !complete.some((done) => done.key === assessment.key));
   const isCombined = scope === "combined";
+  const reportHero = useMemo(() => computeReportHero(scope, interestRaw, valuesRaw), [scope, interestRaw, valuesRaw]);
 
   if (signedIn === null || (signedIn && accountLoading)) return <AiLoadingScreen />;
 
@@ -202,21 +286,24 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
         <section className={styles.choiceSection} aria-label="추가 자료 입력">
           <div className={styles.sectionTitle}><small>OPTIONAL MATERIAL</small><b>자료를 더하면 더 구체적으로 해설해요</b></div>
           <div className={styles.materialGrid}>
-            <div className={styles.materialField}>
-              <label htmlFor="career-ai-resume">이력서 <small>선택</small></label>
-              <textarea id="career-ai-resume" rows={4} maxLength={CAREER_AI_MATERIAL_MAX_CHARS} value={material.resumeText} disabled={busy} placeholder="이력서 내용을 붙여넣으면 실제 경력과 연결해서 해설합니다." onChange={(event) => setMaterial((current) => ({ ...current, resumeText: event.target.value }))} />
-              <small>{material.resumeText.length.toLocaleString()} / {CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자</small>
-            </div>
-            <div className={styles.materialField}>
-              <label htmlFor="career-ai-cover-letter">자기소개서 <small>선택</small></label>
-              <textarea id="career-ai-cover-letter" rows={4} maxLength={CAREER_AI_MATERIAL_MAX_CHARS} value={material.coverLetterText} disabled={busy} placeholder="자소서를 붙여넣으면 실제로 쓴 표현과 결과를 대조합니다." onChange={(event) => setMaterial((current) => ({ ...current, coverLetterText: event.target.value }))} />
-              <small>{material.coverLetterText.length.toLocaleString()} / {CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자</small>
-            </div>
-            <div className={styles.materialField}>
-              <label htmlFor="career-ai-job-posting">채용 공고 <small>선택</small></label>
-              <textarea id="career-ai-job-posting" rows={4} maxLength={CAREER_AI_MATERIAL_MAX_CHARS} value={material.jobPostingText} disabled={busy} placeholder="지원하려는 공고를 붙여넣으면 그 공고에서 확인할 질문을 함께 정리합니다." onChange={(event) => setMaterial((current) => ({ ...current, jobPostingText: event.target.value }))} />
-              <small>{material.jobPostingText.length.toLocaleString()} / {CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자</small>
-            </div>
+            {MATERIAL_FIELD_CONFIG.map(({ field, id, placeholder }) => {
+              const status = fileState[field];
+              return <div className={styles.materialField} key={field}>
+                <div className={styles.materialFieldHead}>
+                  <label htmlFor={id}>{MATERIAL_LABEL[field]} <small>선택</small></label>
+                  {/* 파일에서 채우기 — extractLocalDocument가 이 브라우저 안에서만
+                      읽으므로 서버 호출·토큰 비용이 붙여넣기와 같습니다. */}
+                  <label className={styles.materialUpload} aria-disabled={busy || status.busy}>
+                    {status.busy ? <LoaderCircle className={styles.materialUploadSpin} /> : <Upload />}
+                    {status.busy ? "읽는 중..." : "파일에서 채우기"}
+                    <input type="file" accept={LOCAL_DOCUMENT_ACCEPT} disabled={busy || status.busy} onChange={(event) => void handleMaterialFile(field, event)} />
+                  </label>
+                </div>
+                <textarea id={id} rows={4} maxLength={CAREER_AI_MATERIAL_MAX_CHARS} value={material[field]} disabled={busy} placeholder={placeholder} onChange={(event) => setMaterial((current) => ({ ...current, [field]: event.target.value }))} />
+                <small>{status.filename && !status.error ? `${status.filename}에서 채움 · ` : ""}{material[field].length.toLocaleString()} / {CAREER_AI_MATERIAL_MAX_CHARS.toLocaleString()}자</small>
+                {status.error && <small className={styles.materialUploadError}>{status.error}</small>}
+              </div>;
+            })}
           </div>
           <span className={styles.materialNote}><ShieldCheck />붙여넣은 자료는 해설을 만드는 데만 쓰이고 서버에 저장하지 않습니다. 비워 두면 검사 결과만으로 해설합니다.</span>
         </section>
@@ -229,24 +316,30 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
         {phase === "done"
           ? <span className={styles.packageFoot}><ShieldCheck />아래에서 해설을 확인하세요.</span>
           : <>
-            <button type="button" onClick={() => void startCheckout()} disabled={busy}>
-              {phase === "creating_checkout" ? "결제 페이지 여는 중..." : phase === "generating" ? "AI가 해설 만드는 중..." : <>{priceKrw.toLocaleString("ko-KR")}원 · 심층해설 받기 <ArrowRight /></>}
-            </button>
-            <span className={styles.packageFoot}><ShieldCheck />결제 확인 후에만 AI를 호출합니다.</span>
+            {inApp ? <AppPaidToolNotice tool="AI 심층해설" /> : <>
+              <button type="button" onClick={() => void startCheckout()} disabled={busy}>
+                {phase === "creating_checkout" ? "결제 페이지 여는 중..." : phase === "generating" ? "AI가 해설 만드는 중..." : <>{priceKrw.toLocaleString("ko-KR")}원 · 심층해설 받기 <ArrowRight /></>}
+              </button>
+              <span className={styles.packageFoot}><ShieldCheck />결제 확인 후에만 AI를 호출합니다.</span>
+            </>}
           </>}
         {phase === "error" && errorMessage && <span className={styles.packageFoot} role="alert">{errorMessage}</span>}
         {phase === "error" && pendingBuildId && <button type="button" onClick={() => void runExecute(pendingBuildId, material)}>결제한 건으로 다시 시도 <ArrowRight /></button>}
       </aside>
     </section>
     {phase === "generating" && <div className={styles.loading} aria-live="polite"><LoaderCircle /><span><b>AI가 심층해설을 만들고 있어요.</b><small>보통 1분 안팎으로 끝나요. 창을 닫지 말아 주세요.</small></span></div>}
-    {phase === "done" && report && <CareerAiReportView output={report} />}
+    {phase === "done" && report && <CareerAiReportView output={report} hero={reportHero} />}
     <SampleReportGallery activeScope={scope} />
     <Link className={styles.ghostLink} href="/career/profile">종합 커리어 프로필로</Link>
   </AiFrame>;
 }
 
-function CareerAiReportView({ output }: { output: CareerInterpretationOutput }) {
+function CareerAiReportView({ output, hero }: { output: CareerInterpretationOutput; hero: ReportHero | null }) {
   return <section className={styles.sampleReport} aria-label="AI 심층해설 결과">
+    {hero && <div className={styles.reportHero}>
+      <div className={styles.reportVisual}><Image src={hero.imagePath} alt={`${hero.code} ${hero.title} 캐릭터 카드`} fill sizes="(max-width: 760px) 100vw, 220px" quality={100} unoptimized /></div>
+      <div className={styles.reportHeroCopy}><span className={styles.reportBadge}>{hero.badge}</span><p className={styles.reportCode}>{hero.code}<small>· {hero.title}</small></p><p>{hero.descriptor}</p></div>
+    </div>}
     <div className={styles.sampleHead}><span>AI DEEP INTERPRETATION · 완료</span><h2>{output.profileSummary}</h2></div>
     <div className={styles.sampleGrid}>
       {output.workEnvironmentHypotheses.map((hypothesis) => (

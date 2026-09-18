@@ -1,0 +1,102 @@
+/* 앱 셸의 첨삭 화면.
+   좁은 화면이 기준입니다. 데스크톱 브라우저로 /app을 열면 같은 화면이 가운데
+   한 단으로 서고, 글자와 누르는 자리는 손가락 기준(최소 44px)을 유지합니다.
+   입력 칸의 16px는 취향이 아닙니다 — iOS Safari는 그보다 작은 글씨의 입력에
+   초점이 가면 화면을 확대하고 되돌리지 않습니다. */
+
+.shell { min-height: 100vh; background: #f7f9f7; color: #17221d; }
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  gap: 10px;
+  padding: 10px 16px 12px;
+  background: #fff;
+  border-bottom: 1px solid #dfe6e2;
+}
+.brandRow { display: flex; align-items: center; justify-content: space-between; }
+.brand { font-size: 15px; letter-spacing: -0.02em; color: #17221d; }
+.brand b { color: #176b4a; }
+.help { min-height: 32px; display: flex; align-items: center; color: #68756f; font-size: 12.5px; }
+
+.products { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.product, .productOn {
+  min-height: 52px;
+  display: grid;
+  gap: 2px;
+  padding: 7px 4px;
+  border: 1px solid #dce5e0;
+  border-radius: 10px;
+  background: #fff;
+  color: #54645b;
+  cursor: pointer;
+}
+.product b, .productOn b { font-size: 13px; }
+.product small, .productOn small { font-size: 11px; color: #8a968f; }
+.productOn { border-color: #176b4a; background: #edf7f1; color: #176b4a; box-shadow: inset 0 0 0 1px #176b4a; }
+.productOn small { color: #2d7d58; }
+.product[aria-disabled="true"] { opacity: 0.55; cursor: default; }
+
+.types { display: flex; flex-wrap: wrap; gap: 6px; }
+.type, .typeOn {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #dce5e0;
+  border-radius: 20px;
+  background: #fff;
+  color: #54645b;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.typeOn { border-color: #176b4a; background: #176b4a; color: #fff; }
+
+.summary { margin: 0; color: #68756f; font-size: 12.5px; line-height: 1.6; }
+
+/* 입력 화면은 그대로 얹습니다. 자기 여백을 이미 들고 있으므로, 여기서는
+   앱 헤더와 붙지 않도록만 잡아 줍니다. */
+.body { padding-top: 4px; }
+
+.createCard {
+  display: grid;
+  gap: 12px;
+  margin: 16px;
+  padding: 18px;
+  border: 1px solid #dce5e0;
+  border-radius: 14px;
+  background: #fff;
+}
+.createCard > svg { width: 22px; color: #176b4a; }
+.createCard b { font-size: 15px; }
+.createCard p { margin: 6px 0 0; color: #68756f; font-size: 13px; line-height: 1.75; }
+.createGo {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 10px;
+  background: #176b4a;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+.createGo svg { width: 16px; }
+
+.privacy {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px 28px;
+  color: #68756f;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.privacy svg { width: 15px; flex: none; color: #176b4a; }
+
+@media (min-width: 720px) {
+  .shell { max-width: 720px; margin: 0 auto; }
+  .top { padding: 14px 20px; }
+}

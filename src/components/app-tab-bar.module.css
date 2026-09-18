@@ -1,0 +1,32 @@
+/* 하단 메뉴바. 손가락 기준 높이(56px + 안전영역)와, 가려지지 않도록 같은
+   높이의 자리(spacer)를 함께 둡니다. */
+
+.spacer { height: calc(58px + env(safe-area-inset-bottom, 0px)); }
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #fff;
+  border-top: 1px solid #dfe6e2;
+}
+
+.hidden { display: none; }
+
+.tab, .tabOn {
+  min-height: 58px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  color: #77837c;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.tab svg, .tabOn svg { width: 20px; height: 20px; }
+.tabOn { color: #176b4a; }

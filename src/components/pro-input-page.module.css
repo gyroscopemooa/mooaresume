@@ -173,3 +173,36 @@
 }
 .styleHint svg { flex: none; width: 16px; margin-top: 2px; color: #176b4a; }
 .styleHint b { color: #24352c; }
+
+/* ------------------------------------------------------------------
+   앱 셸(`/app`) 전용. `variant="app"`일 때만 붙는 `.appPage` 아래에서만
+   적용되므로 웹 화면은 위 규칙 그대로입니다.
+   ------------------------------------------------------------------
+   테두리를 셉니다: 앱 헤더 · 이 폼 카드 · 간편 입력 상자 · 입력칸. 네 겹을
+   겹쳐 놓고 정작 글을 치는 칸이 가장 좁았습니다. 폼 카드를 벗고 좌우 여백을
+   줄여 입력칸이 화면 폭을 쓰게 합니다. */
+.appPage .container { width: 100%; padding: 8px 0 20px; }
+.appPage .form {
+  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.appPage .topRow { padding: 0 14px; }
+.appPage .modeSwitch { margin-bottom: 12px; }
+.appPage .modeSwitch small { margin-top: 6px; font-size: 10.5px; }
+/* 결과에 포함되는 것과 안내는 화면 아래로 몰아 두고, 상자 대신 줄로 둡니다. */
+.appPage .included {
+  margin-top: 14px;
+  padding: 12px 0 0;
+  border-top: 1px solid #e4eae7;
+  border-radius: 0;
+  background: transparent;
+}
+.appPage .notice {
+  margin: 12px 0;
+  padding: 0;
+  background: transparent;
+}
+.appPage .notice > svg { width: 14px; }
+.appPage .submit { min-height: 52px; font-size: 15px; }

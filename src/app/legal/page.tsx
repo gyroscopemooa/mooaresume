@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { LegalCaseStarter } from "@/components/legal-case-starter";
-import { DocumentToolHeader } from "@/components/document-tool-header";
+import { LegalServiceHeader, LegalServiceFooter } from "@/components/legal-service-header";
 import { previewRobots } from "@/domain/application-document";
 import { listLegalCases } from "@/server/legal/legal-case-repository";
 import { LegalGuide } from "./legal-guide";
@@ -56,8 +56,9 @@ export default async function LegalHomePage() {
 
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
-    <DocumentToolHeader />
+    <LegalServiceHeader />
     <LegalCaseStarter initialCases={viewer.cases} signedIn={viewer.signedIn} />
     <LegalGuide />
+    <LegalServiceFooter />
   </>;
 }

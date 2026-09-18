@@ -27,6 +27,7 @@ import {
 } from "@/domain/candidate-material";
 import { writingStyleConfig, type WritingStyle } from "@/domain/writing-style";
 import { editingStanceConfig, type EditingStance } from "@/domain/editing-stance";
+import { clearAppIntakeDraft, loadAppIntakeDraft, saveAppIntakeDraft } from "@/lib/app-intake-draft";
 import { SimpleIntake, type SimpleIntakeFile } from "./simple-intake";
 import { IntakeNotes } from "./intake-notes";
 import { PRO_INCLUDED_LIMIT_CHARS } from "@/domain/usage-entitlement";
@@ -37,7 +38,17 @@ import actionStyles from "./blocked-action.module.css";
 // `product` decides which tier the saved draft is for. It defaults to PRO
 // because every route that existed before FINAL is a PRO route, and a default
 // keeps those pages untouched.
-type Props = { mode: "CREATE" | "BUILD" | "POLISH"; product?: "PRO" | "FINAL" };
+type Props = {
+  mode: "CREATE" | "BUILD" | "POLISH";
+  product?: "PRO" | "FINAL";
+  /**
+   * `"app"`은 하이브리드 앱 셸(`/app`) 안에서 쓰는 모양입니다. 같은 입력·검증·
+   * 저장 로직을 그대로 쓰고, 앱 셸이 이미 들고 있는 것(사이트 헤더, 이전으로,
+   * 진행 순서 카드, 제목)만 덜어 냅니다. 기본값 `"web"`에서는 이 파일의 동작이
+   * 한 줄도 달라지지 않습니다.
+   */
+  variant?: "web" | "app";
+};
 
 const modeContent = {
   CREATE: {
@@ -96,7 +107,8 @@ const writingStyles: WritingStyle[] = ["CONCISE", "BALANCED", "STRENGTH_FOCUSED"
 const editingStances: EditingStance[] = ["SAFE", "BALANCED", "CONVICTION"];
 const profileCategoryLabels = Object.fromEntries(profileCategories) as Record<ProfileEntryCategory, string>;
 
-export function ProInputPage({ mode, product = "PRO" }: Props) {
+export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) {
+  const inApp = variant === "app";
   const router = useRouter();
   const content = modeContent[mode];
   const Icon = mode === "POLISH" ? FileCheck2 : mode === "BUILD" ? FilePenLine : Sparkles;
@@ -155,6 +167,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
   function resetDraft() {
     if (!window.confirm("입력한 지원서와 추가 자료를 모두 지우고 새로 시작할까요?")) return;
     clearGuestDraft();
+    clearAppIntakeDraft();
     sessionStorage.removeItem("mooa:guest-job-posting:v1");
     sessionStorage.removeItem("mooa:guest-job-posting-source:v1");
     sessionStorage.removeItem(materialStorageKey);
@@ -176,13 +189,84 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
     setSplitConfirmed(false);
     setSimpleDraft("");
     setSimpleFiles([]);
+    setSimpleFacts("");
+    setSimpleDirection("");
+    setSimpleTargets({});
     setSimpleError("");
     setSimpleTargetLength(String(DEFAULT_TARGET_LENGTH));
     setResetKey((key) => key + 1);
   }
 
+  // 앱에서 탭을 옮겼다 돌아온 경우. 복원이 끝날 때까지 자동 저장을 멈춰
+  // 둡니다 — 빈 화면이 먼저 저장되면 복원할 것이 없어집니다.
+  const [restored, setRestored] = useState(!inApp);
+  const [draftPersisted, setDraftPersisted] = useState(true);
+
+  useEffect(() => {
+    if (!inApp) return;
+    // 아래 기존 복원 효과와 같은 모양으로 한 틱 뒤에 넣습니다 — 효과 본문에서
+    // 곧바로 setState를 부르면 렌더가 연쇄로 돌고, 이 저장소의 lint도 그것을
+    // 막습니다.
+    const timeout = window.setTimeout(() => {
+    const saved = loadAppIntakeDraft();
+    setRestored(true);
+    if (!saved) return;
+    setInputMode(saved.inputMode);
+    setSimpleDraft(saved.simpleDraft);
+    setSimpleDraftRole(saved.simpleDraftRole);
+    setSimpleFiles(saved.simpleFiles);
+    setSimpleTargetLength(saved.simpleTargetLength);
+    setSimpleTargets(Object.fromEntries(Object.entries(saved.simpleTargets).map(([index, value]) => [Number(index), value])));
+    setSimpleFacts(saved.simpleFacts);
+    setSimpleDirection(saved.simpleDirection);
+    if (saved.questions.length > 0) setQuestions(saved.questions);
+    setPosting(saved.posting);
+    setPostingUrl(saved.postingUrl);
+    setPostingFilenames(saved.postingFilenames);
+    setCompanyName(saved.companyName);
+    setRoleName(saved.roleName);
+    if (saved.materials) {
+      setFreeformNotes(saved.materials.freeformNotes);
+      setFreeformAttachments(saved.materials.freeformAttachments);
+      setExperiences(saved.materials.experiences);
+      setProfileEntries(saved.materials.profileEntries);
+      setMaterialAttachments(saved.materials.materialAttachments);
+    }
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [inApp]);
+
+  useEffect(() => {
+    if (!inApp || !restored) return;
+    // 한 글자마다 직렬화하지 않습니다. 첨부에서 뽑은 글이 함께 들어가므로
+    // 타이핑마다 저장하면 긴 자소서에서 눈에 보이게 느려집니다.
+    const timeout = window.setTimeout(() => {
+      setDraftPersisted(saveAppIntakeDraft({
+        inputMode,
+        simpleDraft,
+        simpleDraftRole,
+        simpleFiles,
+        simpleTargetLength,
+        simpleTargets: Object.fromEntries(Object.entries(simpleTargets).map(([index, value]) => [String(index), value])),
+        simpleFacts,
+        simpleDirection,
+        questions,
+        posting,
+        postingUrl,
+        postingFilenames,
+        companyName,
+        roleName,
+        materials: { schemaVersion: "1.0", freeformNotes, freeformAttachments, experiences, profileEntries, materialAttachments },
+      }));
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [inApp, restored, inputMode, simpleDraft, simpleDraftRole, simpleFiles, simpleTargetLength, simpleTargets, simpleFacts, simpleDirection, questions, posting, postingUrl, postingFilenames, companyName, roleName, freeformNotes, freeformAttachments, experiences, profileEntries, materialAttachments]);
+
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      // 앱에서 복원한 초안이 있으면 그것이 최신입니다 — 이전 화면으로
+      // 넘어가며 저장된 게스트 초안으로 덮어쓰지 않습니다.
+      if (inApp && loadAppIntakeDraft()) return;
       const guest = loadGuestDraft();
       if (guest) { setQuestions(guest.questions ?? (guest.questionDrafts ?? [guest.draftText]).map((answer, index) => createCoverLetterQuestion(answer, index))); setWritingStyle(guest.writingStyle); setEditingStance(guest.editingStance ?? "BALANCED"); setCarriedRequest(guest.revisionRequest ?? ""); }
       try {
@@ -199,6 +283,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
       }
     }, 0);
     return () => window.clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -317,7 +402,12 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         : "첨삭할 자기소개서 답변이 하나 이상 필요해요. 빈 문항은 그대로 두어도 됩니다."
       : "";
 
-  return <main className={styles.page}>
+  const anythingEntered = Boolean(posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile
+    || simpleDraft.trim() || simpleFiles.length > 0 || questions.some((question) => question.answer.trim())
+    || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim()
+    || freeformAttachments.length > 0 || materialAttachments.length > 0);
+
+  return <main className={inApp ? `${styles.page} ${styles.appPage}` : styles.page}>
     {gapPrompt && <div className={styles.gapOverlay} role="dialog" aria-modal="true" aria-labelledby="gap-prompt-title">
       <div className={styles.gapDialog}>
         <b id="gap-prompt-title">이대로 진행할까요?</b>
@@ -330,18 +420,20 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
       </div>
     </div>}
 
-    <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>PRO · 기업 지원서 1건 · 12,900원</span></header>
+    {!inApp && <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>PRO · 기업 지원서 1건 · 12,900원</span></header>}
     <div className={styles.container}>
-      <div className={styles.topRow}>
+      {inApp
+        ? anythingEntered && <div className={styles.topRow}><span/><button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button></div>
+        : <div className={styles.topRow}>
         <Link href="/onboarding" className={styles.back}><ArrowLeft/> 이전으로</Link>
-        {mode === "CREATE" && (posting.trim() || postingUrl.trim() || postingFilenames.length > 0 || resumeFile || questions.some((question) => question.answer.trim()) || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim() || freeformAttachments.length > 0 || materialAttachments.length > 0) && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
-      </div>
-      <div className={styles.heading}><Icon/><div><small>{content.label}</small><h1>{content.title}</h1><p>{content.description}</p></div></div>
+        {mode === "CREATE" && anythingEntered && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
+      </div>}
+      {!inApp && <div className={styles.heading}><Icon/><div><small>{content.label}</small><h1>{content.title}</h1><p>{content.description}</p></div></div>}
 
-      <section className={styles.flow}>
+      {!inApp && <section className={styles.flow}>
         <div><small>이 유형의 진행 순서</small><h2>{mode === "CREATE" ? "경험을 찾고 확인한 뒤 쓰는 흐름" : mode === "BUILD" ? "부족한 내용을 찾아 채우는 흐름" : "작성본을 바로 검수하는 흐름"}</h2></div>
         <ol>{content.steps.map(([number,title,description]) => <li key={number}><span>{number}</span><div><b>{title}</b><p>{description}</p></div></li>)}</ol>
-      </section>
+      </section>}
 
       <section className={styles.form}>
         {/* Both panes stay mounted. Switching back and forth is a comparison,
@@ -362,7 +454,9 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
             <span className={inputMode === "SIMPLE" ? styles.modeOn : ""}>간편 입력</span>
             <span className={inputMode === "DETAILED" ? styles.modeOn : ""}>상세 입력</span>
           </button>
-          <small>입력 방식만 다르고 첨삭·분석 수준은 같습니다. 간편 입력은 자료를 한 번에 넣으면 자동 분류합니다.</small>
+          <small>{inApp
+            ? "첨삭 수준은 같습니다. 스타일을 직접 고르려면 상세 입력."
+            : "입력 방식만 다르고 첨삭·분석 수준은 같습니다. 간편 입력은 자료를 한 번에 넣으면 자동 분류합니다."}</small>
         </div>
 
         {inputMode === "SIMPLE" && <>
@@ -370,7 +464,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
             const next = { ...current };
             if (value === null) delete next[index]; else next[index] = value;
             return next;
-          })} lengthLoss={describeLengthLoss(simpleLengthPlans)} limitCharacters={PRO_INCLUDED_LIMIT_CHARS} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError}/>
+          })} lengthLoss={describeLengthLoss(simpleLengthPlans)} limitCharacters={PRO_INCLUDED_LIMIT_CHARS} files={simpleFiles} onFilesChange={setSimpleFiles} onError={setSimpleError} variant={variant}/>
           {simpleError && <p className={styles.inputError}>{simpleError}</p>}
           {simpleMapping && simpleMapping.droppedFilenames.length > 0 && <p className={styles.postingWarning}><b>자료가 너무 많아 일부는 빼고 진행합니다.</b> {simpleMapping.droppedFilenames.join(", ")} — 꼭 필요한 자료라면 다른 파일을 빼고 다시 넣어 주세요.</p>}
 
@@ -380,13 +474,13 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
               처음에는 아래쪽 스타일 선택 자리에 두었는데, 그 자리는 간편
               입력일 때 `hiddenPane`으로 통째로 감춰지는 칸 안이라 영영 보이지
               않았습니다. 안내는 감춰지는 칸 밖에 있어야 합니다. */}
-          <p className={styles.styleHint}>
+          {!inApp && <p className={styles.styleHint}>
             <LockKeyhole/>
             <span>
               <b>작성 스타일과 첨삭 방향은 기본값(균형)으로 진행합니다.</b>{" "}
               직접 고르고 싶으시면 위에서 <b>상세 입력</b>으로 바꿔 주세요.
             </span>
-          </p>
+          </p>}
         </>}
 
         <div className={inputMode === "SIMPLE" ? styles.hiddenPane : undefined}>
@@ -493,6 +587,7 @@ export function ProInputPage({ mode, product = "PRO" }: Props) {
         </section>
         </>}
         </div>
+        {inApp && !draftPersisted && <p className={styles.postingWarning}><b>첨부가 많아 화면을 옮기면 입력이 유지되지 않을 수 있습니다.</b> 지금 화면에서 바로 진행하시거나, 쓰지 않는 자료를 빼 주세요.</p>}
         <div className={styles.notice}><LockKeyhole/><span><b>아직 서버로 전송하지 않습니다.</b><small>다음 화면에서 범위를 확인한 뒤 로그인·결제 경계로 이동합니다.</small></span></div>
         {blockedReason && <p className={actionStyles.message}><b>아직 {content.cta}을 진행할 수 없어요.</b><br/>{blockedReason}</p>}
         <div className={actionStyles.wrap} onMouseEnter={() => blockedReason && setShowBlockedTip(true)} onMouseLeave={() => setShowBlockedTip(false)} onFocus={() => blockedReason && setShowBlockedTip(true)} onBlur={() => setShowBlockedTip(false)}>

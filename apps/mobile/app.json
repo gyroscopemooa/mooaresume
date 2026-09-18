@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "MOOA Resume",
+    "slug": "mooa-resume",
+    "version": "0.1.0",
+    "scheme": "mooaresume",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "android": {
+      "package": "com.mooaresume.app",
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_CONTACTS", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.mooaresume.app",
+      "supportsTablet": true
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-localization",
+      "expo-sharing",
+      "expo-iap",
+      "expo-asset",
+      "expo-font"
+    ],
+    "web": {
+      "name": "MOOA Resume · App Preview",
+      "bundler": "metro"
+    }
+  }
+}
+

@@ -35,6 +35,16 @@ export async function handleGooglePlayVerifyRequest(request: NextRequest) {
     const { client, config } = createAndroidPublisherClientFromEnv();
     const result = await processGooglePlayPurchase({
       rawRequest: body,
+      currentUserId: authData.user.id,
+      loadRunCaseId: async (analysisRunId) => {
+        // The caller's own client: RLS returns nothing for someone else's run.
+        const { data } = await supabase
+          .from("analysis_runs")
+          .select("application_case_id")
+          .eq("id", analysisRunId)
+          .maybeSingle();
+        return typeof data?.application_case_id === "string" ? data.application_case_id : null;
+      },
       loadContext: async (analysisRunId) => {
         const { data, error } = await supabase.rpc("prepare_quick_checkout", {
           p_analysis_run_id: analysisRunId,
@@ -55,6 +65,7 @@ export async function handleGooglePlayVerifyRequest(request: NextRequest) {
           purchaseState: response.data.purchaseState ?? null,
           orderId: response.data.orderId ?? null,
           acknowledgementState: response.data.acknowledgementState ?? null,
+          regionCode: response.data.regionCode ?? null,
         };
       },
       acknowledgePurchase: async (productId, purchaseToken) => {
@@ -76,8 +87,9 @@ export async function handleGooglePlayVerifyRequest(request: NextRequest) {
       }, { status: 400 });
     }
     if (error instanceof GooglePlayVerificationError) {
-      const status = error.code === "ANALYSIS_RUN_MISMATCH" || error.code === "GOOGLE_PLAY_PRODUCT_MISMATCH" ? 409 : 400;
-      return NextResponse.json({ error: error.message, code: error.code }, { status });
+      const status = error.code === "ANALYSIS_RUN_MISMATCH" || error.code === "GOOGLE_PLAY_PRODUCT_MISMATCH" || error.code === "GOOGLE_PLAY_PURCHASE_ALREADY_APPLIED" || error.code === "GOOGLE_PLAY_PENDING" ? 409 : 400;
+      // `consumable` tells the app whether it may finish the Play purchase.
+      return NextResponse.json({ error: error.message, code: error.code, consumable: error.consumable }, { status });
     }
     const detail = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     const code = classifyGooglePlayFailure(error);
@@ -85,6 +97,7 @@ export async function handleGooglePlayVerifyRequest(request: NextRequest) {
     return NextResponse.json({
       error: "구매를 확인하지 못했습니다.",
       code,
+      consumable: false,
       ...(process.env.NODE_ENV !== "production" ? { detail } : {}),
     }, { status: 502 });
   }

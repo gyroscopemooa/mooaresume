@@ -1,0 +1,124 @@
+/* Isolated design variant. Compose the existing behavior/layout classes so
+   employment tools stay untouched. Doubled local selectors make precedence
+   explicit across Next.js development and production CSS chunk ordering. */
+.page { composes: page from "./document-build-tool.module.css"; }
+.page.page { min-height: auto; padding: 56px max(24px, calc((100% - 1180px) / 2)) 72px; background: #f5f6f2; color: #1f302a; font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
+.page :is(button, a, input, select, textarea):focus-visible { outline: 3px solid #37795e; outline-offset: 3px; }
+.page button { touch-action: manipulation; }
+.head { composes: head from "./document-build-tool.module.css"; }
+.head.head { max-width: 1180px; margin: 0 auto 38px; text-align: left; }
+.head.head h1 { max-width: 860px; margin: 12px 0 18px; font-size: clamp(28px, 3.4vw, 44px); line-height: 1.35; font-weight: 700; letter-spacing: -.055em; text-wrap: balance; }
+.head.head p { max-width: 740px; font-size: 15px; line-height: 1.9; color: #53645b; }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #315b47; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #477b5e; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 32px 0 0; padding: 22px 0 0; border-top: 1px solid #d9e1da; list-style: none; }
+.steps li { display: flex; align-items: flex-start; gap: 12px; }
+.steps li > span { color: #63796b; font-size: 12px; font-weight: 700; line-height: 27px; }
+.steps b { display: block; font-size: 14px; color: #263d31; }
+.steps small { display: block; color: #627166; font-size: 12px; }
+.layout { composes: layout from "./document-build-tool.module.css"; }
+.layout.layout { gap: 28px; }
+.card { composes: card from "./document-build-tool.module.css"; }
+.card.card { min-width: 0; padding: 30px; border: 1px solid #dde4dd; border-radius: 18px; box-shadow: 0 4px 18px rgb(30 50 35 / .025); }
+.previewCard { composes: previewCard from "./document-build-tool.module.css"; }
+.previewCard.previewCard { position: static; }
+.sectionLabel { composes: sectionLabel from "./document-build-tool.module.css"; }
+.sectionLabel.sectionLabel { gap: 10px; margin-bottom: 24px; font-size: 17px; color: #253a2f; font-weight: 700; }
+.sectionLabel.sectionLabel svg { width: 20px; height: 20px; color: #44755a; }
+.field { composes: field from "./document-build-tool.module.css"; }
+.field.field { gap: 8px; }
+.field.field + .field { margin-top: 22px; }
+.field.field label { font-size: 14px; color: #35483c; }
+.field.field :is(textarea, input[type="text"], input[type="email"], select) { min-height: 48px; border-color: #d5dfd6; border-radius: 10px; background: #fcfdfa; color: #26362c; font-size: 16px; line-height: 1.7; }
+.field.field :is(textarea, input)::placeholder { color: #727e75; }
+.field.field :is(textarea, input, select):focus { border-color: #4b7a5f; box-shadow: 0 0 0 3px rgb(75 122 95 / .1); }
+.field.field > small, .field.field label small { font-size: 12px; font-weight: 400; color: #667369; }
+.login { composes: login from "./document-build-tool.module.css"; }
+.login.login { padding: 20px; margin-top: 24px; border-color: #dce5db; background: #f3f6f0; border-radius: 12px; }
+.login.login b { font-size: 14px; line-height: 1.7; }
+.login.login p { font-size: 13px; color: #596b5d; }
+.loginRow { composes: loginRow from "./document-build-tool.module.css"; }
+.loginRow.loginRow { gap: 10px; }
+.loginRow.loginRow :is(input, button) { min-height: 46px; font-size: 16px; }
+.loginRow.loginRow button { justify-content: center; font-size: 14px; }
+.footer { composes: footer from "./document-build-tool.module.css"; }
+.footer.footer { gap: 16px; padding-top: 24px; margin-top: 26px; border-color: #e0e7dd; }
+.summary { composes: summary from "./document-build-tool.module.css"; }
+.summary.summary { gap: 5px; }
+.summary.summary b { font-size: 14px; }
+.summary.summary small { font-size: 12px; color: #617064; line-height: 1.7; }
+.buy { composes: buy from "./document-build-tool.module.css"; }
+.buy.buy { min-height: 48px; padding: 13px 20px; justify-content: center; border-radius: 10px; background: #214f3c; font-size: 14px; box-shadow: none; }
+.buy.buy:hover:not(:disabled) { background: #153e2d; }
+.buy.buy:disabled { background: #e2e8df; color: #65715f; }
+.ghost { composes: ghost from "./document-build-tool.module.css"; }
+.ghost.ghost { min-height: 44px; font-size: 13px; border-radius: 10px; box-shadow: none; }
+.disclaimer { composes: disclaimer from "./document-build-tool.module.css"; }
+.disclaimer.disclaimer { margin-top: 24px; padding: 18px; border-color: #e2e4d7; background: #f8f8f0; color: #58614f; font-size: 13px; line-height: 1.85; }
+.message { composes: message from "./document-build-tool.module.css"; }
+.message.message { font-size: 13px; line-height: 1.8; }
+.emptyState { composes: emptyState from "./document-build-tool.module.css"; }
+.emptyState.emptyState { min-height: 180px; align-content: center; padding: 32px 16px; border: 1px dashed #d8e0d5; border-radius: 12px; background: #fafbf7; color: #647361; font-size: 14px; }
+.emptyState.emptyState svg { width: 32px; height: 32px; color: #709079; }
+.caseCard { composes: caseCard from "./document-build-tool.module.css"; }
+.caseCard.caseCard { padding: 20px; min-height: 80px; border-color: #dce5da; cursor: pointer; }
+.caseCard.caseCard:hover { background: #f5f8f0; border-color: #8ca28a; }
+.caseCard.caseCard b { font-size: 15px; }
+.caseCard.caseCard small { font-size: 12px; color: #65745f; }
+.dropzone { composes: dropzone from "./document-build-tool.module.css"; }
+.dropzone.dropzone { padding: 30px 18px; border-color: #b5c8b3; background: #f5f8f0; }
+.dropzone.dropzone b { font-size: 15px; }
+.dropzone.dropzone small { font-size: 12px; color: #65745f; }
+.dropzone.dropzone svg { width: 26px; height: 26px; color: #52785a; }
+.dropzone.dropzone:focus-within { outline: 3px solid #37795e; outline-offset: 3px; }
+.dropzone.dropzone input { display: block; position: absolute; width: 1px; height: 1px; opacity: 0; clip-path: inset(50%); }
+.fileList { composes: fileList from "./document-build-tool.module.css"; }
+.fileList.fileList li { grid-template-columns: 16px minmax(0, 1fr) auto; gap: 8px; }
+.fileList.fileList b { font-size: 13px; }
+.fileList.fileList small { font-size: 12px; color: #65745f; }
+.fileList.fileList select { grid-column: 2; max-width: 100%; min-height: 44px; font-size: 16px; }
+.fileList.fileList li > button { min-width: 44px; min-height: 44px; }
+.fileList.fileList li > span:empty { display: none; }
+.docTile { composes: docTile from "./document-build-tool.module.css"; }
+.docTile.docTile { padding: 17px; gap: 7px; border-color: #dce4d8; }
+.docTile.docTile b { font-size: 14px; }
+.docTile.docTile small { font-size: 12px; color: #61715c; line-height: 1.7; }
+.docTile.docTile:hover { background: #f8faf5; border-color: #9aaf92; }
+.docTile.docTile[aria-pressed="true"] { border-color: #4c7956; background: #edf4e6; box-shadow: inset 3px 0 #4c7956; }
+.stageLabel { composes: stageLabel from "./document-build-tool.module.css"; }
+.stageLabel.stageLabel { margin: 26px 0 12px; color: #65735f; font-size: 12px; letter-spacing: .02em; }
+.terms { composes: terms from "./document-build-tool.module.css"; }
+.terms.terms { color: #5f6c59; font-size: 13px; line-height: 1.85; }
+.entrySub { composes: entrySub from "./document-build-tool.module.css"; }
+.entrySub.entrySub { color: #485b4c; font-size: 15px; line-height: 1.9; white-space: pre-wrap; }
+.entry { composes: entry from "./document-build-tool.module.css"; }
+.entry.entry ul { font-size: 14px; line-height: 1.85; }
+.entryHead { composes: entryHead from "./document-build-tool.module.css"; }
+.entryHead.entryHead b { font-size: 16px; }
+.evidence { composes: evidence from "./document-build-tool.module.css"; }
+.evidence.evidence { font-size: 12px; color: #65745e; }
+.notes { composes: notes from "./document-build-tool.module.css"; }
+.notes.notes b, .notes.notes ul { font-size: 13px; line-height: 1.85; }
+.download { composes: download from "./document-build-tool.module.css"; }
+.download.download { min-height: 48px; font-size: 15px; background: #214f3c; border-color: #214f3c; }
+@media (max-width: 960px) {
+  .layout.layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .page.page { padding: 32px 16px 48px; }
+  .head.head { margin-bottom: 26px; }
+  .head.head h1 { font-size: 28px; }
+  .head.head p { font-size: 14px; }
+  .steps { gap: 12px; margin-top: 24px; }
+  .steps li { display: grid; gap: 2px; }
+  .steps b { font-size: 13px; }
+  .steps small { font-size: 11px; line-height: 1.6; }
+  .card.card { padding: 22px 18px; border-radius: 14px; }
+  .layout.layout { gap: 20px; }
+  .footer.footer > div:last-of-type, .footer.footer .buy { width: 100%; }
+  .login.login { padding: 16px; }
+  .loginRow.loginRow { display: grid; grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page *, .page *::before, .page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

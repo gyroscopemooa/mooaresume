@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Script from "next/script";
 import { getSiteUrl } from "@/lib/site-url";
+import { AppTabBar } from "@/components/app-tab-bar";
 import "./globals.css";
 
 
@@ -30,7 +31,13 @@ export const metadata: Metadata = {
     "채용공고 분석", "이력서 자소서 교차검증", "면접 예상질문",
   ],
   formatDetection: { email: false, address: false, telephone: false },
-  icons: { icon: "/icon.svg", shortcut: "/icon.svg" },
+  // 파비콘·iOS 홈 화면 아이콘. 매니페스트(manifest.ts)와 같은 파일을 써서
+  // 탭·설치 앱·홈 화면이 한 아이콘으로 보이게 합니다.
+  icons: {
+    icon: "/icons/icon-192.png",
+    shortcut: "/icons/icon-192.png",
+    apple: "/icons/apple-icon-180.png",
+  },
   openGraph: {
     type: "website",
     locale: "ko_KR",
@@ -64,6 +71,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="ko">
       <body className={notoSansKr.variable}>
         {children}
+        {/* 하이브리드 앱 셸에서만 보이는 하단 메뉴바. 일반 웹 방문자에게는
+            아무것도 렌더링하지 않으므로 기존 화면은 그대로입니다
+            (components/app-tab-bar.tsx). */}
+        <AppTabBar/>
         {/* next/script's onLoad prop needs "use client", which the root layout
             can't be (it exports metadata). Naver's own snippet relies on
             wcslog.js loading and running before wcs_add/wcs_do exist, which a

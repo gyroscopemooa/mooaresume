@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LegalCaseWorkspace } from "@/components/legal-case-workspace";
-import { DocumentToolHeader } from "@/components/document-tool-header";
+import { LegalServiceHeader, LegalServiceFooter } from "@/components/legal-service-header";
 import { listLegalCaseDocuments, listLegalCaseMaterials, loadLegalCase } from "@/server/legal/legal-case-repository";
 
 /**
@@ -33,7 +33,8 @@ export default async function LegalCasePage({ params }: { params: Promise<{ case
   ]);
 
   return <>
-    <DocumentToolHeader />
+    <LegalServiceHeader />
     <LegalCaseWorkspace initialCase={legalCase} initialMaterials={materials} initialDocuments={documents} />
+    <LegalServiceFooter />
   </>;
 }

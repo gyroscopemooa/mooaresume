@@ -1,0 +1,182 @@
+/* 앱 "시작" 메뉴. 한 화면에 한 가지만 묻습니다. 웹 온보딩의 큰 제목(34px+)은
+   휴대폰에서 두 줄을 먹고 정작 고를 카드를 화면 밖으로 밀어내므로 제목을
+   줄였습니다. 누르는 자리는 손가락 기준(최소 44px)입니다. */
+
+.page { min-height: 100vh; padding: 0 16px 28px; background: #f7f9f7; color: #17221d; }
+
+.top { display: flex; align-items: center; justify-content: space-between; min-height: 46px; }
+.brand { font-size: 14px; letter-spacing: -0.02em; }
+.brand b { color: #176b4a; }
+.back { display: flex; align-items: center; gap: 5px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #68756f; font-size: 12.5px; cursor: pointer; }
+.back svg { width: 15px; }
+.stepCount { color: #8a968f; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+.head { padding: 6px 0 16px; }
+.head small { display: block; color: #176b4a; font-size: 10.5px; font-weight: 800; }
+.head h1 { margin: 7px 0 0; font-size: 19px; line-height: 1.45; letter-spacing: -0.03em; }
+.head p { margin: 7px 0 0; color: #68756f; font-size: 12.5px; line-height: 1.7; }
+.head p b { color: #17221d; }
+
+.stages { display: grid; gap: 8px; }
+.stage, .stageOn {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 1fr 20px;
+  align-items: start;
+  gap: 11px;
+  min-height: 62px;
+  padding: 14px;
+  border: 1px solid #dfe6e2;
+  border-radius: 13px;
+  background: #fff;
+  text-align: left;
+  color: #17221d;
+  cursor: pointer;
+}
+.stageOn { border-color: #176b4a; box-shadow: inset 0 0 0 1px #176b4a; background: #f6fbf8; }
+.stage > svg, .stageOn > svg { width: 20px; height: 20px; padding: 7px; border-radius: 10px; background: #edf7f1; color: #176b4a; box-sizing: content-box; }
+.stage small, .stageOn small { display: block; color: #176b4a; font-size: 10.5px; font-weight: 800; }
+.stage b, .stageOn b { display: block; margin-top: 4px; font-size: 13.5px; line-height: 1.45; }
+.stage p, .stageOn p { margin: 5px 0 0; color: #68756f; font-size: 11.5px; line-height: 1.6; }
+.radio { width: 18px; height: 18px; margin-top: 3px; border: 1px solid #c3cfc9; border-radius: 50%; background: #fff; }
+.stageOn .radio { border-color: #176b4a; background: #176b4a; box-shadow: inset 0 0 0 4px #fff; }
+
+.auto, .privacy {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #edf7f1;
+  color: #41544b;
+  font-size: 11.5px;
+  line-height: 1.7;
+}
+.auto svg, .privacy svg { width: 15px; flex: none; color: #176b4a; }
+.privacy { background: #f4f7f5; color: #5c6b63; }
+
+.unknown { margin-top: 12px; }
+.unknownToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #e3d9b8;
+  border-radius: 12px;
+  background: #fffdf6;
+  color: #6e6037;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.unknownToggle em { margin-left: auto; padding: 4px 8px; border-radius: 10px; background: #f3ead1; color: #7a6a37; font-size: 10px; font-style: normal; white-space: nowrap; }
+.unknownBody { display: grid; gap: 10px; margin-top: 10px; }
+
+.draftField { display: grid; gap: 6px; }
+.draftField > span { color: #41544b; font-size: 11.5px; font-weight: 800; }
+/* 16px 미만이면 iOS Safari가 초점이 갈 때 화면을 확대하고 되돌리지 않습니다. */
+.draftField textarea {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #dbe4df;
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.75;
+  resize: vertical;
+  outline: 0;
+}
+.draftField textarea::placeholder { font-size: 11px; }
+.draftField textarea:focus { border-color: #176b4a; }
+.draftField > small { color: #87928c; font-size: 11px; text-align: right; }
+
+.unknownActions { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  border: 1px dashed #b9cec4;
+  border-radius: 12px;
+  background: #fff;
+  color: #176b4a;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.upload svg { width: 15px; }
+.upload input { display: none; }
+.length { display: grid; gap: 5px; }
+.length > span { color: #41544b; font-size: 11px; font-weight: 800; }
+.length input { width: 96px; min-height: 48px; padding: 0 12px; border: 1px solid #dbe4df; border-radius: 12px; background: #fff; font: inherit; font-size: 16px; text-align: center; outline: 0; }
+.lengthHint { display: block; color: #87928c; font-size: 11px; line-height: 1.6; }
+.error { margin: 0; color: #a34848; font-size: 11.5px; }
+
+/* 하단 메뉴바(고정, 58px) 위에 붙습니다. `bottom: 0`으로 두면 메뉴바가 이
+   단추를 덮어 화면에서 사라집니다. */
+.cta {
+  position: sticky;
+  bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  padding: 14px 0 6px;
+  background: linear-gradient(180deg, rgba(247, 249, 247, 0), #f7f9f7 40%);
+}
+.next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 12px;
+  background: #176b4a;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.next:disabled { background: #c9d2cd; cursor: default; }
+.next svg { width: 17px; }
+
+.products { display: grid; gap: 10px; }
+.product, .productOn, .locked {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid #dfe6e2;
+  border-radius: 14px;
+  background: #fff;
+  text-align: left;
+  color: #17221d;
+  cursor: pointer;
+}
+.productOn { border-color: #176b4a; box-shadow: inset 0 0 0 1px #176b4a; background: #f6fbf8; }
+.locked { background: #f4f6f5; color: #7a857f; cursor: default; }
+.product small, .productOn small, .locked small { color: #176b4a; font-size: 11px; font-weight: 800; }
+.locked small { color: #8a948e; }
+.product b, .productOn b, .locked b { font-size: 15px; line-height: 1.45; }
+.product p, .productOn p, .locked p { margin: 3px 0 0; color: #68756f; font-size: 12px; line-height: 1.7; }
+.product > span, .productOn > span { display: flex; align-items: center; gap: 6px; margin-top: 9px; min-height: 26px; color: #176b4a; font-size: 13px; font-weight: 800; }
+.product > span svg, .productOn > span svg { width: 15px; }
+.product em, .productOn em, .locked em {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  padding: 4px 9px;
+  border-radius: 12px;
+  background: #176b4a;
+  color: #fff;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 800;
+}
+.locked em { background: #dfe4e1; color: #6f7a74; }
+
+@media (min-width: 720px) {
+  .page { max-width: 720px; margin: 0 auto; }
+}

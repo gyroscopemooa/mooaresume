@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import type { ResultDocument } from "@/domain/result-document";
 import type { InterviewEvaluation, InterviewReport } from "@/domain/interview";
-import { isGooglePlayBillingAvailable, purchaseInterviewRetryViaGooglePlay } from "@/lib/google-play/purchase";
+import {
+  isGooglePlayBillingAvailable,
+  openDigitalGoodsService,
+  requestGooglePlayPayment,
+  resolveInterviewRetryProductId,
+} from "@/lib/google-play/purchase";
+import { completeGooglePlayPurchase, type VerifyResponse } from "@/lib/google-play/app-checkout";
 import styles from "./interactive-interview.module.css";
 
 /**
@@ -33,6 +39,36 @@ type Phase = "idle" | "active" | "busy" | "report" | "payment";
 type SessionState = { sessionId: string; maxTurns: number };
 
 const RETRY_FOCUS_STORAGE_KEY = "mooa:interview-retry-focus";
+
+/**
+ * 모의면접 재시도 구매의 서버 검증 한 번.
+ *
+ * 응답의 `consumable`이 "이 구매를 끝내도 된다"는 서버의 답입니다 — 그것 없이
+ * 소비하면 결제는 사라지고 재시도 권한은 없는 상태가 됩니다.
+ */
+async function verifyInterviewRetryPurchase(body: { analysisRunId: string; purchaseToken: string; productId: string }): Promise<VerifyResponse> {
+  const response = await fetch("/api/interview/retry/google-play/verify", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  const record = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  return {
+    ok: response.ok && record.paid === true,
+    code: typeof record.code === "string" ? record.code : null,
+    message: typeof record.error === "string" ? record.error : "구매를 확인하지 못했습니다.",
+    consumable: record.consumable === true,
+  };
+}
+
+function browserLocalStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 export function InteractiveInterview({ result, analysisRunId }: { result: ResultDocument; analysisRunId: string | null }) {
   const [phase, setPhase] = useState<Phase>("idle");
@@ -133,15 +169,29 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
     setMessage("");
     try {
       if (isGooglePlayBillingAvailable()) {
-        const { purchaseToken, productId } = await purchaseInterviewRetryViaGooglePlay();
-        const response = await fetch("/api/interview/retry/google-play/verify", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ analysisRunId, purchaseToken, productId }),
-        });
-        const body = await response.json().catch(() => ({})) as { paid?: boolean; error?: string };
-        if (!response.ok || !body.paid) {
-          setMessage(body.error ?? "구매를 확인하지 못했습니다.");
+        const service = await openDigitalGoodsService();
+        const productId = resolveInterviewRetryProductId();
+        // analysisRunId가 없으면 어느 분석의 재시도인지 서버가 확인할 수
+        // 없습니다 — 결제창을 열지 않습니다.
+        if (!service || !productId || !analysisRunId) {
+          setMessage("지금은 앱에서 재시도를 구매할 수 없습니다.");
+          setPhase("payment");
+          return;
+        }
+        try {
+          // 구매 → 서버 검증 → 검증이 확인한 뒤에만 소비. 소비를 빼면 Play가
+          // 두 번째 재시도를 "이미 보유한 항목"으로 막습니다.
+          await completeGooglePlayPurchase({
+            service,
+            productId,
+            analysisRunId,
+            kind: "interviewRetry",
+            requestPayment: requestGooglePlayPayment,
+            verify: verifyInterviewRetryPurchase,
+            storage: browserLocalStorage(),
+          });
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : "구매를 확인하지 못했습니다.");
           setPhase("payment");
           return;
         }

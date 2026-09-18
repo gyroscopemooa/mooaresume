@@ -12,6 +12,6 @@ export default defineConfig({
     // A background agent working in a git worktree puts a full second copy of
     // the tree under .claude/worktrees. Without this the suite runs every test
     // twice and reports that session's in-progress failures as this one's.
-    exclude: ["**/*.live.test.ts", "**/node_modules/**", "**/.next/**", "**/.claude/worktrees/**"],
+    exclude: ["**/*.live.test.ts", "**/node_modules/**", "**/.next/**", "**/.claude/worktrees/**", "apps/mobile/.gradle-cache/**", "apps/mobile/android/**", "apps/mobile/ios/**", "apps/mobile/dist/**"],
   },
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useId, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { AlertCircle, Check, FileText, HelpCircle, Link as LinkIcon, Loader2, Paperclip, Trash2, UploadCloud } from "lucide-react";
 import {
   CLASSIFIED_KIND_LABEL,
@@ -75,6 +75,16 @@ type Props = {
   files: SimpleIntakeFile[];
   onFilesChange: (files: SimpleIntakeFile[]) => void;
   onError?: (message: string) => void;
+  /**
+   * `"app"`은 하이브리드 앱 셸(`/app`) 안에서 쓰는 모양입니다.
+   *
+   * 좁은 화면에서는 카드가 곧 낭비입니다 — 앱 헤더, 입력 방식 스위치, 이 상자,
+   * 그리고 입력칸까지 테두리가 네 겹 겹쳐 실제로 글을 치는 칸이 화면의 절반도
+   * 못 씁니다. 그래서 앱에서는 상자의 테두리·배경을 벗고 입력칸을 주인공으로
+   * 두고, 설명은 물음표를 눌렀을 때 나오는 말풍선으로 옮깁니다. 기본값
+   * `"web"`에서는 이 파일의 화면이 한 픽셀도 달라지지 않습니다.
+   */
+  variant?: "web" | "app";
 };
 
 /**
@@ -124,10 +134,29 @@ function TargetLengthField({ label, target, fallback, onCommit }: {
   />;
 }
 
-export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, onTargetOverride, draftRole, onDraftRoleChange, lengthLoss, limitCharacters, files, onFilesChange, onError }: Props) {
+export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengthChange, resolvedLengths, lengthPlans, onTargetOverride, draftRole, onDraftRoleChange, lengthLoss, limitCharacters, files, onFilesChange, onError, variant = "web" }: Props) {
+  const inApp = variant === "app";
+  // 앱에서는 말풍선을 눌러서 엽니다. 손가락에는 hover가 없고, 탭으로 들어온
+  // 포커스는 `:focus-visible`에 걸리지 않아 마우스용 말풍선이 아예 열리지
+  // 않습니다.
+  const [helpOpen, setHelpOpen] = useState(false);
   const [loadingLink, setLoadingLink] = useState(false);
   const [linkMessage, setLinkMessage] = useState("");
   const postingUrl = findPostingUrl(draft);
+
+  useEffect(() => {
+    if (!helpOpen) return;
+    const close = () => setHelpOpen(false);
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setHelpOpen(false); };
+    // 말풍선을 열어 둔 채로 다른 곳을 누르면 닫힙니다 — 열어 놓고 글을 치면
+    // 말풍선이 입력칸을 가립니다.
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [helpOpen]);
 
   /**
    * 공고를 읽어 자료 목록에 한 장으로 넣습니다.
@@ -278,31 +307,39 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
   const unsetCount = files.filter((file) => file.kind === "UNSET").length;
   const letterCharacters = lengthPlans.reduce((total, plan) => total + plan.current, 0) || draftCharacters;
 
-  return <section className={styles.intake}>
+  return <section className={inApp ? `${styles.intake} ${styles.intakeApp}` : styles.intake}>
     <div
-      className={`${styles.box} ${dragging ? styles.boxDragging : ""}`}
+      className={`${styles.box} ${inApp ? styles.boxApp : ""} ${dragging ? styles.boxDragging : ""}`}
       onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={drop}
     >
       <div className={styles.boxHead}>
-        <h3>지원 자료를 한 번에 넣어주세요</h3>
-        <p>자기소개서를 붙여넣고, 나머지 파일은 <b>여기에 끌어다 놓으세요.</b> 무엇인지는 무아가 알아서 나눕니다.</p>
+        {/* 앱에서는 제목 한 줄만 남기고, 설명은 말풍선으로 옮깁니다. */}
+        <h3>{inApp ? "자료를 한 번에 넣어주세요" : "지원 자료를 한 번에 넣어주세요"}</h3>
+        {!inApp && <p>자기소개서를 붙여넣고, 나머지 파일은 <b>여기에 끌어다 놓으세요.</b> 무엇인지는 무아가 알아서 나눕니다.</p>}
         {/* The speech bubble carries the formats and the ceilings, so the box
             itself does not have to read like a warning notice. */}
-        <button type="button" className={styles.help} aria-label="넣을 수 있는 파일 안내">
+        <button
+          type="button"
+          className={styles.help}
+          aria-label="넣을 수 있는 파일 안내"
+          aria-expanded={inApp ? helpOpen : undefined}
+          onClick={inApp ? (event) => { event.stopPropagation(); setHelpOpen((open) => !open); } : undefined}
+        >
           <HelpCircle/>
-          <span role="tooltip" className={styles.tooltip}>
+          <span role="tooltip" className={`${styles.tooltip} ${inApp && helpOpen ? styles.tooltipOpen : ""}`}>
             <b>넣을 수 있는 것</b>
             PDF · DOCX · TXT · MD · ZIP<br/>
             최대 {MAX_UPLOAD_FILES}개 · 총 {formatBytes(MAX_TOTAL_UPLOAD_BYTES)}까지<br/>
+            {inApp && <>자기소개서는 붙여넣고, 나머지 파일은 아래 <b style={{ display: "inline" }}>파일 추가</b>로 넣으면 무엇인지 알아서 나눕니다.<br/></>}
             <em>압축파일은 풀어서 안의 문서를 하나씩 읽습니다. 같은 파일을 두 번 넣으면 한 번만 셉니다.</em>
           </span>
         </button>
       </div>
 
       <textarea
-        rows={9}
+        rows={inApp ? 14 : 9}
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
         placeholder={"자기소개서 전체를 그대로 붙여넣어 주세요.\n채용공고 주소를 한 줄로 붙여넣으면 공고 내용을 불러옵니다.\n\n1. 지원 동기\n작성한 답변...\n\n2. 직무 역량\n작성한 답변..."}

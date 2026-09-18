@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { authenticateMobile, mobileFailure } from "@/server/mobile/auth";
 import { sendAnalysisCompleteEmail } from "@/server/notifications/analysis-complete-email";
 import { OpenAIResponsesGateway } from "@/server/ai/quick/openai-responses-gateway";
 import { createQuickAnalysisResult, QuickQuestionResultMissingError } from "@/server/ai/quick/provider";
@@ -81,10 +82,15 @@ function classifyExecutionFailure(detail: string): { code: string; message: stri
 }
 
 export async function POST(request: NextRequest) {
+
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "허용되지 않은 요청 출처입니다." }, { status: 403 });
   }
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = request.nextUrl.pathname === "/api/mobile/execute"
+      ? (await authenticateMobile(request)).client : await createClient();
+  } catch (error) { return mobileFailure(error); }
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });

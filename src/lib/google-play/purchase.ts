@@ -1,5 +1,7 @@
 "use client";
 
+import type { DigitalGoodsItemDetails, DigitalGoodsServiceLike } from "./app-checkout";
+
 export type GooglePlayProductTier = "QUICK" | "PRO" | "FINAL";
 
 /**
@@ -39,7 +41,12 @@ const GOOGLE_PLAY_PRODUCT_ID_LADDERS: Record<GooglePlayProductTier, ReadonlyArra
 };
 
 function getGooglePlayProductId(tier: GooglePlayProductTier, extraBlocks: number): string | null {
-  return GOOGLE_PLAY_PRODUCT_ID_LADDERS[tier][extraBlocks] ?? null;
+  return GOOGLE_PLAY_PRODUCT_ID_LADDERS[tier][extraBlocks] || null;
+}
+
+/** 앱 결제 흐름(app-checkout.ts)이 어느 Play 상품을 열지 고를 때 씁니다. */
+export function resolveGooglePlayProductId(tier: GooglePlayProductTier, extraBlocks: number): string | null {
+  return getGooglePlayProductId(tier, extraBlocks);
 }
 
 /** 3,000원 "모의면접 재시도 1회" — QUICK/PRO/FINAL 사다리와 무관한 별도 상품. */
@@ -61,9 +68,45 @@ export class GooglePlayPurchaseCancelledError extends Error {
   }
 }
 
-type DigitalGoodsService = {
-  getDetails(itemIds: string[]): Promise<Array<{ itemId: string; price: { currency: string; value: string } }>>;
-};
+type DigitalGoodsService = DigitalGoodsServiceLike;
+
+/**
+ * Play 결제 서비스 핸들. 앱 결제 흐름(app-checkout.ts)은 상품 조회·보유 구매
+ * 확인·소비를 한 서비스 객체로 이어서 하므로, 이 함수가 그 핸들을 넘깁니다.
+ */
+export async function openDigitalGoodsService(): Promise<DigitalGoodsService | null> {
+  const getService = (window as unknown as {
+    getDigitalGoodsService?: (paymentMethod: string) => Promise<DigitalGoodsService>;
+  }).getDigitalGoodsService;
+  if (!getService) return null;
+  try {
+    return await getService("https://play.google.com/billing");
+  } catch {
+    return null;
+  }
+}
+
+/** 결제 창을 띄우고 구매 토큰만 돌려줍니다. 검증은 서버가 합니다. */
+export async function requestGooglePlayPayment(details: DigitalGoodsItemDetails): Promise<string> {
+  const request = new PaymentRequest(
+    [{ supportedMethods: "https://play.google.com/billing", data: { sku: details.itemId } }],
+    { total: { label: "총액", amount: details.price } },
+  );
+
+  let response: PaymentResponse;
+  try {
+    response = await request.show();
+  } catch {
+    throw new GooglePlayPurchaseCancelledError();
+  }
+
+  const purchaseToken = (response.details as { purchaseToken?: string } | null)?.purchaseToken;
+  await response.complete("success");
+  if (!purchaseToken) {
+    throw new Error("결제 토큰을 받지 못했습니다.");
+  }
+  return purchaseToken;
+}
 
 /**
  * Runs the Play Billing purchase flow for one product and returns the
@@ -85,6 +128,11 @@ export async function purchaseProductViaGooglePlay(
     );
   }
   return purchaseGooglePlayProduct(productId);
+}
+
+/** 앱 결제 흐름(app-checkout.ts)이 모의면접 재시도 상품을 열 때 씁니다. */
+export function resolveInterviewRetryProductId(): string | null {
+  return INTERVIEW_RETRY_PRODUCT_ID || null;
 }
 
 /** 모의면접 재시도 1회 구매 — 같은 Digital Goods API 흐름, 고정가 단일 상품. */

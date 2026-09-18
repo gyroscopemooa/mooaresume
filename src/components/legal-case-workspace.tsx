@@ -19,7 +19,11 @@ import {
 } from "@/domain/legal-case";
 import { BASIC_CASE_PLAN, describeCasePlanDecision, resolveCasePlan } from "@/domain/case-intake-limits";
 import { buildDocx, DOCX_MIME_TYPE, type DocxBlock } from "@/lib/docx";
-import styles from "./document-build-tool.module.css";
+import baseStyles from "./document-build-tool.module.css";
+import legalStyles from "./legal-tool-design.module.css";
+import { AppPaidToolNotice, useInstalledApp } from "@/components/app-paid-tool-gate";
+
+const styles = { ...baseStyles, ...legalStyles };
 
 /**
  * 사건 작업 화면.
@@ -128,6 +132,9 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
   initialMaterials: LegalCaseMaterial[];
   initialDocuments: LegalCaseDocument[];
 }) {
+  // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
+  // 정책이 앱 안에서의 외부 결제를 금지합니다.
+  const inApp = useInstalledApp();
   const [legalCase, setLegalCase] = useState(initialCase);
   const [materials, setMaterials] = useState(initialMaterials);
   const [documents, setDocuments] = useState(initialDocuments);
@@ -360,6 +367,9 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
   }
 
   async function startCheckout() {
+    // 앱에서는 외부 결제창을 열지 않습니다. 버튼도 가려져 있지만, 다른 경로로
+    // 불려도 여기서 멈춥니다.
+    if (inApp) return;
     // 결제로 나가기 전에 사건 정보를 먼저 저장합니다.
     //
     // 문서를 만드는 쪽은 브라우저가 보낸 값이 아니라 **저장된 사건**을 읽습니다.
@@ -655,7 +665,7 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
               : `사건 경위나 자료가 조금 더 필요합니다(최소 ${LEGAL_CASE_MIN_SOURCE_CHARS}자).`}</small>
           </div>
           <div className={styles.actions}>
-            <button
+            {inApp ? <AppPaidToolNotice tool="법률 문서 제작" /> : <button
               type="button"
               className={styles.buy}
               disabled={busy || !enough || !planDecision.fits}
@@ -663,7 +673,7 @@ export function LegalCaseWorkspace({ initialCase, initialMaterials, initialDocum
               onClick={() => void startCheckout()}
             >
               {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "문서를 만드는 중" : "결제 페이지로 이동 중"}</> : <>{selectedPrice.toLocaleString()}원 · 이 문서 만들기<ArrowRight /></>}
-            </button>
+            </button>}
           </div>
           <p className={styles.terms}>{selected.label} 1건 {selectedPrice.toLocaleString()}원(부가세 포함). 사건을 만들고 자료를 올리는 것은 무료입니다. 결과가 나오지 않으면 결제한 건이 그대로 남아 다시 시도할 수 있고, 그래도 실패하면 환불해 드립니다.</p>
         </footer>

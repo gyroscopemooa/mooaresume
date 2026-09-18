@@ -1,0 +1,18 @@
+import { useState } from 'react';
+import { Text, View, Pressable } from 'react-native';
+import { INTEREST_ITEMS, scoreCareerInterest, questionEnglish, englishDimensions, type InterestAnswer } from './career';
+import type { Messages, Locale } from './i18n';
+import { Page, Card, Heading, Button, ui, colors, Icon } from './ui';
+export function CareerScreen({ t, locale }: { t: Messages; locale: Locale }) {
+  const [stage, setStage] = useState<'intro'|'test'|'result'>('intro');
+  const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, InterestAnswer>>({});
+  const current = INTEREST_ITEMS[index];
+  const scores = stage === 'result' ? scoreCareerInterest(answers).sort((a,b) => b.score - a.score) : [];
+  const tied = scores.length > 0 && scores.every(s => s.score === scores[0].score);
+  return <Page><Text style={ui.eyebrow}>KNOW YOURSELF</Text><Heading title={t.careerTitle} subtitle={t.careerBody}/>{stage === 'intro' && <><Card style={{ backgroundColor: colors.pale, padding: 26 }}><Icon name="compass-outline" size={44}/><Text style={ui.heading}>{t.interest}</Text><Text style={ui.body}>{t.interestBody}</Text><Text style={ui.eyebrow}>RIASEC · 30</Text></Card><Button title={t.begin} onPress={() => setStage('test')}/></>}
+    {stage === 'test' && <><View style={ui.between}><Text style={ui.eyebrow}>{t.question} {index + 1}</Text><Text style={ui.muted}>{index + 1} / 30</Text></View><View style={{ height: 5, backgroundColor: colors.line, borderRadius: 5 }}><View style={{ height: 5, backgroundColor: colors.green, width: `${(index + 1) / 30 * 100}%`, borderRadius: 5 }}/></View><Card style={{ paddingVertical: 32 }}><Text style={[ui.heading, { fontSize: 24, lineHeight: 35 }]}>{locale === 'ko' ? current.text : questionEnglish(index)}</Text></Card><View style={ui.between}>{([1,2,3,4,5] as const).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={`${value}`} accessibilityState={{ checked: answers[current.id] === value }} onPress={() => setAnswers(old => ({ ...old, [current.id]: value }))} style={{ flex: 1, minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: answers[current.id] === value ? colors.green : colors.white, borderWidth: 1, borderColor: colors.line }}><Text style={{ fontSize: 18, fontWeight: '600', color: answers[current.id] === value ? 'white' : colors.ink }}>{value}</Text></Pressable>)}</View><View style={ui.between}><Text style={ui.muted}>{t.disagree}</Text><Text style={ui.muted}>{t.agree}</Text></View><Button title={index === 29 ? t.finish : t.next} disabled={!answers[current.id]} onPress={() => index === 29 ? setStage('result') : setIndex(index + 1)}/><Button secondary title={t.previous} disabled={index === 0} onPress={() => setIndex(index - 1)}/></>}
+    {stage === 'result' && <><Card style={{ backgroundColor: colors.pale }}><Text style={ui.eyebrow}>{t.interestResult}</Text><Text style={[ui.title, { fontSize: 40 }]}>{tied ? 'R · I · A · S · E · C' : scores.slice(0,3).map(s => s.code).join(' · ')}</Text>{tied && <Text style={ui.body}>{t.sameScores}</Text>}</Card>{scores.map(s => <Card key={s.code}><View style={ui.between}><Text style={ui.heading}>{s.code} · {locale === 'ko' ? s.label : englishDimensions[s.code]}</Text><Text style={ui.muted}>{s.score} / 100</Text></View><View style={{ backgroundColor: colors.pale, height: 8, borderRadius: 8 }}><View style={{ width: `${s.score}%`, height: 8, borderRadius: 8, backgroundColor: colors.green }}/></View></Card>)}<Button secondary title={t.retake} onPress={() => { setAnswers({}); setIndex(0); setStage('test'); }}/></>}
+    <Text style={ui.muted}>{t.careerNote}</Text>
+  </Page>;
+}

@@ -70,8 +70,10 @@ export function HeaderAccount() {
       const { error } = await createClient().auth.signInWithOAuth({
         provider: "google",
         // Back to the page they were on, not to a dashboard they did not ask
-        // for.
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=${window.location.pathname}` },
+        // for. 물음표 뒤까지 함께 넘깁니다 — `/result?analysisRunId=...`에서
+        // 경로만 넘기면 돌아온 화면이 "가장 최근 결과"가 되어, 방금 보고
+        // 있던 결과가 아닌 다른 것을 보여 줍니다.
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}` },
       });
       if (error) setBusy(false);
     } catch {

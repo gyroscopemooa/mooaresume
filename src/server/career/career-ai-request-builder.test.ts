@@ -18,9 +18,11 @@ const interest: LatestAssessment = {
 };
 const workValues: LatestAssessment = {
   sessionId: "s3", assessmentCode: "work_values", assessmentVersion: "v1", completedAt: "2026-09-01T00:00:00Z",
+  // 2026-09-18: 직업가치 6기준을 자율성·성장·안정·여유·의미·보상으로 바꿨다
+  // (career-work-values.ts). 이 표는 그 6개 scale_code와 맞아야 한다.
   scores: [
-    { code: "achievement", score: 88 }, { code: "independence", score: 79 }, { code: "recognition", score: 60 },
-    { code: "relationships", score: 55 }, { code: "support", score: 40 }, { code: "conditions", score: 73 },
+    { code: "autonomy", score: 88 }, { code: "growth", score: 79 }, { code: "stability", score: 60 },
+    { code: "leisure", score: 55 }, { code: "meaning", score: 40 }, { code: "reward", score: 73 },
   ],
 };
 

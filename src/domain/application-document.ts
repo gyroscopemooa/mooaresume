@@ -68,7 +68,10 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
     label: "경력기술서",
     summary: "이력서·자소서·자격증을 올리면 회사별 경력으로 정리합니다.",
     badge: "유료",
-    status: "preview",
+    // 2026-09-18 사용자 결정으로 목록에 올립니다("메뉴에 추가해줘"). 입력·생성·
+    // 결과 화면은 이미 있고, 남은 것은 Polar 상품(POLAR_CAREER_DESCRIPTION_PRODUCT_ID)
+    // 뿐입니다 — 그 값이 비어 있는 동안에는 결제 단추가 502로 답합니다.
+    status: "available",
     group: "application",
     href: "/career-description",
   },
@@ -77,7 +80,9 @@ export const applicationDocuments: readonly ApplicationDocument[] = [
     label: "포트폴리오 설명글",
     summary: "프로젝트를 적으면 문제·실행·성과 설명과 목차를 만듭니다.",
     badge: "유료",
-    status: "preview",
+    // 2026-09-18 사용자 결정으로 목록에 올립니다. 위 경력기술서와 같은 상태 —
+    // 기능은 완성, 남은 것은 POLAR_PORTFOLIO_PRODUCT_ID.
+    status: "available",
     group: "application",
     href: "/portfolio",
   },

@@ -50,6 +50,31 @@ export class SupabaseGooglePlayEntitlementRepository implements GooglePlayEntitl
     return outcome;
   }
 
+  async findExistingGrant(input: Parameters<GooglePlayEntitlementRepository["findExistingGrant"]>[0]) {
+    const client = createServiceRoleClient();
+    const byToken = await client
+      .from("billing_orders")
+      .select("application_case_id, owner_user_id")
+      .eq("provider", "GOOGLE_PLAY")
+      .eq("metadata->>purchaseTokenSha256", input.purchaseTokenSha256)
+      .limit(1)
+      .maybeSingle();
+    if (byToken.error) throw new Error(`GOOGLE_PLAY_GRANT_LOOKUP_FAILED:${byToken.error.code}`);
+    let row = byToken.data;
+    if (!row && input.providerOrderId) {
+      const byOrder = await client
+        .from("billing_orders")
+        .select("application_case_id, owner_user_id")
+        .eq("provider", "GOOGLE_PLAY")
+        .eq("provider_order_id", input.providerOrderId)
+        .maybeSingle();
+      if (byOrder.error) throw new Error(`GOOGLE_PLAY_GRANT_LOOKUP_FAILED:${byOrder.error.code}`);
+      row = byOrder.data;
+    }
+    if (!row) return null;
+    return { applicationCaseId: String(row.application_case_id), ownerUserId: String(row.owner_user_id) };
+  }
+
   /**
    * Pays the referrer, if this buyer arrived through someone's code. Never
    * throws — see the same note on SupabasePolarEntitlementRepository's

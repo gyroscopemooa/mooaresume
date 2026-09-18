@@ -17,6 +17,7 @@ import {
 import { portfolioSampleOutput } from "@/fixtures/portfolio-sample";
 import { buildDocx, DOCX_MIME_TYPE, type DocxBlock } from "@/lib/docx";
 import styles from "./document-build-tool.module.css";
+import { AppPaidToolNotice, useInstalledApp } from "@/components/app-paid-tool-gate";
 
 /**
  * 포트폴리오 설명글 도구.
@@ -116,6 +117,9 @@ function OutputPreview({ output }: { output: PortfolioBuildOutput }) {
 }
 
 export function PortfolioBuildPanel() {
+  // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
+  // 정책이 앱 안에서의 외부 결제를 금지합니다.
+  const inApp = useInstalledApp();
   const [projects, setProjects] = useState<PortfolioProjectInput[]>([createProject()]);
   const [direction, setDirection] = useState("");
   const [sources, setSources] = useState<PortfolioBuildSource[]>([]);
@@ -299,6 +303,9 @@ export function PortfolioBuildPanel() {
   }
 
   async function startCheckout() {
+    // 앱에서는 외부 결제창을 열지 않습니다. 버튼도 가려져 있지만, 다른 경로로
+    // 불려도 여기서 멈춥니다.
+    if (inApp) return;
     setPhase("creating");
     setMessage("");
     try {
@@ -462,7 +469,7 @@ export function PortfolioBuildPanel() {
           </div>
           <div className={styles.actions}>
             {buildId && phase !== "done" && <button type="button" className={styles.ghost} disabled={busy || !enough} onClick={() => void runBuild(buildId, request)}>결제한 건으로 만들기</button>}
-            <button
+            {inApp ? <AppPaidToolNotice tool="AI 포트폴리오 설명글" /> : <button
               type="button"
               className={styles.buy}
               disabled={busy || !enough || !signedIn}
@@ -470,7 +477,7 @@ export function PortfolioBuildPanel() {
               onClick={() => void startCheckout()}
             >
               {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "설명글을 쓰는 중" : "결제 페이지로 이동 중"}</> : <>{PORTFOLIO_BUILD_PRICE_KRW.toLocaleString()}원 · AI로 만들기<ArrowRight /></>}
-            </button>
+            </button>}
           </div>
           <p className={styles.terms}>1건 정액 {PORTFOLIO_BUILD_PRICE_KRW.toLocaleString()}원(부가세 포함). 프로젝트 개수와 상관없이 한 번에 정리합니다. 올린 자료는 설명글을 만드는 데만 쓰이고 서버에 저장하지 않습니다. 결과가 나오지 않으면 결제한 건이 그대로 남아 다시 시도할 수 있고, 그래도 실패하면 환불해 드립니다.</p>
         </footer>

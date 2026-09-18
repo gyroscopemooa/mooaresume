@@ -11,7 +11,20 @@ import Link from "next/link";
 import { ResearchConsentGate } from "./research-consent-gate";
 import styles from "./application-case-handoff.module.css";
 import { onCreditChange } from "@/lib/credit-events";
-import { isGooglePlayBillingAvailable, purchaseProductViaGooglePlay } from "@/lib/google-play/purchase";
+import {
+  isGooglePlayBillingAvailable,
+  openDigitalGoodsService,
+  requestGooglePlayPayment,
+  resolveGooglePlayProductId,
+} from "@/lib/google-play/purchase";
+import {
+  completeGooglePlayPurchase,
+  readPendingPurchases,
+  recoverGooglePlayPurchases,
+  type PendingPurchaseRecord,
+  type VerifyResponse,
+} from "@/lib/google-play/app-checkout";
+import { isInstalledAppContext } from "@/lib/app-context";
 
 type Props = {
   guest: GuestDraft | null;
@@ -44,6 +57,35 @@ const emptyMaterials = {
   profileEntries: [],
   materialAttachments: [],
 };
+
+/**
+ * 서버 검증 한 번. 응답의 `consumable`이 "이 구매를 끝내도 된다"는 서버의
+ * 답이고, 그것 없이는 구매를 소비하지 않습니다 — 소비해 버리면 결제는
+ * 사라지고 분석 권한은 없는 상태가 됩니다.
+ */
+async function verifyGooglePlayPurchaseWithServer(body: { analysisRunId: string; purchaseToken: string; productId: string }): Promise<VerifyResponse> {
+  const response = await fetch("/api/billing/google-play/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload: unknown = await response.json().catch(() => null);
+  const record = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  return {
+    ok: response.ok,
+    code: typeof record.code === "string" ? record.code : null,
+    message: typeof record.error === "string" ? record.error : "구매를 확인하지 못했습니다.",
+    consumable: record.consumable === true,
+  };
+}
+
+function browserLocalStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 const subscribeToNothing = () => () => {};
 const readNoAuthError = () => null;
@@ -83,6 +125,15 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
    * 무엇을 가지고 있는지 이름을 대는 편이 낫습니다.
    */
   const [otherCredits, setOtherCredits] = useState<string[]>([]);
+  /**
+   * 결제는 끝났는데 분석까지 이어지지 않은 앱 구매.
+   *
+   * 앱이 닫히거나 통신이 끊겨 서버 검증을 못 받은 구매가 여기로 옵니다. 돈은
+   * 나갔고 분석은 시작되지 않은 상태라, 화면이 말하지 않으면 사라진 결제가
+   * 됩니다. 유료 호출을 대신 시작하지는 않고, 시작할지 묻습니다.
+   */
+  const [recoveredPurchases, setRecoveredPurchases] = useState<PendingPurchaseRecord[]>([]);
+  const [awaitingPurchases, setAwaitingPurchases] = useState<PendingPurchaseRecord[]>([]);
   // A failed sign-in redirects here with the reason in the query string, and
   // nothing was reading it — the visitor saw a plain login screen with no sign
   // their link had just been rejected, so the natural next move was to request
@@ -131,6 +182,33 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     const stop = onCreditChange(() => { void check(); });
     return () => { cancelled = true; stop(); };
   }, [wantedProduct]);
+
+  /**
+   * 앱을 다시 열었을 때 남아 있는 미완료 Play 구매를 확인합니다.
+   *
+   * 로그인 상태에서만 부릅니다 — 검증은 쿠키 인증을 쓰고, 다른 계정으로
+   * 로그인한 상태에서 남의 구매를 확인하려 들 이유도 없습니다.
+   */
+  useEffect(() => {
+    if (!authenticated || !isGooglePlayBillingAvailable()) return;
+    if (readPendingPurchases(browserLocalStorage()).length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const service = await openDigitalGoodsService();
+      if (!service || cancelled) return;
+      const outcome = await recoverGooglePlayPurchases({
+        service,
+        verify: verifyGooglePlayPurchaseWithServer,
+        storage: browserLocalStorage(),
+        // 모의면접 재시도 구매는 검증 라우트가 달라 여기서 확인하지 않습니다.
+        kind: "analysis",
+      });
+      if (cancelled) return;
+      setRecoveredPurchases(outcome.entitled);
+      setAwaitingPurchases(outcome.pending);
+    })();
+    return () => { cancelled = true; };
+  }, [authenticated]);
 
   /**
    * Spends a credit instead of opening a checkout.
@@ -236,6 +314,25 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       setMessage("Google 로그인을 초기화하지 못했습니다.");
     }
   }
+  /**
+   * 결제가 확인된 실행을 시작합니다. Polar처럼 돌아올 화면이 없는 경로(앱
+   * 구매·복구)에서 씁니다.
+   */
+  async function startVerifiedRun(analysisRunId: string) {
+    const executed = await fetch("/api/analysis-runs/quick/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analysisRunId }),
+    });
+    if (!executed.ok && executed.status !== 202) throw new Error("분석을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    const executedPayload: unknown = await executed.json().catch(() => null);
+    if (executedPayload && typeof executedPayload === "object" && "resultUrl" in executedPayload && typeof executedPayload.resultUrl === "string") {
+      window.location.replace(executedPayload.resultUrl);
+      return;
+    }
+    onCreditRunStarted?.(analysisRunId);
+  }
+
   async function beginCheckout(analysisRunId: string, product: "QUICK" | "PRO" | "FINAL") {
     // FINAL has no Polar product yet, so there is no checkout to create. Said
     // plainly here rather than letting the fetch 404 into "오류가 발생했습니다":
@@ -256,37 +353,39 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     // 않으므로 이 분기 자체가 안전한 판단 기준입니다. 아래의 기존 Polar
     // 결제 흐름은 이 블록 밖에서 손대지 않고 그대로 둡니다.
     if (isGooglePlayBillingAvailable()) {
-      const { purchaseToken, productId } = await purchaseProductViaGooglePlay(product, extraBlocks);
-      const verifyResponse = await fetch("/api/billing/google-play/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analysisRunId, purchaseToken, productId }),
-      });
-      const verifyResult: unknown = await verifyResponse.json().catch(() => null);
-      if (!verifyResponse.ok) {
-        const errorMessage = verifyResult && typeof verifyResult === "object" && "error" in verifyResult && typeof verifyResult.error === "string"
-          ? verifyResult.error
-          : "구매를 확인하지 못했습니다.";
-        const code = verifyResult && typeof verifyResult === "object" && "code" in verifyResult && typeof verifyResult.code === "string" ? verifyResult.code : null;
-        throw new Error(code ? `${errorMessage} (원인 코드: ${code})` : errorMessage);
+      const service = await openDigitalGoodsService();
+      const productId = resolveGooglePlayProductId(product, extraBlocks);
+      if (!service) throw new Error("Google Play 결제를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      if (!productId) {
+        // 앱 안에서 "웹에서 결제하세요"라고 안내하지 않습니다 — Play 정책이
+        // 금지하는 외부 결제 유도입니다.
+        throw new Error(extraBlocks > 0
+          ? "이 분량은 아직 앱에서 결제할 수 없습니다. 지원서 분량을 줄이거나 문의해 주세요."
+          : `이 상품(${product})은 아직 앱 결제가 열리지 않았습니다.`);
       }
+      // 구매 → 서버 검증 → (검증이 확인한 뒤에만) 구매 소비. 중간에 끊긴
+      // 구매는 다음 실행에서 되살립니다(recoverGooglePlayPurchases).
+      await completeGooglePlayPurchase({
+        service,
+        productId,
+        analysisRunId,
+        requestPayment: requestGooglePlayPayment,
+        verify: verifyGooglePlayPurchaseWithServer,
+        storage: browserLocalStorage(),
+      });
 
       // Play 결제는 Polar처럼 결제 페이지로 리다이렉트했다가 돌아오는 구조가
       // 아니라 이 자리에서 구매가 바로 끝나므로, 무료 이용권 사용
       // (startWithCredit, 위쪽)과 같은 방식으로 곧바로 분석을 실행합니다.
-      const executed = await fetch("/api/analysis-runs/quick/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analysisRunId }),
-      });
-      if (!executed.ok && executed.status !== 202) throw new Error("분석을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
-      const executedPayload: unknown = await executed.json().catch(() => null);
-      if (executedPayload && typeof executedPayload === "object" && "resultUrl" in executedPayload && typeof executedPayload.resultUrl === "string") {
-        window.location.replace(executedPayload.resultUrl);
-        return;
-      }
-      onCreditRunStarted?.(analysisRunId);
+      await startVerifiedRun(analysisRunId);
       return;
+    }
+
+    // 앱 안인데 Play 결제를 쓸 수 없는 경우. Polar로 넘기지 않습니다 — 앱에서
+    // 파는 디지털 상품은 Play 결제여야 하고, 실패를 조용히 외부 결제로
+    // 우회하면 정책 위반입니다. 입력은 이미 저장되어 있습니다.
+    if (isInstalledAppContext()) {
+      throw new Error("앱에서 Google Play 결제를 불러오지 못했습니다. Google Play 스토어와 Chrome을 업데이트한 뒤 다시 시도해 주세요. 입력하신 내용은 저장되어 있습니다.");
     }
 
     const response = await fetch(`/api/checkouts/${product.toLowerCase()}`, {
@@ -408,6 +507,19 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
 
   if (authenticated) {
     return <div className={styles.action}>
+      <GooglePlayRecoveryNotice
+        entitled={recoveredPurchases}
+        awaiting={awaitingPurchases}
+        busy={busy}
+        onStart={(analysisRunId) => {
+          setBusy(true);
+          setMessage("");
+          void startVerifiedRun(analysisRunId)
+            .then(() => setRecoveredPurchases((current) => current.filter((item) => item.analysisRunId !== analysisRunId)))
+            .catch((error: unknown) => setMessage(error instanceof Error ? error.message : "분석을 시작하지 못했습니다."))
+            .finally(() => setBusy(false));
+        }}
+      />
       <ResearchConsentGate onDecided={setConsentDecided} locked={runActive}/>
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
@@ -464,4 +576,37 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     )}
     {(message || authError) && <p>{message || authError}</p>}
   </div>;
+}
+
+/**
+ * 결제됐지만 분석으로 이어지지 않은 앱 구매를 말하는 자리.
+ *
+ * 조용히 두면 "결제는 됐는데 아무 일도 없었다"가 됩니다. 확인된 건은 이
+ * 자리에서 바로 시작할 수 있고, 승인 대기 중인 건은 추가 결제가 필요 없다는
+ * 사실을 함께 알립니다.
+ */
+function GooglePlayRecoveryNotice({ entitled, awaiting, busy, onStart }: {
+  entitled: PendingPurchaseRecord[];
+  awaiting: PendingPurchaseRecord[];
+  busy: boolean;
+  onStart: (analysisRunId: string) => void;
+}) {
+  if (entitled.length === 0 && awaiting.length === 0) return null;
+  return <>
+    {entitled.map((record) => <p key={record.purchaseToken} className={styles.creditNotice}>
+      <CheckCircle2/>{" "}
+      <span>
+        <b>완료되지 않은 결제를 확인했습니다.</b> 결제는 정상 처리됐고 분석만 시작되지 않았습니다. 추가 결제 없이 이어서 시작할 수 있습니다.{" "}
+        <button type="button" disabled={busy} onClick={() => onStart(record.analysisRunId)}>
+          {busy ? "시작하는 중..." : "이 결제로 분석 시작"}
+        </button>
+      </span>
+    </p>)}
+    {awaiting.map((record) => <p key={record.purchaseToken} className={styles.creditNotice}>
+      <Gift/>{" "}
+      <span>
+        <b>결제 승인을 기다리는 중입니다.</b> Google Play에서 승인이 끝나면 이 화면에서 다시 시작해 주세요. 추가 결제는 되지 않습니다.
+      </span>
+    </p>)}
+  </>;
 }

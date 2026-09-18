@@ -12,6 +12,7 @@ import {
   resumeBuildOutputSchema, type ResumeBuildOutput, type ResumeBuildSource,
 } from "@/domain/resume-build";
 import styles from "./resume-build-panel.module.css";
+import { AppPaidToolNotice, useInstalledApp } from "@/components/app-paid-tool-gate";
 
 /**
  * AI 이력서 제작 — 무료 메이커 아래에 붙는 유료 칸.
@@ -50,6 +51,9 @@ function readStoredSources(): StoredSources | null {
 }
 
 export function ResumeBuildPanel() {
+  // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
+  // 정책이 앱 안에서의 외부 결제를 금지합니다.
+  const inApp = useInstalledApp();
   const [narrative, setNarrative] = useState("");
   const [sources, setSources] = useState<ResumeBuildSource[]>([]);
   const [reading, setReading] = useState(false);
@@ -247,6 +251,9 @@ export function ResumeBuildPanel() {
 
   /** 결제창으로 보냅니다. 자료는 보내지 않습니다 — 결제 전에 서버에 둘 이유가 없습니다. */
   async function startCheckout() {
+    // 앱에서는 외부 결제창을 열지 않습니다. 버튼도 가려져 있지만, 다른 경로로
+    // 불려도 여기서 멈춥니다.
+    if (inApp) return;
     setPhase("creating");
     setMessage("");
     try {
@@ -365,7 +372,7 @@ export function ResumeBuildPanel() {
         {buildId && phase !== "done" && <button type="button" className={styles.ghost} disabled={busy || !enough} onClick={() => void runBuild(buildId, { narrative, sources })}>결제한 건으로 만들기</button>}
         {/* 로그인·자료가 모자라면 감추지 않고 비활성으로 둡니다. 단추가 통째로
             사라지면 왜 못 사는지 알 방법이 없습니다. 이유는 title에 적습니다. */}
-        <button
+        {inApp ? <AppPaidToolNotice tool="AI 이력서 제작" /> : <button
           type="button"
           className={styles.buy}
           disabled={busy || !enough || !signedIn}
@@ -373,7 +380,7 @@ export function ResumeBuildPanel() {
           onClick={() => void startCheckout()}
         >
           {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "이력서를 만드는 중" : "결제 페이지로 이동 중"}</> : <>{RESUME_BUILD_PRICE_KRW.toLocaleString()}원 · AI로 이력서 만들기<ArrowRight /></>}
-        </button>
+        </button>}
       </div>
       <p className={styles.terms}>1건 정액 {RESUME_BUILD_PRICE_KRW.toLocaleString()}원(부가세 포함). 올린 자료는 이력서를 만드는 데만 쓰이고 서버에 저장하지 않습니다. 결과가 나오지 않으면 결제한 건이 그대로 남아 다시 시도할 수 있고, 그래도 실패하면 환불해 드립니다.</p>
     </footer>

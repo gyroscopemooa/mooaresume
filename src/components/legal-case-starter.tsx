@@ -9,7 +9,10 @@ import {
   LEGAL_CASE_TYPE_LABEL, LEGAL_CAUTIONS, LEGAL_PARTY_ROLE_LABEL,
   type LegalCase, type LegalCaseType, type LegalDocumentType, type LegalPartyRole,
 } from "@/domain/legal-case";
-import styles from "./document-build-tool.module.css";
+import baseStyles from "./document-build-tool.module.css";
+import legalStyles from "./legal-tool-design.module.css";
+
+const styles = { ...baseStyles, ...legalStyles };
 
 /**
  * 사건 목록과 "새 사건 만들기".
@@ -104,9 +107,15 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
 
   return <section className={styles.page} aria-labelledby="legal-home-title">
     <div className={styles.head}>
-      <h1 id="legal-home-title">사건 하나를 열면, 서면은 이어서 만듭니다</h1>
-      <p>계약서·문자·녹취록·판결문을 한 번 넣어 두면 <b>주요쟁점 정리부터 내용증명·소장·답변서·준비서면·항소이유서까지</b> 같은 자료로 만듭니다. 문서마다 자료를 새로 올리지 않으셔도 됩니다.</p>
+      <span className={styles.eyebrow}>내 사건을 정리하는 공간</span>
+      <h1 id="legal-home-title">복잡한 사건 자료,<br />서면 준비는 차근차근.</h1>
+      <p>계약서부터 주고받은 문자까지, 사건별로 모아 두세요.<br />같은 자료를 바탕으로 필요한 문서의 초안을 만들고 확인할 수 있습니다.</p>
       {docType && <p><b>{findLegalDocumentDefinition(docType).label}</b>을(를) 고르고 들어오셨습니다. 아래에서 사건을 만들거나 고르면 그 문서로 이어집니다.</p>}
+      <ol className={styles.steps} aria-label="서비스 이용 순서">
+        <li><span>01</span><div><b>사건 만들기</b><small>이름과 상황을 정리해요</small></div></li>
+        <li><span>02</span><div><b>자료 모으기</b><small>필요한 자료를 저장해요</small></div></li>
+        <li><span>03</span><div><b>문서 작성·확인</b><small>문서별 결제 후 초안을 받아요</small></div></li>
+      </ol>
     </div>
 
     <div className={styles.layout}>
@@ -146,7 +155,7 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
           />
         </div>
 
-        {message && <p className={styles.message}><AlertCircle />{message}</p>}
+        {message && <p className={styles.message} role="status"><AlertCircle />{message}</p>}
 
         {!signedIn && <div className={styles.login}>
           <b><LogIn /> 사건을 저장하려면 로그인이 필요합니다</b>
@@ -154,9 +163,9 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
           <div className={styles.loginRow}>
             <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 계속하기</button>
             <span className={styles.or}>또는</span>
-            <input type="email" value={email} placeholder="이메일" onChange={(event) => setEmail(event.target.value)} disabled={authBusy} />
+            <input type="email" autoComplete="email" aria-label="로그인 코드를 받을 이메일" value={email} placeholder="이메일" onChange={(event) => setEmail(event.target.value)} disabled={authBusy} />
             {otpSent
-              ? <><input type="text" inputMode="numeric" value={otpCode} placeholder="6자리 코드" onChange={(event) => setOtpCode(event.target.value)} disabled={authBusy} />
+              ? <><input type="text" inputMode="numeric" autoComplete="one-time-code" aria-label="이메일 인증 코드" value={otpCode} placeholder="6자리 코드" onChange={(event) => setOtpCode(event.target.value)} disabled={authBusy} />
                 <button type="button" onClick={() => void verifyLoginCode()} disabled={authBusy}>확인</button></>
               : <button type="button" onClick={() => void sendLoginCode()} disabled={authBusy}><Mail />코드 받기</button>}
           </div>
@@ -200,7 +209,7 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
           </div>
           : <div className={styles.emptyState}>
             <Scale />
-            <p>{signedIn ? "아직 만든 사건이 없습니다. 왼쪽에서 사건을 하나 열어 보세요." : "로그인하시면 여기에 사건 목록이 보입니다."}</p>
+            <p>{signedIn ? "아직 만든 사건이 없습니다. 새 사건을 만들어 자료를 정리해 보세요." : "로그인하면 저장한 사건을 여기서 이어갈 수 있습니다."}</p>
           </div>}
       </div>
     </div>

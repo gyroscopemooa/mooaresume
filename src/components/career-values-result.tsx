@@ -5,7 +5,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Info, RotateCcw, ShieldCheck } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar as RadarGraph, RadarChart, ResponsiveContainer, Tooltip } from "recharts";
-import { scoreWorkValues, type WorkValueAnswer } from "@/domain/career-work-values";
+import { getWorkValueProfile, scoreWorkValues, type WorkValueAnswer } from "@/domain/career-work-values";
 import { CareerAssessmentStorageNotice } from "./career-assessment-storage-notice";
 import styles from "./work-style-assessment.module.css";
 
@@ -18,8 +18,14 @@ export function CareerValuesResult() {
   if (!scores) return <section className={styles.empty}><Info /><h1>확인할 탐색 결과가 없어요.</h1><p>현재 브라우저에서 직업가치 탐색을 완료해 주세요.</p><Link href="/career/values">직업가치 탐색 시작하기 <ArrowRight /></Link><Link href="/career/saved">저장된 결과 확인하기 <ArrowRight /></Link></section>;
   const top = [...scores].sort((a, b) => b.score - a.score).slice(0, 3);
   const data = scores.map((score) => ({ subject: score.label, score: score.score, fullMark: 100 }));
+  const profile = getWorkValueProfile(scores);
   return <main className={styles.result}>
-    <div className={styles.resultHero}><span><CheckCircle2 />탐색 완료</span><h1>나의 직업가치 우선순위</h1><p>가장 포기하기 어려운 일의 조건을 확인했어요.</p><small>점수는 이 베타 문항에 대한 중요도 응답을 환산한 값이며, 직업 적합성·능력·채용 결과를 판정하지 않습니다.</small></div>
+    <div className={styles.resultHero}><span><CheckCircle2 />탐색 완료</span><h1>{profile.code} · {profile.typeName}</h1><p>{profile.headline}</p><small>상위 2개 기준을 순서대로 적은 탐색 코드입니다. 직업 적합성·능력·채용 결과를 판정하지 않습니다.</small></div>
+    <nav className={styles.resultNavigation} aria-label="결과 화면 이동">
+      <span className={styles.resultNavigationCurrent}><small>01</small>기본 결과</span>
+      <Link href={`/career/values/character?code=${profile.code}`}><small>02</small>캐릭터 해설 <ArrowRight /></Link>
+      <Link href="/career/ai/sample?scope=work_values"><small>03</small>심층해설 예시 <ArrowRight /></Link>
+    </nav>
     <CareerAssessmentStorageNotice assessmentCode="work_values" assessmentVersion="mooa-work-values-exploration-kr-beta-v1" answersRaw={raw} resultPath="/career/values/result" />
     <section className={styles.chartCard}><div><span className={styles.sectionKicker}>WORK VALUES EXPLORATION</span><h2>일에서 중요하게 보는 기준</h2><p>여섯 기준을 비교해, 지원할 조직과 역할에서 무엇을 확인할지 정리하는 출발점으로 사용하세요.</p></div><div className={styles.chart}><ResponsiveContainer width="100%" height="100%"><RadarChart data={data} outerRadius="72%"><PolarGrid stroke="#d7e1da"/><PolarAngleAxis dataKey="subject" tick={{ fill: "#53655b", fontSize: 10 }}/><RadarGraph dataKey="score" stroke="#176b4a" fill="#43a574" fillOpacity={.32}/><Tooltip formatter={(value) => [`${value} / 100`, "중요도 응답 환산"]}/></RadarChart></ResponsiveContainer></div></section>
     <section className={styles.scoreGrid}>{scores.map((score) => <article key={score.id}><div><span>{score.label}</span><b>{score.score >= 67 ? "높음" : score.score >= 34 ? "보통" : "낮음"}</b></div><strong>{score.score}<small>/100</small></strong><div className={styles.scoreLine}><i style={{ width: `${score.score}%` }} /></div><p>{score.score >= 67 ? "지원할 환경에서 이 기준을 구체적으로 확인해 보세요." : "다른 기준과 함께 균형 있게 살펴보세요."}</p></article>)}</section>

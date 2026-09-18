@@ -21,15 +21,18 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "ko",
     // 없으면 "홈 화면에 추가"가 안드로이드에서는 페이지 스크린샷을,
     // 스플래시 화면에서는 빈 배경을 대신 씁니다. 표준 아이콘("any")과
-    // Play/안드로이드 런처의 마스크 아이콘("maskable") 자리를 같은 두 파일로
-    // 겸하도록 항목을 나눠 둡니다 — Next.js의 매니페스트 타입이 스펙의
-    // "any maskable" 같은 공백 구분 다중값을 받지 않아 항목을 분리했습니다.
-    // 마스킹 전용 여백을 더 준 별도 파일은 아직 없습니다.
+    // Play/안드로이드 런처의 마스크 아이콘("maskable")을 항목으로 나눠 둡니다
+    // — Next.js의 매니페스트 타입이 스펙의 "any maskable" 같은 공백 구분
+    // 다중값을 받지 않습니다.
+    //
+    // maskable은 별도 파일입니다. 런처가 원형·스쿼클로 잘라내기 때문에,
+    // 같은 파일을 쓰면 아이콘 아래쪽 "무아레쥬메" 글자가 잘립니다. 원본을
+    // 80%로 줄이고 바깥을 아이콘 모서리 색으로 채운 판이 안전영역을 지킵니다.
     icons: [
-      { src: "/icon-192", sizes: "192x192", type: "image/png" },
-      { src: "/icon-192", sizes: "192x192", type: "image/png", purpose: "maskable" },
-      { src: "/icon-512", sizes: "512x512", type: "image/png" },
-      { src: "/icon-512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }
