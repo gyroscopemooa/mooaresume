@@ -15,7 +15,7 @@
 .otpResend:disabled{opacity:.5;cursor:default}
 
 /* 로그인 → 결제 단계와 큰 Google 버튼. 이메일은 접어 두고 필요할 때만 엽니다. */
-.steps{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 4px;color:#3f4d46;font-size:13px;font-weight:800}
+.steps{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 4px;color:#3f4d46;font-size:12px;font-weight:800;white-space:nowrap}
 .steps span{display:inline-flex;align-items:center;gap:6px}
 .steps i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#176b4a;color:#fff;font-size:11px;font-style:normal;font-weight:900}
 .steps svg{width:14px;color:#9aa8a0}

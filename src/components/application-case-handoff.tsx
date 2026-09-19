@@ -559,7 +559,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
 
   return <div className={styles.login}>
     {/* 로그인 → 결제 두 단계를 먼저 보여 줍니다. 지금 할 일이 1번이라는 것이 읽혀야 합니다. */}
-    <div className={styles.steps}><span><i>1</i>로그인</span><ArrowRight/><span><i>2</i>결제하고 분석 시작</span></div>
+    <div className={styles.steps}><span><i>1</i>로그인</span><ArrowRight/><span><i>2</i>결제</span></div>
     <button className={styles.oauthButton} type="button" disabled={busy} onClick={() => void signInWithGoogle()}>Google로 로그인</button>
     {emailOpen || otpSent ? (
       <>

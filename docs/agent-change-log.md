@@ -7569,3 +7569,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 변경: `src/components/app-my-page.tsx` "안내" 목록에 `/account-deletion` 링크 한 줄 추가(스위치와 무관하게 항상 표시). 실제 즉시 삭제 버튼과 DB 함수는 그대로 스위치 뒤에 둠(원격 함수 미검증 — 테스트 계정으로 시험 전에는 켜지 말 것).
 - Validation: `tsc --noEmit` 오류 없음. 링크가 가리키는 `/account-deletion`은 운영에서 200 확인(2026-09-19).
 - Rollback: 해당 `<li>` 한 줄 삭제.
+
+### 2026-09-20 — Claude: 좁은 폰에서 팝업·결제 단계 글자 꺾임 줄이기 — 사용자 요청
+
+- Agent: Claude. 사용자 보고: 모바일 폭이 좁으면 "이대로 진행할까요?" 팝업의 "자료 더 넣기"가 두 줄로 꺾이고, 결제창의 "1 로그인 → 2 결제하고 분석 시작"도 두 줄이 됨.
+- 변경: `pro-input-page.module.css` 끝에 `@media (max-width:480px)` 블록 추가(팝업 여백·글자 축소, 버튼 `white-space:nowrap`). `application-case-handoff.tsx` 단계 문구 "2 결제하고 분석 시작"→"2 결제", `application-case-handoff.module.css`의 `.steps`를 12px·`nowrap`으로.
+- Validation: `tsc --noEmit`·ESLint 오류 없음, components 테스트 121개 통과. **팝업과 결제창은 화면으로 확인 못 함**(팝업은 입력 조건을 채워야 뜨고, 결제창은 로그인 없이 볼 수 없음).
+- Rollback: 위 CSS 블록 삭제, 문구를 이전 값으로 복원.
