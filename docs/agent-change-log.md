@@ -7545,3 +7545,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 결제 상태(중요): 두 기능 모두 유료(포트폴리오 7,900원 등)이며 **앱의 Google Play 결제에는 연결돼 있지 않습니다.** Play에서 설치한 앱 안에서는 결제 버튼 대신 `AppPaidToolNotice`("앱에서 준비 중")가 나옵니다(기존 동작). 웹 결제(Polar)는 신규 상품·환경변수 미생성 상태라 실결제는 아직 동작하지 않을 수 있음(메모리 기록 참조).
 - Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. 390px에서 두 화면 확인: 가로 넘침 없음, 제목 24px, 가격 칩 없음, 업로드 62px, 로그인 격자 2줄, 결제 버튼 폭 311px=카드 폭. 실기기 미확인.
 - Rollback: 위 파일들의 `variant` 관련 변경과 CSS `data-variant="app"` 블록 제거, 신규 두 라우트 폴더 삭제, 내 정보 링크·탭 `match` 원복.
+
+### 2026-09-20 — Claude: 결제 버튼을 눌러야 로그인 칸이 열리도록 변경(이력서·경력기술서·포트폴리오) — 사용자 요청
+
+- Agent: Claude. 사용자 요청: 비활성처럼 보이는 결제 버튼을 눌렀을 때 로그인창이 나오게. 이어서 "로그인 후 결제가능/Google/입력창/코드 받기 4개가 계속 필요한지 모르겠다"는 의견에 따라 평소에는 숨김.
+- 변경: `resume-build-panel.tsx`, `career-description-build-panel.tsx`, `portfolio-build-panel.tsx` — 결제 버튼의 `disabled`를 진행 중(`busy`)에만 유지하고 `aria-disabled`(회색 표시)로 대체해 클릭 가능하게 함. `onBuyClick`: 로그인 전이면 로그인 칸을 열어 스크롤·강조, 자료 부족이면 안내 메시지, 그 외 결제 시작. 로그인 칸은 `signedIn === false && loginOpen && !inApp`일 때만 렌더(앱 안에서는 결제가 안 되므로 숨김). CSS: `resume-build-panel.module.css`, `document-build-tool.module.css`에 `.buy[aria-disabled="true"]`, `.loginNudge` 추가.
+- 동작 변화: 로그인 전 화면에서 로그인 칸이 처음부터 보이지 않음(버튼을 눌러야 나타남). 로그인 상태·결제 로직·서버는 변경 없음.
+- Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. 390px에서 `/app/resume`: 처음엔 로그인 칸 없음 → 버튼 클릭 후 칸 표시·화면 안·강조, 가로 넘침 없음. `/app/portfolio`도 동일 확인. 경력기술서는 동일 코드라 직접 클릭은 생략. 실기기 미확인.
+- Rollback: 세 파일의 `onBuyClick`·`loginOpen`·`loginRef`·`loginNudge` 제거, 버튼을 `disabled={busy || !enough || !signedIn}`·`onClick={() => void startCheckout()}`로 복원, `{signedIn === false && <div ...login>`로 복원, CSS 두 규칙 삭제.

@@ -178,6 +178,11 @@
 .panel[data-variant="app"] .buy { justify-content: center; width: 100%; box-sizing: border-box; padding: 12px 20px; font-size: 14px; }
 .panel[data-variant="app"] .ghost { width: 100%; box-sizing: border-box; }
 
+/* 회색으로 보이지만 눌리는 결제 단추(로그인·자료 부족 안내용). 진짜 비활성(:disabled)은
+   진행 중일 때만입니다. 눌렀을 때 로그인 칸을 잠깐 강조합니다. */
+.buy[aria-disabled="true"], .buy[aria-disabled="true"]:hover { background: #e5e8eb; color: #b0b8c1; box-shadow: none; cursor: pointer; }
+.loginNudge { border-color: #3182f6; box-shadow: 0 0 0 3px rgb(49 130 246 / .18); transition: border-color .15s, box-shadow .15s; }
+
 /* 이력서를 인쇄할 때 이 칸이 따라 나가면 안 됩니다. 종이에는 이력서만
    나옵니다(도구 쪽 인쇄 규칙은 자기 스타일시트의 클래스만 감출 수 있습니다). */
 @media print {

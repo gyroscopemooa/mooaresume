@@ -138,6 +138,9 @@ export function PortfolioBuildPanel({ variant = "default" }: { variant?: "defaul
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const loginRef = useRef<HTMLDivElement>(null);
+  const [loginNudge, setLoginNudge] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
   const [buildId, setBuildId] = useState<string | null>(null);
   const restored = useRef(false);
 
@@ -339,6 +342,27 @@ export function PortfolioBuildPanel({ variant = "default" }: { variant?: "defaul
     URL.revokeObjectURL(url);
   }
 
+  /* 결제 단추는 회색이어도 눌립니다. 로그인 전이면 그때 로그인 칸을 열어 보여 주고,
+     자료가 모자라면 이유를 메시지로 알려 줍니다(아무 반응이 없으면 왜 안 되는지 모릅니다). */
+  function onBuyClick() {
+    if (signedIn === false) {
+      setLoginOpen(true);
+      // 칸이 그려진 다음에 스크롤합니다.
+      window.setTimeout(() => {
+        loginRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setLoginNudge(true);
+        window.setTimeout(() => setLoginNudge(false), 1400);
+      }, 60);
+      return;
+    }
+    if (!signedIn) return;
+    if (!enough) {
+      setMessage("적어 주신 내용이 조금 더 필요합니다. 프로젝트 설명을 조금 더 적어 주세요.");
+      return;
+    }
+    void startCheckout();
+  }
+
   const busy = phase === "creating" || phase === "running";
 
   return <section className={styles.page} id="portfolio-build" aria-labelledby="portfolio-build-title" data-variant={variant}>
@@ -455,7 +479,7 @@ export function PortfolioBuildPanel({ variant = "default" }: { variant?: "defaul
 
         {message && <p className={styles.message}><AlertCircle />{message}</p>}
 
-        {signedIn === false && <div className={styles.login}>
+        {signedIn === false && loginOpen && !inApp && <div ref={loginRef} className={`${styles.login} ${loginNudge ? styles.loginNudge : ""}`}>
           <b><LogIn /> {variant === "app" ? "로그인 후 결제 가능" : "결제와 결과 확인을 위해 로그인이 필요합니다"}</b>
           <p>적어 두신 내용은 이 브라우저에 그대로 남아 있습니다.</p>
           <div className={styles.loginRow}>
@@ -479,9 +503,10 @@ export function PortfolioBuildPanel({ variant = "default" }: { variant?: "defaul
             {inApp ? <AppPaidToolNotice tool="AI 포트폴리오 설명글" /> : <button
               type="button"
               className={styles.buy}
-              disabled={busy || !enough || !signedIn}
+              disabled={busy}
+              aria-disabled={!enough || !signedIn}
               title={!signedIn ? "로그인 후 결제할 수 있습니다." : enough ? undefined : "적어 주신 내용이 조금 더 필요합니다."}
-              onClick={() => void startCheckout()}
+              onClick={onBuyClick}
             >
               {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "설명글을 쓰는 중" : "결제 페이지로 이동 중"}</> : <>{PORTFOLIO_BUILD_PRICE_KRW.toLocaleString()}원 · AI로 만들기<ArrowRight /></>}
             </button>}
