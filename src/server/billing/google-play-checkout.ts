@@ -161,8 +161,38 @@ export function describeGooglePlayConfigShape() {
  * Turns a failed Google Play Developer API call into a category the operator
  * can act on, the same way classifyPolarFailure does for Polar.
  */
+/**
+ * 실패한 Google 호출의 HTTP 상태와 호스트만 뽑습니다(비밀 없음).
+ *
+ * Cloudflare Workers에서는 Google 오류 응답 본문이 압축된 채로 `error.message`에
+ * 실려 와서(깨진 글자) 아래 정규식이 상태 번호를 못 읽습니다. 그때는 이 값이
+ * 유일한 단서라 로그와 분류 둘 다에 씁니다.
+ */
+export function describeGooglePlayFailureMeta(error: unknown): { status: number | null; host: string | null } {
+  const record = (typeof error === "object" && error !== null ? error : {}) as {
+    status?: unknown;
+    code?: unknown;
+    response?: { status?: unknown; config?: { url?: unknown } };
+    config?: { url?: unknown };
+  };
+  const rawStatus = record.response?.status ?? record.status ?? record.code;
+  const status = typeof rawStatus === "number" ? rawStatus : typeof rawStatus === "string" && /^\d{3}$/.test(rawStatus) ? Number(rawStatus) : null;
+  const rawUrl = record.response?.config?.url ?? record.config?.url;
+  let host: string | null = null;
+  if (typeof rawUrl === "string") {
+    try { host = new URL(rawUrl).hostname; } catch { host = null; }
+  }
+  return { status, host };
+}
+
 export function classifyGooglePlayFailure(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
+  const { status } = describeGooglePlayFailureMeta(error);
+  // 메시지가 깨져 있어도 상태 번호가 있으면 그것을 먼저 믿습니다.
+  if (status === 401 || status === 403) return "GOOGLE_PLAY_AUTH_REJECTED";
+  if (status === 404) return "GOOGLE_PLAY_PURCHASE_NOT_FOUND";
+  if (status === 400) return "GOOGLE_PLAY_REQUEST_REJECTED";
+  if (status !== null && status >= 500) return "GOOGLE_PLAY_UNAVAILABLE";
 
   if (/GOOGLE_PLAY_PACKAGE_NAME|GOOGLE_PLAY_SERVICE_ACCOUNT_JSON|GOOGLE_PLAY_QUICK_PRODUCT_ID|GOOGLE_PLAY_PRO_PRODUCT_ID가 필요합니다/.test(message)) return "GOOGLE_PLAY_CONFIG_MISSING";
   if (/client_email\/private_key|올바른 JSON/.test(message)) return "GOOGLE_PLAY_SERVICE_ACCOUNT_INVALID";

@@ -7624,3 +7624,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 참고: 사용자가 전달한 `57:12…`가 무엇의 지문인지(Play Console의 어느 인증서/어느 앱)는 미확인 — 제거하지 않고 둠. 설치 출처가 내부 앱 공유(IAS)일 가능성도 있어, 정식 트랙 설치 후 지문이 달라지면 재확인 필요.
 - Validation: JSON 파싱 통과, 32쌍 형식. 운영 반영과 결제창은 배포 후 폰에서 확인해야 함. 진단 중 폰 설정·앱 데이터는 변경하지 않았고(읽기 전용 adb·DevTools 진단), 결제는 실행하지 않음.
 - Rollback: 추가한 지문 한 줄 삭제.
+
+### 2026-09-20 — Claude: Play 구매 확인 실패의 HTTP 상태를 읽고 로그에 남김 — 실폰 결제 진단
+
+- Agent: Claude. 배경: 실폰(내부 테스트)에서 구글 결제창은 뜨나 결제 뒤 "구매를 확인하지 못했습니다"(서버 502 `GOOGLE_PLAY_UNKNOWN`). Cloudflare `wrangler tail`로 로그를 읽어 보니 설정은 모두 정상(패키지명·서비스 계정 JSON 파싱·상품 ID)인데, `error.message`가 **압축된 채로 온 Google 오류 본문(깨진 글자)**이라 분류 정규식이 상태 번호를 못 읽음.
+- 변경: `src/server/billing/google-play-checkout.ts` — `describeGooglePlayFailureMeta(error)`(HTTP 상태·호스트만 추출, 비밀 없음) 추가, `classifyGooglePlayFailure`가 상태 번호(401/403·404·400·5xx)를 메시지보다 먼저 사용. `src/server/billing/google-play-verify-route.ts` — 실패 로그에 `meta`(status·host)와 200자로 자른 `error` 포함. 결제 검증·지급 로직은 변경 없음.
+- Validation: `tsc --noEmit`·ESLint 오류 없음, `src/server/billing` 테스트 93개 통과. 배포 후 폰 구매 기록으로 재요청해 상태를 확인할 예정.
+- Rollback: 위 두 파일의 변경 되돌림.

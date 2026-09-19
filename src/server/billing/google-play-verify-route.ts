@@ -5,6 +5,7 @@ import { ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import {
   classifyGooglePlayFailure,
+  describeGooglePlayFailureMeta,
   createAndroidPublisherClientFromEnv,
   describeGooglePlayConfigShape,
 } from "@/server/billing/google-play-checkout";
@@ -93,7 +94,7 @@ export async function handleGooglePlayVerifyRequest(request: NextRequest) {
     }
     const detail = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     const code = classifyGooglePlayFailure(error);
-    console.error("google_play_verify_failed", JSON.stringify({ code, error: detail, config: describeGooglePlayConfigShape() }));
+    console.error("google_play_verify_failed", JSON.stringify({ code, meta: describeGooglePlayFailureMeta(error), error: detail.slice(0, 200), config: describeGooglePlayConfigShape() }));
     return NextResponse.json({
       error: "구매를 확인하지 못했습니다.",
       code,
