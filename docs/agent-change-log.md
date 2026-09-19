@@ -7591,3 +7591,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: 360px 뷰포트(`/app`, 문항 1개 입력)에서 문항 행 높이 27px(한 줄), 칸 전체 108px, 가로 넘침 없음. 전체 Vitest 통과. 실기기 미확인.
 - 참고: 결제창(`/analysis/prepare`)이 작은 폰에서 밀린다는 보고는 재현 못 함(385px에서 넘치는 요소 0개). 보고된 화면은 브라우저 창 크기와 에뮬레이션 크기가 달라 생긴 잘림으로 보임. 확인 없이 넣었던 CSS 방어 수정은 되돌림.
 - Rollback: 위 블록의 마지막 4줄 삭제.
+
+### 2026-09-20 — Claude: assetlinks.json에 Play 앱 서명 키 지문 추가 — Play 결제·전체 화면(주소창 없음) 검증
+
+- Agent: Claude. 사용자가 Play Console(앱 서명 → 앱 서명 키 인증서)에서 복사한 SHA-256을 전달.
+- 변경: `public/.well-known/assetlinks.json`의 `com.mooaresume.twa` 대상 `sha256_cert_fingerprints`에 `57:12:F7:8B:…:21:A2`(Play 앱 서명 키) 추가. 기존 업로드 키 지문 `47:B0:71:A2:…:F6:74`는 그대로 유지(사이드로드 빌드 검증용). JSON 재직렬화로 들여쓰기가 펼쳐졌으나 내용은 동일.
+- 목적: Play에서 설치한 앱이 사이트와 검증돼야 주소창 없이 열리고 Chrome이 Google Play 결제(Digital Goods)를 열어 줌. 이전 "Client app unavailable"의 원인으로 추정.
+- Validation: JSON 파싱 통과, 지문 32쌍 형식 확인. 운영 반영·폰 동작은 배포 후 확인 필요.
+- Rollback: 새 지문 한 줄 삭제.
