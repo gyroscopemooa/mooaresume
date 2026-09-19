@@ -2,9 +2,11 @@
    Every selector carries .gate on purpose. The container styles `.action
    button` — full width, green, white, 9px bold — which turned these into green
    slabs. A bare class loses to a class-plus-element selector. */
-.gate { margin: 14px 0 0; padding: 10px 12px; border: 1px solid #dfe6e2; border-radius: 8px; background: #fff; }
+.gate { min-width: 0; margin: 14px 0 0; padding: 10px 12px; border: 1px solid #dfe6e2; border-radius: 8px; background: #fff; }
 
-.gate .row { display: flex; align-items: center; gap: 18px; }
+/* 폰 폭에서 "데이터 활용 · 활용하지 않기 · 자세히"가 한 줄에 안 들어가면 카드 밖으로
+   삐져나가 결제창 전체를 오른쪽으로 밀었습니다(항목이 nowrap이라 줄어들지 못함). 넘치면 다음 줄로. */
+.gate .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; min-width: 0; }
 
 .gate .check {
   display: flex; align-items: center; gap: 8px;

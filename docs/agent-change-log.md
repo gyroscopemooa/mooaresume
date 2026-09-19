@@ -7599,3 +7599,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 목적: Play에서 설치한 앱이 사이트와 검증돼야 주소창 없이 열리고 Chrome이 Google Play 결제(Digital Goods)를 열어 줌. 이전 "Client app unavailable"의 원인으로 추정.
 - Validation: JSON 파싱 통과, 지문 32쌍 형식 확인. 운영 반영·폰 동작은 배포 후 확인 필요.
 - Rollback: 새 지문 한 줄 삭제.
+
+### 2026-09-20 — Claude: 결제창이 폰에서 오른쪽으로 밀리는 원인 수정(연구 동의 줄 줄바꿈) — 사용자 실기기 캡처
+
+- Agent: Claude. 사용자가 실기기(내부 테스트 앱) 캡처로 결제창(`/analysis/prepare`) 카드가 화면 오른쪽으로 밀리고 잘린다고 보고. 이전 캡처에서 "데이터 활용 / 활용하지 않기 / 자세히" 줄이 카드 밖으로 삐져나간 것이 단서.
+- 원인(코드 근거): `research-consent-gate.module.css`의 `.gate .row`가 `display:flex`(줄바꿈 없음)이고 항목이 `white-space:nowrap`이라, 폰 폭에서 줄이 카드보다 넓어져 그리드 트랙(`1fr`, min-content)을 밀어냄.
+- 변경: 같은 파일 `.gate .row`에 `flex-wrap:wrap; gap:6px 18px; min-width:0`, `.gate`에 `min-width:0` 추가.
+- Validation: `tsc --noEmit` 오류 없음, components 테스트 통과. **화면으로는 확인 못 함**(로그인 뒤에만 그 줄이 보이고 내 환경은 비로그인). 실기기 재확인 필요.
+- Rollback: 위 두 규칙을 원래대로(`gap:18px`, `flex-wrap` 제거).
