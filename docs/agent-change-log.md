@@ -7583,3 +7583,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 변경: `simple-intake.tsx` — 문항별 목록(`lengthPlans`)이 보이면 같은 내용을 되풀이하는 초록 안내(`resolvedLengths`)를 숨김(목록이 없을 때만 표시). `simple-intake.module.css` 끝에 `@media (max-width:480px)` 블록 추가(여백·글자·입력칸 축소).
 - Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. **화면으로는 확인 못 함**.
 - Rollback: JSX 조건에서 `&& lengthPlans.length === 0` 제거, CSS 블록 삭제.
+
+### 2026-09-20 — Claude: 문항별 글자 수 행을 폰에서 한 줄로 — 사용자 요청(후속)
+
+- Agent: Claude. 앞선 변경(`1652821`)은 초록 안내만 숨겨 4줄이 그대로였음. 원인: `simple-intake.module.css`의 `@media (max-width:430px)` 규칙이 문항 행을 "이름 윗줄 / 목표 글자 수 아랫줄"로 일부러 꺾어 둠.
+- 변경: 같은 파일의 내가 추가한 `@media (max-width:480px)` 블록에서 문항 행을 `flex-wrap:nowrap`으로 되돌리고(이름 줄임표·현재 글자 수·→ 목표 입력 38px) 한 줄로. 입력칸 `font-size`는 16px 그대로 둠(iOS 확대 방지) — 앞 변경에서 12.5px로 줄였던 것을 되돌림.
+- Validation: 360px 뷰포트(`/app`, 문항 1개 입력)에서 문항 행 높이 27px(한 줄), 칸 전체 108px, 가로 넘침 없음. 전체 Vitest 통과. 실기기 미확인.
+- 참고: 결제창(`/analysis/prepare`)이 작은 폰에서 밀린다는 보고는 재현 못 함(385px에서 넘치는 요소 0개). 보고된 화면은 브라우저 창 크기와 에뮬레이션 크기가 달라 생긴 잘림으로 보임. 확인 없이 넣었던 CSS 방어 수정은 되돌림.
+- Rollback: 위 블록의 마지막 4줄 삭제.

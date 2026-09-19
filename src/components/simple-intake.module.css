@@ -342,8 +342,14 @@
 @media (max-width: 480px) {
   .limit { gap: 4px 8px; margin-top: 10px; padding: 7px 10px; }
   .limit > span { font-size: 11.5px; }
-  .limit input { padding: 4px 8px; font-size: 12.5px; }
+  .limit input { padding: 4px 8px; } /* font-size는 그대로(16px): 줄이면 iOS가 칸을 누를 때 화면을 확대합니다 */
   .resolved { padding: 3px 8px; font-size: 10.5px; }
   .limit .plans { gap: 3px; margin-top: 5px; padding-top: 6px; }
   .limit .plans li { font-size: 10.5px; }
+  /* 문항 줄은 꺾지 않고 한 줄로: 이름(줄임표) · 현재 글자 수 · → 목표 입력. 입력칸을 38px로
+     줄이면 320px에서도 이름에 80px 남습니다(위쪽 430px 규칙의 두 줄 배치를 덮어씀). */
+  .limit .plans li { flex-wrap: nowrap; align-items: center; gap: 5px; }
+  .limit .plans li > span { flex: 1 1 0; min-width: 0; }
+  .limit .plans li em { flex: 0 0 auto; }
+  .limit .plans em input { width: 38px; padding: 1px 3px; font-size: 12px; }
 }
