@@ -47,3 +47,10 @@
   box-shadow: 0 6px 14px -6px rgba(2, 132, 199, .5), inset 0 -2px 0 rgba(3, 105, 161, .5);
 }
 .betterTierNotice a svg { width: 15px; }
+
+/* 추천코드·쿠폰은 대부분 없습니다. 결제 직전 화면에서는 한 줄로 접어 둡니다. */
+.codesFold{margin-top:12px}
+.codesFold>summary{cursor:pointer;color:#6b7a72;font-size:12px;font-weight:700;list-style:none}
+.codesFold>summary::-webkit-details-marker{display:none}
+.codesFold>summary::after{content:" ▾"}
+.codesFold[open]>summary::after{content:" ▴"}

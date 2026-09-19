@@ -138,6 +138,7 @@ export function CareerDescriptionBuildPanel({ variant = "default" }: { variant?:
   const loginRef = useRef<HTMLDivElement>(null);
   const [loginNudge, setLoginNudge] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const [buildId, setBuildId] = useState<string | null>(null);
   const restored = useRef(false);
 
@@ -437,17 +438,21 @@ export function CareerDescriptionBuildPanel({ variant = "default" }: { variant?:
         {message && <p className={styles.message}><AlertCircle />{message}</p>}
 
         {signedIn === false && loginOpen && !inApp && <div ref={loginRef} className={`${styles.login} ${loginNudge ? styles.loginNudge : ""}`}>
-          <b><LogIn /> {variant === "app" ? "로그인 후 결제 가능" : "결제와 결과 확인을 위해 로그인이 필요합니다"}</b>
-          <p>적어 두신 자료는 이 브라우저에 그대로 남아 있습니다.</p>
-          <div className={styles.loginRow}>
-            <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 계속하기</button>
-            <span className={styles.or}>또는</span>
-            <input type="email" value={email} placeholder="이메일" onChange={(event) => setEmail(event.target.value)} disabled={authBusy} />
-            {otpSent
-              ? <><input type="text" inputMode="numeric" value={otpCode} placeholder="6자리 코드" onChange={(event) => setOtpCode(event.target.value)} disabled={authBusy} />
-                <button type="button" onClick={() => void verifyLoginCode()} disabled={authBusy}>확인</button></>
-              : <button type="button" onClick={() => void sendLoginCode()} disabled={authBusy}><Mail />코드 받기</button>}
+          <b><LogIn /> 결제하려면 로그인이 필요해요</b>
+          <div className={styles.loginSteps}>
+            <span><i>1</i>로그인</span><ArrowRight />
+            <span><i>2</i>결제 {CAREER_DESCRIPTION_BUILD_PRICE_KRW.toLocaleString()}원</span>
           </div>
+          <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 로그인</button>
+          {emailOpen || otpSent
+            ? <div className={styles.loginRow}>
+              <input type="email" value={email} placeholder="이메일" onChange={(event) => setEmail(event.target.value)} disabled={authBusy} />
+              {otpSent
+                ? <><input type="text" inputMode="numeric" value={otpCode} placeholder="6자리 코드" onChange={(event) => setOtpCode(event.target.value)} disabled={authBusy} />
+                  <button type="button" onClick={() => void verifyLoginCode()} disabled={authBusy}>확인</button></>
+                : <button type="button" onClick={() => void sendLoginCode()} disabled={authBusy}><Mail />코드 받기</button>}
+            </div>
+            : <button type="button" className={styles.emailToggle} onClick={() => setEmailOpen(true)}>Google이 없으면 이메일 코드로 로그인</button>}
         </div>}
 
         <footer className={styles.footer}>

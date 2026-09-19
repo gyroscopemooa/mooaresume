@@ -101,10 +101,19 @@
 .message { display: flex; align-items: flex-start; gap: 7px; margin: 14px 0 0; padding: 11px 13px; border: 1px solid #fbe2c0; border-radius: 11px; background: #fff9ef; color: #99671a; font-size: 11.5px; line-height: 1.7; }
 .message svg { width: 14px; flex: none; margin-top: 1px; }
 
-.login { margin-top: 16px; padding: 14px 15px; border: 1px solid #e8edf5; border-radius: 12px; background: #f9fbff; }
-.login b { display: flex; align-items: center; gap: 6px; color: #191f28; font-size: 12.5px; }
-.login b svg { width: 14px; color: #3182f6; }
-.login p { margin: 5px 0 11px; color: #8b95a1; font-size: 11px; }
+.login { margin-top: 16px; padding: 16px; border: 1px solid #cfe0f8; border-radius: 14px; background: #f5f9ff; }
+.login b { display: flex; align-items: center; gap: 7px; color: #191f28; font-size: 15px; font-weight: 800; letter-spacing: -.03em; }
+.login b svg { width: 16px; color: #3182f6; }
+/* 로그인 → 결제 두 단계를 눈에 띄게. 지금 할 일(1)과 그다음(2)이 한눈에 읽힙니다. */
+.loginSteps { display: flex; align-items: center; gap: 8px; margin: 10px 0 14px; color: #4e5968; font-size: 13px; font-weight: 700; }
+.loginSteps span { display: inline-flex; align-items: center; gap: 6px; }
+.loginSteps i { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #3182f6; color: #fff; font-size: 11px; font-style: normal; font-weight: 800; }
+.loginSteps svg { width: 14px; color: #9aa5b1; }
+.login .googleButton { display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; padding: 15px 16px; border: 2px solid #3182f6; border-radius: 12px; background: #fff; color: #1b64da; font: inherit; font-size: 15px; font-weight: 800; letter-spacing: -.02em; cursor: pointer; box-shadow: 0 6px 14px -8px rgb(49 130 246 / .7); }
+.login .googleButton:hover { background: #eaf3ff; }
+.login .googleButton:disabled { opacity: .55; cursor: not-allowed; }
+.emailToggle { display: block; width: 100%; margin-top: 10px; padding: 6px; border: 0; background: none; color: #6b7684; font: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.login .loginRow { margin-top: 12px; }
 .loginRow { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
 .loginRow input { flex: 1 1 150px; min-width: 0; padding: 9px 11px; border: 1px solid #e5e8eb; border-radius: 9px; background: #fff; color: #191f28; font: inherit; font-size: 11.5px; }
 .loginRow input:focus { outline: none; border-color: #3182f6; box-shadow: 0 0 0 3px rgb(49 130 246 / .12); }
@@ -275,12 +284,6 @@
 .page[data-variant="app"] .dropzone b { min-width: 0; font-size: 11px; }
 .page[data-variant="app"] .dropzone small { min-width: 0; max-width: 100%; overflow: hidden; font-size: 9.5px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 
-.page[data-variant="app"] .login { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 10px; border-radius: 10px; }
-.page[data-variant="app"] .login b { min-width: 0; margin: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.page[data-variant="app"] .login p, .page[data-variant="app"] .or { display: none; }
-.page[data-variant="app"] .loginRow { display: contents; }
-.page[data-variant="app"] .loginRow input { box-sizing: border-box; width: 100%; flex: none; min-width: 0; padding: 7px 9px; font-size: 11px; }
-.page[data-variant="app"] .loginRow button { justify-content: center; padding: 7px 10px; font-size: 11px; white-space: nowrap; }
 
 .page[data-variant="app"] .footer { flex-direction: column; align-items: stretch; gap: 10px; }
 .page[data-variant="app"] .summary { margin-right: 0; }

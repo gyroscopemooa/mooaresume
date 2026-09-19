@@ -101,6 +101,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   // 끝나는 값이라 사람이 누르기 전에 이미 소모되어 있었습니다. 코드는
   // 직접 입력해야 하니 그렇게 미리 소모될 일이 없습니다.
   const [otpSent, setOtpSent] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [savedCaseId, setSavedCaseId] = useState<string | null>(null);
@@ -557,23 +558,28 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   }
 
   return <div className={styles.login}>
-    <button className={styles.oauthButton} type="button" disabled={busy} onClick={() => void signInWithGoogle()}>{"Google\uB85C \uACC4\uC18D\uD558\uAE30"}</button>
-    <div className={styles.divider}><span>{"\uB610\uB294 \uC774\uBA54\uC77C\uB85C \uB85C\uADF8\uC778"}</span></div>
-    <label><Mail/><input type="email" autoComplete="email" value={email} onChange={(event) => { setEmail(event.target.value); setOtpSent(false); }} placeholder="이메일 주소" disabled={otpSent}/></label>
-    {!otpSent ? (
-      <button type="button" disabled={busy} onClick={() => void sendLoginLink()}>{busy ? "전송 중..." : "로그인 코드 받기"} <ArrowRight/></button>
-    ) : (
+    {/* 로그인 → 결제 두 단계를 먼저 보여 줍니다. 지금 할 일이 1번이라는 것이 읽혀야 합니다. */}
+    <div className={styles.steps}><span><i>1</i>로그인</span><ArrowRight/><span><i>2</i>결제하고 분석 시작</span></div>
+    <button className={styles.oauthButton} type="button" disabled={busy} onClick={() => void signInWithGoogle()}>Google로 로그인</button>
+    {emailOpen || otpSent ? (
       <>
-        <input
-          type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-          value={otpCode}
-          onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ""))}
-          placeholder="6자리 코드"
-        />
-        <button type="button" disabled={verifyingOtp} onClick={() => void verifyLoginCode()}>{verifyingOtp ? "확인 중..." : "코드 확인"} <ArrowRight/></button>
-        <button type="button" className={styles.otpResend} disabled={busy} onClick={() => void sendLoginLink()}>코드 다시 받기</button>
+        <label><Mail/><input type="email" autoComplete="email" value={email} onChange={(event) => { setEmail(event.target.value); setOtpSent(false); }} placeholder="이메일 주소" disabled={otpSent}/></label>
+        {!otpSent ? (
+          <button type="button" disabled={busy} onClick={() => void sendLoginLink()}>{busy ? "전송 중..." : "로그인 코드 받기"} <ArrowRight/></button>
+        ) : (
+          <>
+            <input
+              type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, ""))}
+              placeholder="6자리 코드"
+            />
+            <button type="button" disabled={verifyingOtp} onClick={() => void verifyLoginCode()}>{verifyingOtp ? "확인 중..." : "코드 확인"} <ArrowRight/></button>
+            <button type="button" className={styles.otpResend} disabled={busy} onClick={() => void sendLoginLink()}>코드 다시 받기</button>
+          </>
+        )}
       </>
-    )}
+    ) : <button type="button" className={styles.emailToggle} disabled={busy} onClick={() => setEmailOpen(true)}>Google이 없으면 이메일 코드로 로그인</button>}
     {(message || authError) && <p>{message || authError}</p>}
   </div>;
 }

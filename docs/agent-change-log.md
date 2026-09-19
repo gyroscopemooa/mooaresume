@@ -7553,3 +7553,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 동작 변화: 로그인 전 화면에서 로그인 칸이 처음부터 보이지 않음(버튼을 눌러야 나타남). 로그인 상태·결제 로직·서버는 변경 없음.
 - Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. 390px에서 `/app/resume`: 처음엔 로그인 칸 없음 → 버튼 클릭 후 칸 표시·화면 안·강조, 가로 넘침 없음. `/app/portfolio`도 동일 확인. 경력기술서는 동일 코드라 직접 클릭은 생략. 실기기 미확인.
 - Rollback: 세 파일의 `onBuyClick`·`loginOpen`·`loginRef`·`loginNudge` 제거, 버튼을 `disabled={busy || !enough || !signedIn}`·`onClick={() => void startCheckout()}`로 복원, `{signedIn === false && <div ...login>`로 복원, CSS 두 규칙 삭제.
+
+### 2026-09-20 — Claude: 결제·로그인 단계 강조 + 자소서 결제창 정리 — 사용자 요청
+
+- Agent: Claude. 사용자 요청: 자소서 첨삭 후 결제창이 난잡함 → 줄이고 결제·로그인을 강조, 구글 버튼을 더 길고 크게, 이력서 등 AI 칸의 로그인도 같은 강조.
+- **AI 칸 3곳**(`resume-build-panel.tsx`, `career-description-build-panel.tsx`, `portfolio-build-panel.tsx`): 로그인 칸을 "결제하려면 로그인이 필요해요" 제목 + `① 로그인 → ② 결제 N원` 단계 + 꽉 찬 큰 "Google로 로그인" 버튼으로 교체. 이메일 입력·코드 받기는 접어 두고 "Google이 없으면 이메일 코드로 로그인"을 누르면 열림(`emailOpen`). 앱 압축 배치용 로그인 격자 CSS 제거. CSS: `resume-build-panel.module.css`, `document-build-tool.module.css`.
+- **자소서 결제창**: `application-case-handoff.tsx`의 로그인 부분을 같은 구조(1 로그인 → 2 결제하고 분석 시작, 큰 Google 버튼, 이메일 접기)로 변경, `application-case-handoff.module.css`에 `.steps`·`.emailToggle` 등 추가. `analysis-preparation.tsx`에서 추천코드·쿠폰 코드 두 줄을 닫힌 `<details>`("추천코드 · 쿠폰 코드가 있어요") 하나로 접음, `analysis-preparation.module.css`에 `.codesFold` 추가.
+- 주의: "Google로 로그인" 버튼은 **로그인만** 합니다(결제는 로그인 뒤 별도 버튼). 그래서 문구를 "로그인하고 결제하기"가 아니라 단계 표시(1 로그인 → 2 결제)로 표현함.
+- Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. `/app/resume` 390px에서 로그인 칸 확인(제목·단계·큰 Google 버튼·이메일 접힘, 가로 넘침 없음). **자소서 결제창(`/analysis/prepare`)은 화면으로 확인 못 함** — 로그인 안 한 방문자를 바로 Google 로그인으로 보내서 비로그인 상태 화면을 볼 수 없었음. 코드·타입·테스트로만 검증.
+- Rollback: 위 파일들의 로그인 블록·`emailOpen`·`codesFold` 변경과 추가 CSS 제거(이전 마크업은 git 이력에 있음: 커밋 a20b123 시점).
