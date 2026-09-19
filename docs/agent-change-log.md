@@ -7562,3 +7562,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 주의: "Google로 로그인" 버튼은 **로그인만** 합니다(결제는 로그인 뒤 별도 버튼). 그래서 문구를 "로그인하고 결제하기"가 아니라 단계 표시(1 로그인 → 2 결제)로 표현함.
 - Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. `/app/resume` 390px에서 로그인 칸 확인(제목·단계·큰 Google 버튼·이메일 접힘, 가로 넘침 없음). **자소서 결제창(`/analysis/prepare`)은 화면으로 확인 못 함** — 로그인 안 한 방문자를 바로 Google 로그인으로 보내서 비로그인 상태 화면을 볼 수 없었음. 코드·타입·테스트로만 검증.
 - Rollback: 위 파일들의 로그인 블록·`emailOpen`·`codesFold` 변경과 추가 CSS 제거(이전 마크업은 git 이력에 있음: 커밋 a20b123 시점).
+
+### 2026-09-20 — Claude: 내 정보에 "계정 · 데이터 삭제 요청" 링크 상시 노출 — 출시 준비(Play 계정 삭제 요건)
+
+- Agent: Claude. 배경: `NEXT_PUBLIC_ACCOUNT_DELETION_ENABLED`가 꺼져 있으면 앱 안에 삭제 경로가 전혀 없었음(`AccountDeleteForm`이 null 반환). Play는 계정 생성 앱에 앱 안 삭제 시작 경로를 요구.
+- 변경: `src/components/app-my-page.tsx` "안내" 목록에 `/account-deletion` 링크 한 줄 추가(스위치와 무관하게 항상 표시). 실제 즉시 삭제 버튼과 DB 함수는 그대로 스위치 뒤에 둠(원격 함수 미검증 — 테스트 계정으로 시험 전에는 켜지 말 것).
+- Validation: `tsc --noEmit` 오류 없음. 링크가 가리키는 `/account-deletion`은 운영에서 200 확인(2026-09-19).
+- Rollback: 해당 `<li>` 한 줄 삭제.

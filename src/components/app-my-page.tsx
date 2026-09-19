@@ -150,6 +150,7 @@ export function AppMyPage() {
         <li><Link href="/refer">친구 추천 · 무료 이용권 <ArrowRight/></Link></li>
         <li><Link href="/guide">이용 방법 · 자주 묻는 질문 <ArrowRight/></Link></li>
         <li><Link href="/privacy">개인정보 처리방침 <ArrowRight/></Link></li>
+        <li><Link href="/account-deletion">계정 · 데이터 삭제 요청 <ArrowRight/></Link></li>
       </ul>
     </section>
 
