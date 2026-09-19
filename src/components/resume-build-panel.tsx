@@ -50,7 +50,11 @@ function readStoredSources(): StoredSources | null {
   }
 }
 
-export function ResumeBuildPanel() {
+/**
+ * `variant="app"`은 앱 이력서 탭용 압축 배치입니다(제목·가격 칩·업로드 칸·로그인 줄을
+ * 줄임). 웹 `/resume`은 기본값 그대로라 화면이 바뀌지 않습니다.
+ */
+export function ResumeBuildPanel({ variant = "default" }: { variant?: "default" | "app" } = {}) {
   // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
   // 정책이 앱 안에서의 외부 결제를 금지합니다.
   const inApp = useInstalledApp();
@@ -274,17 +278,18 @@ export function ResumeBuildPanel() {
 
   const busy = phase === "creating" || phase === "running";
 
-  return <section className={styles.panel} id="resume-ai-build" aria-labelledby="resume-ai-build-title">
+  return <section className={styles.panel} id="resume-ai-build" aria-labelledby="resume-ai-build-title" data-variant={variant}>
     <div className={styles.card}>
     {/* 알약 모양 라벨("AI RESUME BUILD · 유료")을 걷어냈습니다. 광고 배너처럼
         읽혀서 정작 무엇을 하는 칸인지가 뒤로 밀렸습니다. 값은 라벨이 아니라
         값이므로, 오른쪽 위에 네모 칩 하나로 고정해 둡니다. */}
+    {variant === "app" && <h1 className={styles.appTitle}>자동 이력서 메이커</h1>}
     <header className={styles.head}>
       <div className={styles.headText}>
         <h2 id="resume-ai-build-title">자료를 던져 두면, 칸은 이쪽에서 채웁니다</h2>
         <p>경력증명서·재직증명서·예전 이력서를 올리거나, 기억나는 대로 줄글로 적어 주세요. 위 이력서의 경력·학력·자격 칸으로 옮겨 적어 드립니다. <b>없는 경력은 지어내지 않습니다</b> — 자료로 확인되지 않는 칸은 비워 두고 무엇이 없는지 알려 드립니다.</p>
       </div>
-      <div className={styles.priceTag}><b>{RESUME_BUILD_PRICE_KRW.toLocaleString()}원</b><small>1건 · 부가세 포함</small></div>
+      {variant !== "app" && <div className={styles.priceTag}><b>{RESUME_BUILD_PRICE_KRW.toLocaleString()}원</b><small>1건 · 부가세 포함</small></div>}
     </header>
 
     <div className={styles.grid}>
@@ -350,7 +355,7 @@ export function ResumeBuildPanel() {
     {message && <p className={styles.message}><AlertCircle />{message}</p>}
 
     {signedIn === false && <div className={styles.login}>
-      <b><LogIn /> 결제와 결과 확인을 위해 로그인이 필요합니다</b>
+      <b><LogIn /> {variant === "app" ? "로그인 후 결제 가능" : "결제와 결과 확인을 위해 로그인이 필요합니다"}</b>
       <p>적어 두신 자료는 이 브라우저에 그대로 남아 있습니다.</p>
       <div className={styles.loginRow}>
         <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 계속하기</button>

@@ -17,7 +17,7 @@ import styles from "./app-resume-page.module.css";
  */
 export function AppResumePage() {
   return <div className={styles.page}>
-    <ResumeBuildPanel/>
+    <ResumeBuildPanel variant="app"/>
     <Link className={styles.free} href="/resume">
       <span><b>직접 칸을 채워서 만들기</b>무료 · 로그인 없이 바로 인쇄·PDF 저장</span>
       <ArrowRight/>

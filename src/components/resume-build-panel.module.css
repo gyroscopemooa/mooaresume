@@ -147,6 +147,37 @@
   .headText h2 { font-size: 16.5px; }
 }
 
+/* 앱 이력서 탭용 압축 배치(`variant="app"`). 웹 화면에는 적용되지 않습니다.
+   제목은 크게, 나머지 설명은 작게. 가격 칩은 렌더하지 않고, 업로드 칸과
+   로그인 줄은 얇게, 결제 버튼은 가로를 꽉 채웁니다. */
+.appTitle { margin: 0 0 14px; color: #191f28; font-size: 24px; font-weight: 900; letter-spacing: -.04em; line-height: 1.25; }
+
+.panel[data-variant="app"] { padding-top: 20px; }
+.panel[data-variant="app"] .headText h2 { margin-bottom: 4px; font-size: 13px; }
+.panel[data-variant="app"] .headText p { font-size: 10.5px; line-height: 1.65; }
+
+/* 업로드: 길고 얇은 한 줄 직사각형. */
+.panel[data-variant="app"] .dropzone { grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: center; column-gap: 8px; row-gap: 0; padding: 9px 12px; }
+.panel[data-variant="app"] .dropzone svg { grid-row: 1 / span 2; width: 16px; }
+.panel[data-variant="app"] .dropzone b { min-width: 0; font-size: 11px; }
+.panel[data-variant="app"] .dropzone small { min-width: 0; max-width: 100%; overflow: hidden; font-size: 9.5px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 로그인: 가장 얇은 줄. 안내 문장은 걷고, 두 줄 격자로 둡니다.
+   1줄: 제목 · Google 버튼 / 2줄: 이메일 입력 · 코드 받기. */
+.panel[data-variant="app"] .login { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 10px; border-radius: 10px; }
+.panel[data-variant="app"] .login b { min-width: 0; margin: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.panel[data-variant="app"] .login p, .panel[data-variant="app"] .or { display: none; }
+.panel[data-variant="app"] .loginRow { display: contents; }
+.panel[data-variant="app"] .loginRow input { box-sizing: border-box; width: 100%; flex: none; min-width: 0; padding: 7px 9px; font-size: 11px; }
+.panel[data-variant="app"] .loginRow button { justify-content: center; padding: 7px 10px; font-size: 11px; white-space: nowrap; }
+
+/* 결제: 꽉 채운 넓은 버튼. */
+.panel[data-variant="app"] .footer { flex-direction: column; align-items: stretch; gap: 10px; }
+.panel[data-variant="app"] .summary { margin-right: 0; }
+.panel[data-variant="app"] .actions { flex-direction: column; width: 100%; }
+.panel[data-variant="app"] .buy { justify-content: center; width: 100%; box-sizing: border-box; padding: 12px 20px; font-size: 14px; }
+.panel[data-variant="app"] .ghost { width: 100%; box-sizing: border-box; }
+
 /* 이력서를 인쇄할 때 이 칸이 따라 나가면 안 됩니다. 종이에는 이력서만
    나옵니다(도구 쪽 인쇄 규칙은 자기 스타일시트의 클래스만 감출 수 있습니다). */
 @media print {

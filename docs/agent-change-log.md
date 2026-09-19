@@ -7526,3 +7526,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - **의도적으로 뺀 것**: 법률(`/legal`)은 옮기지 않음(변호사법 리스크 보류). "직무기술서"는 별도 화면이 없어 경력기술서로 대체.
 - Validation: `tsc --noEmit` 오류 없음, ESLint 오류 없음, components 테스트 14파일/121개 통과. 390px 뷰포트에서 `/app/resume`(AI 칸 있음, 무료 메이커 없음, 가로 넘침 없음)과 `/app/my`(링크 3개) 확인. 하단 탭바는 앱 셸에서만 보여 브라우저에서는 확인 못 함. 실기기 미확인.
 - Rollback: 신규 3개 파일·`app/app/resume` 폴더 삭제 + 위 두 파일의 변경 되돌림.
+
+### 2026-09-20 — Claude: 앱 이력서 탭 AI 칸 압축 배치(`variant="app"`) — 사용자 요청
+
+- Agent: Claude. 사용자 요청: 큰 제목 "자동 이력서 메이커", 설명 글자 축소, 가격 칩 제거, 업로드 칸을 길고 얇게, 로그인 칸을 최대 2줄로, 결제 버튼을 가로 꽉 채움.
+- 변경: `resume-build-panel.tsx`에 선택 prop `variant`("default"|"app") 추가. `app`일 때만 큰 제목 렌더, 가격 칩 미렌더, 로그인 제목 문구 단축. `resume-build-panel.module.css`에 `.panel[data-variant="app"]` 규칙 블록 추가(기존 규칙은 그대로). `app-resume-page.tsx`가 `variant="app"` 전달.
+- **웹 `/resume`은 기본값(`default`)이라 바뀌지 않습니다.**
+- 주의: Play에서 설치한 앱 안에서는 결제 버튼 대신 `AppPaidToolNotice`("앱에서 준비 중")가 나옵니다(기존 동작). 꽉 찬 결제 버튼은 브라우저·웹에서 보입니다.
+- Validation: `tsc --noEmit`·ESLint 오류 없음, components 테스트 통과. 390px에서 `/app/resume` 확인: 가로 넘침 없음, 가격 칩 없음, 업로드 62px, 로그인 2줄(격자), 결제 버튼 폭 311px=카드 폭. 실기기 미확인.
+- Rollback: 위 세 파일의 `variant` 관련 변경과 CSS `data-variant="app"` 블록 제거.
