@@ -7576,3 +7576,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 변경: `pro-input-page.module.css` 끝에 `@media (max-width:480px)` 블록 추가(팝업 여백·글자 축소, 버튼 `white-space:nowrap`). `application-case-handoff.tsx` 단계 문구 "2 결제하고 분석 시작"→"2 결제", `application-case-handoff.module.css`의 `.steps`를 12px·`nowrap`으로.
 - Validation: `tsc --noEmit`·ESLint 오류 없음, components 테스트 121개 통과. **팝업과 결제창은 화면으로 확인 못 함**(팝업은 입력 조건을 채워야 뜨고, 결제창은 로그인 없이 볼 수 없음).
 - Rollback: 위 CSS 블록 삭제, 문구를 이전 값으로 복원.
+
+### 2026-09-20 — Claude: 문항별 글자 수 칸 줄 수·글자 축소 — 사용자 요청
+
+- Agent: Claude. 요청: 자소서 입력의 "문항별 글자 수" 칸(입력칸 + 초록 안내 + 문항별 목록)이 좁은 폰에서 크고 중복이라 글자를 줄이고 줄 수를 최소화.
+- 변경: `simple-intake.tsx` — 문항별 목록(`lengthPlans`)이 보이면 같은 내용을 되풀이하는 초록 안내(`resolvedLengths`)를 숨김(목록이 없을 때만 표시). `simple-intake.module.css` 끝에 `@media (max-width:480px)` 블록 추가(여백·글자·입력칸 축소).
+- Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. **화면으로는 확인 못 함**.
+- Rollback: JSX 조건에서 `&& lengthPlans.length === 0` 제거, CSS 블록 삭제.

@@ -434,7 +434,8 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
             difference between a trim and a thousand characters of filler. The
             marker comes back on its own in the shrink warning below, which is
             the moment it actually matters. */}
-        {resolvedLengths && <b className={styles.resolved}>{resolvedLengths}</b>}
+        {/* 문항별 목록이 뜨면 같은 내용을 위에서 한 번 더 말하지 않습니다(줄 수 최소화). */}
+        {resolvedLengths && lengthPlans.length === 0 && <b className={styles.resolved}>{resolvedLengths}</b>}
 
         {/* 설정이 아니라 결과를 보여줍니다. 이 숫자가 없어서 완성된 자기소개서를
             올린 사람이 기본값 그대로 절반 가까이 잘렸습니다. */}
