@@ -7615,3 +7615,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `tsc --noEmit`·ESLint 오류 없음, `src/lib/google-play`·`src/components` 테스트 132개 통과.
 - 주의: 사유 문구에는 브라우저 예외 이름/메시지만 들어감(개인정보·키 없음). 원인 파악 후 제거해도 됨.
 - Rollback: 두 파일의 위 변경 되돌림.
+
+### 2026-09-20 — Claude: assetlinks.json에 폰 설치 앱의 실제 서명 지문 추가 — Digital Goods `unsupported context` 진단 결과
+
+- Agent: Claude. 무선 디버깅으로 실폰(Galaxy A36, Chrome 153)을 진단: 앱은 Play(`com.android.vending`)로 설치·버전 3·Chrome CustomTab(TWA) 호스트·`display-mode: standalone`·`document.referrer=android-app://com.mooaresume.twa/`인데도 `getDigitalGoodsService()`가 `OperationError: unsupported context`로 거절.
+- 원인 추정 근거: 설치된 `base.apk`의 서명 인증서를 `apksigner verify --print-certs`로 확인 → `CN=Android, O=Google Inc.`(Google이 만든 서명 키), SHA-256 `2A:64:93:CE:…:2C:88:74`. 이 값이 사이트 `assetlinks.json`의 기존 두 지문(업로드 키 `47:B0…`, 사용자가 전달한 `57:12…`)과 모두 달랐음.
+- 변경: `public/.well-known/assetlinks.json`의 `com.mooaresume.twa` 지문 목록에 `2A:64:93:CE:A4:F0:34:F4:9E:44:30:37:91:43:07:E1:A5:C6:2F:33:7A:A2:C6:11:F7:91:4E:73:5C:2C:88:74` 추가(기존 2개 유지).
+- 참고: 사용자가 전달한 `57:12…`가 무엇의 지문인지(Play Console의 어느 인증서/어느 앱)는 미확인 — 제거하지 않고 둠. 설치 출처가 내부 앱 공유(IAS)일 가능성도 있어, 정식 트랙 설치 후 지문이 달라지면 재확인 필요.
+- Validation: JSON 파싱 통과, 32쌍 형식. 운영 반영과 결제창은 배포 후 폰에서 확인해야 함. 진단 중 폰 설정·앱 데이터는 변경하지 않았고(읽기 전용 adb·DevTools 진단), 결제는 실행하지 않음.
+- Rollback: 추가한 지문 한 줄 삭제.
