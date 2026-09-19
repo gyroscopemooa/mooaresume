@@ -7516,3 +7516,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 변경: `src/components/resume-maker.module.css`의 `@media (max-width: 560px)` 블록의 `.topbar` 한 줄만 수정(`flex-wrap: wrap; height: auto; min-height: 58px; white-space: normal`). 다른 규칙·데스크톱 레이아웃은 그대로.
 - Validation: 360px 뷰포트(개발 서버 3001, `/resume`)에서 가로 넘침 0(문서 폭 360=화면 360), 헤더 2줄, 인쇄 · PDF 저장 단추 전체 표시 확인. 실기기 확인은 못 함. `/career` 첫 페이지는 넘침 없음 확인; 그 외 커리어 하위 화면은 미확인.
 - Rollback: 위 `.topbar` 줄을 `.topbar { gap: 6px; padding: 0 12px; }`로 되돌림.
+
+### 2026-09-20 — Claude: 앱 이력서 탭을 심플 화면으로 분리 + 내 정보에 "문서 만들기" 메뉴 — 사용자 지시
+
+- Agent: Claude. 사용자 요청: 앱의 이력서 탭이 난잡함 → AI 유료 칸 + 심플 입력만 두고, 무료 이력서 메이커·경력기술서·포트폴리오는 내 정보의 버튼으로 옮김.
+- **추가(신규)**: `src/app/app/resume/page.tsx`, `src/components/app-resume-page.tsx`, `src/components/app-resume-page.module.css`. 화면 = 기존 `ResumeBuildPanel` 그대로 + 무료 메이커(`/resume`)로 가는 링크 하나.
+- **수정(한 곳씩)**: `app-tab-bar.tsx` 이력서 탭 링크 `/resume`→`/app/resume`(`match`에 `/resume` 유지), `app-my-page.tsx`에 "문서 만들기" 카드(무료 이력서 만들기 `/resume`, 경력기술서 `/career-description`, 포트폴리오 설명글 `/portfolio`) 추가.
+- **건드리지 않음**: 웹 `/resume`(SEO·무료 메이커), `ResumeBuildPanel`, 결제·로그인 복귀 경로(`next=/resume`). AI 결과는 여전히 `/resume`의 메이커 칸에 채워지므로 결제 뒤에는 그 화면으로 돌아옵니다.
+- **의도적으로 뺀 것**: 법률(`/legal`)은 옮기지 않음(변호사법 리스크 보류). "직무기술서"는 별도 화면이 없어 경력기술서로 대체.
+- Validation: `tsc --noEmit` 오류 없음, ESLint 오류 없음, components 테스트 14파일/121개 통과. 390px 뷰포트에서 `/app/resume`(AI 칸 있음, 무료 메이커 없음, 가로 넘침 없음)과 `/app/my`(링크 3개) 확인. 하단 탭바는 앱 셸에서만 보여 브라우저에서는 확인 못 함. 실기기 미확인.
+- Rollback: 신규 3개 파일·`app/app/resume` 폴더 삭제 + 위 두 파일의 변경 되돌림.

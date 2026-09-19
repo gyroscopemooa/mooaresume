@@ -136,6 +136,15 @@ export function AppMyPage() {
     </p>}
 
     <section className={styles.card}>
+      <h2>문서 만들기</h2>
+      <ul className={styles.links}>
+        <li><Link href="/resume">무료 이력서 만들기 <ArrowRight/></Link></li>
+        <li><Link href="/career-description">경력기술서 만들기 <ArrowRight/></Link></li>
+        <li><Link href="/portfolio">포트폴리오 설명글 만들기 <ArrowRight/></Link></li>
+      </ul>
+    </section>
+
+    <section className={styles.card}>
       <h2>안내</h2>
       <ul className={styles.links}>
         <li><Link href="/refer">친구 추천 · 무료 이용권 <ArrowRight/></Link></li>

@@ -29,7 +29,7 @@ import styles from "./app-tab-bar.module.css";
  */
 const TABS = [
   { href: "/app/start", label: "시작", Icon: ListOrdered, match: ["/app/start", "/onboarding"] },
-  { href: "/resume", label: "이력서", Icon: FileText, match: ["/resume"] },
+  { href: "/app/resume", label: "이력서", Icon: FileText, match: ["/app/resume", "/resume"] },
   { href: "/app", label: "첨삭", Icon: FilePenLine, match: ["/app", "/analysis", "/result", "/quick", "/pro", "/final", "/analyze"] },
   // 커리어 탭의 홈은 검사 목록입니다. `/career`의 종합 대시보드는 좁은 화면에서
   // 워터마크·잠긴 패널이 겹쳐 읽히지 않고, 앱에서 커리어를 누르는 사람이 찾는
