@@ -7535,3 +7535,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 주의: Play에서 설치한 앱 안에서는 결제 버튼 대신 `AppPaidToolNotice`("앱에서 준비 중")가 나옵니다(기존 동작). 꽉 찬 결제 버튼은 브라우저·웹에서 보입니다.
 - Validation: `tsc --noEmit`·ESLint 오류 없음, components 테스트 통과. 390px에서 `/app/resume` 확인: 가로 넘침 없음, 가격 칩 없음, 업로드 62px, 로그인 2줄(격자), 결제 버튼 폭 311px=카드 폭. 실기기 미확인.
 - Rollback: 위 세 파일의 `variant` 관련 변경과 CSS `data-variant="app"` 블록 제거.
+
+### 2026-09-20 — Claude: 경력기술서·포트폴리오 AI 칸도 앱 압축 배치(`variant="app"`) + 앱 전용 주소 — 사용자 요청
+
+- Agent: Claude. 사용자 요청: 이력서 AI 칸에 한 디자인 수정(큰 제목·가격 칩 제거·얇은 업로드·2줄 로그인·꽉 찬 결제 버튼)을 경력기술서·포트폴리오에도 동일 적용.
+- 변경: `career-description-build-panel.tsx`, `portfolio-build-panel.tsx`에 선택 prop `variant`("default"|"app") 추가(앱일 때만 큰 제목 "자동 경력기술서 메이커"/"자동 포트폴리오 메이커", 가격 칩 미렌더, 로그인 제목 단축). 공용 `document-build-tool.module.css` 끝에 `.page[data-variant="app"]` 규칙 블록 추가(기존 규칙 그대로).
+- 추가(신규): `src/app/app/career-description/page.tsx`, `src/app/app/portfolio/page.tsx`(`variant="app"` 전달). `app-my-page.tsx`의 "문서 만들기" 링크 2개를 새 앱 주소로 변경, `app-tab-bar.tsx` 내 정보 탭 `match`에 두 주소 추가.
+- **웹 `/career-description`·`/portfolio`는 기본값이라 바뀌지 않습니다.**
+- 결제 상태(중요): 두 기능 모두 유료(포트폴리오 7,900원 등)이며 **앱의 Google Play 결제에는 연결돼 있지 않습니다.** Play에서 설치한 앱 안에서는 결제 버튼 대신 `AppPaidToolNotice`("앱에서 준비 중")가 나옵니다(기존 동작). 웹 결제(Polar)는 신규 상품·환경변수 미생성 상태라 실결제는 아직 동작하지 않을 수 있음(메모리 기록 참조).
+- Validation: `tsc --noEmit`·ESLint 오류 없음, 전체 Vitest 통과. 390px에서 두 화면 확인: 가로 넘침 없음, 제목 24px, 가격 칩 없음, 업로드 62px, 로그인 격자 2줄, 결제 버튼 폭 311px=카드 폭. 실기기 미확인.
+- Rollback: 위 파일들의 `variant` 관련 변경과 CSS `data-variant="app"` 블록 제거, 신규 두 라우트 폴더 삭제, 내 정보 링크·탭 `match` 원복.

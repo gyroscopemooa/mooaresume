@@ -116,7 +116,11 @@ function OutputPreview({ output }: { output: PortfolioBuildOutput }) {
   </>;
 }
 
-export function PortfolioBuildPanel() {
+/**
+ * `variant="app"`은 앱 안 화면용 압축 배치입니다(큰 제목·가격 칩 없음·얇은 업로드 칸·
+ * 두 줄 로그인·꽉 찬 결제 버튼). 웹 페이지는 기본값 그대로라 바뀌지 않습니다.
+ */
+export function PortfolioBuildPanel({ variant = "default" }: { variant?: "default" | "app" } = {}) {
   // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
   // 정책이 앱 안에서의 외부 결제를 금지합니다.
   const inApp = useInstalledApp();
@@ -337,13 +341,16 @@ export function PortfolioBuildPanel() {
 
   const busy = phase === "creating" || phase === "running";
 
-  return <section className={styles.page} id="portfolio-build" aria-labelledby="portfolio-build-title">
+  return <section className={styles.page} id="portfolio-build" aria-labelledby="portfolio-build-title" data-variant={variant}>
     <div className={styles.head}>
-      <h1 id="portfolio-build-title">프로젝트만 적어 주세요. 설명은 이쪽에서 씁니다</h1>
+      {variant === "app" && <h1 className={styles.appTitle}>자동 포트폴리오 메이커</h1>}
+      {variant === "app"
+        ? <h2 id="portfolio-build-title" className={styles.appSub}>프로젝트만 적어 주세요. 설명은 이쪽에서 씁니다</h2>
+        : <h1 id="portfolio-build-title">프로젝트만 적어 주세요. 설명은 이쪽에서 씁니다</h1>}
       <p>포트폴리오에서 제일 오래 막히는 건 배치가 아니라 &quot;이 프로젝트를 뭐라고 설명하지&quot;입니다. 프로젝트마다 <b>소개 · 담당 역할 · 문제 · 실행 · 성과 · 사용 기술</b>과 전체 목차를 만들어 드립니다. 없는 성과는 지어내지 않습니다.</p>
-      <div className={styles.priceRow}>
+      {variant !== "app" && <div className={styles.priceRow}>
         <span className={styles.priceTag}><b>{PORTFOLIO_BUILD_PRICE_KRW.toLocaleString()}원</b><small>&nbsp;· 1건 · 부가세 포함</small></span>
-      </div>
+      </div>}
     </div>
 
     <div className={styles.layout}>
@@ -449,7 +456,7 @@ export function PortfolioBuildPanel() {
         {message && <p className={styles.message}><AlertCircle />{message}</p>}
 
         {signedIn === false && <div className={styles.login}>
-          <b><LogIn /> 결제와 결과 확인을 위해 로그인이 필요합니다</b>
+          <b><LogIn /> {variant === "app" ? "로그인 후 결제 가능" : "결제와 결과 확인을 위해 로그인이 필요합니다"}</b>
           <p>적어 두신 내용은 이 브라우저에 그대로 남아 있습니다.</p>
           <div className={styles.loginRow}>
             <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 계속하기</button>

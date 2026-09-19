@@ -113,7 +113,11 @@ function OutputPreview({ output }: { output: CareerDescriptionBuildOutput }) {
   </>;
 }
 
-export function CareerDescriptionBuildPanel() {
+/**
+ * `variant="app"`은 앱 안 화면용 압축 배치입니다(큰 제목·가격 칩 없음·얇은 업로드 칸·
+ * 두 줄 로그인·꽉 찬 결제 버튼). 웹 페이지는 기본값 그대로라 바뀌지 않습니다.
+ */
+export function CareerDescriptionBuildPanel({ variant = "default" }: { variant?: "default" | "app" } = {}) {
   // Play 앱 안에서는 외부 결제(Polar) 버튼을 내리고 안내만 둡니다 — Play
   // 정책이 앱 안에서의 외부 결제를 금지합니다.
   const inApp = useInstalledApp();
@@ -331,13 +335,16 @@ export function CareerDescriptionBuildPanel() {
 
   const busy = phase === "creating" || phase === "running";
 
-  return <section className={styles.page} id="career-description-build" aria-labelledby="career-description-build-title">
+  return <section className={styles.page} id="career-description-build" aria-labelledby="career-description-build-title" data-variant={variant}>
     <div className={styles.head}>
-      <h1 id="career-description-build-title">자료를 모으면, 경력기술서로 정리해 드립니다</h1>
+      {variant === "app" && <h1 className={styles.appTitle}>자동 경력기술서 메이커</h1>}
+      {variant === "app"
+        ? <h2 id="career-description-build-title" className={styles.appSub}>자료를 모으면, 경력기술서로 정리해 드립니다</h2>
+        : <h1 id="career-description-build-title">자료를 모으면, 경력기술서로 정리해 드립니다</h1>}
       <p>이력서·자기소개서·자격증·수료증·경력증명서를 올리거나 기억나는 대로 적어 주세요. 회사별로 소속·직무·기간·담당업무를 정리한 경력기술서 한 장으로 만들어 드립니다. <b>없는 경력은 지어내지 않습니다.</b></p>
-      <div className={styles.priceRow}>
+      {variant !== "app" && <div className={styles.priceRow}>
         <span className={styles.priceTag}><b>{CAREER_DESCRIPTION_BUILD_PRICE_KRW.toLocaleString()}원</b><small>&nbsp;· 1건 · 부가세 포함</small></span>
-      </div>
+      </div>}
     </div>
 
     <div className={styles.layout}>
@@ -406,7 +413,7 @@ export function CareerDescriptionBuildPanel() {
         {message && <p className={styles.message}><AlertCircle />{message}</p>}
 
         {signedIn === false && <div className={styles.login}>
-          <b><LogIn /> 결제와 결과 확인을 위해 로그인이 필요합니다</b>
+          <b><LogIn /> {variant === "app" ? "로그인 후 결제 가능" : "결제와 결과 확인을 위해 로그인이 필요합니다"}</b>
           <p>적어 두신 자료는 이 브라우저에 그대로 남아 있습니다.</p>
           <div className={styles.loginRow}>
             <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 계속하기</button>

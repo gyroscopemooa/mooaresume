@@ -259,3 +259,31 @@
   .card { padding: 20px 17px 18px; border-radius: 16px; }
   .head h1 { font-size: 21px; }
 }
+
+/* 앱 안 화면용 압축 배치(`variant="app"`). 웹 화면에는 적용되지 않습니다.
+   제목은 크게, 설명은 작게. 가격 칩은 렌더하지 않고, 업로드 칸과 로그인 줄은
+   얇게, 결제 버튼은 가로를 꽉 채웁니다. 이력서 AI 칸(resume-build-panel)과 같은 모양입니다. */
+.appTitle { margin: 0 0 14px; color: #191f28; font-size: 24px; font-weight: 900; letter-spacing: -.04em; line-height: 1.25; }
+.page[data-variant="app"] { min-height: 0; padding-top: 20px; }
+.page[data-variant="app"] .head .appTitle { margin: 0 0 14px; font-size: 24px; }
+.page[data-variant="app"] .head { margin-bottom: 14px; text-align: left; }
+.page[data-variant="app"] .appSub { margin: 0 0 4px; color: #191f28; font-size: 13px; font-weight: 700; letter-spacing: -.03em; line-height: 1.4; }
+.page[data-variant="app"] .head p { font-size: 10.5px; line-height: 1.65; }
+
+.page[data-variant="app"] .dropzone { grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: center; column-gap: 8px; row-gap: 0; padding: 9px 12px; }
+.page[data-variant="app"] .dropzone svg { grid-row: 1 / span 2; width: 16px; }
+.page[data-variant="app"] .dropzone b { min-width: 0; font-size: 11px; }
+.page[data-variant="app"] .dropzone small { min-width: 0; max-width: 100%; overflow: hidden; font-size: 9.5px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+
+.page[data-variant="app"] .login { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 10px; border-radius: 10px; }
+.page[data-variant="app"] .login b { min-width: 0; margin: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.page[data-variant="app"] .login p, .page[data-variant="app"] .or { display: none; }
+.page[data-variant="app"] .loginRow { display: contents; }
+.page[data-variant="app"] .loginRow input { box-sizing: border-box; width: 100%; flex: none; min-width: 0; padding: 7px 9px; font-size: 11px; }
+.page[data-variant="app"] .loginRow button { justify-content: center; padding: 7px 10px; font-size: 11px; white-space: nowrap; }
+
+.page[data-variant="app"] .footer { flex-direction: column; align-items: stretch; gap: 10px; }
+.page[data-variant="app"] .summary { margin-right: 0; }
+.page[data-variant="app"] .actions { flex-direction: column; width: 100%; }
+.page[data-variant="app"] .buy { justify-content: center; width: 100%; box-sizing: border-box; padding: 12px 20px; font-size: 14px; }
+.page[data-variant="app"] .ghost { width: 100%; box-sizing: border-box; }

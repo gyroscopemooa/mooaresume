@@ -36,7 +36,7 @@ const TABS = [
   // 것은 "무슨 검사를 할 수 있나"입니다. 대시보드로 들어와도 이 탭이 켜지도록
   // `match`에는 `/career` 전체를 둡니다.
   { href: "/career/assessments", label: "커리어", Icon: Compass, match: ["/career"] },
-  { href: "/app/my", label: "내 정보", Icon: CircleUser, match: ["/app/my", "/refer", "/redeem"] },
+  { href: "/app/my", label: "내 정보", Icon: CircleUser, match: ["/app/my", "/app/career-description", "/app/portfolio", "/refer", "/redeem"] },
 ] as const;
 
 /** 앱 셸에서도 하단 바를 띄우지 않는 곳: 관리자 화면. */
