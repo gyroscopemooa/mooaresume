@@ -12,6 +12,7 @@ import { ResearchConsentGate } from "./research-consent-gate";
 import styles from "./application-case-handoff.module.css";
 import { onCreditChange } from "@/lib/credit-events";
 import {
+  describeDigitalGoodsFailure,
   isGooglePlayBillingAvailable,
   openDigitalGoodsService,
   requestGooglePlayPayment,
@@ -356,7 +357,10 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     if (isGooglePlayBillingAvailable()) {
       const service = await openDigitalGoodsService();
       const productId = resolveGooglePlayProductId(product, extraBlocks);
-      if (!service) throw new Error("Google Play 결제를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      if (!service) {
+        const reason = describeDigitalGoodsFailure();
+        throw new Error(`Google Play 결제를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.${reason ? ` (사유: ${reason})` : ""}`);
+      }
       if (!productId) {
         // 앱 안에서 "웹에서 결제하세요"라고 안내하지 않습니다 — Play 정책이
         // 금지하는 외부 결제 유도입니다.

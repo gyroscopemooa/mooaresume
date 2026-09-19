@@ -74,14 +74,28 @@ type DigitalGoodsService = DigitalGoodsServiceLike;
  * Play 결제 서비스 핸들. 앱 결제 흐름(app-checkout.ts)은 상품 조회·보유 구매
  * 확인·소비를 한 서비스 객체로 이어서 하므로, 이 함수가 그 핸들을 넘깁니다.
  */
+let lastDigitalGoodsError = "";
+
+/** 마지막으로 결제 서비스를 못 얻은 이유(화면에 보여 줄 짧은 글). 폰에서는 로그를 볼 수 없어서 남깁니다. */
+export function describeDigitalGoodsFailure(): string {
+  return lastDigitalGoodsError;
+}
+
 export async function openDigitalGoodsService(): Promise<DigitalGoodsService | null> {
+  lastDigitalGoodsError = "";
   const getService = (window as unknown as {
     getDigitalGoodsService?: (paymentMethod: string) => Promise<DigitalGoodsService>;
   }).getDigitalGoodsService;
-  if (!getService) return null;
+  if (!getService) {
+    lastDigitalGoodsError = "getDigitalGoodsService 없음";
+    return null;
+  }
   try {
     return await getService("https://play.google.com/billing");
-  } catch {
+  } catch (error) {
+    const name = error instanceof Error ? error.name : "Error";
+    const message = error instanceof Error ? error.message : String(error);
+    lastDigitalGoodsError = `${name}: ${message}`.slice(0, 160);
     return null;
   }
 }

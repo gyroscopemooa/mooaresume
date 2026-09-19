@@ -7607,3 +7607,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 변경: 같은 파일 `.gate .row`에 `flex-wrap:wrap; gap:6px 18px; min-width:0`, `.gate`에 `min-width:0` 추가.
 - Validation: `tsc --noEmit` 오류 없음, components 테스트 통과. **화면으로는 확인 못 함**(로그인 뒤에만 그 줄이 보이고 내 환경은 비로그인). 실기기 재확인 필요.
 - Rollback: 위 두 규칙을 원래대로(`gap:18px`, `flex-wrap` 제거).
+
+### 2026-09-20 — Claude: Play 결제 서비스를 못 얻은 이유를 화면에 표시 — 실기기 결제 진단
+
+- Agent: Claude. 배경: 내부 테스트 앱에서 결제 시 `clientAppUnavailable`, 재설치 후에는 "Google Play 결제를 불러오지 못했습니다"가 나오는데, `openDigitalGoodsService()`가 예외를 삼켜 폰에서는 원인을 알 수 없음.
+- 변경: `src/lib/google-play/purchase.ts` — 실패 원인(`getDigitalGoodsService` 없음 또는 예외의 name: message, 160자 제한)을 저장하고 `describeDigitalGoodsFailure()`로 노출. `src/components/application-case-handoff.tsx` — 서비스를 못 얻었을 때 기존 문구 뒤에 ` (사유: …)`를 덧붙임. 동작(분기·정책 차단)은 그대로.
+- Validation: `tsc --noEmit`·ESLint 오류 없음, `src/lib/google-play`·`src/components` 테스트 132개 통과.
+- 주의: 사유 문구에는 브라우저 예외 이름/메시지만 들어감(개인정보·키 없음). 원인 파악 후 제거해도 됨.
+- Rollback: 두 파일의 위 변경 되돌림.
