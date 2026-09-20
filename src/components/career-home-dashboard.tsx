@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, CheckCircle2, Compass, FileText, LayoutDashboard, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, Compass, FileText, LayoutDashboard, Scale } from "lucide-react";
 import styles from "./career-home-dashboard.module.css";
 
 const assessments = [
@@ -10,7 +10,7 @@ const assessments = [
 
 export function CareerHomeDashboard() {
   return <main className={styles.shell}>
-    <aside className={styles.sidebar}><Link className={styles.brand} href="/">MOOA<span>.</span></Link><p>CAREER<br />INTELLIGENCE</p><nav><span className={styles.active}><LayoutDashboard />커리어 홈</span><Link href="/career/interest"><Compass />직업흥미 탐색</Link><Link href="/career/work-style"><BarChart3 />업무성향 분석</Link><Link href="/career/values"><Sparkles />직업가치 탐색</Link><Link href="/career/profile"><FileText />종합 커리어 프로필</Link></nav><small>PRIVATE BY DEFAULT<br />RESULTS STAY YOURS</small></aside>
+    <aside className={styles.sidebar}><Link className={styles.brand} href="/">MOOA<span>.</span></Link><p>CAREER<br />INTELLIGENCE</p><nav><span className={styles.active}><LayoutDashboard />커리어 홈</span><Link href="/career/interest"><Compass />직업흥미 탐색</Link><Link href="/career/work-style"><BarChart3 />업무성향 분석</Link><Link href="/career/values"><Scale />직업가치 탐색</Link><Link href="/career/profile"><FileText />종합 커리어 프로필</Link></nav><small>PRIVATE BY DEFAULT<br />RESULTS STAY YOURS</small></aside>
     <section className={styles.content}>
       <header className={styles.mobileHeader}><Link href="/">MOOA<span>.</span></Link><p>CAREER</p></header>
       <div className={styles.topline}><span>CAREER / EXPLORATION</span><Link href="/career/profile">내 프로필 <ArrowRight /></Link></div>

@@ -7667,3 +7667,8 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 변경: `saved-career-profile.tsx` 재작성(검사별 카드: 저장 날짜·헤드라인(업무성향은 대표 유형, 나머지는 상위 3개)·상위 점수 막대·카드 전체가 각 결과 화면 링크; 단순 새로고침용 "다시 불러오기"는 실패했을 때만 표시) + `saved-career-profile.module.css` 신규. `career-ai-report-history.tsx`에 `showEmpty` 선택 인자 추가(저장된 결과 화면에서는 기록이 없어도 "아직 받은 AI 심층해설이 없어요" 안내 표시). `/career/profile`의 기존 심층해설 기록 표시는 그대로.
 - Validation: tsc·ESLint 오류 없음. 로컬 dev(3001, 로그인 상태)에서 세 검사 카드·심층해설 기록 표시 확인, 콘솔 오류 없음. 없는 경우 안내 문구는 화면으로 확인하지 못함.
 - Rollback: 위 두 컴포넌트 변경 되돌리고 css 삭제.
+
+### 2026-09-20 — Claude: 직업가치 탐색 아이콘을 반짝임에서 저울로 변경
+
+- Agent: Claude. 사용자 요청(스샷의 ✦ 아이콘). `career-home-dashboard.tsx`(사이드바 직업가치 탐색)와 `career-public-home.tsx`(검사 목록 03)의 아이콘 `Sparkles` → `Scale`. AI 심층해설 링크의 반짝임 아이콘은 그대로.
+- Validation: tsc·ESLint 오류 없음. Rollback: 두 파일의 `Scale`을 `Sparkles`로 되돌림.

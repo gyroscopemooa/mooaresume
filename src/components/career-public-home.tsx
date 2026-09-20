@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { ArrowRight, BarChart3, CheckCircle2, Compass, FileText, LayoutDashboard, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, Compass, FileText, LayoutDashboard, LockKeyhole, Scale } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { scoreWorkStyle, type WorkStyleAnswer } from "@/domain/career-assessment";
@@ -14,7 +14,7 @@ import styles from "./career-public-home.module.css";
 const assessments = [
   { id: "01", name: "직업흥미 탐색", method: "RIASEC · BETA", meta: "30문항 · 약 5분", description: "무엇을 해 보고 싶은가", href: "/career/interest", resultHref: "/career/interest/result", icon: Compass, key: "interest" },
   { id: "02", name: "업무성향 분석", method: "IPIP BIG FIVE", meta: "50문항 · 약 7분", description: "어떻게 일하는가", href: "/career/work-style", resultHref: "/career/work-style/result", icon: BarChart3, key: "work-style" },
-  { id: "03", name: "직업가치 탐색", method: "WORK VALUES · BETA", meta: "18문항 · 약 4분", description: "어떤 조건을 중요하게 보는가", href: "/career/values", resultHref: "/career/values/result", icon: Sparkles, key: "values" },
+  { id: "03", name: "직업가치 탐색", method: "WORK VALUES · BETA", meta: "18문항 · 약 4분", description: "어떤 조건을 중요하게 보는가", href: "/career/values", resultHref: "/career/values/result", icon: Scale, key: "values" },
 ] as const;
 // 잠긴 검사도 카드는 남깁니다. 목록에서 지우면 나중에 열 때 다시 만들어야 하고,
 // 그동안 검색으로 찾아온 사람은 이 서비스에 그런 검사가 있는 줄도 모릅니다.
