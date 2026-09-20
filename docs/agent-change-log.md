@@ -7660,3 +7660,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 한계: 저장은 5개 환산 점수만이라 복원 결과의 rawScore는 환산값에서 역산한 근사치(화면·판정은 score만 사용). 이 브라우저는 비로그인이라 실제 계정 복원은 직접 확인하지 못함.
 - Validation: tsc·ESLint 오류 없음, 복원 테스트 추가.
 - Rollback: `work-style-result.tsx`의 복원 블록과 `restoreWorkStyleScores` 삭제.
+
+### 2026-09-20 — Claude: 저장된 결과 화면을 눌러서 볼 수 있는 기록 화면으로 개편
+
+- Agent: Claude. 증상(사용자 스샷): `/career/profile/saved`가 저장된 점수 개수(5·6·6)와 "현재 브라우저 결과 보기"·"다시 불러오기"만 보여주고 눌러도 결과가 안 열림. 결제 후 받은 AI 심층해설 기록은 `/career/profile` 맨 아래에만 있고 없으면 아무것도 안 그려서 있는지 알 수 없었음.
+- 변경: `saved-career-profile.tsx` 재작성(검사별 카드: 저장 날짜·헤드라인(업무성향은 대표 유형, 나머지는 상위 3개)·상위 점수 막대·카드 전체가 각 결과 화면 링크; 단순 새로고침용 "다시 불러오기"는 실패했을 때만 표시) + `saved-career-profile.module.css` 신규. `career-ai-report-history.tsx`에 `showEmpty` 선택 인자 추가(저장된 결과 화면에서는 기록이 없어도 "아직 받은 AI 심층해설이 없어요" 안내 표시). `/career/profile`의 기존 심층해설 기록 표시는 그대로.
+- Validation: tsc·ESLint 오류 없음. 로컬 dev(3001, 로그인 상태)에서 세 검사 카드·심층해설 기록 표시 확인, 콘솔 오류 없음. 없는 경우 안내 문구는 화면으로 확인하지 못함.
+- Rollback: 위 두 컴포넌트 변경 되돌리고 css 삭제.
