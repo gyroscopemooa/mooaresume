@@ -7,6 +7,8 @@ import { useState } from "react";
 import { getCareerAiSample, type CareerAiSampleScope } from "@/domain/career-ai-sample";
 import { getRiasecCharacterProfile } from "@/domain/career-interest";
 import { getWorkValueCharacterProfile } from "@/domain/career-work-values";
+import { WORK_STYLE_DIMENSION_LABELS } from "@/domain/career-assessment";
+import { getWorkStyleTypeById, workStyleTypeCode, workStyleTypeImagePath } from "@/domain/work-style-type";
 import { CareerAiCtaBar } from "./career-ai-cta-bar";
 import styles from "./career-ai-sample-design-three.module.css";
 
@@ -41,6 +43,14 @@ function getHeroCharacter(scope: CareerAiSampleScope, sampleCode: string): HeroC
       badge: "WORK VALUES 2개 조합형", comboSummary: (profile.rankings ?? []).map((axis) => `${axis.label}(${axis.code})`).join(" + "),
       focusSummary: profile.focusSummary ?? profile.descriptor,
       backHref: `/career/values/character?code=${profile.code}&example=1`,
+    };
+  }
+  if (scope === "work_style") {
+    const type = getWorkStyleTypeById(sampleCode);
+    return {
+      code: workStyleTypeCode(type), topLabel: type.name, subHeading: `TYPE ${workStyleTypeCode(type)}`, descriptor: type.tagline, imagePath: workStyleTypeImagePath(type),
+      badge: "업무성향 30개 유형", comboSummary: type.core.length ? type.core.map((dimension) => WORK_STYLE_DIMENSION_LABELS[dimension]).join(" + ") : "다섯 성향의 균형",
+      focusSummary: type.tagline, backHref: `/career/work-style/character?type=${type.id}&example=1`,
     };
   }
   return null;
@@ -129,6 +139,9 @@ const SAMPLE_COPY: Record<CareerAiSampleScope, { personalityKeywords: string[]; 
   },
 };
 
+/** 로컬 개발 서버(next dev)에서만 결제 전 흐림을 풀어 전체 예시를 검토할 수 있게 한다. 프로덕션 빌드에서는 항상 false. */
+const unlockedForLocalDev = process.env.NODE_ENV === "development";
+
 export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScope }) {
   const router = useRouter();
   const sample = getCareerAiSample(scope);
@@ -170,7 +183,7 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
 
   return <main className={`${styles.page} ${hero?.isSpecialTheme ? styles.isTheme : ""}`}>
     <header className={styles.topbar}><button type="button" className={styles.backButton} onClick={goBack}><ArrowLeft />뒤로가기</button><h1>Career Insight</h1><button type="button" onClick={() => void shareResult()} aria-label="결과 공유"><Share2 /></button></header>
-    {(scope === "interest" || scope === "work_values") && <CareerAiCtaBar scope={scope} top={75} />}
+    {(scope === "interest" || scope === "work_values" || scope === "work_style") && <CareerAiCtaBar scope={scope} top={75} />}
     <main className={styles.container}>
       <section className={styles.heroCard}>
         <div className={styles.heroCopy}>
@@ -200,7 +213,7 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
           흐림 처리로 앞부분만 남깁니다. 흐림은 화면 효과라 개발자도구로 벗길 수 있습니다.
           실제 사용자 해설을 붙일 때는 결제 전에는 서버가 본문을 아예 내려보내지 않아야 합니다. */}
       <div className={styles.lockedZone}>
-      <div className={styles.lockedContent} aria-hidden="true">
+      <div className={unlockedForLocalDev ? undefined : styles.lockedContent} aria-hidden={unlockedForLocalDev ? undefined : "true"}>
       <section className={styles.deepCard}>
         <div className={styles.sectionHeading}><Brain /><h2>AI 심층 해설</h2></div>
         <div className={styles.deepCopy}><h3>{hero?.code ?? sample.code} · {hero?.topLabel ?? sample.typeName}의 해석</h3><p>{hero?.focusSummary ?? sample.headline} {sample.strengthGuide} 이 결과는 특정 직업을 확정하는 답이 아니라, 내가 해 본 경험과 지원할 환경을 더 정확하게 비교하기 위한 단서입니다.</p></div>
@@ -222,14 +235,14 @@ export function CareerAiSampleDesignThree({ scope }: { scope: CareerAiSampleScop
 
       <section className={styles.environment}><h2>나에게 맞는 업무 환경</h2><div>{copy.environments.map((environment, index) => <article key={environment}><i>{index === 0 ? <ClipboardList /> : index === 1 ? <Users /> : index === 2 ? <FlaskConical /> : index === 3 ? <Users /> : <TrendingUp />}</i><p>{environment}</p></article>)}</div></section>
       </div>
-      <div className={styles.lockedOverlay}>
+      {!unlockedForLocalDev && <div className={styles.lockedOverlay}>
         <div className={styles.lockedCard}>
           <i><LockKeyhole /></i>
           <b>여기부터는 결제 후에 열립니다.</b>
           <p>지금 보시는 건 예시 화면입니다. 실제 심층해설은 내 검사 결과와 내가 올린 자소서·공고를 함께 읽고 씁니다.</p>
           <span>결제 준비 중</span>
         </div>
-      </div>
+      </div>}
       </div>
 
       {hero && <section className={styles.shareCard}><h2>나의 진로 캐릭터를 공유해 보세요.</h2><p>지원되는 기기에서는 카드 이미지 파일을 바로 공유하고, 그 외에는 결과 링크를 공유합니다.</p><div><a href={hero.imagePath} download={`${hero.code}-career-card.webp`}><Download />카드 이미지 저장</a><button type="button" onClick={() => void shareResult()}><Share2 />카드 이미지 공유</button><button type="button" onClick={() => void copyResultLink()}><Link2 />{copied ? "링크 복사됨" : "링크 복사"}</button></div></section>}

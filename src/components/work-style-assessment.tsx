@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
 import { type WorkStyleAnswer, workStyleItems } from "@/domain/career-assessment";
+import { workStyleTypeImagePath } from "@/domain/work-style-type";
+import { WORK_STYLE_TYPES } from "@/domain/work-style-type-config";
 import styles from "./work-style-assessment.module.css";
 
 const ANSWERS: { value: WorkStyleAnswer; label: string }[] = [
@@ -58,6 +61,7 @@ export function WorkStyleAssessment() {
         <span><LockKeyhole />의료·정신건강 진단을 제공하지 않아요.</span>
       </div>
       <div className={styles.method}><b>어떤 평가인가요?</b><p>IPIP의 공개 문항을 토대로 한 50문항 성격 5요인 평가입니다. 결과는 한국어 규준 퍼센타일이 아닌 0–100 환산 점수와 응답 경향으로 제공합니다.</p></div>
+      <section className={styles.characterShowcase} aria-label="업무성향 유형 미리보기"><div className={styles.characterShowcaseHead}><span>WORK STYLE TYPE PREVIEW</span><b>어떤 유형이 나올지 미리 살펴보세요.</b><small>예시 유형이며, 실제 결과는 5가지 응답 경향과 가장 비슷한 유형으로 정해집니다.</small></div><div className={styles.characterViewport}><div className={styles.characterTrack} style={{ animationDuration: "150s" }}>{[...WORK_STYLE_TYPES, ...WORK_STYLE_TYPES].map((type, index) => <article className={styles.characterCard} key={`${type.id}-${index}`} aria-hidden={index >= WORK_STYLE_TYPES.length}><Image src={workStyleTypeImagePath(type)} alt={`${type.name} 업무성향 유형 예시`} width={300} height={393} sizes="(max-width: 760px) 190px, 300px" quality={100} unoptimized /></article>)}</div></div></section>
     </section>;
   }
 

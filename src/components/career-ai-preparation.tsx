@@ -232,7 +232,7 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
   const required = scope === "combined" ? assessments : assessments.filter((assessment) => assessment.key === scope);
   const missing = required.filter((assessment) => !complete.some((done) => done.key === assessment.key));
   const isCombined = scope === "combined";
-  const reportHero = useMemo(() => computeReportHero(scope, interestRaw, valuesRaw), [scope, interestRaw, valuesRaw]);
+  const reportHero = useMemo(() => computeReportHero(scope, interestRaw, valuesRaw, workStyleRaw), [scope, interestRaw, valuesRaw, workStyleRaw]);
 
   if (signedIn === null || (signedIn && accountLoading)) return <AiLoadingScreen />;
 

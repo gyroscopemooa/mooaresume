@@ -144,6 +144,18 @@ export function scoreWorkStyle(answers: Record<string, WorkStyleAnswer>): WorkSt
   });
 }
 
+/** 계정에 저장된 5개 환산 점수(0–100)로 결과 화면용 점수를 복원한다. 점수 계산식은 바꾸지 않고, 저장된 값을 같은 등급 경계로 읽기만 한다. */
+export function restoreWorkStyleScores(saved: { code: string; score: number }[]): WorkStyleScore[] | null {
+  const dimensions = Object.keys(dimensionDetails) as WorkStyleDimension[];
+  const scores = dimensions.map((dimension) => {
+    const match = saved.find((entry) => entry.code === dimension);
+    if (!match || !Number.isFinite(match.score) || match.score < 0 || match.score > 100) return null;
+    const score = Math.round(match.score);
+    return { ...dimensionDetails[dimension], score, rawScore: Math.round((score / 100) * 40) + 10, level: score >= 67 ? "높음" as const : score <= 33 ? "낮음" as const : "보통" as const };
+  });
+  return scores.some((entry) => entry === null) ? null : scores as WorkStyleScore[];
+}
+
 export function getCareerProfileHeadline(scores: WorkStyleScore[]): string {
   const topTwo = [...scores].sort((a, b) => b.score - a.score).slice(0, 2);
   return `${topTwo.map((score) => score.label).join("·")}에 관한 응답 경향이 두드러집니다.`;

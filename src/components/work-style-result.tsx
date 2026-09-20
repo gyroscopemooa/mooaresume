@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Radar, RadarChart, PolarAngleAxis, PolarGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { ArrowRight, CheckCircle2, FileText, Info, RotateCcw, ShieldCheck } from "lucide-react";
-import { getCareerProfileHeadline, scoreWorkStyle, type WorkStyleAnswer, type WorkStyleScore } from "@/domain/career-assessment";
+import { getCareerProfileHeadline, restoreWorkStyleScores, scoreWorkStyle, type WorkStyleAnswer, type WorkStyleScore } from "@/domain/career-assessment";
 import { interpretWorkStyle } from "@/domain/career-interpretation";
 import { CareerAssessmentStorageNotice } from "./career-assessment-storage-notice";
+import { classifyWorkStyleType } from "@/domain/work-style-type";
+import { CareerAiCtaBar } from "./career-ai-cta-bar";
+import { WorkStyleTypeCard } from "./work-style-type-card";
 import styles from "./work-style-assessment.module.css";
 
 const storageKey = "mooa-work-style-answers-v1";
@@ -15,20 +18,48 @@ const storageKey = "mooa-work-style-answers-v1";
 export function WorkStyleResult() {
   const router = useRouter();
   const serializedAnswers = useSyncExternalStore(() => () => undefined, () => window.sessionStorage.getItem(storageKey), () => null);
-  const scores = useMemo<WorkStyleScore[] | null>(() => {
+  const localScores = useMemo<WorkStyleScore[] | null>(() => {
     if (!serializedAnswers) return null;
     try { return scoreWorkStyle(JSON.parse(serializedAnswers) as Record<string, WorkStyleAnswer>); } catch { return null; }
   }, [serializedAnswers]);
+  // 이 탭에 응답이 없으면(다른 탭·기기·세션 종료 후) 로그인한 계정에 저장된 최근 결과를 불러온다(직업흥미 결과 화면과 같은 방식).
+  const [savedScores, setSavedScores] = useState<WorkStyleScore[] | null>(null);
+  const [loadingSaved, setLoadingSaved] = useState(!localScores);
+  useEffect(() => {
+    if (localScores) return;
+    let active = true;
+    void fetch("/api/career-assessments/latest?assessmentCode=work_style", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const body = await response.json() as { assessments?: { scores: { code: string; score: number }[] }[] };
+        return body.assessments?.[0] ? restoreWorkStyleScores(body.assessments[0].scores) : null;
+      })
+      .then((restored) => { if (active) setSavedScores(restored); })
+      .catch(() => { if (active) setSavedScores(null); })
+      .finally(() => { if (active) setLoadingSaved(false); });
+    return () => { active = false; };
+  }, [localScores]);
+  const scores = localScores ?? savedScores;
+  const isSavedResult = !localScores && Boolean(savedScores);
   const topScores = useMemo(() => scores ? [...scores].sort((a, b) => b.score - a.score).slice(0, 3) : [], [scores]);
+  if (!scores && loadingSaved) return null;
   if (!scores) return <section className={styles.empty}><Info /><h1>확인할 검사 결과가 없어요.</h1><p>결과는 안전을 위해 현재 브라우저 세션에서만 보여드려요.</p><Link href="/career/work-style">업무성향 분석 시작하기 <ArrowRight /></Link></section>;
   const interpretation = interpretWorkStyle(scores);
+  const typeResult = classifyWorkStyleType(scores);
   const chartData = scores.map((score) => ({ subject: score.label, score: score.score, fullMark: 100 }));
 
   return <main className={styles.result}>
-    <div className={styles.resultHero}><span><CheckCircle2 />분석 완료</span><h1>나의 업무성향 프로필</h1><p>{getCareerProfileHeadline(scores)}</p><small>이 결과는 응답에 따른 자기이해 자료이며, 능력·적합성·채용 결과를 판정하지 않습니다.</small></div>
-    <CareerAssessmentStorageNotice assessmentCode="work_style" assessmentVersion="ipip-bffm-kr-50-v1" answersRaw={serializedAnswers} resultPath="/career/work-style/result" />
+    <CareerAiCtaBar scope="work_style" />
+    <div className={styles.resultHero}><span><CheckCircle2 />{isSavedResult ? "저장 기록 불러옴" : "분석 완료"}</span><h1>나의 업무성향 프로필</h1><p>{getCareerProfileHeadline(scores)}</p><small>이 결과는 응답에 따른 자기이해 자료이며, 능력·적합성·채용 결과를 판정하지 않습니다.</small></div>
+    <nav className={styles.resultNavigation} aria-label="결과 화면 이동">
+      <span className={styles.resultNavigationCurrent}><small>01</small>기본 결과</span>
+      <Link href={`/career/work-style/character?type=${typeResult.primary.id}`}><small>02</small>캐릭터 해설 <ArrowRight /></Link>
+      <Link href="/career/ai/sample?scope=work_style"><small>03</small>심층해설 예시 <ArrowRight /></Link>
+    </nav>
+    <CareerAssessmentStorageNotice assessmentCode="work_style" assessmentVersion="ipip-bffm-kr-50-v1" answersRaw={serializedAnswers} resultPath="/career/work-style/result" restored={isSavedResult} />
     <section className={styles.chartCard}><div><span className={styles.sectionKicker}>5 DIMENSIONS</span><h2>한눈에 보는 응답 경향</h2><p>각 특성은 10문항 응답을 역채점 포함해 0–100으로 환산했습니다. 한국어 규준이 없는 초기 버전이라 퍼센타일은 표시하지 않습니다.</p></div><div className={styles.chart}><ResponsiveContainer width="100%" height="100%"><RadarChart data={chartData} outerRadius="72%"><PolarGrid stroke="#d7e1da"/><PolarAngleAxis dataKey="subject" tick={{ fill: "#53655b", fontSize: 11 }}/><Radar dataKey="score" stroke="#176b4a" fill="#43a574" fillOpacity={0.32}/><Tooltip formatter={(value) => [`${value} / 100`, "환산 점수"]}/></RadarChart></ResponsiveContainer></div></section>
     <section className={styles.scoreGrid}>{scores.map((score) => <article key={score.dimension}><div><span>{score.label}</span><b>{score.level}</b></div><strong>{score.score}<small>/100</small></strong><div className={styles.scoreLine}><i style={{ width: `${score.score}%` }} /></div><p>{score.summary}</p></article>)}</section>
+    <WorkStyleTypeCard scores={scores} />
     <section className={styles.chartCard}><div><span className={styles.sectionKicker}>CAREER INTERPRETATION</span><h2>그래서, 어떤 방식으로 일할 수 있을까요?</h2><p>{interpretation.conclusion}</p></div><div>{interpretation.workEnvironmentHints.map((hint) => <p key={hint.title} style={{ margin: "0 0 13px", color: "#607067", fontSize: 11, lineHeight: 1.7 }}><b>{hint.title}</b><br />{hint.description}<br /><small>{hint.evidence.join(" · ")}</small></p>)}</div></section>
     <section className={styles.useCard}><div><span className={styles.sectionKicker}>USE IT FOR YOUR APPLICATION</span><h2>자기소개서에는<br />실제 경험만 연결하세요.</h2><p>검사 결과가 성과나 역량을 대신 증명하지는 않습니다. 아래 단서를 참고해, 실제로 확인할 수 있는 경험을 고르는 데 활용해 보세요.</p><ul>{topScores.map((score) => <li key={score.dimension}><b>{score.label} · {score.level}</b><span>{score.careerPrompt}</span></li>)}</ul></div><div className={styles.actionStack}><Link href="/onboarding"><FileText />내 자기소개서 분석하기 <ArrowRight /></Link><button type="button" onClick={() => { window.sessionStorage.removeItem(storageKey); router.push("/career/work-style"); }}><RotateCcw />다시 검사하기</button></div></section>
     <Link className={styles.deepInterpretation} href="/career/ai?scope=work_style">심층해설 확인하기 <ArrowRight /></Link>

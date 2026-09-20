@@ -7631,3 +7631,32 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 변경: `src/server/billing/google-play-checkout.ts` — `describeGooglePlayFailureMeta(error)`(HTTP 상태·호스트만 추출, 비밀 없음) 추가, `classifyGooglePlayFailure`가 상태 번호(401/403·404·400·5xx)를 메시지보다 먼저 사용. `src/server/billing/google-play-verify-route.ts` — 실패 로그에 `meta`(status·host)와 200자로 자른 `error` 포함. 결제 검증·지급 로직은 변경 없음.
 - Validation: `tsc --noEmit`·ESLint 오류 없음, `src/server/billing` 테스트 93개 통과. 배포 후 폰 구매 기록으로 재요청해 상태를 확인할 예정.
 - Rollback: 위 두 파일의 변경 되돌림.
+
+### 2026-09-20 — Claude: 업무성향 대표 유형(30개 카드) 판정과 결과 카드 추가
+
+- Agent: Claude. 사용자 승인 하에 진행(설계·시뮬레이션은 대화에서 승인: 중앙 당김 25%, 핵심 가중 2/1, 인접 표시 거리차 0.41).
+- 변경(추가 전용): `src/domain/work-style-type-config.ts`(30개 프로토타입·이름·이미지·설정값), `src/domain/work-style-type.ts`(가중 거리 판정, 결정적 동점 처리, 가까운 유형), `src/domain/work-style-type.test.ts`, `src/components/work-style-type-card.tsx`·`.module.css`, `public/images/career-work-style-types/type-01~30.webp`(원본 PNG `업무성향/`는 그대로 두고 900px WebP로 변환).
+- 기존 파일 수정: `src/components/work-style-result.tsx` 2줄(import + 5개 점수 표와 해석 영역 사이에 `<WorkStyleTypeCard />`). `career-assessment.ts`(문항·채점)와 기존 5개 점수 표시는 변경 없음.
+- 동작: 5개 점수 → 30개 프로토타입(중앙 당김 적용)과 핵심 가중 RMS 거리 → 가장 가까운 카드 1개가 대표, 1·2위 거리 차이가 0.41 미만일 때만 "가까운 업무성향" 표시. 랜덤·저장 상태·보너스 없음. 동점은 카드 핵심 성향 점수 → 번호 낮은 순.
+- 이미지 선택: 17→0b98be05, 19→89e0712d(1024×1536 버전), 22→497f6425, 23→70771015 (같은 번호 대체본 중 기존 카드 레이아웃과 가장 일관된 하나만 사용; 나머지 4장은 미사용). 01번 카드는 정사각(900×900)이라 자연 비율로 표시.
+- 알려진 한계: 프로토타입·집단 중심(55,64,62,52,62)은 가상 응답 집단 기준의 초안이며 한국 규준이 아님. 실제 응답이 쌓이면 설정 파일 값만 보정. 이름 겹침 카드(04/12/28, 05/14)는 최종 이름으로 구분했지만 카드 이미지 속 제목은 원본 그대로(04 "분석형 전략가", 12·28도 동일, 14 "소통형 연결가", 10 "균형형 조화가")라 이미지와 캡션 이름이 다름 — 이미지 재제작 필요.
+- Validation: `tsc --noEmit` 오류 없음, ESLint 오류 없음, `src/domain`·`src/components` 테스트 663개 통과(신규 14개: 30개 도달, 동일 입력 동일 결과, 경계·동점, 채점 회귀). 로컬 dev(3001)에서 결과 화면 렌더 확인(대표 카드·가까운 유형·기존 5개 점수 유지, 콘솔 오류 없음). 배포·실기기 확인은 안 함.
+- Rollback: `work-style-result.tsx`의 추가 2줄을 되돌리고 신규 파일·`public/images/career-work-style-types/`를 삭제.
+
+### 2026-09-20 — Claude: 업무성향 결과 3단 이동·캐릭터 해설·심층해설 예시/리포트 카드 연결, 소개 화면 유형 슬라이드, 로컬 전용 흐림 해제
+
+- Agent: Claude. 사용자 지시: 직업흥미(RIASEC)·직업가치 구조를 참고해 업무성향에도 "01 기본 결과 / 02 캐릭터 해설 / 03 심층해설 예시"와 AI 심층해설 카드를 붙이고, 로컬에서만 예시의 결제 전 흐림을 풀어 달라고 함.
+- 신규: `src/app/career/work-style/character/page.tsx`, `src/components/work-style-character-gate.tsx`(로그인만 요구, 직업흥미·가치와 동일 정책), `src/components/work-style-character-result.tsx`(직업가치 캐릭터 화면의 CSS 모듈 재사용). `src/domain/work-style-type.ts`에 `getWorkStyleTypeById`·`workStyleTypeCode` 추가.
+- 기존 파일 수정(작은 범위): `work-style-result.tsx`(3단 이동 nav·CareerAiCtaBar), `work-style-assessment.tsx`(소개 화면 30개 유형 슬라이드), `career-ai-cta-bar.tsx`(scope 타입에 `work_style` 추가), `career-ai-sample-design-three.tsx`(업무성향 히어로 카드·CTA, 로컬 전용 흐림 해제), `career-ai-sample.ts`(업무성향 샘플만 "02 차근차근 조율가"로 교체 — 이전 "OCA 차분한 개선가"), `career-report-hero.ts`(work_style 히어로 + 선택 인자 `workStyleRaw`), `career-ai-report-page.tsx`·`career-ai-preparation.tsx`(그 인자 전달). 직업흥미·가치 동작과 AI 요청/스키마/프롬프트는 변경 없음.
+- 로컬 전용 흐림 해제: `process.env.NODE_ENV === "development"`일 때만 `lockedContent` 흐림·결제 안내 오버레이를 숨김. 프로덕션 빌드에서는 항상 기존 그대로(흐림 유지). 흐림은 예전부터 화면 효과라는 주석이 있어 실제 결제 게이트는 아님.
+- 한계: AI 심층해설 생성(요청/프롬프트)은 직업흥미와 같이 점수만 전달하며 유형 카드는 결과 화면 히어로에만 표시됨. 캐릭터 해설 페이지는 카드 이미지·이름·한 줄 소개·핵심 성향 표시만 하고 유형별 별도 문구는 없음(카드 이미지 안에 특징·잘하는 일·환경이 있음).
+- Validation: tsc·ESLint 오류 없음. 로컬 dev(3001)에서 심층해설 예시(흐림 해제·02 히어로), 캐릭터 예시 화면, 결과 3단 이동 확인. 신규 테스트는 `work-style-type.test.ts`에 추가.
+- Rollback: 위 수정 파일의 해당 추가분을 되돌리고 신규 3개 파일 삭제.
+
+### 2026-09-20 — Claude: 업무성향 결과를 계정에 저장된 기록에서 다시 불러오기
+
+- Agent: Claude. 증상: 비로그인으로 검사 후 결과 화면에서 로그인하면 저장은 되는데(서버 로그 `POST /api/career-assessments 201`), 다른 탭·세션 종료 후에는 "확인할 검사 결과가 없어요"로 기록을 볼 수 없었음. 직업흥미 결과 화면(`career-interest-result.tsx`)은 계정 저장본을 불러오지만 업무성향 결과 화면은 sessionStorage만 읽고 있었음.
+- 변경: `career-assessment.ts`에 `restoreWorkStyleScores`(저장된 0–100 점수를 결과 화면용 점수로 복원, 채점식·기존 함수는 변경 없음) 추가, `work-style-result.tsx`가 이 탭 응답이 없을 때 `/api/career-assessments/latest?assessmentCode=work_style`로 불러옴("저장 기록 불러옴" 표시, 저장 안내는 restored 상태).
+- 한계: 저장은 5개 환산 점수만이라 복원 결과의 rawScore는 환산값에서 역산한 근사치(화면·판정은 score만 사용). 이 브라우저는 비로그인이라 실제 계정 복원은 직접 확인하지 못함.
+- Validation: tsc·ESLint 오류 없음, 복원 테스트 추가.
+- Rollback: `work-style-result.tsx`의 복원 블록과 `restoreWorkStyleScores` 삭제.

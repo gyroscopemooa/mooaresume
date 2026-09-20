@@ -30,6 +30,7 @@ export function CareerAiReportPage({ buildId }: { buildId: string }) {
   const raw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem(storageKey), () => undefined);
   const interestRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem("mooa-career-interest-answers-v1"), () => null);
   const valuesRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem("mooa-career-work-values-v1"), () => null);
+  const workStyleRaw = useSyncExternalStore(subscribe, () => window.sessionStorage.getItem("mooa-work-style-answers-v1"), () => null);
   const localStored = useMemo<StoredReport | null>(() => { try { return raw ? JSON.parse(raw) as StoredReport : null; } catch { return null; } }, [raw]);
   const [remoteStored, setRemoteStored] = useState<StoredReport | null | undefined>(undefined);
 
@@ -45,7 +46,7 @@ export function CareerAiReportPage({ buildId }: { buildId: string }) {
   }, [localStored, raw, buildId]);
 
   const stored = localStored ?? (remoteStored ?? null);
-  const hero = useMemo(() => (stored ? computeReportHero(stored.scope, interestRaw, valuesRaw) : null), [stored, interestRaw, valuesRaw]);
+  const hero = useMemo(() => (stored ? computeReportHero(stored.scope, interestRaw, valuesRaw, workStyleRaw) : null), [stored, interestRaw, valuesRaw, workStyleRaw]);
 
   if (raw === undefined) return null;
   if (!stored) {
