@@ -42,11 +42,15 @@ describe("daily community publication limit", () => {
   });
 
   it("allows generation when no post exists yet", async () => {
-    database(0);
+    const { query } = database(0);
+    query.limit.mockResolvedValueOnce({ data: [{ title: "면접 복기", topic: "application" }] });
     // Stop before inserts: this verifies eligibility without making a paid call.
     mocks.generate.mockRejectedValueOnce(new Error("test generation stopped"));
     const response = await POST(request());
-    expect(mocks.generate).toHaveBeenCalledOnce();
+    expect(mocks.generate).toHaveBeenCalledExactlyOnceWith({
+      apiKey: "test-key", model: "test-model", recentTitles: ["면접 복기"], recentTopics: ["application"],
+    });
+    expect(query.select).toHaveBeenCalledWith("title, topic");
     expect(response.status).toBe(502);
   });
 

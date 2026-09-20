@@ -7672,3 +7672,11 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 
 - Agent: Claude. 사용자 요청(스샷의 ✦ 아이콘). `career-home-dashboard.tsx`(사이드바 직업가치 탐색)와 `career-public-home.tsx`(검사 목록 03)의 아이콘 `Sparkles` → `Scale`. AI 심층해설 링크의 반짝임 아이콘은 그대로.
 - Validation: tsc·ESLint 오류 없음. Rollback: 두 파일의 `Scale`을 `Sparkles`로 되돌림.
+
+## 2026-09-20 — Codex: daily community diversity wiring
+- Status: completed locally; user requested implementation and commit.
+- Recoverable baseline: 4ebe237a5184ce154ce99c79163d7b9d7370cfd0.
+- Intended transformation: connect existing unused topic selector/guides to generation; replace production-heavy topic suggestions with broad career/editorial formats, rotate by recent categories, and prohibit invented personal/company reviews. Preserve daily limit, comments, schemas and other agents' work.
+- Files: src/server/community/community-seed-content.ts and tests; src/app/api/community/seed/route.ts and tests; this log.
+- Validation: typecheck passed; lint passed with 2 pre-existing unrelated warnings; full Vitest 159 files / 1,253 tests passed (including 120-day category balance, prompt fixtures, structured-output/category rejection and route history forwarding). No paid generation or deployment performed. recentTopics is optional for compatibility with the protected portable community kit; the production route always passes history. Category diversity is enforced; format diversity and factuality are prompt constraints, not live-model guarantees.
+- Rollback: revert this focused commit.
