@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
       if (background.status === "pending") return NextResponse.json({ analysisRunId: body.analysisRunId, status: "RUNNING" }, { status: 202 });
       if (background.status === "failed") {
         await repository.fail(body.analysisRunId, "AI_PROVIDER_FAILED", true);
-        await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "PROVIDER_FAILED", failureCode: "AI_PROVIDER_FAILED", source: "BROWSER", usage: { responseId: background.responseId } });
+        await recordAnalysisAttempt({ analysisRunId: body.analysisRunId, ownerUserId: data.user.id, outcome: "PROVIDER_FAILED", failureCode: /^(QUALITY_REVIEW_|REVISION_REVIEW_)/.test(background.reason) ? `AI_PROVIDER_FAILED:${background.reason}` : "AI_PROVIDER_FAILED", source: "BROWSER", usage: background.execution ?? { responseId: background.responseId } });
         throw new Error(`OPENAI_BACKGROUND_FAILED:${background.reason}`);
       }
       // The synchronous orchestrator ran this guard; the background path

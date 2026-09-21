@@ -86,6 +86,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
   });
 
   return resultDocumentSchema.parse({
+    revisionQuality: gatewayResult.revisionQuality,
     schemaVersion: "1.0", caseId: request.requestId, product: request.product, writingMode: request.writingMode, isSample: false, ...describeSubject(request, source.filename), analyzedAt: new Date().toISOString(),
     analysisRun: { provider: "openai", responseId: gatewayResult.execution.responseId, model: gatewayResult.execution.model, promptVersion: gatewayResult.execution.promptVersion, rubricVersion: gatewayResult.execution.rubricVersion, schemaVersion: gatewayResult.execution.schemaVersion, inputTokens: gatewayResult.execution.inputTokens, outputTokens: gatewayResult.execution.outputTokens, totalTokens: gatewayResult.execution.totalTokens },
     readiness: output.readiness,

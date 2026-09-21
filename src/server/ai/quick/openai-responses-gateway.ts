@@ -12,6 +12,9 @@ import {
 import { resolveMaxOutputTokens } from "./output-budget";
 import { getQuickAnalysisJsonSchema, parseQuickAnalysisOutput, type QuickAnalysisOutput } from "./schema";
 import { resolveModelConfig } from "../model-config";
+import type { RevisionQuality } from "@/domain/revision-quality";
+import { applyRevisionReview, buildRevisionReviewInput, REVISION_REVIEW_INSTRUCTIONS, revisionReviewSchema } from "./revision-quality";
+import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
 
 const responsesEnvelopeSchema = z.object({
   id: z.string().min(1),
@@ -33,6 +36,7 @@ const responsesEnvelopeSchema = z.object({
 });
 
 export type QuickGatewayResult = {
+  revisionQuality?: RevisionQuality;
   output: QuickAnalysisOutput;
   execution: {
     responseId: string;
@@ -49,7 +53,7 @@ export type QuickGatewayResult = {
 export type QuickBackgroundResponse =
   | { status: "pending"; responseId: string }
   | { status: "completed"; result: QuickGatewayResult }
-  | { status: "failed"; responseId: string; reason: string };
+  | { status: "failed"; responseId: string; reason: string; execution?: QuickGatewayResult["execution"] };
 
 export interface QuickAnalysisGateway {
   analyze(request: AnalysisRequest, validationFeedback?: string[]): Promise<QuickGatewayResult>;
@@ -92,6 +96,57 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
     this.fetchImplementation = options.fetchImplementation ?? fetch;
   }
 
+  async startReview(request: AnalysisRequest, candidate: QuickGatewayResult, background = true): Promise<string | QuickGatewayResult> {
+    const { model, reasoningEffort } = resolveModelConfig(request.product, this.options.model);
+    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", {
+      method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(background ? 30_000 : 120_000),
+      body: JSON.stringify({ model, background, max_output_tokens: Math.min(24000, (reasoningEffort === "high" ? 12000 : 6000) + 800 * (candidate.output.revisions?.length ?? request.questions?.length ?? 1)),
+        instructions: REVISION_REVIEW_INSTRUCTIONS, input: buildRevisionReviewInput(request, candidate),
+        ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
+        text: { format: { type: "json_schema", name: "revision_quality_review", strict: true, schema: toOpenAIStrictSchema(z.toJSONSchema(revisionReviewSchema)) } },
+      }),
+    });
+    if (!response.ok) throw new Error(`OpenAI Responses API quality review failed: status=${response.status}`);
+    const envelope = responsesEnvelopeSchema.parse(await response.json());
+    if (background) return envelope.id;
+    return this.finishReview(request, candidate, envelope);
+  }
+
+  private finishReview(request: AnalysisRequest, candidate: QuickGatewayResult, envelope: z.infer<typeof responsesEnvelopeSchema>): QuickGatewayResult {
+    const review = revisionReviewSchema.parse(JSON.parse(extractOutputText(envelope)) as unknown);
+    const result = applyRevisionReview(request, candidate, review, { responseId: envelope.id, model: envelope.model });
+    const sum = (a: number | null, b: number | undefined) => a === null || b === undefined ? null : a + b;
+    return { ...result, execution: { ...result.execution,
+      inputTokens: sum(candidate.execution.inputTokens, envelope.usage?.input_tokens),
+      outputTokens: sum(candidate.execution.outputTokens, envelope.usage?.output_tokens),
+      totalTokens: sum(candidate.execution.totalTokens, envelope.usage?.total_tokens),
+    } };
+  }
+
+  async getReview(responseId: string, request: AnalysisRequest, candidate: QuickGatewayResult): Promise<QuickBackgroundResponse> {
+    const response = await this.fetchImplementation(`https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`, {
+      headers: { Authorization: `Bearer ${this.options.apiKey}` }, signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) throw new Error(`OpenAI Responses API quality poll failed: status=${response.status}`);
+    const envelope = responsesEnvelopeSchema.parse(await response.json());
+    if (!envelope.status || envelope.status === "queued" || envelope.status === "in_progress") return { status: "pending", responseId };
+    const sum = (a: number | null, b: number | undefined) => a === null || b === undefined ? null : a + b;
+    const execution = { ...candidate.execution,
+      inputTokens: sum(candidate.execution.inputTokens, envelope.usage?.input_tokens),
+      outputTokens: sum(candidate.execution.outputTokens, envelope.usage?.output_tokens),
+      totalTokens: sum(candidate.execution.totalTokens, envelope.usage?.total_tokens),
+    };
+    if (envelope.status !== "completed") return { status: "failed", responseId, reason: "QUALITY_REVIEW_FAILED", execution };
+    try {
+      return { status: "completed", result: this.finishReview(request, candidate, envelope) };
+    } catch (error) {
+      // Malformed/contradictory reviews are never presented as an approval.
+      const reason = error instanceof Error && error.message.startsWith("REVISION_REVIEW_") ? error.message : "QUALITY_REVIEW_INVALID";
+      return { status: "failed", responseId, reason, execution };
+    }
+  }
+
   async analyze(request: AnalysisRequest, validationFeedback: string[] = []): Promise<QuickGatewayResult> {
     const { model, reasoningEffort } = resolveModelConfig(request.product, this.options.model);
     const response = await this.fetchImplementation("https://api.openai.com/v1/responses", {
@@ -129,7 +184,7 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
 
     const envelope = responsesEnvelopeSchema.parse(await response.json());
     const output = parseQuickAnalysisOutput(JSON.parse(extractOutputText(envelope)) as unknown);
-    return {
+    const candidate: QuickGatewayResult = {
       output,
       execution: {
         responseId: envelope.id,
@@ -142,6 +197,10 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
         totalTokens: envelope.usage?.total_tokens ?? null,
       },
     };
+    if (validateQuickAnalysis(request, candidate.output).some(issue => BLOCKING_VALIDATION_CODES.has(issue.code))) return candidate;
+    const reviewed = await this.startReview(request, candidate, false);
+    if (typeof reviewed === "string") throw new Error("QUALITY_REVIEW_NOT_COMPLETED");
+    return reviewed;
   }
   /**
    * 실패한 응답의 본문을 짧게 붙입니다.

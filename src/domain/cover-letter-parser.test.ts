@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { splitCoverLetterDraft } from "./cover-letter-parser";
 
 describe("splitCoverLetterDraft", () => {
+  it("splits bracketed form headings and removes UI counters while keeping each limit", () => {
+    const input = ["* [문항1] 지원동기를 기술하시오.", "현재 0 자 / 210~700자 이내", "첫 번째 답변입니다.", "[문항2] 경험을 설명하시오.", "현재 0 자 / 240~800자 이내", "두 번째 답변입니다.", "* [문항3] 배운 점을 설명하시오.", "세 번째 답변입니다.", "[문항4] 가치를 기술하시오.", "네 번째 답변입니다."].join("\n");
+    const result = splitCoverLetterDraft(input);
+    expect(result).toHaveLength(4);
+    expect(result[0]).toMatchObject({ answer: "첫 번째 답변입니다.", targetLength: 700 });
+    expect(result[1]).toMatchObject({ answer: "두 번째 답변입니다.", targetLength: 800 });
+    expect(result[3].answer).toBe("네 번째 답변입니다.");
+  });
   it("splits numbered questions without an AI call", () => {
     const result = splitCoverLetterDraft("1. 지원동기\n첫 번째 답변\n\n2. 직무 역량을 작성해 주세요.\n두 번째 답변");
     expect(result).toHaveLength(2);

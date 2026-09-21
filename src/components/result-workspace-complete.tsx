@@ -519,12 +519,12 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
               the score they just bought was a mock. */}
           <small>지원서 준비도{result.isSample ? " · 샘플" : ""}</small><strong>{result.readiness.score}<span>/100</span></strong><em>{result.readiness.label}</em></div><p>{result.readiness.summary}</p></div>
         <div className={styles.overviewGrid}>
-          <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>핵심 개선점 3가지</h2>{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 수정 내용 확인 <ArrowRight/></button></section>
+          <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다.</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
             <section className={styles.panel}><span className={styles.eyebrow}>분석한 원본</span>{result.attachments.map((file) => <div className={styles.file} key={file.id}><FileText/><span><b>{file.filename}</b><small>{file.extension} · {(file.sizeBytes/1024).toFixed(0)}KB · {file.sectionCount}개 문항</small></span><em><CheckCircle2/> 읽기 완료</em></div>)}<p className={styles.privacy}><LockKeyhole/> 원본은 수정하지 않고 결과와 분리해 보관합니다.</p></section>
             {result.coverageNotes.length > 0 && <CoverageNotice notes={result.coverageNotes}/>}
-            <section className={styles.warning}><AlertCircle/><div><b>확인이 필요한 사실</b><p>{result.verificationQuestions[0]}</p><small>확인되지 않은 성과는 만들지 않았습니다.</small></div></section>
+            {result.verificationQuestions.length > 0 && <section className={styles.warning}><AlertCircle/><div><b>확인이 필요한 사실</b><p>{result.verificationQuestions[0]}</p><small>확인되지 않은 성과는 만들지 않았습니다.</small></div></section>}
           </aside>
         </div>
       </section>}
@@ -575,12 +575,12 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
           // 10% 안쪽으로 모자란 것은 말하지 않습니다. 700자에 30자 모자란
           // 것까지 짚으면 매 문항이 경고처럼 보입니다.
           const remaining = question.targetLength - countCompactCharacters(answer);
-          const showLengthGap = remaining > question.targetLength * 0.1;
+          const showLengthGap = remaining > question.targetLength * 0.1 && result.revisionQuality?.decision !== "keep_current";
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
-            <div className={styles.reasons}><Lightbulb/><div><b>왜 바뀌었나요?</b><ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
+            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다.</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             {showLengthGap && <div className={styles.lengthGap}>
               <div><b>{remaining.toLocaleString()}자 남음</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
               <p>{question.lengthNote ?? "원문에서 확인되는 사실만 써서 여기까지 왔습니다. 근거 없이 채우면 오히려 감점이라 늘리지 않았어요."}</p>

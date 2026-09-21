@@ -17,6 +17,7 @@ export type QuickValidationIssue = { code: "NEW_NUMBER" | "INVALID_EVIDENCE" | "
 export const BLOCKING_VALIDATION_CODES: ReadonlySet<QuickValidationIssue["code"]> = new Set([
   "NEW_NUMBER",
   "INVALID_EVIDENCE",
+  "QUESTION_MISMATCH",
   // 껍데기 결과를 막습니다. 같은 자소서로 세 번 돌린 기록을 보면 한 번은
   // 9,814자를 돌려주고 두 번은 각각 362자·394자를 돌려줬습니다. 뒤의 둘은
   // 첨삭이 아니라 요약에 가까웠는데, `revisedAnswer`가 한 글자라도 있으면

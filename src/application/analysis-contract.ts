@@ -41,7 +41,11 @@ export const analysisRequestSchema = z.object({
   questions: z.array(analysisQuestionInputSchema).min(1).max(20).optional(),
 });
 
-export type AnalysisRequest = z.infer<typeof analysisRequestSchema>;
+// Server-resolved only: the public request parser strips this field, so a
+// caller cannot assert ownership or claim its text was previously approved.
+export type AnalysisRequest = z.infer<typeof analysisRequestSchema> & {
+  previousRevision?: { runId: string; relationship: "same_input" | "previous_revision"; result: ResultDocument };
+};
 
 export interface ResumeAnalysisProvider {
   analyze(request: AnalysisRequest): Promise<ResultDocument>;

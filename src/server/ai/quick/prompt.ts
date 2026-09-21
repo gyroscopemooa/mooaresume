@@ -1,4 +1,5 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
+import { EDITING_QUALITY_RULES } from "./revision-quality";
 import { EDITING_STANCE_INSTRUCTION, RED_TEAM_HANDLING_INSTRUCTION, resolveEditingStance } from "@/domain/editing-stance";
 import {
   expandsFromOwnContent,
@@ -11,7 +12,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-3.3";
+export const QUICK_PROMPT_VERSION = "quick-3.4";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -38,7 +39,7 @@ const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> =
   // returns the notes back almost unchanged.
   CREATE: "작성 단계: 처음부터 작성. 각 문항의 원문은 완성된 글이 아니라 지원자가 단계별로 입력한 사실 메모입니다([지원 계기], [경험 ①] 같은 머리말이 붙어 있습니다). 메모와 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험)에 있는 사실을 근거로, 문항 질문에 답하는 완결된 자기소개서 문장을 새로 작성하세요. 메모 문장을 그대로 옮기지 말고, 단어 나열이나 짧은 조각이어도 완결된 문장으로 풀어 쓰세요. 메모에도 자료에도 없는 경험·자격·수치는 만들지 말고 확인 질문으로 남기세요.",
 };
-export const QUICK_RUBRIC_VERSION = "quick-rubric-1.0";
+export const QUICK_RUBRIC_VERSION = "quick-rubric-2.0";
 export const QUICK_SCHEMA_VERSION = "1.0";
 
 /**
@@ -365,6 +366,7 @@ polish: 위 여섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
           "자소서 문장이 '~한 후', '~하고 나서', '이후에는' 같은 표현으로 사건의 순서를 서술하면, 그 순서를 지원자료의 경력·학력 시작일·종료일과 대조하세요. 날짜가 겹치거나 순서가 반대이면(예: 재직 기간과 재학 기간이 겹침, 졸업일이 다음 경력의 시작일보다 늦음) 그 순서를 그대로 새 문장에 쓰지 말고, 시간 표현 없이 사실만 서술하거나 verificationQuestions에 확인을 남기세요.",
         ]
       : []),
+    EDITING_QUALITY_RULES,
     "consultingAdvice의 remove 제안은 '없어도 되는 문장'이 아니라 '두면 감점 요인이 되는 문장'만 대상으로 하세요. rationale에 무엇이 왜 문제인지 원문 근거와 함께 적고, 단순히 분량을 줄이기 위한 삭제는 제안하지 마세요.",
     "consultingAdvice의 모든 항목은 지원자가 바로 실행할 수 있는 구체적 행동이어야 합니다. '더 구체적으로 쓰세요' 같은 일반론은 넣지 마세요.",
     // The final tab is a view of these same revisions, so the only place a
@@ -453,6 +455,7 @@ export function buildQuickAnalysisInput(request: AnalysisRequest) {
     ...(request.roleName?.trim() ? [`[지원 직무] ${request.roleName.trim()}`] : []),
     `[작성 단계] ${request.writingMode}`,
     `[작성 스타일] ${request.writingStyle}`,
+    ...(request.previousRevision ? ["[동일 조건의 이전 검토 — 정답으로 가정하지 말 것]", JSON.stringify({ relationship: request.previousRevision.relationship, readiness: request.previousRevision.result.readiness, priorities: request.previousRevision.result.priorities, questions: request.previousRevision.result.questions.map(q => ({ original: q.originalAnswer, revised: q.revisedAnswer, reasons: q.revisionReasons })) })] : []),
     `[자기소개서 문항별 원문 - 총 ${questions.length}개]`,
     ...questionSections,
     // Listed as context, never as a revision target: the applicant has not
