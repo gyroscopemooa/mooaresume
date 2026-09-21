@@ -10,6 +10,16 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 4. Validate each variant independently and present the differences to the user.
 5. Integrate or remove a variant only after the user explicitly chooses it.
 
+## 2026-09-21 — 관리자 분석 결과표·입력 스냅샷 열람
+
+- Agent/session: Codex, current session.
+- Status: complete; local, uncommitted.
+- Intended change and reason: the admin analysis detail currently flattens a completed run to before/after text and raw JSON. Add a read-only reuse of the applicant's real result workspace, and expose the immutable submission snapshot (document type, filename, character count, and source text) plus product/input settings. This lets the operator compare the delivered experience with exactly what was submitted, including a job posting and materials that QUICK deliberately excludes.
+- Protected baseline: existing applicant `/result` behaviour, immutable `analysis_results`, and stored document versions. No user data will be changed; the admin view remains behind the existing `isAdmin()` layout gate.
+- Files expected: `src/server/admin/admin-repository.ts`, `src/app/meensoo/analyses/[id]/page.tsx`, `src/components/result-workspace-complete.tsx`, `src/app/meensoo/admin.module.css`, this log.
+- Delivered: `getAnalysis` now reads the run's `submission_snapshot_items` → immutable `document_versions` → document metadata, never a mutable current document. The detail page labels the product, stage, style and editing stance; shows each input's type, filename, full stored text and whether it was fully/partly/not included under the product budget. Completed structured results render through the same `ResultWorkspaceComplete` UI in an admin-only read-only mode; legacy result records retain the existing before/after fallback and raw JSON.
+- Validation: `npm run typecheck` passed; `npm run lint` passed; `git diff --check` passed. No migrations, deployments, external calls, or user-data writes. Rollback is removal of this additive admin read path.
+
 ## 2026-09-12 — Legal launch audit and isolated design variant
 
 ### 2026-09-12 — End-of-day handoff

@@ -268,7 +268,7 @@ function readCarriedMaterialCount(): number {
 
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
-export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null }: { result?: ResultDocument; analysisRunId?: string | null }) {
+export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null, adminPreview = false }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
@@ -487,7 +487,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
     </div>}
 
     <div className={styles.container}>
-      <Link href="/onboarding" className={styles.back}><ArrowLeft/> 작성 단계로 돌아가기</Link>
+      {!adminPreview && <Link href="/onboarding" className={styles.back}><ArrowLeft/> 작성 단계로 돌아가기</Link>}
       <section className={styles.hero}>
         <div><span>{result.isSample ? "가상 지원서 · 결과 화면 샘플" : "분석 완료"}</span><h1>{subject.name}{subject.qualifier && <> <em>{subject.qualifier}</em></>}</h1><p>{applicationLabel} · {result.questions.length}개 문항 · {result.product}</p></div>
         <button onClick={() => setView("final")}>최종 첨삭본 보기 <ArrowRight/></button>
@@ -498,19 +498,19 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         {result.product === "FINAL" && <button onClick={() => setView("verification")} className={view === "verification" ? styles.active : ""}>FINAL 검증<small>FINAL</small></button>}
         {/* 검증 옆에 둡니다. 순서가 곧 읽는 순서입니다 — 무엇이 문제인지 본
             다음에 그래서 무엇을 할지가 옵니다. */}
-        {result.product === "FINAL" && <button onClick={() => setView("wrapup")} className={view === "wrapup" ? styles.active : ""}>제출 전 마무리<small>FINAL</small></button>}
+        {result.product === "FINAL" && !adminPreview && <button onClick={() => setView("wrapup")} className={view === "wrapup" ? styles.active : ""}>제출 전 마무리<small>FINAL</small></button>}
         {/* 정적 "면접 준비" 탭(PRO도 공유)과 분리한 새 탭 — 실제 턴 주고받기는
             FINAL만 판다. 가격표가 약속한 기능이라 여기 있어야 한다. */}
-        {result.product === "FINAL" && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
+        {result.product === "FINAL" && !adminPreview && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
       </nav>
 
       {view === "verification" && result.product === "FINAL" && (
         <FinalVerification result={result} hasResume={result.suppliedResume} />
       )}
 
-      {view === "wrapup" && result.product === "FINAL" && <FinalWrapUp result={result} analysisRunId={analysisRunId} />}
+      {view === "wrapup" && result.product === "FINAL" && !adminPreview && <FinalWrapUp result={result} analysisRunId={analysisRunId} />}
 
-      {view === "mockInterview" && result.product === "FINAL" && (
+      {view === "mockInterview" && result.product === "FINAL" && !adminPreview && (
         <InteractiveInterview result={result} analysisRunId={analysisRunId} />
       )}
 
@@ -586,7 +586,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
               <p>{question.lengthNote ?? "원문에서 확인되는 사실만 써서 여기까지 왔습니다. 근거 없이 채우면 오히려 감점이라 늘리지 않았어요."}</p>
               <span>알려주시면 그 내용으로 채워 다시 첨삭해 드립니다.</span>
             </div>}
-            <footer>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button><button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
+            <footer>{!adminPreview && <>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button></>}<button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
         })}
         {result.consultingAdvice.length > 0 && <section className={styles.consulting}>
@@ -630,7 +630,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         </ul>
       </section>}
 
-      {view === "final" && !result.isSample && <section className={styles.revision}>
+      {view === "final" && !result.isSample && !adminPreview && <section className={styles.revision}>
         <div>
           <span className={styles.eyebrow}>추가 요청</span>
           <h2>고치고 싶은 방향이 있나요?</h2>
@@ -676,7 +676,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
           only one who cannot see it — so this names what the next one would do
           with the draft they now have, and renders nothing when there is
           honestly nothing left to suggest. */}
-      {nextStep && <section className={styles.nextStep}>
+      {nextStep && !adminPreview && <section className={styles.nextStep}>
         <div>
           <span className={styles.eyebrow}>선택 사항</span>
           <h2>{nextStep.label}</h2>
@@ -686,17 +686,17 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
           더 준비하기 <ArrowRight/>
         </button>
       </section>}
-      {view === "final" && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
-      {view === "final" && <FinalUpgradeCard product={result.product} />}
+      {view === "final" && !adminPreview && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
+      {view === "final" && !adminPreview && <FinalUpgradeCard product={result.product} />}
       {/* Asked here rather than before payment: with the result already in
           hand, nothing is riding on the answer, which is the only position
           from which "아니오" costs the applicant nothing. Hidden on the sample
           page, where there is no real application to consent about. */}
-      {view === "final" && !result.isSample && <ResearchConsent />}
+      {view === "final" && !result.isSample && !adminPreview && <ResearchConsent />}
       {/* Same placement logic as the consent block: this is the one moment
           anyone is inclined to tell a friend, because the thing they were
           handed just worked. */}
-      {view === "final" && !result.isSample && <ReferralPanel />}
+      {view === "final" && !result.isSample && !adminPreview && <ReferralPanel />}
     </div>
   </main>;
 }

@@ -285,6 +285,25 @@ export type AdminAnalysisDetail = {
   resultData: unknown | null;
   targetLength: number | null;
   writingStyle: string | null;
+  editingStance: string | null;
+  inputDocuments: AdminAnalysisInputDocument[];
+};
+
+/**
+ * The immutable version used for this run, rather than the applicant's latest
+ * document. Admins need to judge the delivered result against what the model
+ * actually received; joining the current document would silently change that
+ * answer after a user edits or re-uploads a file.
+ */
+export type AdminAnalysisInputDocument = {
+  purpose: string;
+  kind: string;
+  title: string;
+  filename: string | null;
+  sourceType: string;
+  createdAt: string;
+  characterCount: number;
+  normalizedText: string;
 };
 
 export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisDetail | null> {
@@ -292,7 +311,7 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
   const [{ data: run, error }, { data: result }, emails] = await Promise.all([
     client
       .from("analysis_runs")
-      .select("id, owner_user_id, product, writing_mode, writing_style, target_length, status, attempt_count, failure_code, model, prompt_version, total_tokens, created_at, completed_at, application_cases(title, company_name)")
+      .select("id, owner_user_id, submission_snapshot_id, product, writing_mode, writing_style, editing_stance, target_length, status, attempt_count, failure_code, model, prompt_version, total_tokens, created_at, completed_at, application_cases(title, company_name)")
       .eq("id", analysisRunId)
       .maybeSingle(),
     client.from("analysis_results").select("result_data").eq("analysis_run_id", analysisRunId).maybeSingle(),
@@ -301,10 +320,39 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
   if (error || !run) return null;
   const applicationCase = run.application_cases as unknown as EmbeddedCase;
   const product = run.product as string;
-  const [ledger, paidRunIds] = await Promise.all([
+  const [{ data: snapshotItems, error: snapshotItemsError }, ledger, paidRunIds] = await Promise.all([
+    client.from("submission_snapshot_items").select("purpose, document_version_id").eq("snapshot_id", run.submission_snapshot_id as string),
     loadAttemptLedger([analysisRunId]),
     loadPaidRunIds([analysisRunId]),
   ]);
+  if (snapshotItemsError) console.error("admin-query:analysis-snapshot", snapshotItemsError);
+  const versionIds = (snapshotItems ?? []).map((item) => item.document_version_id as string);
+  const { data: versions, error: versionsError } = versionIds.length > 0
+    ? await client.from("document_versions").select("id, document_id, source_type, original_filename, normalized_text, character_count").in("id", versionIds)
+    : { data: [], error: null };
+  if (versionsError) console.error("admin-query:analysis-snapshot-versions", versionsError);
+  const documentIds = (versions ?? []).map((version) => version.document_id as string);
+  const { data: documents, error: documentsError } = documentIds.length > 0
+    ? await client.from("documents").select("id, kind, title, created_at").in("id", documentIds)
+    : { data: [], error: null };
+  if (documentsError) console.error("admin-query:analysis-snapshot-documents", documentsError);
+  const versionsById = new Map((versions ?? []).map((version) => [version.id as string, version]));
+  const documentsById = new Map((documents ?? []).map((document) => [document.id as string, document]));
+  const inputDocuments = (snapshotItems ?? []).flatMap((item) => {
+    const version = versionsById.get(item.document_version_id as string);
+    if (!version) return [];
+    const document = documentsById.get(version.document_id as string);
+    return [{
+      purpose: item.purpose as string,
+      kind: (document?.kind as string | undefined) ?? "OTHER",
+      title: (document?.title as string | undefined) ?? "제목 없는 자료",
+      filename: (version.original_filename as string | null) ?? null,
+      sourceType: version.source_type as string,
+      createdAt: (document?.created_at as string | undefined) ?? "",
+      characterCount: (version.character_count as number | null) ?? 0,
+      normalizedText: (version.normalized_text as string | null) ?? "",
+    }];
+  });
   const attempts = ledger.get(analysisRunId) ?? [];
   const paid = paidRunIds.has(analysisRunId);
   return {
@@ -336,6 +384,8 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
     resultData: result?.result_data ?? null,
     targetLength: (run.target_length as number | null) ?? null,
     writingStyle: (run.writing_style as string | null) ?? null,
+    editingStance: (run.editing_stance as string | null) ?? null,
+    inputDocuments,
   };
 }
 
