@@ -448,3 +448,30 @@
 }
 .riskWhy a { margin-left: auto; color: var(--admin-accent); font-weight: 600; text-decoration: none; }
 .riskWhy a:hover { text-decoration: underline; }
+
+/* 관리자 결과 상세의 입력 원본. 문서 전문은 접힌 상태에서만 확인합니다. */
+.inputSnapshotList { display: grid; border-top: 1px solid var(--admin-line); }
+.inputSnapshot { border-bottom: 1px solid var(--admin-line); }
+.inputSnapshot summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 16px; cursor: pointer; color: var(--admin-text); font-size: 12.5px; }
+.inputSnapshot summary > span:first-child { display: grid; gap: 3px; }
+.inputSnapshot summary > span:last-child { color: var(--admin-muted); text-align: right; word-break: break-all; }
+.inputSnapshot summary b { font-size: 13px; }
+.inputSnapshot summary em { color: var(--admin-muted); font-size: 11px; font-style: normal; }
+.inputSnapshot > div { padding: 0 16px 16px; }
+.inputSnapshot dl { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 5px 10px; margin: 0 0 12px; font-size: 12px; }
+.inputSnapshot dt { color: var(--admin-muted); }
+.inputSnapshot dd { margin: 0; color: var(--admin-text); overflow-wrap: anywhere; }
+.inputText { max-height: 420px; margin: 0; overflow: auto; padding: 12px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-sunken); color: var(--admin-text); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+
+/* The applicant workspace keeps its own visual language inside this preview. */
+.adminResultPreview { margin-top: 22px; overflow: hidden; border: 1px solid var(--admin-line); border-radius: 12px; background: var(--admin-sunken); }
+.adminResultPreview > .panelHead { padding: 16px 20px; border-bottom: 1px solid var(--admin-line); }
+.adminResultPreview > .panelHead small { display: block; margin-top: 3px; color: var(--admin-muted); font-size: 11.5px; line-height: 1.55; }
+.adminResultPreview :global(main) { min-height: 0; }
+
+@media (max-width: 720px) {
+  .inputSnapshot summary { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .inputSnapshot summary > span:last-child { text-align: left; }
+  .inputSnapshot dl { grid-template-columns: 72px minmax(0, 1fr); }
+  .inputText { max-height: 300px; font-size: 11px; }
+}

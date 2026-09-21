@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   // 같은 질문이 반복될 위험이 있습니다.
   const { data: recentRows } = await supabase
     .from("community_posts")
-    .select("title")
+    .select("title, topic")
     .eq("is_editorial", true)
     .order("created_at", { ascending: false })
     .limit(30);
@@ -62,9 +62,13 @@ export async function POST(request: NextRequest) {
     .map((row) => (typeof row.title === "string" ? row.title : ""))
     .filter(Boolean);
 
+  const recentTopics = (recentRows ?? [])
+    .map((row) => (typeof row.topic === "string" ? row.topic : ""))
+    .filter(Boolean);
+
   let item;
   try {
-    item = await generateCommunitySeedContent({ apiKey, model, recentTitles });
+    item = await generateCommunitySeedContent({ apiKey, model, recentTitles, recentTopics });
   } catch (error) {
     console.error("community_seed_generation_failed", error instanceof Error ? error.message : "UNKNOWN_ERROR");
     return NextResponse.json({ error: "글 생성에 실패했습니다." }, { status: 502 });
