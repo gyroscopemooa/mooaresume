@@ -28,6 +28,8 @@
 }
 .action a:hover { background: linear-gradient(180deg, #143723, #0b2417); }
 
+.disabledAction{display:inline-flex;align-items:center;gap:5px;padding:7px 10px 7px 12px;border:1px solid rgba(9,43,29,.16);border-radius:999px;background:#163e2b;color:#f4ffd7;font-size:11px;font-weight:900;letter-spacing:-.02em;opacity:.72}
+
 .copy b {
   background: linear-gradient(180deg, #1c4a35, #123726);
   box-shadow:

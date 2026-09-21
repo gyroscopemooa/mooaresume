@@ -3,6 +3,7 @@ import { Noto_Sans_KR } from "next/font/google";
 import Script from "next/script";
 import { getSiteUrl } from "@/lib/site-url";
 import { AppTabBar } from "@/components/app-tab-bar";
+import { RuntimeSiteNotice } from "@/components/runtime-site-notice";
 import "./globals.css";
 
 
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ko">
       <body className={notoSansKr.variable}>
+        <RuntimeSiteNotice />
         {children}
         {/* 하이브리드 앱 셸에서만 보이는 하단 메뉴바. 일반 웹 방문자에게는
             아무것도 렌더링하지 않으므로 기존 화면은 그대로입니다

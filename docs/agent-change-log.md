@@ -44,6 +44,17 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 4. Validate each variant independently and present the differences to the user.
 5. Integrate or remove a variant only after the user explicitly chooses it.
 
+## 2026-09-21 — LIVE-SUB HQ browser runtime configuration
+
+- Agent/session: Codex, current session.
+- Status: complete; isolated branch `feat/livesub-hq-runtime`, uncommitted.
+- Intended change and reason: add a browser-only, failure-tolerant LIVE-SUB HQ runtime-config client for display-only home launch messaging and public-page notices. This permits remotely managed copy while retaining existing hard-coded copy as the initial and failure fallback.
+- Protected baseline: Polar pricing, product, checkout, coupon, entitlement and analysis flows; existing `next-env.d.ts` local change and untracked Korean-named folders. No server render, build, middleware, data schema, or HQ service code will be changed.
+- Expected files: new `src/lib/live-sub-runtime/*`, `src/components/launch-price-banner.tsx`, a new runtime notice component/style, `src/app/layout.tsx`, `.env.example`, `wrangler.jsonc`, runtime tests, `docs/live-sub-admin-integration.md`, and this log.
+- Delivered: added a client-only module with module-single-flight retrieval, a 3-second timeout per configured public endpoint, normal-config localStorage cache, default/cached failure behavior and display selectors. Connected `home_launch_price` to `LaunchPriceBanner`; added a global public-page notice/maintenance strip with analysis, checkout-progress, app and admin route exclusions. Added public runtime URL/environment config to examples and Cloudflare vars, plus the HQ operator guide.
+- Validation: focused runtime Vitest 4/4 passed; `npm run typecheck`, `npm run lint`, and `git diff --check` passed. Full suite and production build were started, but this shared host returned only each runner's startup output instead of a final result; neither is recorded as passed. No local browser/HQ verification, deployment, commit, push, API key, payment, or data change.
+- Recovery: remove the additive client module/components and their root-layout import, or discard this uncommitted isolated branch. Existing pricing and checkout implementation is untouched.
+
 ## 2026-09-21 — 관리자 분석 결과표·입력 스냅샷 열람
 
 - Agent/session: Codex, current session.
