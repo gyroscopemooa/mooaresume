@@ -27,6 +27,13 @@ vi.mock("@/lib/local-document", () => {
 afterEach(cleanup);
 
 describe("ResultWorkspaceComplete 제출본 탭", () => {
+  it("renders zero issues and unchanged answers without forced criticism", () => {
+    const result = { ...sampleResultDocument, priorities: [], consultingAdvice: [], verificationQuestions: [], questions: sampleResultDocument.questions.map(q => ({ ...q, revisedAnswer: q.originalAnswer, revisionReasons: [] })) };
+    render(<ResultWorkspaceComplete result={result}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getAllByText("현재 문장 유지").length).toBeGreaterThan(0);
+    expect(screen.queryByText("왜 바뀌었나요?")).toBeNull();
+  });
   it("저장된 구버전 결과도 실제 원문과 첨삭 차이로 표시한다", () => {
     // 주석이 한 문항에도 없는 결과라야 진짜 구버전이다. 샘플은 한 문항에만
     // 주석이 있어 이제 나머지 문항을 비워 두므로, 여기서는 전부 지워 쓴다.

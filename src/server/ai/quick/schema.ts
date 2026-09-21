@@ -13,7 +13,7 @@ const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type
 // reason originalAnnotations comes first. With the revision written first, the
 // annotations were produced after the fact and could praise a sentence the
 // revision had already deleted. Ordering only — nothing stored changes.
-const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), subheading: z.string().nullable(), lengthNote: z.string().nullable(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).min(1).max(5), verificationNote: z.string().nullable() });
+const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), subheading: z.string().nullable(), lengthNote: z.string().nullable(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).max(5), verificationNote: z.string().nullable() });
 const legacyQuickRevisionSchema = quickRevisionSchema.omit({ questionOrder: true });
 
 // PRO is sold on two things QUICK does not promise: matching the posting's
@@ -114,14 +114,14 @@ const answerStructureOutputSchema = z.object({
 const baseOutputShape = {
   schemaVersion: z.literal("1.0"),
   readiness: z.object({ score: z.number().int().min(0).max(100), label: z.string().min(1), summary: z.string().min(1), reasons: z.array(z.string().min(1)).min(1).max(5) }),
-  priorities: z.array(z.object({ title: z.string().min(1), description: z.string().min(1), category: z.enum(["evidence", "duplication", "clarity", "length", "verification"]), severity: z.enum(["high", "medium", "low"]), evidenceQuote: z.string().min(1) })).min(1).max(3),
+  priorities: z.array(z.object({ title: z.string().min(1), description: z.string().min(1), category: z.enum(["evidence", "duplication", "clarity", "length", "verification"]), severity: z.enum(["high", "medium", "low"]), evidenceQuote: z.string().min(1) })).max(3),
   revisions: z.array(quickRevisionSchema).min(1).max(20).optional(),
   revision: legacyQuickRevisionSchema,
   verificationQuestions: z.array(z.string().min(1)).max(5),
   // Counts are computed on screen; this carries the part only the analysis
   // knows — what it judged and changed.
   editSummary: z.array(z.string().min(1)).max(3).optional(),
-  consultingAdvice: z.array(z.object({ kind: z.enum(["add", "remove", "strengthen", "structure", "clarify", "reframe"]), title: z.string().min(1), guidance: z.string().min(1), rationale: z.string().min(1), priority: z.enum(["high", "medium", "low"]) })).min(4).max(8).optional(),
+  consultingAdvice: z.array(z.object({ kind: z.enum(["add", "remove", "strengthen", "structure", "clarify", "reframe"]), title: z.string().min(1), guidance: z.string().min(1), rationale: z.string().min(1), priority: z.enum(["high", "medium", "low"]) })).max(8).optional(),
 };
 
 // No minimum on purpose. A required minimum forces the model to produce a

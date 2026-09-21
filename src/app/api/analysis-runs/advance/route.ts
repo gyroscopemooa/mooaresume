@@ -85,7 +85,7 @@ async function advanceOne(run: RunRow, origin: string) {
   if (step.response.status === "pending") return { analysisRunId: run.id, outcome: "PENDING" as const };
   if (step.response.status === "failed") {
     await repository.fail(run.id, "AI_PROVIDER_FAILED", true);
-    await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "PROVIDER_FAILED", failureCode: "AI_PROVIDER_FAILED", source: "CRON", usage: { responseId: step.response.responseId } });
+    await recordAnalysisAttempt({ analysisRunId: run.id, ownerUserId: run.owner_user_id, outcome: "PROVIDER_FAILED", failureCode: /^(QUALITY_REVIEW_|REVISION_REVIEW_)/.test(step.response.reason) ? `AI_PROVIDER_FAILED:${step.response.reason}` : "AI_PROVIDER_FAILED", source: "CRON", usage: step.response.execution ?? { responseId: step.response.responseId } });
     return { analysisRunId: run.id, outcome: "PROVIDER_FAILED" as const };
   }
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { revisionQualitySchema } from "./revision-quality";
 
 export const resultAttachmentSchema = z.object({
   id: z.string().min(1),
@@ -72,7 +73,7 @@ export const resultQuestionSchema = z.object({
   revisedAnswer: z.string().min(1),
   highlightedPhrases: z.array(z.string().min(1)),
   originalAnnotations: z.array(resultOriginalAnnotationSchema).optional(),
-  revisionReasons: z.array(z.string().min(1)).min(1),
+  revisionReasons: z.array(z.string().min(1)),
   verificationNote: z.string().optional(),
 });
 
@@ -304,6 +305,7 @@ export const consultingAdviceSchema = z.object({
 });
 
 export const resultDocumentSchema = z.object({
+  revisionQuality: revisionQualitySchema.optional(),
   schemaVersion: z.literal("1.0"),
   caseId: z.string().min(1),
   product: z.enum(["QUICK", "PRO", "FINAL"]),
@@ -335,7 +337,7 @@ export const resultDocumentSchema = z.object({
   }),
   attachments: z.array(resultAttachmentSchema),
   candidateProfile: resultCandidateProfileSchema,
-  priorities: z.array(resultPrioritySchema).min(1).max(3),
+  priorities: z.array(resultPrioritySchema).max(3),
   questions: z.array(resultQuestionSchema).min(1),
   requirementMatches: z.array(requirementMatchSchema),
   verificationQuestions: z.array(z.string().min(1)),

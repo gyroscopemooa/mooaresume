@@ -1,6 +1,6 @@
 import { createCoverLetterQuestion, readTargetLengthMarker, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 
-const QUESTION_LINE = /^\s*(?:문항\s*)?(\d{1,2})(?:\s*[.)\]:：-]\s*|\s*번(?:\s*[:.)\]-]\s*|\s+))(.+?)\s*$/;
+const QUESTION_LINE = /^\s*(?:\*\s*)?(?:\[\s*문항\s*|문항\s*)?(\d{1,2})(?:\s*[.)\]:：-]\s*|\s*번(?:\s*[:.)\]-]\s*|\s+))(.+?)\s*$/;
 const SECTION_TITLE = /^(?:이력서|경력기술서|직무기술서)$/;
 
 function compactHeading(line: string) {
@@ -77,7 +77,10 @@ export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
     // analysis request carries one number for the whole draft and there is
     // nowhere else for a per-question limit to survive the round trip.
     const { heading, targetLength } = readTargetLengthMarker(match?.[2]?.trim() ?? "");
-    const extractedBody = lines.slice(start + 1, end).join("\n").trim();
+    const bodyLines = lines.slice(start + 1, end);
+    const counter = bodyLines.find((line) => /^\s*현재\s*\d+\s*자\s*\/\s*\d+\s*[~～-]\s*\d+\s*자\s*이내\s*$/.test(line));
+    const counterLimit = counter?.match(/[~～-]\s*(\d+)\s*자/);
+    const extractedBody = bodyLines.filter((line) => line !== counter).join("\n").trim();
     const body = /^(?:주특기\s*)?업무\s*작성$/i.test(extractedBody.replace(/\s+/g, " ")) ? "" : extractedBody;
     // 질문으로 읽히는 줄은 제목이 아니라 질문 칸에 넣습니다. 낱말 목록에
     // "말씀"과 "바랍니다"가 빠져 있어, "본인 성격의 장단점을 **말씀해**
@@ -87,7 +90,7 @@ export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
       ...createCoverLetterQuestion(body, index),
       title: looksLikePrompt ? "" : heading.slice(0, 120),
       prompt: looksLikePrompt ? heading.slice(0, 1000) : "",
-      targetLength,
+      targetLength: targetLength ?? (counterLimit && Number(counterLimit[1]) >= 100 && Number(counterLimit[1]) <= 3000 ? Number(counterLimit[1]) : null),
     };
   });
 }

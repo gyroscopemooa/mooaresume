@@ -3,6 +3,8 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { validateAnalysisRequest } from "@/application/analysis-contract";
+import type { AnalysisRequest } from "@/application/analysis-contract";
+import { matchPreviousRevision, revisionFingerprints } from "@/server/ai/quick/revision-quality";
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
 import { RESEARCH_CONSENT_VERSION, buildResearchSnapshot } from "./research-capture";
 import type { QuickAnalysisRunRepository } from "./quick-analysis-orchestrator";
@@ -27,6 +29,29 @@ function client() {
 
 export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepository {
   constructor(private readonly ownerUserId: string) {}
+
+  private async withPreviousRevision(request: AnalysisRequest, before: string): Promise<AnalysisRequest> {
+    // Exact context matching only, owner filter BEFORE limit; no cross-user
+    // text matching or AI guesses. Legacy results lack context and are skipped.
+    const { data, error } = await client().from("analysis_results")
+      .select("analysis_run_id, result_data").eq("owner_user_id", this.ownerUserId)
+      .eq("result_data->revisionQuality->>contextFingerprint", revisionFingerprints(request).contextFingerprint)
+      .lt("created_at", before).order("created_at", { ascending: false }).limit(20);
+    if (error) throw new Error(`REVISION_HISTORY_LOAD_FAILED:${error.code}`);
+    const history = (data ?? []).flatMap(row => {
+      const parsed = resultDocumentSchema.safeParse(row.result_data);
+      return parsed.success ? [{ runId: row.analysis_run_id as string, result: parsed.data }] : [];
+    });
+    return { ...request, previousRevision: matchPreviousRevision(request, history) };
+  }
+
+  async compareAndSwapResponse(analysisRunId: string, expected: string, next: string) {
+    const { data, error } = await client().from("analysis_runs").update({ response_id: next })
+      .eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING")
+      .eq("response_id", expected).select("id");
+    if (error) throw new Error(`QUALITY_REVIEW_CURSOR_FAILED:${error.code}`);
+    return Boolean(data?.length);
+  }
 
   async prepareRetry(analysisRunId: string) {
     const { error } = await client().rpc("prepare_quick_analysis_retry", {
@@ -59,10 +84,10 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     // return shape has survived eight migrations unchanged — not the place to
     // add a column for this. One extra primary-key read instead: `begin` runs
     // once per start or retry, never in a poll loop.
-    const { data: run } = await client().from("analysis_runs").select("attempt_count").eq("id", parsed.analysisRunId).maybeSingle();
+    const { data: run } = await client().from("analysis_runs").select("attempt_count, created_at").eq("id", parsed.analysisRunId).maybeSingle();
     return {
       analysisRunId: parsed.analysisRunId,
-      request: validateAnalysisRequest(parsed.request),
+      request: await this.withPreviousRevision(validateAnalysisRequest(parsed.request), run?.created_at ?? new Date().toISOString()),
       attemptCount: (run?.attempt_count as number | undefined) ?? 1,
     };
   }
@@ -73,7 +98,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
   }
 
   async getRunningContext(analysisRunId: string) {
-    const { data: run, error: runError } = await client().from("analysis_runs").select("id, application_case_id, submission_snapshot_id, product, writing_mode, writing_style, target_length, response_id, attempt_count").eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING").single();
+    const { data: run, error: runError } = await client().from("analysis_runs").select("id, application_case_id, submission_snapshot_id, product, writing_mode, writing_style, editing_stance, target_length, response_id, attempt_count, created_at").eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING").single();
     if (runError || !run) throw new Error(`QUICK_ANALYSIS_RUNNING_CONTEXT_FAILED:${runError?.code ?? "NOT_FOUND"}`);
     const { data: items, error: itemsError } = await client().from("submission_snapshot_items").select("document_version_id").eq("snapshot_id", run.submission_snapshot_id);
     if (itemsError) throw new Error(`QUICK_ANALYSIS_SNAPSHOT_LOAD_FAILED:${itemsError.code}`);
@@ -99,7 +124,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       // cross-check against.
       .filter((document) => run.product !== "QUICK" || !supportingKinds.has(document.kind));
     const { data: applicationCase } = await client().from("application_cases").select("company_name, role_name").eq("id", run.application_case_id).maybeSingle();
-    return { analysisRunId: run.id, responseId: run.response_id, attemptCount: run.attempt_count as number, request: validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments }) };
+    return { analysisRunId: run.id, responseId: run.response_id, attemptCount: run.attempt_count as number, request: await this.withPreviousRevision(validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, editingStance: run.editing_stance ?? undefined, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments }), run.created_at) };
   }
 
   async complete(analysisRunId: string, result: unknown) {

@@ -1,5 +1,17 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-22 — Codex: repeat-edit quality and convergence gate
+
+- Status: implemented locally; user subsequently authorized commit, push and production deployment. Release validation in progress.
+- Protected/recoverable baseline: `a3e8d2b2b860344c5f78359941d04d7b1a621e7f` on `feat/livesub-hq-runtime`; pre-existing untracked reference folders remain untouched.
+- Intended transformation: additive independent before/after assessment for QUICK, PRO and FINAL across all writing modes; whole-document adoption or source retention, owner-scoped exact prior-result context, optional persisted assessment metadata, zero-issue schemas and honest keep-current UI. Preserve existing factual validators, product/mode boundaries and billing. Fix explicit bracketed question headings so coverage is not silently lost.
+- Expected files: quick AI prompt/schema/gateway/provider and new quality module/tests; background execution and repository; result schema/UI; cover-letter parser/tests; this log and implementation notes.
+- Rationale: preserve real improvement without forced criticism, score inflation or automatically trusting prior MOOA text. Rejected edits retain input and remaining real issues.
+- Delivered files: `src/server/ai/quick/{revision-quality,openai-responses-gateway,prompt,provider,questions,schema,validator}.ts`; `src/server/analysis/{quick-background-execution,supabase-quick-analysis-run-repository}.ts`; browser/cron analysis API routes (combined usage/failure-code accounting); `src/application/analysis-contract.ts`; domain revision-quality/result-document and cover-letter-parser; primary result workspace; focused tests and `docs/revision-quality-gate-2026-09-22.md`.
+- Validation: 163 files / 1,296 tests passed, typecheck passed, lint 0 errors / 2 existing unrelated warnings; OpenNext production build passed. Includes owner/context-isolated history checks, independent API boundary and background CAS/failure accounting tests. No paid model calls, migrations or customer-data writes performed. Tests use mock evaluators, not a live ten-run convergence proof. Re-evaluation adds a bounded model call and can increase latency/failure rate; existing 10-minute timeout remains.
+- Release scope: remote main confirmed at `89e8b9810758d9c0426c35b21a0fa029e0490b99`. HEAD also contains the separately owned HQ runtime commit, not yet in main. Preserve that branch and prepare a main-based release checkout containing only this reviewed quality patch, to avoid deploying unrelated HQ behavior. Previous production Worker version: `9ae15494-64d8-4303-90d8-66b4cd31c2c2`.
+- Rollback: revert only this entry's focused diff against the baseline above.
+
 This append-only document coordinates Claude, Codex, other agents, and the user. It does not replace Git history. Before changing overlapping code, read this file and inspect the working tree and relevant branches.
 
 ## Mandatory workflow

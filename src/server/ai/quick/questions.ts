@@ -28,7 +28,15 @@ export type AnalysisQuestion = CoverLetterQuestion & { order: number; targetLeng
 
 function readQuestions(request: AnalysisRequest): CoverLetterQuestion[] {
   const source = request.documents.find((document) => document.kind === "cover_letter");
-  if (request.questions) return request.questions;
+  if (request.questions) {
+    // A single input box can still contain explicit form headings. Do not
+    // silently treat four labelled answers as one merely because the UI did.
+    if (request.questions.length === 1 && /^\s*(?:\*\s*)?\[문항\s*\d+\]/m.test(request.questions[0].answer)) {
+      const separated = splitCoverLetterDraft(request.questions[0].answer);
+      if (separated.length > 1) return separated;
+    }
+    return request.questions;
+  }
   return source ? splitCoverLetterDraft(source.text) : [];
 }
 
