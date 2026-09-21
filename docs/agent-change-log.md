@@ -1,5 +1,11 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-22 — Codex: release branch push completed
+
+- User explicitly approved the existing GitHub origin `https://github.com/gyroscopemooa/mooaresume.git`; GitHub CLI authentication completed as `gyroscopemooa`.
+- Isolated, main-based `codex/revision-quality-release-20260922` pushed successfully at `6414b6e` (quality gate and FAQ; HQ runtime excluded). Production Worker remains `839185e2-0cbb-4d7e-864c-206d8c470b17`.
+- This entry corrects the historical push-blocked status below. No app code, database, payment or deployment changes.
+
 ## 2026-09-22 — Codex: concise repeat-edit FAQ
 
 - Requested: add a short, non-defensive explanation in the lower tips FAQ, collapsed by default; commit and deploy.
