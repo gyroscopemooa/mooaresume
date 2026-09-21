@@ -2,7 +2,8 @@
 
 ## 2026-09-22 — Codex: repeat-edit quality and convergence gate
 
-- Status: implemented locally; user subsequently authorized commit, push and production deployment. Release validation in progress.
+- Status: production deployed from isolated main-based release branch `codex/revision-quality-release-20260922`, source commit `784f037`, excluding separate HQ runtime. Original implementation preserved as `d38b23c`. Push is blocked on credential-manager authentication; GitHub CLI is not logged in and the remote release branch is not yet present.
+- Release verification: 162 files / 1,292 tests passed; typecheck and OpenNext build passed; lint only 2 existing warnings. Worker `58f62d68-2f34-40a9-8baf-b848b442330f` deployed. Production `/quick`, `/pro/polish`, `/final/polish`, `/result/sample` returned HTTP 200. No paid live AI test. Deployment receipt changes only this log and quality-gate notes.
 - Protected/recoverable baseline: `a3e8d2b2b860344c5f78359941d04d7b1a621e7f` on `feat/livesub-hq-runtime`; pre-existing untracked reference folders remain untouched.
 - Intended transformation: additive independent before/after assessment for QUICK, PRO and FINAL across all writing modes; whole-document adoption or source retention, owner-scoped exact prior-result context, optional persisted assessment metadata, zero-issue schemas and honest keep-current UI. Preserve existing factual validators, product/mode boundaries and billing. Fix explicit bracketed question headings so coverage is not silently lost.
 - Expected files: quick AI prompt/schema/gateway/provider and new quality module/tests; background execution and repository; result schema/UI; cover-letter parser/tests; this log and implementation notes.
