@@ -5,7 +5,7 @@
 - Requested: add a short, non-defensive explanation in the lower tips FAQ, collapsed by default; commit and deploy.
 - Files: `src/app/new/page.tsx`, `src/app/new/page.test.tsx`, this log. No analysis, billing or settings changes.
 - Preservation: additive FAQ only, existing entries retained. Baselines: original `a2ea61b`, isolated release `8b898bc`. Rollback: revert this focused FAQ commit only.
-- Validation: isolated release 163 files / 1,293 tests passed, typecheck and changed-file ESLint passed. FAQ test checks collapsed placement and concise two-sentence copy. Production build/deployment in progress. Git push retried non-interactively and failed because GitHub credentials are unavailable. Release retains the previous quality gate and excludes HQ changes.
+- Validation: isolated release 163 files / 1,293 tests passed, typecheck, changed-file ESLint and OpenNext build passed. FAQ test checks collapsed placement and concise two-sentence copy. Release code commit `83ffb1d` deployed as Worker `839185e2-0cbb-4d7e-864c-206d8c470b17`; production `/new` returned HTTP 200 with the exact copy and closed details element. Git push retried non-interactively and failed because GitHub credentials are unavailable. Release retains the previous quality gate and excludes HQ changes.
 
 ## 2026-09-22 — Codex: repeat-edit quality and convergence gate
 
