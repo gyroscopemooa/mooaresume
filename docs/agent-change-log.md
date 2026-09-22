@@ -7,6 +7,13 @@
 - Implementation: use the restored `visualViewport` height (with window-resize fallback), rather than `innerHeight`, because Android resize mode can change both viewport measurements together.
 - Recovery: revert this focused component change. The separate Expo app and all other working-tree changes remain untouched.
 
+## 2026-09-22 — Codex: production Google OAuth callback recovery
+
+- Incident evidence: production `/auth/callback` returned HTTP 500 for both Android and desktop requests before any OAuth code exchange. The active Worker version lacked the two `NEXT_PUBLIC_SUPABASE_*` values required by the server callback's Supabase client; this can surface in Chrome/TWA as “This page couldn't load” after Google returns.
+- Scope: build the existing focused release with only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` supplied from the protected local environment; do not copy/link any other environment values, alter Supabase Auth settings, reset sessions, or delete cached/user data. Make the callback fail as an ordinary safe redirect rather than an unhandled 500 if runtime configuration is ever unavailable.
+- Validation: production callback without an OAuth code must redirect to the safe return route instead of responding 500; the actual Google provider journey remains user-driven and no account credentials are automated.
+- Recovery: restore the previous Worker version or revert this callback guard. Existing Supabase sessions remain untouched.
+
 ## 2026-09-22 — Codex: LIVE-SUB event-campaign production release (in progress)
 
 - User approved an event-only production release. This release is based on the current production-equivalent commit `594221c`, with existing runtime client commit `a3e8d2b` and the verified `eventCampaigns` slot implementation only.

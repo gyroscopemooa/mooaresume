@@ -36,7 +36,15 @@ export async function GET(request: NextRequest) {
     return failure(request, next, `provider:${providerError}:${params.get("error_description") ?? ""}`);
   }
 
-  const supabase = await createClient();
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try {
+    supabase = await createClient();
+  } catch {
+    // A missing runtime configuration must not leave a mobile Chrome/TWA
+    // history entry as an opaque 500 page. The user can return to the page
+    // that started sign-in and retry once the deployment is repaired.
+    return failure(request, next, "supabase_client_unavailable");
+  }
 
   const code = params.get("code");
   if (code) {
