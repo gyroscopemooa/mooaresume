@@ -7804,3 +7804,8 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Rollback: revert this focused change; release baseline abd1f7d. Other source changes remain untouched.
 - Validation: carousel tests 4/4 passed; typecheck, focused ESLint and diff check passed. Deployment pending.
 - Completed: commit 71cedac pushed; OpenNext build/deploy succeeded. Production Worker 49ea7699-4fbc-44d6-8387-4c1442386390. Live HTTP 200 and served carousel chunk confirmed timer 2500ms. Rollback Worker 15980d65-6950-4186-90e2-16d361c15e1a.
+
+## 2026-09-22 — Codex: automatic community post cleanup
+
+- Status: implemented; deployment pending. Automatic community generation now creates one post only, never an operating-team comment. The structured output excludes a comment field; the prompt prohibits Markdown `**` emphasis and parsing removes any that remain. Existing one-daily guard is retained.
+- Files: `src/app/api/community/seed/route.ts`, `src/server/community/community-seed-content.ts`, focused tests, this log. Regular member comments and existing content are unchanged. Rollback: revert this focused commit.

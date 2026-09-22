@@ -22,24 +22,24 @@ const TOPIC_POOL = [
 
 const seedItemSchema = z.object({
   topic: z.enum(communityTopics),
-  title: z.string(),
-  body: z.string(),
-  comment: z.string(),
+  title: z.string().transform(removeMarkdownBoldMarkers),
+  body: z.string().transform(removeMarkdownBoldMarkers),
 });
 export type CommunitySeedItem = z.infer<typeof seedItemSchema>;
 
-// 호출 하나당 글 1개 · 댓글 1개만 만듭니다. 하루 세 번(마이그레이션의 세
-// cron.schedule) 서로 떨어진 시각에 이 함수가 불려서, 결과적으로 하루
-// 3개·댓글 3개가 되지만 전부 같은 순간에 한꺼번에 올라오지는 않습니다.
+function removeMarkdownBoldMarkers(value: string) {
+  return value.replaceAll("**", "");
+}
+
+// 호출 하나당 운영팀 글 1개만 만듭니다.
 const SEED_JSON_SCHEMA = {
   type: "object",
   properties: {
     topic: { type: "string", enum: [...communityTopics] },
     title: { type: "string" },
     body: { type: "string" },
-    comment: { type: "string" },
   },
-  required: ["topic", "title", "body", "comment"],
+  required: ["topic", "title", "body"],
   additionalProperties: false,
 } as const;
 
@@ -51,7 +51,7 @@ function buildInstructions(recentTitles: string[]) {
     `아래 주제들에서 영감을 얻어 구체적인 질문 하나를 만드세요(주제를 그대로 제목에 베끼지 마세요): ${TOPIC_POOL.join(", ")}`,
     recentTitles.length ? `다음 제목들과 겹치는 질문은 쓰지 마세요(오늘 이미 쓴 것을 포함합니다): ${recentTitles.join(" / ")}` : "",
     "제목(title)은 50자 이내(공백 포함)로 짧고 구체적으로 쓰세요. 본문(body)은 400~1200자 정도로, 질문 상황과 실전 답변, 예시 문장을 담으세요.",
-    "댓글(comment)도 하나 함께 쓰세요. 댓글은 본문과 다른 목소리로 80~300자 분량의 추가 팁이나 다른 관점의 예시를 짧게 덧붙이세요.",
+    "제목과 본문에 마크다운 굵게 표기(**...**)를 쓰지 마세요. 별표로 강조하지 말고 일반 문장으로 작성하세요.",
   ].filter(Boolean).join("\n");
 }
 
@@ -88,7 +88,7 @@ export async function generateCommunitySeedContent(options: GenerateCommunitySee
     body: JSON.stringify({
       model: options.model,
       instructions: buildInstructions(options.recentTitles),
-      input: "오늘의 커뮤니티 운영팀 글 1개와 그 글에 달 댓글 1개를 만들어 주세요.",
+      input: "오늘의 커뮤니티 운영팀 글 1개를 만들어 주세요.",
       text: { format: { type: "json_schema", name: "community_seed_item", strict: true, schema: SEED_JSON_SCHEMA } },
     }),
   });

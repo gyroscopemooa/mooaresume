@@ -21,13 +21,13 @@ describe("community editorial diversity", () => {
 
   it("includes review and experience boundaries plus varied formats", () => {
     const instructions = buildCommunitySeedInstructions(["최근 면접 준비 글"], ["application"]);
-    for (const text of ["취업·진로·이직", "기업 리뷰", "직무 경험", "가상 사례", "지어내지 마세요", "현재 검색 결과나 검증된 자료는 제공되지 않았습니다", "별도 이용자", "최근 면접 준비 글"])
+    for (const text of ["취업·진로·이직", "기업 리뷰", "직무 경험", "가상 사례", "지어내지 마세요", "현재 검색 결과나 검증된 자료는 제공되지 않았습니다", "마크다운 굵게 표기", "최근 면접 준비 글"])
       expect(instructions).toContain(text);
   });
 
   it("sends the selected category to the API and rejects off-category output", async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
-      output_text: JSON.stringify({ topic: "application", title: "면접 준비", body: "테스트 본문", comment: "보충 설명" }),
+      output_text: JSON.stringify({ topic: "application", title: "면접 준비", body: "테스트 본문" }),
     })));
     await expect(generateCommunitySeedContent({ apiKey: "test", model: "test-model", recentTitles: [], recentTopics: ["application"], fetchImplementation })).rejects.toThrow("지정 분류");
     const payload = JSON.parse(String(fetchImplementation.mock.calls[0][1]?.body));
@@ -36,12 +36,20 @@ describe("community editorial diversity", () => {
   });
 
   it("accepts structured output in the chosen category and rejects malformed content", async () => {
-    const item = { topic: "job-search", title: "첫 취업 준비", body: "공고를 비교할 때 확인할 항목", comment: "기준을 먼저 정리하세요" };
+    const item = { topic: "job-search", title: "첫 취업 준비", body: "공고를 비교할 때 확인할 항목" };
     const fetchImplementation = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response(JSON.stringify({ output: [{ content: [{ type: "output_text", text: JSON.stringify(item) }] }] })))
       .mockResolvedValueOnce(new Response(JSON.stringify({ output_text: JSON.stringify({ ...item, topic: "unknown" }) })));
     const options = { apiKey: "test", model: "test-model", recentTitles: [], recentTopics: [], fetchImplementation };
     await expect(generateCommunitySeedContent(options)).resolves.toEqual(item);
     await expect(generateCommunitySeedContent(options)).rejects.toThrow();
+  });
+
+  it("removes markdown bold markers from generated titles and bodies", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
+      output_text: JSON.stringify({ topic: "job-search", title: "**첫 취업** 준비", body: "**공고**를 비교하세요." }),
+    })));
+    await expect(generateCommunitySeedContent({ apiKey: "test", model: "test-model", recentTitles: [], recentTopics: [], fetchImplementation }))
+      .resolves.toEqual({ topic: "job-search", title: "첫 취업 준비", body: "공고를 비교하세요." });
   });
 });
