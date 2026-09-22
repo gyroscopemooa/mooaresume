@@ -1,5 +1,11 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-22 — Codex: LIVE-SUB event-campaign production release (in progress)
+
+- User approved an event-only production release. This release is based on the current production-equivalent commit `594221c`, with existing runtime client commit `a3e8d2b` and the verified `eventCampaigns` slot implementation only.
+- Scope: HQ parser/selectors/hooks, home/pricing/result `RuntimeEventSlot` placements, integration documentation and focused tests. All other dirty source, mobile-navigation, community and promotion changes remain outside this release worktree.
+- Verification required before deployment: typecheck, lint, tests, OpenNext build, then production bundle/config/render checks. Rollback: redeploy the preceding Worker version or revert this event-only commit.
+
 ## 2026-09-22 — Codex: TWA compact navigation and English catalog release
 
 - User approved production release after physical-device review.

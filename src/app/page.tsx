@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Briefcase, Check, FileSearch, FileUp, ListChecks, ScanSearch, ShieldCheck, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
+import { RuntimeEventSlot } from "@/components/runtime-event-slot";
 
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
 import { ApplicationDocsDrawer } from "@/components/application-docs-drawer";
@@ -88,7 +89,7 @@ export default function HomePage() {
     ],
   };
   return (
-    <><LaunchPriceBanner /><main className="home-page">
+    <><LaunchPriceBanner /><RuntimeEventSlot slot="home_modal" /><main className="home-page">
       {/* Inside .home-page, not beside it.
           body carries zoom:1.25 and .home-page cancels it with calc(1/1.25).
           Placed outside, the drawer took the 1.25 without the 0.8 back, so a
@@ -156,6 +157,8 @@ export default function HomePage() {
       <EmployerPerspectivePromo />
 
       <ConveniencePromo />
+
+      <RuntimeEventSlot slot="home_banner" />
 
       <section className="proof container" aria-label="분석 결과 예시">
         <div className="result-preview">
