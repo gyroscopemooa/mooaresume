@@ -17,7 +17,7 @@ describe("service showcase", () => {
     Object.defineProperties(track, { scrollBy: { value: scrollBy }, scrollTo: { value: scrollTo }, scrollWidth: { value: 1200 }, clientWidth: { value: 400 } });
     vi.spyOn(track, "getBoundingClientRect").mockReturnValue({ top: 10, bottom: 300 } as DOMRect);
     vi.spyOn(track.firstElementChild!, "getBoundingClientRect").mockReturnValue({ width: 264 } as DOMRect);
-    const tick = () => act(() => { vi.advanceTimersByTime(4000); });
+    const tick = () => act(() => { vi.advanceTimersByTime(2500); });
     tick();
     expect(scrollBy).toHaveBeenCalledWith({ left: 288, behavior: "smooth" });
     fireEvent.mouseEnter(section); tick();
@@ -27,6 +27,7 @@ describe("service showcase", () => {
     expect(scrollBy).toHaveBeenCalledTimes(1);
     fireEvent.touchEnd(track); tick();
     expect(scrollBy).toHaveBeenCalledTimes(1);
+    tick(); expect(scrollBy).toHaveBeenCalledTimes(1);
     tick(); expect(scrollBy).toHaveBeenCalledTimes(2);
     track.scrollLeft = 800; tick();
     expect(scrollTo).toHaveBeenCalledWith({ left: 0, behavior: "smooth" });

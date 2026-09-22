@@ -7797,3 +7797,9 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Release validation: full isolated suite 164 files / 1,300 tests passed; typecheck passed; lint 0 errors / 2 existing unrelated warnings; staged diff and credential-pattern checks passed. Mobile Expo dependencies linked locally for tests only (ignored node_modules). Next compile/types/static generation passed; OpenNext packaging pending.
 - Production deployment completed: Worker 15980d65-6950-4186-90e2-16d361c15e1a, source 40c2e27. OpenNext build/deploy succeeded; existing vars retained.
 - Live verification: https://mooaresume.com returned 200 with new convenience/philosophy copy, summary-capability copy, service carousel, autoplay pause control, interview PRO and contact email. /pro/build, /result/sample and /new returned 200. No paid analysis or database changes performed. Generated next-env.d.ts differs only by production type paths and is intentionally not committed.
+
+## 2026-09-22 — Codex: faster service carousel
+- Status: implemented, validation pending. Files: service-showcase.tsx and test, this log.
+- Reason: user confirmed autoplay works but feels very slow. Shorten automatic interval from 4 seconds to 2.5 seconds; retain reading, touch, visibility and reduced-motion safeguards.
+- Rollback: revert this focused change; release baseline abd1f7d. Other source changes remain untouched.
+- Validation: carousel tests 4/4 passed; typecheck, focused ESLint and diff check passed. Deployment pending.

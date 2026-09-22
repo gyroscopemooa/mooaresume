@@ -45,7 +45,7 @@ export function ServiceShowcase() {
         const width = track.firstElementChild?.getBoundingClientRect().width ?? 280;
         track.scrollBy({ left: width + 24, behavior: "smooth" });
       }
-    }, 4000);
+    }, 2500);
     return () => window.clearInterval(timer);
   }, [paused]);
 
