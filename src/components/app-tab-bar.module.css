@@ -25,8 +25,8 @@
   align-content: center;
   gap: 3px;
   color: #77837c;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
 }
-.tab svg, .tabOn svg { width: 20px; height: 20px; }
+.tab svg, .tabOn svg { width: 24px; height: 24px; }
 .tabOn { color: #176b4a; }

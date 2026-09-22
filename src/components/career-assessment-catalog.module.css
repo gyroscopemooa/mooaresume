@@ -43,6 +43,10 @@
 .seoLead p { margin: 0; color: #5d6b62; font-size: 12.5px; line-height: 1.9; }
 .seoLead b { color: #26362b; font-weight: 700; }
 
+/* Long English source names must not establish a wider minimum grid track. */
+.grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card { min-width: 0; }
+
 @media (max-width: 800px) {
   .seoLead { margin-top: 34px; }
   .seoLead p { font-size: 12px; }

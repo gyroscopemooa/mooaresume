@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-22 — Codex: TWA compact navigation and English catalog release
+
+- User approved production release after physical-device review.
+- Scope: keep the 58px app bottom bar and compact `/app` content unchanged; enlarge only tab icons (20px → 24px) and labels (10.5px → 11.5px). Constrain catalog grid tracks so lengthy English-original labels cannot widen the third card past the viewport.
+- Files: `src/components/app-tab-bar.module.css`, `src/components/career-assessment-catalog.module.css`, this log.
+- Protected: all other release content, app routing, billing and data behavior. Release worktree is based on current production source `9ff5ba5`; unrelated dirty root changes are excluded.
+- Validation: pending build/typecheck. Rollback: revert this focused release commit.
+
 ## 2026-09-22 — Codex: release branch push completed
 
 - User explicitly approved the existing GitHub origin `https://github.com/gyroscopemooa/mooaresume.git`; GitHub CLI authentication completed as `gyroscopemooa`.
