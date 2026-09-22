@@ -7809,3 +7809,4 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 
 - Status: implemented; deployment pending. Automatic community generation now creates one post only, never an operating-team comment. The structured output excludes a comment field; the prompt prohibits Markdown `**` emphasis and parsing removes any that remain. Existing one-daily guard is retained.
 - Files: `src/app/api/community/seed/route.ts`, `src/server/community/community-seed-content.ts`, focused tests, this log. Regular member comments and existing content are unchanged. Rollback: revert this focused commit.
+- Validation/release: focused route/content tests 13/13, typecheck and focused ESLint passed; OpenNext production build/deploy succeeded. Worker `e8f0ce4a-9fce-4430-a0f2-76f691932951`. No live seed request was sent because it could publish a public post and incur an AI call.
