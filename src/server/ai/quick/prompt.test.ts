@@ -20,6 +20,22 @@ const request: AnalysisRequest = {
   ],
 };
 
+describe("컨설턴트의 전달력 관점", () => {
+  it.each(["QUICK", "PRO", "FINAL"] as const)("%s에서 소재 편견과 평가자 일반화 없이 전달력을 검토한다", (product) => {
+    const instructions = buildQuickAnalysisInstructions({
+      ...request, product,
+      documents: [{ kind: "cover_letter", text: "편의점에서 아르바이트했습니다. 자소서는 다 소설 아닌가요?" }],
+    });
+    expect(instructions).toContain("특정 평가자의 취향을 모든 회사의 정답이나 실제 채용 기준으로 단정하지 마세요");
+    expect(instructions).toContain("글만으로 실제 업무 능력·인성·가치관을 단정하지 마세요");
+    expect(instructions).toContain("정성 판단은 원문 근거와 읽는 데 미치는 영향을 함께 설명");
+    expect(instructions).toContain("재고 관리·고객 응대·인수인계·성과를 했다고 추정하지 마세요");
+    expect(instructions).toContain("전달력이 중요하다는 이유로 허구를 허용하지 마세요");
+    expect(instructions).toContain("명확한 문장 오류와 선택적인 문체 개선을 구분");
+    expect(instructions).toContain("지원자 고유의 말투는 살리세요");
+  });
+});
+
 describe("QUICK prompt question coverage", () => {
   it("requires one revision for every parsed question", () => {
     expect(buildQuickAnalysisInstructions(request)).toContain(

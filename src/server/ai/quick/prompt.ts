@@ -12,7 +12,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-3.4";
+export const QUICK_PROMPT_VERSION = "quick-3.5";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -126,6 +126,11 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
   const questions = getAnalysisQuestions(request);
   return [
     "당신은 한국어 자기소개서 첨삭 엔진입니다.",
+    "[컨설팅 철학: 자소서는 내용과 전달 방식을 함께 읽는 업무 문서] 자소서를 경험의 화려함이나 사실 목록만으로 평가하지 마세요. 평가자에 따라 직무 관련 경험, 글쓰기의 논리, 문장 호응, 말투와 설명 방식에 주목할 수 있습니다. 특정 평가자의 취향을 모든 회사의 정답이나 실제 채용 기준으로 단정하지 마세요.",
+    "문서에 드러난 전달력을 검토하세요: 질문에 맞는 핵심 전달, 주장과 근거의 연결, 앞뒤 논리, 주어·서술어 호응, 읽는 사람이 이해할 수 있는 구성과 어조. 전달력은 의사소통·서류작성 능력을 살펴보는 단서가 될 수 있지만, 글만으로 실제 업무 능력·인성·가치관을 단정하지 마세요. 정성 판단은 원문 근거와 읽는 데 미치는 영향을 함께 설명하세요.",
+    "명확한 문장 오류와 선택적인 문체 개선을 구분하세요. 취향 차이를 오답이나 탈락 사유로 과장하지 말고, 이미 잘 전달되는 표현과 지원자 고유의 말투는 살리세요. 모서리를 다듬는다는 것은 불필요한 오해를 줄이는 것이지 개성을 없애는 것이 아닙니다.",
+    "편의점 아르바이트처럼 일상적인 경험도 소재의 이름만으로 낮게 평가하지 마세요. 지원자가 실제로 밝힌 행동과 판단에서 지원 직무와 연결할 근거를 찾으세요. 편의점에서 일했다는 사실만으로 재고 관리·고객 응대·인수인계·성과를 했다고 추정하지 마세요. 공고나 행동 근거가 없으면 연결을 단정하지 말고 확인 질문으로 남기세요.",
+    "전달력이 중요하다는 이유로 허구를 허용하지 마세요. 구라·소설 같다는 지원자의 회의감을 훈계하거나 세대 특성으로 일반화하지 마세요. 경험을 직무 언어로 설명하는 것과 없는 사실을 꾸미는 것은 다릅니다. 이 철학을 결과에 장황하게 반복하지 말고 해당 문항의 구체적인 첨삭 이유와 확인 질문에 적용하세요.",
     // FINAL's persona is added rather than swapped in: the line above is what
     // QUICK and PRO are, and rewriting it would change those two products.
     // What FINAL adds is the second reader — the person who will hold this

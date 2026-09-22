@@ -7716,3 +7716,82 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: src/server/community/community-seed-content.ts and tests; src/app/api/community/seed/route.ts and tests; this log.
 - Validation: typecheck passed; lint passed with 2 pre-existing unrelated warnings; full Vitest 159 files / 1,253 tests passed (including 120-day category balance, prompt fixtures, structured-output/category rejection and route history forwarding). No paid generation or deployment performed. recentTopics is optional for compatibility with the protected portable community kit; the production route always passes history. Category diversity is enforced; format diversity and factuality are prompt constraints, not live-model guarantees.
 - Rollback: revert this focused commit.
+
+
+## 2026-09-22 — Codex: 자소서의 전달력 철학과 홈 홍보
+- Status: in progress; 사용자 요청에 따른 추가 변경.
+- Baseline: ef809f2ef788bf9421f4913fadf849f95ee3f20f (feat/livesub-hq-runtime). 기존 page.tsx 이벤트 삽입 변경은 그대로 보존; 수정 전 파일은 .local-backups/communication-20260922/page.tsx에 보관.
+- Intended change: 별도 홈 홍보 컴포넌트 추가, QUICK/PRO/FINAL 공통 프롬프트에 평가 관점의 다양성과 문서 전달력 기준 추가, 철학 문서 보완. 기존 구현 대체·요금·스키마 변경 없음.
+- Files: src/components/cover-letter-philosophy.tsx 및 CSS; src/app/page.tsx; src/server/ai/quick/prompt.ts, prompt.test.ts; docs/analysis-consistency-and-rounded-editing-philosophy.md; 이 로그.
+- Validation: pending. Rollback: 이번 추가 블록·import·컴포넌트 호출만 제거하고 prompt version을 복구. 홈 전체를 HEAD로 되돌리면 다른 작업이 사라지므로 금지.
+- Completion: 로컬 구현 완료. 홈 가격 영역 앞에 독립 홍보 섹션 추가(모바일 1열); 기존 RuntimeEventSlot 삽입 보존. 프롬프트 quick-3.5로 변경 이력 추적, 세 상품 공통 지시 회귀 테스트 추가.
+- Validation result: typecheck 통과; lint 오류 0/기존 무관 경고 2; 전체 Vitest 164개 파일/1,300개 테스트 통과; git diff --check 통과. 실제 브라우저 시각 확인 및 유료 모델 호출은 미실행. 배포·커밋 없음.
+
+## 2026-09-22 — Codex: 자소서 홍보 관점 확대 (사용자 후속 수정)
+- Status: implemented; validation pending. 사용자 선택에 따라 이번 세션에서 만든 홍보 문구를 수정함. 다른 작업자의 코드와 기존 홈 배치는 그대로 유지.
+- Files: src/components/cover-letter-philosophy.tsx, src/components/cover-letter-philosophy.module.css, docs/analysis-consistency-and-rounded-editing-philosophy.md, 이 로그.
+- Reason: 전달력을 결론으로 좁히지 않고 경험·직무 연결·논리·표현·생각·소신·태도 등 여러 관점이 함축된 문서라는 철학을 전면에 배치. 제목은 거짓말, 작은 만화풍 질문 말풍선에는 소설/구라 표현을 사용하고 답은 거짓말 작성 금지로 시작. 공개 노하우·확정적 인성 평가·합격 보장 없음.
+- Rollback: 앞선 세션의 CoverLetterPhilosophy 변경 단위로 복구; 홈 파일 전체 되돌리기 금지. 기준 Git ef809f2ef788bf9421f4913fadf849f95ee3f20f 및 앞선 로그 참조.
+- Validation/completion: 로컬 완료. typecheck 통과, lint 오류 0(기존 무관 경고 2), 전체 164개 파일/1,300개 테스트 통과, diff --check 통과. 브라우저 시각 검증·배포·유료 AI 실행은 하지 않음.
+
+## 2026-09-22 — Codex: 랜딩 상단 기업·직무 방향 및 전문가 모집 홍보
+- Status: in progress. 사용자 요청에 따라 히어로 바로 다음에 독립 섹션 추가. 기존 이벤트·샘플·철학 섹션 보존.
+- Files: src/components/employer-perspective-promo.tsx 및 CSS, src/app/page.tsx, 이 로그.
+- Reason: 지원자 취향만이 아니라 산업·기업 요구와 직무 관련성을 기준으로 첨삭하는 방향 안내; 취업컨설턴트·다양한 직무의 재직자/현직자·인사담당자 상시 모집 및 support@mooaresume.com 연결. 수량 근거 없는 데이터 규모나 기업 내부 기준을 안다는 보장은 사용하지 않음.
+- Rollback: 신규 컴포넌트와 홈 import/호출만 제거. 수정 전 홈은 .local-backups/communication-20260922/page-before-employer.tsx, Git 기준 ef809f2ef788bf9421f4913fadf849f95ee3f20f. 다른 작업의 변경은 보존.
+- Completion/validation: 로컬 완료. typecheck 통과; lint 오류 0/기존 경고 2; 164개 파일/1,300개 테스트 통과; diff --check 통과. localhost:3000 응답 200과 홍보/모집/메일 링크 HTML 반영 확인. 모바일 실화면 미검증; 배포·커밋·메일 발송 없음.
+
+## 2026-09-22 — Codex: 상단 홍보 문구 사용자 확정안 적용
+- Status: implemented. Files: src/components/employer-perspective-promo.tsx, 이 로그.
+- Reason: 사용자가 채용공고 언급을 빼고 직접 제시한 문구를 적용하도록 명시 요청. 제목·설명을 회사가 원하는 방향, 수많은 데이터와 경험, 산업·기업·직무 연결로 변경. 모집·메일·분석 로직은 그대로.
+- Rollback: 이 컴포넌트의 제목과 소개 두 문단만 직전 문구로 복구. 다른 작업자 변경 없음.
+- Validation/completion: 완료. typecheck 통과, lint 오류 0/기존 경고 2, 164개 파일/1,300개 테스트 통과. 로컬 홈 HTTP 200 및 새 본문 반영 확인. 배포 없음.
+
+## 2026-09-22 — Codex: 간편 입력·정리 대행 가치 홍보 추가
+- Status: in progress. Files: src/components/convenience-promo.tsx 및 CSS, src/app/page.tsx, 이 로그.
+- Reason: 사용자 요청. AI 자체보다 여러 자료 입력·문항 정리·수정본 취합의 수고를 줄이는 편리함을 홍보. 상단 기업 관점 섹션 다음에 추가하며 기존 홍보는 보존. 사용자 제공 기업 문항·분량 기준에 맞춰 작성/첨삭하며 사실 확인 후 제출하는 현재 서비스 범위로 설명.
+- Rollback: 새 컴포넌트와 홈 import/호출만 제거. 홈 수정 전 .local-backups/communication-20260922/page-before-convenience.tsx; Git baseline ef809f2ef788bf9421f4913fadf849f95ee3f20f. 다른 작업자의 이벤트 변경 보존.
+- Validation/completion: 로컬 완료. typecheck 통과, lint 오류 0/기존 경고 2, 전체 164개 파일/1,300개 테스트 통과, diff --check 통과. 로컬 홈 HTTP 200 및 신규 문구 반영 확인. 모바일 실화면 확인·유료 호출·배포·커밋 없음.
+
+## 2026-09-22 — Codex: 한정된 분량의 핵심 전달 및 PRO BUILD 안내
+- Status: implemented. Agent: Codex. Files: src/components/cover-letter-philosophy.tsx 및 CSS, 이 로그.
+- Reason: 사용자 요청에 따라 기존 자소서 관점 섹션 하단에 추가. 모든 인생을 한 장에 담을 수 없으므로 핵심을 간추려 전달한다는 메시지와 작은 실제 경험의 직무 연결·내용 보완 안내. /pro/build가 BUILD 모드로 연결됨을 코드 확인. 다른 관점 설명은 유지.
+- Rollback: focus/build 추가 JSX와 해당 CSS만 제거. 기존 섹션·다른 작업자 코드 보존. Git baseline ef809f2ef788bf9421f4913fadf849f95ee3f20f.
+- Validation/completion: 완료. typecheck 통과; lint 오류 0/기존 경고 2; 전체 165개 파일/1,302개 테스트 통과; diff --check 통과. 로컬 홈 HTTP 200, 새 문구 및 /pro/build 링크 HTML 확인. 모바일 시각 검증 및 배포는 미실행.
+
+## 2026-09-22 — Codex: 함축·요약을 통한 의도 전달 능력 명시
+- Status: implemented. Files: src/components/cover-letter-philosophy.tsx, 이 로그.
+- Reason: 사용자 후속 지적 반영. 단순 분량 축소가 아니라 남길 내용·덜어낼 내용을 판단해 핵심을 함축하고 간추려 원하는 바를 명확히 전달하는 능력도 읽힐 수 있음을 제목·본문에 명시.
+- Rollback: focus 영역 제목·본문 두 문장만 직전 버전으로 복구. 다른 작업 보존. Git baseline ef809f2ef788bf9421f4913fadf849f95ee3f20f.
+- Validation/completion: 완료. typecheck 및 변경 컴포넌트 ESLint 통과. 로컬 홈 HTML에서 수정 제목 확인. 홈 영상 회귀 테스트 실행(문구 자체의 의미 검증은 아님). 배포 없음.
+
+## 2026-09-22 — Codex: 모집 영역 하단 가로 배치·간편 홍보 제목 축약
+- Status: implemented. Files: src/components/employer-perspective-promo.tsx 및 CSS, src/components/convenience-promo.tsx, 이 로그.
+- Reason: 사용자 모바일 캡처의 좁은 모집 카드 이메일 넘침 수정. 모집 영역을 본문 아래 전체 폭으로 이동, 내부 flex wrap/min-width 및 이메일 @ 뒤 줄바꿈 지점 추가. 편리성 제목은 “한 방에, 간편하게.”로 축약; 기존 설명은 부제 유지.
+- Rollback: 이 세 파일의 이번 레이아웃·문구 변경만 복구. 다른 작업 보존. Git baseline ef809f2ef788bf9421f4913fadf849f95ee3f20f.
+- Validation/completion: 브라우저 390px/980px에서 모집 카드 내부 넘침 없음, 이메일 오른쪽 경계 정상 확인. 타입 검사·변경 TSX lint 통과; components 테스트 결과는 아래 기록. 배포 없음.
+- Component tests: 15개 파일/123개 테스트 통과.
+
+## 2026-09-22 — Codex: 이메일 한 줄 고정 및 모집 하단 배치 재확인
+- Status: implemented. Files: src/components/employer-perspective-promo.tsx 및 CSS, 이 로그.
+- Reason: 사용자 최신 캡처에 이전 2열 카드가 남아 있고 이메일 줄바꿈을 원치 않음. @ 뒤 wbr 제거, 이메일 nowrap, 외부 배치를 새 stackSection 클래스로 명시적 세로 flex 전환. 내부 모집은 가로 flex/wrap 유지. 이전 캡처가 다른 브라우저 CSS 갱신 문제인지는 확정하지 않음.
+- Rollback: 이번 클래스·이메일 변경만 복구. 다른 작업 보존. Git baseline ef809f2ef788bf9421f4913fadf849f95ee3f20f.
+- Validation/completion: 완료. 브라우저 360px/980px 모두 모집 영역이 본문 아래, 이메일 텍스트 1줄, 카드 넘침 없음 확인. typecheck·변경 TSX ESLint 통과, components 15개 파일/123개 테스트 통과. 배포 없음.
+
+## 2026-09-22 — Codex: 기준 본문 카드 및 하단 서비스 슬라이더
+- Status: in progress. Files: src/components/employer-perspective-promo.module.css; 신규 service-showcase.tsx/.module.css/.test.tsx; src/app/page.tsx; 이 로그.
+- Reason: 사용자 요청. 기준 본문을 독립 배경·테두리 카드로 강조. footer 직전 정사각형 서비스 목록 추가, 터치 가로 스크롤/화살표/키보드 및 reduced-motion 지원. 기존 applicationDocuments에서 상태/주소를 가져오며 preview/coming-soon은 사용 링크를 열지 않음. 사용자 요청 면접 PRO는 별도 준비 중 소개 카드(기존 FINAL 면접 상품 변경 없음).
+- Preservation/rollback: 기존 홈/이벤트·다른 작업 보존. 새 import/호출과 신규 파일, 이번 본문 CSS만 되돌리기. 홈 사본 .local-backups/communication-20260922/page-before-service-carousel.tsx; Git baseline ef809f2ef788bf9421f4913fadf849f95ee3f20f.
+- Validation/completion: 완료. typecheck·변경 파일 ESLint 통과. components 실행 중 신규 테스트의 모호한 텍스트 선택 1건을 고친 후 신규 3개 테스트 통과(기존 components 123개 통과). 브라우저 390px에서 카드 264x264, 980px에서 290x290 전부 확인; 카드 내용 넘침 없음; 다음 버튼 키보드 실행 후 scrollLeft 6→294 이동 확인. 기본 브라우저 viewport 복구. 추가 패키지·배포 없음.
+
+## 2026-09-22 — Codex: 서비스 카드 자동 슬라이드
+- Status: implemented. Files: src/components/service-showcase.tsx/.module.css/.test.tsx, 이 로그.
+- Reason: 사용자 요청. 4초마다 카드 이동, 마지막에서 처음으로 순환. 화면 밖/탭 숨김/reduced-motion/호버/키보드 포커스/터치 중 중지, 직접 조작 후 6초 유예. 일시정지·재생 버튼 추가. 기존 링크·상품 상태 보존.
+- Rollback: 자동 타이머·상호작용 핸들러·재생 버튼 및 관련 테스트/CSS 추가분만 복구. Git baseline ef809f2ef788bf9421f4913fadf849f95ee3f20f.
+- Validation/completion: 완료. typecheck·변경 파일 ESLint 통과, 슬라이더 테스트 4개 통과(자동 이동/처음 복귀/호버·터치·일시정지/reduced-motion/수동 이동·준비 중 링크). 기존 테스트 exact 옵션 타입 오류 수정 후 typecheck 재통과. 로컬 HTML 자동 넘김 버튼 확인, diff --check 통과. 배포 없음.
+
+## 2026-09-22 — Codex: authorized landing release
+- User requested commit, Git push and production deployment. Isolated release branch codex/landing-philosophy-release-20260922, based on current production source 6656691 / Worker 839185e2-0cbb-4d7e-864c-206d8c470b17.
+- Includes only this session landing components, shared prompt quick-3.5, tests and philosophy documentation. Separate HQ/runtime/event changes remain untouched in original workspace and excluded from release. No credentials, attachments or local backups committed. Production vars preserved by existing keep_vars config.
+- Validation/build/deployment pending; rollback is previous Worker version above and revert focused release commit.
+- Release validation: full isolated suite 164 files / 1,300 tests passed; typecheck passed; lint 0 errors / 2 existing unrelated warnings; staged diff and credential-pattern checks passed. Mobile Expo dependencies linked locally for tests only (ignored node_modules). Next compile/types/static generation passed; OpenNext packaging pending.
