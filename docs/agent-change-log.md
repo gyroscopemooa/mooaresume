@@ -7803,3 +7803,4 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Reason: user confirmed autoplay works but feels very slow. Shorten automatic interval from 4 seconds to 2.5 seconds; retain reading, touch, visibility and reduced-motion safeguards.
 - Rollback: revert this focused change; release baseline abd1f7d. Other source changes remain untouched.
 - Validation: carousel tests 4/4 passed; typecheck, focused ESLint and diff check passed. Deployment pending.
+- Completed: commit 71cedac pushed; OpenNext build/deploy succeeded. Production Worker 49ea7699-4fbc-44d6-8387-4c1442386390. Live HTTP 200 and served carousel chunk confirmed timer 2500ms. Rollback Worker 15980d65-6950-4186-90e2-16d361c15e1a.
