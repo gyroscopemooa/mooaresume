@@ -26,6 +26,18 @@ describe("LIVE-SUB runtime config", () => {
     const config = parseRuntimeConfig({ schemaVersion: 1, featureFlags: { launchPriceBanner: false, invalid: "no" }, eventCampaigns: [campaign(), { id: "bad", status: "active" }, campaign({ id: "old-trigger", placementConfigs: { home_banner: { triggerEvent: "immediate" } } })], notices: [{ id: "valid-notice", enabled: true, type: "banner", title: "안내", body: "내용", linkType: "none" }] });
     expect(config?.featureFlags).toEqual({ launchPriceBanner: false }); expect(config?.eventCampaigns.map((item) => item.id)).toEqual(["campaign"]); expect(config?.notices.map((notice) => notice.id)).toEqual(["valid-notice"]); expect("events" in (config ?? {})).toBe(false);
   });
+  it("accepts the published HQ nulls, display hints and unsupported placement without dropping supported slots", () => {
+    const config = parseRuntimeConfig({ schemaVersion: 1, eventCampaigns: [campaign({
+      placements: ["home_banner", "my_page_entry"],
+      placementConfigs: { home_banner: { delayMs: 0, scrollTriggerPercent: null, maxWidth: null, layout: "mixed", triggerEvent: "page_load" }, my_page_entry: { delayMs: 0, scrollTriggerPercent: null, maxWidth: null, layout: "text", triggerEvent: "page_load" } },
+      frequency: { mode: "per_session", hideDaysAfterClose: null },
+    })] });
+    const selected = selectRuntimeEventCampaign(config?.eventCampaigns ?? [], "home_banner");
+    expect(selected?.campaign.id).toBe("campaign");
+    expect(selected?.config).toMatchObject({ delayMs: 0, layout: "mixed", triggerEvent: "page_load" });
+    expect(selected?.config.scrollTriggerPercent).toBeUndefined();
+    expect(selected?.campaign.frequency.hideDaysAfterClose).toBeUndefined();
+  });
   it("uses active status, web platform, schedule, priority and Korean localized content", () => {
     const config = parseRuntimeConfig({ schemaVersion: 1, eventCampaigns: [campaign({ id: "paused", status: "paused", priority: 9 }), campaign({ id: "app", platforms: ["ios"], priority: 8 }), campaign({ id: "expired", endAt: "2026-09-20T00:00:00.000Z", priority: 7 }), campaign({ id: "low", priority: 1 }), campaign({ id: "high", priority: 2 })] });
     const selected = selectRuntimeEventCampaign(config?.eventCampaigns ?? [], "home_banner", "ko", new Date("2026-09-21T00:00:00.000Z")); expect(selected?.campaign.id).toBe("high"); expect(selected?.content.title).toBe("한국어 이벤트"); expect(selected?.config.layout).toBe("banner");

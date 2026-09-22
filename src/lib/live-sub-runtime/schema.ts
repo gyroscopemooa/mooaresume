@@ -3,7 +3,9 @@ import { z } from "zod";
 const linkTypeSchema = z.enum(["external", "webview", "deeplink", "none"]);
 const audienceSchema = z.enum(["all", "free", "premium"]);
 const campaignStatusSchema = z.enum(["draft", "active", "paused", "ended"]);
-const placementSchema = z.enum(["home_modal", "home_banner", "result_top_banner", "result_bottom_cta", "pricing_banner", "announcement_bar"]);
+// HQ can publish slots that this web client does not render yet. They must not
+// invalidate an otherwise eligible campaign for one of the supported slots.
+const placementSchema = z.enum(["home_modal", "home_banner", "result_top_banner", "result_bottom_cta", "pricing_banner", "announcement_bar", "my_page_entry"]);
 const frequencyModeSchema = z.enum(["once", "daily", "every_3_days", "per_session"]);
 const isoDateSchema = z.string().datetime({ offset: true });
 
@@ -22,15 +24,17 @@ const campaignContentSchema = z.object({
 });
 const placementConfigSchema = z.object({
   enabled: z.boolean().optional(),
-  delayMs: z.number().int().min(0).max(10_000).optional(),
-  scrollTriggerPercent: z.number().min(0).max(100).optional(),
+  delayMs: z.number().int().min(0).max(10_000).nullable().optional().transform((value) => value ?? undefined),
+  scrollTriggerPercent: z.number().min(0).max(100).nullable().optional().transform((value) => value ?? undefined),
   showCloseButton: z.boolean().optional(),
-  layout: z.enum(["card", "banner", "compact"]).optional(),
-  maxWidth: z.number().int().min(240).max(1_600).optional(),
+  // `mixed`, `text` and `image` are HQ display hints. The card has a safe
+  // default treatment when this client does not provide a dedicated variant.
+  layout: z.enum(["card", "banner", "compact", "mixed", "text", "image"]).optional(),
+  maxWidth: z.number().int().min(240).max(1_600).nullable().optional().transform((value) => value ?? undefined),
   triggerEvent: z.enum(["page_load", "result_rendered", "translation_end", "paywall_open"]).optional(),
 });
 const eventCampaignSchema = z.object({
-  id: z.string().min(1), status: campaignStatusSchema, placements: z.array(placementSchema).min(1), placementConfigs: z.record(z.string(), placementConfigSchema).default({}), platforms: z.array(z.string().min(1)).default([]), locales: z.array(z.string().min(1)).default([]), audience: audienceSchema.default("all"), targetRules: z.unknown().optional(), frequency: z.object({ mode: frequencyModeSchema, hideDaysAfterClose: z.number().nonnegative().optional() }), linkType: linkTypeSchema.default("none"), startAt: isoDateSchema.optional(), endAt: isoDateSchema.optional(), priority: z.number().int().default(0), defaultLocale: z.string().min(1), defaultContent: campaignContentSchema, localizedContent: z.record(z.string(), campaignContentSchema.partial()).default({}),
+  id: z.string().min(1), status: campaignStatusSchema, placements: z.array(placementSchema).min(1), placementConfigs: z.record(z.string(), placementConfigSchema).default({}), platforms: z.array(z.string().min(1)).default([]), locales: z.array(z.string().min(1)).default([]), audience: audienceSchema.default("all"), targetRules: z.unknown().optional(), frequency: z.object({ mode: frequencyModeSchema, hideDaysAfterClose: z.number().nonnegative().nullable().optional().transform((value) => value ?? undefined) }), linkType: linkTypeSchema.default("none"), startAt: isoDateSchema.optional(), endAt: isoDateSchema.optional(), priority: z.number().int().default(0), defaultLocale: z.string().min(1), defaultContent: campaignContentSchema, localizedContent: z.record(z.string(), campaignContentSchema.partial()).default({}),
 });
 const maintenanceSchema = z.object({ enabled: z.boolean().default(false), message: z.string().default(""), scope: z.string().default("all"), startsAt: isoDateSchema.optional(), endsAt: isoDateSchema.optional() });
 const configEnvelopeSchema = z.object({ schemaVersion: z.literal(1), appKey: z.literal("mooaresume").default("mooaresume"), environment: z.string().default("production"), version: z.number().int().nonnegative().nullable().optional(), featureFlags: z.unknown().optional(), banners: z.array(z.unknown()).default([]), eventCampaigns: z.array(z.unknown()).default([]), notices: z.array(z.unknown()).default([]), maintenance: z.unknown().optional() });

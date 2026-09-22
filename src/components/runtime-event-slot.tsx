@@ -6,7 +6,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { getRuntimeLink, useRuntimeEventCampaign, type RuntimeEventPlacement, type SelectedEventCampaign } from "@/lib/live-sub-runtime";
 import styles from "./runtime-event-slot.module.css";
 
-const slotTrigger: Record<RuntimeEventPlacement, "page_load" | "result_rendered"> = { home_modal: "page_load", home_banner: "page_load", result_top_banner: "result_rendered", result_bottom_cta: "result_rendered", pricing_banner: "page_load", announcement_bar: "page_load" };
+const slotTrigger: Record<RuntimeEventPlacement, "page_load" | "result_rendered"> = { home_modal: "page_load", home_banner: "page_load", result_top_banner: "result_rendered", result_bottom_cta: "result_rendered", pricing_banner: "page_load", announcement_bar: "page_load", my_page_entry: "page_load" };
 function storageFor(mode: SelectedEventCampaign["campaign"]["frequency"]["mode"]): Storage | null { try { return mode === "per_session" ? window.sessionStorage : window.localStorage; } catch { return null; } }
 function impressionKey(selected: SelectedEventCampaign): string {
   const { mode } = selected.campaign.frequency;
