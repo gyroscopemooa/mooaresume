@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CircleUser, Gift, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { createAuthCallbackUrl } from "@/lib/app-context";
 import { AccountDeleteForm } from "./account-delete-form";
 import styles from "./app-my-page.module.css";
 
@@ -81,7 +82,7 @@ export function AppMyPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/app/my` },
+        options: { redirectTo: createAuthCallbackUrl("/app/my") },
     });
     if (error) setBusy(false);
   }

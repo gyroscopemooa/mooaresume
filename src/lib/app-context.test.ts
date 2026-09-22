@@ -33,7 +33,7 @@ describe("app context", () => {
     expect(visit).toEqual({ installed: false, shell: true });
 
     const nextPage = syncAppContext({ pathname: "/resume", search: "", referrer: "", hasDigitalGoods: false, storage: session });
-    expect(nextPage).toEqual({ installed: false, shell: true });
+    expect(nextPage).toEqual({ installed: false, shell: false });
   });
 
   it("treats a tab that exposes Play billing as the installed app", () => {

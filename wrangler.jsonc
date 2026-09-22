@@ -15,6 +15,7 @@
 	// be set in the dashboard rather than committed here.
 	"keep_vars": true,
 	"vars": {
+		"NEXT_PUBLIC_SITE_URL": "https://mooaresume.com",
 		"NEXT_PUBLIC_LIVESUB_RUNTIME_BASE_URLS": "https://runtime.live-sub.com",
 		"NEXT_PUBLIC_LIVESUB_RUNTIME_ENV": "production"
 	},

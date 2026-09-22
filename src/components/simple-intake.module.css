@@ -10,9 +10,9 @@
    than a stack of labelled slots. */
 .box {
   position: relative;
-  padding: 26px;
+  padding: 20px;
   border: 1px solid #cfe4d8;
-  border-radius: 18px;
+  border-radius: 14px;
   background:
     radial-gradient(120% 90% at 0% 0%, #eefaf3 0%, rgba(238, 250, 243, 0) 58%),
     radial-gradient(120% 90% at 100% 0%, #eef4fb 0%, rgba(238, 244, 251, 0) 52%),
@@ -22,9 +22,9 @@
 }
 .boxDragging { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.12), 0 18px 42px -30px rgba(15, 61, 44, 0.6); }
 
-.boxHead { position: relative; padding-right: 34px; }
-.boxHead h3 { margin: 0 0 5px; font-size: 18px; letter-spacing: -0.03em; }
-.boxHead p { margin: 0 0 13px; color: #5f6d66; font-size: 12px; line-height: 1.7; }
+.boxHead { position: relative; display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: baseline; gap: 4px 14px; padding-right: 34px; }
+.boxHead h3 { margin: 0 0 10px; font-size: 16px; letter-spacing: -0.03em; }
+.boxHead p { margin: 0 0 10px; color: #5f6d66; font-size: 11.5px; line-height: 1.6; }
 .boxHead p b { color: #17221d; }
 
 /* Speech bubble, so the formats and ceilings do not turn the box into a notice
@@ -37,7 +37,7 @@
 .tooltip em { display: block; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.14); color: #a7bcb2; font-style: normal; font-size: 11px; }
 .help:hover .tooltip, .help:focus-visible .tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
 
-.box textarea { position: relative; z-index: 1; width: 100%; padding: 15px; border: 1px solid #dbe6e0; border-radius: 12px; background: #fff; font: inherit; font-size: 14px; line-height: 1.75; resize: vertical; outline: 0; }
+.box textarea { position: relative; z-index: 1; width: 100%; padding: 13px; border: 1px solid #dbe6e0; border-radius: 10px; background: #fff; font: inherit; font-size: 14px; line-height: 1.7; resize: vertical; outline: 0; }
 .box textarea:focus { border-color: #176b4a; box-shadow: 0 0 0 3px rgba(23, 107, 74, 0.08); }
 
 .boxFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 11px; }
@@ -85,6 +85,7 @@
      줄여 두 겹으로 만듭니다 — 은은한 배경은 남겨 "한 판에 던져 넣는 곳"이라는
      성격은 유지합니다. */
   .box { padding: 12px 10px; border-color: transparent; box-shadow: none; }
+  .boxHead { display: block; padding-right: 34px; }
   .boxHead h3 { font-size: 15px; }
   .boxHead p { font-size: 11.5px; }
   /* 16px so iOS Safari does not zoom the page in on focus and leave it there. */

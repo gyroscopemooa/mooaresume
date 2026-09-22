@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { createAuthCallbackUrl } from "@/lib/app-context";
 import styles from "./page.module.css";
 
 function safeNext(value: string | null) {
@@ -36,7 +37,7 @@ function CareerLoginForm() {
     })();
   }, [next, router]);
 
-  const callbackUrl = () => `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+  const callbackUrl = () => createAuthCallbackUrl(next);
 
   async function continueWithGoogle() {
     setBusy(true);

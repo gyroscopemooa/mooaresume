@@ -25,7 +25,7 @@ import {
   type PendingPurchaseRecord,
   type VerifyResponse,
 } from "@/lib/google-play/app-checkout";
-import { isInstalledAppContext } from "@/lib/app-context";
+import { createAuthCallbackUrl, isInstalledAppContext } from "@/lib/app-context";
 
 type Props = {
   guest: GuestDraft | null;
@@ -262,7 +262,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/analysis/prepare`,
+        emailRedirectTo: createAuthCallbackUrl("/analysis/prepare"),
       },
     });
     setBusy(false);
@@ -308,7 +308,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/analysis/prepare`,
+        redirectTo: createAuthCallbackUrl("/analysis/prepare"),
       },
     });
     if (error) {

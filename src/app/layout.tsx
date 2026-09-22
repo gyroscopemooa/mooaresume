@@ -6,6 +6,10 @@ import { AppTabBar } from "@/components/app-tab-bar";
 import { RuntimeSiteNotice } from "@/components/runtime-site-notice";
 import "./globals.css";
 
+// Do not let a cached document from an older Worker version request assets
+// which no longer exist after deployment.
+export const dynamic = "force-dynamic";
+
 
 const notoSansKr = Noto_Sans_KR({ subsets: ["latin"], variable: "--font-sans" });
 

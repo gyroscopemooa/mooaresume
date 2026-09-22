@@ -23,7 +23,6 @@ export const TWA_PACKAGE_ID = "com.mooaresume.twa";
 export const TWA_SOURCE_PARAM = "twa";
 
 const INSTALLED_KEY = "mooa:app-installed:v1";
-const SHELL_KEY = "mooa:app-shell:v1";
 
 /**
  * 첫 화면이 TWA에서 열렸는가.
@@ -79,8 +78,7 @@ export function syncAppContext(input: {
   // Digital Goods API는 Play에서 설치한 TWA에만 있습니다.
   const installed = readFlag(storage, INSTALLED_KEY) || isTwaLaunch(input) || input.hasDigitalGoods;
   if (installed) writeFlag(storage, INSTALLED_KEY);
-  const shell = installed || readFlag(storage, SHELL_KEY) || isAppShellPath(input.pathname);
-  if (shell) writeFlag(storage, SHELL_KEY);
+  const shell = installed || isAppShellPath(input.pathname);
   return { installed, shell };
 }
 
@@ -97,4 +95,15 @@ export function isInstalledAppContext(): boolean {
     referrer: document.referrer,
     hasDigitalGoods: "getDigitalGoodsService" in window,
   }).installed;
+}
+
+/** Creates a same-origin callback URL and preserves TWA context only for an installed app. */
+export function createAuthCallbackUrl(nextPath: string): string {
+  if (typeof window === "undefined") throw new Error("Auth callback URLs require a browser");
+  const next = new URL(nextPath, window.location.origin);
+  if (next.origin !== window.location.origin) throw new Error("Auth callback destination must stay on this site");
+  if (isInstalledAppContext()) next.searchParams.set("source", TWA_SOURCE_PARAM);
+  const callback = new URL("/auth/callback", window.location.origin);
+  callback.searchParams.set("next", `${next.pathname}${next.search}`);
+  return callback.toString();
 }

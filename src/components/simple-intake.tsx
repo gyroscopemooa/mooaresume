@@ -317,7 +317,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
       <div className={styles.boxHead}>
         {/* 앱에서는 제목 한 줄만 남기고, 설명은 말풍선으로 옮깁니다. */}
         <h3>{inApp ? "자료를 한 번에 넣어주세요" : "지원 자료를 한 번에 넣어주세요"}</h3>
-        {!inApp && <p>자기소개서를 붙여넣고, 나머지 파일은 <b>여기에 끌어다 놓으세요.</b> 무엇인지는 무아가 알아서 나눕니다.</p>}
+        {!inApp && <p>자기소개서를 붙여넣고, 나머지 파일은 <b>여기에 끌어다 놓으세요.</b> 무엇인지는 알아서 나눕니다.</p>}
         {/* The speech bubble carries the formats and the ceilings, so the box
             itself does not have to read like a warning notice. */}
         <button
@@ -339,7 +339,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
       </div>
 
       <textarea
-        rows={inApp ? 14 : 9}
+        rows={inApp ? 14 : 8}
         value={draft}
         onChange={(event) => onDraftChange(event.target.value)}
         placeholder={"자기소개서 전체를 그대로 붙여넣어 주세요.\n채용공고 주소를 한 줄로 붙여넣으면 공고 내용을 불러옵니다.\n\n1. 지원 동기\n작성한 답변...\n\n2. 직무 역량\n작성한 답변..."}

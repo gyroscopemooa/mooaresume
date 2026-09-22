@@ -1,5 +1,12 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-23 — Codex: production navigation / OAuth incident release
+
+- Scope: isolated release for the Android Chrome navigation, Google OAuth return and app/web-shell leakage incident. Normal browser visits no longer persist app-shell state across unrelated routes; installed TWA context survives Google return; callback redirects are 303/no-store; document responses are dynamic to prevent an old cached HTML response from requesting removed versioned assets; production site URL is declared explicitly.
+- UI: compacted the PC payment-login step and the simple-input surface. The supporting sentence now sits alongside the title on desktop and says “무엇인지는 알아서 나눕니다.”
+- Safety: no user data, Auth provider configuration, credentials, session clearing, payment records or database schema changed. This release includes only incident files from a clean `ef809f2` worktree.
+- Validation: focused app-context tests, TypeScript, focused lint, diff check and production build/deploy verification follow. Rollback is one commit or the prior Worker version.
+
 ## 2026-09-22 — Codex: release branch push completed
 
 - User explicitly approved the existing GitHub origin `https://github.com/gyroscopemooa/mooaresume.git`; GitHub CLI authentication completed as `gyroscopemooa`.

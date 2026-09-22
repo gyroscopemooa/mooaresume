@@ -10,7 +10,11 @@ function failure(request: NextRequest, next: string, reason: string) {
   const errorUrl = new URL(next, request.url);
   errorUrl.searchParams.set("auth_error", "로그인 링크를 확인하지 못했습니다. 링크를 요청한 것과 같은 브라우저에서 열어야 하며, 링크는 한 번만 사용할 수 있습니다.");
   errorUrl.searchParams.set("auth_reason", reason.slice(0, 200));
-  return NextResponse.redirect(errorUrl);
+  return NextResponse.redirect(errorUrl, { status: 303, headers: { "Cache-Control": "no-store" } });
+}
+
+function completedRedirect(request: NextRequest, next: string) {
+  return NextResponse.redirect(new URL(next, request.url), { status: 303, headers: { "Cache-Control": "no-store" } });
 }
 
 /**
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest) {
   const code = params.get("code");
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL(next, request.url));
+    if (!error) return completedRedirect(request, next);
     return failure(request, next, `exchange:${error.message}`);
   }
 
@@ -55,7 +59,7 @@ export async function GET(request: NextRequest) {
       type: type as "email" | "magiclink" | "recovery" | "invite" | "signup",
       token_hash: tokenHash,
     });
-    if (!error) return NextResponse.redirect(new URL(next, request.url));
+    if (!error) return completedRedirect(request, next);
     return failure(request, next, `verify_otp:${error.message}`);
   }
 
