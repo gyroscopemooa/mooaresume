@@ -1,5 +1,12 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-22 — Codex: TWA hybrid launch path and keyboard-navigation recovery
+
+- User decision: launch one hybrid Android TWA (`com.mooaresume.twa`), keeping the wide `/app` interface and LIVE-SUB HQ runtime in the web client. Android supplies the app shell, splash, Play billing and deep-link integration; presentation, prompts, API-backed functionality and HQ event/notice changes remain web-delivered.
+- Scope: only make the TWA bottom navigation recover after Android Back dismisses the keyboard while the textarea remains focused. The existing navigation continues to hide only while editing; no analysis, payment, API, prompt, data or layout behavior is changed.
+- Implementation: use the restored `visualViewport` height (with window-resize fallback), rather than `innerHeight`, because Android resize mode can change both viewport measurements together.
+- Recovery: revert this focused component change. The separate Expo app and all other working-tree changes remain untouched.
+
 ## 2026-09-22 — Codex: LIVE-SUB event-campaign production release (in progress)
 
 - User approved an event-only production release. This release is based on the current production-equivalent commit `594221c`, with existing runtime client commit `a3e8d2b` and the verified `eventCampaigns` slot implementation only.

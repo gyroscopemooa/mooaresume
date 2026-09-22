@@ -98,6 +98,28 @@ export function AppTabBar() {
     };
   }, [visible]);
 
+  useEffect(() => {
+    if (!visible || !window.visualViewport) return;
+
+    const viewport = window.visualViewport;
+    // TWA/Chrome can keep a textarea focused after Android Back closes the
+    // keyboard. `focusout` therefore does not run. Track the largest visual
+    // viewport seen for this screen instead of comparing `innerHeight`: in
+    // resize mode Android changes both values together.
+    let restingHeight = viewport.height;
+    const restoreWhenKeyboardCloses = () => {
+      restingHeight = Math.max(restingHeight, viewport.height);
+      if (viewport.height >= restingHeight - 120) setTyping(false);
+    };
+
+    viewport.addEventListener("resize", restoreWhenKeyboardCloses);
+    window.addEventListener("resize", restoreWhenKeyboardCloses);
+    return () => {
+      viewport.removeEventListener("resize", restoreWhenKeyboardCloses);
+      window.removeEventListener("resize", restoreWhenKeyboardCloses);
+    };
+  }, [visible]);
+
   if (!visible || HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null;
 
   const active = activeHref(pathname);
