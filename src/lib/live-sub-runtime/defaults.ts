@@ -10,6 +10,7 @@ export const runtimeDefaults: RuntimeConfig = {
     siteNotice: true,
   },
   banners: [],
+  eventCampaigns: [],
   notices: [],
   maintenance: { enabled: false, message: "", scope: "all" },
 };

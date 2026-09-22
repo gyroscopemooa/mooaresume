@@ -2,6 +2,11 @@ import { z } from "zod";
 
 const linkTypeSchema = z.enum(["external", "webview", "deeplink", "none"]);
 const audienceSchema = z.enum(["all", "free", "premium"]);
+const campaignStatusSchema = z.enum(["draft", "active", "paused", "ended"]);
+// HQ can publish slots that this web client does not render yet. They must not
+// invalidate an otherwise eligible campaign for one of the supported slots.
+const placementSchema = z.enum(["home_modal", "home_banner", "result_top_banner", "result_bottom_cta", "pricing_banner", "announcement_bar", "my_page_entry"]);
+const frequencyModeSchema = z.enum(["once", "daily", "every_3_days", "per_session"]);
 const isoDateSchema = z.string().datetime({ offset: true });
 
 const bannerSchema = z.object({
@@ -39,6 +44,30 @@ const noticeSchema = z.object({
   showOnce: z.boolean().default(false),
 });
 
+/** Content is owned by HQ: an explicit locale entry falls back to defaultLocale, then defaultContent. */
+const campaignContentSchema = z.object({
+  title: z.string().min(1),
+  body: z.string().optional(),
+  buttonText: z.string().optional(),
+  secondaryButtonText: z.string().optional(),
+  badgeText: z.string().optional(),
+  imageUrl: z.string().refine((value) => value === "" || URL.canParse(value) && new URL(value).protocol === "https:").optional(),
+  linkUrl: z.string().optional(),
+});
+const placementConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  delayMs: z.number().int().min(0).max(10_000).nullable().optional().transform((value) => value ?? undefined),
+  scrollTriggerPercent: z.number().min(0).max(100).nullable().optional().transform((value) => value ?? undefined),
+  showCloseButton: z.boolean().optional(),
+  // `mixed`, `text` and `image` are HQ display hints. The card has a safe
+  // default treatment when this client does not provide a dedicated variant.
+  layout: z.enum(["card", "banner", "compact", "mixed", "text", "image"]).optional(),
+  maxWidth: z.number().int().min(240).max(1_600).nullable().optional().transform((value) => value ?? undefined),
+  triggerEvent: z.enum(["page_load", "result_rendered", "translation_end", "paywall_open"]).optional(),
+});
+const eventCampaignSchema = z.object({
+  id: z.string().min(1), status: campaignStatusSchema, placements: z.array(placementSchema).min(1), placementConfigs: z.record(z.string(), placementConfigSchema).default({}), platforms: z.array(z.string().min(1)).default([]), locales: z.array(z.string().min(1)).default([]), audience: audienceSchema.default("all"), targetRules: z.unknown().optional(), frequency: z.object({ mode: frequencyModeSchema, hideDaysAfterClose: z.number().nonnegative().nullable().optional().transform((value) => value ?? undefined) }), linkType: linkTypeSchema.default("none"), startAt: isoDateSchema.optional(), endAt: isoDateSchema.optional(), priority: z.number().int().default(0), defaultLocale: z.string().min(1), defaultContent: campaignContentSchema, localizedContent: z.record(z.string(), campaignContentSchema.partial()).default({}),
+});
 /**
  * 점검 화면 이미지 URL. https 만 허용하고(개발 빌드에서만 http://localhost 허용),
  * 잘못된 값은 점검 자체를 죽이지 않고 "이미지 없음"으로 취급한다.
@@ -74,6 +103,7 @@ const configEnvelopeSchema = z.object({
   version: z.number().int().nonnegative().nullable().optional(),
   featureFlags: z.unknown().optional(),
   banners: z.array(z.unknown()).default([]),
+  eventCampaigns: z.array(z.unknown()).default([]),
   notices: z.array(z.unknown()).default([]),
   maintenance: z.unknown().optional(),
 });
@@ -82,10 +112,15 @@ export type RuntimeBanner = z.infer<typeof bannerSchema>;
 export type RuntimeNotice = z.infer<typeof noticeSchema>;
 export type RuntimeMaintenance = z.infer<typeof maintenanceSchema>;
 export type LinkType = z.infer<typeof linkTypeSchema>;
-export type RuntimeConfig = Omit<z.infer<typeof configEnvelopeSchema>, "banners" | "notices" | "maintenance" | "version" | "featureFlags"> & {
+export type RuntimeEventCampaign = z.infer<typeof eventCampaignSchema>;
+export type RuntimeEventPlacement = z.infer<typeof placementSchema>;
+export type RuntimeEventPlacementConfig = z.infer<typeof placementConfigSchema>;
+export type RuntimeEventContent = z.infer<typeof campaignContentSchema>;
+export type RuntimeConfig = Omit<z.infer<typeof configEnvelopeSchema>, "banners" | "eventCampaigns" | "notices" | "maintenance" | "version" | "featureFlags"> & {
   version: number | null;
   featureFlags: Record<string, boolean>;
   banners: RuntimeBanner[];
+  eventCampaigns: RuntimeEventCampaign[];
   notices: RuntimeNotice[];
   maintenance: RuntimeMaintenance;
 };
@@ -106,6 +141,10 @@ export function parseRuntimeConfig(value: unknown): RuntimeConfig | null {
       : {},
     banners: envelope.data.banners.flatMap((item) => {
       const parsed = bannerSchema.safeParse(item);
+      return parsed.success ? [parsed.data] : [];
+    }),
+    eventCampaigns: envelope.data.eventCampaigns.flatMap((item) => {
+      const parsed = eventCampaignSchema.safeParse(item);
       return parsed.success ? [parsed.data] : [];
     }),
     notices: envelope.data.notices.flatMap((item) => {

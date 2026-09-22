@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Briefcase, Check, FileSearch, FileUp, ListChecks, ScanSearch, ShieldCheck, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
+import { RuntimeEventSlot } from "@/components/runtime-event-slot";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
 import { ApplicationDocsDrawer } from "@/components/application-docs-drawer";
 import { LegalToolsDrawer } from "@/components/legal-tools-drawer";
@@ -83,7 +84,7 @@ export default function HomePage() {
     ],
   };
   return (
-    <><LaunchPriceBanner /><main className="home-page">
+    <><LaunchPriceBanner /><RuntimeEventSlot slot="home_modal" /><main className="home-page">
       {/* Inside .home-page, not beside it.
           body carries zoom:1.25 and .home-page cancels it with calc(1/1.25).
           Placed outside, the drawer took the 1.25 without the 0.8 back, so a
@@ -148,6 +149,7 @@ export default function HomePage() {
         <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
       </section>
 
+      <RuntimeEventSlot slot="home_banner" />
       <section className="proof container" aria-label="분석 결과 예시">
         <div className="result-preview">
           <div className="preview-head"><div><span className="status-dot"/>분석 완료</div><span>현대모비스 · 생산관리</span></div>

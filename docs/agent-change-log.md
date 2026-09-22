@@ -1,6 +1,13 @@
 # Agent Change Log and Variant Registry
 
 ## 2026-09-25 — Claude: 선택 제안 설명을 서버에 저장 — 다른 기기·다시 열기에서도 같은 설명 (추가 전용, DB 마이그레이션 1개 — 사용자 실행 대기)
+## 2026-09-22 — Codex: LIVE-SUB event-campaign production release (in progress)
+
+- User approved an event-only production release. This release is based on the current production-equivalent commit `594221c`, with existing runtime client commit `a3e8d2b` and the verified `eventCampaigns` slot implementation only.
+- Scope: HQ parser/selectors/hooks, home/pricing/result `RuntimeEventSlot` placements, integration documentation and focused tests. All other dirty source, mobile-navigation, community and promotion changes remain outside this release worktree.
+- Verification required before deployment: typecheck, lint, tests, OpenNext build, then production bundle/config/render checks. Rollback: redeploy the preceding Worker version or revert this event-only commit.
+
+## 2026-09-22 — Codex: TWA compact navigation and English catalog release
 
 - 배경: 하이브리드 배포 뒤 남은 한계 "설명이 브라우저별 저장이라 다른 기기에서 열면 문구가 달라질 수 있다"에 대해 사용자가 진행 지시("ㄱㄱ"). 한 번 쓴 설명을 서버에 저장해 어느 기기에서 열어도 같은 문구가 나오게 한다.
 - 변경(추가 전용): 신규 `supabase/migrations/20260925030000_result_style_tips.sql`(표 `result_style_tips`: 실행·소유자·문항·종류·글 해시·설명, `unique(analysis_run_id, question_id, kind, tip_key)`, RLS는 소유자 읽기 + 소유자 넣기(자기 실행에 대해서만), 수정·삭제 정책 없음 → 한 번 저장하면 바뀌지 않음). `src/app/api/result/style-tip/route.ts`: 제안 대상 확인 뒤 저장된 설명을 먼저 조회해 있으면 모델을 부르지 않고 그대로 반환, 없으면 생성 후 저장, 동시에 두 요청이 오면(23505 중복) 먼저 저장된 설명으로 맞춤. `route.test.ts`에 저장 관련 6개 추가(총 13개). `connector-merge-hint.tsx`는 주석만 수정. 브라우저 저장(`localStorage`)은 요청을 아끼는 용도로 유지.

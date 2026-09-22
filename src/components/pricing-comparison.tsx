@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, Minus, X } from "lucide-react";
 import { isFinalEnabled } from "@/domain/final-availability";
+import { RuntimeEventSlot } from "@/components/runtime-event-slot";
 import styles from "./pricing-comparison.module.css";
 
 type Plan = "QUICK" | "PRO" | "FINAL";
@@ -90,6 +91,7 @@ export function PricingComparison() {
             </article>
           ))}
         </div>
+        <RuntimeEventSlot slot="pricing_banner" />
         <div className={styles.message}><b>QUICK</b>은 이미 쓴 것을 고치고, <b>PRO</b>는 쓸 것부터 찾아 지원서를 완성합니다. <b>FINAL</b>은 PRO에 실제 AI 면접 연습을 더합니다.</div>
         <button className={styles.toggle} onClick={() => setOpen((value) => !value)} aria-expanded={open}>{open ? "전체 기능 비교 닫기" : "전체 기능 비교 보기"}{open ? <X /> : <ChevronDown />}</button>
         {open && (

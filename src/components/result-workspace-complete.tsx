@@ -27,6 +27,7 @@ import { ConnectorMergeHint } from "./connector-merge-hint";
 import { InteractiveInterview } from "./interactive-interview";
 import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
+import { RuntimeEventSlot } from "./runtime-event-slot";
 
 type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "final";
 
@@ -509,6 +510,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         <div><span>{result.isSample ? "가상 지원서 · 결과 화면 샘플" : "분석 완료"}</span><h1>{subject.name}{subject.qualifier && <> <em>{subject.qualifier}</em></>}</h1><p>{applicationLabel} · {result.questions.length}개 문항 · {result.product}</p></div>
         <button onClick={() => setView("final")}>최종 첨삭본 보기 <ArrowRight/></button>
       </section>
+      {!adminPreview && <RuntimeEventSlot slot="result_top_banner" sample={result.isSample} />}
 
       <nav className={styles.tabs}>
         {tabs.filter((tab) => !tab[2] || showsProTabs).map(([id,label,pro]) => <button key={id} onClick={() => setView(id)} className={view === id ? styles.active : ""}>{label}{pro && <small>PRO</small>}</button>)}
@@ -730,6 +732,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
       </section>}
       {view === "final" && !adminPreview && <ApplicationTrackerCard caseId={result.caseId} company={subject.name} role={subject.qualifier ?? applicationLabel} isSample={result.isSample} onPrepareInterview={() => setView("interview")} onReviewIssues={() => setView("overview")} />}
       {view === "final" && !adminPreview && <FinalUpgradeCard product={result.product} />}
+      {view === "final" && !adminPreview && <RuntimeEventSlot slot="result_bottom_cta" sample={result.isSample} />}
       {/* Asked here rather than before payment: with the result already in
           hand, nothing is riding on the answer, which is the only position
           from which "아니오" costs the applicant nothing. Hidden on the sample
