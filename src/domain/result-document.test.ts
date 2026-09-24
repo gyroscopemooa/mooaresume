@@ -279,6 +279,7 @@ describe("접속어로 시작하는 한 줄 문단 붙이기 제안", () => {
     const [suggestion] = suggestConnectorMerges(answer);
     expect(suggestion.connector).toBe("또한");
     expect(suggestion.lead).toBe(claim);
+    expect(suggestion.next).toBe(evidence);
     expect(suggestion.merged).toBe(`저는 사무직·관리직뿐 아니라 생산·제조·품질·현장 업무도 직접 경험했습니다. ${evidence}`);
     expect(suggestion.resultText).toBe([opening, suggestion.merged, closing].join("\n\n"));
   });

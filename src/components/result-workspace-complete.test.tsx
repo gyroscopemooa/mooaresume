@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { sampleResultDocument } from "@/fixtures/result-document";
 import { ResultWorkspaceComplete } from "./result-workspace-complete";
 
@@ -526,5 +526,80 @@ describe("ResultWorkspaceComplete 최종 첨삭본 붙이기 제안", () => {
     openFinal(resultWith([opening, claim, evidence, closing].join("\n\n")), { adminPreview: true });
 
     expect(screen.queryByText(/작성 팁 · 선택 사항/)).toBeNull();
+  });
+});
+
+describe("ResultWorkspaceComplete 선택 제안의 컨설턴트 설명", () => {
+  const RUN_ID = "0f3c1d52-7a4e-4b8e-9c55-2f1f6a7d3b10";
+  const opening = "저는 이러한 경험이 대학일자리플러스센터 업무와 매우 잘 연결된다고 생각합니다. 취업을 준비하는 학생에게는 자기소개서와 면접 준비를 돕고, 창업에 관심 있는 학생에게는 사업계획서 준비 방향을 안내할 수 있습니다.";
+  const claim = "또한 저는 사무직·관리직뿐 아니라 생산·제조·품질·현장 업무도 직접 경험했습니다.";
+  const evidence = "울산 지역은 자동차, 제조, 협력사, 생산관리 직무가 중요한 비중을 차지합니다. 저는 현장 분위기와 교대근무의 차이를 몸으로 경험했습니다. 따라서 실제 현장에서 통하는 취업 전략으로 상담할 수 있습니다.";
+  const closing = "저는 다양한 경험을 갖춘 실무형 직업상담사로서 학생들이 자신의 경험을 취업 경쟁력으로 바꿀 수 있도록 돕고 싶습니다.";
+  const result = { ...sampleResultDocument, questions: [{ ...sampleResultDocument.questions[0], revisedAnswer: [opening, claim, evidence, closing].join("\n\n") }] };
+  const aiText = "현장 경험이라는 주장 바로 뒤에 울산 지역의 근거가 이어져서, 한 문단으로 읽으면 흐름이 더 또렷해져요.";
+  const templateText = "그러면 주장과 근거가 한 문단으로 이어져 읽는 사람이 흐름을 잡기 쉬워요.";
+
+  const isTipRequest = (input: unknown) => String(input).includes("/api/result/style-tip");
+  const tipCalls = (fetchMock: { mock: { calls: unknown[][] } }) => fetchMock.mock.calls.filter(([input]) => isTipRequest(input));
+  const mockTipApi = (respond: () => Response) => vi.spyOn(globalThis, "fetch").mockImplementation(async (input: RequestInfo | URL) => isTipRequest(input) ? respond() : new Response("{}", { status: 404 }));
+  const openFinal = (props: { analysisRunId?: string | null } = {}) => {
+    render(<ResultWorkspaceComplete result={result} analysisRunId={props.analysisRunId ?? null}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+  };
+  const body = () => document.querySelector("p[data-tip]") as HTMLElement;
+
+  // 문항 편집 내용은 sessionStorage에 남아 다음 테스트의 글을 덮어쓰므로 시작 전에 비운다.
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it("AI 설명이 오면 고정 문구 자리에 그 설명이 들어가고, 고를 자유는 그대로 안내한다", async () => {
+    const fetchMock = mockTipApi(() => Response.json({ explanation: aiText }));
+    openFinal({ analysisRunId: RUN_ID });
+
+    expect(await screen.findByText(new RegExp(aiText.slice(0, 20)))).toBeTruthy();
+    expect(body().dataset.tip).toBe("ai");
+    expect(body().textContent).not.toContain(templateText);
+    expect(body().textContent).toContain("선택은 자유예요");
+
+    // 서버에는 어느 문항의 어느 한 줄인지만 알린다.
+    const [call] = tipCalls(fetchMock);
+    expect(JSON.parse(String((call[1] as RequestInit).body))).toEqual({ analysisRunId: RUN_ID, questionId: result.questions[0].id, lead: claim });
+  });
+
+  it("설명을 못 받으면 고정 문구가 그대로 남는다", async () => {
+    const fetchMock = mockTipApi(() => new Response(JSON.stringify({ error: "x" }), { status: 502 }));
+    openFinal({ analysisRunId: RUN_ID });
+
+    await waitFor(() => expect(tipCalls(fetchMock)).toHaveLength(1));
+    expect(body().dataset.tip).toBe("template");
+    expect(body().textContent).toContain(templateText);
+  });
+
+  it("저장되지 않은 결과(샘플)에서는 설명을 요청하지 않는다", () => {
+    const fetchMock = mockTipApi(() => Response.json({ explanation: aiText }));
+    openFinal();
+
+    expect(body().dataset.tip).toBe("template");
+    expect(tipCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it("한 번 받은 설명은 저장해 두고, 다시 열어도 새로 요청하지 않는다", async () => {
+    const fetchMock = mockTipApi(() => Response.json({ explanation: aiText }));
+    const first = render(<ResultWorkspaceComplete result={result} analysisRunId={RUN_ID}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+    await screen.findByText(new RegExp(aiText.slice(0, 20)));
+    first.unmount();
+
+    openFinal({ analysisRunId: RUN_ID });
+
+    expect(await screen.findByText(new RegExp(aiText.slice(0, 20)))).toBeTruthy();
+    expect(tipCalls(fetchMock)).toHaveLength(1);
   });
 });

@@ -485,6 +485,8 @@ export type ConnectorMergeSuggestion = {
   connector: string;
   /** 따로 떨어져 있던 한 줄 문단(원문 그대로). */
   lead: string;
+  /** 그 한 줄 바로 뒤에 이어지는 문단(원문 그대로). */
+  next: string;
   /** 접속어를 빼고 다음 문단 맨 앞에 붙인 문단. */
   merged: string;
   /** 이 제안 하나만 적용한 답변 전체. */
@@ -518,6 +520,7 @@ export function suggestConnectorMerges(text: string): ConnectorMergeSuggestion[]
     suggestions.push({
       connector: match[1],
       lead,
+      next,
       merged,
       resultText: [...paragraphs.slice(0, index), merged, ...paragraphs.slice(index + 2)].join("\n\n"),
     });

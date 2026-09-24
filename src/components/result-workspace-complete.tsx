@@ -645,7 +645,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
               <div>
                 <div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,normalizeAnswerParagraphs(answer))}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>
                 {question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}
-                <div className={styles.finalBody}>{splitIntoParagraphs(answer).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>{!adminPreview && <ConnectorMergeHint answer={answer} applied={mergeUndo[question.id]?.after === answer} onApply={(next) => applyConnectorMerge(question.id, answer, next)} onUndo={() => undoConnectorMerge(question.id)} />}
+                <div className={styles.finalBody}>{splitIntoParagraphs(answer).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>{!adminPreview && <ConnectorMergeHint answer={answer} analysisRunId={analysisRunId} questionId={question.id} applied={mergeUndo[question.id]?.after === answer} onApply={(next) => applyConnectorMerge(question.id, answer, next)} onUndo={() => undoConnectorMerge(question.id)} />}
                 <small data-short={isShort}>공백 제외 {answerLength.toLocaleString()} / {question.targetLength.toLocaleString()}자 · 공백 포함 {answerLengthWithSpaces.toLocaleString()}자{isShort ? " · 분량 보완 필요" : ""}</small>
               </div>
             </article>;
