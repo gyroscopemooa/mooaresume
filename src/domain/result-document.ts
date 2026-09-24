@@ -12,6 +12,19 @@ export const resultAttachmentSchema = z.object({
   warning: z.string().optional(),
 });
 
+/**
+ * Files that were supplied as evidence beyond the cover letter itself.
+ * This is generated from the immutable run snapshot, not guessed by the AI:
+ * the applicant can tell which files were actually made available to it.
+ */
+export const referenceMaterialUseSchema = z.object({
+  id: z.string().min(1),
+  filename: z.string().min(1),
+  label: z.string().min(1),
+  status: z.enum(["read", "partial", "not_read"]),
+  note: z.string().min(1),
+});
+
 export const resultPrioritySchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
@@ -336,6 +349,7 @@ export const resultDocumentSchema = z.object({
     reasons: z.array(z.string().min(1)).min(1),
   }),
   attachments: z.array(resultAttachmentSchema),
+  referenceMaterials: z.array(referenceMaterialUseSchema).default([]),
   candidateProfile: resultCandidateProfileSchema,
   priorities: z.array(resultPrioritySchema).max(3),
   questions: z.array(resultQuestionSchema).min(1),
@@ -371,6 +385,7 @@ export const resultDocumentSchema = z.object({
 });
 
 export type ResultDocument = z.infer<typeof resultDocumentSchema>;
+export type ResultReferenceMaterialUse = z.infer<typeof referenceMaterialUseSchema>;
 export type ResultQuestion = z.infer<typeof resultQuestionSchema>;
 export type ResultOriginalAnnotation = z.infer<typeof resultOriginalAnnotationSchema>;
 export type ResultRequirementMatch = z.infer<typeof requirementMatchSchema>;

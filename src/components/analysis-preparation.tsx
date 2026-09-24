@@ -303,6 +303,15 @@ export function AnalysisPreparation() {
                 </article>
               ))}
             </div>
+            {product !== "QUICK" && materialSummary.length > 0 && (
+              <div className={styles.runtimeNotice}>
+                <FileText />
+                <span>
+                  <b>첨부 자료를 내용 보완에 활용합니다.</b>
+                  <small>현재 문항과 연결되는 경험·역할·성과를 찾아 보완합니다. 다른 회사 전용 지원동기나 문항 문구는 현재 지원서에 옮기지 않습니다.</small>
+                </span>
+              </div>
+            )}
             {product !== "QUICK" && !hasResumeMaterial && (
               // Not a blocker. Some applicants genuinely have no résumé — a new
               // graduate often has only the employer's own application form —

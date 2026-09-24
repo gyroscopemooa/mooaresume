@@ -7,6 +7,7 @@ export const sampleResultDocument: ResultDocument = {
   writingMode: "BUILD",
   isSample: true,
   coverageNotes: [],
+  referenceMaterials: [],
   // FINAL-only sections. This sample is a PRO result, so they stay empty —
   // filling them here would put FINAL content on the PRO sample page.
   careerTimeline: [],

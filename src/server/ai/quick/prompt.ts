@@ -12,7 +12,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-3.4";
+export const QUICK_PROMPT_VERSION = "quick-3.5";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -26,6 +26,7 @@ const SUPPORTING_LABEL: Record<(typeof SUPPORTING_KINDS)[number], string> = {
   certificate: "자격·증명서",
   career_description: "경력기술서",
   portfolio: "포트폴리오·추가 경험",
+  other: "기타 참고자료(과거 지원서·경력 사실 포함 가능)",
 };
 
 const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> = {
@@ -134,6 +135,7 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       ? ["FINAL 단계에서 당신은 첨삭가인 동시에 해당 직무의 실무 전문가이자, 이 지원서를 손에 들고 면접을 진행하는 인사담당자·면접관입니다. 자기소개서만 보는 것이 아니라 이력서와 자기소개서를 나란히 펼쳐 놓고 지원서 전체를 검증한 뒤, 실제 면접에서 나올 질문까지 연결하는 것이 이 단계의 일입니다."]
       : []),
     "지원자가 제공하지 않은 경험, 사건, 역할, 회사, 직책, 기간, 자격, 수치 또는 성과를 절대 만들지 마세요.",
+    ...(request.documents.some((document) => document.kind === "other") ? ["기타 참고자료에는 과거 다른 회사의 자기소개서와 후보자 경력 사실이 함께 있을 수 있습니다. 현재 지원 회사와 다른 회사명, 그 회사 전용 지원동기, 문항 문구, 채용요건은 현재 첨삭본에 복사하지 마세요. 후보자 본인이 실제로 했다고 적은 경력·프로젝트·역할·성과·자격·행동 중 현재 문항과 직접 연결되고 다른 제출 자료와 모순되지 않는 사실만 활용하세요. 과거 자소서에 썼다는 사실만으로 진실을 단정하지 말고, 확인이 필요하면 verificationQuestions에 남기세요."] : []),
     "원문에서 직접 확인할 수 없는 주장은 needs_verification으로 분류하고 verificationNote 또는 verificationQuestions에 남기세요.",
     // Every evidenceQuote is checked against the applicant's own documents, and
     // a quote that is not found there fails the whole run. The posting is
@@ -180,7 +182,7 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
       ? `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문이 목표에 못 미치는 문항은 목표 글자 수에 가깝게 늘리세요. 첨삭본이 원문보다 짧아지면 안 됩니다(원문이 이미 목표를 넘은 경우는 예외입니다).
 분량은 다음 순서로 채우세요.
 1) 원문에 이미 있는 경험을 더 구체적으로 풉니다. 무엇을 왜 했는지, 어떻게 판단했는지, 무엇이 어려웠는지, 무엇을 배웠는지를 씁니다.
-2) 그래도 부족하면 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험)에서 이 문항과 관련 있는데 아직 쓰이지 않은 사실을 가져와 문장으로 만듭니다. 자료에 적힌 것은 지원자가 직접 밝힌 사실이므로 가져다 쓰는 것이 맞습니다. 단, 자료에 없는 내용을 추측해 덧붙이지는 마세요.
+2) 그래도 부족하면 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험·기타 참고자료)에서 이 문항과 관련 있는데 아직 쓰이지 않은 사실을 가져와 문장으로 만듭니다. 그 사실은 후보자 본인이 실제로 했다고 적은 경력·프로젝트·역할·성과·자격이어야 합니다. 단, 자료에 없는 내용을 추측해 덧붙이지는 마세요.
 3) 1)과 2)로도 목표에 닿지 않으면 거기서 멈추고, 무엇을 더 알려주면 채울 수 있는지 consultingAdvice에 적으세요.
 표현을 바꾸거나 순서를 정리하는 것은 분량을 채운 것이 아닙니다. 같은 말을 반복하거나 일반론을 덧붙여 글자 수만 늘리지 마세요.`
       : expandsFromOwnContent(request)
@@ -409,6 +411,40 @@ polish: 위 여섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
  * a fixed budget and says plainly where it stopped reading.
  */
 export const SUPPORTING_CHARACTER_BUDGET = 30_000;
+
+export type SupportingMaterialSummary = {
+  filename: string;
+  label: string;
+  status: "read" | "partial" | "not_read";
+  note: string;
+};
+
+function supportingNote(kind: (typeof SUPPORTING_KINDS)[number], status: SupportingMaterialSummary["status"]) {
+  if (status === "not_read") return "전체 참고자료 분량 제한 때문에 이번 분석 입력에는 포함되지 않았습니다.";
+  if (kind === "other") return status === "partial"
+    ? "일부를 참고로 읽었습니다. 다른 회사 전용 문장·지원동기는 옮기지 않고 후보자 사실만 활용합니다."
+    : "참고로 읽었습니다. 다른 회사 전용 문장·지원동기는 옮기지 않고 후보자 사실만 활용합니다.";
+  return status === "partial" ? "일부를 참고로 읽었습니다." : "참고로 읽었습니다.";
+}
+
+/** The exact same budget walk that builds the model input, exposed for the result record. */
+export function summarizeSupportingMaterials(request: AnalysisRequest): SupportingMaterialSummary[] {
+  let remaining = SUPPORTING_CHARACTER_BUDGET;
+  const summaries: SupportingMaterialSummary[] = [];
+  for (const kind of SUPPORTING_KINDS) {
+    for (const document of request.documents.filter((item) => item.kind === kind)) {
+      const status: SupportingMaterialSummary["status"] = remaining <= 0 ? "not_read" : document.text.length > remaining ? "partial" : "read";
+      summaries.push({
+        filename: document.filename?.trim() || SUPPORTING_LABEL[kind],
+        label: SUPPORTING_LABEL[kind],
+        status,
+        note: supportingNote(kind, status),
+      });
+      remaining = Math.max(0, remaining - document.text.length);
+    }
+  }
+  return summaries;
+}
 
 function buildSupportingSections(request: AnalysisRequest) {
   const sections: string[] = [];

@@ -746,4 +746,14 @@ describe("오탈자 유형", () => {
     };
     expect(buildQuickAnalysisInput(heavy)).toContain("자격증: 정보처리기사");
   });
+
+  it("기타자료의 후보자 사실은 참고로 싣되 다른 회사 전용 문장을 옮기지 못하게 한다", () => {
+    const withOther: AnalysisRequest = {
+      ...request,
+      writingMode: "BUILD",
+      documents: [...request.documents, { kind: "other", filename: "한화생명_지원서.pdf", text: "한화생명 지원동기와 데이터 분석 프로젝트에서 맡은 역할" }],
+    };
+    expect(buildQuickAnalysisInput(withOther)).toContain("[기타 참고자료(과거 지원서·경력 사실 포함 가능) · 한화생명_지원서.pdf]");
+    expect(buildQuickAnalysisInstructions(withOther)).toContain("다른 회사명, 그 회사 전용 지원동기, 문항 문구, 채용요건은 현재 첨삭본에 복사하지 마세요");
+  });
 });

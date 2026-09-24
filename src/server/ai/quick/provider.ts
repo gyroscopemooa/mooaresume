@@ -2,6 +2,7 @@ import type { AnalysisRequest, ResumeAnalysisProvider } from "@/application/anal
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
 import { resolveOriginalAnnotations } from "@/domain/result-original-annotations";
 import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
+import { summarizeSupportingMaterials } from "./prompt";
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
 import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
 
@@ -91,6 +92,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
     analysisRun: { provider: "openai", responseId: gatewayResult.execution.responseId, model: gatewayResult.execution.model, promptVersion: gatewayResult.execution.promptVersion, rubricVersion: gatewayResult.execution.rubricVersion, schemaVersion: gatewayResult.execution.schemaVersion, inputTokens: gatewayResult.execution.inputTokens, outputTokens: gatewayResult.execution.outputTokens, totalTokens: gatewayResult.execution.totalTokens },
     readiness: output.readiness,
     attachments: source.filename ? [{ id: `${request.requestId}-source`, filename: source.filename, extension: source.filename.split(".").pop()?.toUpperCase() || "TEXT", sizeBytes: new TextEncoder().encode(source.text).length, parseStatus: "ready", parserLabel: "Source document", sectionCount: questions.length }] : [],
+    referenceMaterials: summarizeSupportingMaterials(request).map((material, index) => ({ id: `reference-material-${index + 1}`, ...material })),
     candidateProfile: { snapshotLabel: `${request.product} input`, items: [] }, priorities: output.priorities.map((priority, index) => ({ id: `priority-${index + 1}`, title: priority.title, description: priority.description, category: priority.category, severity: priority.severity })),
     questions: questions.map((question) => {
       const revision = revisions.get(question.order)!;

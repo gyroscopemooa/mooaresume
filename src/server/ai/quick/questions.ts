@@ -18,7 +18,10 @@ import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
  * 것**이라 잘리면 그 칸의 뜻 자체가 사라집니다. 길어야 4,000자라 앞에 두어도
  * 뒤가 굶지 않습니다.
  */
-export const SUPPORTING_KINDS = ["applicant_note", "resume", "certificate", "career_description", "portfolio"] as const;
+// Unstructured uploads can mix prior applications with real candidate facts.
+// They are useful in PRO/FINAL, but are last so labelled evidence keeps its
+// fixed prompt budget first.
+export const SUPPORTING_KINDS = ["applicant_note", "resume", "certificate", "career_description", "portfolio", "other"] as const;
 
 export function hasSupportingMaterials(request: AnalysisRequest) {
   return request.documents.some((document) => SUPPORTING_KINDS.includes(document.kind as (typeof SUPPORTING_KINDS)[number]));
