@@ -84,3 +84,5 @@
 .lengthGap small { color: #8a97a3; font-size: 11px; font-variant-numeric: tabular-nums; }
 .lengthGap p { margin: 0; color: #52616f; font-size: 12.5px; font-weight: 500; line-height: 1.65; word-break: keep-all; }
 .lengthGap span { color: #8a97a3; font-size: 11px; font-weight: 500; }
+/* 모바일 최종 첨삭본: 글이 들어가는 칸이 좁아 양쪽 정렬이 단어 사이를 크게 벌리므로, 번호를 제목 위로 올려 글 폭을 넓히고 왼쪽 정렬로 둔다. PC(701px 이상)는 그대로. */
+@media(max-width:700px){.finalDocument>article{grid-template-columns:1fr;gap:6px}.finalBody p{text-align:left}}

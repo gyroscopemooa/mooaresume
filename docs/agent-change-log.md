@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-25 — Claude: 최종 첨삭본 모바일 — 좁은 칸의 양쪽 정렬 때문에 단어 사이가 벌어지던 문제
+
+- 배경: 사용자가 모바일 폭 스크린샷을 보내며 "띄운 부분(단어 사이가 크게 벌어짐)이 모바일에서만 이상하게 나온다, PC는 정상이니 모바일만 손대달라"고 요청.
+- 원인: 최종 첨삭본 본문(`.finalBody p`)이 `text-align:justify;word-break:keep-all`인데, 모바일(375px)에서는 왼쪽 여백 50px + 번호 칸 26px(+간격 10px) 때문에 글이 들어가는 칸이 약 231px(한 줄 13자 안팎)뿐이라 양쪽 정렬이 단어 사이를 크게 벌림.
+- 변경(CSS 규칙 하나, 파일 맨 끝에 추가만 — 기존 줄은 안 건드림): `src/components/result-workspace-complete.module.css` 끝에 `@media(max-width:700px){.finalDocument>article{grid-template-columns:1fr;gap:6px}.finalBody p{text-align:left}}`. 번호를 제목 위로 올려 글 폭을 넓히고 모바일만 왼쪽 정렬. 701px 이상(PC)은 변경 없음. 다른 세션 `claude/sharp-johnson-ljqvsx`가 같은 CSS 파일의 1번째·7번째 줄을 수정하므로 파일 끝에 붙여 텍스트 충돌을 피함.
+- Validation: 로컬 dev `/result/sample` 최종 첨삭본 탭을 375px 모바일 에뮬레이션으로 측정 — 본문 칸 폭 231px → 276px, `text-align:left`, 가로 스크롤 없음, 번호가 제목 위로 올라오고 "이 문항 복사" 버튼 위치 유지(스크린샷 확인). 1280px에서 `justify`·`26px 704px` 그리드 그대로. `origin/main`(`04a7863`) 기준 격리 worktree에서 컴포넌트 테스트 통과. 실제 폰에서는 확인하지 않음.
+- Release(사용자 지시 "1 … ㄱㄱ"): `origin/main` 기준 격리 브랜치 `claude/mobile-final-draft-fix`에서 커밋 → 브랜치 push 후 `main`으로 fast-forward push, Cloudflare Git 빌드로 배포.
+- Rollback: 파일 끝에 추가한 주석 1줄 + `@media` 규칙 1줄을 삭제(커밋 revert).
+
 ## 2026-09-25 — Claude: 최종 첨삭본 — 화면 폭 때문에 끊긴 줄을 문단으로 갈라 놓던 문제 수정
 
 - 배경: 사용자가 최종 첨삭본 탭 스크린샷을 첨부해 "문장 중간(`어|떤`, `관|점에서도`, `있습니|다`)에서 문단이 갈라져 나온다, 기대는 문단이 구별된 자소서 문서(첨부 Word·목업·직접 붙여준 정답 글)"라고 신고.
