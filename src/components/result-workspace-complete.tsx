@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
-import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
+import { buildFinalDocumentText, countCharactersWithWhitespace, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
 import { recommendNextStep } from "@/domain/next-step";
 import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
@@ -439,7 +439,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
       ...[...result.questions].sort((left, right) => left.order - right.order).flatMap((question) => [
         { text: `${question.order}. ${resolveQuestionTitle(question)}`, style: "heading" as const },
         ...(question.subheading ? [{ text: `[${question.subheading}]`, style: "body" as const }] : []),
-        { text: answers[question.id] ?? question.revisedAnswer, style: "body" as const },
+        { text: normalizeAnswerParagraphs(answers[question.id] ?? question.revisedAnswer), style: "body" as const },
       ]),
     ];
     save(new Blob([buildDocx(blocks)], { type: DOCX_MIME_TYPE }), `${baseFilename}.docx`);
@@ -586,7 +586,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
               <p>{question.lengthNote ?? "원문에서 확인되는 사실만 써서 여기까지 왔습니다. 근거 없이 채우면 오히려 감점이라 늘리지 않았어요."}</p>
               <span>알려주시면 그 내용으로 채워 다시 첨삭해 드립니다.</span>
             </div>}
-            <footer>{!adminPreview && <>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button></>}<button className={styles.copy} onClick={() => copy(question.id,answer)}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
+            <footer>{!adminPreview && <>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button></>}<button className={styles.copy} onClick={() => copy(question.id,normalizeAnswerParagraphs(answer))}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
         })}
         {result.consultingAdvice.length > 0 && <section className={styles.consulting}>
@@ -611,7 +611,32 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         </section>}
       </section>}
 
-      {view === "final" && <section className={styles.final}><header><div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div><div><button onClick={() => sampleBlocked() || copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={() => sampleBlocked() || downloadDocx()}><Download/> DOCX 저장</button><button onClick={() => sampleBlocked() || download()}><Download/> TXT 저장</button></div></header>{result.questions.map((question) => {const answer=answers[question.id]??question.revisedAnswer;const copyId=`final-${question.id}`;const answerLength=countCompactCharacters(answer);return <article key={question.id}><span>{String(question.order).padStart(2,"0")}</span><div><div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,answer)}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>{question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}<p>{answer}</p><small data-short={answerLength < question.targetLength * .7}>공백 제외 {answerLength} / {question.targetLength}자{answerLength < question.targetLength * .7 ? " · 분량 보완 필요" : ""}</small></div></article>})}{isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>비어 있던 부분을 채운 제안이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}<footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer></section>}
+      {view === "final" && <section className={styles.final}>
+        <header>
+          <div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div>
+          <div><button onClick={() => sampleBlocked() || copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={() => sampleBlocked() || downloadDocx()}><Download/> DOCX 저장</button><button onClick={() => sampleBlocked() || download()}><Download/> TXT 저장</button></div>
+        </header>
+        <div className={styles.finalDocument}>
+          {result.questions.map((question) => {
+            const answer = answers[question.id] ?? question.revisedAnswer;
+            const copyId = `final-${question.id}`;
+            const answerLength = countCompactCharacters(answer);
+            const answerLengthWithSpaces = countCharactersWithWhitespace(answer);
+            const isShort = answerLength < question.targetLength * .7;
+            return <article key={question.id}>
+              <span>{String(question.order).padStart(2,"0")}</span>
+              <div>
+                <div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,normalizeAnswerParagraphs(answer))}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>
+                {question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}
+                <div className={styles.finalBody}>{splitIntoParagraphs(answer).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                <small data-short={isShort}>공백 제외 {answerLength.toLocaleString()} / {question.targetLength.toLocaleString()}자 · 공백 포함 {answerLengthWithSpaces.toLocaleString()}자{isShort ? " · 분량 보완 필요" : ""}</small>
+              </div>
+            </article>;
+          })}
+        </div>
+        {isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>비어 있던 부분을 채운 제안이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}
+        <footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer>
+      </section>}
       {/* Sits before the next-step card because it acts on the draft in hand
           rather than moving to another stage. Only on the final tab, and only
           on a real result — there is nothing to revise on the sample. */}

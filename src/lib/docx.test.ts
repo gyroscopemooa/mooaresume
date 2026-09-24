@@ -50,4 +50,21 @@ describe("buildDocx", () => {
     expect(document).toContain("첫 줄입니다.");
     expect(document).toContain("둘째 줄입니다.");
   });
+
+  it("justifies body paragraphs but not the title/heading", () => {
+    const document = readEntry(bytes, "word/document.xml") ?? "";
+    const paragraphs = document.split("<w:p>").slice(1);
+
+    expect(paragraphs[0]).not.toContain("<w:jc");
+    expect(paragraphs[1]).not.toContain("<w:jc");
+    expect(paragraphs[2]).toContain('<w:jc w:val="both"/>');
+  });
+
+  it("keeps a blank line between paragraphs as its own empty paragraph", () => {
+    const spaced = buildDocx([{ text: "첫 문단입니다.\n\n둘째 문단입니다.", style: "body" }]);
+    const document = readEntry(spaced, "word/document.xml") ?? "";
+
+    expect(document.split("<w:p>").length - 1).toBe(3);
+    expect(document).toContain("<w:p><w:pPr><w:spacing w:before=\"0\" w:after=\"200\"");
+  });
 });
