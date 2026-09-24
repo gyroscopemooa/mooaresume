@@ -32,13 +32,20 @@ function escapeXml(value: string) {
 }
 
 // Half-points, as Word measures them: 32 = 16pt.
-const STYLE_SIZE: Record<NonNullable<DocxBlock["style"]>, number> = { title: 32, heading: 24, body: 20 };
+const STYLE_SIZE: Record<NonNullable<DocxBlock["style"]>, number> = { title: 32, heading: 24, body: 21 };
+// 240ths of a line (Word's "auto" line-spacing unit): 240 = single, 360 = 1.5.
+// Body is set closer to the 1.6–1.8 a submitted document reads best at; a
+// heading is one short line, so single spacing there reads as the label it is.
+const STYLE_LINE: Record<NonNullable<DocxBlock["style"]>, number> = { title: 276, heading: 276, body: 400 };
 
 function paragraph(block: DocxBlock) {
   const style = block.style ?? "body";
   const bold = style === "title" || style === "heading" ? "<w:b/>" : "";
   const runProperties = `<w:rPr><w:rFonts w:ascii="맑은 고딕" w:hAnsi="맑은 고딕" w:eastAsia="맑은 고딕"/>${bold}<w:sz w:val="${STYLE_SIZE[style]}"/></w:rPr>`;
-  const spacing = `<w:pPr><w:spacing w:before="${style === "heading" ? 240 : 0}" w:after="120" w:line="300" w:lineRule="auto"/></w:pPr>`;
+  // Justified (양쪽 정렬) only for the body text — a heading is a single short
+  // line, and justifying it would just stretch word spacing for no reason.
+  const alignment = style === "body" && block.text ? "<w:jc w:val=\"both\"/>" : "";
+  const spacing = `<w:pPr><w:spacing w:before="${style === "heading" ? 240 : 0}" w:after="${style === "body" ? 200 : 120}" w:line="${STYLE_LINE[style]}" w:lineRule="auto"/>${alignment}</w:pPr>`;
   const run = block.text ? `<w:r>${runProperties}<w:t xml:space="preserve">${escapeXml(block.text)}</w:t></w:r>` : "";
   return `<w:p>${spacing}${run}</w:p>`;
 }

@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { sampleResultDocument } from "@/fixtures/result-document";
 import {
   buildFinalDocumentText,
+  countCharactersWithWhitespace,
   countCompactCharacters,
+  normalizeAnswerParagraphs,
   resultDocumentSchema,
+  splitIntoParagraphs,
 } from "./result-document";
 
 describe("resultDocumentSchema", () => {
@@ -64,6 +67,45 @@ describe("소제목이 있는 최종본 텍스트", () => {
     const text = buildFinalDocumentText(base, { q1: "제가 고친 답변입니다." });
 
     expect(text).toContain("[현장에서 배운 기준의 무게]\n제가 고친 답변입니다.");
+  });
+});
+
+describe("문단 사이 줄 띄우기", () => {
+  it("첫째/둘째처럼 줄바꿈 하나로만 나뉜 문단 사이를 빈 줄로 벌린다", () => {
+    const text = "지원 이유는 두 가지입니다.\n첫째, 이렇습니다.\n둘째, 저렇습니다.";
+    expect(normalizeAnswerParagraphs(text)).toBe(
+      "지원 이유는 두 가지입니다.\n\n첫째, 이렇습니다.\n\n둘째, 저렇습니다.",
+    );
+  });
+
+  it("이미 빈 줄이 여러 개여도 하나로 정리한다", () => {
+    expect(normalizeAnswerParagraphs("첫 문단\n\n\n\n둘째 문단")).toBe("첫 문단\n\n둘째 문단");
+  });
+
+  it("문단이 하나뿐이면 그대로 둔다", () => {
+    expect(normalizeAnswerParagraphs("한 문단짜리 답변입니다.")).toBe("한 문단짜리 답변입니다.");
+  });
+
+  it("문단 배열로도 나눌 수 있다", () => {
+    expect(splitIntoParagraphs("첫 문단\n둘째 문단")).toEqual(["첫 문단", "둘째 문단"]);
+  });
+
+  it("최종 문서 텍스트도 문단 사이가 벌어진 채로 나온다", () => {
+    const text = buildFinalDocumentText(
+      { company: "회사", role: "직무", questions: [{ id: "q1", order: 1, title: "지원 동기", prompt: "", targetLength: 700, originalAnswer: "", revisedAnswer: "첫 문단입니다.\n둘째 문단입니다.", highlightedPhrases: [], revisionReasons: [] }] },
+      {},
+    );
+    expect(text).toContain("첫 문단입니다.\n\n둘째 문단입니다.");
+  });
+});
+
+describe("공백 포함 글자 수", () => {
+  it("띄어쓰기와 줄바꿈을 모두 센다", () => {
+    expect(countCharactersWithWhitespace("첫 문단\n둘째 문단")).toBe(10);
+  });
+
+  it("CRLF도 LF와 같은 한 글자로 센다", () => {
+    expect(countCharactersWithWhitespace("첫 문단\r\n둘째 문단")).toBe(countCharactersWithWhitespace("첫 문단\n둘째 문단"));
   });
 });
 
