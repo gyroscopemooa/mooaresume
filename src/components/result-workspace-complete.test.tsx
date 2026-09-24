@@ -193,6 +193,27 @@ describe("ResultWorkspaceComplete 영문 자리표시자", () => {
     expect(screen.queryByText("Question 1")).toBeNull();
     expect(screen.queryByText("Cover-letter question")).toBeNull();
   });
+
+  it("최종 첨삭본은 화면 폭 때문에 끊긴 줄을 이어 붙여 실제 문단만큼만 그린다", () => {
+    // 사용자 신고: PDF·한글에서 복사한 원문의 줄끊김(문장 중간 포함)이 그대로 문단으로 갈라짐.
+    const wrapped = [
+      "저는 직업상담사에게 필요한 역량이 이력서와 자기소개서를 첨삭하는 능력에만 있다고 생각하지 않습니다. 학생이 실제로 어",
+      "떤 직무를 선택해야 하는지, 그 직무가 현장에서 어떻게 작동하는지, 기업은 어떤 사람을 뽑으려 하는지를 함께 설계해야 합니다.",
+      "제가 지원하는 이유는 크게 두 가지입니다.",
+      "첫째, 저는 실제 취업지원사업과 상담 현장에 대한 이해를 가지고 있습니다. 직업상담사 2급 자격을 바탕으로 국민취업",
+      "지원제도와 민간위탁사업 분야에 관심을 가지고 준비해왔으며, 학생들의 취업 준비를 지원한 경험이 있습니",
+      "다.",
+    ].join("\n");
+    const result = { ...sampleResultDocument, questions: [{ ...sampleResultDocument.questions[0], revisedAnswer: wrapped }] };
+    render(<ResultWorkspaceComplete result={result}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+
+    const paragraphs = Array.from(document.querySelectorAll("p")).map((node) => node.textContent ?? "");
+    expect(paragraphs).toContain("저는 직업상담사에게 필요한 역량이 이력서와 자기소개서를 첨삭하는 능력에만 있다고 생각하지 않습니다. 학생이 실제로 어떤 직무를 선택해야 하는지, 그 직무가 현장에서 어떻게 작동하는지, 기업은 어떤 사람을 뽑으려 하는지를 함께 설계해야 합니다.");
+    expect(paragraphs).toContain("제가 지원하는 이유는 크게 두 가지입니다.");
+    expect(paragraphs).toContain("첫째, 저는 실제 취업지원사업과 상담 현장에 대한 이해를 가지고 있습니다. 직업상담사 2급 자격을 바탕으로 국민취업지원제도와 민간위탁사업 분야에 관심을 가지고 준비해왔으며, 학생들의 취업 준비를 지원한 경험이 있습니다.");
+    expect(paragraphs.some((text) => text === "지원제도와 민간위탁사업 분야에 관심을 가지고 준비해왔으며, 학생들의 취업 준비를 지원한 경험이 있습니")).toBe(false);
+  });
 });
 
 describe("ResultWorkspaceComplete 채운 부분 표시", () => {

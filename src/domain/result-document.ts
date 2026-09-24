@@ -400,19 +400,72 @@ export function countCharactersWithWhitespace(value: string) {
   return Array.from(value.replace(/\r\n/g, "\n")).length;
 }
 
+// 문장이 끝난 줄: 마침표·물음표·느낌표·말줄임표(뒤에 닫는 따옴표·괄호가 붙어도 됨),
+// 콜론은 뒤에 설명·목록이 이어지는 자리라 문단 끝으로 본다.
+const SENTENCE_END = /[.!?…:。！？：][)\]"'”’」』]*$/;
+// 다음 줄이 이 모양으로 시작하면 앞 줄에 이어 붙이지 않는다(목록·번호·첫째/둘째).
+// "다. 특히…"처럼 줄이 끊긴 조각이 한글 뒤 마침표로 시작할 수 있어 가·나·다 목록은 넣지 않는다.
+const BLOCK_START = /^(?:[-–—•▪■□◆◇○●※*]\s|\d{1,2}[.)]\s|\(\d{1,2}\)|[①-⑳]|\[|(?:첫째|둘째|셋째|넷째|다섯째)[,.]?\s)/;
+// 이보다 짧은데 문장부호 없이 끝나는 줄은 소제목·라벨로 보고 이어 붙이지 않는다.
+const MIN_WRAPPED_LINE = 20;
+
+/** 한글 음절의 받침이 ㄹ인가("바꿀", "할", "얻을"의 마지막 글자). */
+function endsWithRieulBatchim(value: string) {
+  const code = value.charCodeAt(value.length - 1);
+  return code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 === 8;
+}
+
 /**
- * AI가 "첫째/둘째"처럼 문단을 나눈 자리는 원문에서 줄바꿈 하나뿐이라, 그대로
- * 복사·저장하면 문단 구분이 없는 하나의 덩어리처럼 보인다(사용자 신고: 결과
- * 화면과 복사본 모두 문단 사이 빈 줄이 없어 실제 자소서 문서처럼 안 보임).
- * 문장 내용은 그대로 두고 문단 경계(줄바꿈 1개 이상)를 빈 줄 하나로 통일한다.
+ * PDF·한글·워드에서 복사한 글은 화면 폭마다 줄이 끊겨 문장 한가운데("어|떤",
+ * "있습니|다")에서 줄바꿈이 들어온다. AI 첨삭본도 이 줄바꿈을 그대로 따라오는데,
+ * 줄바꿈을 전부 문단 경계로 보면 한 문단이 여러 조각으로 갈라진다. 이 줄이
+ * 문장 중간에서 끊긴 줄(=이어 붙일 줄)인지 판정한다.
+ */
+function continuesOnNextLine(lastLine: string, nextLine: string) {
+  const before = lastLine.trimEnd();
+  return before.length >= MIN_WRAPPED_LINE && !SENTENCE_END.test(before) && !BLOCK_START.test(nextLine.trimStart());
+}
+
+function joinWrappedLines(current: string, nextLine: string) {
+  const before = current.trimEnd();
+  const after = nextLine.trimStart();
+  // 줄 끝·줄 시작에 공백이 남아 있으면 단어 사이다. 끊기면서 공백이 사라진 경우는
+  // 단어 중간에서 끊긴 경우가 대부분이라 그냥 붙이고, 자소서에 아주 흔한
+  // "~ㄹ 수 있/없" 하나만 띄어쓰기를 복원한다.
+  const spaced =
+    current !== before ||
+    after !== nextLine ||
+    (endsWithRieulBatchim(before) && /^수 (?:있|없)/.test(after));
+  return `${before}${spaced ? " " : ""}${after}`;
+}
+
+/**
+ * 문장 내용은 그대로 두고 문단 경계만 정리한다.
+ * - 빈 줄은 항상 문단 경계다(여러 개여도 빈 줄 하나로 통일).
+ * - AI가 "첫째/둘째"처럼 문단을 나눈 자리는 원문에서 줄바꿈 하나뿐이라 그대로
+ *   복사·저장하면 하나의 덩어리처럼 보였다. 문장이 끝난 줄 뒤의 줄바꿈은 문단
+ *   경계로 보고 빈 줄 하나로 벌린다.
+ * - 문장이 끝나지 않은 줄 뒤의 줄바꿈은 원문 복사 과정에서 생긴 줄끊김이므로
+ *   앞 줄에 이어 붙인다(사용자 신고: 문장 중간에서 문단이 갈라져 보임).
  */
 export function normalizeAnswerParagraphs(text: string) {
-  return text
-    .replace(/\r\n/g, "\n")
-    .split(/\n+/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
-    .join("\n\n");
+  const paragraphs: string[] = [];
+  for (const block of text.replace(/\r\n?/g, "\n").split(/\n\s*\n/)) {
+    let current = "";
+    let lastLine = "";
+    for (const line of block.split("\n")) {
+      if (!line.trim()) continue;
+      if (current && continuesOnNextLine(lastLine, line)) {
+        current = joinWrappedLines(current, line);
+      } else {
+        if (current) paragraphs.push(current.trim());
+        current = line;
+      }
+      lastLine = line;
+    }
+    if (current) paragraphs.push(current.trim());
+  }
+  return paragraphs.join("\n\n");
 }
 
 /** 화면에서 문단마다 별도 `<p>`로 그리기 위한 배열. */
