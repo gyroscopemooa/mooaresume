@@ -1,0 +1,16 @@
+/* 부모(.final)의 `.final button` 규칙보다 우선하도록 버튼 선택자는 .hint/.applied 아래에 둔다. */
+.hint{margin:16px 0 0;padding:12px 14px;border:1px solid #d9e9e0;border-left:3px solid #176b4a;border-radius:8px;background:#f3f9f5;color:#33443b;font-size:12.5px;line-height:1.7}
+.title{display:flex;align-items:center;gap:6px;margin:0 0 5px;color:#176b4a;font-size:11px;font-weight:800}
+.title svg,.applied svg{width:13px;height:13px;flex:none}
+.body{margin:0;word-break:keep-all}
+.respect{color:#5c6d64}
+.preview{margin:9px 0 0}
+.preview summary{cursor:pointer;color:#176b4a;font-size:12px;font-weight:700}
+.preview p{margin:7px 0 0;padding:11px 13px;border:1px solid #e3ece7;border-radius:6px;background:#fff;color:#1c261f;font-size:13px;line-height:1.8;word-break:keep-all}
+.actions{display:flex;justify-content:flex-end;margin-top:10px}
+.hint .apply{padding:7px 13px;border:1px solid #176b4a;border-radius:6px;background:#176b4a;color:#fff;font-size:11px;font-weight:800;cursor:pointer}
+.applied{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:14px 0 0;padding:9px 12px;border-radius:8px;background:#f3f9f5;color:#33443b;font-size:12px;line-height:1.6}
+.applied svg{color:#176b4a}
+.applied span{flex:1;min-width:0;word-break:keep-all}
+.applied button{padding:5px 10px;border:1px solid #bfd6c8;border-radius:6px;background:#fff;color:#176b4a;font-size:11px;font-weight:800;cursor:pointer}
+@media print{.hint,.applied{display:none}}

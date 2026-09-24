@@ -23,6 +23,7 @@ import { CandidateProfileCard } from "@/components/candidate-profile-card";
 import styles from "./result-workspace-complete.module.css";
 import { FinalVerification } from "./final-verification";
 import { FinalWrapUp } from "./final-wrap-up";
+import { ConnectorMergeHint } from "./connector-merge-hint";
 import { InteractiveInterview } from "./interactive-interview";
 import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
@@ -276,6 +277,22 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
   const [copied, setCopied] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
   const [showChanges, setShowChanges] = useState(false);
+  // 최종 첨삭본의 "붙이기 제안"을 적용한 문항. 적용 직후의 글과 같을 때만 되돌릴 수 있어서, 그 뒤에 직접 고친 내용을 덮어쓰지 않는다.
+  const [mergeUndo, setMergeUndo] = useState<Record<string, { before: string; after: string }>>({});
+  function applyConnectorMerge(questionId: string, before: string, after: string) {
+    setMergeUndo((current) => ({ ...current, [questionId]: { before, after } }));
+    setAnswers((current) => ({ ...current, [questionId]: after }));
+  }
+  function undoConnectorMerge(questionId: string) {
+    const entry = mergeUndo[questionId];
+    if (!entry) return;
+    setAnswers((current) => current[questionId] === entry.after ? { ...current, [questionId]: entry.before } : current);
+    setMergeUndo((current) => {
+      const next = { ...current };
+      delete next[questionId];
+      return next;
+    });
+  }
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -628,7 +645,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
               <div>
                 <div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,normalizeAnswerParagraphs(answer))}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>
                 {question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}
-                <div className={styles.finalBody}>{splitIntoParagraphs(answer).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+                <div className={styles.finalBody}>{splitIntoParagraphs(answer).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>{!adminPreview && <ConnectorMergeHint answer={answer} applied={mergeUndo[question.id]?.after === answer} onApply={(next) => applyConnectorMerge(question.id, answer, next)} onUndo={() => undoConnectorMerge(question.id)} />}
                 <small data-short={isShort}>공백 제외 {answerLength.toLocaleString()} / {question.targetLength.toLocaleString()}자 · 공백 포함 {answerLengthWithSpaces.toLocaleString()}자{isShort ? " · 분량 보완 필요" : ""}</small>
               </div>
             </article>;

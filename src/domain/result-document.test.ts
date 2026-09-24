@@ -7,6 +7,7 @@ import {
   normalizeAnswerParagraphs,
   resultDocumentSchema,
   splitIntoParagraphs,
+  suggestConnectorMerges,
 } from "./result-document";
 
 describe("resultDocumentSchema", () => {
@@ -218,5 +219,64 @@ describe("공고에 적힌 요구와 읽어낸 요구", () => {
     // 두 묶음이 다 있어야 나눈 이유가 화면에서 드러납니다.
     expect(stated.length).toBeGreaterThan(0);
     expect(inferred.length).toBeGreaterThan(0);
+  });
+});
+
+describe("접속어로 시작하는 한 줄 문단 붙이기 제안", () => {
+  // 사용자 자소서: "또한 저는 …" 한 줄이 문단으로 혼자 떠 있고, 바로 뒤에 그 근거 문단이 이어진다.
+  const claim = "또한 저는 사무직·관리직뿐 아니라 생산·제조·품질·현장 업무도 직접 경험했습니다.";
+  const evidence = "울산 지역은 자동차, 제조, 협력사, 생산관리, 품질, 물류, 현장관리 직무가 중요한 비중을 차지합니다. 저는 현장 분위기, 교대근무, 생산직과 관리직의 차이, 기업이 현장에서 실제로 중요하게 보는 태도와 역량을 몸으로 경험했습니다. 따라서 학생들에게 단순히 사무적인 조언이 아니라, 실제 현장에서 통하는 취업 전략과 직무 이해를 바탕으로 상담할 수 있습니다.";
+  const opening = "저는 이러한 경험이 대학일자리플러스센터 업무와 매우 잘 연결된다고 생각합니다. 취업을 준비하는 학생에게는 자기소개서와 면접 준비를 돕고, 창업에 관심 있는 학생에게는 사업계획서와 정부지원사업 준비 방향을 안내할 수 있습니다.";
+  const closing = "저는 AI, 창업, 사무·관리직, 생산·현장직 경험을 모두 갖춘 실무형 직업상담사로서 학생들이 자신의 경험을 취업 경쟁력으로 바꿀 수 있도록 돕고 싶습니다. 학생이 가진 경험이 작아 보이더라도 그 안에서 직무 역량을 찾아내고, 목표 기업과 직무에 맞는 방향으로 정리해주는 컨설턴트가 되겠습니다.";
+  const answer = [opening, claim, evidence, closing].join("\n\n");
+
+  it("한 줄 문단의 접속어를 빼고 다음 문단 맨 앞에 붙이자고 제안한다", () => {
+    const [suggestion] = suggestConnectorMerges(answer);
+    expect(suggestion.connector).toBe("또한");
+    expect(suggestion.lead).toBe(claim);
+    expect(suggestion.merged).toBe(`저는 사무직·관리직뿐 아니라 생산·제조·품질·현장 업무도 직접 경험했습니다. ${evidence}`);
+    expect(suggestion.resultText).toBe([opening, suggestion.merged, closing].join("\n\n"));
+  });
+
+  it("제안만 만들고 원문은 바꾸지 않으며, 접속어와 문단 나눔 말고는 글자를 잃지 않는다", () => {
+    const [suggestion] = suggestConnectorMerges(answer);
+    expect(splitIntoParagraphs(answer)).toHaveLength(4);
+    expect(splitIntoParagraphs(suggestion.resultText)).toHaveLength(3);
+    expect(suggestion.resultText.replace(/\s+/g, "")).toBe(answer.replace("또한 ", "").replace(/\s+/g, ""));
+  });
+
+  it("같은 글이면 몇 번을 물어도 같은 결과이고, 적용한 뒤에는 더 제안하지 않는다", () => {
+    expect(suggestConnectorMerges(answer)).toEqual(suggestConnectorMerges(answer));
+    expect(suggestConnectorMerges(suggestConnectorMerges(answer)[0].resultText)).toEqual([]);
+  });
+
+  it("줄바꿈 하나로만 나뉜 글도 같은 문단 구조로 읽는다", () => {
+    expect(suggestConnectorMerges([opening, claim, evidence, closing].join("\n"))).toHaveLength(1);
+  });
+
+  it("쉼표가 붙은 접속어와 다른 접속어도 뺀다", () => {
+    const [comma] = suggestConnectorMerges([opening, "또한, 저는 현장 업무도 직접 경험했습니다.", evidence, closing].join("\n\n"));
+    expect(comma.merged.startsWith("저는 현장 업무도 직접 경험했습니다. 울산 지역은")).toBe(true);
+    const [other] = suggestConnectorMerges([opening, "그리고 저는 현장 업무도 직접 경험했습니다.", evidence, closing].join("\n\n"));
+    expect(other.connector).toBe("그리고");
+  });
+
+  it("접속어로 시작하지 않는 한 줄 도입 문단은 건드리지 않는다", () => {
+    const intro = "제가 지원하는 이유는 크게 두 가지입니다.";
+    expect(suggestConnectorMerges([opening, intro, "첫째, 이렇습니다. 그래서 그렇습니다. 그러므로 이렇습니다.", closing].join("\n\n"))).toEqual([]);
+  });
+
+  it("첫 문단·마지막 문단, 여러 문장 문단, 긴 문단, 문단 안의 '또한'은 건드리지 않는다", () => {
+    expect(suggestConnectorMerges([claim, evidence, closing].join("\n\n"))).toEqual([]);
+    expect(suggestConnectorMerges([opening, evidence, claim].join("\n\n"))).toEqual([]);
+    expect(suggestConnectorMerges([opening, "또한 저는 현장을 압니다. 그래서 상담할 수 있습니다.", evidence, closing].join("\n\n"))).toEqual([]);
+    expect(suggestConnectorMerges([opening, `또한 ${"저는 현장 업무를 직접 경험했습니다 ".repeat(6)}했습니다.`, `${evidence} ${evidence}`, closing].join("\n\n"))).toEqual([]);
+    expect(suggestConnectorMerges(opening.replace("저는 이러한", "또한 저는 이러한"))).toEqual([]);
+    expect(suggestConnectorMerges([opening, evidence.replace("따라서", "또한"), closing].join("\n\n"))).toEqual([]);
+  });
+
+  it("뒤 문단이 더 짧거나 '첫째/둘째' 나열이면 붙이지 않는다", () => {
+    expect(suggestConnectorMerges([opening, claim, "짧은 문단입니다.", closing].join("\n\n"))).toEqual([]);
+    expect(suggestConnectorMerges([opening, claim, `둘째, ${evidence}`, closing].join("\n\n"))).toEqual([]);
   });
 });

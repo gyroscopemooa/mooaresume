@@ -477,3 +477,54 @@ describe("이번 첨삭에서 한 일", () => {
     expect(screen.queryByText(/다시 썼습니다/)).toBeNull();
   });
 });
+
+describe("ResultWorkspaceComplete 최종 첨삭본 붙이기 제안", () => {
+  const opening = "저는 이러한 경험이 대학일자리플러스센터 업무와 매우 잘 연결된다고 생각합니다. 취업을 준비하는 학생에게는 자기소개서와 면접 준비를 돕고, 창업에 관심 있는 학생에게는 사업계획서 준비 방향을 안내할 수 있습니다.";
+  const claim = "또한 저는 사무직·관리직뿐 아니라 생산·제조·품질·현장 업무도 직접 경험했습니다.";
+  const evidence = "울산 지역은 자동차, 제조, 협력사, 생산관리 직무가 중요한 비중을 차지합니다. 저는 현장 분위기와 교대근무의 차이를 몸으로 경험했습니다. 따라서 실제 현장에서 통하는 취업 전략으로 상담할 수 있습니다.";
+  const closing = "저는 다양한 경험을 갖춘 실무형 직업상담사로서 학생들이 자신의 경험을 취업 경쟁력으로 바꿀 수 있도록 돕고 싶습니다.";
+  const merged = `저는 사무직·관리직뿐 아니라 생산·제조·품질·현장 업무도 직접 경험했습니다. ${evidence}`;
+  const resultWith = (revisedAnswer: string) => ({ ...sampleResultDocument, questions: [{ ...sampleResultDocument.questions[0], revisedAnswer }] });
+  // "붙인 모습 보기" 미리보기(<details>) 안의 문단은 본문이 아니므로 뺀다.
+  const paragraphs = () => Array.from(document.querySelectorAll("p")).filter((node) => !node.closest("details")).map((node) => node.textContent ?? "");
+  const openFinal = (result: typeof sampleResultDocument, extra: { adminPreview?: boolean } = {}) => {
+    render(<ResultWorkspaceComplete result={result} {...extra}/>);
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+  };
+
+  it("접속어로 시작하는 한 줄 문단이 있으면 결과는 그대로 두고 선택 제안만 보여준다", () => {
+    openFinal(resultWith([opening, claim, evidence, closing].join("\n\n")));
+
+    expect(screen.getByText(/작성 팁 · 선택 사항/)).toBeTruthy();
+    expect(screen.getByText(/선택은 자유예요/)).toBeTruthy();
+    expect(paragraphs()).toContain(claim);
+    expect(screen.getByRole("button", { name: "이렇게 바꾸기" })).toBeTruthy();
+  });
+
+  it("이렇게 바꾸기를 누르면 접속어 없이 다음 문단에 붙고, 되돌리기로 원래대로 돌아간다", () => {
+    openFinal(resultWith([opening, claim, evidence, closing].join("\n\n")));
+
+    fireEvent.click(screen.getByRole("button", { name: "이렇게 바꾸기" }));
+    expect(paragraphs()).toContain(merged);
+    expect(paragraphs()).not.toContain(claim);
+    expect(screen.queryByRole("button", { name: "이렇게 바꾸기" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "되돌리기" }));
+    expect(paragraphs()).toContain(claim);
+    expect(paragraphs()).not.toContain(merged);
+    expect(screen.getByRole("button", { name: "이렇게 바꾸기" })).toBeTruthy();
+  });
+
+  it("제안이 없는 글에는 아무것도 붙이지 않는다", () => {
+    openFinal(resultWith([opening, evidence, closing].join("\n\n")));
+
+    expect(screen.queryByText(/작성 팁 · 선택 사항/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "이렇게 바꾸기" })).toBeNull();
+  });
+
+  it("관리자 미리보기에서는 지원자용 제안을 붙이지 않는다", () => {
+    openFinal(resultWith([opening, claim, evidence, closing].join("\n\n")), { adminPreview: true });
+
+    expect(screen.queryByText(/작성 팁 · 선택 사항/)).toBeNull();
+  });
+});

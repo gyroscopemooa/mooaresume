@@ -474,6 +474,58 @@ export function splitIntoParagraphs(text: string) {
   return normalized ? normalized.split("\n\n") : [];
 }
 
+// 문단 첫머리에서 "앞 내용에 덧붙인다"는 뜻으로 쓰는 접속어. 뒤에 내용이 이어져야 한다.
+const CONNECTOR_LEAD = /^(또한|그리고|아울러|더불어|게다가|이와 함께|한편)[,\s]+(?=\S)/;
+// 한 줄짜리 문단으로 볼 최대 길이. 이보다 길면 한 줄이 아니라 독립 문단이다.
+const CONNECTOR_LEAD_MAX_LENGTH = 100;
+// 다음 문단이 "첫째/둘째…"로 시작하면 나열 구조라서 앞 문단에 붙이지 않는다.
+const ENUMERATION_START = /^(?:첫째|둘째|셋째|넷째|다섯째)[,.]?\s/;
+
+export type ConnectorMergeSuggestion = {
+  connector: string;
+  /** 따로 떨어져 있던 한 줄 문단(원문 그대로). */
+  lead: string;
+  /** 접속어를 빼고 다음 문단 맨 앞에 붙인 문단. */
+  merged: string;
+  /** 이 제안 하나만 적용한 답변 전체. */
+  resultText: string;
+};
+
+function sentenceCount(paragraph: string) {
+  return (paragraph.match(/[.!?…](?=\s|$)/g) ?? []).length;
+}
+
+/**
+ * "또한 ~했습니다." 한 줄이 문단으로 혼자 떨어져 있고 바로 뒤에 그 근거를 풀어 쓴
+ * 더 긴 문단이 이어질 때, 접속어를 빼고 그 문단 앞에 붙이자고 제안한다.
+ * 주장이 먼저 나오고 근거가 한 문단으로 이어지는 두괄식이 되기 때문이다.
+ *
+ * AI 호출 없이 정해진 모양만 찾으므로 같은 글이면 항상 같은 결과가 나온다.
+ * 제안만 만들 뿐 글을 바꾸지 않는다 — 적용 여부는 지원자가 고른다.
+ * 첫 문단, 마지막 문단, "두 가지입니다."처럼 뒤에 나열이 이어지는 도입 문장,
+ * 여러 문장인 문단은 건드리지 않는다.
+ */
+export function suggestConnectorMerges(text: string): ConnectorMergeSuggestion[] {
+  const paragraphs = splitIntoParagraphs(text);
+  const suggestions: ConnectorMergeSuggestion[] = [];
+  for (let index = 1; index < paragraphs.length - 1; index += 1) {
+    const lead = paragraphs[index];
+    const match = CONNECTOR_LEAD.exec(lead);
+    if (!match || lead.length > CONNECTOR_LEAD_MAX_LENGTH || sentenceCount(lead) !== 1 || !SENTENCE_END.test(lead)) continue;
+    const next = paragraphs[index + 1];
+    if (next.length <= lead.length || ENUMERATION_START.test(next)) continue;
+    const merged = `${lead.slice(match[0].length)} ${next}`;
+    suggestions.push({
+      connector: match[1],
+      lead,
+      merged,
+      resultText: [...paragraphs.slice(0, index), merged, ...paragraphs.slice(index + 2)].join("\n\n"),
+    });
+    index += 1;
+  }
+  return suggestions;
+}
+
 export function buildFinalDocumentText(
   document: Pick<ResultDocument, "company" | "role" | "questions">,
   answers: Record<string, string>,
