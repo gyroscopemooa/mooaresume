@@ -1,5 +1,22 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-25 — Claude: LIVE-SUB 점검 모드 2단계 (implemented locally; commit/deploy pending)
+
+- Requested: HQ `maintenance.scope` 가 "all" 이면 전체 차단, 기능 key 이면 그 기능 진입 화면만 차단. 우회(QA) 수단 포함. 서버 API 는 건드리지 않는다.
+- Files (new): `src/lib/live-sub-runtime/maintenance.ts`, `maintenance-hooks.ts`, `maintenance-bypass.ts`, `maintenance.test.ts`; `src/components/maintenance-gate.tsx/.module.css/.test.tsx`; `src/app/api/maintenance/bypass/route.ts`. Modified: `src/app/layout.tsx`(children 을 `MaintenanceGate` 로 감쌈 + import 1줄), `src/components/runtime-site-notice.tsx`(점검 띠가 startsAt/endsAt 를 무시하던 것을 `resolveMaintenance` 로 교체), `.env.example`, `docs/live-sub-admin-integration.md`.
+- Preservation: `hooks.ts`/`schema.ts`/`index.ts`/`defaults.ts` 는 stash@{0}(2차 이벤트 미커밋 작업)에도 수정본이 있어 건드리지 않고 새 파일로만 구현. `layout.tsx` 는 stash@{0} 에도 수정본이 있어, 그 stash 를 되살릴 때 이 두 줄과 충돌할 수 있음(의미는 `<MaintenanceGate>{children}</MaintenanceGate>` 유지).
+- Validation: typecheck·lint 통과, 런타임·점검 관련 4개 파일 26개 테스트 통과(점검 로직·우회 기억·토큰 확인, 게이트 화면 6개 시나리오 포함), 전체 vitest 329 파일 통과·실패 1건은 `.incident-release-build/`(타 작업자 미추적 복사본)의 mobile routes 테스트. 로컬 브라우저(가짜 HQ): all 딥링크 차단, 기억된 우회 통과, 토큰 미설정 시 API 401, resume_analysis 로 /quick 만 차단·홈/#plans/community 정상 확인.
+- Rollback: layout.tsx 의 두 줄 복구 + 신규 파일 삭제. 커밋/푸시/배포 안 함. Git baseline e2954ef (branch feat/livesub-hq-grant-reward).
+
+## 2026-09-25 — Claude: 최종 첨삭본 — 화면 폭 때문에 끊긴 줄을 문단으로 갈라 놓던 문제 수정 (implemented locally; commit pending)
+
+- 배경: 사용자가 최종 첨삭본 탭 스크린샷을 첨부해 "문장 중간(`어|떤`, `관|점에서도`, `있습니|다`)에서 문단이 갈라져 나온다, 기대는 문단이 구별된 자소서 문서(첨부 Word·목업·직접 붙여준 정답 글)"라고 신고.
+- 원인: 원문(PDF·한글 등에서 복사한 글)이 화면 폭마다 줄이 끊긴 채 들어왔고(스크린샷 줄들의 표시 폭이 144~148칸으로 비슷함 → 고정 폭 줄끊김), AI 첨삭본(`revisedAnswer`)이 그 줄바꿈을 그대로 따라옴(서버·프롬프트에는 줄을 끊는 코드 없음 확인). 어제(2026-09-24) 항목의 `normalizeAnswerParagraphs`가 "줄바꿈 1개 이상 = 문단 경계"로 처리해서 이 줄끊김이 전부 별도 `<p>`로 갈라짐. 즉 어제 변경이 만든 부작용.
+- 변경(표시 계층만, 저장 데이터·AI 프롬프트·검증기 변경 없음): `src/domain/result-document.ts`의 `normalizeAnswerParagraphs`만 수정(헬퍼 상수·함수 4개 추가). 규칙 — ① 빈 줄은 항상 문단 경계. ② 한 줄 바꿈은 앞 줄이 문장부호(`. ? ! …`, 뒤에 닫는 따옴표·괄호 허용, `:` 포함)로 안 끝났고 길이 20자 이상이면 화면 폭 줄끊김으로 보고 앞 줄에 이어 붙임. ③ 다음 줄이 목록 표시(`- `·`•`·`1.`·`①`·`[`)나 `첫째/둘째…`로 시작하면 이어 붙이지 않음. ④ 이어 붙일 때 줄 끝·시작에 공백이 남아 있으면 한 칸 띄움, 없으면(대부분 단어 중간에서 끊긴 경우) 붙이되 "~ㄹ 수 있/없"만 띄어쓰기 복원. 글자 내용은 바꾸지 않고 줄바꿈·공백만 조정. 이 함수가 화면·전체 복사·이 문항 복사·TXT·DOCX가 공유하는 단일 지점이라 다섯 곳이 함께 고쳐짐.
+- 알려진 한계: (a) 줄끊김이 마침 문장부호 바로 뒤에 걸리면 문단 경계로 오인해 그 자리에서 문단이 나뉨(문장 끝이라 읽기엔 자연스러움). (b) 끊기면서 공백이 사라진 단어 사이(`바꿀|수` 외)는 붙어 나올 수 있음 — 단어 중간 끊김이 대부분이라 붙이는 쪽을 기본으로 함. (c) `문항별 첨삭`·`제출본` 탭의 비교 화면은 강조 표시가 원문 글자 위치에 묶여 있어 원본 줄바꿈 그대로 둠(이번 범위 밖). (d) 원문 입력 시점에서 줄끊김을 정리하거나 AI가 직접 이어 쓰게 하는 방법은 프롬프트·입력 변경이라 별도 결정 필요.
+- Validation: `tsc --noEmit` 오류 없음, ESLint(변경 파일) 오류 없음. `vitest run src/domain src/components/result-workspace-complete.test.tsx src/lib` 149개 파일 1,293개 테스트 통과 + 컴포넌트 테스트 파일 재실행 63개 통과. 신규 테스트: `result-document.test.ts`(사용자 스크린샷 줄 그대로 재현한 케이스, 단어 중간/공백 있는 줄끊김, `바꿀|수 있는지`, 빈 줄, 목록·소제목·첫째/둘째, 재정규화 멱등성), `result-workspace-complete.test.tsx`(최종 탭이 실제 문단 수만큼만 `<p>`를 그림). 실제 로그인한 결과 데이터로 브라우저에서 확인하지는 못함(샘플 결과에는 줄끊김이 없음).
+- Rollback: `src/domain/result-document.ts`의 `normalizeAnswerParagraphs`와 그 위 헬퍼 4개를 2026-09-24 버전(`e2954ef`)으로 되돌리고, 위 두 테스트 파일의 신규 케이스 삭제.
+
 ## 2026-09-24 — Claude: 최종 첨삭본 문단 조판·복사/DOCX 문서 품질 개선
 
 - 배경: 사용자가 `/result` 최종 첨삭본 화면에서 "전체 복사"/"이 문항 복사"로 복사한 결과를 채용 사이트 입력창에 붙여넣으면 "첫째/둘째" 같은 문단 구분이 빈 줄 없이 붙어 나온다고 신고(스크린샷 2장 첨부, 실제 SK 자소서 예시처럼 문단이 벌어져 보이길 원함). 이어서 최종 첨삭본 화면 자체도 A4 자소서 문서처럼 폭·행간·양쪽 정렬·문단 간격을 갖추고, 복사·DOCX·TXT·글자 수 계산이 모두 같은 문단 구조를 쓰게 해달라는 상세 요청(28개 항목)이 이어짐.
