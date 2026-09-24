@@ -390,6 +390,37 @@ export function countCompactCharacters(value: string) {
   return value.replace(/\s/g, "").length;
 }
 
+/**
+ * 실제로 붙여넣을 문자열 기준의 글자 수(공백·줄바꿈 포함). 자소서 문항의
+ * 목표/제한 글자 수는 이 프로젝트 전체에서 공백 제외(`countCompactCharacters`)
+ * 기준이므로 그 판정은 바꾸지 않고, 화면에는 참고용으로 이 값도 함께 보여준다.
+ * 이모지 등 서로게이트 쌍 문자가 1자로 세이도록 code point 기준으로 센다.
+ */
+export function countCharactersWithWhitespace(value: string) {
+  return Array.from(value.replace(/\r\n/g, "\n")).length;
+}
+
+/**
+ * AI가 "첫째/둘째"처럼 문단을 나눈 자리는 원문에서 줄바꿈 하나뿐이라, 그대로
+ * 복사·저장하면 문단 구분이 없는 하나의 덩어리처럼 보인다(사용자 신고: 결과
+ * 화면과 복사본 모두 문단 사이 빈 줄이 없어 실제 자소서 문서처럼 안 보임).
+ * 문장 내용은 그대로 두고 문단 경계(줄바꿈 1개 이상)를 빈 줄 하나로 통일한다.
+ */
+export function normalizeAnswerParagraphs(text: string) {
+  return text
+    .replace(/\r\n/g, "\n")
+    .split(/\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/** 화면에서 문단마다 별도 `<p>`로 그리기 위한 배열. */
+export function splitIntoParagraphs(text: string) {
+  const normalized = normalizeAnswerParagraphs(text);
+  return normalized ? normalized.split("\n\n") : [];
+}
+
 export function buildFinalDocumentText(
   document: Pick<ResultDocument, "company" | "role" | "questions">,
   answers: Record<string, string>,
@@ -401,7 +432,8 @@ export function buildFinalDocumentText(
       // Bracketed because that is how a subheading is actually typed into the
       // form — it is part of the submitted answer, not a label on it.
       const subheading = question.subheading ? `[${question.subheading}]\n` : "";
-      return `${question.order}. ${question.title}\n${subheading}${answers[question.id] ?? question.revisedAnswer}`;
+      const answer = normalizeAnswerParagraphs(answers[question.id] ?? question.revisedAnswer);
+      return `${question.order}. ${question.title}\n${subheading}${answer}`;
     })
     .join("\n\n");
   return `${heading}\n${body}`;
