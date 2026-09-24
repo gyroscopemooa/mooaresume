@@ -34,6 +34,18 @@
 - Release(사용자 지시 "2 A ㄱㄱ"): `origin/main` 기준 격리 브랜치 `claude/connector-merge-hint`에서 커밋 → 브랜치 push 후 `main`으로 fast-forward push, Cloudflare Git 빌드로 배포.
 - Rollback: 이 커밋 revert(신규 파일 2개 삭제, `result-document.ts`의 추가 함수·`result-workspace-complete.tsx`의 추가 줄 제거).
 
+## 2026-09-25 — Claude: LIVE-SUB 점검 게이트 배포 분리 + null 방어 + 점검 이미지 (branch `feat/maintenance-gate`, commit pending push/PR/deploy)
+
+- 배경: HQ production 이 `maintenance {enabled:true, scope:"all"}` 을 발행했는데 mooaresume.com 이 그대로 열림. 원인은 점검 게이트(`ae827f0`)가 `feat/livesub-hq-grant-reward`(미배포 작업이 섞인 공유 폴더 브랜치)에만 있어 `origin/main` 에 없었던 것.
+- 방식: 공유 폴더는 건드리지 않고 `origin/main`(작업 중 `b12ab58`→`e88920a` 로 앞서가 rebase 함) 기준 새 worktree `C:\mooaresume-maintenance-gate`(브랜치 `feat/maintenance-gate`)에서 점검 파일만 `ae827f0` 에서 가져오고, 그 위에 아래를 추가. 다른 사람의 미커밋 작업(grant-reward, `.incident-release-build`, `twa-dev-app` 등)은 손대지 않음.
+- Files (from ae827f0, 그대로): `src/components/maintenance-gate.{tsx,module.css}`, `src/lib/live-sub-runtime/maintenance{,-hooks,-bypass}.ts`, `src/app/api/maintenance/bypass/route.ts`, `src/app/layout.tsx`(`<MaintenanceGate>` 감싸기), `src/components/runtime-site-notice.tsx`, `.env.example`(HQ_MAINTENANCE_BYPASS_TOKEN), `docs/live-sub-admin-integration.md`.
+- Files (이번에 추가·수정): `schema.ts`(`maintenanceSchema`: startsAt/endsAt/message `.nullish()`, `imageUrl`/`mobileImageUrl`(https만, 개발 빌드는 http://localhost 허용)/`imageBackground`(#rrggbb) 는 잘못된 값이면 "없음"), `maintenance.ts`(full 상태에 `image` 포함, feature 는 이미지 없음), `maintenance-gate.tsx`/`.module.css`(전체 차단 이미지: `<picture>`, 760px 이하 모바일 이미지, contain, 로드 전 문구 카드, onError 폴백), `maintenance-hooks.ts`(아래 버그 수정), 테스트 3개 파일.
+- 버그 수정(ae827f0 원본에 있던 것): `?bypass=<토큰>` 우회가 개발 모드(React StrictMode)에서 effect 가 두 번 실행될 때 사라졌음(첫 실행이 주소에서 토큰을 먼저 지워 두 번째 실행이 토큰을 못 봄). 토큰 확인이 끝난 뒤에 주소에서 지우도록 순서만 변경. 회귀 테스트 추가(옛 코드에서 실패·수정 후 통과 확인).
+- 포함하지 않은 것(`git diff origin/main` 에 딸려 있던 무관한 변경, 사용자 판단 필요): AI 프롬프트/quick provider·questions, 결과 워크스페이스·`result-document`·CSS, `supabase/migrations/20260924010000_include_other_reference_materials.sql`, `wrangler.jsonc`(1줄 삭제), `twa-dev-app` 서브모듈 포인터, `.incident-release-build`, `.vscode/settings.json`, `resolve-conflict.js`, auth/callback·career login·app-context 등. 점검 코드는 `wrangler.jsonc` 변경이 필요 없음(서버 env 만 사용).
+- Validation: typecheck·전체 vitest(1개 파일 실패는 이 PC에 Expo 의존성이 없어 나는 `mobile.test.ts`, 변경 무관)·next build(HQ 서버 없이) 통과. 브라우저(가짜 HQ 서버, staging env): scope all 딥링크 차단, `?bypass=` 우회 통과, 이미지 데스크톱(1280×800 contain)·375px(모바일 이미지)·깨진 URL(카드 폴백), scope resume_analysis 는 /quick 만 차단·/community 정상.
+- Rollback: 브랜치/worktree 삭제(`git worktree remove`, `git branch -D feat/maintenance-gate`). 배포 후라면 병합 커밋 revert. HQ 에서 `enabled:false` 발행하면 코드 롤백 없이 점검 해제.
+- 남은 일: production Cloudflare 에 `HQ_MAINTENANCE_BYPASS_TOKEN` secret 이 아직 없음(2026-09-25 `wrangler secret list` 확인) — 없으면 배포 후 우회 확인 불가. 푸시·PR·병합·배포는 사용자 승인 대기.
+
 ## 2026-09-25 — Claude: 최종 첨삭본 모바일 — 좁은 칸의 양쪽 정렬 때문에 단어 사이가 벌어지던 문제
 
 - 배경: 사용자가 모바일 폭 스크린샷을 보내며 "띄운 부분(단어 사이가 크게 벌어짐)이 모바일에서만 이상하게 나온다, PC는 정상이니 모바일만 손대달라"고 요청.

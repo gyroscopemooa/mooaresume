@@ -39,12 +39,32 @@ const noticeSchema = z.object({
   showOnce: z.boolean().default(false),
 });
 
+/**
+ * 점검 화면 이미지 URL. https 만 허용하고(개발 빌드에서만 http://localhost 허용),
+ * 잘못된 값은 점검 자체를 죽이지 않고 "이미지 없음"으로 취급한다.
+ */
+function isAllowedMediaUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol === "https:") return true;
+    return process.env.NODE_ENV !== "production" && url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+  } catch {
+    return false;
+  }
+}
+
+const maintenanceImageUrlSchema = z.string().refine(isAllowedMediaUrl).nullish().catch(undefined);
+
+// HQ 는 값을 지우면 필드를 생략하지만 null 로 보내도 점검이 꺼지지 않게 nullish 로 받는다.
 const maintenanceSchema = z.object({
   enabled: z.boolean().default(false),
-  message: z.string().default(""),
+  message: z.string().nullish().transform((value) => value ?? ""),
   scope: z.string().default("all"),
-  startsAt: isoDateSchema.optional(),
-  endsAt: isoDateSchema.optional(),
+  startsAt: isoDateSchema.nullish(),
+  endsAt: isoDateSchema.nullish(),
+  imageUrl: maintenanceImageUrlSchema,
+  mobileImageUrl: maintenanceImageUrlSchema,
+  imageBackground: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullish().catch(undefined),
 });
 
 const configEnvelopeSchema = z.object({

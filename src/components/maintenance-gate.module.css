@@ -1,0 +1,15 @@
+.full,.feature{display:grid;place-items:center;padding:24px;background:#f6f7f2;color:#173d2c}
+/* 전체 차단은 하단 메뉴바·공지 띠까지 덮는다. */
+.full{position:fixed;inset:0;z-index:2147483000;overflow:auto}
+/* 이미지 모드: 자르지 않고(contain) 화면 전체에 맞춘다. 배경색은 인라인 style 로 덮는다. */
+.fullImage{padding:0;overflow:hidden}
+.picture,.pictureLoaded{position:absolute;inset:0;display:block;opacity:0}
+.pictureLoaded{opacity:1}
+.picture img,.pictureLoaded img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
+.fullImage .card{position:relative}
+.feature{min-height:70vh}
+.card{width:min(520px,100%);padding:36px 28px;border:1px solid rgba(23,61,44,.14);border-radius:18px;background:#fff;text-align:center;box-shadow:0 12px 32px rgba(23,61,44,.08)}
+.badge{display:inline-block;margin:0 0 14px;padding:4px 12px;border-radius:999px;background:#173d2c;color:#efffb8;font-size:12px;font-weight:800}
+.card h1{margin:0;font-size:20px;line-height:1.55;font-weight:800;word-break:keep-all;white-space:pre-line}
+.home{display:inline-block;margin-top:22px;padding:11px 20px;border-radius:10px;background:#173d2c;color:#fff;font-size:14px;font-weight:800;text-decoration:none}
+@media(max-width:760px){.card{padding:28px 20px}.card h1{font-size:18px}}

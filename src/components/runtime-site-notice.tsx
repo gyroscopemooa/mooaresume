@@ -4,7 +4,8 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getRuntimeLink, isRuntimeItemActive, useRuntimeFlag, useRuntimeMaintenance, useRuntimeNotices } from "@/lib/live-sub-runtime";
+import { getRuntimeLink, useRuntimeFlag, useRuntimeMaintenance, useRuntimeNotices } from "@/lib/live-sub-runtime";
+import { resolveMaintenance } from "@/lib/live-sub-runtime/maintenance";
 import styles from "./runtime-site-notice.module.css";
 
 const hiddenPathPrefixes = ["/analysis", "/analyze", "/quick", "/pro", "/final", "/result", "/feedback", "/begin", "/entry", "/start", "/app", "/meensoo"];
@@ -26,7 +27,7 @@ export function RuntimeSiteNotice() {
   const maintenance = useRuntimeMaintenance();
   const [dismissed, setDismissed] = useState<string | null>(null);
   const isExcluded = hiddenPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-  const maintenanceActive = maintenance.enabled && maintenance.scope === "all" && isRuntimeItemActive({ ...maintenance, audience: "all", priority: 0 });
+  const maintenanceActive = resolveMaintenance(maintenance, { pathname })?.mode === "full";
   const notice = !maintenanceActive && enabled ? notices.find((candidate) => candidate.id !== dismissed && !isDismissed(candidate.id, candidate.showOnce)) : null;
 
   useEffect(() => {
