@@ -98,6 +98,19 @@ export function AppTabBar() {
     };
   }, [visible]);
 
+  useEffect(() => {
+    if (!visible || !window.visualViewport) return;
+    const viewport = window.visualViewport;
+    const restoreWhenKeyboardCloses = () => {
+      // Android's Back button can dismiss the keyboard without blurring the
+      // textarea. In that case focusout never fires, so use the restored
+      // visual viewport to return the app navigation instead.
+      if (window.innerHeight - viewport.height < 120) setTyping(false);
+    };
+    viewport.addEventListener("resize", restoreWhenKeyboardCloses);
+    return () => viewport.removeEventListener("resize", restoreWhenKeyboardCloses);
+  }, [visible]);
+
   if (!visible || HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null;
 
   const active = activeHref(pathname);

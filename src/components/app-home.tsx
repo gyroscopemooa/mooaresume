@@ -6,6 +6,7 @@ import { ArrowRight, ListOrdered, LockKeyhole } from "lucide-react";
 import { isFinalEnabled } from "@/domain/final-availability";
 import { FINAL_BASE_PRICE_KRW, PRO_BASE_PRICE_KRW, QUICK_BASE_PRICE_KRW, type ProductTier } from "@/domain/usage-entitlement";
 import { loadAppSelection, saveAppSelection } from "@/lib/app-intake-draft";
+import { isInstalledAppContext } from "@/lib/app-context";
 import { ProInputPage } from "./pro-input-page";
 import { QuickInputPage } from "./quick-input-page";
 import styles from "./app-home.module.css";
@@ -53,6 +54,7 @@ export function AppHome() {
   const finalOpen = isFinalEnabled();
   const [product, setProduct] = useState<ProductTier>("PRO");
   const [writingType, setWritingType] = useState<WritingType>("POLISH");
+  const [installedApp, setInstalledApp] = useState(false);
   // 고른 값은 이 탭에 기억해 둡니다. 결과를 보고 돌아왔을 때 다시 고르게 하면
   // 매번 같은 두 번을 누릅니다.
   const [restored, setRestored] = useState(false);
@@ -72,6 +74,14 @@ export function AppHome() {
   }, [finalOpen]);
 
   useEffect(() => {
+    // The actual TWA starts with `source=twa` (or its Android referrer). Its
+    // wider work canvas is deliberately app-only; normal mobile web keeps the
+    // shared web width and no app navigation.
+    const timeout = window.setTimeout(() => setInstalledApp(isInstalledAppContext()), 0);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     if (restored) saveAppSelection({ product, mode: writingType });
   }, [restored, product, writingType]);
 
@@ -84,10 +94,11 @@ export function AppHome() {
   const types = WRITING_TYPES[product];
   const activeType = types.find((type) => type.id === writingType) ?? types[0];
 
-  return <div className={styles.shell}>
+  return <div className={installedApp ? `${styles.shell} ${styles.shellInstalled}` : styles.shell}>
     <header className={styles.top}>
       <div className={styles.brandRow}>
-        <span className={styles.brand}><b>MOOA</b> Resume</span>
+        {/* 설치 앱에서만 TWA 표시를 붙입니다. 일반 웹 손님에게 붙으면 앱으로 오인돼 Polar 결제가 막힙니다. */}
+        <Link href={installedApp ? "/?source=twa" : "/"} className={styles.brand} aria-label="MOOA Resume 홈으로"><b>MOOA</b> Resume</Link>
         <Link href="/guide" className={styles.help}>이용 안내</Link>
       </div>
       <div className={styles.products} role="tablist" aria-label="상품 선택">
@@ -107,7 +118,7 @@ export function AppHome() {
           </button>;
         })}
       </div>
-      <div className={styles.types} role="tablist" aria-label="작성 유형 선택">
+      <div className={`${styles.types} ${types.length === 2 ? styles.typesTwo : ""}`} role="tablist" aria-label="작성 유형 선택">
         {types.map((type) => <button
           key={type.id}
           type="button"

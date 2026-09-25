@@ -78,7 +78,9 @@ export function syncAppContext(input: {
   // Digital Goods API는 Play에서 설치한 TWA에만 있습니다.
   const installed = readFlag(storage, INSTALLED_KEY) || isTwaLaunch(input) || input.hasDigitalGoods;
   if (installed) writeFlag(storage, INSTALLED_KEY);
-  const shell = installed || isAppShellPath(input.pathname);
+  // 기능 화면(`/app`)은 웹과 앱이 공유하지만, 하단 탭바는 설치된 TWA에만
+  // 제공합니다. 이 구분으로 모바일 웹은 랜딩 헤더·홈 경로를 유지합니다.
+  const shell = installed;
   return { installed, shell };
 }
 

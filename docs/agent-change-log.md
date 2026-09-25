@@ -1,5 +1,22 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-25 — Claude: Codex의 앱 넓은 캔버스·첫 실행 온보딩 작업을 stash에서 복구해 통합 — claude/app-wide-canvas-onboarding-20260925
+
+- 계기(사용자): "모바일은 넓은 데스크톱 모드로 하기로 했는데 하단 탭이 또 보인다. 코덱스로 다 만들었는데." 조사 결과 Codex가 2026-09-23 밤에 만든 작업이 **커밋·배포 없이** 공유 작업트리에서 `stash@{0}`("before applying paragraph-spacing fix")으로 치워져 있었고, 신규 파일(첫 실행 온보딩 컴포넌트)은 stash에 아예 들어가지 않아 디스크에서 사라진 상태였습니다.
+- 보존: stash 커밋 `ff4489d`를 브랜치 `recover/codex-app-canvas-stash-20260923`으로 남겼습니다(stash 자체는 그대로). 사라진 신규 3개 파일은 Codex 세션 기록(`~/.codex/sessions/2026/09/23/rollout-…19-41-09…jsonl`의 파일 생성 명령)에서 **글자 그대로** 복원했습니다. 이후 세션에서 이 파일을 수정한 기록은 없습니다.
+- 통합 범위(origin/main `5d09052` 기준 격리 워크트리, stash에서 아래만 선택 적용 — stash의 나머지 LIVE-SUB·커뮤니티 시드·assetlinks·로컬 개발 TWA 관련 변경은 가져오지 않음):
+  - `src/app/layout.tsx`: 루트 `viewport = { width: "960", initialScale: 0.4 }`(사용자 결정: 폰에서도 컴팩트한 데스크톱형 캔버스), `AppFirstRunOnboarding` 마운트.
+  - 신규 `src/components/app-first-run-onboarding.{tsx,module.css,test.tsx}`: 설치된 TWA에서만 기기당 1회 소개 영상(기존 `public/videos/mooa-intro-vertical-20260917.*`), 하단 건너뛰기, 영상 종료·닫기·건너뛰기 시 재표시 안 함, 서버 기록 없음. `내 정보 → 앱 소개 영상 다시 보기`(`app-my-page.tsx`).
+  - `src/components/app-home.{tsx,module.css,test.tsx}`: 설치 앱에서만 넓은 캔버스(960px), 로고 → `/?source=twa`(웹 홈), 작성 유형 칸 균등 배치.
+  - `src/components/landing-entry.tsx`: 설치 앱에서 홈의 첨삭 시작 버튼은 온보딩이 아니라 `/app`으로 복귀(TWA 표시 유지 → Polar 차단 가드 유지).
+  - `src/components/app-tab-bar.{tsx,module.css}`: 뷰포트 축소(0.4)에 맞춰 바를 82px·라벨 14px·아이콘 34px로 키움, 키보드 닫힘 시 복원.
+  - `src/lib/app-context.{ts,test.ts}`: 하단 탭은 **설치된 TWA에서만** 표시(브라우저의 `/app` 방문은 탭 없음). 결제 판정(`installed`)은 변경 없음.
+- 의도적으로 제외: 이미 main에 있는 로그인 복귀·`force-dynamic`·점검 게이트, stash의 로컬 개발 TWA 호스트 판정, Android 저장소 변경(별도 저장소).
+- 추가 수정(검증 중 발견): stash 원본은 일반 웹의 `/app` 로고도 `/?source=twa`로 보내, 웹 손님이 앱으로 오인돼 Polar 결제가 막힐 수 있었습니다. 로고 링크는 설치 앱에서만 `?source=twa`를 붙이고 일반 웹은 `/`로 가게 고쳤습니다(테스트 추가).
+- Validation: `tsc --noEmit` clean, 변경 파일 eslint 0건, 전체 `vitest run` 1,406건 통과(기존 `mobile.test.ts` Expo 로드 실패 1건은 이 PC 고질, 무관). 폰 크기(384×820)로 실제 렌더 확인 — viewport `width=960, initial-scale=0.4`, 설치 앱(`?source=twa`)에서 첫 실행 영상 자동 표시·하단 건너뛰기·건너뛴 뒤 재방문 시 미표시·`내 정보`에서 다시 보기 동작, 일반 웹 `/app`은 하단 탭·영상 없음. 실기기(Play 설치 앱) 확인은 배포 후 필요.
+- Rollback: 이 브랜치의 커밋을 revert(루트 viewport 제거만으로도 폰 축소는 원복). 원본 작업은 `recover/codex-app-canvas-stash-20260923`·`stash@{0}`에 그대로 있습니다.
+- Status: 검증 완료, main 푸시 예정.
+
 ## 2026-09-25 — Claude: 이벤트 팝업 개선 (이미지 클릭 이동·버튼 정리·이미지 저장) — feat/livesub-hq-events, 로컬 커밋·미푸시·미배포
 
 - 요청(사용자): 이미지를 눌러도 신청 페이지로 가게, 참여/보조 버튼을 심플하게 띄우기, 참가자가 팝업 이미지를 홍보에 쓰므로 저장 버튼.

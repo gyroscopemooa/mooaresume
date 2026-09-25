@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, LockKeyhole, Upload } from "lucide-react";
 import { decideWritingMode } from "@/domain/writing-mode";
 import { saveGuestDraft } from "@/lib/guest-draft";
+import { isInstalledAppContext } from "@/lib/app-context";
 import { AttachmentCard } from "./attachment-card";
 import styles from "./landing-entry.module.css";
 
@@ -44,6 +45,12 @@ export function LandingEntry() {
   }
 
   function continueWithDraft() {
+    // 앱에서 홈을 둘러본 뒤에는 웹 온보딩으로 빠지지 않고, 앱 입력 화면으로 돌아갑니다.
+    if (isInstalledAppContext()) {
+      router.push("/app");
+      return;
+    }
+
     const trimmedDraft = draft.trim();
     if (!trimmedDraft) {
       saveGuestDraft({ draftText: "", targetLength: 700, temporaryWritingMode: "CREATE" });

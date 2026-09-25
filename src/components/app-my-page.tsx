@@ -6,6 +6,7 @@ import { ArrowRight, CircleUser, Gift, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import { AccountDeleteForm } from "./account-delete-form";
+import { AppIntroReplayButton } from "./app-first-run-onboarding";
 import styles from "./app-my-page.module.css";
 
 /**
@@ -148,6 +149,7 @@ export function AppMyPage() {
     <section className={styles.card}>
       <h2>안내</h2>
       <ul className={styles.links}>
+        <li><AppIntroReplayButton /></li>
         <li><Link href="/refer">친구 추천 · 무료 이용권 <ArrowRight/></Link></li>
         <li><Link href="/guide">이용 방법 · 자주 묻는 질문 <ArrowRight/></Link></li>
         <li><Link href="/privacy">개인정보 처리방침 <ArrowRight/></Link></li>

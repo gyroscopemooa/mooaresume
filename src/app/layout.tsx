@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Script from "next/script";
 import { getSiteUrl } from "@/lib/site-url";
 import { AppTabBar } from "@/components/app-tab-bar";
+import { AppFirstRunOnboarding } from "@/components/app-first-run-onboarding";
 import { MaintenanceGate } from "@/components/maintenance-gate";
 import { RuntimeSiteNotice } from "@/components/runtime-site-notice";
 import "./globals.css";
@@ -10,6 +11,12 @@ import "./globals.css";
 // Do not let a cached document from an older Worker version request assets
 // which no longer exist after deployment.
 export const dynamic = "force-dynamic";
+
+/** Keep the compact desktop-like work canvas visible on phones and in the installed app. */
+export const viewport: Viewport = {
+  width: "960",
+  initialScale: 0.4,
+};
 
 
 const notoSansKr = Noto_Sans_KR({ subsets: ["latin"], variable: "--font-sans" });
@@ -81,6 +88,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* 하이브리드 앱 셸에서만 보이는 하단 메뉴바. 일반 웹 방문자에게는
             아무것도 렌더링하지 않으므로 기존 화면은 그대로입니다
             (components/app-tab-bar.tsx). */}
+        <AppFirstRunOnboarding />
         <AppTabBar/>
         {/* next/script's onLoad prop needs "use client", which the root layout
             can't be (it exports metadata). Naver's own snippet relies on

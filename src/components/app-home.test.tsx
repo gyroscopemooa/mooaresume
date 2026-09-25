@@ -35,6 +35,24 @@ describe("앱 첨삭 화면", () => {
     expect(draftBox()).toBeTruthy();
   });
 
+  it("설치 앱 시작 신호에서는 넓은 앱 캔버스를 사용한다", async () => {
+    window.history.replaceState(null, "", "/app?source=twa");
+    const { container } = render(<AppHome/>);
+
+    await waitFor(() => expect(container.firstElementChild?.className).toContain("shellInstalled"));
+    // 앱의 로고는 웹 홈으로 가되 TWA 표시를 이어 붙입니다.
+    expect(screen.getByRole("link", { name: "MOOA Resume 홈으로" }).getAttribute("href")).toBe("/?source=twa");
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("일반 웹의 /app 로고는 TWA 표시 없이 홈으로 간다(웹 손님이 앱으로 오인돼 결제가 막히지 않도록)", async () => {
+    window.history.replaceState(null, "", "/app");
+    render(<AppHome/>);
+
+    await waitFor(() => expect(screen.getByRole("link", { name: "MOOA Resume 홈으로" })).toBeTruthy());
+    expect(screen.getByRole("link", { name: "MOOA Resume 홈으로" }).getAttribute("href")).toBe("/");
+  });
+
   it("탭을 옮겼다 돌아와도 붙여넣은 자기소개서가 남아 있다", async () => {
     const { unmount } = render(<AppHome/>);
     fireEvent.change(draftBox(), { target: { value: "저는 생산라인에서 3년간 일했습니다." } });

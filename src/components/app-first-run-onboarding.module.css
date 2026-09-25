@@ -1,0 +1,33 @@
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: min(420px, calc(100vw - 32px), calc((100dvh - 190px) * 9 / 16));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #325440;
+  border-radius: 18px;
+  background: #081e13;
+  color: #eff6eb;
+  box-shadow: 0 30px 100px #0006;
+}
+.dialog::backdrop { background: rgb(3 15 10 / 75%); backdrop-filter: blur(6px); }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 68px; padding: 12px 14px; }
+.eyebrow { display: block; color: #9bc7ab; font-size: 10px; letter-spacing: 1.5px; }
+.header h2 { margin: 5px 0 0; color: #eff6eb; font-size: 16px; line-height: 1.35; letter-spacing: -.3px; }
+.close { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; padding: 0; border: 1px solid #3a5a46; border-radius: 50%; color: #eff6eb; background: #193c27; cursor: pointer; }
+.stage { width: 100%; aspect-ratio: 9 / 16; background: #061610; }
+.video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 12px; color: #aac9b4; font-size: 12px; line-height: 1.45; }
+.footer button, .error button { min-height: 40px; flex: none; padding: 8px 12px; border: 1px solid #52805f; border-radius: 9px; color: #eff6eb; background: #214932; font-size: 13px; font-weight: 700; cursor: pointer; }
+.footer button:hover, .error button:hover, .close:hover { background: #2a5238; }
+.close:focus-visible, .footer button:focus-visible, .error button:focus-visible, .replay:focus-visible { outline: 3px solid #70cba0; outline-offset: 3px; }
+.error { display: grid; place-items: center; gap: 12px; height: 100%; padding: 20px; text-align: center; }
+.error p { margin: 0; color: #d9e9dc; font-size: 15px; }
+.replay { width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0; border: 0; background: transparent; color: #17221d; font: inherit; font-size: 13.5px; cursor: pointer; text-align: left; }
+.replay svg { width: 16px; color: #176b4a; }
+.replay::after { content: "›"; color: #9aa5a0; font-size: 22px; line-height: 1; }
+@media (max-width: 480px) { .dialog { border-radius: 15px; } .header { padding: 10px 12px; } }

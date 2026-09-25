@@ -4,6 +4,9 @@
    입력 칸의 16px는 취향이 아닙니다 — iOS Safari는 그보다 작은 글씨의 입력에
    초점이 가면 화면을 확대하고 되돌리지 않습니다. */
 
+/* The root fixed viewport supplies the shared compact desktop canvas. Do not
+   apply another app-only zoom here: it would shrink the work surface twice
+   and leave unusable empty space on the right. */
 .shell { min-height: 100vh; background: #f7f9f7; color: #17221d; }
 
 .top {
@@ -39,10 +42,11 @@
 .productOn small { color: #2d7d58; }
 .product[aria-disabled="true"] { opacity: 0.55; cursor: default; }
 
-.types { display: flex; flex-wrap: wrap; gap: 6px; }
+.types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.typesTwo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .type, .typeOn {
   min-height: 40px;
-  padding: 9px 14px;
+  padding: 9px 6px;
   border: 1px solid #dce5e0;
   border-radius: 20px;
   background: #fff;
@@ -50,6 +54,7 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+  text-align: center;
 }
 .typeOn { border-color: #176b4a; background: #176b4a; color: #fff; }
 
@@ -98,5 +103,11 @@
 
 @media (min-width: 720px) {
   .shell { max-width: 720px; margin: 0 auto; }
+  /* The installed app intentionally gets the broader desktop work canvas.
+     Ordinary mobile web uses .shell alone and remains at its web width. */
+  .shellInstalled { max-width: 960px; }
+  /* 앱에서는 브랜드를 진짜 화면 중앙에 두고, 안내 링크만 오른쪽에 고정합니다. */
+  .shellInstalled .brandRow { position: relative; justify-content: center; }
+  .shellInstalled .help { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
   .top { padding: 14px 20px; }
 }
