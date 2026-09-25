@@ -1,5 +1,15 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-25 — Claude: `final_submission_patches` 쓰기 정책 보완 — "제출 전 보완" 저장이 매번 실패하던 문제 (DB 마이그레이션 1개, 코드 변경 없음)
+
+- 배경: 앞선 작업(`result_style_tips`) 중 발견한 의심을 사용자가 "final_submission_patches 이거하고 마무리"로 확인·정리하라고 지시.
+- 원인(마이그레이션과 코드로 확인): `20260902020000_final_submission_patch.sql`은 이 표에 **읽기 정책만** 만들고 쓰기는 "서버만 한다"는 뜻으로 정책을 두지 않았다("no client write" 정책은 `drop policy if exists`뿐 실제로 만들어지지 않음). 그런데 코드베이스에는 서비스 키 서버 클라이언트가 없어 `/api/final-patch`도 로그인한 사용자 권한으로 `upsert`한다. RLS에 쓰기 정책이 없으면 그 `upsert`는 매번 거절되어 응답이 `saved:false`가 되고, 화면(`final-patch-form.tsx`)에 "고쳤지만 저장하지 못했습니다. 아래 문장을 복사해 두세요."가 매번 뜬다. 보완된 문장은 그 자리 화면에는 나오지만 저장되지 않아 다시 열면 사라진다. 이 표를 읽는 코드는 지금 없어 그 밖의 피해는 없다.
+- 변경(추가 전용): 신규 `supabase/migrations/20260925040000_final_submission_patches_owner_write.sql` — 소유자에 한해 넣기·고치기 정책 추가(자기 `analysis_runs`의 행만, `upsert`는 둘 다 필요). 삭제 정책은 두지 않음(분석 실행 삭제 시 cascade). 앱 코드·다른 표·기존 정책은 변경 없음.
+- 트레이드오프(사용자 확인 필요): 원래 주석의 "브라우저가 직접 넣을 수 있으면 아무 문장이나 보완본으로 저장할 수 있다"는 우려가 이 정책으로 다시 열린다. 다만 서버도 같은 사용자 권한으로 쓰므로 서버만 쓰게 강제할 방법이 없었고(강제하려면 서비스 키 클라이언트 추가가 필요), 쓰는 사람과 읽는 사람이 모두 본인이라 다른 사람에게 영향이 없다.
+- Validation: 실제 DB에 적용하기 전이라 동작은 확인하지 못함. 마이그레이션은 `drop policy if exists` + `create policy`라 여러 번 실행해도 안전. 적용 뒤에는 FINAL 결과에서 "제출 전 보완"을 한 번 실행해 "저장하지 못했습니다" 문구가 사라지고 `final_submission_patches`에 행이 생기는지 봐야 함(로그인 필요).
+- Release: `origin/main`(`b882a6a`) 기준 격리 worktree, 브랜치 `claude/final-patch-write-policy`. SQL 파일 + 이 기록만이라 앱 동작 변경은 없다. 사용자가 SQL을 mooaresume 프로젝트에서 실행해야 효과가 난다.
+- Rollback: `drop policy "final patch owner insert" on public.final_submission_patches; drop policy "final patch owner update" on public.final_submission_patches;`(원래 상태로 돌아가 저장이 다시 거절됨).
+
 ## 2026-09-25 — Claude: 선택 제안 설명을 서버에 저장 — 다른 기기·다시 열기에서도 같은 설명 (추가 전용, DB 마이그레이션 1개 — 사용자 실행 대기)
 
 - 배경: 하이브리드 배포 뒤 남은 한계 "설명이 브라우저별 저장이라 다른 기기에서 열면 문구가 달라질 수 있다"에 대해 사용자가 진행 지시("ㄱㄱ"). 한 번 쓴 설명을 서버에 저장해 어느 기기에서 열어도 같은 문구가 나오게 한다.
