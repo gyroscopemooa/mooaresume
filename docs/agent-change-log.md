@@ -1,5 +1,17 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-25 — Claude: 2차 이벤트 캠페인 표시 코드 복원 (feat/livesub-hq-events, 로컬 커밋·미푸시·미배포)
+
+- 계기: 운영 번들과 `feat/livesub-hq-grant-reward` 에 `runtime-event-slot.tsx`/`eventCampaigns` 코드가 없음. 이후 main 기반 배포들이 09-22 이벤트 릴리스(`codex/livesub-event-release-20260922`)를 포함하지 않았기 때문.
+- 출처 판단: stash@{0}(미커밋 원본)과 릴리스 브랜치 커밋 `e92016d`+`c7dea0d` 를 비교 → 릴리스 쪽이 스태시 + HQ 실제 응답의 `null`(delayMs·scrollTriggerPercent·maxWidth·hideDaysAfterClose)·표시 힌트(`mixed/text/image`)·`my_page_entry` 허용 수정을 더한 상위 버전. 스태시는 삭제·pop 하지 않고 그대로 보존. 릴리스 브랜치의 무관한 변경(홍보 섹션, 품질 게이트, 커뮤니티 시드 등)은 가져오지 않음.
+- 기준: `origin/feat/maintenance-gate`(`c6640ec` = main `b882a6a`(grant-reward 포함) + 점검 모드) 위에 새 브랜치 `feat/livesub-hq-events`. `feat/livesub-hq-grant-reward` 는 main 보다 뒤처지고 옛 점검 코드(`ae827f0`)를 가진 가지라 사용하지 않음. cherry-pick `e92016d`→`e18ed56`, `c7dea0d`→`849661f`.
+- 충돌 해결: `schema.ts` 는 점검 모드 최신본(`imageUrl`·null 허용)을 뼈대로 이벤트 스키마(null 허용 수정 포함)를 이식해 재조립(마커 제거가 아님). `page.tsx` 는 슬롯 3줄(import, home_modal, home_banner)만 반영하고 릴리스 전용 홍보 컴포넌트는 제외. 변경 기록은 양쪽 유지. `.env.example`·grant-reward·점검 모드 파일은 변경 없음.
+- 화면 연결: home_modal, home_banner, pricing_banner, result_top_banner, result_bottom_cta(결과는 실제 결과에서만, 샘플·관리자 미리보기에서는 숨김). `announcement_bar`, `my_page_entry` 는 스키마·타입만 있고 화면에 연결되지 않음(스태시·릴리스 모두 동일, 이번에도 미구현).
+- Validation: typecheck·lint 통과, vitest 1,393개 통과(기존 `mobile.test.ts` Expo 로드 오류 1건 동일). 로컬 개발 서버(3002)에서 실제 HQ staging 데이터(캠페인 `event-mugeeze9`)로 확인: 홈 팝업·홈 배너·요금제 박스 렌더, 신청 링크 3곳 모두 `https://admin.live-sub.com/apply/mooaresume/event-mugeeze9?env=staging`(새 탭, noopener), 신청 페이지 200 및 폼 표시(제출 안 함), 콘솔 오류 없음. 3001 포트는 다른 세션 서버가 사용 중이라 HQ 응답을 그대로 전달하는 로컬 CORS 중계기(4200)를 거쳐 3002 로 확인함(HQ 는 localhost:3000/3001 만 허용).
+- 관찰: 홈에서 기존 60초 소개 영상 팝업(`<dialog>` 최상단 레이어)이 이벤트 팝업(z-index 120)보다 위에 떠, 영상 팝업을 닫아야 이벤트 팝업이 보임. 설정 요청은 구독 컴포넌트마다 1회씩(홈 5회) — 운영은 HQ 30초 캐시로 완화.
+- 미확인: 실제 분석 결과 화면의 result 슬롯, HQ 일시중지 후 30초 내 사라짐, 운영 배포. 임시 파일(.env.development.local, launch.json 항목, 중계기)은 정리함.
+- Rollback: 브랜치 삭제 또는 `e18ed56`,`849661f` revert. 배포 시 기준 운영 버전 확인 필수.
+
 ## 2026-09-25 — Claude: 선택 제안 설명을 서버에 저장 — 다른 기기·다시 열기에서도 같은 설명 (추가 전용, DB 마이그레이션 1개 — 사용자 실행 대기)
 ## 2026-09-22 — Codex: LIVE-SUB event-campaign production release (in progress)
 
