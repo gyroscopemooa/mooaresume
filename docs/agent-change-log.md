@@ -1,5 +1,16 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-25 — Claude: 선택 제안 설명을 서버에 저장 — 다른 기기·다시 열기에서도 같은 설명 (추가 전용, DB 마이그레이션 1개 — 사용자 실행 대기)
+
+- 배경: 하이브리드 배포 뒤 남은 한계 "설명이 브라우저별 저장이라 다른 기기에서 열면 문구가 달라질 수 있다"에 대해 사용자가 진행 지시("ㄱㄱ"). 한 번 쓴 설명을 서버에 저장해 어느 기기에서 열어도 같은 문구가 나오게 한다.
+- 변경(추가 전용): 신규 `supabase/migrations/20260925030000_result_style_tips.sql`(표 `result_style_tips`: 실행·소유자·문항·종류·글 해시·설명, `unique(analysis_run_id, question_id, kind, tip_key)`, RLS는 소유자 읽기 + 소유자 넣기(자기 실행에 대해서만), 수정·삭제 정책 없음 → 한 번 저장하면 바뀌지 않음). `src/app/api/result/style-tip/route.ts`: 제안 대상 확인 뒤 저장된 설명을 먼저 조회해 있으면 모델을 부르지 않고 그대로 반환, 없으면 생성 후 저장, 동시에 두 요청이 오면(23505 중복) 먼저 저장된 설명으로 맞춤. `route.test.ts`에 저장 관련 6개 추가(총 13개). `connector-merge-hint.tsx`는 주석만 수정. 브라우저 저장(`localStorage`)은 요청을 아끼는 용도로 유지.
+- 안전·호환: **표가 아직 없어도 동작한다** — 조회·저장이 실패하면(예: 42P01) 로그만 남기고 설명은 그대로 돌려준다(저장은 부가 기능). 그래서 코드를 먼저 배포해도 안전하고, 사용자가 SQL을 실행하면 그때부터 저장이 시작된다. 계정 삭제(`delete_account_preserving_billing`)는 `analysis_runs`·`auth.users` 삭제 시 `on delete cascade`로 이 표도 함께 지워져 함수 수정이 필요 없다. 첨삭 결과·다른 표·기존 정책은 건드리지 않음.
+- 확인한 것: `analysis_runs`에 소유자 읽기 정책이 있어(`20260816153000_analysis_runs_and_results.sql`) 넣기 정책의 소유 확인이 동작한다. 모델에는 이전과 같이 서버가 저장된 결과에서 꺼낸 문단만 간다.
+- 발견(이번 변경과 무관, 미수정): `final_submission_patches`(`20260902020000_final_submission_patch.sql`)는 주석에 "쓰기는 서버만"이라 적혀 있으나 `/api/final-patch`가 로그인 사용자 권한으로 upsert하고 그 표에는 넣기·수정 정책이 없어 저장이 조용히 실패(`saved:false`)하고 있을 가능성이 있다. 별도 확인 필요.
+- Validation: `tsc --noEmit`·ESLint 오류 없음, 경로 테스트 13개 통과, 전체 vitest 167개 파일 중 166개·1,354개 통과(실패 1개는 이 PC에 Expo 의존성이 없어 나는 무관한 `mobile.test.ts`). 이 표의 SQL은 아직 실제 DB에 적용하지 않았다(사용자가 mooaresume 프로젝트에서 실행).
+- Release: `origin/main`(`71b04fe`) 기준 격리 worktree `.claude/worktrees/tip-store`, 브랜치 `claude/style-tip-store`. 사용자 확인 뒤 `main`으로 push하고 SQL을 실행한다.
+- Rollback: 커밋 revert. 표를 만든 뒤 되돌리려면 `drop table public.result_style_tips;`(설명 캐시일 뿐이라 잃는 것은 저장된 설명뿐이며 다시 생성된다).
+
 ## 2026-09-25 — Claude: "선택 제안" 하이브리드 — 이유 문장을 AI가 글의 실제 내용으로 써 주기 (추가 전용)
 
 - 배경: 사용자 지시 "하이브리드 ㄱㄱ". 앞서 배포한 선택 제안 카드(고정 문구)에 컨설턴트식 설명을 얹되 결과가 "들쭉날쭉"하지 않게 한다 — **어디에 제안할지는 그대로 화면 규칙(`suggestConnectorMerges`, 결정적)이 정하고**, AI는 그 자리의 이유 문장 한 토막만 쓰며, 받은 설명은 브라우저에 한 번 저장해 다시 열어도 바뀌지 않는다.

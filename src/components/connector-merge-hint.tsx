@@ -8,7 +8,8 @@ import styles from "./connector-merge-hint.module.css";
 const PREVIEW_LENGTH = 24;
 const CACHE_PREFIX = "mooa:style-tip:v1:";
 
-// 같은 글이면 몇 번을 열어도 설명이 바뀌지 않게, 받은 설명은 이 브라우저에 한 번만 저장해 둔다.
+// 받은 설명은 이 브라우저에도 저장해 다시 열 때 요청을 아낀다. 기기가 달라도 설명이 같게 하는 것은
+// 서버의 저장(`result_style_tips`)이며, 그 표가 없는 환경에서는 이 저장만으로 같은 기기에서 유지된다.
 function readCachedTip(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
