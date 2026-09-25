@@ -84,7 +84,7 @@ export default function HomePage() {
     ],
   };
   return (
-    <><LaunchPriceBanner /><RuntimeEventSlot slot="home_modal" /><main className="home-page">
+    <><LaunchPriceBanner /><RuntimeEventSlot slot="announcement_bar" /><RuntimeEventSlot slot="home_modal" /><main className="home-page">
       {/* Inside .home-page, not beside it.
           body carries zoom:1.25 and .home-page cancels it with calc(1/1.25).
           Placed outside, the drawer took the 1.25 without the 0.8 back, so a

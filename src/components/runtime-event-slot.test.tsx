@@ -48,7 +48,7 @@ it("uses HQ content, waits for scroll and delay, and honours hideDaysAfterClose 
 
 const HASH = "6f1714d4d4311f61e4f71967fbc3fd7d448167efd7be24d6873039fef706a4d8";
 const imageUrl = `https://runtime.live-sub.com/api/runtime/media/events/${HASH}.png`;
-function selectWithImage(slot: "home_modal" | "home_banner") {
+function selectWithImage(slot: "home_modal" | "home_banner" | "announcement_bar") {
   const config = parseRuntimeConfig({ schemaVersion: 1, eventCampaigns: [{
     id: "img", status: "active", placements: [slot],
     placementConfigs: { [slot]: { enabled: true, delayMs: 0, triggerEvent: "page_load" } },
@@ -83,4 +83,13 @@ it("배너 카드는 이미지 클릭 링크만 있고 저장 버튼은 없다",
   act(() => vi.advanceTimersByTime(0));
   expect(screen.queryByRole("link", { name: /이미지 저장/ })).toBeNull();
   expect(screen.getAllByRole("link").filter((link) => link.querySelector("img"))).toHaveLength(1);
+});
+
+it("상단 공지바 자리는 기본으로 가로 compact 카드로 그려지고 이미지 저장 버튼은 없다", () => {
+  selectWithImage("announcement_bar");
+  const { container } = render(<RuntimeEventSlot slot="announcement_bar" />);
+  act(() => vi.advanceTimersByTime(0));
+  expect(screen.getByText("SNS 후기 이벤트")).toBeTruthy();
+  expect(container.querySelector("article")?.getAttribute("data-layout")).toBe("compact");
+  expect(screen.queryByRole("link", { name: /이미지 저장/ })).toBeNull();
 });

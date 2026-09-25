@@ -7851,3 +7851,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: src/server/community/community-seed-content.ts and tests; src/app/api/community/seed/route.ts and tests; this log.
 - Validation: typecheck passed; lint passed with 2 pre-existing unrelated warnings; full Vitest 159 files / 1,253 tests passed (including 120-day category balance, prompt fixtures, structured-output/category rejection and route history forwarding). No paid generation or deployment performed. recentTopics is optional for compatibility with the protected portable community kit; the production route always passes history. Category diversity is enforced; format diversity and factuality are prompt constraints, not live-model guarantees.
 - Rollback: revert this focused commit.
+
+### 2026-09-25 — Claude: 이벤트 상단 공지바 자리(announcement_bar) 연결 + events 브랜치 배포
+
+- Agent: Claude. 사용자 요청: 상단 공지바에 이벤트가 안 보임 → 10배 할인 띠 바로 아래에 붙이고, `feat/livesub-hq-events`(점검 게이트 + 이벤트 렌더링)를 main에 합쳐 배포.
+- 원인: 이벤트 렌더링 코드(`runtime-event-slot.tsx`)가 origin/main에 없었음(미배포). 또한 `announcement_bar` 자리는 정의만 있고 어디에도 안 붙어 있었음.
+- 변경(`release/livesub-events-20260925`, `feat/livesub-hq-events` 위 1커밋): `src/app/page.tsx` — `<LaunchPriceBanner />` 바로 뒤에 `<RuntimeEventSlot slot="announcement_bar" />` 추가. `runtime-event-slot.tsx` — announcement_bar는 HQ가 레이아웃을 안 정했을 때 기본 `compact`. `runtime-event-slot.module.css` — `.announcement_bar` 여백. 테스트 1개 추가.
+- 함께 배포되는 것: `feat/livesub-hq-events`의 기존 커밋(점검 게이트 c6640ec, 이벤트 렌더링 e18ed56·849661f·b32526a·4dfd9da). 점검 게이트는 production에 `HQ_MAINTENANCE_BYPASS_TOKEN` secret이 없어 점검 중 우회 확인 불가(현재 HQ 점검은 꺼져 있음).
+- 되돌린 것: 같은 기능을 공유 폴더(`feat/livesub-hq-grant-reward`)에 중복으로 만들었다가 사용자 승인 후 전부 삭제(내가 만든 파일만).
+- 표시 조건: HQ에서 이벤트 status가 `active`여야 보임(현재 `paused`).
+- Rollback: main에서 이 커밋 이후 머지 범위를 revert.

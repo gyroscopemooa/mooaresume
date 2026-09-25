@@ -44,7 +44,7 @@ function EventCard({ selected, onDismiss, saveable = false }: { selected: Select
   const image = content.imageUrl && !imageBroken
     ? <img className={styles.image} src={content.imageUrl} alt={content.title} onError={() => setImageBroken(true)} /* eslint-disable-line @next/next/no-img-element */ />
     : null;
-  return <article className={styles.card} data-layout={config.layout ?? "card"}>
+  return <article className={styles.card} data-layout={config.layout ?? (selected.placement === "announcement_bar" ? "compact" : "card")}>
     {config.showCloseButton !== false && <button type="button" className={styles.close} aria-label={`${content.title} 닫기`} onClick={onDismiss}><X aria-hidden="true" /></button>}
     {image && <div className={styles.media}>
       {/* 이미지를 눌러도 참여 버튼과 같은 곳으로 간다. 링크가 없는 이벤트는 그냥 그림이다. */}
