@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { X } from "lucide-react";
+import { Download, X } from "lucide-react";
 import { useEffect, useState, type CSSProperties } from "react";
 import { getRuntimeLink, useRuntimeEventCampaign, type RuntimeEventPlacement, type SelectedEventCampaign } from "@/lib/live-sub-runtime";
+import { eventImageDownloadHref } from "@/lib/live-sub-runtime/event-image";
 import styles from "./runtime-event-slot.module.css";
 
 const slotTrigger: Record<RuntimeEventPlacement, "page_load" | "result_rendered"> = { home_modal: "page_load", home_banner: "page_load", result_top_banner: "result_rendered", result_bottom_cta: "result_rendered", pricing_banner: "page_load", announcement_bar: "page_load", my_page_entry: "page_load" };
@@ -24,25 +25,39 @@ function frequencyReached(selected: SelectedEventCampaign) {
 }
 function recordImpression(selected: SelectedEventCampaign) { try { storageFor(selected.campaign.frequency.mode)?.setItem(impressionKey(selected), "1"); } catch {} }
 
-function EventAction({ selected }: { selected: SelectedEventCampaign }) {
-  const link = getRuntimeLink(selected.content.linkUrl, selected.campaign.linkType);
-  if (!link) return null;
-  const label = selected.content.buttonText ?? "이벤트 보기";
-  return link.external ? <a className={styles.action} href={link.href} target="_blank" rel="noopener">{label} <span aria-hidden="true">→</span></a> : <Link className={styles.action} href={link.href}>{label} <span aria-hidden="true">→</span></Link>;
+type EventLink = NonNullable<ReturnType<typeof getRuntimeLink>>;
+
+/** 버튼과 이미지가 같은 링크 규칙을 쓴다: 내부 경로는 앱 이동, 외부는 https 만 새 탭(noopener). */
+function EventLink({ link, className, label, children }: { link: EventLink; className?: string; label?: string; children: React.ReactNode }) {
+  return link.external
+    ? <a className={className} href={link.href} target="_blank" rel="noopener" aria-label={label}>{children}</a>
+    : <Link className={className} href={link.href} aria-label={label}>{children}</Link>;
 }
 
-function EventCard({ selected, onDismiss }: { selected: SelectedEventCampaign; onDismiss: () => void }) {
+function EventCard({ selected, onDismiss, saveable = false }: { selected: SelectedEventCampaign; onDismiss: () => void; saveable?: boolean }) {
   const [imageBroken, setImageBroken] = useState(false);
   const { content, config } = selected;
+  const link = getRuntimeLink(content.linkUrl, selected.campaign.linkType);
+  const label = content.buttonText ?? "이벤트 보기";
+  const saveHref = saveable && !imageBroken ? eventImageDownloadHref(content.imageUrl) : null;
+  // HQ controls HTTPS URLs at runtime, so Next's build-time image allowlist cannot optimize it safely.
+  const image = content.imageUrl && !imageBroken
+    ? <img className={styles.image} src={content.imageUrl} alt={content.title} onError={() => setImageBroken(true)} /* eslint-disable-line @next/next/no-img-element */ />
+    : null;
   return <article className={styles.card} data-layout={config.layout ?? "card"}>
     {config.showCloseButton !== false && <button type="button" className={styles.close} aria-label={`${content.title} 닫기`} onClick={onDismiss}><X aria-hidden="true" /></button>}
-    {/* HQ controls HTTPS URLs at runtime, so Next's build-time image allowlist cannot optimize it safely. */}
-    {content.imageUrl && !imageBroken && <img className={styles.image} src={content.imageUrl} alt={content.title} onError={() => setImageBroken(true)} /* eslint-disable-line @next/next/no-img-element */ />}
+    {image && <div className={styles.media}>
+      {/* 이미지를 눌러도 참여 버튼과 같은 곳으로 간다. 링크가 없는 이벤트는 그냥 그림이다. */}
+      {link ? <EventLink link={link} className={styles.imageLink} label={label}>{image}</EventLink> : image}
+      {saveHref && <a className={styles.save} href={saveHref} download><Download aria-hidden="true" />이미지 저장</a>}
+    </div>}
     <div className={styles.copy}>
       {content.badgeText && <small>{content.badgeText}</small>}
       <h2>{content.title}</h2>{content.body && <p>{content.body}</p>}
-      <EventAction selected={selected} />
-      {content.secondaryButtonText && <button type="button" onClick={onDismiss}>{content.secondaryButtonText}</button>}
+      {(link || content.secondaryButtonText) && <div className={styles.actions}>
+        {link && <EventLink link={link} className={styles.action}>{label} <span aria-hidden="true">→</span></EventLink>}
+        {content.secondaryButtonText && <button type="button" className={styles.secondary} onClick={onDismiss}>{content.secondaryButtonText}</button>}
+      </div>}
     </div>
   </article>;
 }
@@ -84,6 +99,6 @@ export function RuntimeEventSlot({ slot, sample = false }: { slot: RuntimeEventP
     setShownKey(null);
   };
   const style = selected.config.maxWidth ? ({ "--event-max-width": `${selected.config.maxWidth}px` } as CSSProperties) : undefined;
-  if (slot === "home_modal") return <div className={styles.backdrop} role="presentation"><div className={styles.modal} role="dialog" aria-modal="true" aria-label={selected.content.title} style={style}><EventCard selected={selected} onDismiss={dismiss} /></div></div>;
+  if (slot === "home_modal") return <div className={styles.backdrop} role="presentation"><div className={styles.modal} role="dialog" aria-modal="true" aria-label={selected.content.title} style={style}><EventCard selected={selected} onDismiss={dismiss} saveable /></div></div>;
   return <div className={`${styles.slot} ${styles[slot]}`} style={style}><EventCard selected={selected} onDismiss={dismiss} /></div>;
 }

@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-25 — Claude: 이벤트 팝업 개선 (이미지 클릭 이동·버튼 정리·이미지 저장) — feat/livesub-hq-events, 로컬 커밋·미푸시·미배포
+
+- 요청(사용자): 이미지를 눌러도 신청 페이지로 가게, 참여/보조 버튼을 심플하게 띄우기, 참가자가 팝업 이미지를 홍보에 쓰므로 저장 버튼.
+- 변경: `src/components/runtime-event-slot.tsx`/`.module.css` — 이미지가 참여 버튼과 같은 링크(내부는 앱 이동, 외부는 https 새 탭 noopener)를 가짐, 버튼 묶음(`.actions`)·보조 버튼 스타일(팝업에서는 세로 전체 폭, 간격 10px), 팝업 이미지 위 "이미지 저장" 칩(팝업 슬롯만; 배너/요금제 카드에는 없음). 신규 `src/lib/live-sub-runtime/event-image.ts`(허용 주소 검사), `src/app/api/event-image/route.ts`(다운로드 통로) 및 테스트 3개.
+- 저장 방식 사유: HQ 미디어 서버(`/api/runtime/media/events/*`)가 CORS 를 허용하지 않아 브라우저 단독 다운로드가 불가(`download` 속성은 교차 출처에서 무시됨). 그래서 같은 도메인 통로를 둠. 보안: 설정된 HQ 주소 + `/api/runtime/media/events/<sha256>.(png|jpg|jpeg|webp|gif)` 한 가지 모양만 통과(쿼리·자격증명·다른 호스트 거절), 리다이렉트 금지, 8초 시간 제한, 8MB 상한, 이미지 content-type 만, `Content-Disposition: attachment`, `nosniff`. 화면 렌더·빌드와 무관하며 저장 클릭 시에만 호출. HQ 가 미디어에 CORS(또는 attachment) 헤더를 추가하면 이 통로는 불필요해짐.
+- Validation: typecheck·lint 통과, vitest 1,402개 통과(기존 `mobile.test.ts` Expo 로드 오류 1건 동일). 로컬 3001(HQ staging 직접 연결)에서 확인: 이미지·참여 버튼 모두 `https://admin.live-sub.com/apply/mooaresume/event-mugeeze9?env=staging` 새 탭, 저장 통로가 200 `image/png` attachment `mooaresume-event-6f1714d4.png` 1.6MB 반환, 계산된 스타일(참여 진한 초록 채움 / 보조 흰색+테두리, 세로, gap 10px, line-height 1.2).
+- 미확인: 이 브라우저 창이 세로로 짧아 팝업 하단 보조 버튼의 시각 확인은 계산된 스타일로 대체. 실기기(모바일) 저장 동작 미확인.
+- Rollback: 이 커밋 revert(이미지·버튼 스타일·통로 라우트 제거).
+
 ## 2026-09-25 — Claude: 2차 이벤트 캠페인 표시 코드 복원 (feat/livesub-hq-events, 로컬 커밋·미푸시·미배포)
 
 - 계기: 운영 번들과 `feat/livesub-hq-grant-reward` 에 `runtime-event-slot.tsx`/`eventCampaigns` 코드가 없음. 이후 main 기반 배포들이 09-22 이벤트 릴리스(`codex/livesub-event-release-20260922`)를 포함하지 않았기 때문.

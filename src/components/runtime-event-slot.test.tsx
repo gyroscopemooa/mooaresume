@@ -45,3 +45,42 @@ it("uses HQ content, waits for scroll and delay, and honours hideDaysAfterClose 
   act(() => vi.advanceTimersByTime(1000));
   expect(screen.queryByText("본문")).toBeNull();
 });
+
+const HASH = "6f1714d4d4311f61e4f71967fbc3fd7d448167efd7be24d6873039fef706a4d8";
+const imageUrl = `https://runtime.live-sub.com/api/runtime/media/events/${HASH}.png`;
+function selectWithImage(slot: "home_modal" | "home_banner") {
+  const config = parseRuntimeConfig({ schemaVersion: 1, eventCampaigns: [{
+    id: "img", status: "active", placements: [slot],
+    placementConfigs: { [slot]: { enabled: true, delayMs: 0, triggerEvent: "page_load" } },
+    frequency: { mode: "per_session" },
+    defaultLocale: "ko", linkType: "external",
+    defaultContent: { title: "SNS 후기 이벤트", buttonText: "참여하기", secondaryButtonText: "나중에", imageUrl, linkUrl: "https://admin.live-sub.com/apply/mooaresume/img?env=staging" },
+  }] });
+  state.selected = selectRuntimeEventCampaign(config!.eventCampaigns, slot);
+}
+
+it("이미지를 눌러도 참여 버튼과 같은 신청 페이지(새 탭)로 가고, 팝업에는 이미지 저장 버튼이 있다", () => {
+  selectWithImage("home_modal");
+  render(<RuntimeEventSlot slot="home_modal" />);
+  act(() => vi.advanceTimersByTime(0));
+  const applyHref = "https://admin.live-sub.com/apply/mooaresume/img?env=staging";
+  const links = screen.getAllByRole("link");
+  const apply = links.filter((link) => link.getAttribute("href") === applyHref);
+  expect(apply).toHaveLength(2); // 이미지 + 참여 버튼
+  apply.forEach((link) => { expect(link.getAttribute("target")).toBe("_blank"); expect(link.getAttribute("rel")).toBe("noopener"); });
+  expect(apply[0].querySelector("img")).toBeTruthy();
+  const save = screen.getByRole("link", { name: /이미지 저장/ });
+  expect(save.getAttribute("href")).toBe(`/api/event-image?src=${encodeURIComponent(imageUrl)}`);
+  expect(save.hasAttribute("download")).toBe(true);
+  // 보조 버튼은 닫기 동작
+  fireEvent.click(screen.getByRole("button", { name: "나중에" }));
+  expect(screen.queryByText("SNS 후기 이벤트")).toBeNull();
+});
+
+it("배너 카드는 이미지 클릭 링크만 있고 저장 버튼은 없다", () => {
+  selectWithImage("home_banner");
+  render(<RuntimeEventSlot slot="home_banner" />);
+  act(() => vi.advanceTimersByTime(0));
+  expect(screen.queryByRole("link", { name: /이미지 저장/ })).toBeNull();
+  expect(screen.getAllByRole("link").filter((link) => link.querySelector("img"))).toHaveLength(1);
+});
