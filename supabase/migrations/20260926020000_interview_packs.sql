@@ -547,6 +547,46 @@ end;
 $$;
 
 /*
+ * 충돌 확인 뒤 점검 결과의 "상태만" 다시 계산해 저장한다(AI 호출 없음, 사용량 차감 없음).
+ * 새 자료 버전을 만든 직후에 부르며, 점검 결과가 새 버전 기준이 되어 바로 생성으로 넘어갈 수 있게 한다.
+ * 진행 중인 AI 작업이 있으면(pack 이 busy) 덮어쓰지 않는다.
+ */
+create or replace function public.refresh_interview_pack_assessment(
+  p_owner_user_id uuid,
+  p_pack_id uuid,
+  p_materials_version integer,
+  p_assessment jsonb
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target public.interview_packs%rowtype;
+begin
+  select * into target from public.interview_packs
+  where id = p_pack_id and owner_user_id = p_owner_user_id for update;
+  if target.id is null then
+    raise exception 'PACK_NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if target.assessment is null then
+    return false;
+  end if;
+  if target.busy_until is not null and target.busy_until > now() then
+    raise exception 'PACK_BUSY' using errcode = '55P03';
+  end if;
+  if p_materials_version > target.materials_version then
+    raise exception 'MATERIAL_VERSION_UNKNOWN' using errcode = '22023';
+  end if;
+  update public.interview_packs
+  set assessment = p_assessment, assessment_materials_version = p_materials_version
+  where id = target.id;
+  return true;
+end;
+$$;
+
+/*
  * 생성·이어 만들기·AI 수정 결과 저장 + 예약 확정.
  *
  * p_cards 는 [{slot, card, model, promptVersion}] 배열. 문항마다 새 판(revision)으로 쌓는다 — 이전 판은 지우지 않는다.
@@ -705,6 +745,7 @@ revoke all on function public.save_interview_pack_materials(uuid, uuid, jsonb) f
 revoke all on function public.reserve_interview_pack_usage(uuid, uuid, text, text, text) from public, anon, authenticated;
 revoke all on function public.settle_interview_pack_usage(uuid, uuid, text, text) from public, anon, authenticated;
 revoke all on function public.save_interview_pack_assessment(uuid, uuid, integer, jsonb) from public, anon, authenticated;
+revoke all on function public.refresh_interview_pack_assessment(uuid, uuid, integer, jsonb) from public, anon, authenticated;
 revoke all on function public.save_interview_pack_answers(uuid, uuid, integer, jsonb) from public, anon, authenticated;
 revoke all on function public.save_interview_pack_user_answer(uuid, uuid, text, text, integer, integer, jsonb) from public, anon, authenticated;
 revoke all on function public.delete_admin_test_packs(uuid, uuid[]) from public, anon, authenticated;
@@ -716,6 +757,7 @@ grant execute on function public.save_interview_pack_materials(uuid, uuid, jsonb
 grant execute on function public.reserve_interview_pack_usage(uuid, uuid, text, text, text) to service_role;
 grant execute on function public.settle_interview_pack_usage(uuid, uuid, text, text) to service_role;
 grant execute on function public.save_interview_pack_assessment(uuid, uuid, integer, jsonb) to service_role;
+grant execute on function public.refresh_interview_pack_assessment(uuid, uuid, integer, jsonb) to service_role;
 grant execute on function public.save_interview_pack_answers(uuid, uuid, integer, jsonb) to service_role;
 grant execute on function public.save_interview_pack_user_answer(uuid, uuid, text, text, integer, integer, jsonb) to service_role;
 grant execute on function public.delete_admin_test_packs(uuid, uuid[]) to service_role;

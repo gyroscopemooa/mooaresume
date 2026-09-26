@@ -212,6 +212,8 @@ export const materialDocSchema = z.object({
   documentId: z.string().nullable().default(null),
   documentVersionId: z.string().nullable().default(null),
   filename: z.string().nullable().default(null),
+  /** 너무 길어 앞부분만 쓴 문서. 화면에서 그렇다고 알려 준다. */
+  truncated: z.boolean().optional(),
 });
 export type MaterialDoc = z.infer<typeof materialDocSchema>;
 
@@ -434,6 +436,49 @@ export type StoredAnswer = {
 export function cardIsComplete(card: Pick<PackCard, "issues">): boolean {
   return !card.issues.some((issue) => issue.severity === "error");
 }
+
+// ───────────────────────────── 저장된 JSON 읽기용 스키마 ─────────────────────────────
+// DB 에 들어 있는 카드·점검 결과를 읽을 때 형식을 다시 확인한다(스키마가 바뀐 옛 행이 화면을 깨지 않게).
+
+export const packIssueSchema = z.object({
+  type: z.enum(PACK_ISSUE_TYPES),
+  severity: z.enum(["error", "warn"]),
+  detail: z.string(),
+});
+
+export const packCardSchema = z.object({
+  slot: packSlotIdSchema,
+  answer: z.string(),
+  keywords: z.array(z.object({ text: z.string(), sentenceIndex: z.number().int().nullable() })),
+  steps: z.array(z.object({ label: z.string(), sentence: z.string() })),
+  memoryLine: z.string(),
+  followUps: z.array(z.string()),
+  evidence: z.array(evidenceRefSchema),
+  usedFactIds: z.array(z.string()),
+  issues: z.array(packIssueSchema),
+});
+
+export const packAssessmentSchema = z.object({
+  materialsVersion: z.number().int().positive(),
+  facts: z.array(z.object({ id: z.string(), kind: z.enum(FACT_KINDS), statement: z.string(), source: evidenceRefSchema })),
+  conflicts: z.array(z.object({
+    id: z.string(),
+    topic: z.enum(CONFLICT_TOPICS),
+    summary: z.string(),
+    left: evidenceRefSchema,
+    right: evidenceRefSchema,
+  })),
+  slots: z.array(z.object({
+    slot: packSlotIdSchema,
+    status: readinessSchema,
+    reason: z.string(),
+    questions: z.array(z.string()),
+    factIds: z.array(z.string()),
+    blockedByConflictIds: z.array(z.string()),
+  })),
+  droppedFacts: z.number().int().nonnegative(),
+  droppedConflicts: z.number().int().nonnegative(),
+});
 
 // ───────────────────────────── 사용량·설정 ─────────────────────────────
 
