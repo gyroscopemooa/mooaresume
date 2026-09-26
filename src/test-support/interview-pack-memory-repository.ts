@@ -52,9 +52,10 @@ export class MemoryPackRepository implements PackRepository {
   private counter = 0;
   clock = () => Date.now();
 
-  private id(prefix: string): string {
+  private id(_prefix: string): string {
     this.counter += 1;
-    return `${prefix}-${String(this.counter).padStart(8, "0")}-0000-4000-8000-000000000000`;
+    // 실제 DB 처럼 UUID 모양이어야 라우트의 형식 검사를 통과한다.
+    return crypto.randomUUID();
   }
 
   addRun(runId: string, run: FakeRun) {

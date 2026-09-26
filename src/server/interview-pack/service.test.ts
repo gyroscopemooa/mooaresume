@@ -775,9 +775,9 @@ describe("오류 메시지와 원장에는 자료 원문이 없다", () => {
   it("서비스 오류 메시지에는 자료 내용이 실리지 않는다", async () => {
     const opened = await service.openForRun(USER, RUN);
     ai.assessImpl = async () => { throw new PackAiProviderError(500, "PROVIDER_HTTP_500"); };
-    const error = await service.check(USER, opened.pack.id, nextKey()).catch((caught) => caught as PackServiceError);
+    const error = (await service.check(USER, opened.pack.id, nextKey()).catch((caught: unknown) => caught)) as PackServiceError;
     expect(error).toBeInstanceOf(PackServiceError);
     expect(error.message).not.toContain("검사보조");
-    expect(JSON.stringify((error as PackServiceError).detail ?? {})).not.toContain("샘플파트");
+    expect(JSON.stringify(error.detail ?? {})).not.toContain("샘플파트");
   });
 });

@@ -247,6 +247,25 @@ export class InterviewPackService {
     return this.buildState(pack);
   }
 
+  /**
+   * 탭이 열릴 때 부르는 조회. 팩이 있으면 상태를, 없으면 "만들 수 있는지"만 알려 준다.
+   * 아무것도 만들지 않고 AI 도 부르지 않는다(최초 진입만으로 생성이 실행되지 않게).
+   */
+  async peekForRun(userId: string, analysisRunId: string): Promise<{ state: PackState | null; availability: { available: boolean; code?: PackErrorCode; reason?: string } }> {
+    const existing = await this.repo.getPackByRun(userId, analysisRunId);
+    if (existing) return { state: await this.buildState(existing), availability: { available: true } };
+
+    const access = await this.repo.getRunAccess(userId, analysisRunId);
+    if (!access.allowed) {
+      const code: PackErrorCode = access.reason === "RUN_NOT_FOUND" ? "NOT_FOUND" : access.reason === "NOT_FINAL" ? "NOT_FINAL" : access.reason === "NOT_COMPLETED" ? "NOT_COMPLETED" : "ACCESS_DENIED";
+      return { state: null, availability: { available: false, code, reason: describeDenial(access.reason) } };
+    }
+    if (access.accessSource !== "admin_test" && !isEligibleByPolicy(this.config, access.completedAt)) {
+      return { state: null, availability: { available: false, code: "NOT_ELIGIBLE", reason: "이 결과는 면접 준비팩 제공 대상이 아닙니다." } };
+    }
+    return { state: null, availability: { available: true } };
+  }
+
   async getState(userId: string, packId: string): Promise<PackState> {
     return this.buildState(await this.requirePack(userId, packId));
   }
