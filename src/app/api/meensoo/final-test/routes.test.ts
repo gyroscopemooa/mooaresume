@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { MemoryPackRepository } from "@/test-support/interview-pack-memory-repository";
+import { MemoryPackRepository } from "@/server/interview-pack/memory-repository";
 
 const state = vi.hoisted(() => ({
   user: null as { id: string; email: string | null } | null,

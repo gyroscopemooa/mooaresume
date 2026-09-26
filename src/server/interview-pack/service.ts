@@ -36,7 +36,7 @@ import {
   PackAiProviderError,
   type PackAiGateway,
   type PackAiResult,
-} from "@/server/ai/interview-pack/gateway";
+} from "@/server/ai/interview-pack/gateway-types";
 import {
   INTERVIEW_PACK_PROMPT_VERSION,
   REVISE_KIND_LABEL,

@@ -8,9 +8,9 @@ import {
   type PackSlotId,
 } from "@/domain/interview-pack";
 import { splitParagraphs } from "@/domain/interview-pack-text";
-import { PackAiInvalidOutputError, PackAiProviderError, type PackAiGateway, type PackAiResult } from "@/server/ai/interview-pack/gateway";
+import { PackAiInvalidOutputError, PackAiProviderError, type PackAiGateway, type PackAiResult } from "@/server/ai/interview-pack/gateway-types";
 import { getPackSample } from "@/fixtures/interview-pack-samples";
-import { MemoryPackRepository, makeRun } from "@/test-support/interview-pack-memory-repository";
+import { MemoryPackRepository, makeRun } from "@/server/interview-pack/memory-repository";
 import { InterviewPackService, PackServiceError, type PackState } from "./service";
 
 const USER = "11111111-1111-4111-8111-111111111111";

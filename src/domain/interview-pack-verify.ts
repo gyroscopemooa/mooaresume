@@ -22,6 +22,7 @@ import {
   locateQuote,
   normalizeForMatch,
   sentenceExistsInAnswer,
+  splitParagraphs,
   splitSentences,
   type EffectiveMaterials,
 } from "@/domain/interview-pack-text";
@@ -314,19 +315,39 @@ export function scanClaims(answer: string, sourceTexts: readonly string[]): Pack
   return issues;
 }
 
-/** 사용자가 확인으로 물리친 쪽에만 있는 숫자가 답변에 남아 있는지. */
-export function scanRejectedValues(answer: string, confirmations: readonly ConflictConfirmation[]): PackIssue[] {
+/** 확인으로 물리친 역할 서술에만 있는 동사(팀 배정·지휘 등). 자료가 승인 주체를 다른 사람으로 밝힌 경우의 부풀림을 잡는다. */
+const REJECTED_ROLE_LEXEMES = ["배정", "지휘", "총괄", "이끌", "리드"];
+
+/**
+ * 사용자가 확인으로 물리친 쪽에만 있는 숫자·역할 표현이 답변에 남아 있는지.
+ * "물리친 쪽에만"이란 그 문단을 뺀 나머지 자료 어디에도 없는 값이다 — 같은 날짜가 이력서의 다른 줄에
+ * 있다면 그것은 물리친 값이 아니라 원래 있는 사실이다.
+ */
+export function scanRejectedValues(answer: string, confirmations: readonly ConflictConfirmation[], sourceTexts: readonly string[] = []): PackIssue[] {
   const answerTokens = new Set(extractNumberTokens(answer));
+  const answerNormalized = normalizeForMatch(affirmativeAnswerSentences(answer).join(" "));
   const found = new Set<string>();
   for (const confirmation of confirmations) {
-    if (!confirmation.rejectedText || confirmation.topic === "role") continue;
+    if (!confirmation.rejectedText) continue;
+    const rejectedLines = new Set(confirmation.rejectedText.split("\n").map((line) => line.trim()).filter(Boolean));
+    const elsewhere = sourceTexts.map((text) => splitParagraphs(text).filter((line) => !rejectedLines.has(line)).join("\n")).join("\n");
+    const elsewhereTokens = new Set(extractNumberTokens(elsewhere));
     const chosen = new Set(extractNumberTokens(confirmation.chosenText ?? ""));
     for (const token of extractNumberTokens(confirmation.rejectedText)) {
-      if (!chosen.has(token) && answerTokens.has(token)) found.add(token);
+      if (!chosen.has(token) && !elsewhereTokens.has(token) && answerTokens.has(token)) found.add(token);
+    }
+    if (confirmation.topic === "role") {
+      const chosenNormalized = normalizeForMatch(confirmation.chosenText ?? "");
+      const elsewhereNormalized = normalizeForMatch(elsewhere);
+      const rejectedNormalized = normalizeForMatch(confirmation.rejectedText);
+      for (const lexeme of REJECTED_ROLE_LEXEMES) {
+        const needle = normalizeForMatch(lexeme);
+        if (rejectedNormalized.includes(needle) && !chosenNormalized.includes(needle) && !elsewhereNormalized.includes(needle) && answerNormalized.includes(needle)) found.add(lexeme);
+      }
     }
   }
   if (found.size === 0) return [];
-  return [{ type: "rejected_value", severity: "error", detail: `확인 과정에서 제외하신 내용의 숫자가 남아 있습니다: ${[...found].join(", ")}` }];
+  return [{ type: "rejected_value", severity: "error", detail: `확인 과정에서 제외하신 내용이 답변에 남아 있습니다: ${[...found].join(", ")}` }];
 }
 
 function excludePhrases(exclude: string): string[] {
@@ -407,7 +428,7 @@ export function verifyGeneratedCard(ai: AiCard, input: CardVerificationInput): P
   }
 
   issues.push(...scanClaims(ai.answer, sourceTexts(materials)));
-  issues.push(...scanRejectedValues(ai.answer, materials.confirmations));
+  issues.push(...scanRejectedValues(ai.answer, materials.confirmations, sourceTexts(materials)));
 
   for (const phrase of excludePhrases(materials.exclude)) {
     if (normalizeForMatch(ai.answer).includes(normalizeForMatch(phrase))) {
@@ -461,7 +482,7 @@ export function recheckEditedCard(previous: PackCard, newAnswer: string, materia
     issues.push({ type: "step_missing", severity: "warn", detail: "수정으로 문장이 바뀌어 일부 ‘말하는 순서’를 다시 나눴습니다." });
   }
 
-  for (const issue of [...scanClaims(answer, sourceTexts(materials)), ...scanRejectedValues(answer, materials.confirmations)]) {
+  for (const issue of [...scanClaims(answer, sourceTexts(materials)), ...scanRejectedValues(answer, materials.confirmations, sourceTexts(materials))]) {
     issues.push({ ...issue, severity: "warn" });
   }
 

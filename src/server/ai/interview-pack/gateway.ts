@@ -7,13 +7,14 @@ import {
   READINESS_VALUES,
   aiAssessmentSchema,
   aiGenerateSchema,
-  type AiAssessment,
-  type AiGenerate,
-  type PackAssessment,
-  type PackCard,
-  type PackSlotId,
 } from "@/domain/interview-pack";
-import type { EffectiveMaterials } from "@/domain/interview-pack-text";
+import {
+  PACK_CALL_TOKEN_LIMITS,
+  PackAiInvalidOutputError,
+  PackAiProviderError,
+  type PackAiGateway,
+  type PackAiUsage,
+} from "./gateway-types";
 import {
   ASSESS_INSTRUCTIONS,
   GENERATE_INSTRUCTIONS,
@@ -21,9 +22,11 @@ import {
   buildAssessInput,
   buildGenerateInput,
   buildReviseInput,
-  type ReviseKind,
-  type RetryNote,
 } from "./prompt";
+
+export type PackAiOptions = { apiKey: string; model: string; reasoningEffort?: string };
+export { PACK_CALL_TOKEN_LIMITS, PackAiInvalidOutputError, PackAiProviderError };
+export type { PackAiGateway, PackAiResult, PackAiUsage } from "./gateway-types";
 
 /**
  * 면접 준비팩 OpenAI 호출.
@@ -36,46 +39,7 @@ import {
  * 실패 원문·자료 내용은 오류 메시지에 싣지 않는다(로그에 개인정보가 남지 않게).
  */
 
-export type PackAiUsage = { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null };
-export type PackAiResult<T> = { output: T; responseId: string | null; usage: PackAiUsage; model: string };
-
-/** 호출 자체가 실패(네트워크·HTTP 오류·시간 초과). 재시도해도 사용자 횟수는 차감하지 않는다. */
-export class PackAiProviderError extends Error {
-  constructor(readonly status: number | null, message: string) {
-    super(message);
-    this.name = "PackAiProviderError";
-  }
-}
-
-/** 응답은 왔지만 비었거나 형식이 틀림(토큰 한도로 잘린 경우 포함). */
-export class PackAiInvalidOutputError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "PackAiInvalidOutputError";
-  }
-}
-
-export type PackAiOptions = { apiKey: string; model: string; reasoningEffort?: string };
-
-/** 호출별 출력 토큰 상한. 관리자 테스트 화면에도 이 값을 그대로 보여 준다. */
-export const PACK_CALL_TOKEN_LIMITS = { assess: 6_000, generate: 9_000, revise: 4_000 } as const;
 const TIMEOUT_MS = { assess: 100_000, generate: 110_000, revise: 70_000 } as const;
-
-/** 서비스가 의존하는 좁은 인터페이스. 테스트에서는 이 자리에 가짜를 넣는다. */
-export interface PackAiGateway {
-  assess(materials: EffectiveMaterials): Promise<PackAiResult<AiAssessment>>;
-  generate(input: { materials: EffectiveMaterials; assessment: PackAssessment | null; slots: readonly PackSlotId[]; retryNotes?: readonly RetryNote[] }): Promise<PackAiResult<AiGenerate>>;
-  revise(input: {
-    materials: EffectiveMaterials;
-    assessment: PackAssessment | null;
-    slot: PackSlotId;
-    current: PackCard;
-    kind: ReviseKind;
-    customText?: string;
-    otherCards: ReadonlyArray<{ slot: PackSlotId; answer: string }>;
-    retryNotes?: readonly RetryNote[];
-  }): Promise<PackAiResult<AiGenerate>>;
-}
 
 // ───────────────────────────── JSON schema ─────────────────────────────
 

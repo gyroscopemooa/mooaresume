@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { resolveInterviewPackConfig } from "@/domain/interview-pack";
 import { getPackSample } from "@/fixtures/interview-pack-samples";
-import { MemoryPackRepository, makeRun } from "@/test-support/interview-pack-memory-repository";
+import { MemoryPackRepository, makeRun } from "@/server/interview-pack/memory-repository";
 import {
   AdminTestError,
   AdminTestService,
