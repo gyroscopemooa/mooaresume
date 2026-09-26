@@ -1,0 +1,65 @@
+/* 관리자 FINAL 테스트 콘솔. 색은 관리자 콘솔의 변수(--admin-*)를 그대로 쓴다. */
+.stack { display: grid; gap: 18px; }
+.lead { color: var(--admin-muted); font-size: 13.5px; line-height: 1.7; max-width: 840px; margin: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.body { padding: 16px 18px 18px; display: grid; gap: 12px; font-size: 13.5px; line-height: 1.7; }
+.body p { margin: 0; color: var(--admin-muted); }
+.body b { color: var(--admin-text); }
+.kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--admin-muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.status { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.status[data-tone="ok"] { background: var(--admin-ok-bg); color: var(--admin-accent); }
+.status[data-tone="warn"] { background: var(--admin-warn-bg); color: var(--admin-warn); }
+.status[data-tone="bad"] { background: var(--admin-bad-bg); color: var(--admin-danger); }
+.status[data-tone="muted"] { background: var(--admin-raise); color: var(--admin-muted); }
+
+.banner { padding: 11px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; border: 1px solid var(--admin-line); background: var(--admin-raise); }
+.banner[data-tone="warn"] { background: var(--admin-warn-bg); color: var(--admin-warn); border-color: transparent; }
+.banner[data-tone="bad"] { background: var(--admin-bad-bg); color: var(--admin-danger); border-color: transparent; }
+.banner code { font-size: 12px; }
+.banner ul { margin: 6px 0 0; padding-left: 18px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border-radius: 8px;
+  border: 1px solid var(--admin-accent); background: var(--admin-accent); color: #04140a; font: inherit; font-weight: 700; font-size: 13px;
+  cursor: pointer; text-decoration: none; min-height: 38px;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn[data-variant="ghost"] { background: transparent; color: var(--admin-accent); }
+.btn[data-variant="danger"] { background: transparent; color: var(--admin-danger); border-color: var(--admin-danger); }
+.btn[data-variant="quiet"] { background: var(--admin-raise); color: var(--admin-text); border-color: var(--admin-line); font-weight: 600; }
+.btn[data-size="sm"] { padding: 5px 10px; min-height: 30px; font-size: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.field { display: grid; gap: 5px; }
+.field label { font-size: 12.5px; color: var(--admin-muted); }
+.field input, .field textarea, .field select {
+  width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--admin-line); background: var(--admin-input);
+  color: var(--admin-text); font: inherit; font-size: 13px;
+}
+.field textarea { min-height: 84px; resize: vertical; }
+.fields3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+
+.samples { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.sample { border: 1px solid var(--admin-line); border-radius: 12px; padding: 14px; background: var(--admin-panel); display: grid; gap: 8px; align-content: start; }
+.sample h3 { margin: 0; font-size: 14.5px; }
+.sample p { margin: 0; color: var(--admin-muted); font-size: 12.5px; line-height: 1.6; }
+.sample details { font-size: 12.5px; color: var(--admin-muted); }
+.sample summary { cursor: pointer; color: var(--admin-accent); font-weight: 600; }
+.sample ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.6; }
+
+.msg { font-size: 13px; padding: 8px 12px; border-radius: 8px; }
+.msg[data-kind="ok"] { background: var(--admin-ok-bg); color: var(--admin-accent); }
+.msg[data-kind="err"] { background: var(--admin-bad-bg); color: var(--admin-danger); }
+
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.checks { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.checks li { display: flex; gap: 8px; align-items: flex-start; }
+.sheet { background: #fff; border-radius: 14px; padding: 0; }
+.crumbs { font-size: 12.5px; color: var(--admin-muted); margin-bottom: 10px; }
+.crumbs a { color: var(--admin-accent); text-decoration: none; }
+
+@media (max-width: 720px) {
+  .kv { grid-template-columns: 1fr; }
+}

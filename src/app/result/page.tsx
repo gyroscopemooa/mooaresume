@@ -2,6 +2,8 @@ import { ResultWorkspaceComplete } from "@/components/result-workspace-complete"
 import { ResultSignIn } from "@/components/result-sign-in";
 import { resultDocumentSchema } from "@/domain/result-document";
 import { createClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/server/admin/admin-session";
+import { shouldShowInterviewPackTab } from "@/server/interview-pack/visibility";
 
 /**
  * Where every paid run lands: the checkout return and the completion email both
@@ -55,5 +57,16 @@ export default async function ResultPage({
     return <ResultSignIn nextPath={`/result?analysisRunId=${encodeURIComponent(analysisRunId)}`} variant="missing"/>;
   }
 
-  return <ResultWorkspaceComplete result={parsed.data} analysisRunId={(data?.analysis_run_id as string | undefined) ?? analysisRunId ?? null}/>;
+  const resolvedRunId = (data?.analysis_run_id as string | undefined) ?? analysisRunId ?? null;
+  // 면접 준비팩 탭을 보일지는 서버가 정한다(공개 플래그·기존 구매자 정책·테스트 이용권·승인된 테스트 계정).
+  const interviewPackEnabled = await shouldShowInterviewPackTab({
+    product: parsed.data.product,
+    analysisRunId: resolvedRunId,
+    isSample: parsed.data.isSample,
+    userId: authData.user.id,
+    email: authData.user.email,
+    isAdmin: await isAdmin().catch(() => false),
+  });
+
+  return <ResultWorkspaceComplete result={parsed.data} analysisRunId={resolvedRunId} interviewPackEnabled={interviewPackEnabled}/>;
 }

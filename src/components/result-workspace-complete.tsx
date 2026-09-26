@@ -26,11 +26,13 @@ import { FinalVerification } from "./final-verification";
 import { FinalWrapUp } from "./final-wrap-up";
 import { ConnectorMergeHint } from "./connector-merge-hint";
 import { InteractiveInterview } from "./interactive-interview";
+import { InterviewPackPanel } from "./interview-pack/interview-pack-panel";
+import { createLiveApi } from "@/lib/interview-pack/client-api";
 import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
 import { RuntimeEventSlot } from "./runtime-event-slot";
 
-type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "final";
+type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final";
 
 const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
   good: "좋은 표현",
@@ -271,7 +273,7 @@ function readCarriedMaterialCount(): number {
 
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
-export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null, adminPreview = false }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean }) {
+export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
@@ -319,6 +321,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
   }, [answers, restored, storageKey]);
 
   const subject = useMemo(() => resolveResultSubject(result), [result]);
+  // 면접 준비팩은 이 FINAL 실행 하나에 묶인다. 탭이 열릴 때 저장된 것을 읽기만 하고 AI 는 부르지 않는다.
+  const interviewPackApi = useMemo(() => (analysisRunId ? createLiveApi({ analysisRunId }) : null), [analysisRunId]);
+  const showInterviewPack = interviewPackEnabled && result.product === "FINAL" && !result.isSample && !adminPreview && interviewPackApi !== null;
   const isFilledResult = result.writingMode === "BUILD";
   const applicationLabel = resolveApplicationLabel(result);
   // The shared builder is left untouched for the other result screens; the
@@ -522,6 +527,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         {/* 정적 "면접 준비" 탭(PRO도 공유)과 분리한 새 탭 — 실제 턴 주고받기는
             FINAL만 판다. 가격표가 약속한 기능이라 여기 있어야 한다. */}
         {result.product === "FINAL" && !adminPreview && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
+        {showInterviewPack && <button onClick={() => setView("interviewPack")} className={view === "interviewPack" ? styles.active : ""}>면접 준비팩<small>FINAL</small></button>}
       </nav>
 
       {view === "verification" && result.product === "FINAL" && (
@@ -532,6 +538,10 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
 
       {view === "mockInterview" && result.product === "FINAL" && !adminPreview && (
         <InteractiveInterview result={result} analysisRunId={analysisRunId} />
+      )}
+
+      {view === "interviewPack" && showInterviewPack && interviewPackApi && (
+        <div style={{ marginTop: 18 }}><InterviewPackPanel api={interviewPackApi} mode="live" /></div>
       )}
 
       {view === "overview" && <section className={styles.overview}>

@@ -27,6 +27,36 @@ import {
 } from "@/lib/google-play/app-checkout";
 import { createAuthCallbackUrl, isInstalledAppContext } from "@/lib/app-context";
 
+/**
+ * 이 계정에 남은 관리자 테스트 이용권(FINAL)이 있는지.
+ *
+ * 화면 안내용일 뿐이다 — 실제 사용은 DB 함수 consume_admin_test_grant 가 로그인한 본인·본인의 지원 건·유효한
+ * 이용권을 다시 확인한다. RLS 로 본인에게 발급된 것만 읽히므로 일반 계정은 언제나 "없음"이고,
+ * 조회가 실패하거나 표가 아직 없는 환경에서도 조용히 "없음"으로 처리해 결제 화면을 방해하지 않는다.
+ */
+async function hasUsableTestGrant(supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  try {
+    const { data: grants, error } = await supabase
+      .from("admin_test_grants")
+      .select("id, max_uses")
+      .eq("product", "FINAL")
+      .is("revoked_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .limit(5);
+    if (error || !grants || grants.length === 0) return false;
+    const { data: uses, error: useError } = await supabase
+      .from("admin_test_grant_uses")
+      .select("grant_id")
+      .in("grant_id", grants.map((grant) => String(grant.id)));
+    if (useError) return false;
+    const used = new Map<string, number>();
+    for (const row of uses ?? []) used.set(String(row.grant_id), (used.get(String(row.grant_id)) ?? 0) + 1);
+    return grants.some((grant) => (used.get(String(grant.id)) ?? 0) < Number(grant.max_uses));
+  } catch {
+    return false;
+  }
+}
+
 type Props = {
   guest: GuestDraft | null;
   /** Called once a reward credit has been spent and the run is under way. */
@@ -111,6 +141,8 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   // a QUICK credit does not pay for a PRO run, and offering it would end in a
   // refusal after the case is already saved.
   const [availableCredit, setAvailableCredit] = useState(false);
+  // 관리자 테스트 이용권(FINAL 전용). 있으면 결제 대신 이것으로 시작하고, 실제 결제·주문은 만들지 않는다.
+  const [availableTestGrant, setAvailableTestGrant] = useState(false);
   // Lets someone with a credit pay anyway. They might be saving it for a
   // different application, or simply not trust that a free run is the same run.
   const [spendCredit, setSpendCredit] = useState(true);
@@ -170,7 +202,10 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         // pays.
         if (error) { console.error("reward_credits", error); setCreditCheckFailed(true); return; }
         const rows = (credits ?? []) as Array<{ product?: string | null }>;
-        setAvailableCredit(rows.some((row) => row.product === wantedProduct));
+        const testGrant = wantedProduct === "FINAL" ? await hasUsableTestGrant(supabase) : false;
+        if (cancelled) return;
+        setAvailableTestGrant(testGrant);
+        setAvailableCredit(testGrant || rows.some((row) => row.product === wantedProduct));
         setOtherCredits([...new Set(rows.map((row) => row.product).filter((product): product is string => Boolean(product) && product !== wantedProduct))]);
       } catch (error) {
         console.error("reward_credits", error);
@@ -221,11 +256,12 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
    */
   async function startWithCredit(applicationCaseId: string, analysisRunId: string) {
     const supabase = createClient();
-    const { error } = await supabase.rpc("consume_reward_credit", {
+    // 테스트 이용권이 있으면 그것을 먼저 쓴다(테스트 계정이 실수로 실제 무료 이용권을 쓰지 않게).
+    const { error } = await supabase.rpc(availableTestGrant ? "consume_admin_test_grant" : "consume_reward_credit", {
       p_application_case_id: applicationCaseId,
       p_product: wantedProduct,
     });
-    if (error) throw new Error("무료 이용권을 사용하지 못했습니다. 결제로 진행해 주세요.");
+    if (error) throw new Error(availableTestGrant ? "테스트 이용권을 사용하지 못했습니다. 만료·회수·횟수를 확인해 주세요." : "무료 이용권을 사용하지 못했습니다. 결제로 진행해 주세요.");
 
     const executed = await fetch("/api/analysis-runs/quick/execute", {
       method: "POST",
@@ -507,7 +543,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       }
     }
 
-    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
+    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   if (authenticated) {
@@ -529,7 +565,8 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
       {creditCheckFailed && <p className={styles.creditNotice}><Gift/> <span><b>무료 이용권 보유 여부를 확인하지 못했습니다.</b> 이용권이 있으실 수도 있습니다. 새로고침한 뒤에도 이 안내가 보이면 결제 전에 알려 주세요.</span></p>}
-      {availableCredit && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
+      {availableTestGrant && <p className={styles.creditNotice}><Gift/> <span><b>관리자 테스트 이용권이 있습니다.</b> 이번 FINAL 분석은 결제 없이 진행되며 실제 주문·매출은 만들어지지 않습니다. 실제 AI 사용 요금은 발생하고, 결제대행사 연동은 이 경로로 검증되지 않습니다.</span></p>}
+      {availableCredit && !availableTestGrant && <p className={styles.creditNotice}><Gift/> <span><b>{wantedProduct} 무료 이용권이 있습니다.</b> 이번 분석은 결제 없이 진행됩니다.</span></p>}
       {/* 가진 것이 있는데 이 분석에는 못 쓰는 경우. 말하지 않으면 등록이
           실패한 줄 알고 쿠폰을 다시 넣어 보다가 "이미 사용하신 쿠폰"을
           만납니다. */}
@@ -543,7 +580,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           </span>
         </p>
       )}
-      <button type="button" disabled={busy || runActive || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "저장 중..." : availableCredit && spendCredit ? "무료 이용권으로 분석 시작 · 0원" : "결제하고 분석 시작"} <ArrowRight/></button>
+      <button type="button" disabled={busy || runActive || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "저장 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
       {guest && !consentDecided && !busy && !runActive && <p className={styles.noDraft}>위에서 하나를 골라 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL
           directly — or in a new tab — arrives with nothing to analyse and a

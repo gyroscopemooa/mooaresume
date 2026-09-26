@@ -444,6 +444,39 @@ export class SupabasePackRepository implements PackRepository {
     return z.number().int().parse(data);
   }
 
+  /** 관리자 콘솔용: 내 완료된 FINAL 결과(복제 후보). */
+  async listOwnCompletedFinalRuns(ownerUserId: string): Promise<Array<{ id: string; completedAt: string | null; company: string; role: string }>> {
+    const { data, error } = await this.client
+      .from("analysis_runs")
+      .select("id, completed_at, application_cases(company_name, role_name, title)")
+      .eq("owner_user_id", ownerUserId)
+      .eq("product", "FINAL")
+      .eq("status", "COMPLETED")
+      .order("completed_at", { ascending: false })
+      .limit(10);
+    if (error) throw dbError(error);
+    return (data ?? []).map((row) => {
+      const embedded = row.application_cases as unknown as { company_name?: string | null; role_name?: string | null; title?: string | null } | Array<{ company_name?: string | null; role_name?: string | null; title?: string | null }> | null;
+      const applicationCase = Array.isArray(embedded) ? embedded[0] : embedded;
+      return {
+        id: String(row.id),
+        completedAt: (row.completed_at as string | null) ?? null,
+        company: applicationCase?.company_name ?? applicationCase?.title ?? "",
+        role: applicationCase?.role_name ?? "",
+      };
+    });
+  }
+
+  /** 마이그레이션이 적용됐는지 확인한다(없는 표를 읽으면 콘솔이 오류로 죽는 대신 안내를 띄우기 위해). */
+  async checkSchema(): Promise<{ ready: boolean; missing: string[] }> {
+    const missing: string[] = [];
+    for (const table of ["admin_test_grants", "admin_test_material_sets", "interview_packs", "interview_pack_ai_calls"]) {
+      const { error } = await this.client.from(table).select("id", { head: true, count: "exact" }).limit(1);
+      if (error) missing.push(table);
+    }
+    return { ready: missing.length === 0, missing };
+  }
+
   async listTestPacks(ownerUserId: string) {
     const { data, error } = await this.client
       .from("interview_packs")
