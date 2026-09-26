@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-26 — Claude: Google Play 심사 반려(데이터 보안 양식의 계정 삭제 링크) 대응 — 삭제 요청 페이지에 앱 이름·개발자 이름 명시
+
+- 계기(사용자가 붙인 Play 심사 메일): 앱 변경사항 거부됨. 사유 "데이터 보안 양식의 계정 삭제 링크가 잘못됨 — `https://mooaresume.com/account-deletion` does not link to a valid page, missing reference to the app or to the entity named in the app's Google Play listing". 양식 안내는 링크가 (1) 스토어 등록정보에 표시되는 앱 또는 개발자 이름 기재, (2) 삭제 요청 단계를 눈에 띄게 표시, (3) 삭제·보관 데이터 유형과 추가 보관 기간 지정을 충족해야 한다고 명시. 기존 페이지는 (2)(3)은 있었으나 (1)이 없었음(페이지는 "무아레쥬메(MOOA Resume)"만 씀. Play 등록 앱 이름은 "자소서첨삭-직업심리검사,자기소개서,이력서,커리어검사", 개발자 이름은 "GyroScope").
+- 변경: `src/app/account-deletion/page.tsx` — 상수 `PLAY_APP_NAME`/`PLAY_DEVELOPER`/`PLAY_PACKAGE`(Play 등록정보와 같아야 함), 페이지 `<title>`·description에 앱 이름과 개발자 이름, 머리글 안내문에 「앱 이름」, 새 섹션 "이 페이지가 다루는 앱"(앱 이름·서비스 이름·개발자·패키지). 삭제 요청 단계·삭제/보관 데이터·기간 내용은 그대로. 신규 `page.test.tsx`(앱 이름·개발자 이름·패키지 노출, 요청 단계·보관 기간 유지).
+- 사용자가 해야 하는 것: 배포 뒤 Play Console **게시 개요에서 앱 변경사항을 다시 전송**(이의신청이 아니라 수정 후 재전송). 양식의 URL은 그대로 `https://mooaresume.com/account-deletion`.
+- Validation: `tsc --noEmit` clean, eslint 0건, 신규 테스트 2건 통과(전체 실행은 아래 커밋 시).
+- Rollback: 위 페이지 변경 revert(단, Play 재심사에는 앱/개발자 이름 명시가 필요).
+- Status: 커밋됨, main 푸시 대기.
+
 ## 2026-09-26 — Claude: 앱에서 "작성 유형 다시 고르기" 등 링크를 웹 `/onboarding`이 아니라 앱 첨삭 홈 `/app`으로
 
 - 요청(사용자): 앱 결제 안내의 "유형 다시 고르기"를 누르면 앱 안에서 웹(모바일 웹 스타일) 화면이 열림 → 앱은 앱 첨삭 화면(시작 탭이 아니라 `/app`)으로 가게.

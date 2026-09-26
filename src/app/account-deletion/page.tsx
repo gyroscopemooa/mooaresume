@@ -3,9 +3,15 @@ import Link from "next/link";
 import { AccountDeleteForm } from "@/components/account-delete-form";
 import styles from "../privacy/page.module.css";
 
+// Google Play 등록정보와 같은 이름이어야 합니다. 데이터 보안 양식의 계정 삭제 링크는 이 페이지가
+// 스토어에 등록된 앱 이름 또는 개발자 이름을 분명히 밝혀야 승인됩니다(2026-09-26 심사에서 이 언급이 없어 반려됨).
+const PLAY_APP_NAME = "자소서첨삭-직업심리검사,자기소개서,이력서,커리어검사";
+const PLAY_DEVELOPER = "GyroScope";
+const PLAY_PACKAGE = "com.mooaresume.twa";
+
 export const metadata: Metadata = {
-  title: "계정 및 데이터 삭제 요청",
-  description: "무아레쥬메(MOOA Resume) 계정과 관련 데이터의 삭제를 요청하는 방법, 삭제되는 데이터와 보관되는 데이터를 안내합니다.",
+  title: `계정 및 데이터 삭제 요청 - ${PLAY_APP_NAME} (${PLAY_DEVELOPER})`,
+  description: `${PLAY_DEVELOPER}이(가) 운영하는 Google Play 앱 「${PLAY_APP_NAME}」(무아레쥬메, MOOA Resume) 계정과 관련 데이터의 삭제를 요청하는 방법, 삭제되는 데이터와 보관되는 데이터를 안내합니다.`,
   robots: { index: true, follow: true },
   alternates: { canonical: "/account-deletion" },
 };
@@ -17,13 +23,23 @@ export default function AccountDeletionPage() {
     <main className={styles.page}>
       <div className={styles.container}>
         <header className={styles.head}>
-          <span className={styles.eyebrow}>MOOA RESUME</span>
+          <span className={styles.eyebrow}>{PLAY_DEVELOPER} · MOOA RESUME</span>
           <h1>계정 및 데이터 삭제 요청</h1>
           <p>
-            무아레쥬메(MOOA Resume) 계정과 그 계정에 쌓인 데이터를 지우고 싶으시면 아래 순서로 요청해 주세요.
-            앱과 웹사이트 모두 같은 계정을 쓰기 때문에 한 번 요청하시면 됩니다.
+            Google Play 앱 <b>「{PLAY_APP_NAME}」</b>(무아레쥬메, MOOA Resume)의 계정과 그 계정에 쌓인 데이터를 지우고 싶으시면
+            아래 순서로 요청해 주세요. 앱과 웹사이트 모두 같은 계정을 쓰기 때문에 한 번 요청하시면 됩니다.
           </p>
         </header>
+
+        <section className={styles.section}>
+          <h2>이 페이지가 다루는 앱</h2>
+          <ul>
+            <li><b>앱 이름(Google Play):</b> {PLAY_APP_NAME}</li>
+            <li><b>서비스 이름:</b> 무아레쥬메 (MOOA Resume)</li>
+            <li><b>개발자·운영:</b> {PLAY_DEVELOPER}</li>
+            <li><b>앱 패키지:</b> {PLAY_PACKAGE}</li>
+          </ul>
+        </section>
 
         <section className={styles.section}>
           <h2>삭제 요청 방법</h2>
