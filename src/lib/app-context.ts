@@ -64,6 +64,24 @@ function sessionStorageOrNull(): SessionLike | null {
 }
 
 /**
+ * Play 결제(Digital Goods)가 있고 **앱 창(standalone 등)으로 실행 중**인가.
+ *
+ * 주의: Android 일반 Chrome 탭에도 `getDigitalGoodsService`가 있습니다(2026-09-26
+ * 실기기 확인). 그래서 이 기능의 존재만으로 "설치 앱"이라 판단하면 폰의 일반
+ * 브라우저가 앱으로 오인되어 하단 탭이 뜨고 결제가 Polar 대신 Google Play로
+ * 갑니다. TWA는 display-mode가 standalone(또는 fullscreen/minimal-ui)이고, 일반
+ * 탭은 browser입니다.
+ */
+export function detectTwaBillingSurface(): boolean {
+  if (typeof window === "undefined" || !("getDigitalGoodsService" in window)) return false;
+  try {
+    return ["standalone", "fullscreen", "minimal-ui"].some((mode) => window.matchMedia(`(display-mode: ${mode})`).matches);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * 현재 탭의 앱 상태를 읽고, 첫 진입 신호가 있으면 기억합니다.
  * 화면 렌더링 중이 아니라 effect 안에서 부르세요(sessionStorage 접근).
  */
@@ -71,12 +89,13 @@ export function syncAppContext(input: {
   pathname: string;
   search: string;
   referrer: string;
-  hasDigitalGoods: boolean;
+  /** 앱 창 모드에서 Play 결제 기능이 있는가(`detectTwaBillingSurface`). 기능이 있다는 것만으로는 앱이 아닙니다. */
+  twaBilling: boolean;
   storage?: SessionLike | null;
 }): { installed: boolean; shell: boolean } {
   const storage = input.storage === undefined ? sessionStorageOrNull() : input.storage;
   // Digital Goods API는 Play에서 설치한 TWA에만 있습니다.
-  const installed = readFlag(storage, INSTALLED_KEY) || isTwaLaunch(input) || input.hasDigitalGoods;
+  const installed = readFlag(storage, INSTALLED_KEY) || isTwaLaunch(input) || input.twaBilling;
   if (installed) writeFlag(storage, INSTALLED_KEY);
   // 기능 화면(`/app`)은 웹과 앱이 공유하지만, 하단 탭바는 설치된 TWA에만
   // 제공합니다. 이 구분으로 모바일 웹은 랜딩 헤더·홈 경로를 유지합니다.
@@ -95,7 +114,7 @@ export function isInstalledAppContext(): boolean {
     pathname: window.location.pathname,
     search: window.location.search,
     referrer: document.referrer,
-    hasDigitalGoods: "getDigitalGoodsService" in window,
+    twaBilling: detectTwaBillingSurface(),
   }).installed;
 }
 
@@ -129,9 +148,10 @@ export const APP_MARKER_VALUE = "twa";
 /**
  * 첫 페인트 전에 `<html>`에 앱 표시를 붙이는 인라인 스크립트(루트 레이아웃 `<head>`).
  * 판단 기준은 `syncAppContext`와 같습니다(시작 주소 표시, referrer, Digital Goods,
- * 이 탭에 저장된 설치 앱 표시). 저장소가 막혀 있어도 나머지 신호로 판단합니다.
+ * 이 탭에 저장된 설치 앱 표시). Digital Goods는 앱 창 모드일 때만 셉니다.
+ * 저장소가 막혀 있어도 나머지 신호로 판단합니다.
  */
-export const APP_MARKER_SCRIPT = `(function(){try{var w=window,d=document,s=false;try{s=w.sessionStorage.getItem(${JSON.stringify(INSTALLED_KEY)})==="1"}catch(e){}var q=new URLSearchParams(w.location.search).get("source")===${JSON.stringify(TWA_SOURCE_PARAM)};var r=d.referrer.indexOf(${JSON.stringify(`android-app://${TWA_PACKAGE_ID}`)})===0;var g="getDigitalGoodsService" in w;if(s||q||r||g)d.documentElement.setAttribute(${JSON.stringify(APP_MARKER_ATTRIBUTE)},${JSON.stringify(APP_MARKER_VALUE)})}catch(e){}})();`;
+export const APP_MARKER_SCRIPT = `(function(){try{var w=window,d=document,s=false;try{s=w.sessionStorage.getItem(${JSON.stringify(INSTALLED_KEY)})==="1"}catch(e){}var q=new URLSearchParams(w.location.search).get("source")===${JSON.stringify(TWA_SOURCE_PARAM)};var r=d.referrer.indexOf(${JSON.stringify(`android-app://${TWA_PACKAGE_ID}`)})===0;var g="getDigitalGoodsService" in w&&["standalone","fullscreen","minimal-ui"].some(function(m){try{return w.matchMedia("(display-mode: "+m+")").matches}catch(e){return false}});if(s||q||r||g)d.documentElement.setAttribute(${JSON.stringify(APP_MARKER_ATTRIBUTE)},${JSON.stringify(APP_MARKER_VALUE)})}catch(e){}})();`;
 
 /** 클라이언트 이동 중에도 표시가 유지되도록 확인된 설치 앱에 표시를 붙입니다. */
 export function markAppDocument(installed: boolean) {

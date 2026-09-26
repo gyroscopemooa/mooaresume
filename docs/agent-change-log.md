@@ -1,5 +1,15 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-26 — Claude: 일반 Android Chrome이 "설치 앱"으로 오인되던 판정 수정 (결제 경로 영향)
+
+- 증상(사용자): PC F12 모바일 보기에서는 데스크톱 스타일로 잘 나오는데, **폰 Chrome**에서 랜딩의 "첨삭하기"를 누르면 `/app`으로 가서 앱과 비슷한 화면이 나옴.
+- 원인(실기기 확인): **Android 일반 Chrome 탭에도 `getDigitalGoodsService`가 있다**(폰의 일반 Chrome 탭: `digitalGoods:true`, `display-mode standalone:false`, referrer 없음). `app-context.ts`의 `installed`가 이 기능의 존재만으로 참이 되어, 일반 폰 Chrome이 설치 앱으로 판정 → `data-app="twa"`·하단 탭·`landing-entry`의 `/app` 이동. 같은 잘못된 가정("일반 브라우저 탭에는 존재하지 않는다")이 `isGooglePlayBillingAvailable()`(`google-play/purchase.ts`)에도 있어 **Android 일반 Chrome의 결제가 Polar 대신 Google Play 결제를 시도**했을 수 있음(체크아웃 2곳: `application-case-handoff.tsx`, `interactive-interview.tsx`, 미결제 복구 1곳). 진짜 TWA(Play 설치 앱)는 `standalone:true`, referrer `android-app://com.mooaresume.twa/`로 확인.
+- 변경: `detectTwaBillingSurface()` 신설 = Digital Goods **그리고** display-mode(standalone/fullscreen/minimal-ui). `syncAppContext`의 입력 `hasDigitalGoods`를 `twaBilling`으로 바꾸고 이 값을 넣음, `APP_MARKER_SCRIPT`도 같은 기준, `isGooglePlayBillingAvailable()`은 Digital Goods **그리고** `isInstalledAppContext()`. TWA 판정의 나머지 신호(시작 주소 `?source=twa`, referrer `android-app://…`, 이 탭에 저장된 설치 앱 표시)는 그대로라 진짜 앱에서 Play 결제 경로는 유지됨.
+- Validation: `tsc --noEmit` clean, 변경 파일 eslint 0건, 전체 `vitest run` 1,413건 통과(기존 `mobile.test.ts` Expo 로드 실패 1건은 이 PC 고질). 신규 테스트: Digital Goods만 있고 browser 모드면 표시·앱 판정·Play 결제 모두 없음 / standalone이면 앱 / 저장된 앱 표시가 있으면 Play 결제. 실기기 확인은 배포 후.
+- 위험/알아둘 점: 결제 경로 판정이라 배포 뒤 (1) 폰 일반 Chrome에서 하단 탭·`/app` 이동이 없고 결제가 Polar로 가는지, (2) Play 설치 앱에서 Play 결제가 그대로인지 확인 필요. 실제 결제는 이 세션에서 실행하지 않음.
+- Rollback: `isGooglePlayBillingAvailable`에서 `isInstalledAppContext()` 조건 제거 + `installed`에 Digital Goods 존재 판정 복원(이전 동작).
+- Status: 커밋됨, main 푸시 대기.
+
 ## 2026-09-26 — Claude: 앱/모바일 웹 스타일 분리 장치, 커리어 검사 영어 카드 깨짐 수정, 앱 영상 소리 기본 켜짐
 
 - 요청(사용자): (1) 앱 소개 영상은 소리가 켜진 채로 시작. (2) 앱/모바일 웹 커리어 검사 목록(`/career/assessments`)에서 영문 카드가 길어 3칸이 깨짐 — 이건 앱·모바일 웹 **같이** 수정. (3) 앞으로 모바일 웹만 고칠 때 앱이 같이 바뀌지 않도록 앱/모바일 웹을 구분.

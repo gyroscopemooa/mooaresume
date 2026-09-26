@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleUser, Compass, FilePenLine, FileText, ListOrdered } from "lucide-react";
-import { markAppDocument, syncAppContext } from "@/lib/app-context";
+import { detectTwaBillingSurface, markAppDocument, syncAppContext } from "@/lib/app-context";
 import styles from "./app-tab-bar.module.css";
 
 /**
@@ -73,7 +73,7 @@ export function AppTabBar() {
         pathname,
         search: window.location.search,
         referrer: document.referrer,
-        hasDigitalGoods: "getDigitalGoodsService" in window,
+        twaBilling: detectTwaBillingSurface(),
       });
       markAppDocument(installed);
       setVisible(shell);

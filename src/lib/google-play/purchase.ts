@@ -1,6 +1,7 @@
 "use client";
 
 import type { DigitalGoodsItemDetails, DigitalGoodsServiceLike } from "./app-checkout";
+import { isInstalledAppContext } from "@/lib/app-context";
 
 export type GooglePlayProductTier = "QUICK" | "PRO" | "FINAL";
 
@@ -54,11 +55,14 @@ const INTERVIEW_RETRY_PRODUCT_ID = process.env.NEXT_PUBLIC_GOOGLE_PLAY_INTERVIEW
 
 /**
  * True only inside a Trusted Web Activity launched from an app installed via
- * Google Play — the Digital Goods API does not exist in a normal browser tab,
- * so this is also how the checkout button decides which provider to use.
+ * Google Play. The Digital Goods API is also present in Android Chrome tabs, so
+ * the installed-app context (app-context.ts) is checked as well; this is how the
+ * checkout button decides which provider to use.
  */
 export function isGooglePlayBillingAvailable(): boolean {
-  return typeof window !== "undefined" && "getDigitalGoodsService" in window;
+  // Android 일반 Chrome 탭에도 Digital Goods가 있으므로(2026-09-26 실기기 확인) 기능 존재만으로는
+  // 부족합니다. 설치된 앱 안에서만 Play 결제를 씁니다; 일반 웹은 Polar.
+  return typeof window !== "undefined" && "getDigitalGoodsService" in window && isInstalledAppContext();
 }
 
 export class GooglePlayPurchaseCancelledError extends Error {

@@ -17,30 +17,30 @@ describe("app context", () => {
 
   it("remembers the installed-app launch for later navigations in the same tab", () => {
     const session = storage();
-    const launch = syncAppContext({ pathname: "/app", search: "?source=twa", referrer: "", hasDigitalGoods: false, storage: session });
+    const launch = syncAppContext({ pathname: "/app", search: "?source=twa", referrer: "", twaBilling: false, storage: session });
     expect(launch).toEqual({ installed: true, shell: true });
 
     // 로그인 복귀처럼 referrer가 바뀐 다음 화면에서도 앱으로 봅니다.
-    const later = syncAppContext({ pathname: "/analysis/prepare", search: "", referrer: "https://accounts.google.com/", hasDigitalGoods: false, storage: session });
+    const later = syncAppContext({ pathname: "/analysis/prepare", search: "", referrer: "https://accounts.google.com/", twaBilling: false, storage: session });
     expect(later.installed).toBe(true);
   });
 
   it("keeps an ordinary browser app-screen visit out of the app navigation shell", () => {
     const session = storage();
-    const visit = syncAppContext({ pathname: "/app", search: "", referrer: "https://www.google.com/", hasDigitalGoods: false, storage: session });
+    const visit = syncAppContext({ pathname: "/app", search: "", referrer: "https://www.google.com/", twaBilling: false, storage: session });
     expect(visit).toEqual({ installed: false, shell: false });
 
-    const nextPage = syncAppContext({ pathname: "/resume", search: "", referrer: "", hasDigitalGoods: false, storage: session });
+    const nextPage = syncAppContext({ pathname: "/resume", search: "", referrer: "", twaBilling: false, storage: session });
     expect(nextPage).toEqual({ installed: false, shell: false });
   });
 
-  it("treats a tab that exposes Play billing as the installed app", () => {
-    expect(syncAppContext({ pathname: "/quick", search: "", referrer: "", hasDigitalGoods: true, storage: storage() }))
+  it("treats an app window that exposes Play billing as the installed app", () => {
+    expect(syncAppContext({ pathname: "/quick", search: "", referrer: "", twaBilling: true, storage: storage() }))
       .toEqual({ installed: true, shell: true });
   });
 
   it("stays a plain web visit elsewhere on the site", () => {
-    expect(syncAppContext({ pathname: "/quick", search: "", referrer: "", hasDigitalGoods: false, storage: storage() }))
+    expect(syncAppContext({ pathname: "/quick", search: "", referrer: "", twaBilling: false, storage: storage() }))
       .toEqual({ installed: false, shell: false });
   });
 
@@ -49,7 +49,7 @@ describe("app context", () => {
       getItem: () => { throw new Error("blocked"); },
       setItem: () => { throw new Error("blocked"); },
     };
-    expect(syncAppContext({ pathname: "/app", search: "", referrer: "", hasDigitalGoods: false, storage: blocked }))
+    expect(syncAppContext({ pathname: "/app", search: "", referrer: "", twaBilling: false, storage: blocked }))
       .toEqual({ installed: false, shell: false });
   });
 });
