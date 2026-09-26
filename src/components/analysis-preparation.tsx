@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { WritingHomeLink } from "@/components/writing-home-link";
 import {
   ArrowLeft,
   ArrowRight,
@@ -177,9 +178,9 @@ export function AnalysisPreparation() {
       </header>
       <QuickCheckoutReturn onProductConfirmed={setConfirmedProduct} creditRunId={creditRunId} onRunActive={setRunActive} />
       <div className={styles.container}>
-        <Link href="/onboarding" className={styles.back}>
+        <WritingHomeLink className={styles.back}>
           <ArrowLeft /> 상품 선택으로
-        </Link>
+        </WritingHomeLink>
         <section className={styles.heading}>
           <small>분석 시작 전 확인</small>
           <h1>
@@ -213,7 +214,7 @@ export function AnalysisPreparation() {
               // choice; a wrong mode cannot be undone after payment.
               <p className={styles.shortNotice}>
                 문항당 목표 분량의 <b>{Math.round(fillRatio * 100)}%</b>가 작성돼 있습니다. 최종 첨삭은 <b>이미 쓰신 내용을 풀어 쓰는 데까지만</b> 합니다. 이력서에서 새 소재를 가져와 채우려면 <b>내용 보완</b>이 맞습니다.
-                <Link href="/onboarding">유형 다시 고르기 <ArrowRight /></Link>
+                <WritingHomeLink preselect={{ product, mode: "BUILD" }}>유형 다시 고르기 <ArrowRight /></WritingHomeLink>
               </p>
             )}
             {product === "QUICK" && missingQuestionCount > 0 && (
@@ -235,7 +236,7 @@ export function AnalysisPreparation() {
                 PRO는 {PRO_BASE_PRICE_KRW.toLocaleString("ko-KR")}원입니다.
                 값이 싼 쪽이 공고 요구역량 대조와 경험 근거 매칭, 면접 예상질문까지
                 포함하고 {PRO_INCLUDED_LIMIT_CHARS.toLocaleString("ko-KR")}자까지 추가금이 없습니다.
-                <Link href="/pro/polish">PRO로 진행하기 <ArrowRight /></Link>
+                <WritingHomeLink webHref="/pro/polish" preselect={{ product: "PRO", mode: "POLISH" }}>PRO로 진행하기 <ArrowRight /></WritingHomeLink>
               </p>
             )}
             <div className={styles.materials}>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { WritingHomeLink } from "@/components/writing-home-link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
 import { buildFinalDocumentText, countCharactersWithWhitespace, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
@@ -199,7 +200,7 @@ function CoverageNotice({ notes }: { notes: readonly string[] }) {
     <small>첨삭은 이미 쓴 글을 고치는 기능이라 원문이 있어야 동작합니다. 아직 내용을 못 쓴 문항은 &lsquo;처음부터 작성 · 아직 아무것도 못 썼어요&rsquo; 유형으로 진행해야 소재와 개요부터 함께 만들어 드립니다.</small>
     <small>작성되지 않은 문항 {notes.length}개는 첨삭·생성 대상에서 제외됩니다. 빈 문항까지 보완하려면 PRO · 내용 보완으로 진행해 주세요.</small>
     <small>문항 번호 줄만 있고 그 아래에 내용이 없으면 빈 문항으로 잡힙니다. 실제 문항이 아니라면 번호 줄을 지우고, 실제 문항이라면 내용을 채운 뒤 다시 분석해 주세요.</small>
-    <Link href="/onboarding" className={styles.coverageLink}>작성 유형 다시 고르기 <ArrowRight/></Link>
+    <WritingHomeLink className={styles.coverageLink}>작성 유형 다시 고르기 <ArrowRight/></WritingHomeLink>
   </div></section>;
 }
 
@@ -499,13 +500,13 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
     {sampleNotice && <div className={styles.sampleNotice}>
       <p><b>이 화면은 샘플입니다.</b> 가상의 지원서로 만든 예시라 복사·저장은 동작하지 않습니다. 내 자기소개서를 넣으면 같은 화면을 받고, 거기서는 전부 저장됩니다.</p>
       <div>
-        <Link href="/onboarding">내 자소서로 시작하기 <ArrowRight/></Link>
+        <WritingHomeLink>내 자소서로 시작하기 <ArrowRight/></WritingHomeLink>
         <button type="button" onClick={() => setSampleNotice(false)}>닫기</button>
       </div>
     </div>}
 
     <div className={styles.container}>
-      {!adminPreview && <Link href="/onboarding" className={styles.back}><ArrowLeft/> 작성 단계로 돌아가기</Link>}
+      {!adminPreview && <WritingHomeLink className={styles.back}><ArrowLeft/> 작성 단계로 돌아가기</WritingHomeLink>}
       <section className={styles.hero}>
         <div><span>{result.isSample ? "가상 지원서 · 결과 화면 샘플" : "분석 완료"}</span><h1>{subject.name}{subject.qualifier && <> <em>{subject.qualifier}</em></>}</h1><p>{applicationLabel} · {result.questions.length}개 문항 · {result.product}</p></div>
         <button onClick={() => setView("final")}>최종 첨삭본 보기 <ArrowRight/></button>

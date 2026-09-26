@@ -7,6 +7,7 @@ import { decideWritingMode, type WritingMode } from "@/domain/writing-mode";
 import { isFinalEnabled } from "@/domain/final-availability";
 import { loadGuestDraft, saveGuestDraft } from "@/lib/guest-draft";
 import { AttachmentCard } from "@/components/attachment-card";
+import { AppOnboardingRedirect } from "@/components/writing-home-link";
 import styles from "./onboarding.module.css";
 
 const options = [
@@ -111,6 +112,7 @@ export default function OnboardingPage() {
 
   return (
     <main className={styles.page}>
+      <AppOnboardingRedirect />
       <header>
         <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
         <Link href="/examples">첨삭 예시</Link>

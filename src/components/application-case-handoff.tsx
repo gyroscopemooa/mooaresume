@@ -7,7 +7,7 @@ import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
 import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
-import Link from "next/link";
+import { WritingHomeLink } from "@/components/writing-home-link";
 import { ResearchConsentGate } from "./research-consent-gate";
 import styles from "./application-case-handoff.module.css";
 import { onCreditChange } from "@/lib/credit-events";
@@ -550,7 +550,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           grey button explaining nothing. Say which of the two it is. */}
       {!guest && !busy && <p className={styles.noDraft}>
         이 탭에 저장된 작성본이 없습니다. 자기소개서를 넣는 화면에서 다시 시작해 주세요.
-        {" "}<Link href="/onboarding">작성 화면으로 가기</Link>
+        {" "}<WritingHomeLink>작성 화면으로 가기</WritingHomeLink>
       </p>}
       {availableCredit && (
         <button type="button" className={styles.payInstead} onClick={() => setSpendCredit(!spendCredit)} disabled={busy}>

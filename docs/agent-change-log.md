@@ -1,5 +1,15 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-26 — Claude: 앱에서 "작성 유형 다시 고르기" 등 링크를 웹 `/onboarding`이 아니라 앱 첨삭 홈 `/app`으로
+
+- 요청(사용자): 앱 결제 안내의 "유형 다시 고르기"를 누르면 앱 안에서 웹(모바일 웹 스타일) 화면이 열림 → 앱은 앱 첨삭 화면(시작 탭이 아니라 `/app`)으로 가게.
+- 변경: 신규 `src/components/writing-home-link.tsx` — `WritingHomeLink`(웹은 `webHref`(기본 `/onboarding`), 설치된 앱은 `/app`; 서버 렌더는 웹 값으로 시작해 마운트 뒤 앱이면 바꿈; `preselect`가 있으면 앱에서 클릭 시 `saveAppSelection`으로 상품·작성 유형을 미리 선택) + `AppOnboardingRedirect`(설치된 앱에서 `/onboarding`이 열리면 `router.replace("/app")` — 놓친 링크·예전 주소·`/analyze`·`/entry` 리다이렉트 대비 안전장치). 교체한 링크 6곳: `analysis-preparation.tsx`(상품 선택으로 / 유형 다시 고르기[안내 권고대로 내용 보완 미리 선택] / PRO로 진행하기[웹 `/pro/polish`, 앱은 `/app`+PRO·최종 첨삭 선택]), `application-case-handoff.tsx`(작성 화면으로 가기), `result-workspace-complete.tsx`(작성 유형 다시 고르기 / 내 자소서로 시작하기 / 작성 단계로 돌아가기). `src/app/onboarding/page.tsx`에 리다이렉트 마운트.
+- 손대지 않음: 웹 입력 화면(`pro-input-page`, `quick-input-page`)의 "이전으로"(앱 변형에서는 원래 숨김), 비교용 결과 변형(`result-workspace-codex-restored`, `-v2`), 결제 로직, 웹 동작(웹은 이전과 같은 주소).
+- 앱 입력 내용: `/app`으로 돌아가도 `app-intake-draft`(탭 sessionStorage)에 저장돼 있어 그대로 남음.
+- Validation: `tsc --noEmit` clean, 변경 파일 eslint 0건, 전체 `vitest run` 1,421건 통과(신규 `writing-home-link.test.tsx` 8건: 웹/앱 도착지, webHref, 앱에서만 미리 선택 저장, 리다이렉트 앱만). 기존 `mobile.test.ts` Expo 로드 실패 1건은 이 PC 고질. **브라우저 화면 확인은 못 함**: 개발용 webpack 빌더가 기존 `result-workspace-complete.module.css`의 `body{...}` 선택자를 거부해(배포용 Turbopack 빌드는 통과) 이 워크트리 개발 서버에서 해당 화면이 뜨지 않음 → 배포 후 실기기 확인 필요.
+- Rollback: 링크 6곳을 `<Link href="/onboarding" …>`로 되돌리고 온보딩 페이지의 `<AppOnboardingRedirect />` 제거, 신규 컴포넌트 삭제.
+- Status: 커밋됨, main 푸시 대기.
+
 ## 2026-09-26 — Claude: 일반 Android Chrome이 "설치 앱"으로 오인되던 판정 수정 (결제 경로 영향)
 
 - 증상(사용자): PC F12 모바일 보기에서는 데스크톱 스타일로 잘 나오는데, **폰 Chrome**에서 랜딩의 "첨삭하기"를 누르면 `/app`으로 가서 앱과 비슷한 화면이 나옴.
