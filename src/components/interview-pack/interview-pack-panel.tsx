@@ -253,7 +253,7 @@ export function InterviewPackPanel({ api, mode, testKind = null }: Props) {
   return <section className={styles.panel} aria-label={PACK_COPY.title}>
     {heading}
     {banner}
-    {state.testBudget && <p className={styles.hint} style={{ marginTop: 8 }}>오늘 실제 AI 테스트 남은 호출 {state.testBudget.remaining}/{state.testBudget.dailyLimit}회 · 호출별 출력 토큰 상한: 점검 {state.testBudget.tokenLimits.assess.toLocaleString("ko-KR")} · 생성 {state.testBudget.tokenLimits.generate.toLocaleString("ko-KR")} · 수정 {state.testBudget.tokenLimits.revise.toLocaleString("ko-KR")}</p>}
+    {mode === "live" && state.testBudget && <p className={styles.hint} style={{ marginTop: 8 }}>오늘 실제 AI 테스트 남은 호출 {state.testBudget.remaining}/{state.testBudget.dailyLimit}회 · 호출별 출력 토큰 상한: 점검 {state.testBudget.tokenLimits.assess.toLocaleString("ko-KR")} · 생성 {state.testBudget.tokenLimits.generate.toLocaleString("ko-KR")} · 수정 {state.testBudget.tokenLimits.revise.toLocaleString("ko-KR")}</p>}
 
     <ol className={styles.steps} aria-label="진행 단계">
       {STEP_LABELS.map((label, index) => <li key={label} data-state={stepState(index)}><b>{index + 1}</b>{label}</li>)}

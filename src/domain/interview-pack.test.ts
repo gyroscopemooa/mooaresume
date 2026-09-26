@@ -230,8 +230,8 @@ describe("문장·키워드·시간", () => {
     const perChar = personalSecondsPerChar([{ chars: 100, seconds: 20 }, { chars: 100, seconds: 30 }, { chars: 100, seconds: 90 }]);
     expect(perChar).toBeCloseTo(0.3, 5);
     expect(estimateSeconds(200, perChar)).toBe(60);
-    // 기록이 없으면 참고 기준(초당 5자)을 쓴다.
-    expect(estimateSeconds(150, null)).toBe(30);
+    // 기록이 없으면 참고 기준(초당 4.5자)을 쓴다.
+    expect(estimateSeconds(135, null)).toBe(30);
   });
 
   it("입력 정리는 제어 문자를 지우고 길이를 자른다", () => {

@@ -5,7 +5,7 @@ import {
   type PackCard,
   type PackSlotId,
 } from "@/domain/interview-pack";
-import { renderDocsForPrompt, type EffectiveMaterials } from "@/domain/interview-pack-text";
+import { REFERENCE_CHARS_PER_SECOND, renderDocsForPrompt, type EffectiveMaterials } from "@/domain/interview-pack-text";
 
 /**
  * 면접 준비팩 프롬프트.
@@ -87,7 +87,7 @@ export function buildAssessInput(materials: EffectiveMaterials): string {
 /** 문항마다 목표 글자 수 범위(공백 제외). 시간은 어림이고, 이 범위는 프롬프트 길이 안내용이다. */
 export function targetCharRange(slot: PackSlotId): { min: number; max: number } {
   const seconds = getPackSlot(slot).targetSeconds;
-  const center = seconds * 5;
+  const center = seconds * REFERENCE_CHARS_PER_SECOND;
   return { min: Math.round(center * 0.75), max: Math.round(center * 1.15) };
 }
 

@@ -428,13 +428,17 @@ export class SupabasePackRepository implements PackRepository {
   }
 
   async countTestAiCallsSince(sinceIso: string): Promise<number> {
+    // head 요청 대신 일반 조회 + count 헤더. 표가 없거나 읽지 못하면 0 으로 얼버무리지 않고 실패시킨다
+    // (하루 한도라는 안전장치가 조용히 꺼지면 안 된다).
     const { count, error } = await this.client
       .from("interview_pack_ai_calls")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "exact" })
       .eq("is_test", true)
-      .gte("created_at", sinceIso);
+      .gte("created_at", sinceIso)
+      .limit(1);
     if (error) throw dbError(error);
-    return count ?? 0;
+    if (count === null) throw new PackDbError("COUNT_UNAVAILABLE", null);
+    return count;
   }
 
   async deleteTestPacks(ownerUserId: string, packIds: string[]): Promise<number> {
@@ -471,7 +475,8 @@ export class SupabasePackRepository implements PackRepository {
   async checkSchema(): Promise<{ ready: boolean; missing: string[] }> {
     const missing: string[] = [];
     for (const table of ["admin_test_grants", "admin_test_material_sets", "interview_packs", "interview_pack_ai_calls"]) {
-      const { error } = await this.client.from(table).select("id", { head: true, count: "exact" }).limit(1);
+      // head 요청은 쓰지 않는다: 없는 표에 대한 HEAD 404 는 본문이 비어 supabase-js 가 오류 없이 "성공"으로 돌려준다.
+      const { error } = await this.client.from(table).select("id").limit(1);
       if (error) missing.push(table);
     }
     return { ready: missing.length === 0, missing };

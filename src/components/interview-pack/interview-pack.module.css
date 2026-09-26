@@ -14,6 +14,7 @@
   --pk-note-bg: #eef4fb;
   --pk-note: #1e4d7b;
   color: var(--pk-text);
+  color-scheme: light;
   background: #fff;
   border: 1px solid var(--pk-line);
   border-radius: 14px;

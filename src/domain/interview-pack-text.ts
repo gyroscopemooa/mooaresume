@@ -142,10 +142,10 @@ export function compactLength(text: string): number {
 }
 
 /**
- * 한국어를 또박또박 읽을 때의 대략적인 초당 글자 수(공백 제외).
+ * 한국어로 면접 답변을 말할 때의 대략적인 초당 글자 수(공백 제외, 쉼 포함).
  * 사람마다 다르므로 "정확한 시간"이 아니라 길이를 가늠하는 어림 기준으로만 쓴다.
  */
-export const REFERENCE_CHARS_PER_SECOND = 5;
+export const REFERENCE_CHARS_PER_SECOND = 4.5;
 
 export type LengthGuide = { state: "short" | "fit" | "long"; minChars: number; maxChars: number; chars: number };
 
