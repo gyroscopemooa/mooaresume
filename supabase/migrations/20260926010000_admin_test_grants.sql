@@ -59,6 +59,20 @@ create policy "test grant target read" on public.admin_test_grants for select to
 create policy "test grant use read" on public.admin_test_grant_uses for select to authenticated
   using ((select auth.uid()) = user_id);
 
+-- 관리자 테스트 콘솔의 "내 자료 세트". 한 번 저장해 두면 새 테스트 팩을 만들 때마다 다시 붙여 넣지 않아도 된다.
+-- 서비스 키를 쓰는 콘솔 라우트만 읽고 쓴다(정책이 없어 브라우저에서는 어떤 행도 보이지 않는다).
+create table public.admin_test_material_sets (
+  id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 80),
+  payload jsonb not null check (jsonb_typeof(payload) = 'object'),
+  created_at timestamptz not null default now()
+);
+
+create index admin_test_material_sets_owner_idx on public.admin_test_material_sets(owner_user_id, created_at desc);
+alter table public.admin_test_material_sets enable row level security;
+revoke all on table public.admin_test_material_sets from anon, authenticated;
+
 -- 브라우저(anon/authenticated)는 읽기만 한다. 정책이 없어도 막히지만 권한 자체를 명시적으로 거둔다.
 revoke all on table public.admin_test_grants from anon;
 revoke all on table public.admin_test_grant_uses from anon;
