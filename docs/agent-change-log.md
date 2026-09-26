@@ -1,5 +1,15 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-26 — Claude: FINAL 면접 준비팩 + 관리자 무결제 테스트 (branch `feat/final-interview-pack`, in progress)
+
+- Agent: Claude. 사용자 지시: FINAL 안에 "면접 준비팩"(자기소개·면접 답변·키워드 암기)을 붙이고, 운영자가 결제·재입력 없이 점검할 관리자 테스트 화면을 만든다. 배포·운영 DB 변경·실주문 변경은 하지 않는다.
+- 작업 위치: 공유 폴더가 아니라 격리 worktree `C:/6.mooaresume/.claude/worktrees/final-interview-pack`, 브랜치 `feat/final-interview-pack`(기준 `origin/main` `6937e21`). 공유 폴더의 다른 작업자 미커밋 변경(CSS 헤더, LIVE-SUB grant-reward 등)은 건드리지 않음.
+- 기존 구현 보존: 기존 FINAL 모의면접(`/api/interview/*`, `interactive-interview.tsx`, `interview_sessions` 계열)·가격·결제·쿠폰·첨삭 횟수·결과 저장·다운로드는 수정하지 않는다. 새 기능은 별도 탭·별도 테이블·별도 라우트.
+- 겹치는 기존 파일(작은 추가만, 의도 먼저 기록): `src/components/result-workspace-complete.tsx`(새 탭 1개), `src/app/result/page.tsx`(탭 노출 여부 서버 판정 prop), `src/components/application-case-handoff.tsx`(테스트 이용권 사용 분기), `src/app/meensoo/admin-shell.tsx`(메뉴 1개), `src/server/admin/admin-repository.ts`(테스트 이용권 주문 구분은 필요 시), `.env.example`.
+- 스키마 변경(기존 핵심 표 1곳): `analysis_entitlements.billing_order_id` NOT NULL 해제 + `test_grant_id` 추가 + "주문 또는 테스트 이용권 중 정확히 하나" 체크. 이유: 테스트 이용권을 가짜 결제 주문(billing_orders)으로 만들지 않기 위해. 기존 행은 전부 order 가 있어 체크를 그대로 통과한다. `begin_quick_analysis` 는 수정하지 않는다(주문이 없으면 무료 이용권과 같은 반 한도를 쓴다).
+- 상태: 계획 단계 기록. 구현·검증 결과는 이 항목을 갱신한다.
+- Rollback: 이 브랜치를 폐기하면 된다(기존 브랜치·공유 폴더 미변경). 마이그레이션은 아직 어떤 DB 에도 적용하지 않았다.
+
 ## 2026-09-26 — Claude: Google Play 심사 반려(데이터 보안 양식의 계정 삭제 링크) 대응 — 삭제 요청 페이지에 앱 이름·개발자 이름 명시
 
 - 계기(사용자가 붙인 Play 심사 메일): 앱 변경사항 거부됨. 사유 "데이터 보안 양식의 계정 삭제 링크가 잘못됨 — `https://mooaresume.com/account-deletion` does not link to a valid page, missing reference to the app or to the entity named in the app's Google Play listing". 양식 안내는 링크가 (1) 스토어 등록정보에 표시되는 앱 또는 개발자 이름 기재, (2) 삭제 요청 단계를 눈에 띄게 표시, (3) 삭제·보관 데이터 유형과 추가 보관 기간 지정을 충족해야 한다고 명시. 기존 페이지는 (2)(3)은 있었으나 (1)이 없었음(페이지는 "무아레쥬메(MOOA Resume)"만 씀. Play 등록 앱 이름은 "자소서첨삭-직업심리검사,자기소개서,이력서,커리어검사", 개발자 이름은 "GyroScope").
