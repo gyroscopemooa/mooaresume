@@ -520,3 +520,28 @@ describe("지원 회사·직무 고르기", () => {
     expect(pickCompanyAndRole({})).toEqual({ company: "", role: "" });
   });
 });
+
+describe("점검 결과 확인 — 보완 칸의 회사·직무는 충돌이 아니다", () => {
+  const base = materialsFor("complete");
+  const profile = base.docs.find((doc) => doc.title.includes("PROFILE-01"))!;
+  const profileParagraphs = splitParagraphs(profile.text);
+  const companyParagraph = profileParagraphs.findIndex((text) => text.includes("지원회사"));
+  const supplementDoc = { id: "U", kind: "supplement" as const, title: "지원자가 직접 보완한 내용", text: "[지원회사] 다른회사(가상기업)\n\n[실제 지원 이유] 조율하는 일이 맞는다고 느꼈다.", documentId: null, documentVersionId: null, filename: null };
+  const materials = { ...base, docs: [...base.docs, supplementDoc] };
+  const conflictWith = (paragraph: number, quote: string) => ({
+    facts: [],
+    conflicts: [{ topic: "other" as const, summary: "회사가 다르다", left: { docId: profile.id, paragraph: companyParagraph, quote: profileParagraphs[companyParagraph] }, right: { docId: "U", paragraph, quote } }],
+    slots: [],
+  });
+
+  it("[지원회사] 문단이 한쪽인 충돌은 버린다", () => {
+    const assessment = buildVerifiedAssessment(conflictWith(0, "[지원회사] 다른회사(가상기업)"), materials);
+    expect(assessment.conflicts).toHaveLength(0);
+    expect(assessment.droppedConflicts).toBe(1);
+  });
+
+  it("그 밖의 보완 문단과 원본 사이의 충돌은 그대로 남긴다", () => {
+    const assessment = buildVerifiedAssessment(conflictWith(1, "[실제 지원 이유] 조율하는 일이 맞는다고 느꼈다."), materials);
+    expect(assessment.conflicts).toHaveLength(1);
+  });
+});

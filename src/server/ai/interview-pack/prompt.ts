@@ -16,7 +16,7 @@ import { REFERENCE_CHARS_PER_SECOND, renderDocsForPrompt, type EffectiveMaterial
  *
  * 프롬프트나 스키마를 바꾸면 PROMPT_VERSION 을 올린다(저장되는 답변에 이 값이 함께 남는다).
  */
-export const INTERVIEW_PACK_PROMPT_VERSION = "interview-pack-2026-09-26.1";
+export const INTERVIEW_PACK_PROMPT_VERSION = "interview-pack-2026-09-26.2";
 export const INTERVIEW_PACK_SCHEMA_VERSION = "1";
 
 const SOURCE_RULES = [
@@ -49,7 +49,7 @@ export const ASSESS_INSTRUCTIONS = [
   "",
   "## 할 일",
   "1. facts — 면접 답변의 근거가 될 수 있는 사실을 자료에서 뽑습니다(역할·기간·행동·결과·수치·도구·지원동기·포부·강점·약점 보완·협업). 사실마다 자료 원문에서 그대로 복사한 quote와 그 문서id·문단번호를 붙입니다. quote는 문장 일부여도 되지만 글자 그대로여야 합니다. 자료에 없는 사실은 만들지 않습니다. 60개 이내로, 중요한 것부터.",
-  "2. conflicts — 서로 다른 자료(또는 같은 자료의 다른 곳)가 같은 대상에 대해 함께 성립할 수 없는 값을 말할 때만 적습니다. 대상은 재직·활동 기간(period), 직책·역할(role), 같은 사건의 성과 수치(metric), 그 밖의 사실(other)입니다. 양쪽 quote를 원문 그대로 복사합니다. 표현만 다르거나 함께 성립할 수 있는 서술은 충돌이 아닙니다.",
+  "2. conflicts — 서로 다른 자료(또는 같은 자료의 다른 곳)가 같은 대상에 대해 함께 성립할 수 없는 값을 말할 때만 적습니다. 대상은 재직·활동 기간(period), 직책·역할(role), 같은 사건의 성과 수치(metric), 그 밖의 사실(other)입니다. 양쪽 quote를 원문 그대로 복사합니다. 표현만 다르거나 함께 성립할 수 있는 서술은 충돌이 아닙니다. '지원자가 직접 보완한 내용'의 [지원회사]·[지원직무]는 원본의 '아직 정하지 않음'·빈 값을 지원자가 채운 것이므로, 원본과 다르다고 충돌로 적지 않습니다.",
   "3. slots — 아래 11개 항목마다 지금 자료로 답변을 만들 수 있는지 판정합니다.",
   "   - ready(만들 수 있음): 필요한 재료가 자료에 있습니다. 성과 수치가 없어도 실제 행동과 정성적인 결과가 있으면 ready입니다. reason에 무엇이 있는지 한 줄, factIds에 근거가 되는 사실 id를 넣고, questions는 빈 배열로 둡니다.",
   "   - needs_material(자료 보완 필요): 재료가 없거나 너무 빈약합니다. reason에 무엇이 비었는지 한 줄, questions에 지원자가 짧게 답할 수 있는 질문 1~3개를 씁니다. 자료에 이미 있는 것은 묻지 않습니다.",

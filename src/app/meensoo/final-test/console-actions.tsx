@@ -123,7 +123,7 @@ export function MaterialSetManager({ sets, disabled }: { sets: SetRow[]; disable
       <table className={adminStyles.table}>
         <thead><tr><th>이름</th><th>문서</th><th>저장</th><th></th></tr></thead>
         <tbody>{sets.map((set) => <tr key={set.id}>
-          <td>{set.name}</td><td>{set.docCount}개</td><td>{new Date(set.createdAt).toLocaleDateString("ko-KR")}</td>
+          <td>{set.name}</td><td>{set.docCount}개</td><td>{new Date(set.createdAt).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}</td>
           <td><div className={styles.row}>
             <button type="button" className={styles.btn} data-size="sm" disabled={disabled || busy !== null} onClick={() => void createFrom(set.id)}>불러와 실제 AI 테스트 팩 만들기</button>
             <button type="button" className={styles.btn} data-size="sm" data-variant="danger" disabled={busy !== null} onClick={() => void remove(set.id)}>삭제</button>
@@ -177,7 +177,7 @@ export function CloneRuns({ runs, disabled }: { runs: Array<{ id: string; comple
       <table className={adminStyles.table}>
         <thead><tr><th>완료</th><th>회사 · 직무</th><th></th></tr></thead>
         <tbody>{runs.map((run) => <tr key={run.id}>
-          <td>{run.completedAt ? new Date(run.completedAt).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "—"}</td>
+          <td>{run.completedAt ? new Date(run.completedAt).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Seoul" }) : "—"}</td>
           <td>{[run.company, run.role].filter(Boolean).join(" · ") || "(이름 없음)"}</td>
           <td><button type="button" className={styles.btn} data-size="sm" disabled={disabled || busy !== null} onClick={() => void clone(run.id)}>{busy === run.id ? "복제 중…" : "복제해서 실제 AI 테스트"}</button></td>
         </tr>)}</tbody>
@@ -218,7 +218,7 @@ export function PacksTable({ packs }: { packs: Array<{ id: string; label: string
           <td><input type="checkbox" aria-label="초기화할 팩 선택" checked={selected.has(pack.id)} onChange={(event) => setSelected((previous) => { const next = new Set(previous); if (event.target.checked) next.add(pack.id); else next.delete(pack.id); return next; })} /></td>
           <td>{pack.label ?? "(이름 없음)"}</td>
           <td>{pack.origin === "admin_snapshot" ? "가상·복제 자료" : "테스트 이용권 FINAL"}</td>
-          <td>{new Date(pack.createdAt).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}</td>
+          <td>{new Date(pack.createdAt).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Seoul" })}</td>
           <td>{pack.initialGeneratedAt ? "생성함" : "아직"}</td>
           <td>v{pack.materialsVersion}</td>
           <td><a className={styles.btn} data-size="sm" data-variant="ghost" href={`/meensoo/final-test/pack/${pack.id}`}>열기</a></td>
@@ -279,7 +279,7 @@ export function GrantManager({ approvedEmails, defaultEmail, grants, disabled }:
           return <tr key={grant.id}>
             <td>{grant.targetEmail ?? "(알 수 없음)"}</td>
             <td>{Math.max(0, grant.maxUses - grant.usedCount)} / {grant.maxUses}</td>
-            <td>{new Date(grant.expiresAt).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" })}</td>
+            <td>{new Date(grant.expiresAt).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Seoul" })}</td>
             <td><span className={`${adminStyles.pill} ${state === "유효" ? adminStyles.pillOk : adminStyles.pillMuted}`}>{state}</span></td>
             <td>{grant.note ?? ""}</td>
             <td>{grant.status === "valid" && <button type="button" className={styles.btn} data-size="sm" data-variant="danger" disabled={busy !== null} onClick={() => void revoke(grant.id)}>회수</button>}</td>

@@ -259,6 +259,7 @@ export function InterviewPackPanel({ api, mode, testKind = null }: Props) {
       {STEP_LABELS.map((label, index) => <li key={label} data-state={stepState(index)}><b>{index + 1}</b>{label}</li>)}
     </ol>
 
+    <div className={styles.workArea}>
     <MaterialsSection
       state={state}
       drafts={drafts}
@@ -278,6 +279,7 @@ export function InterviewPackPanel({ api, mode, testKind = null }: Props) {
       disabled={isBusy}
     />
 
+    <div className={styles.stickyBar}>
     <div className={styles.actions}>
       <button type="button" className={styles.btn} data-variant="ghost" onClick={() => void saveSupplements()} disabled={isBusy || !supplementPayload}>보완 내용 저장</button>
       <button type="button" className={styles.btn} onClick={() => void perform("check", "check", () => api.check(keyFor("check")))} disabled={isBusy || !state.aiAvailable || state.usage.check.remaining <= 0}>
@@ -290,6 +292,8 @@ export function InterviewPackPanel({ api, mode, testKind = null }: Props) {
         {busy === "generate" ? "만드는 중…" : `보류했던 ${pendingReady.length}개 문항 이어서 만들기`}
       </button>}
     </div>
+    {message && <p className={styles.msg} data-kind={message.kind} role={message.kind === "error" ? "alert" : "status"}>{message.text}</p>}
+    </div>
     <p className={styles.usage} style={{ marginTop: 8 }}>
       {!initialDone && readySlots.length > 0 && `‘답변 만들기’는 팩 최초 생성 ${state.usage.initial.limit}회 중 1회를 사용하고, 자료가 충분한 ${readySlots.length}개 문항만 만듭니다. `}
       {!initialDone && !freshAssessment && "먼저 자료를 점검해 주세요. "}
@@ -298,8 +302,8 @@ export function InterviewPackPanel({ api, mode, testKind = null }: Props) {
     </p>
     {assessment && assessment.unresolvedConflictCount > 0 && <p className={styles.msg} data-kind="notice" role="status">서류 사이 다른 내용이 {assessment.unresolvedConflictCount}건 남아 있어요. 확인하시기 전에는 그 내용이 들어가는 문항을 만들지 않습니다.</p>}
     {!state.aiAvailable && <p className={styles.msg} data-kind="error" role="alert">지금은 AI 기능을 사용할 수 없어요. 저장된 답변 보기·직접 수정·연습은 계속 쓸 수 있습니다.</p>}
-    {message && <p className={styles.msg} data-kind={message.kind} role={message.kind === "error" ? "alert" : "status"}>{message.text}</p>}
     {state.pack.busy && !busy && <p className={styles.msg} data-kind="busy" role="status">AI 작업이 진행 중입니다. 끝나면 이 화면에 자동으로 표시됩니다.</p>}
+    </div>
 
     <section className={styles.section} aria-labelledby="pack-answers">
       <h3 id="pack-answers">③ 답변 확인·키워드 연습</h3>

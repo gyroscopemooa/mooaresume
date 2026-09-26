@@ -81,6 +81,11 @@ export function stableConflictId(topic: string, left: EvidenceRef, right: Eviden
 
 const MAX_QUESTIONS = 3;
 
+/** 지원자가 "부족한 내용 보완"의 회사·직무 칸에 직접 적은 문단인가. */
+function isUserFieldOverride(evidence: EvidenceRef): boolean {
+  return evidence.docKind === "supplement" && /^\s*\[(지원회사|지원직무)\]/.test(evidence.paragraphText);
+}
+
 function unresolvedConflicts(conflicts: readonly VerifiedConflict[], confirmations: readonly ConflictConfirmation[]): VerifiedConflict[] {
   const confirmed = new Set(confirmations.map((entry) => entry.conflictId));
   return conflicts.filter((conflict) => !confirmed.has(conflict.id));
@@ -135,6 +140,11 @@ export function buildVerifiedAssessment(ai: AiAssessment, materials: EffectiveMa
     const right = resolveEvidence(conflict.right, materials);
     // 양쪽 원문을 나란히 보여 주려면 둘 다 실제로 있어야 한다. 같은 문장끼리는 충돌이 아니다.
     if (!left || !right || (left.docId === right.docId && left.paragraph === right.paragraph && normalizeForMatch(left.quote) === normalizeForMatch(right.quote))) {
+      droppedConflicts += 1;
+      continue;
+    }
+    // 지원자가 보완 칸에 적은 회사·직무는 원본의 "미정"·빈 값을 채우는 것이지, 서류끼리의 충돌이 아니다.
+    if (isUserFieldOverride(left) || isUserFieldOverride(right)) {
       droppedConflicts += 1;
       continue;
     }

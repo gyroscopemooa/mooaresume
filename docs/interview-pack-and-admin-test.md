@@ -58,7 +58,7 @@ Supabase SQL Editor(프로젝트 이름 확인!)에서 이 순서로:
 
 ## 검증 결과 (2026-09-26)
 
-- 자동 테스트: 전체 1,656개 통과(기존 `mobile.test.ts` 로드 실패 1건은 기존과 동일, Expo tsconfig 부재).
+- 자동 테스트: 전체 1,658개 통과(기존 `mobile.test.ts` 로드 실패 1건은 기존과 동일, Expo tsconfig 부재).
 - 타입 검사·린트: 오류 0(린트 경고 2건은 기존 파일).
 - `next build`(Turbopack) 성공.
 - **SQL은 실제 Postgres(PGlite)에 운영 마이그레이션 전체 + 신규 2개를 적용해 103개 시나리오 통과**(`scripts/verify-interview-pack-sql/`).

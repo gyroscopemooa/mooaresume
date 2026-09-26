@@ -112,6 +112,11 @@
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
 .usage { color: var(--pk-muted); font-size: 12.5px; }
 
+/* 입력칸이 길어도 저장·점검·만들기 버튼이 화면 아래에 계속 보이게 한다(① ② 구간에서만). */
+.stickyBar { position: sticky; bottom: 0; z-index: 5; margin-top: 14px; padding: 10px 0 12px; background: #fff; border-top: 1px solid var(--pk-line); }
+.stickyBar .actions { margin-top: 0; }
+.stickyBar .msg { margin-top: 8px; }
+
 .msg { margin-top: 14px; padding: 10px 13px; border-radius: 10px; font-size: 13.5px; font-weight: 600; }
 .msg[data-kind="error"] { background: var(--pk-bad-bg); color: var(--pk-bad); }
 .msg[data-kind="notice"] { background: var(--pk-green-soft); color: var(--pk-green); }
