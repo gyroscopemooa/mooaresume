@@ -161,9 +161,12 @@ export function createSampleApi(sampleId: PackSampleId): PackClientApi {
     }
   }
 
+  // 실제 화면과 같은 첫 화면(‘만들기’ 안내)을 보이려고, 열기 전에는 팩이 없는 것처럼 답한다.
+  let opened = false;
+
   return {
-    load: () => run(async (packId) => ({ state: await service.getState(SAMPLE_USER, packId), availability: { available: true } })),
-    open: () => run((packId) => service.getState(SAMPLE_USER, packId)),
+    load: () => run(async (packId) => (opened ? { state: await service.getState(SAMPLE_USER, packId), availability: { available: true } } : { state: null, availability: { available: true } })),
+    open: () => run(async (packId) => { opened = true; return service.getState(SAMPLE_USER, packId); }),
     saveMaterials: (input) => run((packId) => service.saveSupplements(SAMPLE_USER, packId, input)),
     check: (requestKey) => run((packId) => service.check(SAMPLE_USER, packId, requestKey)),
     generate: (requestKey, mode) => run((packId) => service.generate(SAMPLE_USER, packId, requestKey, mode)),

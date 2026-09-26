@@ -25,6 +25,9 @@ afterEach(() => {
 describe("샘플 A — 자료 충분", () => {
   it("점검하면 열한 문항이 모두 만들 수 있음이고, 생성하면 완성 답변 열한 개가 나온다", async () => {
     const api = createSampleApi("complete");
+    // 열기 전에는 실제 화면처럼 팩이 없는 상태다.
+    expect((await api.load()).state).toBeNull();
+    await api.open();
     const loaded = await api.load();
     expect(loaded.state?.materials.docs.length).toBe(9);
     expect(loaded.state?.answers).toEqual([]);
@@ -85,6 +88,7 @@ describe("샘플 A — 자료 충분", () => {
 
   it("선택 답변 수정(줄이기)은 예시로만 동작하고 횟수를 쓰며, 예시가 없는 요청은 성공처럼 꾸미지 않는다", async () => {
     const api = createSampleApi("complete");
+    await api.open();
     await api.check(nextKey());
     await api.generate(nextKey(), "initial");
     const revised = (await api.revise({ slot: "intro_30", kind: "shorten", requestKey: nextKey() })).state;
@@ -117,6 +121,7 @@ describe("샘플 A — 자료 충분", () => {
 describe("샘플 B — 자료 부족", () => {
   it("모든 항목이 자료 보완 필요이고, 문항마다 1~3개 질문이 있으며, 완성 답변은 만들어지지 않는다", async () => {
     const api = createSampleApi("insufficient");
+    await api.open();
     const state = (await api.check(nextKey())).state;
     expect(state.assessment!.slots).toHaveLength(11);
     for (const slot of state.assessment!.slots) {

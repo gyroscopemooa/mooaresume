@@ -55,7 +55,7 @@ export class MemoryPackRepository implements PackRepository {
   private counter = 0;
   clock = () => Date.now();
 
-  private id(_prefix: string): string {
+  private id(): string {
     this.counter += 1;
     // 실제 DB 처럼 UUID 모양이어야 라우트의 형식 검사를 통과한다.
     return crypto.randomUUID();
@@ -124,7 +124,7 @@ export class MemoryPackRepository implements PackRepository {
     if (!access.allowed) throw Object.assign(new Error(`PACK_NOT_ALLOWED:${access.reason}`), { code: "PACK_NOT_ALLOWED" });
     const existing = await this.getPackByRun(input.ownerUserId, input.analysisRunId);
     if (existing) return { packId: existing.id, created: false };
-    const id = this.id("pack");
+    const id = this.id();
     this.packs.set(id, {
       id, ownerUserId: input.ownerUserId, origin: "final_run", analysisRunId: input.analysisRunId,
       accessSource: access.accessSource, isTest: access.accessSource === "admin_test", testGrantId: access.testGrantId, label: null,
@@ -136,7 +136,7 @@ export class MemoryPackRepository implements PackRepository {
   }
 
   async createAdminSnapshotPack(input: { ownerUserId: string; materials: MaterialsPayload; limits: PackLimits; label: string | null; clonedFromRunId: string | null }) {
-    const id = this.id("snap");
+    const id = this.id();
     this.packs.set(id, {
       id, ownerUserId: input.ownerUserId, origin: "admin_snapshot", analysisRunId: null, accessSource: "admin_test", isTest: true,
       testGrantId: null, label: input.label, materialsVersion: 1, assessment: null, assessmentMaterialsVersion: null, limits: input.limits,
@@ -176,7 +176,7 @@ export class MemoryPackRepository implements PackRepository {
     const limit = pack.limits[input.kind];
     const used = this.usage.filter((row) => row.packId === pack.id && row.kind === input.kind && this.counts(row)).length;
     if (used >= limit) return { outcome: "LIMIT_REACHED", used, limit };
-    const usageId = this.id("usage");
+    const usageId = this.id();
     this.usage.push({ id: usageId, packId: pack.id, ownerUserId: input.ownerUserId, kind: input.kind, requestKey: input.requestKey, slot: input.slot, state: "reserved", reservedAt: now });
     pack.busyKind = input.kind;
     pack.busyUntil = new Date(now + TTL_MS).toISOString();
@@ -184,7 +184,8 @@ export class MemoryPackRepository implements PackRepository {
     return { outcome: "RESERVED", usageId, used: used + 1, limit };
   }
 
-  async settleUsage(ownerUserId: string, usageId: string, state: "released" | "confirmed", _failureCode: string | null) {
+  async settleUsage(ownerUserId: string, usageId: string, state: "released" | "confirmed", failureCode: string | null) {
+    void failureCode;
     const row = this.usage.find((entry) => entry.id === usageId && entry.ownerUserId === ownerUserId);
     if (!row || row.state !== "reserved") return false;
     row.state = state;
@@ -228,7 +229,7 @@ export class MemoryPackRepository implements PackRepository {
       if (row.kind === "edit" && entry.slot !== row.slot) continue;
       if (row.kind === "complete" && list.some((answer) => answer.slot === entry.slot)) continue;
       const revisionNo = Math.max(0, ...list.filter((answer) => answer.slot === entry.slot).map((answer) => answer.revisionNo)) + 1;
-      list.push({ id: this.id("ans"), slot: entry.slot, revisionNo, origin: row.kind === "edit" ? "ai_revised" : "ai", materialsVersion: input.materialsVersion, card: clone(entry.card), createdAt: new Date(this.clock()).toISOString() });
+      list.push({ id: this.id(), slot: entry.slot, revisionNo, origin: row.kind === "edit" ? "ai_revised" : "ai", materialsVersion: input.materialsVersion, card: clone(entry.card), createdAt: new Date(this.clock()).toISOString() });
       saved += 1;
     }
     this.answers.set(pack.id, list);
@@ -243,7 +244,7 @@ export class MemoryPackRepository implements PackRepository {
     const current = Math.max(0, ...list.filter((answer) => answer.slot === input.slot).map((answer) => answer.revisionNo));
     if (current === 0) throw Object.assign(new Error("ANSWER_NOT_FOUND"), { code: "ANSWER_NOT_FOUND" });
     if (current !== input.baseRevision) throw Object.assign(new Error("STALE_REVISION"), { code: "STALE_REVISION" });
-    list.push({ id: this.id("ans"), slot: input.slot, revisionNo: current + 1, origin: input.origin, materialsVersion: input.materialsVersion, card: clone(input.card), createdAt: new Date(this.clock()).toISOString() });
+    list.push({ id: this.id(), slot: input.slot, revisionNo: current + 1, origin: input.origin, materialsVersion: input.materialsVersion, card: clone(input.card), createdAt: new Date(this.clock()).toISOString() });
     this.answers.set(input.packId, list);
     return current + 1;
   }

@@ -311,6 +311,5 @@ export function hasAnyMaterialText(materials: Pick<EffectiveMaterials, "docs">):
 
 /** 제어 문자를 지우고 길이를 자른다. 모델에게 보내기 전·저장 전 공통 정리. */
 export function sanitizeUserText(value: string, max: number): string {
-  // eslint-disable-next-line no-control-regex
   return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").replace(/\r\n/g, "\n").trim().slice(0, max);
 }
