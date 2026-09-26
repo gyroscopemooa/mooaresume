@@ -2,10 +2,10 @@
 
 ## 2026-09-26 — Claude: 첫 실행 온보딩을 앱 네이티브로 이동, 웹 자동 팝업 제거
 
-- 요청(사용자): 온보딩은 웹과 연동된 팝업이 아니라 "앱을 켰을 때 앱 자체에서 영상 + 하단 넘기기 버튼"이어야 한다.
+- 요청(사용자): 온보딩은 웹과 연동된 팝업이 아니라 "앱을 켰을 때 앱 자체에서 영상 + 하단 넘기기 버튼"이어야 하고, 앱을 껐다 켤 때도 나와야 한다.
 - 변경(웹): 루트 레이아웃에서 `<AppFirstRunOnboarding />` 마운트를 제거해 웹 자동 팝업이 네이티브 영상과 겹치지 않게 했습니다. 컴포넌트·테스트는 그대로 두고, `내 정보 → 앱 소개 영상 다시 보기`(웹 팝업으로 다시 재생)는 유지합니다.
-- 변경(Android, `C:.mooaresume-android`, 별도 저장소): 신규 `IntroActivity`가 런처 진입점이 되어 첫 실행에만 `res/raw/mooa_intro.mp4`(웹과 같은 60초 영상)를 재생합니다. 하단 건너뛰기·소리 켜기(기본 무음), 종료·건너뛰기·뒤로가기·재생 오류 모두 "봤음"(SharedPreferences)으로 기록하고 TWA(`LauncherActivity`)를 새 작업으로 시작합니다. 이후 실행은 화면 없이 곧바로 TWA. versionCode 8 / 1.0.7.
-- Validation: 에뮬레이터(API 35)에서 서명된 릴리스 APK로 첫 실행 영상 → 건너뛰기 → 웹 앱 진입, 두 번째 실행은 영상 없이 곧바로 앱 확인. 웹은 tsc·해당 테스트 통과(실행 결과는 커밋 시 확인).
+- 변경(Android, `C:.mooaresume-android`, 별도 저장소): 신규 `IntroActivity`가 런처 진입점이 되어 앱을 새로 켤 때마다 `res/raw/mooa_intro.mp4`(웹과 같은 60초 영상)를 재생합니다(사용자 결정: 설치 후 한 번은 너무 적다). 하단 건너뛰기·소리 켜기(기본 무음), 종료·건너뛰기·뒤로가기·재생 오류 시 TWA(`LauncherActivity`)를 새 작업으로 시작합니다. "봤음" 기록 없음. 최근 앱 목록에서 켜진 앱을 다시 여는 경우에는 영상 없음. versionCode 9 / 1.0.8.
+- Validation: 에뮬레이터(API 35)에서 서명된 릴리스 APK로 앱·Chrome 완전 종료 후 재실행할 때마다 영상 → 건너뛰기 → 웹 앱 진입 확인. 웹은 tsc·해당 테스트 통과(실행 결과는 커밋 시 확인).
 - Rollback: 웹은 레이아웃에 마운트 두 줄 복원. Android는 IntroActivity 삭제 + 매니페스트의 MAIN/LAUNCHER 필터를 LauncherActivity로 되돌림.
 
 ## 2026-09-25 — Claude: Codex의 앱 넓은 캔버스·첫 실행 온보딩 작업을 stash에서 복구해 통합 — claude/app-wide-canvas-onboarding-20260925
