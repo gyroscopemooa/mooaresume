@@ -85,7 +85,7 @@ function CostCell({ analysis }: { analysis: AdminAnalysis }) {
           {cost.marginRate !== null && ` (${Math.round(cost.marginRate * 100)}%)`}
         </small>
       ) : (
-        <small>무료 이용권 · 판매액 없음</small>
+        <small>{analysis.testGrant ? "테스트 이용권 · 결제·매출 아님" : "무료 이용권 · 판매액 없음"}</small>
       )}
     </div>
   );
@@ -116,7 +116,7 @@ function AttentionList({ items }: { items: AdminAnalysis[] }) {
               <small>
                 {analysis.paid
                   ? `판매 ${analysis.cost.priceKrw.toLocaleString("ko-KR")}원 · 남음 ${won(analysis.cost.marginKrw)}`
-                  : "무료 이용권"}
+                  : analysis.testGrant ? "테스트 이용권" : "무료 이용권"}
               </small>
             </div>
             <div className={styles.riskWho}>

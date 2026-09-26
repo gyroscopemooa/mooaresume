@@ -1,14 +1,24 @@
 # Agent Change Log and Variant Registry
 
-## 2026-09-26 — Claude: FINAL 면접 준비팩 + 관리자 무결제 테스트 (branch `feat/final-interview-pack`, in progress)
+## 2026-09-26 — Claude: FINAL 면접 준비팩 + 관리자 무결제 테스트 (branch `feat/final-interview-pack`, 개발 완료 · 병합/배포/DB 적용 전)
 
-- Agent: Claude. 사용자 지시: FINAL 안에 "면접 준비팩"(자기소개·면접 답변·키워드 암기)을 붙이고, 운영자가 결제·재입력 없이 점검할 관리자 테스트 화면을 만든다. 배포·운영 DB 변경·실주문 변경은 하지 않는다.
-- 작업 위치: 공유 폴더가 아니라 격리 worktree `C:/6.mooaresume/.claude/worktrees/final-interview-pack`, 브랜치 `feat/final-interview-pack`(기준 `origin/main` `6937e21`). 공유 폴더의 다른 작업자 미커밋 변경(CSS 헤더, LIVE-SUB grant-reward 등)은 건드리지 않음.
-- 기존 구현 보존: 기존 FINAL 모의면접(`/api/interview/*`, `interactive-interview.tsx`, `interview_sessions` 계열)·가격·결제·쿠폰·첨삭 횟수·결과 저장·다운로드는 수정하지 않는다. 새 기능은 별도 탭·별도 테이블·별도 라우트.
-- 겹치는 기존 파일(작은 추가만, 의도 먼저 기록): `src/components/result-workspace-complete.tsx`(새 탭 1개), `src/app/result/page.tsx`(탭 노출 여부 서버 판정 prop), `src/components/application-case-handoff.tsx`(테스트 이용권 사용 분기), `src/app/meensoo/admin-shell.tsx`(메뉴 1개), `src/server/admin/admin-repository.ts`(테스트 이용권 주문 구분은 필요 시), `.env.example`.
-- 스키마 변경(기존 핵심 표 1곳): `analysis_entitlements.billing_order_id` NOT NULL 해제 + `test_grant_id` 추가 + "주문 또는 테스트 이용권 중 정확히 하나" 체크. 이유: 테스트 이용권을 가짜 결제 주문(billing_orders)으로 만들지 않기 위해. 기존 행은 전부 order 가 있어 체크를 그대로 통과한다. `begin_quick_analysis` 는 수정하지 않는다(주문이 없으면 무료 이용권과 같은 반 한도를 쓴다).
-- 상태: 계획 단계 기록. 구현·검증 결과는 이 항목을 갱신한다.
-- Rollback: 이 브랜치를 폐기하면 된다(기존 브랜치·공유 폴더 미변경). 마이그레이션은 아직 어떤 DB 에도 적용하지 않았다.
+- Agent: Claude. 사용자 지시: FINAL 안에 "면접 준비팩"(자기소개·면접 답변·키워드 암기)을 붙이고, 운영자가 결제·재입력 없이 점검할 관리자 "FINAL 테스트" 화면을 만든다. 배포·운영 DB 변경·실주문 변경·유료 AI 시험 실행은 하지 않았다.
+- 작업 위치: 공유 폴더가 아니라 격리 worktree `C:/6.mooaresume/.claude/worktrees/final-interview-pack`, 브랜치 `feat/final-interview-pack`(기준 `origin/main` `6937e21`). 공유 폴더의 다른 작업자 미커밋 변경(CSS 헤더, LIVE-SUB 등)은 건드리지 않았다.
+- 새 파일(기존 구현과 겹치지 않음):
+  - DB: `supabase/migrations/20260926010000_admin_test_grants.sql`, `20260926020000_interview_packs.sql` (**어느 DB에도 미적용**).
+  - 규칙: `src/domain/interview-pack*.ts`(슬롯·준비도·서버 검증·자료 버전), `src/fixtures/interview-pack-*.ts`(가상 샘플 A/B/C 원문·샘플용 AI·기대값(테스트/관리자 전용, 서버 코드가 import 안 함)).
+  - 서버: `src/server/ai/interview-pack/`(프롬프트·게이트웨이), `src/server/interview-pack/`(서비스·Supabase/메모리 저장소·접근 정책·관리자 테스트 서비스·콘솔 데이터), API `src/app/api/interview-pack/**`, `src/app/api/meensoo/final-test/**`.
+  - 화면: `src/components/interview-pack/**`, `src/lib/interview-pack/client-api.ts`, `src/app/meensoo/final-test/**`.
+  - 검증 도구·문서: `scripts/verify-interview-pack-sql/`(실제 Postgres(PGlite) 시나리오 검증), `src/evals/interview-pack-live-eval.live.test.ts`(유료, `RUN_LIVE_EVAL=1`일 때만), `docs/interview-pack-and-admin-test.md`.
+- 기존 파일의 작은 추가(의도를 먼저 기록한 것): `src/components/result-workspace-complete.tsx`(새 탭 1개, prop `interviewPackEnabled`), `src/app/result/page.tsx`(탭 노출 여부 서버 판정), `src/components/application-case-handoff.tsx`(테스트 이용권이 있으면 결제 대신 "테스트 이용권으로 분석 시작" — 기존 결제 경로는 그대로), `src/app/meensoo/admin-shell.tsx`(메뉴 1개), `src/server/admin/admin-repository.ts` + `src/app/meensoo/analyses/page.tsx`(테스트 이용권 표식), `.env.example`(환경변수 이름만).
+- 기존 구현 보존: 기존 FINAL 모의면접(`/api/interview/*`, `interview_sessions` 계열)·가격·결제·쿠폰·첨삭 횟수·결과 저장·다운로드·`begin_quick_analysis` 등 결제/분석 SQL 함수는 수정하지 않았다(마이그레이션 회귀 테스트가 재정의·결제 표 쓰기 부재를 고정).
+- 스키마 변경(기존 핵심 표 1곳): `analysis_entitlements.billing_order_id` NOT NULL 해제 + `test_grant_id` 추가 + "주문 또는 테스트 이용권 중 정확히 하나" 체크. 기존 행은 그대로 통과. 이유: 테스트 이용권을 가짜 결제 주문(billing_orders)으로 만들지 않기 위해서.
+- 기본 동작(꺼짐): 일반 공개는 `NEXT_PUBLIC_ENABLE_INTERVIEW_PACK`가 켜져야 하고, 기존 FINAL 구매자 소급 적용은 `INTERVIEW_PACK_ELIGIBLE_FROM` 기본 `none`(발급 없음). 테스트 계정은 `FINAL_TEST_ACCOUNT_EMAILS`(비면 아무도 못 씀). 이 브랜치 배포만으로는 일반 사용자에게 아무것도 보이지 않는다.
+- 이번 마무리 수정: 팩의 지원 회사·직무를 사용자가 입력한 지원 건(`application_cases`) 값으로 먼저 채우고, 결과에 저장된 영어 자리표시자("Applicant company" 등)는 자료로 삼지 않게 함(`pickCompanyAndRole`, 테스트 2건).
+- Validation (2026-09-26): 전체 `vitest run` 1,656건 통과(186개 파일 중 기존 `mobile.test.ts` 1개는 Expo tsconfig 부재로 로드 실패 — 이 PC 고질, 변경 전과 동일); `tsc --noEmit` 0 오류; eslint 오류 0(경고 2건은 기존 파일); `next build`(Turbopack) 성공; SQL은 운영 마이그레이션 전체 + 신규 2개를 실제 Postgres(PGlite)에 적용해 103개 시나리오 통과; 브라우저(개발 서버)에서 관리자 로그인·콘솔·샘플 A/C 흐름·모바일 폭 확인.
+- 미검증: 실제 OpenAI 응답 품질(live eval 준비만, 유료라 미실행), 실제 Supabase RPC 왕복(마이그레이션 미적용), Polar sandbox 결제·웹훅 회귀(자동 실행하지 않음, 별도 보고), 로그인·DB가 필요한 실제 FINAL 결과 화면의 탭, 동시 요청 경합(PGlite는 연결 1개), 배포 환경(Cloudflare) 동작.
+- Rollback: 병합 전이면 이 브랜치를 폐기하면 된다(기존 브랜치·공유 폴더 미변경). 병합 뒤에는 해당 커밋 revert. DB를 적용했다면 신규 표·함수(`interview_pack_*`, `admin_test_*`)를 삭제하고 `analysis_entitlements`의 `test_grant_id`·체크를 제거한 뒤(테스트 이용권 행이 없어야 함) `billing_order_id` NOT NULL 복구. 즉시 끄기: `NEXT_PUBLIC_ENABLE_INTERVIEW_PACK` 비움 + `FINAL_TEST_ACCOUNT_EMAILS` 비움.
+- Status: 커밋됨(브랜치), **병합·마이그레이션 적용·배포는 사용자 결정 대기**.
 
 ## 2026-09-26 — Claude: Google Play 심사 반려(데이터 보안 양식의 계정 삭제 링크) 대응 — 삭제 요청 페이지에 앱 이름·개발자 이름 명시
 

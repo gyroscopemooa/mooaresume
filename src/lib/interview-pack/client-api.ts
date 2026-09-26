@@ -136,7 +136,8 @@ export function createSampleApi(sampleId: PackSampleId): PackClientApi {
     repo,
     ai: createCannedGateway(sampleId, docs),
     model: { model: "샘플 고정 응답" },
-    config: resolveInterviewPackConfig({}),
+    // 고정 응답은 유료 호출이 아니므로 "하루 실제 AI 테스트 한도"에 걸리지 않게 한도를 최대로 둔다.
+    config: resolveInterviewPackConfig({ INTERVIEW_PACK_TEST_DAILY_AI_CALLS: "500" }),
   });
   let packIdPromise: Promise<string> | null = null;
   const ensurePack = () => {

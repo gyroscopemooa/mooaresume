@@ -16,6 +16,7 @@ import {
   type StoredAnswer,
   type UsageKind,
 } from "@/domain/interview-pack";
+import { pickCompanyAndRole } from "@/domain/interview-pack-materials";
 import { mapDocumentKind } from "@/domain/interview-pack-text";
 import { resultDocumentSchema } from "@/domain/result-document";
 import type {
@@ -242,7 +243,7 @@ export class SupabasePackRepository implements PackRepository {
   async loadFinalRunSource(ownerUserId: string, analysisRunId: string): Promise<FinalRunSource | null> {
     const { data: run, error: runError } = await this.client
       .from("analysis_runs")
-      .select("id, submission_snapshot_id, completed_at")
+      .select("id, submission_snapshot_id, completed_at, application_cases(company_name, role_name)")
       .eq("id", analysisRunId)
       .eq("owner_user_id", ownerUserId)
       .maybeSingle();
@@ -295,11 +296,17 @@ export class SupabasePackRepository implements PackRepository {
     const parsedResult = resultDocumentSchema.safeParse(result?.result_data);
 
     let hints: FinalHints = { careerTimeline: [], documentConflicts: [] };
-    let company = "";
-    let role = "";
+    const embeddedCase = run.application_cases as unknown as { company_name?: string | null; role_name?: string | null } | Array<{ company_name?: string | null; role_name?: string | null }> | null;
+    const applicationCase = Array.isArray(embeddedCase) ? embeddedCase[0] : embeddedCase;
+    const labels = pickCompanyAndRole({
+      caseCompany: applicationCase?.company_name,
+      caseRole: applicationCase?.role_name,
+      resultCompany: parsedResult.success ? parsedResult.data.company : null,
+      resultRole: parsedResult.success ? parsedResult.data.role : null,
+    });
+    const company = labels.company;
+    const role = labels.role;
     if (parsedResult.success) {
-      company = parsedResult.data.company;
-      role = parsedResult.data.role;
       hints = finalHintsSchema.parse({
         careerTimeline: parsedResult.data.careerTimeline.slice(0, 20).map((entry) => `${entry.period} · ${entry.title} (${entry.source})`.slice(0, 300)),
         documentConflicts: parsedResult.data.documentConflicts.slice(0, 10).map((entry) => `[${entry.field}] 이력서: ${entry.resumeStatement} / 자소서: ${entry.coverLetterQuote}`.slice(0, 400)),

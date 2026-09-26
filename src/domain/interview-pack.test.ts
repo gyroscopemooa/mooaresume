@@ -40,6 +40,7 @@ import {
   stableConflictId,
   verifyGeneratedCard,
 } from "@/domain/interview-pack-verify";
+import { pickCompanyAndRole } from "@/domain/interview-pack-materials";
 import { PACK_SAMPLES, getPackSample, splitSampleSections } from "@/fixtures/interview-pack-samples";
 
 function materialsFor(id: "complete" | "insufficient" | "conflicting", extra: Partial<MaterialsPayload> = {}) {
@@ -504,5 +505,18 @@ describe("카드 확인", () => {
     // 본인이 쓴 글이므로 어떤 문제도 오류(error)로 올리지 않는다.
     expect(edited.issues.every((issue) => issue.severity === "warn")).toBe(true);
     expect(cardIsComplete(edited)).toBe(true);
+  });
+});
+
+describe("지원 회사·직무 고르기", () => {
+  it("사용자가 입력한 지원 건의 값을 먼저 쓰고 없으면 분석 결과의 값을 쓴다", () => {
+    expect(pickCompanyAndRole({ caseCompany: "내 회사", caseRole: "내 직무", resultCompany: "결과 회사", resultRole: "결과 직무" })).toEqual({ company: "내 회사", role: "내 직무" });
+    expect(pickCompanyAndRole({ caseCompany: "", caseRole: null, resultCompany: "결과 회사", resultRole: "결과 직무" })).toEqual({ company: "결과 회사", role: "결과 직무" });
+  });
+
+  it("예전에 저장된 영어 자리표시자는 자료로 삼지 않는다", () => {
+    expect(pickCompanyAndRole({ resultCompany: "Applicant company", resultRole: "Applicant role" })).toEqual({ company: "", role: "" });
+    expect(pickCompanyAndRole({ caseCompany: " applicant company ", resultRole: "자기소개서 첨삭" })).toEqual({ company: "", role: "" });
+    expect(pickCompanyAndRole({})).toEqual({ company: "", role: "" });
   });
 });

@@ -168,3 +168,26 @@ export function buildNextMaterialsPayload(input: {
     confirmations: [...confirmations.values()].slice(0, 20),
   };
 }
+
+const PLACEHOLDER_LABELS = new Set(["applicant company", "applicant role", "cover-letter question", "자기소개서 첨삭"]);
+
+function realLabel(value: string | null | undefined): string {
+  const trimmed = (value ?? "").trim();
+  return trimmed && !PLACEHOLDER_LABELS.has(trimmed.toLowerCase()) ? trimmed : "";
+}
+
+/**
+ * 팩의 지원 회사·직무. 사용자가 입력한 지원 건의 값을 먼저 쓰고, 없으면 분석 결과의 값을 쓴다.
+ * 분석 결과에 예전 영어 자리표시자("Applicant company" 등)가 저장돼 있어도 그대로 자료로 삼지 않는다.
+ */
+export function pickCompanyAndRole(input: {
+  caseCompany?: string | null;
+  caseRole?: string | null;
+  resultCompany?: string | null;
+  resultRole?: string | null;
+}): { company: string; role: string } {
+  return {
+    company: realLabel(input.caseCompany) || realLabel(input.resultCompany),
+    role: realLabel(input.caseRole) || realLabel(input.resultRole),
+  };
+}

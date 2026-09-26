@@ -149,6 +149,8 @@ export type AdminAnalysis = {
   hasResult: boolean;
   /** 결제된 건인지. 아니면 무료 이용권(쿠폰·추천 보상)으로 돌린 것입니다. */
   paid: boolean;
+  /** 관리자 테스트 이용권으로 돌린 건인지. 결제·매출 집계와 무관한 점검용 실행입니다. */
+  testGrant: boolean;
   /** 시도별 원장을 합친 원가. 원장이 없으면 시도 0건으로 나옵니다. */
   cost: RunCostSummary;
   /** 화면에 시도 내역을 그대로 펼치기 위한 목록. */
@@ -225,6 +227,21 @@ async function loadPaidRunIds(runIds: string[]): Promise<Set<string>> {
   return new Set((data ?? []).map((row) => row.analysis_run_id as string));
 }
 
+/**
+ * 관리자 테스트 이용권으로 소비된 실행. 결제 주문이 없는 이용권이라 `paid` 로는 "무료"와 구분되지 않는다.
+ * 마이그레이션 전(열이 없는 환경)에는 빈 집합으로 돌아가 목록이 막히지 않는다.
+ */
+async function loadTestGrantRunIds(runIds: string[]): Promise<Set<string>> {
+  if (runIds.length === 0) return new Set();
+  const { data, error } = await serviceClient()
+    .from("analysis_entitlements")
+    .select("consumed_by_analysis_run_id")
+    .not("test_grant_id", "is", null)
+    .in("consumed_by_analysis_run_id", runIds);
+  if (error) return new Set();
+  return new Set((data ?? []).map((row) => row.consumed_by_analysis_run_id as string));
+}
+
 export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
   const [{ data, error }, emails] = await Promise.all([
     serviceClient()
@@ -242,7 +259,7 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
   // 줍니다 — 틀린 원가는 없는 것보다 나쁩니다. FINAL이 다른 모델을 쓰면
   // 단가도 달라지므로, 여기서 미리 하나로 고정하지 않고 행마다 그 행의
   // product로 다시 읽습니다.
-  const [ledger, paidRunIds] = await Promise.all([loadAttemptLedger(runIds), loadPaidRunIds(runIds)]);
+  const [ledger, paidRunIds, testRunIds] = await Promise.all([loadAttemptLedger(runIds), loadPaidRunIds(runIds), loadTestGrantRunIds(runIds)]);
 
   return data.map((row) => {
     const applicationCase = row.application_cases as unknown as EmbeddedCase;
@@ -268,6 +285,7 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
       companyName: applicationCase?.company_name ?? null,
       hasResult: Array.isArray(results) ? results.length > 0 : Boolean(results),
       paid,
+      testGrant: testRunIds.has(id),
       attempts,
       cost: summarizeRunCost({
         product,
@@ -373,6 +391,7 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
       companyName: applicationCase?.company_name ?? null,
       hasResult: Boolean(result?.result_data),
       paid,
+      testGrant: (await loadTestGrantRunIds([analysisRunId])).has(analysisRunId),
       attempts,
       cost: summarizeRunCost({
         product,
