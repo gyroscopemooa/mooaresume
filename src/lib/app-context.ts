@@ -109,3 +109,31 @@ export function createAuthCallbackUrl(nextPath: string): string {
   callback.searchParams.set("next", `${next.pathname}${next.search}`);
   return callback.toString();
 }
+
+/**
+ * 앱과 모바일 웹을 CSS에서 구분하는 표시.
+ *
+ * 설치된 앱으로 열린 문서는 `<html data-app="twa">`를 갖습니다. 그러면 스타일을
+ * 나눠 쓸 수 있습니다.
+ *
+ *   앱에만:      :global(html[data-app="twa"]) .card { ... }
+ *   모바일 웹만: :global(html:not([data-app])) .card { ... }
+ *
+ * 규칙: 모바일 웹을 고칠 때는 `html:not([data-app])` 안에, 앱을 고칠 때는
+ * `html[data-app="twa"]` 안에 씁니다. 표시 없는 규칙은 둘 다에 적용됩니다.
+ * 표시는 권한이 아닙니다(화면 스타일만 바뀝니다).
+ */
+export const APP_MARKER_ATTRIBUTE = "data-app";
+export const APP_MARKER_VALUE = "twa";
+
+/**
+ * 첫 페인트 전에 `<html>`에 앱 표시를 붙이는 인라인 스크립트(루트 레이아웃 `<head>`).
+ * 판단 기준은 `syncAppContext`와 같습니다(시작 주소 표시, referrer, Digital Goods,
+ * 이 탭에 저장된 설치 앱 표시). 저장소가 막혀 있어도 나머지 신호로 판단합니다.
+ */
+export const APP_MARKER_SCRIPT = `(function(){try{var w=window,d=document,s=false;try{s=w.sessionStorage.getItem(${JSON.stringify(INSTALLED_KEY)})==="1"}catch(e){}var q=new URLSearchParams(w.location.search).get("source")===${JSON.stringify(TWA_SOURCE_PARAM)};var r=d.referrer.indexOf(${JSON.stringify(`android-app://${TWA_PACKAGE_ID}`)})===0;var g="getDigitalGoodsService" in w;if(s||q||r||g)d.documentElement.setAttribute(${JSON.stringify(APP_MARKER_ATTRIBUTE)},${JSON.stringify(APP_MARKER_VALUE)})}catch(e){}})();`;
+
+/** 클라이언트 이동 중에도 표시가 유지되도록 확인된 설치 앱에 표시를 붙입니다. */
+export function markAppDocument(installed: boolean) {
+  if (installed && typeof document !== "undefined") document.documentElement.setAttribute(APP_MARKER_ATTRIBUTE, APP_MARKER_VALUE);
+}

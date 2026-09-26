@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleUser, Compass, FilePenLine, FileText, ListOrdered } from "lucide-react";
-import { syncAppContext } from "@/lib/app-context";
+import { markAppDocument, syncAppContext } from "@/lib/app-context";
 import styles from "./app-tab-bar.module.css";
 
 /**
@@ -69,12 +69,13 @@ export function AppTabBar() {
     // 한 틱 뒤에 정합니다. 효과 본문에서 바로 setState를 부르면 렌더가 연쇄로
     // 돌고, 이 저장소의 lint 규칙도 그것을 막습니다.
     const timeout = window.setTimeout(() => {
-      const { shell } = syncAppContext({
+      const { installed, shell } = syncAppContext({
         pathname,
         search: window.location.search,
         referrer: document.referrer,
         hasDigitalGoods: "getDigitalGoodsService" in window,
       });
+      markAppDocument(installed);
       setVisible(shell);
     }, 0);
     return () => window.clearTimeout(timeout);

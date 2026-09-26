@@ -1,5 +1,16 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-26 — Claude: 앱/모바일 웹 스타일 분리 장치, 커리어 검사 영어 카드 깨짐 수정, 앱 영상 소리 기본 켜짐
+
+- 요청(사용자): (1) 앱 소개 영상은 소리가 켜진 채로 시작. (2) 앱/모바일 웹 커리어 검사 목록(`/career/assessments`)에서 영문 카드가 길어 3칸이 깨짐 — 이건 앱·모바일 웹 **같이** 수정. (3) 앞으로 모바일 웹만 고칠 때 앱이 같이 바뀌지 않도록 앱/모바일 웹을 구분.
+- 변경(웹, 공통): `src/components/career-assessment-catalog.module.css` — `.grid`를 `repeat(3,minmax(0,1fr))`로, `.card`에 `min-width:0`, 제목·영문 부제에 `overflow-wrap:anywhere`. 긴 영어 단어가 칸의 최소 폭을 키워 3열이 화면 밖으로 밀리던 원인입니다(Codex가 2026-09-22 `594221c`에서 같은 원인을 찾았으나 main에는 없었음. 작은 화면 1열 미디어쿼리를 덮어쓰지 않도록 원래 규칙 자리에서 고침). 폰 크기(`width=960`)로 확인: 12개 카드 줄의 칸이 모두 236px, 화면 밖 카드 0개, 영어 이름은 카드 안에서 줄바꿈.
+- 변경(웹, 구분 장치): 설치된 앱으로 열린 문서에 `<html data-app="twa">`를 첫 페인트 전에 붙입니다(`APP_MARKER_SCRIPT` 인라인 스크립트, 루트 레이아웃 `<head>`; `AppTabBar`가 클라이언트 이동 중에도 `markAppDocument`로 유지). 판단 기준은 `syncAppContext`와 동일합니다. **사용 규칙**: 앱만 고칠 때 `:global(html[data-app="twa"]) .x { }`, 모바일 웹만 고칠 때 `:global(html:not([data-app])) .x { }`. 표시 없는 규칙은 둘 다에 적용됩니다. 권한이 아니라 화면 스타일 전용 표시입니다. 신규 `src/lib/app-marker.test.ts`.
+- 알려진 한계: `<meta viewport>`(width=960, initial-scale=0.4)는 앱과 모바일 웹이 지금 같은 값입니다. 뷰포트를 둘로 나누려면 별도 작업이 필요합니다(TWA는 Chrome과 UA가 같아 서버에서 구분 불가 → 인라인 스크립트로 메타 교체 등).
+- 변경(Android, `C:.mooaresume-android`): `IntroActivity` 영상이 소리를 켠 채로 시작(`소리 끄기` 버튼으로 끔). versionCode 10 / 1.0.9.
+- Validation: `tsc --noEmit` clean, 변경 파일 eslint 0건, 전체 `vitest run` 1,410건 통과(기존 `mobile.test.ts` Expo 로드 실패 1건은 이 PC 고질). 실기기 Galaxy A36에 테스트 앱(`com.mooaresume.twa.test`)으로 소리 켜진 소개 영상 시작 확인. 카드 수정은 브라우저 폰 크기에서 확인(실기기 확인은 배포 후).
+- Rollback: CSS 3곳 원복, 레이아웃 `<head>` 스크립트·`markAppDocument` 호출 제거, IntroActivity `muted` 기본값 true.
+- Status: main 푸시 대기.
+
 ## 2026-09-26 — Claude: 첫 실행 온보딩을 앱 네이티브로 이동, 웹 자동 팝업 제거
 
 - 요청(사용자): 온보딩은 웹과 연동된 팝업이 아니라 "앱을 켰을 때 앱 자체에서 영상 + 하단 넘기기 버튼"이어야 하고, 앱을 껐다 켤 때도 나와야 한다.

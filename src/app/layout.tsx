@@ -3,6 +3,7 @@ import { Noto_Sans_KR } from "next/font/google";
 import Script from "next/script";
 import { getSiteUrl } from "@/lib/site-url";
 import { AppTabBar } from "@/components/app-tab-bar";
+import { APP_MARKER_SCRIPT } from "@/lib/app-context";
 import { MaintenanceGate } from "@/components/maintenance-gate";
 import { RuntimeSiteNotice } from "@/components/runtime-site-notice";
 import "./globals.css";
@@ -80,7 +81,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/* 설치된 앱으로 열렸으면 첫 페인트 전에 <html data-app="twa">를 붙입니다(앱/모바일 웹 스타일 분리, lib/app-context.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: APP_MARKER_SCRIPT }} />
+      </head>
       <body className={notoSansKr.variable}>
         <RuntimeSiteNotice />
         <MaintenanceGate>{children}</MaintenanceGate>
