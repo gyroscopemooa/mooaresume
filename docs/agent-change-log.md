@@ -7971,3 +7971,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, 전체 `vitest run` 1,659건 통과(기존 실패 무관), `next build` 성공(새 라우트 `/result/sample/final` 정상 빌드). 브라우저에서 실제로 자료 점검→답변 만들기까지 눌러 11개 문항 전부 완성 답변으로 뜨는 것 확인(근거 보기·연습하기 등 실제 면접 준비팩과 동일 동작, 네트워크 호출 없음).
 - Rollback: `src/app/result/sample/final/` 삭제, `result-workspace-complete.tsx`/`interview-pack-panel.tsx`/`page.tsx`의 이번 diff만 되돌리면 된다(신규 API·DB 없음).
 - Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
+
+## 2026-09-28 — Claude: FINAL 전용 소개 페이지 `/final` + 홈 FINAL 노출 보강 (branch `feat/final-interview-pack`)
+
+- 요청(사용자): 홈의 FINAL 카드 하나로는 부족하다. "자세히 보기"로 이어지는 FINAL 전용 홍보 페이지를 만들고, 홈 제목은 PC에서 한 줄로, FINAL 노출을 홈에 1곳 더 추가해 달라.
+- 새 파일: `src/app/final/page.tsx` — FINAL 전용 소개 페이지. 히어로(가격·CTA·결과 예시 링크), PRO 대비 추가 기능 6개 카드(면접 답변 준비·FINAL 검증·제출 전 마무리·모의면접·취약질문 재훈련·최종 면접 리포트), 면접 준비팩 정적 예시(홈과 같은 카드 재사용), "확률을 점치지 않는다"는 안내, 하단 CTA. 신청 버튼은 기존 가격표와 같은 `isFinalEnabled()`를 그대로 따름. 새 라우트라 기존 `/final/build`·`/final/create`·`/final/polish`와 충돌 없음.
+- `src/app/page.tsx`: (1) 히어로에 두 번째 FINAL 노출 — "FINAL · 지원서 완성부터 면접 답변까지" 링크(`/final`, `isFinalEnabled()`일 때만). (2) FINAL 예시 카드 제목을 두 줄에서 한 줄로. (3) 카드 아래 버튼을 "FINAL 결과·면접 준비팩 예시 보기"(기존)와 "FINAL 더 자세히 보기"(신규, `/final`로) 두 개로. (4) 이 두 링크에 어두운 배경 전용 클래스 `.cta-secondary`(밝은 초록, 흰 배경에서는 잘 안 보임)를 잘못 쓰고 있던 것을 발견해 직접 스타일(진한 초록)로 고침 — 실사용 확인 전에 잡은 대비 문제.
+- 확인: `tsc --noEmit` 0 오류, 변경 파일 eslint 0건, 전체 `vitest run` 1,659건 통과, `next build` 성공(`/final` 라우트 포함). 브라우저에서 새 페이지 전체 텍스트·기존 링크 라벨·링크 색상(진한 초록 `rgb(23,107,74)`) 확인.
+- Rollback: `src/app/final/page.tsx` 삭제, `src/app/page.tsx`의 이번 diff만 되돌리면 된다.
+- Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.

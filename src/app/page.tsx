@@ -148,6 +148,7 @@ export default function HomePage() {
         <Link href="/result/sample" className="hero-sample">첨삭 예시 보기 <ArrowRight size={18}/></Link>
         <HomePromoVideo />
         <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
+        {isFinalEnabled() && <p style={{ textAlign: "center", marginTop: 14, fontSize: 13.5 }}><Link href="/final" style={{ color: "var(--green)", fontWeight: 800 }}>FINAL · 지원서 완성부터 면접 답변까지 한 번에 <ArrowRight size={14} style={{ verticalAlign: "-2px" }}/></Link></p>}
       </section>
 
       <RuntimeEventSlot slot="home_banner" />
@@ -167,7 +168,7 @@ export default function HomePage() {
           하지 않는 정적 예시이고, 내부 판정 로직·프롬프트는 언급하지 않는다. */}
       {isFinalEnabled() && <section className="proof container" aria-label="FINAL 면접 준비팩 예시">
         <div className="section-label">FINAL · 면접 준비팩</div>
-        <h2 style={{ fontSize: 28, letterSpacing: "-.03em", margin: "10px 0 22px" }}>서류를 마쳤다면,<br/>이제 말할 차례예요.</h2>
+        <h2 style={{ fontSize: 28, letterSpacing: "-.03em", margin: "10px 0 22px" }}>서류를 마쳤다면, 이제 말할 차례예요.</h2>
         <div className="result-preview">
           <div className="preview-head"><div><span className="status-dot"/>면접 준비팩</div><span>현대모비스 · 생산관리</span></div>
           <div className="preview-grid">
@@ -189,7 +190,12 @@ export default function HomePage() {
           </div>
         </div>
         <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginTop: 18 }}>자기소개·지원동기·입사 후 포부까지 만들고, 키워드로 외우도록 도와드려요.</p>
-        <div style={{ textAlign: "center", marginTop: 14 }}><Link href="/result/sample/final" className="cta-secondary">FINAL 결과·면접 준비팩 예시 보기 <ArrowRight size={16}/></Link></div>
+        <div style={{ textAlign: "center", marginTop: 14, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
+          {/* .cta-secondary는 밝은 초록(#a9d4c1)이라 어두운 cta-section 배경 전용이다.
+              이 섹션은 흰 배경이라 진한 초록으로 직접 스타일을 준다. */}
+          <Link href="/result/sample/final" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>FINAL 결과·면접 준비팩 예시 보기 <ArrowRight size={16}/></Link>
+          <Link href="/final" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>FINAL 더 자세히 보기 <ArrowRight size={16}/></Link>
+        </div>
       </section>}
 
       {/* Codex's career CTA, carried over from their home so the assessments
