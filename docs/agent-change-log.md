@@ -7951,3 +7951,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 되돌린 것: 같은 기능을 공유 폴더(`feat/livesub-hq-grant-reward`)에 중복으로 만들었다가 사용자 승인 후 전부 삭제(내가 만든 파일만).
 - 표시 조건: HQ에서 이벤트 status가 `active`여야 보임(현재 `paused`).
 - Rollback: main에서 이 커밋 이후 머지 범위를 revert.
+
+## 2026-09-27 — Claude: 홈 화면에 FINAL "면접 준비팩" 노출 — 정적 예시 카드 + 가격표 문구 (branch `feat/final-interview-pack`)
+
+- 요청(사용자): FINAL이 런칭된 지 좀 됐는데 홈 화면 샘플 예시에 FINAL 기능이 안 보여서 어필력이 약하다. 기존+새 면접 준비팩 기능을 합친 예시를 홈에 보여주고, 홍보 문구도 넣어 달라. 단 "부족/충돌/충분" 같은 내부 테스트 용어는 쓰지 말고, 내부 판정 로직·프롬프트는 공개하지 말 것.
+- 변경: `src/app/page.tsx` — 기존 "분석 결과 예시"(현대모비스·생산관리) 섹션 바로 아래에 같은 지원자가 FINAL을 썼다면 어떻게 되는지 보여주는 정적 예시 섹션 추가(`isFinalEnabled()`로 가드). 실제 서비스 호출은 하지 않는 손으로 쓴 예시이고, 기존 `result-preview`/`score-block`/`issues`/`tag` 클래스를 그대로 재사용해 새 CSS 없이 기존 톤과 일치시킴. 내용은 "적은 내용 그대로만 씀 / 서류마다 다르면 먼저 확인함 / 어디서 가져온 문장인지 보여줌" 세 가지를 금지어 없이 서술.
+- 변경: `src/components/pricing-comparison.tsx` — FINAL 카드 설명과 하단 요약 문장에 "면접 답변 준비" 한 구절 추가, 기능 비교표에 FINAL 전용 행 2개 추가("자기소개·지원동기 등 면접 답변 준비", "말하기용 키워드·순서 정리, 암기 연습"). 기존 QUICK/PRO 행은 손대지 않음.
+- 확인: `tsc --noEmit` 0 오류, 변경 파일 eslint 0건, 전체 `vitest run` 1,659건 통과(기존 mobile.test.ts 실패는 무관), `next build` 성공. 브라우저에서 접근성 트리로 새 섹션 문구·구조 확인, `.tag` 칩 스타일 적용 확인, 가격 비교표 새 행 데스크톱·모바일 둘 다 노출 확인(스크린샷은 브라우저 창 렌더링 문제로 실패, 접근성 트리·computed style로 대체 확인).
+- Rollback: 두 파일의 이번 diff만 되돌리면 된다(신규 표·API·DB 없음, 순수 UI 문구 추가).
+- Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.

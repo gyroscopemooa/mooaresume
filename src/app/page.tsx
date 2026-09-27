@@ -10,6 +10,7 @@ import { LegalToolsDrawer } from "@/components/legal-tools-drawer";
 import { LandingEntry } from "@/components/landing-entry";
 import { HomePromoVideo } from "@/components/home-promo-video";
 import { PricingComparison } from "@/components/pricing-comparison";
+import { isFinalEnabled } from "@/domain/final-availability";
 import landingStyles from "./landing-sections.module.css";
 import outcomeStyles from "./outcome-learning.module.css";
 import positioningStyles from "./landing-positioning.module.css";
@@ -159,6 +160,36 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* FINAL의 새 면접 준비팩을 홈에서 보여주는 자리. 위 첨삭 예시와 같은
+          지원자(현대모비스·생산관리)가 이어서 FINAL을 썼다면 어떻게 되는지
+          보여줘서, 두 섹션이 한 이야기로 읽히게 한다. 실제 서비스 호출은
+          하지 않는 정적 예시이고, 내부 판정 로직·프롬프트는 언급하지 않는다. */}
+      {isFinalEnabled() && <section className="proof container" aria-label="FINAL 면접 준비팩 예시">
+        <div className="section-label">FINAL · 면접 준비팩</div>
+        <h2 style={{ fontSize: 28, letterSpacing: "-.03em", margin: "10px 0 22px" }}>서류를 마쳤다면,<br/>이제 말할 차례예요.</h2>
+        <div className="result-preview">
+          <div className="preview-head"><div><span className="status-dot"/>면접 준비팩</div><span>현대모비스 · 생산관리</span></div>
+          <div className="preview-grid">
+            <div className="score-block">
+              <small>30초 자기소개</small>
+              <p style={{ fontSize: 14, color: "#3c463f", lineHeight: 1.75, margin: "10px 0 16px" }}>
+                “저는 현장실습에서 점검 순서를 통일해 확인 절차를 정리한 생산관리 지원자입니다. 통일안을 작업자와 팀장에게 먼저 공유하고 현장에 적용했습니다. 이 경험을 바탕으로 반복되는 현장 작업을 꼼꼼하게 관리하겠습니다.”
+              </p>
+              <span className="tag">점검 순서 통일</span>{" "}<span className="tag">작업자·팀장 공유</span>{" "}<span className="tag">현장실습</span>
+            </div>
+            <div className="issues">
+              <small>이렇게 만들어요</small>
+              <ol>
+                <li><b>적은 내용 그대로만 써요</b><span>이력서·자소서에 없는 성과나 직책은 새로 만들지 않아요.</span></li>
+                <li><b>서류마다 다르면 먼저 확인해요</b><span>같은 경험이 다르게 적혀 있으면, 어느 쪽이 맞는지 확인해 주신 뒤에만 답변에 씁니다.</span></li>
+                <li><b>어디서 가져온 문장인지 보여드려요</b><span>만든 답변 옆에 어느 자료, 몇 번째 문단에서 가져왔는지 표시돼요.</span></li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginTop: 18 }}>자기소개·지원동기·입사 후 포부까지 만들고, 키워드로 외우도록 도와드려요.</p>
+      </section>}
 
       {/* Codex's career CTA, carried over from their home so the assessments
           have a place on the page and not only behind the drawer and the menu.

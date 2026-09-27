@@ -17,7 +17,7 @@ const plans = [
   // Reads the same flag as the FINAL routes and the onboarding card. A table
   // that says 준비 중 next to an entry point that works is the kind of
   // disagreement nobody notices until a customer does.
-  { id: "FINAL" as const, price: "19,900원", title: "지원서에서 면접 연습까지", body: "PRO 전체에 답변 평가, 동적 꼬리질문과 면접 리포트를 더합니다.", href: "/onboarding", cta: isFinalEnabled() ? "무료로 시작하기" : "FINAL 준비 중", pending: !isFinalEnabled() },
+  { id: "FINAL" as const, price: "19,900원", title: "지원서에서 면접 연습까지", body: "PRO 전체에 면접 답변 준비, 답변 평가, 동적 꼬리질문과 면접 리포트를 더합니다.", href: "/onboarding", cta: isFinalEnabled() ? "무료로 시작하기" : "FINAL 준비 중", pending: !isFinalEnabled() },
 ];
 
 const features: Feature[] = [
@@ -53,6 +53,8 @@ const features: Feature[] = [
   { name: "지원자료 기반 면접 예상질문", quick: false, pro: true, final: true },
   { name: "면접 질문의 근거와 답변 핵심포인트", quick: false, pro: true, final: true },
   { name: "면접 리스크 분석", quick: false, pro: true, final: true },
+  { name: "자기소개·지원동기 등 면접 답변 준비", quick: false, pro: false, final: true },
+  { name: "말하기용 키워드·순서 정리, 암기 연습", quick: false, pro: false, final: true },
   { name: "인터랙티브 AI 모의면접", quick: false, pro: false, final: true },
   { name: "사용자 답변 평가", quick: false, pro: false, final: true },
   { name: "동적 꼬리질문", quick: false, pro: false, final: true },
@@ -92,7 +94,7 @@ export function PricingComparison() {
           ))}
         </div>
         <RuntimeEventSlot slot="pricing_banner" />
-        <div className={styles.message}><b>QUICK</b>은 이미 쓴 것을 고치고, <b>PRO</b>는 쓸 것부터 찾아 지원서를 완성합니다. <b>FINAL</b>은 PRO에 실제 AI 면접 연습을 더합니다.</div>
+        <div className={styles.message}><b>QUICK</b>은 이미 쓴 것을 고치고, <b>PRO</b>는 쓸 것부터 찾아 지원서를 완성합니다. <b>FINAL</b>은 PRO에 면접 답변 준비와 실제 AI 면접 연습을 더합니다.</div>
         <button className={styles.toggle} onClick={() => setOpen((value) => !value)} aria-expanded={open}>{open ? "전체 기능 비교 닫기" : "전체 기능 비교 보기"}{open ? <X /> : <ChevronDown />}</button>
         {open && (
           <div className={styles.comparison}>
