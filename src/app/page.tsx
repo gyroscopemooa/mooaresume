@@ -193,7 +193,7 @@ export default function HomePage() {
         <div style={{ textAlign: "center", marginTop: 14, display: "flex", gap: 18, justifyContent: "center", flexWrap: "wrap" }}>
           {/* .cta-secondary는 밝은 초록(#a9d4c1)이라 어두운 cta-section 배경 전용이다.
               이 섹션은 흰 배경이라 진한 초록으로 직접 스타일을 준다. */}
-          <Link href="/result/sample/final" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>FINAL 결과·면접 준비팩 예시 보기 <ArrowRight size={16}/></Link>
+          <Link href="/result/sample" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>FINAL 결과·면접 준비팩 예시 보기 <ArrowRight size={16}/></Link>
           <Link href="/final" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>FINAL 더 자세히 보기 <ArrowRight size={16}/></Link>
         </div>
       </section>}

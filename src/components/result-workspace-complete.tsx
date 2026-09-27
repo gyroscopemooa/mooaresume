@@ -274,7 +274,7 @@ function readCarriedMaterialCount(): number {
 
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
-export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (e.g. `/result/sample/final`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
+export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
   const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
@@ -525,23 +525,23 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
 
       <nav className={styles.tabs}>
         {tabs.filter((tab) => !tab[2] || showsProTabs).map(([id,label,pro]) => <button key={id} onClick={() => setView(id)} className={view === id ? styles.active : ""}>{label}{pro && <small>PRO</small>}</button>)}
-        {result.product === "FINAL" && !result.isSample && <button onClick={() => setView("verification")} className={view === "verification" ? styles.active : ""}>FINAL 검증<small>FINAL</small></button>}
+        {result.product === "FINAL" && <button onClick={() => setView("verification")} className={view === "verification" ? styles.active : ""}>FINAL 검증<small>FINAL</small></button>}
         {/* 검증 옆에 둡니다. 순서가 곧 읽는 순서입니다 — 무엇이 문제인지 본
             다음에 그래서 무엇을 할지가 옵니다. */}
-        {result.product === "FINAL" && !result.isSample && !adminPreview && <button onClick={() => setView("wrapup")} className={view === "wrapup" ? styles.active : ""}>제출 전 마무리<small>FINAL</small></button>}
+        {result.product === "FINAL" && !adminPreview && <button onClick={() => setView("wrapup")} className={view === "wrapup" ? styles.active : ""}>제출 전 마무리<small>FINAL</small></button>}
         {/* 정적 "면접 준비" 탭(PRO도 공유)과 분리한 새 탭 — 실제 턴 주고받기는
             FINAL만 판다. 가격표가 약속한 기능이라 여기 있어야 한다. */}
-        {result.product === "FINAL" && !result.isSample && !adminPreview && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
+        {result.product === "FINAL" && !adminPreview && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
         {showInterviewPack && <button onClick={() => setView("interviewPack")} className={view === "interviewPack" ? styles.active : ""}>면접 준비팩<small>{analysisRunId ? "FINAL" : "FINAL · 예시"}</small></button>}
       </nav>
 
-      {view === "verification" && result.product === "FINAL" && !result.isSample && (
+      {view === "verification" && result.product === "FINAL" && (
         <FinalVerification result={result} hasResume={result.suppliedResume} />
       )}
 
-      {view === "wrapup" && result.product === "FINAL" && !result.isSample && !adminPreview && <FinalWrapUp result={result} analysisRunId={analysisRunId} />}
+      {view === "wrapup" && result.product === "FINAL" && !adminPreview && <FinalWrapUp result={result} analysisRunId={analysisRunId} />}
 
-      {view === "mockInterview" && result.product === "FINAL" && !result.isSample && !adminPreview && (
+      {view === "mockInterview" && result.product === "FINAL" && !adminPreview && (
         <InteractiveInterview result={result} analysisRunId={analysisRunId} />
       )}
 

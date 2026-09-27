@@ -7989,3 +7989,15 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 1,659건 통과, `next build` 성공. 브라우저 접근성 트리로 새 섹션·다섯 제목이 한 줄 텍스트로 나오는 것 확인.
 - Rollback: 이번 diff만 되돌리면 된다(신규 파일 없음, `page.tsx` 하나).
 - Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
+
+## 2026-09-28 — Claude: `/result/sample`을 FINAL 전체 예시로 통합, 새 FINAL 탭 3개 실제 콘텐츠 작성 (branch `feat/final-interview-pack`)
+
+- 요청(사용자): `/result/sample/final`을 따로 만들지 말고, 기존에 다들 링크하는 `/result/sample` 자체가 FINAL까지 다 보여주게 해 달라. "탭 다 합쳐도 검증+면접준비팩뿐이냐"는 질문 — 확인해 보니 모의면접·제출 전 마무리는 실제 코드에 이미 있었고(내가 만든 게 아님, `origin/main` 그대로), 두 곳에서 적게 보인 건 (1) 관리자 미리보기(`/meensoo/analyses/[id]`)가 실사용자 데이터를 안 건드리려고 그 두 탭과 `interviewPackEnabled`를 원래 안 켜기 때문(의도된 동작, 버그 아님), (2) `/result/sample`이 PRO 티어 예시였기 때문(내가 일부러 분리해 뒀었음). `git fetch origin main` 으로 비교해 브랜치 분리 때문에 없어진 기능은 없음을 확인함(1커밋 차이, 무관한 커밋).
+- `src/app/result/sample/page.tsx`: 기본 `sampleResultDocument`(PRO) 대신 새 `sampleFinalResultDocument`(FINAL)를 렌더링하고 `interviewPackEnabled` + `interviewPackSampleId="complete"`를 켬. 결과: **탭 10개**(PRO 6 + FINAL 4: FINAL 검증·제출 전 마무리·모의면접·면접 준비팩)가 이 한 페이지에서 전부 확인됨. 다른 페이지가 쓰는 `sampleResultDocument`(PRO)는 그대로 둠.
+- `src/app/result/sample/final/`: 삭제(중복). 홈·`/final` 페이지의 링크 4곳을 `/result/sample`로 정리.
+- `src/fixtures/result-document.ts`: `sampleFinalResultDocument`의 FINAL 검증 전용 필드(커리어 타임라인·면접관 시선·탈락요인·네 관점·주장-근거·첫인상·문항 구조·최종 체크리스트)를 실제 콘텐츠로 채움(그동안 빈 배열이라 "찾지 못했습니다"만 떴음). 이력서·자소서 충돌은 실제로 없는 사례라 정직하게 비워 둠.
+- `src/components/result-workspace-complete.tsx`: FINAL 검증·제출 전 마무리·모의면접 탭에 걸려 있던 `!result.isSample` 임시 제외를 제거(안전 확인 끝남 — 셋 다 `analysisRunId` 없이도 안전하게 렌더링됨, `!adminPreview`는 원래 있던 제약이라 그대로 둠).
+- `src/components/interactive-interview.tsx`: `analysisRunId`가 없을 때(공개 예시) 조용히 숨는 대신, 무엇을 하는 기능인지와 예상 질문 3개를 보여 주는 짧은 미리보기로 바꿈(실제 세션은 시작하지 않음).
+- 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 1,659건 통과, `next build` 성공. 브라우저에서 `/result/sample`의 탭 10개, FINAL 검증·제출 전 마무리·모의면접 세 탭 내용까지 직접 확인.
+- Rollback: 이번 diff만 되돌리면 된다(신규 표·API·DB 없음).
+- Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.

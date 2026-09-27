@@ -47,7 +47,7 @@ export default function FinalLandingPage() {
             : <button className="button" disabled>FINAL 준비 중</button>}
           <span>19,900원 · 지원 건 1개 기준</span>
         </div>
-        <Link href="/result/sample/final" className="hero-sample">FINAL 결과 화면 예시 보기 <ArrowRight size={18}/></Link>
+        <Link href="/result/sample" className="hero-sample">FINAL 결과 화면 예시 보기 <ArrowRight size={18}/></Link>
         <div className="trust-row"><span><Check/> PRO의 모든 첨삭 포함</span><span><Check/> 확인 안 된 내용은 지어내지 않아요</span><span><Check/> 서류마다 다르면 먼저 여쭤봐요</span></div>
       </section>
 
@@ -85,7 +85,7 @@ export default function FinalLandingPage() {
           </div>
         </div>
         <div style={{ textAlign: "center", marginTop: 18 }}>
-          <Link href="/result/sample/final" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>실제로 눌러 보는 FINAL 결과 화면 보기 <ArrowRight size={16}/></Link>
+          <Link href="/result/sample" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>실제로 눌러 보는 FINAL 결과 화면 보기 <ArrowRight size={16}/></Link>
         </div>
       </section>
 
@@ -100,7 +100,7 @@ export default function FinalLandingPage() {
         {enabled
           ? <Link href="/onboarding" className="button button-light">무료로 시작하기 <ArrowRight size={18}/></Link>
           : <button className="button button-light" disabled>FINAL 준비 중</button>}
-        <Link href="/result/sample/final" className="cta-secondary">FINAL 결과 화면 예시 보기 <ArrowRight size={16}/></Link>
+        <Link href="/result/sample" className="cta-secondary">FINAL 결과 화면 예시 보기 <ArrowRight size={16}/></Link>
       </div></div></section>
     </main>
   );

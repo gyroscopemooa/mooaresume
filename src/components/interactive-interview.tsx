@@ -120,7 +120,24 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisRunId]);
 
-  if (!analysisRunId || result.interviewQuestions.length === 0) return null;
+  if (result.interviewQuestions.length === 0) return null;
+
+  // 공개 예시(홈·결과 샘플)는 실제 분석 건이 없어 세션을 시작할 수 없다. 조용히
+  // 숨기는 대신, 실제로는 무엇이 일어나는지 짧게 보여준다(질문·답변·평가는 없음).
+  if (!analysisRunId) {
+    return (
+      <section className={styles.wrap}>
+        <div className={styles.head}>
+          <h2>인터랙티브 AI 모의면접</h2>
+          <p>예시 화면에서는 실제로 실행하지 않습니다. 실제 서비스에서는 아래 같은 예상 질문에 직접 답을 말하면, AI가 답변을 평가하고 상황에 맞는 꼬리질문을 이어서 던집니다.</p>
+        </div>
+        <div className={styles.block}>
+          <h3>예상 질문 예시</h3>
+          <ul>{result.interviewQuestions.slice(0, 3).map((question) => <li key={question.id}>{question.question}</li>)}</ul>
+        </div>
+      </section>
+    );
+  }
 
   async function start(focusQuestionIds?: string[]) {
     setPhase("busy");

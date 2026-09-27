@@ -265,7 +265,8 @@ export const sampleResultDocument: ResultDocument = {
 };
 
 /**
- * FINAL 샘플. `/result/sample/final` 전용이고, 위 PRO 샘플과는 다른 지원 건이다.
+ * FINAL 샘플. `/result/sample`이 쓰는 문서고, 위 `sampleResultDocument`(PRO)와는 다른 지원 건이다.
+ * FINAL은 PRO의 모든 탭을 포함하므로, 공개 샘플은 이 문서 하나로 두 티어를 다 보여준다.
  *
  * 인물·회사·경험은 면접 준비팩의 관리자 검증용 "자료 충분" 가상 자료(A)와 같은
  * 지원자다 — `src/fixtures/interview-pack-sample-texts.ts` 의 `COMPLETE_TEXT`.
@@ -281,16 +282,93 @@ export const sampleFinalResultDocument: ResultDocument = {
   writingMode: "BUILD",
   isSample: true,
   coverageNotes: [],
-  careerTimeline: [],
+  careerTimeline: [
+    { id: "final-timeline-1", period: "2024.01~2025.12", title: "샘플파트 품질팀 검사보조", category: "career", source: "both", note: "이력서와 자기소개서 모두에 있습니다." },
+    { id: "final-timeline-2", period: "2025.05", title: "검사기록 체크리스트 개선", category: "project", source: "cover_letter", note: "자기소개서에만 자세히 적혀 있습니다. 이력서에는 직급·기간만 있고 이 프로젝트 이름은 없습니다." },
+  ],
+  // 이력서와 자기소개서의 사실이 실제로 서로 일치한다(둘 다 검사보조·2년·체크리스트 개선을 같은 방향으로 말한다).
+  // 어긋나는 곳이 없다는 것도 검증 결과다 — 억지로 만들지 않는다.
   documentConflicts: [],
-  interviewerFlags: [],
-  finalChecklist: [],
+  interviewerFlags: [
+    {
+      id: "final-flag-1",
+      headline: "체크리스트 개선에서 본인이 결정한 범위",
+      observation: "초안 작성부터 최종 시행까지 한 문장으로 이어져 있어, 어디까지가 본인 결정인지 구분이 필요합니다.",
+      evidenceQuote: "선임의 검토와 팀장의 승인을 거쳐 생산 담당자와 표기 방식을 맞췄습니다.",
+      resumeReference: "이력서: 품질팀 검사보조, 팀원(관리직·팀장 아님)",
+      likelyQuestion: "개선안을 최종적으로 시행하기로 결정한 사람은 누구였나요?",
+      followUps: ["선임과 팀장에게는 어떤 자료로 설명했나요?", "승인이 안 났다면 어떻게 하셨을까요?"],
+      preparation: "본인은 초안 작성과 기록 취합, 검토·승인은 선임과 팀장이었다는 순서를 그대로 말할 수 있게 준비하세요.",
+      likelihood: "medium",
+    },
+    {
+      id: "final-flag-2",
+      headline: "이 회사를 고른 이유",
+      observation: "시장점유율·사내 문화는 조사하지 않았다고 자기소개서에 스스로 밝혔습니다.",
+      evidenceQuote: "이 회사의 시장점유율, 사내 문화, 연봉, 최근 투자계획은 조사하거나 확인하지 않았다",
+      resumeReference: null,
+      likelyQuestion: "다른 자동차 부품 회사가 아니라 왜 이 회사인가요?",
+      followUps: ["샘플모빌리티의 제품을 접해 본 적이 있나요?"],
+      preparation: "회사 자체보다 공고에 적힌 업무(조치 내역 추적)와 본인 경험을 연결해 답하는 쪽으로 준비하세요.",
+      likelihood: "medium",
+    },
+  ],
+  finalChecklist: [
+    { id: "final-checklist-1", item: "체크리스트 개선에서 본인 역할(초안 작성)과 팀장 역할(승인)을 구분해서 말하는 연습", why: "면접관이 가장 먼저 확인하려는 지점입니다." },
+    { id: "final-checklist-2", item: "불량률·시간 단축처럼 측정하지 않은 수치는 먼저 '측정하지 않았다'고 밝히는 연습", why: "지어낸 답보다 솔직한 답이 더 신뢰를 얻습니다." },
+  ],
   suppliedResume: true,
-  rejectionRisks: [],
-  reviewerNotes: [],
-  claimEvidence: [],
-  firstImpression: null,
-  answerStructures: [],
+  rejectionRisks: [
+    {
+      id: "final-rejection-1",
+      headline: "성과가 검사기록 누락 한 가지 사례에 집중돼 있습니다",
+      reason: "직무역량 문항의 근거가 하나의 사례뿐이라, 다른 상황에서도 같은 역량을 보일 수 있는지 의문을 가질 수 있습니다.",
+      evidenceQuote: "검사기록 누락이 줄어든 사례이며, 제품 불량률 감소를 측정한 사례는 아닙니다.",
+      severity: "medium",
+      fix: "협업 경험이나 다른 작은 개선 사례를 하나 더 준비해 두면 이 우려를 줄일 수 있습니다.",
+      handling: "needs_applicant",
+    },
+  ],
+  reviewerNotes: [
+    { id: "final-lens-hr", lens: "hr", finding: "숫자(8건→2건)가 있어 신뢰는 가지만, 이 업무가 전체 중 얼마나 큰 비중이었는지는 알기 어렵습니다.", evidenceQuote: "200건 중 필수 항목이 빠진 기록이 8건", recommendation: "전체 검사 건수 대비 처리한 비중을 한 줄 더하면 규모가 더 잘 보입니다." },
+    { id: "final-lens-field", lens: "field_lead", finding: "체크리스트를 바꾸기 전에 현장 담당자의 우려를 먼저 들은 점이 실무에 바로 쓸 수 있는 태도로 보입니다.", evidenceQuote: "생산 담당자는 기록 시간이 늘어날 수 있다고 우려했습니다.", recommendation: "이 태도를 지원동기나 포부 문항에서도 한 번 더 언급하면 좋습니다." },
+  ],
+  claimEvidence: [
+    { id: "final-claim-1", claim: "정확한 기록 관리 능력이 있습니다.", evidenceQuote: "필수 항목이 빠진 기록이 8건이었습니다 … 필수 항목이 빠진 기록은 2건으로 줄었습니다.", verdict: "supported", note: "수치로 확인됩니다." },
+    { id: "final-claim-2", claim: "부서 간 협업을 잘합니다.", evidenceQuote: "생산 담당자의 우려를 듣고 … 합의한 표기 방식을 현장에서 사용했습니다.", verdict: "weak", note: "한 번의 사례뿐이고, 결과(시간이 얼마나 단축됐는지)는 측정되지 않았습니다." },
+  ],
+  firstImpression: {
+    remembered: ["검사기록 누락 8건→2건이라는 구체적 수치", "체크리스트 초안을 직접 만든 행동"],
+    missing: ["이 지원자만의 강점을 한 문장으로 요약한 표현"],
+    openingIssue: "첫 문장이 지원동기 설명으로 시작해, 이 사람이 실제로 무엇을 했는지는 두 번째 문단에야 나옵니다.",
+    advice: "첫 문장에 '검사기록 누락을 8건에서 2건으로 줄인 경험이 있습니다' 같은 결과를 먼저 두면 더 오래 기억에 남습니다.",
+  },
+  answerStructures: [
+    {
+      questionOrder: 1,
+      situation: ["품질관리 업무에서 기록을 정리하고 이상 항목의 조치를 끝까지 확인하는 일이 저에게 잘 맞았습니다.", "샘플파트 품질팀에서 2년간 검사기록과 조치 내역 정리를 보조하며, 검사표의 이름과 기록 방식이 근무조마다 달라 확인을 반복하는 문제를 봤습니다."],
+      action: ["반복해서 비는 항목을 모아 표로 정리하고 항목 명칭을 통일한 체크리스트 초안을 작성했습니다."],
+      result: [],
+      jobLink: ["샘플모빌리티의 공고에 공정검사 기록 관리와 조치 내역 추적 업무가 명시되어 있어, 이 경험을 활용하면서 품질관리 역량을 더 키울 수 있다고 생각해 지원했습니다."],
+      reading: "지원동기 문항인데도 실제 경험과 공고를 연결한 문장까지 갖췄습니다. 다만 결과 문장이 없어 이 경험의 성과는 다른 문항에서 보완됩니다.",
+    },
+    {
+      questionOrder: 2,
+      situation: ["2025년 5월, 근무조마다 검사 항목의 이름을 다르게 쓰고 일부 칸을 비워 조치 여부를 다시 확인해야 하는 문제가 있었습니다.", "2025년 4월 검사기록 200건을 확인하니 필수 항목이 빠진 기록이 8건이었습니다."],
+      action: ["저는 반복해서 비는 항목을 모아 표로 정리하고, 항목 명칭을 통일한 체크리스트 초안을 작성했습니다.", "선임의 검토와 팀장의 승인을 거쳐 생산 담당자와 표기 방식을 맞췄습니다."],
+      result: ["그 결과 2025년 6월 검사기록 200건 중 필수 항목이 빠진 기록은 2건으로 줄었습니다.", "이 경험은 검사기록 누락이 줄어든 사례이며, 제품 불량률 감소를 측정한 사례는 아닙니다."],
+      jobLink: ["작은 표기 차이도 현장에서 반복 확인을 만들 수 있어 기준을 함께 정하는 것이 중요하다는 점을 배웠습니다."],
+      reading: "상황·행동·결과가 고르게 있고, 확인된 결과와 확인 안 된 성과를 스스로 구분했습니다.",
+    },
+    {
+      questionOrder: 3,
+      situation: ["새 체크리스트를 제안했을 때 생산 담당자는 기록 시간이 늘어날 수 있다고 우려했습니다."],
+      action: ["저는 그 우려를 먼저 듣고, 기존에 쓰던 표현을 가능한 한 유지하면서 중복된 칸을 줄인 초안을 제안했습니다.", "검사 시점과 조치 확인 시점의 기록 담당자를 함께 확인해 조정했고, 선임 검토 뒤 합의한 표기 방식을 현장에서 사용했습니다."],
+      result: ["다만 기록 시간이 실제로 몇 분 단축되었는지는 측정하지 않았습니다."],
+      jobLink: ["이 경험을 통해 상대의 우려를 먼저 확인하고 기존 방식을 존중하는 범위에서 개선안을 조정하는 것이 중요하다는 점을 배웠습니다."],
+      reading: "상황보다 본인 행동이 더 자세히 드러나 있고, 측정하지 않은 부분을 숨기지 않았습니다.",
+    },
+  ],
   interviewRisks: [
     {
       id: "final-interview-risk-1",
