@@ -39,7 +39,7 @@ export type { PackAiGateway, PackAiResult, PackAiUsage } from "./gateway-types";
  * 실패 원문·자료 내용은 오류 메시지에 싣지 않는다(로그에 개인정보가 남지 않게).
  */
 
-const TIMEOUT_MS = { assess: 100_000, generate: 110_000, revise: 70_000 } as const;
+const TIMEOUT_MS = { assess: 100_000, generate: 170_000, revise: 70_000 } as const;
 
 // ───────────────────────────── JSON schema ─────────────────────────────
 

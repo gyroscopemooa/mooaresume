@@ -450,12 +450,15 @@ describe("생성 — 자료가 충분한 항목만", () => {
     expect(ai.generateCalls).toHaveLength(0);
   });
 
-  it("만들 수 있는 항목만 한 번의 호출로 만들고, 부족한 항목은 보완 상태로 남는다", async () => {
+  it("만들 수 있는 항목만 여러 번에 나눠(한 번에 너무 많은 문항을 요청하지 않고) 만들고, 부족한 항목은 보완 상태로 남는다", async () => {
     const state = await openAndCheck();
     const result = await service.generate(USER, state.pack.id, nextKey(), "initial");
-    expect(ai.generateCalls).toHaveLength(1);
-    expect(ai.generateCalls[0].slots).not.toContain("weakness");
-    expect(ai.generateCalls[0].slots).toHaveLength(10);
+    // 10개 문항을 한 번에 요청하지 않고 4개씩 나눠 부른다(출력 토큰 한도로 잘리지 않게).
+    expect(ai.generateCalls).toHaveLength(3);
+    expect(ai.generateCalls.every((call) => call.slots.length <= 4)).toBe(true);
+    const requested = ai.generateCalls.flatMap((call) => call.slots);
+    expect(requested).not.toContain("weakness");
+    expect(requested).toHaveLength(10);
     expect(result.state.answers.map((answer) => answer.slot)).not.toContain("weakness");
     expect(result.state.answers).toHaveLength(10);
     expect(result.state.assessment!.slots.find((slot) => slot.slot === "weakness")?.status).toBe("needs_material");
@@ -474,7 +477,7 @@ describe("생성 — 자료가 충분한 항목만", () => {
     const state = await openAndCheck();
     await service.generate(USER, state.pack.id, nextKey(), "initial");
     await expect(service.generate(USER, state.pack.id, nextKey(), "initial")).rejects.toMatchObject({ code: "LIMIT_REACHED" });
-    expect(ai.generateCalls).toHaveLength(1);
+    expect(ai.generateCalls).toHaveLength(3);
   });
 
   it("같은 요청 키를 다시 보내도 이중 차감되지 않는다", async () => {
@@ -483,7 +486,7 @@ describe("생성 — 자료가 충분한 항목만", () => {
     await service.generate(USER, state.pack.id, requestKey, "initial");
     const replay = await service.generate(USER, state.pack.id, requestKey, "initial");
     expect(replay.replayed).toBe(true);
-    expect(ai.generateCalls).toHaveLength(1);
+    expect(ai.generateCalls).toHaveLength(3);
     expect(replay.state.usage.initial.used).toBe(1);
   });
 
@@ -497,7 +500,8 @@ describe("생성 — 자료가 충분한 항목만", () => {
     };
     state = (await service.check(USER, state.pack.id, nextKey())).state;
     const completed = await service.generate(USER, state.pack.id, nextKey(), "complete");
-    expect(ai.generateCalls[1].slots).toEqual(["weakness"]);
+    // 최초 10개가 3번(4+4+2)으로 나눠 갔으니, 이어서 만들기 호출은 그다음(4번째) 호출이다.
+    expect(ai.generateCalls[3].slots).toEqual(["weakness"]);
     expect(completed.state.answers.map((answer) => answer.slot)).toContain("weakness");
     // 최초 생성권 사용량은 그대로 1/1 이다. 기존 답변은 바뀌지 않았다.
     expect(completed.state.usage.initial.used).toBe(1);
@@ -531,9 +535,10 @@ describe("생성 결과 확인 — 자료 밖 내용은 완성 답변이 아니�
       return { output: { cards }, responseId: "r", usage: usage(), model: "test-model" };
     };
     const result = await service.generate(USER, state.pack.id, nextKey(), "initial");
-    expect(ai.generateCalls).toHaveLength(2);
-    expect(ai.generateCalls[1].slots).toEqual(["intro_30"]);
-    expect(JSON.stringify(ai.generateCalls[1].retryNotes)).toContain("intro_30");
+    // 최초 10개가 3번(4+4+2)으로 나눠 가고, intro_30 만 다시 쓰는 호출이 그 뒤에 하나 더 붙는다.
+    expect(ai.generateCalls).toHaveLength(4);
+    expect(ai.generateCalls[3].slots).toEqual(["intro_30"]);
+    expect(JSON.stringify(ai.generateCalls[3].retryNotes)).toContain("intro_30");
     const intro = result.state.answers.find((answer) => answer.slot === "intro_30")!;
     expect(intro.card.answer).not.toContain("불량률");
     expect(intro.complete).toBe(true);

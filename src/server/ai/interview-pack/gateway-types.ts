@@ -35,8 +35,14 @@ export class PackAiInvalidOutputError extends Error {
   }
 }
 
-/** 호출별 출력 토큰 상한. 관리자 테스트 화면에도 이 값을 그대로 보여 준다. */
-export const PACK_CALL_TOKEN_LIMITS = { assess: 6_000, generate: 9_000, revise: 4_000 } as const;
+/**
+ * 호출별 출력 토큰 상한. 관리자 테스트 화면에도 이 값을 그대로 보여 준다.
+ *
+ * generate 는 한 번에 여러 문항 카드(근거·키워드·말하는 순서 포함)를 만들어서 더 넉넉하게 잡았다.
+ * 그래도 한 번에 요청하는 문항 수가 많으면(추론 강도가 높을수록 눈에 보이지 않는 추론 토큰도 이 한도를
+ * 같이 쓴다) 다 쓰지 못하고 잘릴 수 있어서, 서비스가 문항을 여러 번에 나눠 부른다(GENERATE_BATCH_SIZE).
+ */
+export const PACK_CALL_TOKEN_LIMITS = { assess: 6_000, generate: 16_000, revise: 4_000 } as const;
 
 /** 서비스가 의존하는 좁은 인터페이스. 테스트에서는 이 자리에 가짜를 넣는다. */
 export interface PackAiGateway {

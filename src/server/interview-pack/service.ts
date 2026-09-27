@@ -201,7 +201,17 @@ export function describeDenial(reason: string): string {
 
 // ───────────────────────────── 서비스 ─────────────────────────────
 
+/** 배열을 최대 size 개씩 묶는다. 마지막 묶음은 더 작을 수 있다. */
+function chunk<T>(items: readonly T[], size: number): T[][] {
+  const groups: T[][] = [];
+  for (let index = 0; index < items.length; index += size) groups.push(items.slice(index, index + size));
+  return groups;
+}
+
 export class InterviewPackService {
+  // 한 번의 답변 생성 호출에 담는 문항 수 상한. 1번(초안 발급을 못 받는) 것보다 여러 번(합쳐서 저장)이 낫다.
+  private static readonly GENERATE_BATCH_SIZE = 4;
+
   private readonly repo: PackRepository;
   private readonly ai: PackAiGateway | null;
   private readonly model: ModelInfo | null;
@@ -531,19 +541,27 @@ export class InterviewPackService {
     existing: StoredAnswer[];
     purpose: AiCallPurpose;
   }): Promise<PackCard[]> {
-    const wanted = new Set(input.slots);
-    const first = await this.callWithRetry(input.pack, input.purpose, () => input.ai.generate({ materials: input.materials, assessment: input.assessment, slots: input.slots }));
-    let cards = this.verifyBatch(first.output.cards, wanted, input);
+    // 한 번에 너무 많은 문항을 요청하면(근거·키워드·말하는 순서까지 다 채운 카드라 문항 하나가 가볍지 않다)
+    // 출력 토큰 한도를 다 쓰기 전에 응답이 끊길 수 있다. 그래서 여러 번에 나눠 부르고 합친다.
+    let cards: PackCard[] = [];
+    for (const batch of chunk(input.slots, InterviewPackService.GENERATE_BATCH_SIZE)) {
+      const result = await this.callWithRetry(input.pack, input.purpose, () => input.ai.generate({ materials: input.materials, assessment: input.assessment, slots: batch }));
+      cards.push(...this.verifyBatch(result.output.cards, new Set(batch), input));
+    }
     if (cards.length === 0) throw new PackAiInvalidOutputError("NO_USABLE_CARDS");
 
     const failing = cards.filter((card) => card.issues.some((issue) => issue.severity === "error"));
     if (failing.length > 0) {
+      const failingSlots = failing.map((card) => card.slot);
       const notes: RetryNote[] = failing.map((card) => ({ slot: card.slot, issues: card.issues.filter((issue) => issue.severity === "error").map((issue) => issue.detail) }));
       try {
-        const retry = await this.callWithRetry(input.pack, input.purpose, () =>
-          input.ai.generate({ materials: input.materials, assessment: input.assessment, slots: failing.map((card) => card.slot), retryNotes: notes }),
-        );
-        const retried = this.verifyBatch(retry.output.cards, new Set(failing.map((card) => card.slot)), input);
+        const retried: PackCard[] = [];
+        for (const batch of chunk(failingSlots, InterviewPackService.GENERATE_BATCH_SIZE)) {
+          const retry = await this.callWithRetry(input.pack, input.purpose, () =>
+            input.ai.generate({ materials: input.materials, assessment: input.assessment, slots: batch, retryNotes: notes.filter((note) => batch.includes(note.slot)) }),
+          );
+          retried.push(...this.verifyBatch(retry.output.cards, new Set(batch), input));
+        }
         const bySlot = new Map(cards.map((card) => [card.slot, card]));
         for (const card of retried) {
           const previous = bySlot.get(card.slot);
