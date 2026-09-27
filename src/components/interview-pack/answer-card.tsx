@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CARD_ORIGIN_LABEL,
   PACK_DOC_KIND_LABEL,
@@ -74,6 +74,13 @@ export function AnswerCard({ packId, answer, editsRemaining, aiAvailable, busy, 
   const [history, setHistory] = useState<StoredAnswer[] | null>(null);
   const [historyBusy, setHistoryBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  // 수정 칸은 답변 위쪽에 나오는데, "직접 수정" 버튼은 키워드·근거 아래 있다. 눌러도 아무 일
+  // 없는 것처럼 보이지 않도록, 수정 칸이 열리면 그쪽으로 스크롤한다.
+  useEffect(() => {
+    if (mode === "edit") editorRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }, [mode]);
 
   const isIntro = answer.slot === "intro_30" || answer.slot === "intro_60";
   const errors = answer.card.issues.filter((issue) => issue.severity === "error");
@@ -125,7 +132,7 @@ export function AnswerCard({ packId, answer, editsRemaining, aiAvailable, busy, 
     </div>
 
     {mode === "edit"
-      ? <div className={styles.editor}>
+      ? <div className={styles.editor} ref={editorRef}>
         <label htmlFor={`edit-${answer.slot}`} className={styles.fieldLabel}>직접 수정</label>
         <textarea id={`edit-${answer.slot}`} value={draft} onChange={(event) => setDraft(event.target.value)} rows={7} maxLength={1400} />
         <p className={styles.hint}>저장하면 사용자 수정본으로 표시되고, 키워드·근거 확인 상태가 새 문장에 맞게 다시 계산됩니다. AI 수정 횟수는 쓰지 않습니다.</p>
