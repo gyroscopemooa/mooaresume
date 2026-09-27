@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Briefcase, Check, FileSearch, FileUp, ListChecks, ScanSearch, ShieldCheck, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
+import { ArrowRight, Award, Briefcase, Check, FileCheck2, FileSearch, FileUp, ListChecks, Mic, Repeat2, ScanSearch, ShieldCheck, SquareCheckBig, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { RuntimeEventSlot } from "@/components/runtime-event-slot";
@@ -198,6 +198,23 @@ export default function HomePage() {
         </div>
       </section>}
 
+      {/* 홈의 두 번째 FINAL 소개 자리(첫 번째는 위 예시 카드). 여기는 "무엇을
+          더 보여주는지"가 아니라 "PRO에 무엇이 더 붙는지" 목록이다. /final
+          페이지의 같은 목록을 홈에서도 짧게 보여주고, 더 볼 사람은 그 페이지로 보낸다. */}
+      {isFinalEnabled() && <section className="section container">
+        <div className="section-label">FINAL이 PRO에 더하는 것</div>
+        <h2>서류를 냈다고 끝이 아니라, 면접까지 준비해서 끝냅니다.</h2>
+        <div className="feature-grid">
+          <article><div className="icon-box"><ListChecks/></div><h3>면접 답변 준비</h3><p>제출한 자료 그대로 자기소개·지원동기 답변을 만들고 키워드로 외우도록 정리합니다.</p></article>
+          <article><div className="icon-box"><FileCheck2/></div><h3>서류 위험요소 점검</h3><p>이력서와 자기소개서를 나란히 놓고 어긋나는 곳, 근거 없는 주장을 찾습니다.</p></article>
+          <article><div className="icon-box"><SquareCheckBig/></div><h3>제출 전 마무리</h3><p>찾아낸 것들을 지금 할 수 있는 일과 면접에서 준비할 일로 다시 정리합니다.</p></article>
+          <article><div className="icon-box"><Mic/></div><h3>인터랙티브 AI 모의면접</h3><p>예상 질문에 실제로 답하면 AI가 평가하고 상황에 맞는 꼬리질문을 이어갑니다.</p></article>
+          <article><div className="icon-box"><Repeat2/></div><h3>취약 질문 재훈련</h3><p>답이 흔들린 질문만 따로 모아 다시 연습할 수 있습니다.</p></article>
+          <article><div className="icon-box"><Award/></div><h3>최종 면접 리포트</h3><p>모의면접이 끝나면 어디서 흔들렸고 무엇을 더 준비해야 하는지 정리해 드립니다.</p></article>
+        </div>
+        <div style={{ textAlign: "center", marginTop: 8 }}><Link href="/final" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 800, fontSize: 13.5, textDecoration: "underline", textUnderlineOffset: 4 }}>FINAL 더 자세히 보기 <ArrowRight size={16}/></Link></div>
+      </section>}
+
       {/* Codex's career CTA, carried over from their home so the assessments
           have a place on the page and not only behind the drawer and the menu.
           Placed after the sample result and before pricing: someone who has
@@ -216,7 +233,7 @@ export default function HomePage() {
 
       <section className={"section container " + landingStyles.states}>
         <div className="section-label">어디까지 작성했든</div>
-        <h2>지금 상태에 맞는 방식으로<br/>바로 시작할 수 있어요.</h2>
+        <h2>지금 상태에 맞는 방식으로 바로 시작할 수 있어요.</h2>
         <div className="feature-grid">
           <article><span className={landingStyles.number}>01 · CREATE</span><h3>아직 아무것도 못 썼어요</h3><p>경험과 소재를 찾고 개요부터 함께 만들어요.</p></article>
           <article><span className={landingStyles.number}>02 · BUILD</span><h3>써봤지만 내용이 부족해요</h3><p>부족한 행동과 결과를 확인해 현재 초안을 강화해요.</p></article>
@@ -224,7 +241,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section container" id="how"><div className="section-label">왜 MOOA인가요?</div><h2>AI 답변이 아니라<br/>지원 과정 전체를 정리해요.</h2><div className="feature-grid">{differences.map(({icon: Icon,title,body})=><article key={title}><div className="icon-box"><Icon/></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+      <section className="section container" id="how"><div className="section-label">왜 MOOA인가요?</div><h2>AI 답변이 아니라 지원 과정 전체를 정리해요.</h2><div className="feature-grid">{differences.map(({icon: Icon,title,body})=><article key={title}><div className="icon-box"><Icon/></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
 
       {/* Says who is behind the judgement, which is the one thing an AI editing
           tool cannot claim by default. Every sentence here is a statement about
@@ -258,7 +275,7 @@ export default function HomePage() {
         </div>
         <div className={fieldStyles.closing}>
           <p>단순히 문장을 예쁘게 바꾸는 것에 그치지 않습니다. 지원자의 경험을 이해하고, 채용공고와 직무를 분석하며, 인사담당자와 면접관의 시선에서 전달되도록 돕는 것. 그것이 무아레쥬메가 생각하는 자기소개서 첨삭입니다.</p>
-          <strong>현장의 경험을 기술로.<br/>첨삭을 넘어, 실제 취업에 가까워지는 지원서로.</strong>
+          <strong>현장의 경험을 기술로. 첨삭을 넘어, 실제 취업에 가까워지는 지원서로.</strong>
           <small>MOOA RESUME · 무아레쥬메</small>
         </div>
       </section>
@@ -271,7 +288,7 @@ export default function HomePage() {
       <section className={"container " + fieldStyles.loop}>
         <div className={fieldStyles.loopHead}>
           <span>STANDARDS THAT KEEP LEARNING</span>
-          <h2>같은 AI라도,<br/><em>판단 기준은 다릅니다.</em></h2>
+          <h2>같은 AI라도, <em>판단 기준은 다릅니다.</em></h2>
           <p className={fieldStyles.loopLead}>같은 AI 컨설팅이더라도 담긴 경험이 다릅니다. 오랜 경력의 취업 전문가와 커리어팀, 컨설턴트들의 경험과 기술이 이 안에 들어 있습니다.</p>
           <p>무아레쥬메는 완성된 서비스가 아니라 <b>계속 경험을 쌓는 취업 컨설팅 시스템</b>을 지향합니다. 같은 AI를 쓰더라도 무엇을 문제로 볼지, 무엇을 남기고 무엇을 덜어낼지를 정하는 기준은 저희가 만듭니다. 그 기준은 지금도 쌓이고 있고, 앞으로 계속 정밀해집니다.</p>
         </div>
@@ -317,7 +334,7 @@ export default function HomePage() {
           <p><b>실제 지원 결과는 이용자가 동의한 경우에만, 개인정보를 지운 사본으로 반영합니다.</b> 동의는 결과 화면에서 언제든 켜고 끌 수 있고, 철회하시면 보관 중이던 사본까지 그 자리에서 지웁니다. 그리고 표본이 충분히 쌓이기 전까지 &ldquo;이 문장은 합격률을 몇 % 높입니다&rdquo; 같은 수치는 쓰지 않습니다. 저희가 말할 수 있는 것은 <b>반복해서 발견되는 패턴</b>까지입니다.</p>
         </div>
 
-        <p className={fieldStyles.loopClose}>실제 경험이 기준이 되고,<br/><em>실제 결과가 다시 기준을 발전시킵니다.</em></p>
+        <p className={fieldStyles.loopClose}>실제 경험이 기준이 되고, <em>실제 결과가 다시 기준을 발전시킵니다.</em></p>
       </section>
 
       <section className={"container " + landingStyles.narrative}>

@@ -7980,3 +7980,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, 변경 파일 eslint 0건, 전체 `vitest run` 1,659건 통과, `next build` 성공(`/final` 라우트 포함). 브라우저에서 새 페이지 전체 텍스트·기존 링크 라벨·링크 색상(진한 초록 `rgb(23,107,74)`) 확인.
 - Rollback: `src/app/final/page.tsx` 삭제, `src/app/page.tsx`의 이번 diff만 되돌리면 된다.
 - Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
+
+## 2026-09-28 — Claude: 홈에 FINAL 기능 소개 섹션 추가, 제목 5곳 한 줄로 정리 (branch `feat/final-interview-pack`)
+
+- 요청(사용자): 홈에 FINAL 홍보가 링크 하나뿐이라 부족하다, 기능 소개 섹션을 하나 더 만들어 달라. 또 PC에서 굳이 두 줄일 필요 없는 제목 5곳(지금 상태에 맞는 방식으로/AI 답변이 아니라/같은 AI라도/실제 경험이 기준이 되고/현장의 경험을 기술로)을 한 줄로.
+- `src/app/page.tsx`: 예시 카드 섹션 바로 아래에 **두 번째 FINAL 섹션**을 추가 — "FINAL이 PRO에 더하는 것", `/final` 페이지와 같은 기능 6개를 카드로(면접 답변 준비·서류 위험요소 점검·제출 전 마무리·모의면접·취약질문 재훈련·최종 면접 리포트), 기존 "왜 MOOA인가요" 섹션과 같은 `feature-grid`/`icon-box` 재사용. 아래에 `/final`로 가는 링크. `isFinalEnabled()`로 가드.
+- 기존 다섯 제목의 강제 줄바꿈(`<br/>`)을 제거해 한 줄로(반응형 줄바꿈은 그대로 브라우저에 맡김, 모바일에서 좁으면 자동으로 줄바뀜).
+- 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 1,659건 통과, `next build` 성공. 브라우저 접근성 트리로 새 섹션·다섯 제목이 한 줄 텍스트로 나오는 것 확인.
+- Rollback: 이번 diff만 되돌리면 된다(신규 파일 없음, `page.tsx` 하나).
+- Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
