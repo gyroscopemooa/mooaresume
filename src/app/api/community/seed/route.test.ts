@@ -15,6 +15,7 @@ function database(count: number | null, error: { message: string } | null = null
     select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
     gte: vi.fn().mockResolvedValue({ count, error }),
     order: vi.fn().mockReturnThis(), limit: vi.fn().mockResolvedValue({ data: [] }),
+    insert: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }),
   };
   const from = vi.fn().mockReturnValue(query);
   mocks.client.mockReturnValue({ from });
@@ -52,6 +53,18 @@ describe("daily community publication limit", () => {
     });
     expect(query.select).toHaveBeenCalledWith("title, topic");
     expect(response.status).toBe(502);
+  });
+
+  it("publishes only the generated post and never creates an automatic comment", async () => {
+    const { from, query } = database(0);
+    mocks.generate.mockResolvedValueOnce({ topic: "job-search", title: "첫 취업 준비", body: "공고를 비교할 때 확인할 항목" });
+    query.single.mockResolvedValueOnce({ data: { id: "seed-post" }, error: null });
+
+    const response = await POST(request());
+
+    expect(await response.json()).toEqual({ ok: true, postId: "seed-post", postsToday: 1 });
+    expect(from).toHaveBeenCalledWith("community_posts");
+    expect(from).not.toHaveBeenCalledWith("community_comments");
   });
 
   it("does not generate if today's count cannot be verified", async () => {
