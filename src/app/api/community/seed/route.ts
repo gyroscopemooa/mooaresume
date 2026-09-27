@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCommunityCommentSchema, createCommunityPostSchema } from "@/domain/community";
+import { createCommunityPostSchema } from "@/domain/community";
 import { serviceClient } from "@/server/admin/admin-repository";
 import { generateCommunitySeedContent } from "@/server/community/community-seed-content";
 
-// 매일 자동 글 1개와 해당 글의 운영팀 댓글 1개를 발행합니다.
+// 매일 자동 글 1개만 발행합니다.
 // Supabase pg_cron이 하루 한 번 이 라우트를 부릅니다(마이그레이션
 // 20260904030000_community_daily_seed.sql). 사람이 직접 배포·수동 호출할
 // 일이 없으므로 GET은 두지 않습니다.
@@ -92,18 +92,6 @@ export async function POST(request: NextRequest) {
     console.error("community_seed_post_insert_failed", postError?.message);
     return NextResponse.json({ error: "글을 저장하지 못했습니다." }, { status: 500 });
   }
-
-  // 댓글은 방금 쓴 그 운영팀 글에만 답니다 — 다른 사용자 글에 AI가 답을
-  // 다는 것은 이 기능의 범위가 아닙니다(문서 145행).
-  const parsedComment = createCommunityCommentSchema.safeParse({ body: item.comment });
-  if (!parsedComment.success) {
-    console.error("community_seed_comment_invalid", parsedComment.error.issues[0]?.message);
-    return NextResponse.json({ ok: true, postId: post.id, commentSkipped: true });
-  }
-  const { error: commentError } = await supabase
-    .from("community_comments")
-    .insert({ post_id: post.id, owner_user_id: seedUserId, body: parsedComment.data.body, is_editorial: true });
-  if (commentError) console.error("community_seed_comment_insert_failed", commentError.message);
 
   return NextResponse.json({ ok: true, postId: post.id, postsToday: (count ?? 0) + 1 });
 }

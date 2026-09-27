@@ -1,5 +1,17 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-27 — Claude: 커뮤니티 자동 글의 `**` 표기와 댓글을 실제로 배포(Codex의 2026-09-22 수정이 main에 없었음)
+
+- 계기(사용자): "라운지 자동글에 여전히 `**`가 나오고 댓글도 계속 달린다." 조사 결과 Codex가 2026-09-22에 정확히 이 문제를 고쳤지만(커밋 `f7e6d81`/`50f71cf` "fix: publish community seeds without comments", 자신의 변경 기록에는 "배포"라고 적었음) 그 커밋이 **main에 한 번도 push되지 않았습니다** — 별도 워크트리(`C:\mooaresume-community-seed-fix`)와 브랜치(`fix/community-seed-no-comment-no-bold`)에만 존재해 실제 운영에는 예전 코드(댓글 스키마 포함, `**` 제거 없음)가 계속 돌고 있었습니다.
+- 통합(origin/main `6937e21` 기준 격리 워크트리에 Codex의 수정을 그대로 적용, 재작성하지 않음):
+  - `src/server/community/community-seed-content.ts`: `title`/`body`에 `.transform(removeMarkdownBoldMarkers)`(`**` 제거) 추가, 스키마·JSON 스키마·프롬프트에서 `comment` 필드 제거, 프롬프트에 "마크다운 굵게 표기(**...**)를 쓰지 마세요" 추가.
+  - `src/app/api/community/seed/route.ts`: 글 저장 뒤 댓글을 만들어 넣던 블록 삭제. 글 1개만 발행.
+  - 테스트 갱신(Codex가 이미 작성): `community-seed-content.test.ts`, `route.test.ts`.
+- 추가로 발견해 같이 고침: `docs/portable/community-kit/src/app/api/community/seed/route.ts`(다른 프로젝트로 옮겨 쓰라고 만든 참고 문서, `README.md`에 이식 안내가 있음)가 `@/server/community/community-seed-content`를 이 저장소의 실제 경로 별칭으로 가리키고 있어(`docs/portable/community-kit/src/...`의 자체 사본은 실제로는 안 쓰임), 위 스키마 변경으로 `item.comment`가 사라져 `tsc --noEmit`이 저장소 전체에서 실패했습니다. 이 문서 파일의 댓글 삽입 블록만 제거해 타입 통과시켰습니다(문서 자체의 "하루 3개·댓글 3개" 이식 설계 설명이나 로컬 참고용 `community-seed-content.ts` 사본은 손대지 않았습니다 — 그 사본은 이 저장소에서 실제로 쓰이지 않는 별도 참고 자료입니다).
+- Validation: `tsc --noEmit` clean(문서 파일 수정 전에는 `docs/portable/community-kit/.../route.ts`에서 `item.comment` 타입 오류로 실패했음), 변경 파일 eslint 0건, 전체 `vitest run` 1,425건 통과(기존 `mobile.test.ts` Expo 로드 실패 1건은 이 PC 고질). 실제 자동 글 생성(OpenAI 호출)은 이 세션에서 실행하지 않음 — 다음 예약 발행(pg_cron)에서 확인 필요.
+- Rollback: 이 커밋을 revert. `fix/community-seed-no-comment-no-bold` 브랜치와 그 워크트리는 그대로 남아 있습니다.
+- Status: 커밋됨, main 푸시 대기.
+
 ## 2026-09-26 — Claude: Google Play 심사 반려(데이터 보안 양식의 계정 삭제 링크) 대응 — 삭제 요청 페이지에 앱 이름·개발자 이름 명시
 
 - 계기(사용자가 붙인 Play 심사 메일): 앱 변경사항 거부됨. 사유 "데이터 보안 양식의 계정 삭제 링크가 잘못됨 — `https://mooaresume.com/account-deletion` does not link to a valid page, missing reference to the app or to the entity named in the app's Google Play listing". 양식 안내는 링크가 (1) 스토어 등록정보에 표시되는 앱 또는 개발자 이름 기재, (2) 삭제 요청 단계를 눈에 띄게 표시, (3) 삭제·보관 데이터 유형과 추가 보관 기간 지정을 충족해야 한다고 명시. 기존 페이지는 (2)(3)은 있었으나 (1)이 없었음(페이지는 "무아레쥬메(MOOA Resume)"만 씀. Play 등록 앱 이름은 "자소서첨삭-직업심리검사,자기소개서,이력서,커리어검사", 개발자 이름은 "GyroScope").
