@@ -26,6 +26,12 @@ type Props = {
   mode: "live" | "sample";
   /** 관리자 테스트 경로 표시. 없으면 팩의 출처로 판단한다. */
   testKind?: "snapshot" | "full-flow" | null;
+  /**
+   * 홈·결과 샘플처럼 일반 방문자에게 보여주는 예시일 때. 같은 "sample" 동작(네트워크
+   * 호출 없음, 고정 자료)이지만, 관리자 테스트용 "실제 AI 생성 아님" 문구 대신
+   * 이 페이지의 다른 예시들과 같은 톤의 안내로 바꾼다.
+   */
+  publicPreview?: boolean;
 };
 
 type View = "loading" | "hidden" | "error" | "unavailable" | "intro" | "ready";
@@ -49,7 +55,7 @@ function newKey(): string {
 const CORE_IDS = PACK_SLOTS.filter((slot) => slot.group === "core").map((slot) => slot.id);
 const EXTRA_IDS = PACK_SLOTS.filter((slot) => slot.group === "extra").map((slot) => slot.id);
 
-export function InterviewPackPanel({ api, mode, testKind = null }: Props) {
+export function InterviewPackPanel({ api, mode, testKind = null, publicPreview = false }: Props) {
   const [view, setView] = useState<View>("loading");
   const [availability, setAvailability] = useState<AvailabilityView | null>(null);
   const [state, setState] = useState<PackState | null>(null);
@@ -205,7 +211,9 @@ export function InterviewPackPanel({ api, mode, testKind = null }: Props) {
 
   const resolvedTestKind = testKind ?? (state?.pack.isTest ? (state.pack.origin === "admin_snapshot" ? "snapshot" : "full-flow") : null);
   const banner = mode === "sample"
-    ? <div className={styles.mode} data-kind="sample" role="note">샘플 화면 · 실제 AI 생성 아님<small>고정 가상 자료와 미리 써 둔 예시 응답으로 화면만 점검합니다. 결제·AI·외부 유료 API를 부르지 않습니다.</small></div>
+    ? publicPreview
+      ? <div className={styles.mode} data-kind="sample" role="note">가상 지원자 · 예시 화면<small>실제 면접 준비팩과 같은 화면·항목으로 보여드립니다. 결과 내용은 예시용으로 미리 준비했습니다.</small></div>
+      : <div className={styles.mode} data-kind="sample" role="note">샘플 화면 · 실제 AI 생성 아님<small>고정 가상 자료와 미리 써 둔 예시 응답으로 화면만 점검합니다. 결제·AI·외부 유료 API를 부르지 않습니다.</small></div>
     : resolvedTestKind === "snapshot"
       ? <div className={styles.mode} data-kind="cost" role="note">실제 AI 사용 요금 발생 · 결제 및 원본 파일 파싱은 이 경로에서 검증하지 않음<small>가상 자료 또는 내 FINAL 결과 사본으로 실제 면접팩 생성·저장·권한 확인·수정 로직을 실행합니다.</small></div>
       : resolvedTestKind === "full-flow"

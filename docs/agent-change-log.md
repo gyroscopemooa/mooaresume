@@ -7960,3 +7960,14 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, 변경 파일 eslint 0건, 전체 `vitest run` 1,659건 통과(기존 mobile.test.ts 실패는 무관), `next build` 성공. 브라우저에서 접근성 트리로 새 섹션 문구·구조 확인, `.tag` 칩 스타일 적용 확인, 가격 비교표 새 행 데스크톱·모바일 둘 다 노출 확인(스크린샷은 브라우저 창 렌더링 문제로 실패, 접근성 트리·computed style로 대체 확인).
 - Rollback: 두 파일의 이번 diff만 되돌리면 된다(신규 표·API·DB 없음, 순수 UI 문구 추가).
 - Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
+
+## 2026-09-27 — Claude: FINAL 전용 샘플 결과 페이지 `/result/sample/final` — 면접 준비팩 실제 작동 예시 (branch `feat/final-interview-pack`)
+
+- 요청(사용자, 이전 홈 정적 카드로는 부족하다며 다시 요청): 홈 정적 카드 말고, `/result/sample` 같은 **실제로 눌러 보는** FINAL 샘플 결과 페이지를 새로 만들어서 기존 기능(면접 준비·최종 첨삭본 등)과 새 면접 준비팩을 같이 보여 달라. 실제 대시보드처럼, 결제·AI 호출 없이, 내부 판정 로직·프롬프트는 노출하지 않고.
+- 새 파일: `src/app/result/sample/final/page.tsx`(라우트). `src/fixtures/result-document.ts`에 `sampleFinalResultDocument` 추가 — 면접 준비팩 관리자 검증용 "자료 충분"(A) 가상 지원자(샘플모빌리티·품질관리·검사보조)와 같은 인물로 새로 쓴 Before/After 3문항·면접 리스크·예상질문 등. 그 가상 자료는 이미 실제 OpenAI로 11개 문항 전부가 지어내지 않고 만들어지는 것까지 검증됐다(2026-09-27 앞 항목).
+- 겹치는 기존 파일(의도 먼저 기록): `src/components/result-workspace-complete.tsx` — 새 prop `interviewPackSampleId`(공개 예시 전용, 있으면 `createSampleApi`로 네트워크 호출 없이 면접 준비팩 탭을 띄움). `showInterviewPack` 판정에서 `!result.isSample` 조건을 빼고 `interviewPackApi !== null`(명시적으로 켠 경우만)로 대체 — 기존 살아있는 FINAL 결과·다른 샘플 페이지는 이 값을 안 넘기므로 동작 그대로. 안전을 위해 이번에 검증 안 한 FINAL 전용 탭(모의면접·FINAL 검증·제출 전 마무리)은 `!result.isSample` 조건을 새로 추가해 이 샘플 페이지에서는 숨김(기존 실제 FINAL 결과에는 영향 없음, 그 값이 원래 항상 false였던 경로).
+- `src/components/interview-pack/interview-pack-panel.tsx` — 새 prop `publicPreview`. 관리자 테스트용 "실제 AI 생성 아님" 문구 대신 방문자에게 맞는 "가상 지원자 · 예시 화면" 문구로 바꿈(관리자 A/B 화면은 그대로 기존 문구 유지, 기본값 false).
+- `src/app/page.tsx` — 앞의 홈 정적 카드 아래에 이 새 페이지로 가는 링크 추가.
+- 확인: `tsc --noEmit` 0 오류, 전체 `vitest run` 1,659건 통과(기존 실패 무관), `next build` 성공(새 라우트 `/result/sample/final` 정상 빌드). 브라우저에서 실제로 자료 점검→답변 만들기까지 눌러 11개 문항 전부 완성 답변으로 뜨는 것 확인(근거 보기·연습하기 등 실제 면접 준비팩과 동일 동작, 네트워크 호출 없음).
+- Rollback: `src/app/result/sample/final/` 삭제, `result-workspace-complete.tsx`/`interview-pack-panel.tsx`/`page.tsx`의 이번 diff만 되돌리면 된다(신규 API·DB 없음).
+- Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.

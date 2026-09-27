@@ -263,3 +263,145 @@ export const sampleResultDocument: ResultDocument = {
     },
   ],
 };
+
+/**
+ * FINAL 샘플. `/result/sample/final` 전용이고, 위 PRO 샘플과는 다른 지원 건이다.
+ *
+ * 인물·회사·경험은 면접 준비팩의 관리자 검증용 "자료 충분" 가상 자료(A)와 같은
+ * 지원자다 — `src/fixtures/interview-pack-sample-texts.ts` 의 `COMPLETE_TEXT`.
+ * 그 자료는 이미 실제 OpenAI로 11개 문항 전부가 지어내지 않고 만들어지는 것까지
+ * 검증됐으므로(2026-09-27), 이 페이지의 면접 준비팩 탭도 그 자료로 만든 고정
+ * 예시를 그대로 쓴다(`createSampleApi("complete")`, 네트워크 호출 없음).
+ * 이 문서(Before/After, 면접 리스크 등)는 그 자료와 같은 사실만으로 새로 썼다.
+ */
+export const sampleFinalResultDocument: ResultDocument = {
+  schemaVersion: "1.0",
+  caseId: "sample-final-quality-management",
+  product: "FINAL",
+  writingMode: "BUILD",
+  isSample: true,
+  coverageNotes: [],
+  careerTimeline: [],
+  documentConflicts: [],
+  interviewerFlags: [],
+  finalChecklist: [],
+  suppliedResume: true,
+  rejectionRisks: [],
+  reviewerNotes: [],
+  claimEvidence: [],
+  firstImpression: null,
+  answerStructures: [],
+  interviewRisks: [
+    {
+      id: "final-interview-risk-1",
+      topic: "체크리스트 개선에서 본인이 결정한 범위",
+      risk: "최종 승인과 시행 결정은 팀장이 했는데, 이야기 순서에 따라 본인이 결정한 것처럼 들릴 수 있습니다.",
+      evidenceQuote: "선임의 검토와 팀장의 승인을 거쳐 생산 담당자와 표기 방식을 맞췄다",
+      preparation: "본인은 초안 작성과 기록 취합까지이고, 검토·승인은 선임과 팀장이었다는 순서를 그대로 말할 수 있게 정리해 두세요.",
+    },
+    {
+      id: "final-interview-risk-2",
+      topic: "개선 효과의 근거 범위",
+      risk: "기록 누락이 줄었다는 수치는 있지만, 제품 불량률이나 기록 시간 단축까지 물으면 확인한 적 없는 답을 지어내기 쉽습니다.",
+      evidenceQuote: "제품 불량률 감소를 측정한 사례는 아니다",
+      preparation: "확인된 것은 검사기록 누락 건수(8건→2건)뿐이라는 점을 먼저 밝히고, 나머지는 측정하지 않았다고 답하는 연습을 해 두세요.",
+    },
+    {
+      id: "final-interview-risk-3",
+      topic: "이 회사를 고른 이유",
+      risk: "시장점유율이나 사내 문화는 조사하지 않았다고 밝혀 둔 지원자라, 회사 자체에 대해 물으면 답이 막힐 수 있습니다.",
+      evidenceQuote: "시장점유율, 사내 문화, 연봉, 최근 투자계획은 조사하거나 확인하지 않았다",
+      preparation: "회사 자체보다 공고에 적힌 업무(공정검사 기록 관리, 조치 내역 추적)와 본인 경험을 연결해 답하는 쪽으로 준비하세요.",
+    },
+  ],
+  company: "샘플모빌리티",
+  role: "품질관리",
+  applicationLabel: "자동차 부품 품질관리 신입 지원서",
+  analysisRun: {
+    provider: "mock",
+    responseId: null,
+    model: "fixture",
+    promptVersion: "sample-final-1.0",
+    rubricVersion: "sample-rubric-1.0",
+    schemaVersion: "1.0",
+    inputTokens: null,
+    outputTokens: null,
+    totalTokens: null,
+  },
+  analyzedAt: "2026-09-27T00:00:00.000Z",
+  readiness: {
+    score: 88,
+    label: "제출 가능",
+    summary: "구성과 근거가 안정적이고, 실제로 확인된 수치와 확인되지 않은 부분이 잘 구분되어 있습니다.",
+    reasons: ["행동·과정·결과가 순서대로 드러남", "확인 안 된 성과(불량률)를 확인된 것처럼 쓰지 않음"],
+  },
+  attachments: [
+    { id: "final-attachment-1", filename: "샘플파트_이력서.pdf", extension: "PDF", sizeBytes: 152_064, parseStatus: "ready", parserLabel: "샘플 문서", sectionCount: 4 },
+    { id: "final-attachment-2", filename: "샘플모빌리티_자기소개서.docx", extension: "DOCX", sizeBytes: 96_256, parseStatus: "ready", parserLabel: "샘플 문서", sectionCount: 5 },
+  ],
+  candidateProfile: {
+    snapshotLabel: "샘플모빌리티 품질관리 지원 당시 정보",
+    items: [
+      { id: "final-profile-career", category: "career", label: "경력", value: "자동차 부품 품질팀 검사보조 2년", needsVerification: false },
+      { id: "final-profile-project", category: "project", label: "주요 경험", value: "검사기록 체크리스트 개선 외 1개", needsVerification: false },
+      { id: "final-profile-tool", category: "certification", label: "활용 도구", value: "엑셀 정렬·필터, 기본 수식", needsVerification: false },
+    ],
+  },
+  priorities: [
+    { id: "final-priority-1", title: "회사 선택 이유를 업무와 더 연결하세요.", description: "공고의 ‘조치 내역 추적’ 업무와 본인이 체크리스트를 개선한 경험을 한 번 더 붙이세요.", category: "posting_fit", severity: "medium" },
+    { id: "final-priority-2", title: "확인 안 된 수치와 확인된 수치를 계속 구분하세요.", description: "지금처럼 누락 건수(8건→2건)만 근거로 쓰고, 불량률·시간 단축은 언급하지 않는 편이 안전합니다.", category: "evidence", severity: "low" },
+  ],
+  questions: [
+    {
+      id: "final-motivation",
+      order: 1,
+      title: "지원동기",
+      prompt: "샘플모빌리티에 지원한 이유를 작성해 주세요.",
+      targetLength: 400,
+      originalAnswer: "꼼꼼하고 성실한 성격이라 품질관리 업무가 저에게 잘 맞을 것 같아 지원했습니다.",
+      revisedAnswer: "품질관리 업무에서 기록을 정리하고 이상 항목의 조치를 끝까지 확인하는 일이 저에게 잘 맞았습니다. 샘플파트 품질팀에서 2년간 검사기록과 조치 내역 정리를 보조하며, 검사표의 이름과 기록 방식이 근무조마다 달라 확인을 반복하는 문제를 봤습니다. 반복해서 비는 항목을 모아 표로 정리하고 항목 명칭을 통일한 체크리스트 초안을 작성했습니다. 샘플모빌리티의 공고에 공정검사 기록 관리와 조치 내역 추적 업무가 명시되어 있어, 이 경험을 활용하면서 품질관리 역량을 더 키울 수 있다고 생각해 지원했습니다.",
+      highlightedPhrases: ["검사표의 이름과 기록 방식이 근무조마다 달라", "항목 명칭을 통일한 체크리스트 초안을 작성했습니다"],
+      revisionReasons: ["성격 표현 대신 실제 경험으로 지원동기를 뒷받침", "공고의 업무와 본인 경험을 직접 연결"],
+      verificationNote: "체크리스트 초안을 만든 경험과 공고 업무 연결이 본인 의도와 맞는지 확인해 주세요.",
+    },
+    {
+      id: "final-capability",
+      order: 2,
+      title: "직무 역량",
+      prompt: "지원 직무와 관련된 경험을 작성해 주세요.",
+      targetLength: 500,
+      originalAnswer: "책임감을 갖고 맡은 업무를 끝까지 처리하는 편입니다.",
+      revisedAnswer: "2025년 5월, 근무조마다 검사 항목의 이름을 다르게 쓰고 일부 칸을 비워 조치 여부를 다시 확인해야 하는 문제가 있었습니다. 2025년 4월 검사기록 200건을 확인하니 필수 항목이 빠진 기록이 8건이었습니다. 저는 반복해서 비는 항목을 모아 표로 정리하고, 항목 명칭을 통일한 체크리스트 초안을 작성했습니다. 선임의 검토와 팀장의 승인을 거쳐 생산 담당자와 표기 방식을 맞췄습니다. 그 결과 2025년 6월 검사기록 200건 중 필수 항목이 빠진 기록은 2건으로 줄었습니다. 이 경험은 검사기록 누락이 줄어든 사례이며, 제품 불량률 감소를 측정한 사례는 아닙니다. 작은 표기 차이도 현장에서 반복 확인을 만들 수 있어 기준을 함께 정하는 것이 중요하다는 점을 배웠습니다.",
+      highlightedPhrases: ["필수 항목이 빠진 기록이 8건", "필수 항목이 빠진 기록은 2건으로 줄었습니다", "제품 불량률 감소를 측정한 사례는 아닙니다"],
+      revisionReasons: ["역할 범위(검토·승인은 선임·팀장)를 명확히 함", "확인된 수치와 확인 안 된 성과를 구분", "행동을 상황→조사→행동→결과 순서로 정리"],
+      verificationNote: "선임 검토·팀장 승인 순서와 본인이 맡은 범위가 실제와 같은지 확인해 주세요.",
+    },
+    {
+      id: "final-collaboration",
+      order: 3,
+      title: "협업 경험",
+      prompt: "협업 과정에서 발생한 문제를 해결한 경험을 작성해 주세요.",
+      targetLength: 500,
+      originalAnswer: "동료와 협의하여 원만하게 문제를 해결한 경험이 있습니다.",
+      revisedAnswer: "새 체크리스트를 제안했을 때 생산 담당자는 기록 시간이 늘어날 수 있다고 우려했습니다. 저는 그 우려를 먼저 듣고, 기존에 쓰던 표현을 가능한 한 유지하면서 중복된 칸을 줄인 초안을 제안했습니다. 검사 시점과 조치 확인 시점의 기록 담당자를 함께 확인해 조정했고, 선임 검토 뒤 합의한 표기 방식을 현장에서 사용했습니다. 다만 기록 시간이 실제로 몇 분 단축되었는지는 측정하지 않았습니다. 이 경험을 통해 상대의 우려를 먼저 확인하고 기존 방식을 존중하는 범위에서 개선안을 조정하는 것이 중요하다는 점을 배웠습니다.",
+      highlightedPhrases: ["기존에 쓰던 표현을 가능한 한 유지하면서", "기록 시간이 실제로 몇 분 단축되었는지는 측정하지 않았습니다"],
+      revisionReasons: ["우려를 들은 뒤 조정한 과정을 순서대로 제시", "측정하지 않은 부분을 숨기지 않고 그대로 밝힘"],
+    },
+  ],
+  requirementMatches: [
+    { id: "final-requirement-1", requirement: "정확한 기록 관리", status: "matched", evidence: "검사기록 누락 항목을 정리하고 체크리스트 초안을 만든 경험", recommendation: "현재 근거를 지원동기와 직무역량 문항에서 일관되게 유지하세요.", origin: "stated", postingQuote: null },
+    { id: "final-requirement-2", requirement: "엑셀을 활용한 자료 정리", status: "matched", evidence: "엑셀 정렬·필터, 기본 수식을 활용한 검사표 작성", recommendation: "필요하면 사용한 함수나 방식을 한 문장 더 구체화하세요.", origin: "stated", postingQuote: null },
+    { id: "final-requirement-3", requirement: "부서 간 의사소통", status: "partial", evidence: "생산 담당자의 우려를 듣고 표기 방식을 조정한 경험", recommendation: "상대 의견을 어떻게 반영했는지 한 문장 더 보완하면 좋습니다.", origin: "inferred", postingQuote: "생산부서와 검사기준 공유" },
+  ],
+  editSummary: ["성격 위주 표현을 실제 경험 기반 문장으로 바꿨습니다.", "확인된 수치와 확인 안 된 성과를 문항마다 구분했습니다."],
+  verificationQuestions: ["체크리스트 개선 이후 기록 시간이나 재작업 요청이 실제로 달라졌나요?", "선임·팀장이 승인 과정에서 남긴 의견이 있나요?"],
+  consultingAdvice: [
+    { id: "final-advice-1", kind: "strengthen", title: "확인된 수치를 지원동기에도 한 번 더 쓰세요", guidance: "8건에서 2건으로 줄었다는 근거를 지원동기 문항에도 짧게 넣으면 지원동기가 더 구체적으로 읽힙니다.", rationale: "지금은 직무역량 문항에만 수치가 있어, 지원동기가 상대적으로 추상적으로 보입니다.", priority: "medium" },
+    { id: "final-advice-2", kind: "clarify", title: "본인 몫과 팀장 몫을 계속 나눠 말하세요", guidance: "‘초안 작성·기록 취합은 본인, 검토·승인은 선임과 팀장’이라는 구분을 다른 문항에서도 유지하세요.", rationale: "면접에서 ‘그중 본인이 결정한 부분은 무엇인가요’를 가장 먼저 물을 가능성이 높습니다.", priority: "high" },
+  ],
+  interviewQuestions: [
+    { id: "final-interview-q1", question: "검사 항목 이름이 근무조마다 달랐던 걸 어떻게 알아채셨나요?", reason: "지원서에 적힌 문제 발견 과정이 본인의 실제 관찰인지 확인하는 질문입니다.", answerGuide: ["처음 이상하다고 느낀 계기", "확인한 방법", "표로 정리한 기준"], relatedQuestionId: "final-capability" },
+    { id: "final-interview-q2", question: "생산 담당자가 끝까지 반대했다면 어떻게 하셨을까요?", reason: "협업 중 이해관계 조정 역량을 더 깊이 확인하는 질문입니다.", answerGuide: ["상대가 걱정하는 지점", "먼저 시도해 볼 수 있는 범위", "선임에게 도움을 요청할 시점"], relatedQuestionId: "final-collaboration" },
+    { id: "final-interview-q3", question: "체크리스트 개선이 불량률에는 어떤 영향을 줬을까요?", reason: "측정하지 않은 성과를 지어내지 않고 설명할 수 있는지 확인하는 질문입니다.", answerGuide: ["실제로 확인한 것(기록 누락 건수)", "측정하지 않은 것(불량률)", "다음에 확인하고 싶은 지표"] },
+  ],
+};

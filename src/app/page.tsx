@@ -189,6 +189,7 @@ export default function HomePage() {
           </div>
         </div>
         <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginTop: 18 }}>자기소개·지원동기·입사 후 포부까지 만들고, 키워드로 외우도록 도와드려요.</p>
+        <div style={{ textAlign: "center", marginTop: 14 }}><Link href="/result/sample/final" className="cta-secondary">FINAL 결과·면접 준비팩 예시 보기 <ArrowRight size={16}/></Link></div>
       </section>}
 
       {/* Codex's career CTA, carried over from their home so the assessments
