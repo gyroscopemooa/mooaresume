@@ -22,7 +22,8 @@
 - Validation (2026-09-26): 전체 `vitest run` 1,658건 통과(186개 파일 중 기존 `mobile.test.ts` 1개는 Expo tsconfig 부재로 로드 실패 — 이 PC 고질, 변경 전과 동일); `tsc --noEmit` 0 오류; eslint 오류 0(경고 2건은 기존 파일); `next build`(Turbopack) 성공; SQL은 운영 마이그레이션 전체 + 신규 2개를 실제 Postgres(PGlite)에 적용해 103개 시나리오 통과; 브라우저(개발 서버)에서 관리자 로그인·콘솔·샘플 A/C 흐름·모바일 폭 확인.
 - 미검증: 실제 OpenAI 응답 품질(live eval 준비만, 유료라 미실행), 실제 Supabase RPC 왕복(마이그레이션 미적용), Polar sandbox 결제·웹훅 회귀(자동 실행하지 않음, 별도 보고), 로그인·DB가 필요한 실제 FINAL 결과 화면의 탭, 동시 요청 경합(PGlite는 연결 1개), 배포 환경(Cloudflare) 동작.
 - Rollback: 병합 전이면 이 브랜치를 폐기하면 된다(기존 브랜치·공유 폴더 미변경). 병합 뒤에는 해당 커밋 revert. DB를 적용했다면 신규 표·함수(`interview_pack_*`, `admin_test_*`)를 삭제하고 `analysis_entitlements`의 `test_grant_id`·체크를 제거한 뒤(테스트 이용권 행이 없어야 함) `billing_order_id` NOT NULL 복구. 즉시 끄기: `NEXT_PUBLIC_ENABLE_INTERVIEW_PACK` 비움 + `FINAL_TEST_ACCOUNT_EMAILS` 비움.
-- Status: 커밋됨(브랜치), **병합·마이그레이션 적용·배포는 사용자 결정 대기**.
+- 실사용 검증(2026-09-27): 사용자가 직접 실제 mooaresume DB·실제 로그인 계정·실제 OpenAI로 A/B/C 전부와 FINAL 결과 화면까지 끝까지 돌려 확인함. 그 과정에서 찾아 고친 실제 문제 4건(위 네 항목)은 전부 테스트 추가 후 재검증 완료.
+- Status: 커밋됨(브랜치), 기능·DB 마이그레이션 모두 실사용 검증 끝남. **병합·일반 공개(`NEXT_PUBLIC_ENABLE_INTERVIEW_PACK`)는 사용자 결정 대기**. DB는 이미 mooaresume 프로젝트에 적용돼 있음.
 
 ## 2026-09-26 — Claude: Google Play 심사 반려(데이터 보안 양식의 계정 삭제 링크) 대응 — 삭제 요청 페이지에 앱 이름·개발자 이름 명시
 
