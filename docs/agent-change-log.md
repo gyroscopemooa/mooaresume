@@ -24,6 +24,16 @@
 - Rollback: 병합 전이면 이 브랜치를 폐기하면 된다(기존 브랜치·공유 폴더 미변경). 병합 뒤에는 해당 커밋 revert. DB를 적용했다면 신규 표·함수(`interview_pack_*`, `admin_test_*`)를 삭제하고 `analysis_entitlements`의 `test_grant_id`·체크를 제거한 뒤(테스트 이용권 행이 없어야 함) `billing_order_id` NOT NULL 복구. 즉시 끄기: `NEXT_PUBLIC_ENABLE_INTERVIEW_PACK` 비움 + `FINAL_TEST_ACCOUNT_EMAILS` 비움.
 - 실사용 검증(2026-09-27): 사용자가 직접 실제 mooaresume DB·실제 로그인 계정·실제 OpenAI로 A/B/C 전부와 FINAL 결과 화면까지 끝까지 돌려 확인함. 그 과정에서 찾아 고친 실제 문제 4건(위 네 항목)은 전부 테스트 추가 후 재검증 완료.
 - Status: 커밋됨(브랜치), 기능·DB 마이그레이션 모두 실사용 검증 끝남. **병합·일반 공개(`NEXT_PUBLIC_ENABLE_INTERVIEW_PACK`)는 사용자 결정 대기**. DB는 이미 mooaresume 프로젝트에 적용돼 있음.
+## 2026-09-28 — Codex: 면접 PRO V2 로컬 프로토타입·원가 하드캡·Pretendard UI 릴리스
+
+- 요청: 면접 PRO의 기업 AI 채용전형/일반 실전면접 기본 틀을 보존하고, Astra 핵심 모델 기준 사용자당 평균 원가 3,000~5,000원·최대 10,000원 정책과 Pretendard Variable 기반의 읽기 편한 한국형 화면을 커밋·푸시·배포.
+- 범위: 개발 전용 `/dev/interview-pro-v2`에 기업/전형 프리셋, 근거 상태가 있는 예상 질문, 카메라·마이크 사전점검, 준비/답변 타이머, MediaRecorder 녹화·재생·재녹화·로컬 다운로드를 추가했다. `NODE_ENV !== development`에서는 `notFound()`이므로 운영 고객에게 공개되지 않으며 결제·DB·기존 상품 경로에도 연결하지 않았다.
+- 원가: 판매가 59,000원, 정상 목표 3,000~5,000원, 7,000원 경고, 9,000원 Astra High 제한, 10,000원 하드캡을 순수 도메인 정책과 테스트로 추가했다. 현재 프로토타입에는 실제 AI 호출이 없어 서버 원장·호출 전 예약·실사용량 정산은 TODO이며, 이 연결 전에는 하드캡이 실제 API 비용을 강제하지 않는다.
+- 디자인: `pretendard@1.3.9`를 자체 번들로 적용하고 80% `zoom`을 제거했다. 본문·질문·버튼 크기와 행간을 키우고 과한 음수 자간을 완화했다. 전역 글꼴과 기존 서비스 화면은 변경하지 않았다.
+- 기획: `docs/interview-pro-product-plan-2026-09-28.md`, `docs/interview-pro-ai-hiring-strategy-2026-09-28.md`, `docs/interview-pro-v2-implementation-todo-2026-09-28.md`에 일반면접/기업 AI전형 이중 축, 회사별 근거 레지스트리, 59,000원 상품 경계, 개인정보·금지선·출시 게이트를 기록했다.
+- 격리: 기존 `feat/livesub-hq-grant-reward` 작업 폴더의 다른 미커밋 파일은 보호하고, 최신 `origin/main` 기준 `codex/interview-pro-v2-release-20260928` worktree에 위 파일만 옮겨 릴리스한다.
+- 검증: 변경 범위 타입검사·ESLint·Vitest와 Cloudflare 프로덕션 빌드/배포를 수행하고, 결과는 Git/Cloudflare 배포 기록으로 추적한다. `PROJECT_SPEC.md`는 저장소에 없어 확인할 수 없었다.
+- 롤백: 이번 릴리스 커밋을 revert한다. 개발 전용 경로라 운영 사용자 흐름·데이터에는 직접 영향이 없다.
 
 ## 2026-09-27 — Claude: 커뮤니티 자동 글의 `**` 표기와 댓글을 실제로 배포(Codex의 2026-09-22 수정이 main에 없었음)
 
