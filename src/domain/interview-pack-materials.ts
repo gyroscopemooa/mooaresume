@@ -171,23 +171,43 @@ export function buildNextMaterialsPayload(input: {
 
 const PLACEHOLDER_LABELS = new Set(["applicant company", "applicant role", "cover-letter question", "자기소개서 첨삭"]);
 
-function realLabel(value: string | null | undefined): string {
+/** 파일 이름에서 확장자를 떼고 비교하기 좋게 다듬는다("03_conflicting_materials.txt" → "03_conflicting_materials"). */
+function normalizeFilenameForCompare(name: string): string {
+  return name.replace(/\.[a-zA-Z0-9]{1,8}$/, "").trim().toLowerCase();
+}
+
+/**
+ * 회사·직무 자리에 파일 이름이 그대로 들어간 것인지 본다.
+ *
+ * 지원자가 회사·공고를 따로 입력하지 않고 자료 파일 하나만 올리면, 분석이 회사를 확정하지
+ * 못해 파일 이름을 대신 쓰는 경우가 있다(관리자 테스트 C 흐름에서 실제로 확인됨). "샘플 주식회사"
+ * 같은 진짜 이름과 달리 이런 값은 올린 파일 이름과 정확히 같으므로, 자료 목록과 대조해서 가려낸다.
+ */
+function looksLikeFilename(value: string, filenames: ReadonlySet<string>): boolean {
+  return filenames.has(normalizeFilenameForCompare(value));
+}
+
+function realLabel(value: string | null | undefined, filenames: ReadonlySet<string>): string {
   const trimmed = (value ?? "").trim();
-  return trimmed && !PLACEHOLDER_LABELS.has(trimmed.toLowerCase()) ? trimmed : "";
+  if (!trimmed || PLACEHOLDER_LABELS.has(trimmed.toLowerCase()) || looksLikeFilename(trimmed, filenames)) return "";
+  return trimmed;
 }
 
 /**
  * 팩의 지원 회사·직무. 사용자가 입력한 지원 건의 값을 먼저 쓰고, 없으면 분석 결과의 값을 쓴다.
- * 분석 결과에 예전 영어 자리표시자("Applicant company" 등)가 저장돼 있어도 그대로 자료로 삼지 않는다.
+ * 분석 결과에 예전 영어 자리표시자("Applicant company" 등)나, 회사를 확정 못해 대신 들어간
+ * 파일 이름이 저장돼 있어도 그대로 자료로 삼지 않는다.
  */
 export function pickCompanyAndRole(input: {
   caseCompany?: string | null;
   caseRole?: string | null;
   resultCompany?: string | null;
   resultRole?: string | null;
+  docFilenames?: ReadonlyArray<string | null | undefined>;
 }): { company: string; role: string } {
+  const filenames = new Set((input.docFilenames ?? []).filter((name): name is string => Boolean(name)).map(normalizeFilenameForCompare));
   return {
-    company: realLabel(input.caseCompany) || realLabel(input.resultCompany),
-    role: realLabel(input.caseRole) || realLabel(input.resultRole),
+    company: realLabel(input.caseCompany, filenames) || realLabel(input.resultCompany, filenames),
+    role: realLabel(input.caseRole, filenames) || realLabel(input.resultRole, filenames),
   };
 }

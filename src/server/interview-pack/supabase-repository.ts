@@ -303,6 +303,7 @@ export class SupabasePackRepository implements PackRepository {
       caseRole: applicationCase?.role_name,
       resultCompany: parsedResult.success ? parsedResult.data.company : null,
       resultRole: parsedResult.success ? parsedResult.data.role : null,
+      docFilenames: docs.map((doc) => doc.filename),
     });
     const company = labels.company;
     const role = labels.role;

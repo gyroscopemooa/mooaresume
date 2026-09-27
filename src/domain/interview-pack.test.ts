@@ -519,6 +519,15 @@ describe("지원 회사·직무 고르기", () => {
     expect(pickCompanyAndRole({ caseCompany: " applicant company ", resultRole: "자기소개서 첨삭" })).toEqual({ company: "", role: "" });
     expect(pickCompanyAndRole({})).toEqual({ company: "", role: "" });
   });
+
+  it("회사를 확정 못해 올린 파일 이름이 그대로 들어간 값은 자료로 삼지 않는다(관리자 테스트 C 흐름에서 실제로 확인됨)", () => {
+    const docFilenames = ["03_conflicting_materials.txt"];
+    expect(pickCompanyAndRole({ resultCompany: "03_conflicting_materials", resultRole: "생산관리", docFilenames })).toEqual({ company: "", role: "생산관리" });
+    // 대소문자·확장자가 달라도 같은 파일로 본다.
+    expect(pickCompanyAndRole({ resultCompany: "03_CONFLICTING_MATERIALS", docFilenames })).toEqual({ company: "", role: "" });
+    // 진짜 회사 이름은 그대로 남는다.
+    expect(pickCompanyAndRole({ resultCompany: "샘플모빌리티 주식회사(가상기업)", docFilenames })).toEqual({ company: "샘플모빌리티 주식회사(가상기업)", role: "" });
+  });
 });
 
 describe("점검 결과 확인 — 보완 칸의 회사·직무는 충돌이 아니다", () => {
