@@ -8001,3 +8001,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 1,659건 통과, `next build` 성공. 브라우저에서 `/result/sample`의 탭 10개, FINAL 검증·제출 전 마무리·모의면접 세 탭 내용까지 직접 확인.
 - Rollback: 이번 diff만 되돌리면 된다(신규 표·API·DB 없음).
 - Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
+
+## 2026-09-28 — Claude: 커리어 검사 공통 헤더 고정(sticky) — 로고가 스크롤해도 계속 보이게 (branch `feat/final-interview-pack`)
+
+- 요청(사용자, FINAL 작업 중 발견): `/career/*` 결과 화면에서 스크롤하면 MOOA Resume 로고가 있는 상단 헤더가 같이 내려가 버림 — 계속 보여야 함.
+- 원인: `/career`(로그인·AI 심층해설 제외) 전체가 같이 쓰는 공통 헤더(`CareerLayoutShell`, `work-style-assessment.module.css`의 `.header`)에 `position: sticky`가 아예 없었음. 같은 저장소의 다른 화면들(`career-ai-sample-design-three`, 홈의 `.app-header` 등)은 이미 고정이라 이 헤더만 예외였음.
+- 변경: `src/components/work-style-assessment.module.css`의 `.header`에 `position:sticky;top:0;z-index:30`만 추가(배경은 이미 불투명한 `#fff`라 추가 스타일 불필요). `CareerLayoutShell`이 쓰는 공통 헤더라 `/career`, `/career/assessments`, `/career/character`, `/career/values-character` 등 해당 화면 전부에 한 번에 적용됨.
+- FINAL/면접 준비팩 작업과는 무관한 별도 화면(커리어 검사)이라 이 항목만 별도로 기록. 위험이 매우 낮은 1줄 CSS 추가라 이 브랜치에서 바로 처리함.
+- 확인: `tsc --noEmit` 0 오류, 전체 `vitest run` 1,659건 통과, `next build` 성공. 브라우저에서 헤더의 `getComputedStyle(...).position`이 `"sticky"`로 바뀐 것 확인.
+- Rollback: `.header` 규칙에서 추가한 세 속성만 지우면 된다.
+- Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
