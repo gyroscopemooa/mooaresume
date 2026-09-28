@@ -1,0 +1,176 @@
+openapi: 3.1.0
+info:
+  title: MooAResume LIVE-SUB Analytics
+  version: 2026-09-27.v1
+paths:
+  /api/hq/analytics/{resource}:
+    get:
+      security:
+        - hqBearer: []
+      parameters:
+        - in: path
+          name: resource
+          required: true
+          schema:
+            type: string
+            enum: [collection-status, summary, funnel, bottlenecks, acquisition, activation, retention, members, timeline, events, purchasers, entitlements, orders, data-quality, experiments, campaign-safety, errors]
+        - in: query
+          name: environment
+          schema: {type: string, enum: [development, staging, production]}
+        - in: query
+          name: from
+          schema: {type: string, format: date-time}
+        - in: query
+          name: to
+          schema: {type: string, format: date-time}
+        - in: query
+          name: userId
+          description: Required for timeline, orders and entitlements
+          schema: {type: string, format: uuid}
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 100, default: 50}
+        - in: query
+          name: offset
+          schema: {type: integer, minimum: 0, default: 0}
+        - in: query
+          name: platform
+          schema: {type: string, enum: [web, android]}
+        - in: query
+          name: includeInternal
+          schema: {type: boolean, default: false}
+        - in: query
+          name: includeTest
+          schema: {type: boolean, default: false}
+        - in: query
+          name: product
+          schema: {type: string, enum: [QUICK, PRO, FINAL, INTERVIEW_RETRY]}
+        - in: query
+          name: provider
+          schema: {type: string, enum: [POLAR, GOOGLE_PLAY, MOOA_CREDIT]}
+        - in: query
+          name: purchaser
+          schema: {type: boolean}
+        - in: query
+          name: refunded
+          schema: {type: boolean}
+        - in: query
+          name: remaining
+          schema: {type: string, enum: [positive, exhausted]}
+        - in: query
+          name: repurchased
+          schema: {type: boolean}
+        - in: query
+          name: q
+          description: Stable user ID substring only; no email search
+          schema: {type: string, maxLength: 80}
+        - in: query
+          name: eventName
+          schema: {type: string, maxLength: 80}
+        - in: query
+          name: coupon
+          description: Unsupported source dimension; nonempty filter returns 400 rather than fabricated attribution
+          schema: {type: string, maxLength: 80}
+      responses:
+        '200':
+          description: HQ envelope, exact total for paged lists; additive N/A/evidence fields
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [contractVersion, resource, environment, status, data]
+                properties:
+                  contractVersion: {const: 2026-09-27.v1}
+                  resource: {type: string}
+                  environment: {type: string}
+                  status: {const: ok}
+                  total: {type: integer, minimum: 0}
+                  data: {}
+        '400': {description: Invalid filters or environment mismatch}
+        '401': {description: Invalid HQ bearer}
+        '404': {description: Unknown resource or unavailable member}
+        '503': {description: Disabled, unbound DB, or unavailable source}
+  /api/analytics/context:
+    post:
+      responses:
+        '200': {description: Signed HttpOnly analytics context cookie and anonymous UUID}
+        '503': {description: Disabled or unavailable authentication}
+  /api/analytics/events:
+    post:
+      description: Same-origin cookie auth or verified bearer plus signed context; no verified event names accepted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [events]
+              properties:
+                events:
+                  type: array
+                  minItems: 1
+                  maxItems: 30
+                  items: {$ref: '#/components/schemas/Event'}
+      responses:
+        '200': {description: Accepted/idempotent batch}
+        '400': {description: Poison event; split batch to isolate}
+        '409': {description: Refresh signed identity context}
+        '429': {description: Retry later; keep queue}
+        '503': {description: Retry later; keep queue}
+  /api/analytics/presence:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [platform, foreground]
+              properties:
+                platform: {type: string, enum: [web, android]}
+                foreground: {const: true}
+      responses:
+        '200': {description: Authenticated foreground presence stored separately}
+        '401': {description: Authentication required}
+  /api/analytics/experiments/assign:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false}
+      responses:
+        '200': {description: Sticky observation-only variant; no reward or price effects}
+components:
+  securitySchemes:
+    hqBearer: {type: http, scheme: bearer}
+  schemas:
+    Event:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, eventId, eventName, occurredAt, anonymousId, sessionId, clientPlatform, surface, environment]
+      properties:
+        schemaVersion: {const: 1}
+        eventId: {type: string, format: uuid}
+        eventName: {type: string, enum: [page_viewed, login_succeeded, editor_entered, analysis_entered, pricing_viewed, checkout_started, referral_share_completed, review_submitted, experiment_exposed, analysis_failed, checkout_failed]}
+        occurredAt: {type: string, format: date-time}
+        anonymousId: {type: string, format: uuid}
+        sessionId: {type: string, format: uuid}
+        authAttemptId: {type: [string, 'null'], format: uuid}
+        billingAttemptId: {type: [string, 'null'], format: uuid}
+        analysisRunId: {type: [string, 'null'], format: uuid}
+        clientPlatform: {type: string, enum: [web, android]}
+        surface: {type: string, enum: [browser, app_webview, native]}
+        environment: {type: string, enum: [development, staging, production]}
+        properties:
+          type: object
+          additionalProperties: false
+          properties:
+            route: {type: string, enum: [home, editor, analysis, result, pricing, account, other]}
+            product: {type: string, enum: [QUICK, PRO, FINAL]}
+            source: {type: string, enum: [direct, search, social, referral, other]}
+            outcome: {type: string, enum: [success, failed, canceled, pending]}
+            experimentKey: {const: analytics_onboarding_v1}
+            variant: {type: string, enum: [control, treatment]}

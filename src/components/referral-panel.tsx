@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { REFERRAL_TERMS } from "@/domain/referral";
+import { observeAnalytics } from "@/lib/analytics/observe";
 import styles from "./referral-panel.module.css";
 
 /**
@@ -61,6 +62,7 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
     if (!code) return;
     try {
       await navigator.clipboard.writeText(code);
+      observeAnalytics("referral_share_completed");
       setStatus({ tone: "ok", text: "코드를 복사했습니다." });
     } catch {
       setStatus({ tone: "bad", text: "복사하지 못했습니다. 코드를 직접 선택해 복사해 주세요." });

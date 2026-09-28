@@ -6,6 +6,7 @@ import { AppTabBar } from "@/components/app-tab-bar";
 import { APP_MARKER_SCRIPT } from "@/lib/app-context";
 import { MaintenanceGate } from "@/components/maintenance-gate";
 import { RuntimeSiteNotice } from "@/components/runtime-site-notice";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 import "./globals.css";
 
 // Do not let a cached document from an older Worker version request assets
@@ -87,6 +88,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: APP_MARKER_SCRIPT }} />
       </head>
       <body className={notoSansKr.variable}>
+        <AnalyticsTracker />
         <RuntimeSiteNotice />
         <MaintenanceGate>{children}</MaintenanceGate>
         {/* 하이브리드 앱 셸에서만 보이는 하단 메뉴바. 일반 웹 방문자에게는
