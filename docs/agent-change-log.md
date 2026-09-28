@@ -8032,3 +8032,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 1,661건 통과, `next build` 성공.
 - Rollback: 두 파일의 이번 diff만 되돌리면 된다.
 - Status: 커밋됨(브랜치), main 반영은 사용자 push 대기.
+
+## 2026-09-29 — Claude: 홈 맨 위 얇은 안내 띠를 세련되게 다시 디자인하고 "FINAL 오픈" 강조 (branch `feat/final-promo-followup`)
+
+- 요청(사용자): 헤더 위 얇은 바 디자인을 더 세련되게, FINAL 오픈 내용을 넣어 강조.
+- `src/components/launch-price-banner.module.css`(전면 재작성): 예전 형광 라임 판+사선 무늬 → 짙은 초록 바탕에 라임을 포인트로만(FINAL 오픈 칩·가격 버튼). 한 줄 높이 48→42px, 안내 문구(조기 종료 가능)는 옅게 아래에 그대로 유지(가격 조건을 숨기지 않음). 칩의 점이 깜빡이는 효과는 `prefers-reduced-motion`이면 꺼짐. 이전 디자인은 git 기록에 그대로 있음.
+- `src/components/launch-price-banner.tsx`: `isFinalEnabled()`일 때만 "FINAL 오픈" 칩(`/final`로 연결)과 문구·가격 버튼에 FINAL을 추가 — FINAL이 닫혀 있으면 예전 문구 그대로라 "오픈"이라고 거짓말하지 않음. 관리자 runtime 배너(`home_launch_price`)가 설정돼 있으면 그 문구가 우선하는 동작은 그대로.
+- 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 통과, `next build` 성공, 브라우저에서 데스크톱·좁은 폭 모두 한 줄로 확인.
+- Rollback: 위 두 파일을 이전 커밋 버전으로 되돌리면 된다.
+- Status: 커밋됨(브랜치), main 반영은 사용자 push 대기.
