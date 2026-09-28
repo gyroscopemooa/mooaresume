@@ -93,6 +93,7 @@ export function LocalInterviewProPrototype() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserIntervalRef = useRef<number | null>(null);
   const recordingsRef = useRef<LocalRecording[]>([]);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   const preset = useMemo(
     () => LOCAL_INTERVIEW_PRESETS.find((item) => item.id === selectedPresetId) ?? LOCAL_INTERVIEW_PRESETS[0],
@@ -104,9 +105,54 @@ export function LocalInterviewProPrototype() {
   const currentRecording = recordings.find((item) => item.questionId === currentQuestion?.id);
   const completedCount = recordings.length;
 
+  const releaseWakeLock = useCallback(() => {
+    const activeLock = wakeLockRef.current;
+    wakeLockRef.current = null;
+    if (activeLock) void activeLock.release().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const shouldKeepScreenAwake = screen === "practice" && (phase === "preparing" || phase === "recording");
+    if (!shouldKeepScreenAwake || !("wakeLock" in navigator)) {
+      releaseWakeLock();
+      return;
+    }
+
+    let disposed = false;
+    const requestWakeLock = async () => {
+      if (document.visibilityState !== "visible" || wakeLockRef.current) return;
+      try {
+        const nextLock = await navigator.wakeLock.request("screen");
+        if (disposed) await nextLock.release();
+        else wakeLockRef.current = nextLock;
+      } catch {
+        // Wake Lock is an enhancement. Recording continues if the browser denies it.
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") void requestWakeLock();
+    };
+
+    void requestWakeLock();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      releaseWakeLock();
+    };
+  }, [phase, releaseWakeLock, screen]);
+
   useEffect(() => {
     recordingsRef.current = recordings;
   }, [recordings]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      window.scrollTo({ top: 0, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [screen]);
 
   useEffect(() => {
     if (!videoRef.current || !stream) return;
@@ -317,9 +363,10 @@ export function LocalInterviewProPrototype() {
   const averageUsage = recordings.length > 0
     ? Math.round(recordings.reduce((sum, recording) => sum + calculateTimeUsagePercent(recording.durationSeconds, preset.config.answerSeconds), 0) / recordings.length)
     : 0;
+  const sessionLocked = screen === "practice" && (phase === "preparing" || phase === "recording");
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-screen={screen} data-phase={phase}>
       <header className={styles.topbar}>
         <div className={styles.brand}><span>M</span><b>MOOA Resume</b><em>Interview PRO V2</em></div>
         <div className={styles.localOnly}><ShieldCheck />LOCAL DEV ONLY</div>
@@ -328,10 +375,10 @@ export function LocalInterviewProPrototype() {
       <div className={styles.shell}>
         <aside className={styles.sidebar}>
           <p className={styles.navTitle}>면접 준비</p>
-          <button type="button" className={screen === "overview" ? styles.navActive : ""} onClick={() => setScreen("overview")}><Building2 />전형 선택</button>
-          <button type="button" className={screen === "setup" ? styles.navActive : ""} onClick={() => setScreen("setup")}><Camera />장비 확인</button>
-          <button type="button" className={screen === "practice" ? styles.navActive : ""} disabled={!stream} onClick={() => setScreen("practice")}><Video />실전 시뮬레이터</button>
-          <button type="button" className={screen === "report" ? styles.navActive : ""} disabled={recordings.length === 0} onClick={() => setScreen("report")}><FileSearch />결과 복기</button>
+          <button type="button" aria-current={screen === "overview" ? "page" : undefined} className={screen === "overview" ? styles.navActive : ""} disabled={sessionLocked} onClick={() => setScreen("overview")}><Building2 /><span>전형 선택</span></button>
+          <button type="button" aria-current={screen === "setup" ? "page" : undefined} className={screen === "setup" ? styles.navActive : ""} disabled={sessionLocked} onClick={() => setScreen("setup")}><Camera /><span>장비 확인</span></button>
+          <button type="button" aria-current={screen === "practice" ? "page" : undefined} className={screen === "practice" ? styles.navActive : ""} disabled={!stream} onClick={() => setScreen("practice")}><Video /><span>실전 면접</span></button>
+          <button type="button" aria-current={screen === "report" ? "page" : undefined} className={screen === "report" ? styles.navActive : ""} disabled={recordings.length === 0 || sessionLocked} onClick={() => setScreen("report")}><FileSearch /><span>결과 복기</span></button>
 
           <div className={styles.caseCard}>
             <span>MY APPLICATION</span>

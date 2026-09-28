@@ -24,6 +24,16 @@
 - Rollback: 병합 전이면 이 브랜치를 폐기하면 된다(기존 브랜치·공유 폴더 미변경). 병합 뒤에는 해당 커밋 revert. DB를 적용했다면 신규 표·함수(`interview_pack_*`, `admin_test_*`)를 삭제하고 `analysis_entitlements`의 `test_grant_id`·체크를 제거한 뒤(테스트 이용권 행이 없어야 함) `billing_order_id` NOT NULL 복구. 즉시 끄기: `NEXT_PUBLIC_ENABLE_INTERVIEW_PACK` 비움 + `FINAL_TEST_ACCOUNT_EMAILS` 비움.
 - 실사용 검증(2026-09-27): 사용자가 직접 실제 mooaresume DB·실제 로그인 계정·실제 OpenAI로 A/B/C 전부와 FINAL 결과 화면까지 끝까지 돌려 확인함. 그 과정에서 찾아 고친 실제 문제 4건(위 네 항목)은 전부 테스트 추가 후 재검증 완료.
 - Status: 커밋됨(브랜치), 기능·DB 마이그레이션 모두 실사용 검증 끝남. **병합·일반 공개(`NEXT_PUBLIC_ENABLE_INTERVIEW_PACK`)는 사용자 결정 대기**. DB는 이미 mooaresume 프로젝트에 적용돼 있음.
+## 2026-09-28 — Codex: 면접 PRO 모바일을 주요 응시 환경으로 승격
+
+- 요청: 휴대폰 카메라로 면접을 연습하고 선택·입력까지 이어가는 사용자가 많을 가능성을 반영해, 면접 PRO를 단순 반응형이 아니라 모바일 우선 응시 UX와 토스 수준의 명확한 정보 위계·터치 품질을 갖춘 방향으로 보강.
+- 구현: 640px 이하에서 safe area·`dvh/svh`를 적용하고, 고정 하단 단계 탐색, 48px 이상 CTA, 16px 입력, 가로 스크롤형 모드 선택, 카드형 프리셋, 세로 카메라 미리보기, 카메라→질문/타이머→고정 행동 버튼 순서, 모바일 리포트 카드를 추가했다. 실전 화면에서는 하단 탐색을 숨기고 준비·녹화 중 다른 단계 이동을 잠가 오조작을 줄였다. 낮은 높이의 가로 화면은 질문과 카메라 2열로 전환한다.
+- 모바일 런타임: 준비·녹화 단계에서 지원 브라우저에 Screen Wake Lock을 요청하고, 미지원 또는 거부 시 녹화를 중단하지 않는 폴백을 사용한다. `viewport-fit=cover`와 모바일 테마 색을 개발 페이지에 선언했다.
+- 문서: 모바일을 주요 응시 환경으로 보는 결정, 터치/키보드/회전/화면 잠금 원칙과 iOS Safari·Android Chrome 실기기 출시 게이트를 제품 계획과 구현 TODO에 반영했다.
+- 파일: `src/app/dev/interview-pro-v2/page.tsx`, `src/components/interview-prototype/local-interview-prototype.tsx`, `src/components/interview-prototype/local-interview-prototype.module.css`, `docs/interview-pro-product-plan-2026-09-28.md`, `docs/interview-pro-v2-implementation-todo-2026-09-28.md`, `docs/agent-change-log.md`.
+- 검증: 타입검사·변경 범위 ESLint·관련 Vitest를 통과했다. 390×844와 360×800 세로 뷰포트에서 가로 넘침 없음, 고정 하단 탐색, 약 50px 최소 버튼 높이, 16px 장치 선택, 3:4 카메라, 단계 전환 시 상단 이동을 브라우저로 확인했다. 카메라 권한·녹화·회전·키보드·Wake Lock은 실기기 E2E 전까지 출시 게이트로 남긴다.
+- 롤백: 위 파일의 이번 모바일 속성·스타일·Wake Lock 효과와 문서 항목을 되돌린다. 기존 녹화 데이터·서버·결제에는 영향이 없다.
+
 ## 2026-09-28 — Codex: 면접 PRO V2 로컬 프로토타입·원가 하드캡·Pretendard UI 릴리스
 
 - 요청: 면접 PRO의 기업 AI 채용전형/일반 실전면접 기본 틀을 보존하고, Astra 핵심 모델 기준 사용자당 평균 원가 3,000~5,000원·최대 10,000원 정책과 Pretendard Variable 기반의 읽기 편한 한국형 화면을 커밋·푸시·배포.

@@ -22,8 +22,16 @@
 
 .page button,
 .page select,
-.page input {
+.page input,
+.page textarea {
   font: inherit;
+}
+
+.page button,
+.page select,
+.page label {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .topbar {
@@ -1357,9 +1365,34 @@
 }
 
 @media (max-width: 640px) {
+  .page {
+    min-height: 100dvh;
+    scroll-padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    overscroll-behavior-y: contain;
+    background: #f5f7f9;
+  }
+
   .topbar {
-    height: 57px;
-    padding: 0 14px;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    height: calc(58px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 16px 0;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, .08);
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand > span {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .brand b {
+    font-size: 15px;
   }
 
   .brand em,
@@ -1368,40 +1401,169 @@
   }
 
   .localOnly {
+    padding: 5px 7px;
+    border-radius: 8px;
     font-size: 8px;
   }
 
+  .shell {
+    min-height: calc(100dvh - 58px - env(safe-area-inset-top));
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    overflow: visible;
+    background: rgba(255, 255, 255, .96);
+    border-top: 1px solid rgba(197, 207, 216, .8);
+    border-bottom: 0;
+    box-shadow: 0 -8px 26px rgba(23, 50, 77, .08);
+    backdrop-filter: blur(16px);
+  }
+
+  .navTitle,
+  .caseCard {
+    display: none;
+  }
+
+  .sidebar > button {
+    width: 100%;
+    min-width: 0;
+    height: 56px;
+    padding: 5px 2px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 11px;
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .sidebar > button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebar > button.navActive {
+    color: var(--blue-dark);
+    background: #eaf4fb;
+  }
+
+  .sidebar > button:disabled {
+    opacity: .5;
+  }
+
+  .page[data-screen="practice"] .sidebar {
+    display: none;
+  }
+
   .workspace {
-    width: min(100% - 20px, 620px);
-    padding-top: 18px;
+    width: 100%;
+    padding: 20px 14px calc(102px + env(safe-area-inset-bottom));
+  }
+
+  .page[data-screen="practice"] .workspace {
+    padding: 0 0 calc(20px + env(safe-area-inset-bottom));
   }
 
   .breadcrumb {
+    display: none;
+  }
+
+  .pageHeading {
     margin-bottom: 20px;
   }
 
   .pageHeading h1 {
-    font-size: 23px;
+    max-width: 15em;
+    font-size: 26px;
+    line-height: 1.32;
+    letter-spacing: -.025em;
+  }
+
+  .pageHeading p {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.65;
   }
 
   .modeTabs {
+    margin: 0 -14px 16px;
+    padding: 0 14px 4px;
     align-items: stretch;
-    flex-direction: column;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    background: transparent;
+    border: 0;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .modeTabs::-webkit-scrollbar {
+    display: none;
   }
 
   .modeTabs button {
-    width: 100%;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
+    width: auto;
+    min-width: max-content;
+    min-height: 50px;
+    padding: 0 15px;
+    flex: none;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    scroll-snap-align: start;
+    box-shadow: 0 2px 8px rgba(23, 50, 77, .04);
+  }
+
+  .modeTabs button.modeActive {
+    border-color: #9fc7e3;
+    box-shadow: 0 4px 14px rgba(23, 105, 170, .11);
+  }
+
+  .presetList,
+  .presetDetail,
+  .questionPreview,
+  .previewPanel,
+  .settingsPanel,
+  .reportSummary,
+  .answerTable {
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 5px 18px rgba(23, 50, 77, .055);
+  }
+
+  .overviewGrid,
+  .setupGrid {
+    gap: 14px;
+  }
+
+  .sectionBar,
+  .panelHeader {
+    min-height: 52px;
+    padding-right: 14px;
+    padding-left: 14px;
   }
 
   .presetRow {
-    grid-template-columns: 36px minmax(0, 1fr);
+    min-height: 104px;
+    padding: 15px 14px;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 11px;
   }
 
   .companyMark {
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
   }
 
   .presetMeta {
@@ -1409,12 +1571,31 @@
     justify-content: flex-start;
   }
 
+  .presetCopy b {
+    font-size: 15px;
+  }
+
+  .presetCopy small,
   .presetCopy em {
+    font-size: 12px;
     white-space: normal;
   }
 
   .questionRow {
+    min-height: 116px;
+    padding: 16px 14px;
     grid-template-columns: 26px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .questionRow b {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .questionRow small {
+    font-size: 12px;
+    line-height: 1.55;
   }
 
   .questionRow > div:last-child {
@@ -1422,9 +1603,27 @@
     justify-content: flex-start;
   }
 
+  .primaryButton,
+  .secondaryButton,
+  .stopButton,
+  .textButton {
+    min-height: 50px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
   .bottomActions {
+    position: sticky;
+    bottom: calc(68px + env(safe-area-inset-bottom));
+    z-index: 24;
+    margin: 22px -14px -18px;
+    padding: 12px 14px;
     align-items: stretch;
     flex-direction: column;
+    background: rgba(255, 255, 255, .94);
+    border-top: 1px solid rgba(207, 216, 224, .8);
+    box-shadow: 0 -10px 26px rgba(23, 50, 77, .07);
+    backdrop-filter: blur(16px);
   }
 
   .bottomActions > button {
@@ -1432,22 +1631,184 @@
   }
 
   .privacyNote {
+    padding: 0 3px;
     align-items: flex-start;
+    font-size: 11px;
+  }
+
+  .settingsPanel > label {
+    margin-top: 16px;
+    font-size: 12px;
+  }
+
+  .settingsPanel select,
+  .page input:not([type="checkbox"]):not([type="radio"]),
+  .page textarea {
+    min-height: 50px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+
+  .videoFrame {
+    max-height: min(64svh, 620px);
+    aspect-ratio: 3 / 4;
+  }
+
+  .safeGuide {
+    width: max-content;
+    max-width: calc(100% - 28px);
+    padding: 8px 11px;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .micMeter {
+    min-height: 58px;
+  }
+
+  .deviceMessage,
+  .checkRows {
+    border-radius: 11px;
+  }
+
+  .deviceMessage p,
+  .checkRows span {
+    font-size: 11px;
+  }
+
+  .practiceHeader {
+    position: sticky;
+    top: calc(58px + env(safe-area-inset-top));
+    z-index: 25;
+    min-height: 58px;
+    padding: 0 16px;
+    border: 0;
+    box-shadow: 0 3px 12px rgba(23, 50, 77, .08);
+  }
+
+  .practiceGrid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .recordPanel {
+    order: 1;
+    height: clamp(290px, 43svh, 410px);
+    min-height: 0;
+  }
+
+  .liveVideo,
+  .reviewVideo {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .cameraFooter {
+    min-height: 44px;
+    justify-content: space-between;
+    gap: 7px;
+    font-size: 10px;
   }
 
   .questionPanel {
-    padding: 23px 18px;
+    position: relative;
+    z-index: 3;
+    order: 2;
+    min-height: auto;
+    margin-top: -14px;
+    padding: 24px 16px calc(18px + env(safe-area-inset-bottom));
+    background: #fff;
+    border: 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -8px 24px rgba(9, 28, 43, .12);
+  }
+
+  .questionMeta > span:last-child,
+  .questionNumber {
+    font-size: 11px;
+  }
+
+  .questionNumber {
+    margin: 20px 0 8px;
   }
 
   .questionPanel h1 {
     min-height: auto;
-    font-size: 20px;
+    font-size: 22px;
+    line-height: 1.48;
+    letter-spacing: -.025em;
   }
 
-  .recordPanel,
-  .liveVideo,
-  .reviewVideo {
-    min-height: 320px;
+  .intentBox {
+    padding: 14px;
+    border-radius: 0 12px 12px 0;
+  }
+
+  .intentBox b,
+  .intentBox p {
+    font-size: 12px;
+  }
+
+  .intentBox small,
+  .practiceMessage {
+    font-size: 11px;
+  }
+
+  .ttsToggle {
+    min-height: 44px;
+    justify-content: flex-start;
+    font-size: 12px;
+  }
+
+  .ttsToggle input {
+    width: 18px;
+    height: 18px;
+  }
+
+  .phaseBox {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 6px 12px;
+  }
+
+  .phaseBox > span {
+    font-size: 12px;
+  }
+
+  .phaseBox strong {
+    margin: 0;
+    font-size: 34px;
+  }
+
+  .phaseTrack {
+    grid-column: 1 / -1;
+    height: 8px;
+    border-radius: 999px;
+  }
+
+  .practiceActions {
+    position: sticky;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 30;
+    min-height: 66px;
+    margin: 18px -4px 0;
+    padding: 8px;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    background: rgba(255, 255, 255, .94);
+    border: 1px solid rgba(197, 207, 216, .9);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(23, 50, 77, .14);
+    backdrop-filter: blur(16px);
+  }
+
+  .practiceActions > button {
+    width: 100%;
   }
 
   .reportSummary {
@@ -1460,14 +1821,21 @@
     border-bottom: 1px solid var(--line);
   }
 
+  .reportNotice,
+  .nextEngine {
+    border-radius: 14px;
+  }
+
   .tableHead {
     display: none;
   }
 
   .tableRow {
-    padding: 13px;
+    min-height: 112px;
+    padding: 15px;
     grid-template-columns: 1fr 1fr;
-    gap: 11px;
+    gap: 12px;
+    font-size: 12px;
   }
 
   .tableRow > span {
@@ -1478,9 +1846,83 @@
     grid-column: 1 / -1;
   }
 
+  .tableRow a {
+    min-height: 40px;
+  }
+
   .nextEngine {
+    padding: 16px;
     align-items: flex-start;
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 980px) and (max-height: 600px) and (orientation: landscape) {
+  .page[data-screen="practice"] .topbar,
+  .page[data-screen="practice"] .sidebar {
+    display: none;
+  }
+
+  .page[data-screen="practice"] .workspace {
+    width: 100%;
+    padding: 0;
+  }
+
+  .page[data-screen="practice"] .practiceHeader {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    min-height: 48px;
+  }
+
+  .page[data-screen="practice"] .practiceGrid {
+    display: grid;
+    grid-template-columns: minmax(0, .92fr) minmax(0, 1.2fr);
+  }
+
+  .page[data-screen="practice"] .questionPanel {
+    order: 1;
+    height: calc(100dvh - 48px);
+    min-height: 0;
+    padding: 17px 18px;
+    overflow-y: auto;
+    border: 0;
+  }
+
+  .page[data-screen="practice"] .questionPanel h1 {
+    min-height: 0;
+    font-size: 19px;
+  }
+
+  .page[data-screen="practice"] .questionNumber {
+    margin: 12px 0 5px;
+  }
+
+  .page[data-screen="practice"] .intentBox {
+    margin-top: 11px;
+  }
+
+  .page[data-screen="practice"] .phaseBox {
+    margin-top: 12px;
+    padding-top: 11px;
+  }
+
+  .page[data-screen="practice"] .phaseBox strong {
+    font-size: 29px;
+  }
+
+  .page[data-screen="practice"] .recordPanel {
+    position: sticky;
+    top: 48px;
+    order: 2;
+    height: calc(100dvh - 48px);
+    min-height: 0;
+  }
+
+  .page[data-screen="practice"] .liveVideo,
+  .page[data-screen="practice"] .reviewVideo {
+    height: 100%;
+    min-height: 0;
   }
 }
 
