@@ -1926,6 +1926,126 @@
   }
 }
 
+/* The interview itself is a focused room, shared by desktop and mobile. */
+.page[data-screen="practice"] .topbar,
+.page[data-screen="practice"] .sidebar,
+.page[data-screen="practice"] .breadcrumb {
+  display: none;
+}
+
+.page[data-screen="practice"] .shell {
+  display: block;
+  min-height: 100dvh;
+}
+
+.page[data-screen="practice"] .workspace {
+  width: min(1160px, 100%);
+  padding: 24px;
+}
+
+.page[data-screen="practice"] .practiceHeader {
+  top: 0;
+  gap: 16px;
+  padding: 8px 0 20px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.page[data-screen="practice"] .practiceHeader > div:first-of-type {
+  flex: 1;
+}
+
+.page[data-screen="practice"] .practiceGrid {
+  gap: 24px;
+  align-items: center;
+}
+
+.page[data-screen="practice"] .questionPanel {
+  min-height: 0;
+  padding: 24px;
+  border: 0;
+  border-radius: 20px;
+}
+
+.page[data-screen="practice"] .questionNumber {
+  margin-top: 0;
+}
+
+.page[data-screen="practice"] .recordPanel {
+  border-radius: 20px;
+}
+
+.page[data-screen="practice"] .cameraFooter {
+  position: static;
+}
+
+.page[data-screen="practice"] .liveVideo,
+.page[data-screen="practice"] .reviewVideo {
+  min-height: 0;
+  height: clamp(260px, 60dvh, 580px);
+  object-fit: contain;
+}
+
+.page[data-screen="practice"] .recordPanel {
+  min-height: 0;
+  height: auto;
+}
+
+.practiceHelp {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.practiceHelp summary {
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .page[data-screen="practice"] .workspace {
+    padding: env(safe-area-inset-top) 12px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .page[data-screen="practice"] .practiceHeader {
+    position: relative;
+    gap: 8px;
+    padding: 8px 0;
+    flex-wrap: wrap;
+  }
+
+  .page[data-screen="practice"] .practiceGrid {
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .page[data-screen="practice"] .questionPanel {
+    order: 1;
+    margin: 0;
+    padding: 18px;
+    box-shadow: none;
+  }
+
+  .page[data-screen="practice"] .recordPanel {
+    order: 2;
+  }
+
+  .page[data-screen="practice"] .liveVideo,
+  .page[data-screen="practice"] .reviewVideo {
+    height: clamp(200px, 32svh, 320px);
+  }
+
+  .page[data-screen="practice"] .practiceActions {
+    position: static;
+    margin: 12px 0 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .phaseTrack i,
   .micMeter i {

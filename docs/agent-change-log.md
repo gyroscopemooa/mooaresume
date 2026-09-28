@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-28 — Codex: 면접 PRO 중간 릴리스
+
+- 변경: 집중 면접 UI, 마이크 시험 녹음, 선택적 고정 질문 자동 진행, 관리자+development 보호 분석 워크벤치와 로컬 프롬프트 초안. 기존 수동 시안 보존.
+- 파일: src/components/interview-prototype/{local-interview-prototype.tsx,local-interview-prototype.module.css,microphone-check.tsx,analysis-workbench.tsx}, src/app/dev/interview-pro-v2/analysis/page.tsx, 면접 TODO, 현재 체크포인트, 이 로그.
+- 상태: AI 분석/실시간 대화/장비 대체/입퇴장 분석 미구현. 운영 dev 페이지 404 유지. 타 작업 미커밋 변경 제외.
+- 검증: 공유 트리 타입검사·범위 ESLint·관련 테스트 통과. 분리 릴리스 빌드 재확인 예정. 실제 하드웨어 E2E 미완료.
+- 롤백 참조: a197fe3(이전 면접 시안). 사용자 요청에 따른 중간 커밋/푸시/배포 준비.
+
 ## 2026-09-26 — Claude: FINAL 면접 준비팩 + 관리자 무결제 테스트 (branch `feat/final-interview-pack`, 개발 완료 · 병합/배포/DB 적용 전)
 
 - Agent: Claude. 사용자 지시: FINAL 안에 "면접 준비팩"(자기소개·면접 답변·키워드 암기)을 붙이고, 운영자가 결제·재입력 없이 점검할 관리자 "FINAL 테스트" 화면을 만든다. 배포·운영 DB 변경·실주문 변경·유료 AI 시험 실행은 하지 않았다.

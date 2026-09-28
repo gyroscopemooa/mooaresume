@@ -35,6 +35,7 @@ import {
   type InterviewPresetPrototype,
 } from "@/domain/interview-prototype";
 import styles from "./local-interview-prototype.module.css";
+import { MicrophoneCheck } from "./microphone-check";
 
 type Screen = "overview" | "setup" | "practice" | "report";
 type PracticePhase = "ready" | "preparing" | "recording" | "review";
@@ -84,6 +85,8 @@ export function LocalInterviewProPrototype() {
   const [recordings, setRecordings] = useState<LocalRecording[]>([]);
   const [practiceMessage, setPracticeMessage] = useState("");
   const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [autoMode, setAutoMode] = useState(false);
+  const [autoRunning, setAutoRunning] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -174,6 +177,7 @@ export function LocalInterviewProPrototype() {
     void audioContextRef.current?.close();
     const AudioContextConstructor = window.AudioContext;
     const context = new AudioContextConstructor();
+    void context.resume().catch(() => undefined);
     const analyser = context.createAnalyser();
     analyser.fftSize = 256;
     const source = context.createMediaStreamSource(activeStream);
@@ -255,6 +259,7 @@ export function LocalInterviewProPrototype() {
   }, []);
 
   const startRecording = useCallback(() => {
+    window.speechSynthesis?.cancel();
     if (!stream || !currentQuestion) {
       setPracticeMessage("카메라와 마이크 연결이 끊겼습니다. 장비 확인으로 돌아가 주세요.");
       setPhase("ready");
@@ -263,16 +268,25 @@ export function LocalInterviewProPrototype() {
     try {
       const mimeType = selectSupportedRecorderMimeType((candidate) => MediaRecorder.isTypeSupported(candidate));
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      let recordingFailed = false;
       chunksRef.current = [];
       recordingStartedAtRef.current = performance.now();
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunksRef.current.push(event.data);
       };
       recorder.onerror = () => {
+        recordingFailed = true;
+        setAutoRunning(false);
         setPracticeMessage("녹화 중 오류가 발생했습니다. 이 답변은 저장되지 않았습니다.");
         setPhase("ready");
       };
       recorder.onstop = () => {
+        if (recordingFailed || chunksRef.current.length === 0) {
+          setAutoRunning(false);
+          setPhase("ready");
+          setPracticeMessage("녹화 데이터를 확인하지 못했습니다. 장비를 점검한 뒤 다시 시작하세요.");
+          return;
+        }
         const durationSeconds = Math.max(1, Math.round((performance.now() - recordingStartedAtRef.current) / 1000));
         const resolvedType = recorder.mimeType || mimeType || "video/webm";
         const blob = new Blob(chunksRef.current, { type: resolvedType });
@@ -301,6 +315,7 @@ export function LocalInterviewProPrototype() {
       setPhase("recording");
       setPracticeMessage("");
     } catch {
+      setAutoRunning(false);
       setPracticeMessage("이 장치 조합으로 녹화를 시작하지 못했습니다. 장비 확인에서 다시 연결해 주세요.");
       setPhase("ready");
     }
@@ -320,14 +335,31 @@ export function LocalInterviewProPrototype() {
     return () => window.clearTimeout(timeoutId);
   }, [phase, remainingSeconds, startRecording, stopRecording]);
 
-  const beginQuestion = () => {
+  const beginQuestion = useCallback(() => {
     if (!currentQuestion) return;
     setPracticeMessage("");
     setRemainingSeconds(preset.config.prepSeconds);
     setPhase(preset.config.prepSeconds > 0 ? "preparing" : "ready");
     speakQuestion(currentQuestion.text);
     if (preset.config.prepSeconds === 0) startRecording();
-  };
+  }, [currentQuestion, preset.config.prepSeconds, speakQuestion, startRecording]);
+
+  useEffect(() => {
+    if (!autoRunning || screen !== "practice") return;
+    const timer = window.setTimeout(() => {
+      if (phase === "ready") beginQuestion();
+      if (phase === "review") {
+        if (questionIndex >= preset.questions.length - 1) {
+          setAutoRunning(false);
+          setScreen("report");
+        } else {
+          setQuestionIndex((index) => index + 1);
+          setPhase("ready");
+        }
+      }
+    }, phase === "review" ? 2000 : 3000);
+    return () => window.clearTimeout(timer);
+  }, [autoRunning, screen, phase, questionIndex, preset.questions.length, beginQuestion]);
 
   const resetPrototype = () => {
     if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
@@ -398,6 +430,9 @@ export function LocalInterviewProPrototype() {
           {screen === "setup" && (
             <section>
               <PageHeading eyebrow="STEP 02 · 사전 점검" title="카메라와 마이크를 확인하세요" description="녹화 파일은 서버에 전송하지 않고 현재 브라우저 메모리에만 임시 보관합니다." />
+              <label className={styles.ttsToggle}><input type="checkbox" checked={ttsEnabled} onChange={(event) => setTtsEnabled(event.target.checked)} /><span><Volume2 />질문을 음성으로 읽어주기</span></label>
+              <label className={styles.ttsToggle}><input type="checkbox" checked={autoMode} onChange={(event) => setAutoMode(event.target.checked)} /><span>연속 자동 진행 시험 모드</span></label>
+              {autoMode && <p>자동 진행 시험 모드: 입장 3초 후 질문 → 준비시간 → 제한시간 녹화 → 다음 질문. AI 대화·침묵 감지·꼬리질문은 아직 미연결입니다.</p>}
               <div className={styles.setupGrid}>
                 <div className={styles.previewPanel}>
                   <div className={styles.panelHeader}><span><Camera />카메라 미리보기</span><i className={stream ? styles.live : ""}>{stream ? "연결됨" : "대기"}</i></div>
@@ -415,37 +450,40 @@ export function LocalInterviewProPrototype() {
                   <div className={`${styles.deviceMessage} ${stream ? styles.deviceSuccess : ""}`}>{stream ? <CheckCircle2 /> : <CircleAlert />}<p>{deviceMessage}</p></div>
                   <div className={styles.checkRows}><span><Check />1280×720 권장 화질</span><span><Check />소음 억제·에코 제거 요청</span><span><Check />현재 세션 종료 시 녹화 폐기</span></div>
                   <button type="button" className={styles.secondaryButton} disabled={deviceBusy} onClick={() => void openDevices(videoDeviceId, audioDeviceId)}>{deviceBusy ? "연결 확인 중..." : stream ? "장치 다시 확인" : "카메라·마이크 확인 시작"}</button>
+                  <MicrophoneCheck key={`${videoDeviceId}-${audioDeviceId}`} stream={stream} />
                 </div>
               </div>
 
-              <div className={styles.bottomActions}><button type="button" className={styles.textButton} onClick={() => setScreen("overview")}><ArrowLeft />전형 선택으로</button><button type="button" className={styles.primaryButton} disabled={!stream} onClick={() => { setQuestionIndex(0); setPhase("ready"); setScreen("practice"); }}>실전 연습 시작<ArrowRight /></button></div>
+              <div className={styles.bottomActions}><button type="button" className={styles.textButton} onClick={() => setScreen("overview")}><ArrowLeft />전형 선택으로</button><button type="button" className={styles.primaryButton} disabled={!stream || deviceBusy} onClick={() => { setQuestionIndex(0); setPhase("ready"); setAutoRunning(autoMode); setScreen("practice"); }}>실전 연습 시작<ArrowRight /></button></div>
             </section>
           )}
 
           {screen === "practice" && currentQuestion && (
             <section>
               <div className={styles.practiceHeader}>
+                <button type="button" className={styles.textButton} disabled={sessionLocked} onClick={() => { window.speechSynthesis?.cancel(); setScreen("setup"); }}><ArrowLeft />준비 화면</button>
                 <div><span>{preset.companyName}</span><b>{preset.positionName}</b></div>
                 <div className={styles.progressText}>문항 <b>{questionIndex + 1}</b> / {preset.questions.length}</div>
               </div>
 
               <div className={styles.practiceGrid}>
                 <section className={styles.questionPanel}>
-                  <div className={styles.questionMeta}><EvidenceBadge status={currentQuestion.evidenceStatus} /><span>{currentQuestion.competency}</span></div>
                   <p className={styles.questionNumber}>QUESTION {String(questionIndex + 1).padStart(2, "0")}</p>
                   <h1>{currentQuestion.text}</h1>
-                  <div className={styles.intentBox}><Info /><div><b>질문 의도 · 연습모드에서만 표시</b><p>{currentQuestion.intent}</p><small>{currentQuestion.evidenceNote}</small></div></div>
-                  <label className={styles.ttsToggle}><input type="checkbox" checked={ttsEnabled} onChange={(event) => setTtsEnabled(event.target.checked)} /><span><Volume2 />질문 음성 읽기</span></label>
+                  {!sessionLocked && <details className={styles.practiceHelp} key={`${currentQuestion.id}-${phase}`}><summary>질문 의도와 출처 보기</summary><div className={styles.intentBox}><Info /><div><EvidenceBadge status={currentQuestion.evidenceStatus} /><p>{currentQuestion.intent}</p><small>{currentQuestion.evidenceNote}</small></div></div></details>}
                   <div className={styles.phaseBox}>
                     <span>{phase === "ready" ? "시작 대기" : phase === "preparing" ? "준비 시간" : phase === "recording" ? "답변 시간" : "답변 확인"}</span>
                     <strong>{phase === "ready" || phase === "review" ? formatInterviewSeconds(phase === "ready" ? preset.config.prepSeconds : currentRecording?.durationSeconds ?? 0) : formatInterviewSeconds(remainingSeconds)}</strong>
                     <div className={styles.phaseTrack}><i style={{ width: phase === "preparing" ? `${100 - (remainingSeconds / Math.max(1, preset.config.prepSeconds)) * 100}%` : phase === "recording" ? `${100 - (remainingSeconds / preset.config.answerSeconds) * 100}%` : phase === "review" ? "100%" : "0%" }} /></div>
                   </div>
                   <div className={styles.practiceActions}>
+                    {autoRunning && <button type="button" className={styles.stopButton} onClick={() => { setAutoRunning(false); window.speechSynthesis?.cancel(); if (phase === "recording") stopRecording(); else setPhase("ready"); }}>자동 진행 중단</button>}
+                    {!autoRunning && <>
                     {phase === "ready" && <button type="button" className={styles.primaryButton} onClick={beginQuestion}><Play />이 질문 시작</button>}
                     {phase === "preparing" && <button type="button" className={styles.primaryButton} onClick={startRecording}><Video />바로 답변 시작</button>}
                     {phase === "recording" && <button type="button" className={styles.stopButton} onClick={stopRecording}><Square />답변 종료</button>}
                     {phase === "review" && <><button type="button" className={styles.secondaryButton} onClick={() => { setPhase("ready"); setPracticeMessage(""); }}><RotateCcw />다시 녹화</button><button type="button" className={styles.primaryButton} onClick={moveToNextQuestion}>{questionIndex === preset.questions.length - 1 ? "결과 보기" : "다음 문항"}<ArrowRight /></button></>}
+                    </>}
                   </div>
                   {practiceMessage && <p className={styles.practiceMessage}>{practiceMessage}</p>}
                 </section>
@@ -468,6 +506,7 @@ export function LocalInterviewProPrototype() {
                 <div><span>저장 상태</span><strong className={styles.localValue}>로컬 임시</strong></div>
               </div>
               <div className={styles.reportNotice}><Info /><div><b>가짜 AI 점수를 만들지 않았습니다</b><p>STT와 평가 엔진을 연결하기 전까지 질문 적합성·직무 연관성·말하기 품질은 표시하지 않습니다.</p></div></div>
+              <section className={styles.reportNotice}><Info /><div><b>분석 예정 항목 · 현재 미분석</b><p>내용: 질문 적합성, STAR 경험 구조, 본인 기여, 근거, 직무 연결, 답변 일관성. 전달력: 말하기 속도, 침묵, 반복·습관어. 발음은 별도 음성 검증이 필요하며 전사문만으로 점수화하지 않습니다.</p></div></section>
               <div className={styles.answerTable}>
                 <div className={styles.tableHead}><span>문항</span><span>사용 시간</span><span>근거 상태</span><span>녹화</span></div>
                 {preset.questions.map((question, index) => {
