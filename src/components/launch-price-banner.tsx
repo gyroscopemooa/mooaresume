@@ -29,17 +29,21 @@ export function LaunchPriceBanner() {
   const eyebrow = banner?.eyebrow ?? defaultCopy.eyebrow;
   const description = [banner?.title, banner?.description].filter(Boolean).join(" · ") || defaultCopy.description;
   const ctaLabel = banner?.ctaLabel ?? defaultCopy.ctaLabel;
+  const mobileCtaLabel = banner ? "자세히 보기" : finalOpen ? "FINAL 19,900원" : "요금 보기";
   const link = banner ? getRuntimeLink(banner.targetUrl, banner.linkType) : { href: "/#plans", external: false };
 
   if (!visible || !enabled) return null;
-  return <aside className={styles.banner} aria-label="런칭 기념 특별가 안내">
+  return <aside className={styles.banner} aria-label="런칭 기념 특별가 안내" data-final-open={finalOpen}>
     <div className={styles.inner}>
       <div className={styles.copy}>
         {finalOpen && <Link href="/final" className={styles.finalChip} aria-label="FINAL 오픈 안내 보기"><i aria-hidden="true" />FINAL 오픈</Link>}
         <span className={styles.text}><b>{eyebrow}</b><em>{description}</em></span>
       </div>
       <div className={styles.action}>
-        {link ? (link.external ? <a href={link.href} target="_blank" rel="noopener">{ctaLabel} <strong>→</strong></a> : <Link href={link.href}>{ctaLabel} <strong>→</strong></Link>) : <span className={styles.disabledAction}>{ctaLabel}</span>}
+        {link ? (link.external
+          ? <a href={link.href} target="_blank" rel="noopener"><span className={styles.desktopCta}>{ctaLabel}</span><span className={styles.mobileCta}>{mobileCtaLabel}</span><strong>→</strong></a>
+          : <Link href={link.href}><span className={styles.desktopCta}>{ctaLabel}</span><span className={styles.mobileCta}>{mobileCtaLabel}</span><strong>→</strong></Link>)
+          : <span className={styles.disabledAction}><span className={styles.desktopCta}>{ctaLabel}</span><span className={styles.mobileCta}>{mobileCtaLabel}</span></span>}
         <button type="button" aria-label="런칭 특별가 안내 닫기" onClick={() => { window.sessionStorage.setItem(dismissKey, "1"); setVisible(false); }}><X /></button>
       </div>
     </div>

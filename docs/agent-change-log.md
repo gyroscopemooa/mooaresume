@@ -8033,6 +8033,14 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Rollback: 두 파일의 이번 diff만 되돌리면 된다.
 - Status: 커밋됨(브랜치), main 반영은 사용자 push 대기.
 
+## 2026-09-28 — Codex: FINAL 런칭 배너 모바일 겹침 수정 및 main 릴리스 준비
+
+- Agent/session: Codex. 사용자 제보 화면에서 약 430px 폭에 `FINAL 오픈` 칩, 런칭 문구, QUICK/PRO/FINAL 가격 CTA가 한 줄에 동시에 남아 겹치는 문제 확인.
+- 변경: `launch-price-banner.tsx`에서 데스크톱/모바일 CTA 레이블을 분리했다. FINAL 오픈 모바일은 `FINAL 오픈` 칩과 `FINAL 19,900원` CTA만 표시하고, runtime 배너 모바일은 `자세히 보기`로 줄인다. `launch-price-banner.module.css`는 760px 이하에서 FINAL 오픈 시 설명 문구를 숨기고 flex 항목의 축소/overflow 경계를 명시했다.
+- Release boundary: 최신 `origin/main`(`a487272`)에서 격리 브랜치를 만들고 배너 커밋 `7fdc5da`만 적용했다. 빌드를 깨뜨린 기능 브랜치의 `.incident-release-build`/`twa-dev-app` gitlink는 main에 포함하지 않는다.
+- Validation: `npx tsc --noEmit`, 대상 ESLint, `git diff --check`, OpenNext Cloudflare build 통과. 430×900 브라우저 실측에서 `FINAL 오픈` + `FINAL 19,900원` + 닫기 버튼이 겹침 없이 표시되고, 최신 main의 세 FINAL 홍보 영역과 가격표·상세 링크가 모두 존재함을 확인했다. 빌드 중 Turbopack 캐시 SST 저장에서 일시적인 C: 공간 부족 경고가 있었지만 캐시 외 산출물 생성은 정상 완료(exit 0, `.open-next/worker.js`).
+- Rollback: 이 항목의 TSX/CSS 커밋을 되돌린다.
+
 ## 2026-09-29 — Claude: 홈 맨 위 얇은 안내 띠를 세련되게 다시 디자인하고 "FINAL 오픈" 강조 (branch `feat/final-promo-followup`)
 
 - 요청(사용자): 헤더 위 얇은 바 디자인을 더 세련되게, FINAL 오픈 내용을 넣어 강조.

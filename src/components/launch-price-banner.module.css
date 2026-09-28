@@ -126,6 +126,7 @@
 .action a:hover { background: rgba(214, 255, 106, 0.18); border-color: rgba(214, 255, 106, 0.7); transform: translateY(-1px); }
 .disabledAction { opacity: 0.7; }
 .action strong { font-size: 13px; line-height: 1; }
+.mobileCta { display: none; }
 .action button {
   display: grid;
   place-items: center;
@@ -156,11 +157,15 @@
 
 @media (max-width: 760px) {
   .inner { width: min(100% - 28px, 1180px); min-height: 44px; gap: 8px; }
-  .copy { gap: 8px; }
+  .copy { flex: 1; gap: 8px; overflow: hidden; }
+  .banner[data-final-open="true"] .text { display: none; }
   .text em, .text b::after { display: none; }
   .text b { font-size: 10px; }
   .finalChip { padding: 4px 9px 4px 7px; font-size: 10px; }
+  .action { min-width: 0; gap: 5px; }
   .action a, .disabledAction { padding: 6px 9px; font-size: 9.5px; }
+  .desktopCta { display: none; }
+  .mobileCta { display: inline; }
   .action button { width: 20px; height: 20px; }
   .banner small { width: min(100% - 28px, 1180px); margin: -2px auto 5px; font-size: 8px; }
 }
