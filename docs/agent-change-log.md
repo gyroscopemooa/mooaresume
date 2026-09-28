@@ -8045,3 +8045,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - N/A: HQ campaign caps/kill switch enforcement and product experiments remain observation-only; no review-submit integration exists; native SDK not wired; unrecorded coupon/discount/platform attribution and build-product captured payments are not fabricated. Legacy HQ duration fields remain N/A-compatible with additive analysis milestones; un-attributed source timeline facts have separate paginated ledgerEvidence. Account ban/deactivation status is unknown, not assumed active. See event catalog and deployment notes for source limitations.
 - Rollback: disable analytics flags, then revert only this focused branch commit; recoverable baseline a487272. Additive telemetry tables can remain; no destructive automatic down-migration. Commit hash is recorded in the task report.
 - Additional intended overlap: `referral-panel.tsx` gets one observation after successful code copy, without copying the code or changing rewards. Baseline `a487272` preserves existing component.
+
+### 2026-09-28 — Codex: analytics publication status (documentation only)
+
+- Source implementation commit: `14959d7774119d84cfaf5a399bb3d2c57568d1b3` on `codex/analytics-v1`.
+- Files: this log and `docs/analytics/DEPLOYMENT.md`. Reason: preserve the exact external blocker for handoff.
+- Automatic approval review rejected `git push -u origin codex/analytics-v1`: source/migration egress to an unverified destination lacked explicit payload/destination authorization. Read-only follow-up verified the existing origin matches the original repository and GitHub reports it as public with connected-user admin/push permission. No workaround or retry performed; public upload awaits explicit user approval.
+- Validation: documentation diff check only; 1,779 passing tests/typecheck/lint/build above remain the source validation record. Production and remote DB unchanged. Rollback: revert this documentation-only follow-up.
