@@ -420,7 +420,7 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
       </div>
     </div>}
 
-    {!inApp && <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>PRO · 기업 지원서 1건 · 12,900원</span></header>}
+    {!inApp && <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>{product} · 기업 지원서 1건 · {product === "FINAL" ? "19,900원" : "12,900원"}</span></header>}
     <div className={styles.container}>
       {inApp
         ? anythingEntered && <div className={styles.topRow}><span/><button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button></div>
@@ -428,7 +428,7 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
         <Link href="/onboarding" className={styles.back}><ArrowLeft/> 이전으로</Link>
         {mode === "CREATE" && anythingEntered && <button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button>}
       </div>}
-      {!inApp && <div className={styles.heading}><Icon/><div><small>{content.label}</small><h1>{content.title}</h1><p>{content.description}</p></div></div>}
+      {!inApp && <div className={styles.heading}><Icon/><div><small>{content.label.replace(/· PRO$/, `· ${product}`)}</small><h1>{content.title}</h1><p>{content.description}</p></div></div>}
 
       {!inApp && <section className={styles.flow}>
         <div><small>이 유형의 진행 순서</small><h2>{mode === "CREATE" ? "경험을 찾고 확인한 뒤 쓰는 흐름" : mode === "BUILD" ? "부족한 내용을 찾아 채우는 흐름" : "작성본을 바로 검수하는 흐름"}</h2></div>

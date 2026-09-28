@@ -231,6 +231,17 @@ export default function HomePage() {
 
       <PricingComparison />
 
+      {/* 세 번째 FINAL 소개 자리(히어로 링크·예시 카드·기능 목록에 이어). 가격표를 막 본 사람에게
+          "그럼 FINAL은 무엇이 다른가"를 한 장으로 답한다. 커리어 CTA 카드와 같은 틀을 재사용한다. */}
+      {isFinalEnabled() && <section className={"container " + careerCtaStyles.card}>
+        <div className={careerCtaStyles.copy}>
+          <small>INTERVIEW READY · FINAL</small>
+          <h2>서류 다음은 면접, 같은 자료로 이어서 준비하세요.</h2>
+          <p>제출한 이력서·자기소개서 그대로 자기소개와 지원동기 답변을 만들고, 면접관이 서류에서 물을 지점까지 미리 짚어 드려요.</p>
+        </div>
+        <Link href="/final" className={careerCtaStyles.cta}>FINAL 자세히 보기 <ArrowRight /></Link>
+      </section>}
+
       <section className={"section container " + landingStyles.states}>
         <div className="section-label">어디까지 작성했든</div>
         <h2>지금 상태에 맞는 방식으로 바로 시작할 수 있어요.</h2>

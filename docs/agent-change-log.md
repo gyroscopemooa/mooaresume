@@ -8023,3 +8023,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, 전체 `vitest run` 1,659건 통과, `next build` 성공. 브라우저에서 헤더의 `getComputedStyle(...).position`이 `"sticky"`로 바뀐 것 확인.
 - Rollback: `.header` 규칙에서 추가한 세 속성만 지우면 된다.
 - Status: 커밋됨(브랜치), 병합·배포는 사용자 결정 대기.
+
+## 2026-09-29 — Claude: 홈에 세 번째 FINAL 카드, FINAL 입력 화면의 "PRO" 표기 수정 (branch `feat/final-promo-followup`)
+
+- 요청(사용자): 메인 랜딩에 FINAL 홍보 카드를 하나 더, 그리고 FINAL 입력 화면(`/final/polish` 등)에 "최종 첨삭 · PRO", "PRO · 기업 지원서 1건 · 12,900원"이 뜨는 것 수정.
+- `src/app/page.tsx`: 가격표 바로 아래에 커리어 CTA 카드 틀(`career-home-cta.module.css`)을 재사용한 "INTERVIEW READY · FINAL" 카드 추가(`/final`로 연결, `isFinalEnabled()` 가드). 이제 홈의 FINAL 노출은 히어로 링크·예시 카드·기능 목록·이 카드로 4곳.
+- `src/components/pro-input-page.tsx`: PRO·FINAL이 같이 쓰는 화면이라 헤더가 항상 "PRO · … · 12,900원"이던 것을 `product`에 맞게(FINAL이면 "FINAL · … · 19,900원", 단계 라벨의 끝 "· PRO"도 "· FINAL"). PRO 화면은 그대로.
+- 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 1,661건 통과, `next build` 성공.
+- Rollback: 두 파일의 이번 diff만 되돌리면 된다.
+- Status: 커밋됨(브랜치), main 반영은 사용자 push 대기.
