@@ -8052,3 +8052,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Files: this log and `docs/analytics/DEPLOYMENT.md`. Reason: preserve the exact external blocker for handoff.
 - Automatic approval review rejected `git push -u origin codex/analytics-v1`: source/migration egress to an unverified destination lacked explicit payload/destination authorization. Read-only follow-up verified the existing origin matches the original repository and GitHub reports it as public with connected-user admin/push permission. No workaround or retry performed; public upload awaits explicit user approval.
 - Validation: documentation diff check only; 1,779 passing tests/typecheck/lint/build above remain the source validation record. Production and remote DB unchanged. Rollback: revert this documentation-only follow-up.
+
+### 2026-09-29 — Codex: authorized public branch publication
+
+- User explicitly approved committing, pushing and deployment. Public push authorization resolves the previous review blocker; production versus staging remains a pending clarification against the original staging-only instruction.
+- Successfully pushed `codex/analytics-v1` (implementation `14959d7`, handoff `347225b`) to the existing public origin `gyroscopemooa/mooaresume`; upstream tracking established. No merge, remote migration or deployment performed.
+- Files: `docs/analytics/DEPLOYMENT.md` and this log. Reason: replace stale publication blocker with observed push outcome.
+- Validation: successful Git push; documentation diff check. Prior source tests/typecheck/lint/build remain applicable. Rollback: revert this documentation commit; source baseline remains `a487272`.
