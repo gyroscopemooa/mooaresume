@@ -1,5 +1,12 @@
 # Agent Change Log and Variant Registry
 
+## 2026-09-29 — Codex: 최신 main + 면접 PRO 통합 검증
+
+- 통합: `origin/main`의 FINAL 상단 광고바 최신 2커밋을 면접 PRO 릴리스 브랜치에 병합했다. 양쪽 구현을 그대로 보존했고 충돌은 없었다.
+- 설정: MediaPipe가 제공한 생성 WASM 로더는 앱 소스가 아니므로 `public/interview-analysis/mediapipe/wasm/**`를 ESLint 전역 제외에 추가했다. 해당 파일은 패키지 고정 버전·준비 스크립트·런타임 감사 테스트로 추적한다.
+- 검증: TypeScript 통과. 저장소 기존 Expo tsconfig 부재로 로드 실패하는 `src/server/mobile/mobile.test.ts`를 제외하면 205개 파일/1,848개 테스트 통과. 전체 ESLint 오류 0(기존 경고 2), OpenNext Cloudflare 빌드와 `wrangler deploy --dry-run` 성공(517개 자산, Worker gzip 약 5.45MiB).
+- 공개 경계: 면접 화면·API는 production 404를 유지하며 홈·메뉴와 연결하지 않는다. `main` 푸시·운영 배포 후 실제 HTTP로 재확인한다.
+
 ## 2026-09-29 — Codex: 면접 PRO 최신 로컬 확장 릴리스 브랜치 통합
 
 - 의도: 공유 작업 트리의 최신 면접 PRO 변경만 `codex/interview-pro-v2-release-20260928`에 통합한다. LIVE-SUB, 전역 CSS, 다른 상품 작업은 포함하지 않는다.
