@@ -234,6 +234,23 @@
   color: #4f5c68;
 }
 
+.practiceModes {
+  margin: 12px 0 24px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  min-width: 0;
+}
+
+.practiceModes legend { font-size: 16px; font-weight: 750; padding: 0 6px; }
+.practiceModes label { display: flex; align-items: center; gap: 12px; padding: 12px 0; min-height: 48px; cursor: pointer; }
+.practiceModes input { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--blue); }
+.practiceModes b { display: block; font-size: 16px; }
+.practiceModes small, .practiceModes p { display: block; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.modeTabs button:disabled { cursor: not-allowed; color: #718096; }
+.modeTabs button small { font-size: 11px; font-weight: 500; }
+
 .pageHeading {
   margin-bottom: 24px;
 }
@@ -246,6 +263,8 @@
 }
 
 .pageHeading h1 {
+  font-weight: 780;
+  text-wrap: balance;
   margin: 8px 0 8px;
   font-size: 32px;
   line-height: 1.3;
@@ -1496,12 +1515,14 @@
   }
 
   .modeTabs {
-    margin: 0 -14px 16px;
-    padding: 0 14px 4px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 0 20px;
+    padding: 0;
     align-items: stretch;
     flex-direction: row;
     gap: 8px;
-    overflow-x: auto;
+    overflow: visible;
     background: transparent;
     border: 0;
     scrollbar-width: none;
@@ -1514,7 +1535,7 @@
 
   .modeTabs button {
     width: auto;
-    min-width: max-content;
+    min-width: 0;
     min-height: 50px;
     padding: 0 15px;
     flex: none;
@@ -1522,6 +1543,18 @@
     border-radius: 14px;
     scroll-snap-align: start;
     box-shadow: 0 2px 8px rgba(23, 50, 77, .04);
+    justify-content: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+  }
+
+  .modeTabs button:last-child {
+    grid-column: 1 / -1;
+    min-height: 44px;
+    background: #eef2f6;
+    border-color: transparent;
+    box-shadow: none;
   }
 
   .modeTabs button.modeActive {
@@ -2052,3 +2085,14 @@
     transition: none;
   }
 }
+.reportHeading { margin: 4px 0 24px; }
+.reportHeading h1 { margin: 0 0 8px; color: #191f28; font-size: 26px; line-height: 1.4; font-weight: 700; letter-spacing: -.01em; }
+.reportHeading p { margin: 0; color: #6b7684; font-size: 15px; line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
+.reportHistory { margin-top: 24px; border-top: 1px solid #e5e8eb; }
+.reportHistory > summary { padding: 20px 0; cursor: pointer; font-size: 16px; font-weight: 600; }
+.typedAnswer { display:block; padding:20px; background:#fff; color:#191f28; font-weight:600; }
+.typedAnswer textarea { display:block; width:100%; min-height:260px; padding:14px; margin:10px 0; box-sizing:border-box; border:1px solid #d8e2ee; border-radius:9px; resize:vertical; font:inherit; font-size:16px; line-height:1.75; font-weight:400; }
+.typedAnswer small { display:block; font-size:12px; color:#6b7684; font-weight:400; }
+.audioOnly { padding:50px 20px; text-align:center; color:#d7e9f5; }
+.audioOnly progress { width:min(100%,300px); accent-color:#3182f6; }
+.audioReview { width:calc(100% - 32px); margin:30px 16px; }

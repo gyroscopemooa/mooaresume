@@ -1,0 +1,33 @@
+.insights,.report { color:#191f28; line-height:1.7; min-width:0; overflow-wrap:anywhere; }
+.insights section { margin:28px 0; }
+.insights h3,.report h3 { font-size:17px; margin:0 0 12px; }
+.report { margin:24px 0; padding:22px 0; border-top:1px solid #e5e8eb; }
+.report h2 { font-size:20px; margin:0 0 8px; }
+.report > p,.help { color:#6b7684; font-size:13px; }
+.criteria { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.criteria > div { border:1px solid #e5e8eb; border-radius:9px; padding:14px; }
+.criteria b { display:block; font-size:14px; }
+.criteria span { color:#8d641c; font-size:12px; }
+.criteria span[data-status=present] { color:#2363b6; }
+.criteria p,.criteria q { font-size:13px; margin:6px 0; }
+.transcript { white-space:pre-wrap; padding:18px; background:#f8fafc; border-radius:8px; font-size:15px; line-height:1.9; }
+.transcript mark { color:inherit; background:#fff2cc; border-bottom:2px solid #e8bd52; cursor:help; }
+.transcript mark[data-kind=strength] { background:#e8f3ff; border-color:#8ab7f4; }
+.transcript mark[data-kind=linking] { background:transparent; border-bottom:1px dotted #909cab; }
+.transcript mark:focus-visible { outline:2px solid #3182f6; outline-offset:2px; }
+.keywords { display:flex; flex-wrap:wrap; gap:8px; }
+.keywords span { padding:7px 12px; background:#eef5ff; color:#2465b5; border-radius:7px; font-size:14px; }
+.insights details,.report details { border-top:1px solid #e5e8eb; margin-top:18px; padding:14px 0; }
+.insights summary,.report summary { cursor:pointer; font-weight:600; font-size:15px; }
+.metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.metrics div { padding:10px; background:#f8fafc; }
+.metrics dt { color:#6b7684; font-size:12px; }
+.metrics dd { margin:4px 0 0; font-size:16px; }
+.insights button,.report button { font:inherit; color:#2363b6; background:white; border:1px solid #d8e2ee; border-radius:7px; min-height:44px; padding:8px 12px; cursor:pointer; }
+.insights .primary { display:block; background:#3182f6; color:white; margin-top:12px; border:0; }
+.insights button:disabled { opacity:.5; cursor:not-allowed; }
+.priorities > div { border-left:2px solid #cfe1fb; padding:10px 16px; margin:10px 0; }
+.priorities p { margin:5px 0; }
+.priorities small { display:block; color:#6b7684; margin-bottom:10px; }
+@media(max-width:600px) { .criteria { grid-template-columns:minmax(0,1fr); } .transcript { padding:14px; } }
+.annotationNote { margin: 12px 0 0; padding: 14px 16px; border-left: 3px solid #3182f6; background: #f5f8fc; color: #334155; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.7; }

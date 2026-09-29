@@ -5,6 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "prepare:interview-media": "node scripts/prepare-interview-media.mjs",
     "dev:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/dev-tunnel.ps1",
     "start": "next start",
     "lint": "eslint .",
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
+    "@mediapipe/tasks-vision": "0.10.32",
     "@opennextjs/cloudflare": "^1.20.2",
     "@polar-sh/sdk": "^0.49.0",
     "@supabase/ssr": "^0.12.4",

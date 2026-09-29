@@ -1,0 +1,19 @@
+.page { font-family: 'Pretendard Variable', sans-serif; color: #192c40; background: #f6f8fb; min-height: 100dvh; padding: 0 max(20px, calc((100vw - 1080px) / 2)) 48px; line-height: 1.65; }
+.page * { box-sizing: border-box; }
+.page header { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; padding: 24px 0; font-weight: 750; }
+.page a { color: #1766aa; text-decoration: none; }
+.page aside { padding: 14px 18px; border-radius: 12px; background: #e8eff7; font-size: 14px; }
+.hero { max-width: 760px; padding: 76px 0 64px; }
+.hero h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 800; line-height: 1.2; letter-spacing: -.025em; text-wrap: balance; margin: 16px 0 24px; word-break: keep-all; overflow-wrap: anywhere; }
+.hero p { font-size: 18px; color: #53677b; }
+.hero a { display: inline-flex; padding: 14px 20px; background: #1766aa; color: white; border-radius: 12px; margin-top: 16px; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.grid article { background: white; padding: 28px; border: 1px solid #e2e8ef; border-radius: 20px; }
+.page h2 { font-size: 24px; line-height: 1.4; letter-spacing: -.02em; word-break: keep-all; overflow-wrap: anywhere; }
+.page small { color: #1766aa; font-weight: 700; }
+.grid p, .perspectives p { color: #52677c; }
+.perspectives { padding: 64px 0 32px; }
+.perspectives ul { padding: 0; display: flex; flex-wrap: wrap; gap: 10px; list-style: none; }
+.perspectives li { padding: 10px 16px; background: white; border: 1px solid #e2e8ef; border-radius: 12px; }
+.page footer { border-top: 1px solid #dde5ee; padding-top: 24px; color: #637488; font-size: 14px; }
+@media (max-width: 640px) { .grid { grid-template-columns: minmax(0, 1fr); } .hero { padding: 44px 0; } .grid article { padding: 22px; } .page header span { font-size: 12px; } }

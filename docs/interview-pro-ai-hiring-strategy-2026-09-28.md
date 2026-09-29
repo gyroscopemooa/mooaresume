@@ -1,11 +1,8 @@
 # 무아레쥬메 면접 PRO — 기업 AI 채용전형 전략
 
 작성일: 2026-09-28
-
 상태: 제품전략 확정용 초안. 런타임 코드·DB·결제·배포 변경 없음.
-
 상위 문서: [면접 PRO 제품 경계 및 영상·음성 실전 모의면접 계획](./interview-pro-product-plan-2026-09-28.md)
-
 구현 백로그: [면접 PRO V2 구현 TODO](./interview-pro-v2-implementation-todo-2026-09-28.md)
 
 ## 1. 한 줄 결론

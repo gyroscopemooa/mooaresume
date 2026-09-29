@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import styles from "./microphone-check.module.css";
 
 /** Uses the already-authorized stream; never uploads microphone data. */
 export function MicrophoneCheck({ stream }: { stream: MediaStream | null }) {
@@ -43,5 +44,5 @@ export function MicrophoneCheck({ stream }: { stream: MediaStream | null }) {
       timerRef.current = setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, 5000);
     } catch { setBusy(false); setMessage("이 브라우저에서 시험 녹음을 시작하지 못했습니다."); }
   };
-  return <section aria-label="마이크 시험 녹음"><button type="button" disabled={!stream || busy} onClick={record}>{busy ? "5초 시험 녹음 중…" : "마이크 5초 시험 녹음"}</button><p role="status">{message}</p>{url && <audio src={url} controls style={{ width: "100%" }} />}</section>;
+  return <section className={styles.check} aria-label="마이크 시험 녹음"><button type="button" disabled={!stream || busy} onClick={record}>{busy ? "5초 시험 녹음 중…" : "마이크 5초 시험 녹음"}</button><p role="status">{message}</p>{url && <audio src={url} controls />}</section>;
 }
