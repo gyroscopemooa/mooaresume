@@ -1,11 +1,12 @@
 # 무아레쥬메 AARRR·이용 분석 이식 (2026-10-03)
 
-로컬 구현이며 운영 배포·원격 DB 적용·실결제·유료 AI 호출은 하지 않았다. 신규 외부 서비스와 패키지 추가 없음. 수집 플래그와 DB 설정은 기본 비활성이다.
+최초 로컬 검증 후 사용자가 커밋·푸시·웹 배포·앱 재빌드를 승인했다. 아래 최초 검증 기록과 마지막 릴리스 기록을 구분한다. 신규 외부 서비스와 패키지 추가 없음.
 
 ## 확인한 플랫폼과 기존 구조
 
 - 웹: Next.js 16.3.1 App Router, React, strict TypeScript, Supabase Auth/PostgreSQL/RLS.
-- 앱: `apps/mobile`, Expo 57 / React Native 0.86.3. Android 프로젝트와 기존 iOS 설정/공통 코드가 존재한다. Android/iOS 어댑터를 같은 앱에 연결했으며 새 앱을 만들지 않았다. iOS 스토어 출시·실기기·StoreKit 결제 지원을 주장하지 않는다.
+- 실제 출시 앱: 별도 `C:/6.mooaresume-android`의 Android TWA, `com.mooaresume.twa`. 운영 웹을 공통 인증으로 사용하며 새 빌드는 이 프로젝트에서 생성한다.
+- 보존된 네이티브 변형: `apps/mobile`, Expo 57 / React Native 0.86.3. 기존 Android/iOS 공통 코드에 어댑터를 추가하고 번들을 검증했으나 현재 출시 앱이 아니다. 새 iOS 제품·스토어 출시·실기기·StoreKit 결제 지원을 주장하지 않는다.
 - 기존 TWA/앱 웹 화면은 웹 트래커를 재사용한다. 설치 앱 컨텍스트는 Android/TWA로 구분하며 모바일 브라우저는 web이다.
 - 웹·앱 회원은 기존 Supabase UUID와 검증된 access token으로 연결한다. 외부 HQ에는 수집하지 않고 MOOA 서버·DB에 저장한다.
 - 관리자: 기존 `/meensoo` 및 `mooa_mail_admin` 서버 인증 그대로 사용.
@@ -118,3 +119,13 @@ npx.cmd expo export --platform android --platform ios --output-dir ../../tmp/ana
 - 단위/통합 테스트: 개인정보 제거, 위조 환경·근거 거부, 실제 body 크기 제한, 관리자 미인증, 네이티브 lifecycle/계정 전환, 큐 429/503 재시도와 poison 격리, 순차 순서, KST 리텐션 경계/미성숙, entitlement와 환불·테스트/미분류 매출, 관리자 화면 N/A와 오류 표시.
 - git diff --check 통과. 운영 DB·실결제·유료 AI·배포·HQ 등록은 실행하지 않았다.
 - 빌드된 로컬 서버 HTTP smoke: 관리자/HQ 미인증 401, 수집 비활성 503, 관리자 페이지 미인증 로그인 화면 200 확인. 테스트 서버는 종료했으며 실제 데이터 조회 없이 검사했다.
+
+## 승인된 릴리스 진행 (2026-10-03)
+
+- 분석 소스 체크포인트 f62ae69; 최신 운영 main b36bcd21에 이번 34개 파일 변경만 검토·통합했다. 기존 면접팩, 홈 출시 배너, 캐시 정책과 보호된 작업을 보존했다. 과거 codex/analytics-v1 변형은 병합·삭제·교체하지 않았다.
+- 운영 DB 읽기 확인: 기존 서비스 oiucnkrknedqyktnwbce의 mooa_analytics_* 5개 테이블 존재, config는 mooaresume/development/false. analytics_deployment(다른 변형)는 없음. CLI 관리 인증이 없어 마이그레이션 이력/트리거 확인이 보류됨. 중복 SQL 적용이나 수집 활성화는 하지 않는다.
+- 실제 Android TWA: 기존 65e81f0 기준 버전만 1.0.12 / 13으로 올려 Gradle APK/AAB 생성 및 기존 키 서명 검증. 인트로/런처/Play Billing 유지, 스토어 업로드 없음.
+
+### 활성화 진행 업데이트
+
+후속 사용자 요청에 따라 기존 DB API로 다섯 테이블의 정확한 열 계약, 네 RPC 존재, 익명 접근 거부, collect 비활성 가드와 이벤트 0건을 확인했다. 기존 객체에 SQL을 중복 적용하지 않았다. config의 기존 development/false 행 하나를 조건부 PATCH하여 production/true로 전환했으며 활성 collect의 INVALID_BATCH 가드(이벤트 기록 없음)를 확인했다. 원격 migration ledger, trigger/cron 카탈로그는 관리 인증 부재로 직접 확인하지 못했다. Worker vars는 ANALYTICS_ENABLED=true, ANALYTICS_ENV=production이며 HQ secret은 외부 연동 전까지 불필요하다. TWA에는 별도의 앱 환경변수/새 자격증명이 없다.
