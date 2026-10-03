@@ -28,6 +28,7 @@ import {
 import styles from "./admin.module.css";
 
 const NAV = [
+  { href: "/meensoo/analytics", label: "AARRR · 이용 분석", Icon: History },
   { href: "/meensoo", label: "대시보드", Icon: LayoutDashboard, exact: true },
   { href: "/meensoo/purchases", label: "구매 내역", Icon: CreditCard },
   { href: "/meensoo/analyses", label: "첨삭 결과", Icon: FileText },

@@ -7,6 +7,7 @@ import { APP_MARKER_SCRIPT } from "@/lib/app-context";
 import { MaintenanceGate } from "@/components/maintenance-gate";
 import { RuntimeSiteNotice } from "@/components/runtime-site-notice";
 import "./globals.css";
+import { AnalyticsTracker } from "@/components/analytics-tracker";
 
 // Do not let a cached document from an older Worker version request assets
 // which no longer exist after deployment.
@@ -93,6 +94,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             아무것도 렌더링하지 않으므로 기존 화면은 그대로입니다
             (components/app-tab-bar.tsx). */}
         <AppTabBar/>
+        {process.env.ANALYTICS_ENABLED === "true" && <AnalyticsTracker />}
         {/* next/script's onLoad prop needs "use client", which the root layout
             can't be (it exports metadata). Naver's own snippet relies on
             wcslog.js loading and running before wcs_add/wcs_do exist, which a
