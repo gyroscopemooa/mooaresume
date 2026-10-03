@@ -1,0 +1,22 @@
+import { isAdmin } from "@/server/admin/admin-session";
+import { analyticsReport } from "@/server/analytics/report";
+import styles from "./page.module.css";
+const names:Record<string,string>={session_started:"방문",account_created:"가입",case_saved:"첨삭 저장",order_paid:"확정 구매",core_completed:"핵심 결과 완료",page_viewed:"화면 방문",signed_in:"로그인",app_foregrounded:"앱 복귀",app_backgrounded:"앱 나가기",result_viewed:"결과 열람",export_completed:"내보내기 생성",checkout_clicked:"결제 시도",order_refunded:"환불 처리",referral_converted:"추천 보상 발급",direct:"직접 유입",search:"검색",social:"소셜",referral:"외부 링크",other:"기타",web:"웹",android:"Android",ios:"iOS",unknown:"미분류",actual:"실제 구매",test:"테스트",unclassified:"미확인",free:"무료"};
+export default async function AnalyticsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+  if(!await isAdmin())return null;
+  const raw=await searchParams;const query=new URLSearchParams();for(const [k,v]of Object.entries(raw)){if(typeof v==='string'&&v)query.set(k,v);}
+  let report;try{report=await analyticsReport(query);}catch{return <section className={styles.page}><h1>이용 분석</h1><p>조회할 수 없습니다. 분석 마이그레이션·환경 설정 또는 조회 필터를 확인해 주세요. 오류를 0건으로 표시하지 않습니다.</p></section>;}
+  return <section className={styles.page}><h1>AARRR · 이용 분석</h1><p>{report.environment} · 웹 / Android / iOS · {report.timezone}</p>
+    <form><label>플랫폼<select name="platform" defaultValue={query.get('platform')??''}><option value="">전체</option>{['web','android','ios','unknown'].map(p=><option key={p}>{p}</option>)}</select></label><label>시작(ISO)<input name="from" defaultValue={query.get('from')??''} placeholder="2026-10-01T00:00:00Z"/></label><label>종료(ISO)<input name="to" defaultValue={query.get('to')??''}/></label><label>회원 UUID<input name="userId" defaultValue={query.get('userId')??''}/></label><button>조회</button></form>
+    {!report.enabled&&<p role="status">수집이 비활성 상태입니다.</p>}{report.truncated&&<p role="alert">조회 한도 초과: 불완전한 합계를 표시하지 않습니다. 회원 또는 플랫폼 필터를 좁혀 주세요.</p>}
+    <p>{report.coverage}</p>
+    {report.summary&&<><div className={styles.cards}><article>결과 완료 회원<strong>{report.summary.activated}</strong></article><article>다른 날짜 재사용<strong>{report.summary.reused}</strong></article><article>추천 보상 전환<strong>{report.referral.converted}</strong></article></div>
+    <h2>신규 가입자 순차 퍼널</h2><p>선택 기간 안에서 방문 → 가입 → 첨삭 저장 → 확정 구매 → 결과 순서. 기존 회원·무료 이용권 경로는 별도이며 이 퍼널에 포함되지 않습니다.</p><table><thead><tr><th>단계</th><th>회원/익명 이용자</th></tr></thead><tbody>{report.summary.funnel.map(s=><tr key={s.event}><td>{names[s.event]}</td><td>{s.count}</td></tr>)}</tbody></table>
+    <h2>핵심 결과 재사용 리텐션</h2><table><thead><tr><th>날짜</th><th>성숙 코호트</th><th>복귀</th><th>비율</th></tr></thead><tbody>{report.summary.retention.map(r=><tr key={r.days}><td>D{r.days}</td><td>{r.eligible}</td><td>{r.returned}</td><td>{r.rate===null?'N/A':`${(r.rate*100).toFixed(1)}%`}</td></tr>)}</tbody></table></>}
+    <h2>매출 · 환불</h2><p>{report.revenue.coverage}</p>
+    <table><thead><tr><th>통화</th><th>구매액</th><th>환불액</th><th>순매출</th></tr></thead><tbody>{Object.entries(report.revenue.byCurrency).map(([currency,amount])=><tr key={currency}><td>{currency.toUpperCase()}</td><td>{amount.gross.toLocaleString()}</td><td>{amount.refunds.toLocaleString()}</td><td>{amount.net.toLocaleString()}</td></tr>)}</tbody></table>{Object.keys(report.revenue.byCurrency).length===0&&<p>집계할 확정 구매가 없습니다.</p>}
+    <p>{Object.entries(report.revenue.classification).map(([kind,count])=>`${names[kind]} ${count}건`).join(' · ')}</p>
+    <h2>유입 · 플랫폼</h2><div className={styles.cards}><article><h3>방문 유입</h3>{Object.entries(report.acquisition).map(([channel,count])=><p key={channel}>{names[channel]}: {count}회</p>)}</article><article><h3>플랫폼별 관측 이벤트</h3>{Object.entries(report.platforms).map(([platform,count])=><p key={platform}>{names[platform]}: {count}건</p>)}</article></div>
+    <h2>사용자 여정</h2><p>최근 100건. 회원 UUID 필터는 웹·앱의 동일 계정을 연결합니다. 문서 본문과 연락처는 수집하지 않습니다.</p><div className={styles.scroll}><table><thead><tr><th>시각(KST)</th><th>이벤트</th><th>플랫폼</th><th>근거</th><th>회원/익명 ID</th></tr></thead><tbody>{report.timeline.map(e=><tr key={e.event_id}><td>{new Date(e.occurred_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})}</td><td>{names[e.event_name]??e.event_name}</td><td>{names[e.platform]}</td><td>{e.evidence==='server_verified'?'서버 확정':'클라이언트 관측'}</td><td>{e.user_id??e.anonymous_id}</td></tr>)}</tbody></table></div>{report.nextOffset!==null&&<a href={`?${new URLSearchParams({...Object.fromEntries(query),offset:String(report.nextOffset)})}`}>다음 100건</a>}
+  </section>;
+}

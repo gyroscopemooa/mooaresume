@@ -1,3 +1,4 @@
+import { trackNative } from './analytics';
 import { useState } from 'react';
 import { Text, View, Platform } from 'react-native';
 import * as Print from 'expo-print';
@@ -16,6 +17,7 @@ export function ResumeScreen({ t, notify }: { t: Messages; notify: (message: str
       if (Platform.OS === 'web') await Print.printAsync({ html: resumeHtml(draft, t) });
       else {
         const result = await Print.printToFileAsync({ html: resumeHtml(draft, t) });
+        trackNative('export_completed', { product: 'RESUME' });
         try { if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(result.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' }); else await Print.printAsync({ uri: result.uri }); }
         finally { new File(result.uri).delete(); }
       }

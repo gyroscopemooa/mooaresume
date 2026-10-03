@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { trackNative } from './analytics';
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Share } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import type { ResultDocument } from '../../../src/domain/result-document';
 import type { Messages } from './i18n';
 import { Page, Card, Heading, Pill, Button, ui, colors } from './ui';
 export function ResultScreen({ result, t, onBack, notify }: { result: ResultDocument; t: Messages; onBack: () => void; notify: (message: string) => void }) {
+  useEffect(() => { if (!result.isSample) trackNative('result_viewed', { product: result.product }); }, [result.isSample, result.product]);
   const [tab, setTab] = useState('overview');
   const [questionIndex, setQuestionIndex] = useState(0);
   const question = result.questions[questionIndex];
-  const copyText = async (text: string) => { try { await Clipboard.setStringAsync(text); notify(t.copied); } catch { notify(t.failure); } };
+  const copyText = async (text: string) => { try { await Clipboard.setStringAsync(text); if (!result.isSample) trackNative('export_completed', { product: result.product }); notify(t.copied); } catch { notify(t.failure); } };
   const share = async () => { try { await Share.share({ message: `${result.isSample ? t.sample + '\n\n' : ''}${result.questions.map(q => `${q.title}\n${q.revisedAnswer}`).join('\n\n')}` }); } catch { notify(t.failure); } };
   return <View style={ui.page}><View style={{ padding: 16 }}><Button title={t.back} onPress={onBack} secondary icon="arrow-back"/></View><Page>
     {result.isSample && <Text style={[ui.muted, { color: colors.amber }]}>{t.sample}</Text>}

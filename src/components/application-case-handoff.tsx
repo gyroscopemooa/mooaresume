@@ -1,5 +1,6 @@
 "use client";
 
+import { trackWeb } from "@/lib/analytics/web";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import { isFinalEnabled } from "@/domain/final-availability";
@@ -336,6 +337,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   }
 
   async function beginCheckout(analysisRunId: string, product: "QUICK" | "PRO" | "FINAL") {
+    trackWeb("checkout_clicked", { product });
     // FINAL has no Polar product yet, so there is no checkout to create. Said
     // plainly here rather than letting the fetch 404 into "오류가 발생했습니다":
     // the run is saved and nothing was charged, and the applicant needs to know
