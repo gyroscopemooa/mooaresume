@@ -756,7 +756,7 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Protected baseline: existing `/pro/create` Guided CREATE implementation, BUILD/POLISH flows, and all input/upload capabilities.
 - Change and reason: user selected an isolated comparison route rather than replacing the current CREATE screen. Add `/pro/create-wizard` with left progress, one primary input group per step, optional posting/material steps, guided facts/questions, and the same single analysis handoff.
 - Files/branch: planned new route/component/style only; no rewrite of the active `pro-input-page.tsx`.
-- Validation: pending.
+- Validation: typecheck passed; lint 0 errors / 2 existing warnings. Vitest 205 suites / 1,848 tests passed, then the remaining mobile suite / 17 tests passed after connecting its existing Expo dependency folder (total 206 suites / 1,865 tests). OpenNext production build passed. Browser verified desktop and 390px layout, 320px no banner overflow, exact Play URL and placement after the sample link. Google Play listing opens successfully. Initial build/test attempts hit isolated-worktree dependency/cache setup issues; independent root dependencies resolved those without source/config changes. Native APK v1 label is MOOA; v9 label is already 무아레쥬메, verified with aapt. No new native binary or Play release was published.
 - Rollback/recovery reference: remove only the new wizard route/component/style.
 - User decision: explicitly chose the separate comparison implementation.
 
@@ -2555,7 +2555,7 @@ This append-only document coordinates Claude, Codex, other agents, and the user.
 - Protected baseline: current `main` landing and its `HeaderAccount` login/account/logout header flow.
 - Change and reason: copied only the launch-price-banner component/styles from `feature/codex-plan` and rendered it immediately before the existing home `<main>`. The current landing body, header markup, and startup-header/mobile-header CSS variant remain untouched.
 - Files/branch: `codex/integrate-launch-price-banner`; `src/components/launch-price-banner.*`, additive `src/app/page.tsx` import/render.
-- Validation: pending.
+- Validation: typecheck passed; lint 0 errors / 2 existing warnings. Vitest 205 suites / 1,848 tests passed, then the remaining mobile suite / 17 tests passed after connecting its existing Expo dependency folder (total 206 suites / 1,865 tests). OpenNext production build passed. Browser verified desktop and 390px layout, 320px no banner overflow, exact Play URL and placement after the sample link. Google Play listing opens successfully. Initial build/test attempts hit isolated-worktree dependency/cache setup issues; independent root dependencies resolved those without source/config changes. Native APK v1 label is MOOA; v9 label is already 무아레쥬메, verified with aapt. No new native binary or Play release was published.
 - Rollback/recovery reference: remove the component import and `<LaunchPriceBanner />`, then remove the two new component files.
 - User decision: explicitly requested this isolated integration; final merge to `main` remains pending review.
 ## 2026-08-26 — Codex-plan worktree preservation before integration review
@@ -8093,3 +8093,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 확인: `tsc --noEmit` 0 오류, eslint 0건, 전체 `vitest run` 통과, `next build` 성공, 브라우저에서 데스크톱·좁은 폭 모두 한 줄로 확인.
 - Rollback: 위 두 파일을 이전 커밋 버전으로 되돌리면 된다.
 - Status: 커밋됨(브랜치), main 반영은 사용자 push 대기.
+
+## 2026-10-03 — Codex: Google Play launch banner and Korean install name
+
+- Status: implementation and validation complete; user authorized commit, push and production deployment.
+- Baseline/rollback: origin/main ea8a4d64; isolated codex/app-launch-20261003 worktree. Revert only this change to roll back.
+- Intended changes: add a responsive Google Play banner directly below the hero sample link; set web manifest name/short_name and application metadata to 무아레쥬메. Preserve existing landing, app identity/start URL and unrelated work.
+- Files: src/app/page.tsx, src/app/manifest.ts, src/app/layout.tsx, src/components/app-launch-banner.tsx, src/components/app-launch-banner.module.css, this log.
+- Android inspection: C:/6.mooaresume-android production v12 already sets both name and launcherName to 무아레쥬메; AndroidManifest references those resources. No native source change needed. Installed older Play binaries cannot be renamed by a web deployment; actual device label remains unverified.
+- Validation: typecheck passed; lint 0 errors / 2 existing warnings. Vitest 205 suites / 1,848 tests passed, then the remaining mobile suite / 17 tests passed after connecting its existing Expo dependency folder (total 206 suites / 1,865 tests). OpenNext production build passed. Browser verified desktop and 390px layout, 320px no banner overflow, exact Play URL and placement after the sample link. Google Play listing opens successfully. Initial build/test attempts hit isolated-worktree dependency/cache setup issues; independent root dependencies resolved those without source/config changes. Native APK v1 label is MOOA; v9 label is already 무아레쥬메, verified with aapt. No new native binary or Play release was published.

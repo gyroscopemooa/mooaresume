@@ -1,0 +1,29 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 23px 26px;
+  border: 1px solid #245945;
+  border-radius: 16px;
+  background: linear-gradient(115deg, #102c23, #1b4937);
+  color: #fff;
+  text-align: left;
+  text-decoration: none;
+}
+.banner:hover { border-color: #6cac8b; }
+.banner:focus-visible { outline: 3px solid #0284c7; outline-offset: 4px; }
+.icon { display: grid; place-items: center; flex: 0 0 52px; height: 58px; border: 1px solid #537960; border-radius: 14px; background: #ffffff0d; color: #d9f6bd; }
+.copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 6px; }
+.eyebrow { color: #c4e8a9; font-size: 11px; font-weight: 800; letter-spacing: .09em; }
+.copy strong { color: #fff; font-size: 19px; line-height: 1.45; letter-spacing: -.035em; word-break: keep-all; }
+.description { color: #c5d9ce; font-size: 13px; line-height: 1.5; word-break: keep-all; }
+.action { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; min-height: 44px; padding: 10px 15px; border-radius: 9px; background: #dbefc7; color: #173b29; font-size: 13px; font-weight: 800; }
+@media (max-width: 680px) {
+  .banner { flex-wrap: wrap; gap: 12px; padding: 19px 18px; }
+  .icon { flex-basis: 42px; height: 50px; border-radius: 11px; }
+  .copy strong { font-size: 17px; }
+  .description { font-size: 12px; }
+  .action { width: 100%; }
+}

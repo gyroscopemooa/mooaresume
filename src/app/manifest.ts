@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     // start_url을 바꿔도(예: 캠페인 파라미터) 이미 설치된 사람들이 새 설치로
     // 잡히지 않습니다.
     id: "/",
-    name: "MOOA Resume",
-    short_name: "MOOA",
+    name: "무아레쥬메",
+    short_name: "무아레쥬메",
     description: "채용공고와 경험을 연결하는 AI 자소서 첨삭 서비스",
     start_url: "/",
     // TWA가 이 오리진의 어디까지를 "이 앱 안"으로 볼지 정합니다. 명시하지

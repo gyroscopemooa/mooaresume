@@ -9,6 +9,7 @@ import { ApplicationDocsDrawer } from "@/components/application-docs-drawer";
 import { LegalToolsDrawer } from "@/components/legal-tools-drawer";
 import { LandingEntry } from "@/components/landing-entry";
 import { HomePromoVideo } from "@/components/home-promo-video";
+import { AppLaunchBanner } from "@/components/app-launch-banner";
 import { PricingComparison } from "@/components/pricing-comparison";
 import { isFinalEnabled } from "@/domain/final-availability";
 import landingStyles from "./landing-sections.module.css";
@@ -146,6 +147,7 @@ export default function HomePage() {
             읽는 사람은 자기가 할 일보다 구경거리를 먼저 권받게 됩니다. 볼
             사람은 버튼을 지나쳐 내려오면서 봅니다. */}
         <Link href="/result/sample" className="hero-sample">첨삭 예시 보기 <ArrowRight size={18}/></Link>
+        <AppLaunchBanner />
         <HomePromoVideo />
         <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
         {isFinalEnabled() && <p style={{ textAlign: "center", marginTop: 14, fontSize: 13.5 }}><Link href="/final" style={{ color: "var(--green)", fontWeight: 800 }}>FINAL · 지원서 완성부터 면접 답변까지 한 번에 <ArrowRight size={14} style={{ verticalAlign: "-2px" }}/></Link></p>}

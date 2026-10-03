@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: { default: "AI 자소서 첨삭·취업 준비 | MOOA Resume", template: "%s | MOOA Resume" },
   description: "채용공고, 자기소개서, 이력서와 경험을 연결해 고칠 이유와 최종 첨삭본을 제공하는 AI 취업 지원서 코치입니다.",
-  applicationName: "MOOA Resume",
+  applicationName: "무아레쥬메",
   authors: [{ name: "MOOA Resume" }],
   creator: "MOOA Resume",
   publisher: "MOOA Resume",
