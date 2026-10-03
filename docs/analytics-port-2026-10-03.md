@@ -129,3 +129,12 @@ npx.cmd expo export --platform android --platform ios --output-dir ../../tmp/ana
 ### 활성화 진행 업데이트
 
 후속 사용자 요청에 따라 기존 DB API로 다섯 테이블의 정확한 열 계약, 네 RPC 존재, 익명 접근 거부, collect 비활성 가드와 이벤트 0건을 확인했다. 기존 객체에 SQL을 중복 적용하지 않았다. config의 기존 development/false 행 하나를 조건부 PATCH하여 production/true로 전환했으며 활성 collect의 INVALID_BATCH 가드(이벤트 기록 없음)를 확인했다. 원격 migration ledger, trigger/cron 카탈로그는 관리 인증 부재로 직접 확인하지 못했다. Worker vars는 ANALYTICS_ENABLED=true, ANALYTICS_ENV=production이며 HQ secret은 외부 연동 전까지 불필요하다. TWA에는 별도의 앱 환경변수/새 자격증명이 없다.
+
+## 운영 배포 완료 (2026-10-03)
+
+- Source: main ef0d4e0 (analytics integration 4eb4e16); production Worker cad3dc7d-9971-4a04-b5c4-6ffdf5bacd41. Rollback Worker ea83e77d-cbef-4486-b638-01a26b7e4ec6. Disable ANALYTICS_ENABLED and config.enabled before rollback; retain production facts and tables.
+- ANALYTICS_ENABLED=true / ANALYTICS_ENV=production deployed; existing service config production/true verified. No new paid service or secret created. Existing schema reused; migration ledger and trigger/cron catalog inspection still requires management access.
+- Final OpenNext production build and Wrangler dry-run passed. 212 suites / 1,894 tests, typecheck, source lint (0 errors / 2 existing warnings), isolated PostgreSQL migration tests passed.
+- Live HTTPS: /, /app?source=twa, /quick, /final/polish, /result/sample, manifest return 200; unauthenticated admin/HQ return 401. Authenticated admin report returns production, enabled and mooa.analytics.v1. Unique synthetic Android/TWA event accepted once, replay accepts zero, cross-origin rejects 403; withdrawal removes only this test event and database read verifies none remains. Browser confirms actual TWA input, existing app navigation and consent/reject controls. No live payment, AI call or applicant record mutation.
+- Android final 1.0.12 / versionCode 13 rebuilt after variables; APK/AAB signed and verified. Native source commit 223ec28, release/checksum documentation b58d832 and 6c20ebd, no Android Git remote configured. Files: C:/6.mooaresume-android/releases/1.0.12/mooaresume-1.0.12-v13.apk and .aab. Native intro hash, Korean label, package and website signer checked. No Play Console upload or physical-device verification.
+- Security incident: a server-only generated environment file was accidentally printed to tool output during inspection. Values are not repeated here. Public asset scan (117 files) and released Git diff contain zero matches for local server secrets. .env.local/.open-next remain ignored; keys were not rotated without authorization.
