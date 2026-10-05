@@ -1,5 +1,11 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-05 — Claude: "한 장 더" 문구 단순화 (배포)
+
+- 사용자 결정: 랜덤 격언은 읽는 사람에 따라 불편할 수 있어 "합격을 기원합니다." 한 문장만 표시. 다른 문장 버튼 제거.
+- 파일: result-one-more.tsx/.test.tsx. one-more-lines.ts와 기존 encouragement.ts·ResultEncouragement는 보존(미사용). 복구: 이 커밋 revert.
+- 검증: tsc, ESLint, 관련 Vitest 42개 통과.
+
 ## 2026-10-05 — Claude: 분석 강화 이름·입력 간소화·출처 비교 + 가독성 양식 운영 반영 (배포)
 
 - 사용자 결정: Codex '기업·직무 맥락 보강 · BETA' → '기업·산업·직무 분석 강화'(BETA 표기 제거, 기본 OFF 유지). 이미 입력한 회사·직무가 있으면 스위치만 켜면 되도록 미리 채움(수정 버튼으로 변경 가능). 다른 채팅창(Codex side conversation)의 가독성 양식 개선을 운영에 함께 반영.
