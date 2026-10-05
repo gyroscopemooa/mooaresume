@@ -27,11 +27,14 @@ vi.mock("@/lib/local-document", () => {
 afterEach(cleanup);
 
 describe("ResultWorkspaceComplete 제출본 탭", () => {
-  it("scopes the review without displaying a score or a submission guarantee", () => {
+  it("shows the score with its basis but no inflated label or guarantee", () => {
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, readiness: { ...sampleResultDocument.readiness, score: 95, label: "완벽한 제출 준비", summary: "문제 없음" } }}/>);
     expect(screen.queryByText("완벽한 제출 준비")).toBeNull();
     expect(screen.queryByText("문제 없음")).toBeNull();
     expect(screen.getByText("제공된 글의 검토 결과")).toBeTruthy();
+    // 점수는 유지(사용자 결정 2026-10-05). 과장된 AI 꼬리말 없이 숫자와 채점 기준만.
+    expect(screen.getByLabelText("준비도 95점")).toBeTruthy();
+    expect(screen.getByText(/준비도 점수 기준/)).toBeTruthy();
     expect(screen.getByText(/이 검토로 예측하지 않습니다/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
     expect(screen.queryByText(/분량 보완 필요/)).toBeNull();

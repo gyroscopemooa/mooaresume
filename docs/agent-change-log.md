@@ -7,6 +7,7 @@
 - 변경: 신규 `src/server/ai/quick/mechanical-fixes.ts/test` — 검수에서 거절된 문항에 한해 후보 수정안 중 앞뒤 4글자가 그대로인 공백 한 칸 추가/삭제와 옆 글자와 같은 한글 한 글자 삭제만 원문에 적용(최대 8곳, 줄바꿈·단어 교체는 옮기지 않음). `revision-quality.ts` 거절 분기 1줄 + 헬퍼. 신규 `result-one-more.tsx/css/test`, `domain/one-more-lines.ts`(운영자 멘트+자체 40개, 기존 60개 재사용 = 100개). `result-workspace-complete.tsx` 탭 라벨·렌더 2줄과 import. 기존 `result-encouragement.tsx`/`encouragement.ts`는 보존(되돌리기 = 그 2줄).
 - 검증: tsc 통과, 변경 파일 ESLint 통과, Vitest 223파일 중 221 통과(1,919 테스트 전부 통과; Expo 의존 mobile 테스트 2파일은 이 PC에서 늘 실패). 로컬 3042에서 탭 화면 확인.
 - 상태: 브랜치 커밋, main 반영·배포는 사용자 확인 대기.
+- 추가(사용자 결정): Codex 5b3709e가 숨긴 준비도 점수를 다시 표시. 점수 계산(검수 rubric 5항목×20점)은 그대로이며 화면에 채점 기준 문구를 붙임. AI가 만드는 과장 라벨(readiness.label/summary)은 Codex 결정대로 계속 숨김. 파일: result-workspace-complete.tsx/.module.css/.test.tsx(Codex 테스트의 '점수 미표시' 기대를 '점수+기준 표시, 라벨 없음'으로 갱신).
 
 ## 2026-10-05 — Codex: QUICK 작성 유형 UI 원상 복원 (사용자 지시)
 
