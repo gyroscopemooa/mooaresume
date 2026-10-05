@@ -1,4 +1,5 @@
 import { createCoverLetterQuestion, readTargetLengthMarker, type CoverLetterQuestion } from "@/domain/cover-letter-question";
+import { restoreWrappedQuestion } from "./wrapped-question-boundary";
 
 const QUESTION_LINE = /^\s*(?:\*\s*)?(?:\[\s*문항\s*|문항\s*)?(\d{1,2})(?:\s*[.)\]:：-]\s*|\s*번(?:\s*[:.)\]-]\s*|\s+))(.+?)\s*$/;
 const SECTION_TITLE = /^(?:이력서|경력기술서|직무기술서)$/;
@@ -76,18 +77,9 @@ export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
     // The plan writes each question's own limit into its heading, because the
     // analysis request carries one number for the whole draft and there is
     // nowhere else for a per-question limit to survive the round trip.
-    let headingLine = match?.[2]?.trim() ?? "";
-    let bodyStart = start + 1;
-    // A hard-wrapped prompt can split a word (업무분담문\n제). Join only
-    // adjacent nonempty lines until the instruction closes; never cross a blank.
-    while (!/(?:바랍니다|주십시오|주세요|하시오|입력가능|이내)[.。)\]\s]*$/.test(headingLine)
-      && (headingLine.match(/\(/g)?.length ?? 0) > (headingLine.match(/\)/g)?.length ?? 0)
-      && bodyStart < end && lines[bodyStart].trim() && !/^\s*\[/.test(lines[bodyStart])) {
-      headingLine += lines[bodyStart].trim();
-      bodyStart++;
-    }
-    const { heading, targetLength } = readTargetLengthMarker(headingLine);
-    const bodyLines = lines.slice(bodyStart, end);
+    const restored = restoreWrappedQuestion(match?.[2]?.trim() ?? "", lines.slice(start + 1, end).join("\n"), true);
+    const { heading, targetLength } = readTargetLengthMarker(restored.heading);
+    const bodyLines = restored.answer.split("\n");
     const counter = bodyLines.find((line) => /^\s*현재\s*\d+\s*자\s*\/\s*\d+\s*[~～-]\s*\d+\s*자\s*이내\s*$/.test(line));
     const counterLimit = counter?.match(/[~～-]\s*(\d+)\s*자/);
     const extractedBody = bodyLines.filter((line) => line !== counter).join("\n").trim();
@@ -103,4 +95,29 @@ export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
       targetLength: targetLength ?? (counterLimit && Number(counterLimit[1]) >= 100 && Number(counterLimit[1]) <= 3000 ? Number(counterLimit[1]) : null),
     };
   });
+}
+
+export type QuestionBoundaryReview = { index: number; number: string; question: string; answer: string; start: number; end: number };
+
+/** Advisory only. Never move ambiguous answer text just because a bracket is open. */
+export function inspectQuestionBoundaries(text: string): QuestionBoundaryReview[] {
+  const parsed = readQuestionStarts(text);
+  if (!parsed) return [];
+  return parsed.starts.flatMap((start, index) => {
+    const end = parsed.starts[index + 1] ?? parsed.lines.length;
+    const match = parsed.lines[start].match(QUESTION_LINE);
+    const restored = restoreWrappedQuestion(match?.[2]?.trim() ?? "", parsed.lines.slice(start + 1, end).join("\n").trim(), true);
+    const unbalanced = (restored.heading.match(/\(/g)?.length ?? 0) !== (restored.heading.match(/\)/g)?.length ?? 0);
+    if (!unbalanced || restored.prefix) return [];
+    return [{ index, number: match?.[1] ?? String(index + 1), question: restored.heading, answer: restored.answer, start: parsed.offset + start, end: parsed.offset + end }];
+  });
+}
+
+/** Replace only this letter section; keep neighbouring questions and other materials. */
+export function applyQuestionBoundaryReview(text: string, issue: QuestionBoundaryReview, question: string, answer: string): string {
+  if (!question.trim() || !answer.trim() || question.length > 1000 || answer.length > 30_000) throw new Error("BOUNDARY_FIELDS_INVALID");
+  const current = inspectQuestionBoundaries(text).find(item => item.start === issue.start && item.end === issue.end && item.question === issue.question && item.answer === issue.answer);
+  if (!current) throw new Error("BOUNDARY_INPUT_CHANGED");
+  const lines = text.replace(/\r\n?/g, "\n").trim().split("\n");
+  return [...lines.slice(0, issue.start), `${issue.number}. ${question.trim().replace(/\s*\n\s*/g, " ")}`, answer.trim(), "", ...lines.slice(issue.end)].join("\n");
 }

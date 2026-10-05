@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { Check, FileUp, ListChecks, PencilLine, RotateCcw, Upload } from "lucide-react";
 import { QuestionEditor } from "@/components/question-editor";
+import { InputBoundaryReview } from "./input-boundary-review";
 import { AttachmentCard } from "@/components/attachment-card";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import { createCoverLetterQuestion, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
@@ -86,6 +87,18 @@ export function ResumeIntake({ questions, onChange, attachment, onAttachmentChan
       <QuestionEditor questions={questions} onChange={onChange} compact={compact}/>
       {!attachment && <label className={styles.secondaryUpload}><Upload/> 파일로 교체 <input type="file" accept=".pdf,.docx,.txt,.md" onChange={handleFile} disabled={busy}/></label>}
     </>}
+    <InputBoundaryReview text={view === "bulk" ? bulk : serializeQuestionAnswers(questions, { includeEmptyAnswers: true })} onChange={(next, changedIndex) => {
+      if (view === "bulk") updateBulk(next);
+      else {
+        setBulk(next);
+        onChange(splitCoverLetterDraft(next).map((question, index) => index !== changedIndex ? questions[index] : ({
+          ...question,
+          id: questions[index]?.id ?? question.id,
+          targetLength: questions[index]?.targetLength ?? question.targetLength,
+        })));
+        onSplitConfirmed?.(true);
+      }
+    }}/>
     <div className={styles.total}><span>지원서 전체 입력량</span><b>공백 제외 {total.toLocaleString()}자</b></div>
   </section>;
 }

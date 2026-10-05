@@ -2,17 +2,17 @@ import type { ResultDocument } from "./result-document";
 
 /** Fail closed: only repair an unclosed question bracket followed by a complete
  * question instruction AND its min/max character-limit footer. */
-export function restoreWrappedQuestion(heading: string, answer: string) {
+export function restoreWrappedQuestion(heading: string, answer: string, inputMode = false) {
   const unchanged = { heading, answer, prefix: "" };
   const opening = (heading.match(/\(/g) ?? []).length - (heading.match(/\)/g) ?? []).length;
   if (opening < 1 || heading.length > 1000) return unchanged;
   const match = answer.match(/^\s*([^\[\]]{1,800}?\(\s*최소\s*\d+\s*자\s*[,，]\s*최대\s*\d+\s*자\s*입력\s*가능\s*\))/);
-  if (!match || !/(?:작성|서술|기술|설명)[\s\S]*(?:바랍니다|주십시오|주세요|하시오)/.test(match[1])) return unchanged;
+  if (!match || !/(?:작성|서술|기술|설명)[\s\S]*(?:바랍니다|주십시오|주세요|하시오)/.test(inputMode ? heading + match[1] : match[1])) return unchanged;
   const tail = match[1].replace(/\s+/g, " ").trim();
   const combined = heading + tail;
   if ((combined.match(/\(/g) ?? []).length !== (combined.match(/\)/g) ?? []).length) return unchanged;
   // "업무분담문\n제," is a split word, not a space between words.
-  const separator = /[가-힣]$/.test(heading) && /^[가-힣][,，)]/.test(tail) ? "" : " ";
+  const separator = /[가-힣]$/.test(heading) && (/^[가-힣][,，)]/.test(tail) || (inputMode && /문$/.test(heading) && /^제(?:\s|[,，)])/.test(tail))) ? "" : " ";
   return { heading: `${heading.trimEnd()}${separator}${tail}`, answer: answer.slice(match[0].length).trimStart(), prefix: match[0] };
 }
 

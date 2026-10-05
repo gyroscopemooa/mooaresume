@@ -23,6 +23,7 @@ import { findPostingUrl, removePostingUrlLine } from "@/domain/posting-link";
 import { usePostingLink } from "@/lib/use-posting-link";
 import type { QuestionLengthPlan } from "@/domain/simple-intake-mapping";
 import styles from "./simple-intake.module.css";
+import { InputBoundaryReview } from "./input-boundary-review";
 
 /**
  * 간편 입력 — one box for everything, sorted afterwards.
@@ -307,6 +308,8 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
         placeholder={"자기소개서 전체를 그대로 붙여넣어 주세요.\n채용공고 주소를 한 줄로 붙여넣으면 공고 내용을 불러옵니다.\n\n1. 지원 동기\n작성한 답변...\n\n2. 직무 역량\n작성한 답변..."}
       />
 
+      {draftRole === "LETTER" && <InputBoundaryReview text={draft} onChange={onDraftChange}/>}
+
       {/* 칸이 하나뿐이라 사람들은 여기에 공고 주소도 함께 붙여넣습니다. 지금까지
           그 줄은 자기소개서 본문으로 읽혔습니다 — 공고를 넣었다고 생각한 사람이
           공고 대조 없는 결과를 받았습니다.
@@ -475,6 +478,7 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           <FileText/>
           <div>
             <b>{file.filename}</b>
+            {file.kind === "COVER_LETTER" && !file.unreadable && <InputBoundaryReview text={file.text} onChange={text => onFilesChange(files.map(item => item.id === file.id ? { ...item, text } : item))}/>}
             <small>
               {file.extension.toUpperCase()} · {formatBytes(file.sizeBytes)}
               {/* Says how it guessed, so a wrong row stands out instead of
