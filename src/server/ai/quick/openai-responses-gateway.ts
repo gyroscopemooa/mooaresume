@@ -114,7 +114,16 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
   }
 
   private finishReview(request: AnalysisRequest, candidate: QuickGatewayResult, envelope: z.infer<typeof responsesEnvelopeSchema>): QuickGatewayResult {
-    const review = revisionReviewSchema.parse(JSON.parse(extractOutputText(envelope)) as unknown);
+    let raw: unknown = JSON.parse(extractOutputText(envelope));
+    // A review started before deployment can finish afterwards. Preserve the
+    // old validated verdict, but never assume its unreviewed length note is valid.
+    if (/^quick-3\./.test(candidate.execution.promptVersion) && raw && typeof raw === "object" && !Array.isArray(raw)) {
+      const legacy = raw as Record<string, unknown>;
+      raw = { ...legacy, adviceCorrections: legacy.adviceCorrections ?? [], questions: Array.isArray(legacy.questions)
+        ? legacy.questions.map(question => question && typeof question === "object" && !Array.isArray(question)
+          ? { validLengthNote: false, ...question } : question) : legacy.questions };
+    }
+    const review = revisionReviewSchema.parse(raw);
     const result = applyRevisionReview(request, candidate, review, { responseId: envelope.id, model: envelope.model });
     const sum = (a: number | null, b: number | undefined) => a === null || b === undefined ? null : a + b;
     return { ...result, execution: { ...result.execution,

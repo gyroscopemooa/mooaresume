@@ -12,6 +12,13 @@ const review = { diagnosis: { readiness: candidate.output.readiness, priorities:
 const envelope = (body: unknown = review, status = "completed") => new Response(JSON.stringify({ id: "reviewer", model: "test", status, output_text: JSON.stringify(body), usage: { input_tokens: 3, output_tokens: 4, total_tokens: 7 } }));
 
 describe("independent evaluator API boundary", () => {
+  it("accepts an already running v3 review without assuming unreviewed length notes", async () => {
+    const oldReview = Object.fromEntries(Object.entries(review).filter(([key]) => key !== "adviceCorrections"));
+    oldReview.questions = review.questions.map(q => Object.fromEntries(Object.entries(q).filter(([key]) => key !== "validLengthNote")));
+    const gateway = new OpenAIResponsesGateway({ apiKey: "test", model: "test", fetchImplementation: vi.fn().mockResolvedValue(envelope(oldReview)) });
+    const oldCandidate = { ...candidate, execution: { ...candidate.execution, promptVersion: "quick-3.4" } };
+    expect((await gateway.getReview("reviewer", request, oldCandidate)).status).toBe("completed");
+  });
   it("sends a separate strict request with the same evidence and no previous_response_id", async () => {
     const fetchImplementation = vi.fn().mockResolvedValue(envelope(review, "queued"));
     const gateway = new OpenAIResponsesGateway({ apiKey: "test", model: "test", fetchImplementation });
