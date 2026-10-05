@@ -34,8 +34,9 @@ import type { PackSampleId } from "@/fixtures/interview-pack-samples";
 import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
 import { RuntimeEventSlot } from "./runtime-event-slot";
-import { ResultEncouragement } from "./result-encouragement";
 import { ContextResearchNotice } from "./context-research-notice";
+// 기존 ResultEncouragement(./result-encouragement)는 보존된 이전 변형입니다.
+import { ResultOneMore } from "./result-one-more";
 
 type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final" | "encouragement";
 
@@ -539,10 +540,10 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
             FINAL만 판다. 가격표가 약속한 기능이라 여기 있어야 한다. */}
         {result.product === "FINAL" && !adminPreview && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
         {showInterviewPack && <button onClick={() => setView("interviewPack")} className={view === "interviewPack" ? styles.active : ""}>면접 준비팩<small>{analysisRunId ? "FINAL" : "FINAL · 예시"}</small></button>}
-        <button onClick={() => setView("encouragement")} className={view === "encouragement" ? styles.active : ""}>당신을 응원해요</button>
+        {!result.isSample && <button onClick={() => setView("encouragement")} className={view === "encouragement" ? styles.active : ""}>한 장 더</button>}
       </nav>
       <ContextResearchNotice research={result.contextResearch} />
-      {view === "encouragement" && <ResultEncouragement onReview={() => setView("revision")} onFinal={() => setView("final")} />}
+      {view === "encouragement" && !result.isSample && <ResultOneMore onReview={() => setView("revision")} onFinal={() => setView("final")} />}
 
       {view === "verification" && result.product === "FINAL" && (
         <FinalVerification result={result} hasResume={result.suppliedResume} />

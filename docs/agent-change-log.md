@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-05 — Claude: 확실한 오탈자 반영 + "한 장 더" 탭 (추가형, 배포 대기)
+
+- 요청: 일산병원(3c103a56)·도화(f272b131) 결과에서 "무학등", "도도로경관"을 고치라고 해 놓고 본문은 원문 유지. 마지막 탭 이름 "한 장 더", AI 티 없는 담백한 디자인, 샘플에서는 숨김.
+- 기준/복구: origin/main 47e3e08, 브랜치 claude/typo-and-onemore-20261005. Codex의 진행 중 맥락 보강 BETA(mooa-revision-20261005, 미커밋)와 같은 파일(revision-quality.ts, result-workspace-complete.tsx)을 만지지만 다른 줄이며, 로직은 새 파일에 둠.
+- 변경: 신규 `src/server/ai/quick/mechanical-fixes.ts/test` — 검수에서 거절된 문항에 한해 후보 수정안 중 앞뒤 4글자가 그대로인 공백 한 칸 추가/삭제와 옆 글자와 같은 한글 한 글자 삭제만 원문에 적용(최대 8곳, 줄바꿈·단어 교체는 옮기지 않음). `revision-quality.ts` 거절 분기 1줄 + 헬퍼. 신규 `result-one-more.tsx/css/test`, `domain/one-more-lines.ts`(운영자 멘트+자체 40개, 기존 60개 재사용 = 100개). `result-workspace-complete.tsx` 탭 라벨·렌더 2줄과 import. 기존 `result-encouragement.tsx`/`encouragement.ts`는 보존(되돌리기 = 그 2줄).
+- 검증: tsc 통과, 변경 파일 ESLint 통과, Vitest 223파일 중 221 통과(1,919 테스트 전부 통과; Expo 의존 mobile 테스트 2파일은 이 PC에서 늘 실패). 로컬 3042에서 탭 화면 확인.
+- 상태: 브랜치 커밋, main 반영·배포는 사용자 확인 대기.
+
 ## 2026-10-05 — Codex: QUICK 작성 유형 UI 원상 복원 (사용자 지시)
 
 - 사용자 지시: 작성 유형은 기존 UI를 유지하고 문구만 수정. 5b3709e에서 추가한 QUICK 드롭다운·추가 설명 줄·전용 CSS만 제거한다. 기존 onboarding 유형 선택 및 선택값 저장 오류 수정은 유지한다.

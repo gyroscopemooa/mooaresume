@@ -9,6 +9,7 @@ import { quickAnalysisOutputSchema } from "./schema";
 import { buildQuickAnalysisInput, QUICK_PROMPT_VERSION } from "./prompt";
 import { ROLE_COACHING_RULES } from "./role-coaching";
 import { CONTEXT_RESEARCH_RULES } from "@/domain/context-enhancement";
+import { applyMechanicalFixes } from "./mechanical-fixes";
 
 export const EDITING_QUALITY_RULES = [
   CONTEXT_RESEARCH_RULES,
@@ -115,6 +116,18 @@ validLengthNote는 그 문항의 lengthNote가 원문에도 실제로 부족한 
 
 export const qualityScore = (scores: z.infer<typeof scoreSchema>) => Object.values(scores).reduce((sum, value) => sum + value, 0) * 5;
 
+/** 거절된 문항: 원문을 유지하되 확실한 띄어쓰기·겹친 글자만 옮깁니다(mechanical-fixes.ts). */
+function keepOriginalWithMechanicalFixes(answer: string, candidate: string) {
+  const { text, fixes } = applyMechanicalFixes(answer, candidate);
+  return {
+    revisedAnswer: text, subheading: null, highlightedPhrases: [],
+    reasons: fixes.length === 0 ? [] : [{
+      reason: `문장은 원문을 유지하고, 확실한 오탈자 ${fixes.length}곳(띄어쓰기·겹쳐 쓴 글자)만 바로잡았습니다.`,
+      evidenceQuote: fixes[0].snippet, category: "qualitative" as const,
+    }],
+  };
+}
+
 export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGatewayResult, review: RevisionReview, reviewer: { responseId: string; model: string }): QuickGatewayResult {
   const questions = getAnalysisQuestions(request);
   const proposed = candidate.output.revisions ?? [{ ...candidate.output.revision, questionOrder: 1 }];
@@ -138,7 +151,7 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
   const revisions = verdicts.map((v) => { const { q, r, draft } = v; return ({
     ...draft,
     originalAnnotations: draft.originalAnnotations.filter((_, index) => r.validAnnotationIndexes.includes(index)),
-    ...(accepted(v) ? { reasons: normalizeRevisionText(q.answer) === normalizeRevisionText(draft.revisedAnswer) ? [] : [{ reason: r.reason, evidenceQuote: r.sourceQuote, category: "qualitative" as const }] } : { revisedAnswer: q.answer, subheading: null, highlightedPhrases: [], reasons: [] }),
+    ...(accepted(v) ? { reasons: normalizeRevisionText(q.answer) === normalizeRevisionText(draft.revisedAnswer) ? [] : [{ reason: r.reason, evidenceQuote: r.sourceQuote, category: "qualitative" as const }] } : keepOriginalWithMechanicalFixes(q.answer, draft.revisedAnswer)),
     lengthNote: r.validLengthNote ? draft.lengthNote : null,
   }); });
   const beforeScore = Math.round(verdicts.reduce((sum, v) => sum + qualityScore(v.r.before), 0) / verdicts.length);

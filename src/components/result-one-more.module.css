@@ -1,0 +1,117 @@
+.root {
+  max-width: 640px;
+  margin: 40px auto 24px;
+  padding: 0 4px;
+  color: #1f2a26;
+}
+.kicker {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7772;
+}
+.line {
+  margin: 22px 0 18px;
+  padding: 0;
+  font-size: clamp(20px, 3.2vw, 26px);
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: -0.03em;
+  word-break: keep-all;
+  min-height: 3.2em;
+}
+.again {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: #1b6b52;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.rule {
+  margin: 40px 0 28px;
+  border: 0;
+  border-top: 1px solid #e3e8e5;
+}
+.heading {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #44514c;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list li {
+  border-bottom: 1px solid #eef1ef;
+}
+.list li > button,
+.list li.soon {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.list li > button {
+  cursor: pointer;
+}
+.list li > button:hover b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.list span {
+  display: grid;
+  gap: 4px;
+}
+.list b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.list small {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6b7772;
+  word-break: keep-all;
+}
+.list svg {
+  flex: none;
+  color: #8a9590;
+}
+.soon b {
+  color: #6b7772;
+}
+.soon em {
+  flex: none;
+  font-style: normal;
+  font-size: 11px;
+  color: #6b7772;
+  border: 1px solid #dfe4e1;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.note {
+  margin-top: 28px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #8a9590;
+}
+.root button:focus-visible {
+  outline: 2px solid #1b6b52;
+  outline-offset: 3px;
+}
+@media (max-width: 720px) {
+  .root {
+    margin-top: 28px;
+  }
+}
