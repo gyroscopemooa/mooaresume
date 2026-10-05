@@ -13,7 +13,7 @@ const envelope = (body: unknown = review, status = "completed") => new Response(
 
 describe("independent evaluator API boundary", () => {
   it("accepts an already running v3 review without assuming unreviewed length notes", async () => {
-    const oldReview = Object.fromEntries(Object.entries(review).filter(([key]) => key !== "adviceCorrections"));
+    const oldReview: Record<string, unknown> = Object.fromEntries(Object.entries(review).filter(([key]) => key !== "adviceCorrections"));
     oldReview.questions = review.questions.map(q => Object.fromEntries(Object.entries(q).filter(([key]) => key !== "validLengthNote")));
     const gateway = new OpenAIResponsesGateway({ apiKey: "test", model: "test", fetchImplementation: vi.fn().mockResolvedValue(envelope(oldReview)) });
     const oldCandidate = { ...candidate, execution: { ...candidate.execution, promptVersion: "quick-3.4" } };
