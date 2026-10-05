@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { contextResearchSchema } from "./context-enhancement";
+import { buildReadableAnswerPreview } from "./answer-readability-preview";
 import { revisionQualitySchema } from "./revision-quality";
 
 export const resultAttachmentSchema = z.object({
@@ -451,8 +452,10 @@ function joinWrappedLines(current: string, nextLine: string) {
  *   앞 줄에 이어 붙인다(사용자 신고: 문장 중간에서 문단이 갈라져 보임).
  */
 export function normalizeAnswerParagraphs(text: string) {
+  // 운영 반영 승인(2026-10-05): 소제목 분리·긴 단일 문단의 의미 단위 나눔을 화면·복사·DOCX에 적용.
+  const displayText = buildReadableAnswerPreview(text).text;
   const paragraphs: string[] = [];
-  for (const block of text.replace(/\r\n?/g, "\n").split(/\n\s*\n/)) {
+  for (const block of displayText.replace(/\r\n?/g, "\n").split(/\n\s*\n/)) {
     let current = "";
     let lastLine = "";
     for (const line of block.split("\n")) {

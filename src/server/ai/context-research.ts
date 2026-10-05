@@ -25,6 +25,23 @@ export function safeSourceUrl(value: string): boolean {
   } catch { return false; }
 }
 
+/**
+ * 같은 페이지인지 비교합니다. 모델이 적은 출처 주소는 실제 조회 주소와 끝의 "/",
+ * "www.", #위치, utm 추적값 정도가 다르게 오는 일이 흔한데, 글자 그대로 비교하면
+ * 진짜 조회한 자료도 "출처 없음"으로 버려집니다. 도메인·경로·나머지 질의는 그대로
+ * 비교하므로 조회하지 않은 다른 페이지가 통과하지는 않습니다.
+ */
+export function sameSourceUrl(a: string, b: string): boolean {
+  const key = (value: string) => {
+    try {
+      const url = new URL(value);
+      const params = [...url.searchParams].filter(([name]) => !/^utm_/i.test(name)).sort(([x], [y]) => x.localeCompare(y));
+      return `${url.protocol}//${url.hostname.toLowerCase().replace(/^www\./, "")}${url.pathname.replace(/\/+$/, "") || ""}?${new URLSearchParams(params)}`;
+    } catch { return value; }
+  };
+  return key(a) === key(b);
+}
+
 export function parseContextResearch(raw: unknown, checkedAt: string): ContextResearch {
   const response = envelopeSchema.parse(raw);
   const base = { ...unavailableResearch(checkedAt), model: response.model, responseId: response.id,
@@ -38,10 +55,10 @@ export function parseContextResearch(raw: unknown, checkedAt: string): ContextRe
   if (!parsed.success || !parsed.data.companyConfirmed) return base;
   // The model cannot invent a URL and have it counted as retrieved evidence.
   const sources = response.output.filter(item => item.type === "web_search_call").flatMap(item => item.action?.sources ?? []).filter(item => safeSourceUrl(item.url));
-  const accepted = parsed.data.findings.filter(item => item.officialSource && sources.some(source => source.url === item.sourceUrl));
+  const accepted = parsed.data.findings.filter(item => item.officialSource && sources.some(source => sameSourceUrl(source.url, item.sourceUrl)));
   if (!accepted.length) return base;
   return { ...base, status: "available", summary: accepted.map(item => `${item.claim}\n출처: ${item.sourceUrl}`).join("\n\n").slice(0, 4000),
-    sources: [...new Map(sources.filter(source => accepted.some(item => item.sourceUrl === source.url)).map(source => [source.url, { url: source.url, title: (source.title || new URL(source.url).hostname).slice(0, 240) }])).values()].slice(0, 8) };
+    sources: [...new Map(sources.filter(source => accepted.some(item => sameSourceUrl(item.sourceUrl, source.url))).map(source => [source.url, { url: source.url, title: (source.title || new URL(source.url).hostname).slice(0, 240) }])).values()].slice(0, 8) };
 }
 
 export async function researchCompanyContext(option: ContextEnhancement, config: { apiKey: string; model: string; fetchImplementation?: typeof fetch }): Promise<ContextResearch> {

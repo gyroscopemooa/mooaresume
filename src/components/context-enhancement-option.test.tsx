@@ -32,3 +32,12 @@ it("shows failure honestly and sourced research as references, not verification"
   expect(screen.getByRole("link").getAttribute("href")).toBe("https://company.example.com");
   expect(screen.getByText(/사실 검증 완료를 뜻하지는/)).toBeTruthy();
 });
+it("uses the company and role already entered so ON is a single click", () => {
+  const onChange = vi.fn();
+  render(<ContextEnhancementOption disabled={false} defaultCompany="도화엔지니어링" defaultRole="조경레저부" onChange={onChange}/>);
+  fireEvent.click(screen.getByRole("switch"));
+  expect(onChange).toHaveBeenLastCalledWith({ company: "도화엔지니어링", role: "조경레저부" }, false);
+  expect(screen.getByText(/분석 대상/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "수정" }));
+  expect((screen.getByLabelText("지원 회사") as HTMLInputElement).value).toBe("도화엔지니어링");
+});

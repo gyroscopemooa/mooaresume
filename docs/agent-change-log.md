@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-05 — Claude: 분석 강화 이름·입력 간소화·출처 비교 + 가독성 양식 운영 반영 (배포)
+
+- 사용자 결정: Codex '기업·직무 맥락 보강 · BETA' → '기업·산업·직무 분석 강화'(BETA 표기 제거, 기본 OFF 유지). 이미 입력한 회사·직무가 있으면 스위치만 켜면 되도록 미리 채움(수정 버튼으로 변경 가능). 다른 채팅창(Codex side conversation)의 가독성 양식 개선을 운영에 함께 반영.
+- 변경: context-enhancement-option.tsx(라벨·defaultCompany/defaultRole·분석 대상 요약), context-research-notice.tsx(라벨), analysis-preparation.tsx(guest 회사·직무 전달), context-research.ts(sameSourceUrl: 끝 '/'·www·#·utm만 무시하고 같은 페이지 비교 — 실제 조회한 출처가 글자 차이로 버려지던 문제) + 테스트.
+- 가독성: 공유 작업트리의 answer-readability-preview.ts/test, wrapped-question-boundary.ts/test, result-document.ts 연결, 결과 화면 질문 경계 복원(read-only, 저장 데이터 불변), 결과 헤더 sticky를 옮기고 development 전용 조건을 제거. cover-letter-parser의 줄바꿈 질문 결합은 main(5b3709e)에 이미 같은 기능이 있어 main 쪽을 유지하고 공유 트리 버전은 반영하지 않음. 모바일 최종본 CSS도 main에 이미 존재. dev 미리보기 페이지와 server/ai/quick/readability-preview.ts(미연결 프롬프트)는 반영하지 않음. 공유 작업트리 원본은 손대지 않음.
+- 영향: 기존 고객 결과도 화면·복사·DOCX에서 소제목 분리/긴 단일 문단 나눔이 적용됨(글자·순서 보존, 저장 데이터 불변).
+- 검증: tsc 통과, 변경 파일 ESLint 통과, Vitest 1,951개 통과(Expo 의존 mobile 2파일 제외), 로컬 3042 화면 확인.
+- 복구: 이 커밋 revert. 상태: main 푸시 → Cloudflare 자동 배포.
+
 ## 2026-10-05 — Claude: 확실한 오탈자 반영 + "한 장 더" 탭 (추가형, 배포 대기)
 
 - 요청: 일산병원(3c103a56)·도화(f272b131) 결과에서 "무학등", "도도로경관"을 고치라고 해 놓고 본문은 원문 유지. 마지막 탭 이름 "한 장 더", AI 티 없는 담백한 디자인, 샘플에서는 숨김.

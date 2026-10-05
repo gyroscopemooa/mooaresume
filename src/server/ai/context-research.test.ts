@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseContextResearch, researchCompanyContext, safeSourceUrl } from "./context-research";
+import { parseContextResearch, researchCompanyContext, safeSourceUrl, sameSourceUrl } from "./context-research";
 import { contextEnhancementSchema } from "@/domain/context-enhancement";
 
 const date = "2026-10-05T00:00:00.000Z";
@@ -53,5 +53,17 @@ describe("context enhancement boundary", () => {
     const fetcher = vi.fn();
     await researchCompanyContext({ company: "회사", role: "직무" }, { apiKey: "", model: "fixture", fetchImplementation: fetcher });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+});
+
+describe("sameSourceUrl", () => {
+  it("treats trailing slash, www, hash and utm as the same page", () => {
+    expect(sameSourceUrl("https://www.dohwa.co.kr/business/landscape/", "https://dohwa.co.kr/business/landscape#top")).toBe(true);
+    expect(sameSourceUrl("https://dohwa.co.kr/a?utm_source=x&id=1", "https://dohwa.co.kr/a?id=1")).toBe(true);
+  });
+  it("does not let a different page or domain pass", () => {
+    expect(sameSourceUrl("https://dohwa.co.kr/a", "https://dohwa.co.kr/b")).toBe(false);
+    expect(sameSourceUrl("https://dohwa.co.kr/a", "https://dohwa.com/a")).toBe(false);
+    expect(sameSourceUrl("https://dohwa.co.kr/a?id=1", "https://dohwa.co.kr/a?id=2")).toBe(false);
   });
 });

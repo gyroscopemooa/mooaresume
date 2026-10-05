@@ -17,6 +17,7 @@ import type { CandidateFreeformAttachment, CandidateMaterialAttachment } from "@
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { deriveFallbackOriginalAnnotations } from "@/domain/result-original-annotations";
 import { resolveApplicationLabel, resolveQuestionTitle, resolveResultSubject, toFilenameToken } from "@/domain/result-labels";
+import { restoreLocalResultQuestionBoundaries } from "@/domain/wrapped-question-boundary";
 import { buildDocx, DOCX_MIME_TYPE } from "@/lib/docx";
 import { sampleResultDocument } from "@/fixtures/result-document";
 import { diffText } from "@/lib/text-diff";
@@ -279,9 +280,12 @@ function readCarriedMaterialCount(): number {
 
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
-export function ResultWorkspaceComplete({ result = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
+export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
+  const result = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
   useEffect(() => { if (!result.isSample && !adminPreview) trackWeb('result_viewed', { product: result.product }); }, [result.isSample, result.product, adminPreview]);
-  const storageKey = "mooa:result-edits:" + result.caseId + ":v1";
+  // Keep prior local edits intact rather than restoring the broken prefix over
+  // the repaired view. Production storage keys are unchanged.
+  const storageKey = "mooa:result-edits:" + result.caseId + ":v1" + (result !== sourceResult ? ":question-boundary-local" : "");
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
   const [editing, setEditing] = useState<string | null>(null);

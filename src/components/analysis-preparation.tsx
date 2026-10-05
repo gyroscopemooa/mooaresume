@@ -377,7 +377,7 @@ export function AnalysisPreparation() {
                 <label><input type="checkbox" checked={allowMissingPosting} onChange={event => setAllowMissingPosting(event.target.checked)} /> 공고 요구사항 대조 없이 진행하는 것을 확인했습니다.</label>
               </div>
             )}
-            {!runActive && !creditRunId && guest && <ContextEnhancementOption key={guest.savedAt} draftKey={guest.savedAt} disabled={false} onChange={(value, invalid) => { setContextEnhancement(value); setContextInvalid(invalid); }} />}
+            {!runActive && !creditRunId && guest && <ContextEnhancementOption key={guest.savedAt} draftKey={guest.savedAt} defaultCompany={guest.companyName} defaultRole={guest.roleName} disabled={false} onChange={(value, invalid) => { setContextEnhancement(value); setContextInvalid(invalid); }} />}
             <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)} extraBlocks={quote.extraBlocks} postingReady={product === "QUICK" || postingLength > 0} allowMissingPosting={allowMissingPosting} contextEnhancement={contextEnhancement} contextInvalid={contextInvalid}/>
             {/* /result/sample rather than /result: with no id, /result falls
                 back to the visitor's most recent analysis, so a returning
