@@ -16,16 +16,15 @@ it("persists BUILD without any draft and restores it on QUICK", async () => {
   expect(loadGuestDraft()?.temporaryWritingMode).toBe("BUILD");
   page.unmount();
   render(<QuickInputPage/>);
-  await waitFor(() => expect((screen.getByRole("combobox", { name: "작성 유형" }) as HTMLSelectElement).value).toBe("BUILD"));
-  expect(screen.getByText("QUICK · 5,900원 · 내용 보완")).toBeTruthy();
+  await waitFor(() => expect(screen.getByText("QUICK · 5,900원 · 내용 보완")).toBeTruthy());
+  expect(screen.queryByRole("combobox", { name: "작성 유형" })).toBeNull();
 });
 
-it("switches QUICK mode explicitly without losing the stored draft", async () => {
-  saveGuestDraft({ draftText: "내 실제 원문", targetLength: 700, temporaryWritingMode: "BUILD" });
+it("keeps the original QUICK layout and restores POLISH without changing the draft", async () => {
+  saveGuestDraft({ draftText: "내 실제 원문", targetLength: 700, temporaryWritingMode: "POLISH" });
   render(<QuickInputPage/>);
-  const select = screen.getByRole("combobox", { name: "작성 유형" }) as HTMLSelectElement;
-  await waitFor(() => expect(select.disabled).toBe(false));
-  fireEvent.change(select, { target: { value: "POLISH" } });
+  await waitFor(() => expect(screen.getByText("QUICK · 5,900원 · 최종 첨삭")).toBeTruthy());
+  expect(screen.queryByRole("combobox", { name: "작성 유형" })).toBeNull();
   expect(loadGuestDraft()).toMatchObject({ draftText: "내 실제 원문", temporaryWritingMode: "POLISH" });
   expect(screen.getByText("QUICK · 5,900원 · 최종 첨삭")).toBeTruthy();
 });

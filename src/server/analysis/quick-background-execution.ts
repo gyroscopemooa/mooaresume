@@ -44,6 +44,7 @@ export async function advanceQuickBackgroundAnalysis(input: {
   gateway: BackgroundGateway;
 }): Promise<QuickBackgroundStep> {
   const running = await input.repository.getRunningContext(input.analysisRunId);
+  if (running.request.contextResearch?.status === "pending") return { status: "started", analysisRunId: running.analysisRunId };
 
   if (!running.responseId) {
     const responseId = await input.gateway.startBackground(running.request, running.attemptCount);

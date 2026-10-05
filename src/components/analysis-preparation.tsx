@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ContextEnhancementOption } from "./context-enhancement-option";
+import type { ContextEnhancement } from "@/domain/context-enhancement";
 import Link from "next/link";
 import { WritingHomeLink } from "@/components/writing-home-link";
 import { hasJobPostingText } from "@/domain/job-posting-source";
@@ -66,6 +68,8 @@ export function AnalysisPreparation() {
   const [guest, setGuest] = useState<GuestDraft | null>(null);
   const [postingLength, setPostingLength] = useState(0);
   const [allowMissingPosting, setAllowMissingPosting] = useState(false);
+  const [contextEnhancement, setContextEnhancement] = useState<ContextEnhancement>();
+  const [contextInvalid, setContextInvalid] = useState(false);
   const [materialSummary, setMaterialSummary] = useState<string[]>([]);
   const [confirmedProduct, setConfirmedProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [hasResumeMaterial, setHasResumeMaterial] = useState(true);
@@ -373,7 +377,8 @@ export function AnalysisPreparation() {
                 <label><input type="checkbox" checked={allowMissingPosting} onChange={event => setAllowMissingPosting(event.target.checked)} /> 공고 요구사항 대조 없이 진행하는 것을 확인했습니다.</label>
               </div>
             )}
-            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)} extraBlocks={quote.extraBlocks} postingReady={product === "QUICK" || postingLength > 0} allowMissingPosting={allowMissingPosting}/>
+            {!runActive && !creditRunId && guest && <ContextEnhancementOption key={guest.savedAt} draftKey={guest.savedAt} disabled={false} onChange={(value, invalid) => { setContextEnhancement(value); setContextInvalid(invalid); }} />}
+            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)} extraBlocks={quote.extraBlocks} postingReady={product === "QUICK" || postingLength > 0} allowMissingPosting={allowMissingPosting} contextEnhancement={contextEnhancement} contextInvalid={contextInvalid}/>
             {/* /result/sample rather than /result: with no id, /result falls
                 back to the visitor's most recent analysis, so a returning
                 customer pressing "샘플 보기" was shown their own past result. And

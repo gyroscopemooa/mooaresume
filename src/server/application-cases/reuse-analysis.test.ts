@@ -22,6 +22,15 @@ function database(rows: unknown[] = [], error: unknown = null, completed = true)
   return { client: { from: vi.fn().mockReturnValue(builder) } as unknown as SupabaseClient, events };
 }
 describe("pre-payment exact-result reuse", () => {
+  it("reuses opt-in research only while available and within its six-hour lifetime", async () => {
+    const enhancedPlan = { ...plan, contextEnhancement: { company: "도화엔지니어링", role: "토목 설계" } };
+    const enhancedFingerprints = revisionFingerprints(reusableRequest(enhancedPlan)!);
+    for (const [status, age, reusable] of [["available", 60_000, true], ["unavailable", 60_000, false], ["pending", 60_000, false], ["available", 6 * 60 * 60 * 1000 + 1, false], ["available", -60_000, false]] as const) {
+      const enhanced = { ...result, revisionQuality: { ...result.revisionQuality, ...enhancedFingerprints }, contextResearch: { version: "context-1", status, checkedAt: new Date(Date.now() - age).toISOString(), summary: "공식 자료 참고", sources: [] } };
+      const db = database([{ analysis_run_id: "existing-run", result_data: enhanced }]);
+      expect(await findReusableAnalysis(db.client, "owner", enhancedPlan)).toBe(reusable ? "existing-run" : null);
+    }
+  });
   it("uses owner, both fingerprints and completed status before returning a result", async () => {
     const db = database([{ analysis_run_id: "existing-run", result_data: result }]);
     expect(await findReusableAnalysis(db.client, "owner", plan)).toBe("existing-run");

@@ -8,8 +8,10 @@ import { getAnalysisQuestions } from "./questions";
 import { quickAnalysisOutputSchema } from "./schema";
 import { buildQuickAnalysisInput, QUICK_PROMPT_VERSION } from "./prompt";
 import { ROLE_COACHING_RULES } from "./role-coaching";
+import { CONTEXT_RESEARCH_RULES } from "@/domain/context-enhancement";
 
 export const EDITING_QUALITY_RULES = [
+  CONTEXT_RESEARCH_RULES,
   ROLE_COACHING_RULES,
   "모든 문장을 고칠 필요는 없습니다. 다른 문장과 더 좋은 문장을 구분하세요. 동의어 교체·취향 차이·자연스러운 문장의 재표현만으로는 수정하지 마세요.",
   "고정 평가 순서: 사실 충돌/날조 → 질문 미응답/논리 → 근거와 본인 역할 → 의미 있는 중복/장황함 → 전달력/구조 → 오탈자. 같은 입력·같은 조건에서는 핵심 진단과 우선순위 및 준비도 기준을 유지하세요.",
@@ -65,6 +67,7 @@ export function revisionFingerprints(request: AnalysisRequest) {
     version: REVISION_RUBRIC_VERSION, prompt: QUICK_PROMPT_VERSION, model: process.env.OPENAI_MODEL ?? "", finalModel: request.product === "FINAL" ? process.env.OPENAI_MODEL_FINAL ?? "" : "", finalReasoning: request.product === "FINAL" ? process.env.OPENAI_REASONING_EFFORT_FINAL ?? "" : "", product: request.product, mode: request.writingMode,
     style: request.writingStyle, stance: request.editingStance ?? "BALANCED",
     company: request.companyName ?? "", role: request.roleName ?? "",
+    ...(request.contextEnhancement ? { contextEnhancement: request.contextEnhancement, researchVersion: "context-1", researchModel: process.env.OPENAI_CONTEXT_MODEL || process.env.OPENAI_MODEL || "" } : {}),
     questions: questions.map(q => ({ prompt: normalizeRevisionText(q.prompt), title: normalizeRevisionText(q.title), target: q.targetLength })),
     documents: request.documents.filter(d => d.kind !== "cover_letter").map(d => ({ kind: d.kind, text: normalizeRevisionText(d.text) })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
   });
@@ -75,6 +78,7 @@ export function matchPreviousRevision(request: AnalysisRequest, history: { runId
   const fingerprints = revisionFingerprints(request);
   const answers = getAnalysisQuestions(request).map(q => normalizeRevisionText(q.answer));
   for (const entry of history) {
+    if (request.contextEnhancement && digest(request.contextResearch) !== digest(entry.result.contextResearch)) continue;
     if (entry.result.revisionQuality?.contextFingerprint !== fingerprints.contextFingerprint) continue;
     if (entry.result.revisionQuality.inputFingerprint === fingerprints.inputFingerprint) return { ...entry, relationship: "same_input" };
     if (entry.result.questions.length === answers.length && entry.result.questions.every((q, i) => normalizeRevisionText(q.revisedAnswer) === answers[i])) {

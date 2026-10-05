@@ -2,6 +2,8 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { contextEnhancementSchema, contextResearchSchema, type ContextResearch } from "@/domain/context-enhancement";
+import { researchCompanyContext, unavailableResearch } from "@/server/ai/context-research";
 import { validateAnalysisRequest } from "@/application/analysis-contract";
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { matchPreviousRevision, revisionFingerprints } from "@/server/ai/quick/revision-quality";
@@ -29,6 +31,42 @@ function client() {
 
 export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepository {
   constructor(private readonly ownerUserId: string) {}
+
+  private async withContextResearch(request: AnalysisRequest, run: { id: string; context_enhancement?: unknown; context_research?: unknown; started_at?: string }, start: boolean): Promise<AnalysisRequest> {
+    const option = contextEnhancementSchema.safeParse(run.context_enhancement);
+    if (!option.success) return request; // Legacy runs and OFF never query the web.
+    request = { ...request, companyName: option.data.company, roleName: option.data.role };
+    const saved = contextResearchSchema.safeParse(run.context_research);
+    let research: ContextResearch = saved.success ? saved.data : { ...unavailableResearch(run.started_at || new Date().toISOString()), status: "pending" };
+    if (saved.success && research.status !== "pending") return { ...request, contextEnhancement: option.data, contextResearch: research };
+    if (start && !run.context_research) {
+      const claim = { ...unavailableResearch(), status: "pending" as const };
+      const { data, error } = await client().from("analysis_runs").update({ context_research: claim })
+        .eq("id", run.id).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING").is("context_research", null).select("id");
+      if (error) throw new Error("CONTEXT_RESEARCH_CLAIM_FAILED");
+      if (data?.length) {
+        research = await researchCompanyContext(option.data, { apiKey: process.env.OPENAI_API_KEY ?? "", model: process.env.OPENAI_CONTEXT_MODEL || process.env.OPENAI_MODEL || "" });
+        const { error: saveError } = await client().from("analysis_runs").update({ context_research: research })
+          .eq("id", run.id).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING")
+          .eq("context_research->>checkedAt", claim.checkedAt).eq("context_research->>status", "pending");
+        if (saveError) throw new Error("CONTEXT_RESEARCH_SAVE_FAILED");
+      }
+    } else if (Date.now() - Date.parse(research.checkedAt) > 60_000) {
+      // Crashed/timed-out lookup is never purchased again on retry or polling.
+      research = unavailableResearch(research.checkedAt);
+      let update = client().from("analysis_runs").update({ context_research: research }).eq("id", run.id).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING");
+      update = run.context_research ? update.eq("context_research->>status", "pending") : update.is("context_research", null);
+      const { error } = await update;
+      if (error) throw new Error("CONTEXT_RESEARCH_FALLBACK_SAVE_FAILED");
+    }
+    // A concurrent recovery may have won the conditional update. Always use
+    // the persisted snapshot, never a local result that was not committed.
+    const { data: current, error: readError } = await client().from("analysis_runs")
+      .select("context_research").eq("id", run.id).eq("owner_user_id", this.ownerUserId).single();
+    if (readError) throw new Error("CONTEXT_RESEARCH_READBACK_FAILED");
+    const persisted = contextResearchSchema.safeParse(current?.context_research);
+    return { ...request, contextEnhancement: option.data, contextResearch: persisted.success ? persisted.data : { ...unavailableResearch(run.started_at || new Date().toISOString()), status: "pending" } };
+  }
 
   private async withPreviousRevision(request: AnalysisRequest, before: string): Promise<AnalysisRequest> {
     // Exact context matching only, owner filter BEFORE limit; no cross-user
@@ -84,14 +122,15 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     // return shape has survived eight migrations unchanged — not the place to
     // add a column for this. One extra primary-key read instead: `begin` runs
     // once per start or retry, never in a poll loop.
-    const { data: run } = await client().from("analysis_runs").select("attempt_count, created_at").eq("id", parsed.analysisRunId).maybeSingle();
+    const { data: run, error: contextError } = await client().from("analysis_runs").select("attempt_count, created_at, started_at, context_enhancement, context_research").eq("id", parsed.analysisRunId).eq("owner_user_id", this.ownerUserId).maybeSingle();
+    if (contextError) throw new Error("ANALYSIS_CONTEXT_LOAD_FAILED");
     const request = validateAnalysisRequest(parsed.request);
     const { data: applicationCase, error: caseError } = await client().from("application_cases")
       .select("company_name, role_name").eq("id", request.requestId).eq("owner_user_id", this.ownerUserId).maybeSingle();
     if (caseError) throw new Error("REVISION_CASE_CONTEXT_FAILED");
     return {
       analysisRunId: parsed.analysisRunId,
-      request: await this.withPreviousRevision({ ...request, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined }, run?.created_at ?? new Date().toISOString()),
+      request: await this.withPreviousRevision(await this.withContextResearch({ ...request, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined }, { ...run, id: parsed.analysisRunId }, true), run?.created_at ?? new Date().toISOString()),
       attemptCount: (run?.attempt_count as number | undefined) ?? 1,
     };
   }
@@ -102,7 +141,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
   }
 
   async getRunningContext(analysisRunId: string) {
-    const { data: run, error: runError } = await client().from("analysis_runs").select("id, application_case_id, submission_snapshot_id, product, writing_mode, writing_style, editing_stance, target_length, response_id, attempt_count, created_at").eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING").single();
+    const { data: run, error: runError } = await client().from("analysis_runs").select("id, application_case_id, submission_snapshot_id, product, writing_mode, writing_style, editing_stance, target_length, response_id, attempt_count, created_at, started_at, context_enhancement, context_research").eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "RUNNING").single();
     if (runError || !run) throw new Error(`QUICK_ANALYSIS_RUNNING_CONTEXT_FAILED:${runError?.code ?? "NOT_FOUND"}`);
     const { data: items, error: itemsError } = await client().from("submission_snapshot_items").select("document_version_id").eq("snapshot_id", run.submission_snapshot_id);
     if (itemsError) throw new Error(`QUICK_ANALYSIS_SNAPSHOT_LOAD_FAILED:${itemsError.code}`);
@@ -128,7 +167,8 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       // cross-check against.
       .filter((document) => run.product !== "QUICK" || !supportingKinds.has(document.kind));
     const { data: applicationCase } = await client().from("application_cases").select("company_name, role_name").eq("id", run.application_case_id).maybeSingle();
-    return { analysisRunId: run.id, responseId: run.response_id, attemptCount: run.attempt_count as number, request: await this.withPreviousRevision(validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, editingStance: run.editing_stance ?? undefined, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments }), run.created_at) };
+    const request = validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, editingStance: run.editing_stance ?? undefined, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments });
+    return { analysisRunId: run.id, responseId: run.response_id, attemptCount: run.attempt_count as number, request: await this.withPreviousRevision(await this.withContextResearch(request, run, false), run.created_at) };
   }
 
   async complete(analysisRunId: string, result: unknown) {

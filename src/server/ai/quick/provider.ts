@@ -89,6 +89,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
 
   if (request.product !== "QUICK" && !postingReady) coverageNotes.push("채용공고 본문이 없는 상태로 진행했습니다. 공고 요구사항 대조는 제외했으며, 입력한 자소서와 지원 자료를 기준으로 분석했습니다.");
   return resultDocumentSchema.parse({
+    contextResearch: request.contextResearch,
     revisionQuality: gatewayResult.revisionQuality,
     schemaVersion: "1.0", caseId: request.requestId, product: request.product, writingMode: request.writingMode, isSample: false, ...describeSubject(request, source.filename), analyzedAt: new Date().toISOString(),
     analysisRun: { provider: "openai", responseId: gatewayResult.execution.responseId, model: gatewayResult.execution.model, promptVersion: gatewayResult.execution.promptVersion, rubricVersion: gatewayResult.execution.rubricVersion, schemaVersion: gatewayResult.execution.schemaVersion, inputTokens: gatewayResult.execution.inputTokens, outputTokens: gatewayResult.execution.outputTokens, totalTokens: gatewayResult.execution.totalTokens },

@@ -198,6 +198,7 @@ export async function POST(request: NextRequest) {
     } catch (executionError) {
       if (!(executionError instanceof Error) || !executionError.message.startsWith("QUICK_ANALYSIS_RUNNING_CONTEXT_FAILED:")) throw executionError;
       const context = await repository.begin(body.analysisRunId);
+      if (context.request.contextResearch?.status === "pending") return NextResponse.json({ analysisRunId: context.analysisRunId, status: "RUNNING" }, { status: 202 });
       const responseId = await gateway.startBackground(context.request, context.attemptCount);
       await repository.saveBackgroundResponse(context.analysisRunId, responseId);
       return NextResponse.json({ analysisRunId: context.analysisRunId, status: "RUNNING" }, { status: 202 });

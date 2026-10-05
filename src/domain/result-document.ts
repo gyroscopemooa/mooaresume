@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { contextResearchSchema } from "./context-enhancement";
 import { revisionQualitySchema } from "./revision-quality";
 
 export const resultAttachmentSchema = z.object({
@@ -368,6 +369,7 @@ export const resultDocumentSchema = z.object({
   // leaves the user believing it was reviewed. Defaulted so results saved
   // before this field existed still parse.
   coverageNotes: z.array(z.string().min(1)).default([]),
+  contextResearch: contextResearchSchema.optional(),
 });
 
 export type ResultDocument = z.infer<typeof resultDocumentSchema>;

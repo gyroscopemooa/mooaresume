@@ -31,6 +31,13 @@ describe("QUICK background execution recovery", () => {
     expect(input.gateway.startReview).toHaveBeenCalledTimes(1);
     expect(input.repository.compareAndSwapResponse).toHaveBeenLastCalledWith("run-1", expect.stringContaining("|starting|"), "quality-v1|writer|reviewer");
   });
+  it("does not start a writer or poll a provider during a claimed context lookup", async () => {
+    const input = harness();
+    input.repository.getRunningContext.mockResolvedValue({ analysisRunId: "run-1", responseId: null, request: { ...request, contextResearch: { version: "context-1", status: "pending", checkedAt: new Date().toISOString(), summary: "", sources: [] } }, attemptCount: 1 });
+    expect((await advanceQuickBackgroundAnalysis(input)).status).toBe("started");
+    expect(input.gateway.startBackground).not.toHaveBeenCalled();
+    expect(input.gateway.getBackground).not.toHaveBeenCalled();
+  });
   it("a concurrent losing poll cannot purchase another review", async () => {
     const input = harness(); input.repository.compareAndSwapResponse.mockResolvedValue(false);
     await advanceQuickBackgroundAnalysis(input);

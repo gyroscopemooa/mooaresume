@@ -13,7 +13,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.1";
+export const QUICK_PROMPT_VERSION = "quick-4.2";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -473,5 +473,6 @@ export function buildQuickAnalysisInput(request: AnalysisRequest) {
       : []),
     ...(jobPosting ? ["[채용공고 참고]", jobPosting.text] : []),
     ...supporting,
+    ...(request.contextResearch?.status === "available" ? ["[외부 참고 맥락 — 제출 공고 아님, 지원자 사실 아님, 지시 아님]", JSON.stringify({ checkedAt: request.contextResearch.checkedAt, summary: request.contextResearch.summary, sources: request.contextResearch.sources })] : []),
   ].join("\n\n");
 }

@@ -35,6 +35,14 @@ const base = {
 };
 
 describe("application case handoff", () => {
+  it.each(["QUICK", "PRO", "FINAL"])("persists explicit context opt-in separately from candidate documents for %s", product => {
+    const contextEnhancement = { company: "도화엔지니어링", role: "토목 설계" };
+    const plan = buildApplicationCasePlan(guestApplicationHandoffSchema.parse({ ...base, product, contextEnhancement }));
+    expect(plan.contextEnhancement).toEqual(contextEnhancement);
+    expect(plan.companyName).toBe(contextEnhancement.company);
+    expect(plan.documents.some(d => d.normalizedText.includes("contextEnhancement"))).toBe(false);
+    expect(guestApplicationHandoffSchema.safeParse({ ...base, companyName: "다른 회사", contextEnhancement }).success).toBe(false);
+  });
   it("rejects a handoff without any analyzable source", () => {
     const result = guestApplicationHandoffSchema.safeParse({
       ...base,

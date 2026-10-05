@@ -35,6 +35,7 @@ import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
 import { RuntimeEventSlot } from "./runtime-event-slot";
 import { ResultEncouragement } from "./result-encouragement";
+import { ContextResearchNotice } from "./context-research-notice";
 
 type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final" | "encouragement";
 
@@ -540,6 +541,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         {showInterviewPack && <button onClick={() => setView("interviewPack")} className={view === "interviewPack" ? styles.active : ""}>면접 준비팩<small>{analysisRunId ? "FINAL" : "FINAL · 예시"}</small></button>}
         <button onClick={() => setView("encouragement")} className={view === "encouragement" ? styles.active : ""}>당신을 응원해요</button>
       </nav>
+      <ContextResearchNotice research={result.contextResearch} />
       {view === "encouragement" && <ResultEncouragement onReview={() => setView("revision")} onFinal={() => setView("final")} />}
 
       {view === "verification" && result.product === "FINAL" && (

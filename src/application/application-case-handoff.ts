@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { contextEnhancementSchema, type ContextEnhancement } from "@/domain/context-enhancement";
 import { CANDIDATE_MATERIAL_LABEL, candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { coverLetterQuestionSchema, resolveDraftTargetLength, serializeQuestionAnswers } from "@/domain/cover-letter-question";
 import { writingModeSchema } from "@/domain/writing-mode";
@@ -7,6 +8,7 @@ import { editingStanceSchema, type EditingStance } from "@/domain/editing-stance
 
 export const guestApplicationHandoffSchema = z.object({
   allowMissingPosting: z.boolean().optional(),
+  contextEnhancement: contextEnhancementSchema.optional(),
   title: z.string().trim().min(1).max(120).default("새 지원서"),
   companyName: z.string().trim().max(120).optional(),
   roleName: z.string().trim().max(120).optional(),
@@ -35,6 +37,9 @@ export const guestApplicationHandoffSchema = z.object({
     materialAttachments: [],
   }),
 }).superRefine((value, context) => {
+  if (value.contextEnhancement && ((value.companyName && value.companyName !== value.contextEnhancement.company) || (value.roleName && value.roleName !== value.contextEnhancement.role))) {
+    context.addIssue({ code: "custom", path: ["contextEnhancement"], message: "맥락 보강의 회사·직무는 지원 대상과 일치해야 합니다." });
+  }
   const hasCoverLetter = value.questions.some((question) => question.answer.trim());
   const hasJobPosting = Boolean(value.jobPosting.text.trim() || value.jobPosting.url);
   if (!hasCoverLetter && !hasJobPosting) {
@@ -58,6 +63,7 @@ export type PlannedDocument = {
 };
 
 export type ApplicationCasePlan = {
+  contextEnhancement?: ContextEnhancement;
   title: string;
   companyName: string | null;
   roleName: string | null;
@@ -204,8 +210,9 @@ export function buildApplicationCasePlan(input: GuestApplicationHandoff): Applic
 
   return {
     title: input.title,
-    companyName: input.companyName || null,
-    roleName: input.roleName || null,
+    ...(input.contextEnhancement ? { contextEnhancement: input.contextEnhancement } : {}),
+    companyName: input.contextEnhancement?.company || input.companyName || null,
+    roleName: input.contextEnhancement?.role || input.roleName || null,
     product: input.product,
     writingMode: input.writingMode,
     writingStyle: input.writingStyle,

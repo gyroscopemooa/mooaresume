@@ -19,7 +19,7 @@ describe("연구 동의 체크", () => {
   });
 
   it("하나를 고르기 전에는 시작할 수 없다", () => {
-    expect(handoff).toContain("disabled={busy || runActive || !guest || !consentDecided || (!postingReady && !allowMissingPosting)}");
+    expect(handoff).toContain("disabled={busy || runActive || !guest || !consentDecided || contextInvalid || (!postingReady && !allowMissingPosting)}");
     expect(handoff).toContain("위에서 하나를 골라 주세요.");
   });
 

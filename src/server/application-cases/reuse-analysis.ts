@@ -14,12 +14,12 @@ export function reusableRequest(plan: ApplicationCasePlan) {
   // Never assume such a run received the same evidence.
   if (plan.product === "QUICK" && plan.documents.some(d => !["COVER_LETTER", "JOB_POSTING"].includes(d.kind))) return null;
   const kinds = { COVER_LETTER: "cover_letter", JOB_POSTING: "job_posting", RESUME: "resume", CAREER_DOCUMENT: "career_description", PORTFOLIO: "portfolio", CERTIFICATE: "certificate", REVISION_REQUEST: "revision_request", APPLICANT_NOTE: "applicant_note", OTHER: "portfolio" } as const;
-  return validateAnalysisRequest({
+  return { ...validateAnalysisRequest({
     requestId: "reuse-check", product: plan.product, writingMode: plan.writingMode,
     writingStyle: plan.writingStyle, editingStance: plan.editingStance, targetLength: plan.targetLength,
     companyName: plan.companyName ?? undefined, roleName: plan.roleName ?? undefined,
     documents: plan.documents.filter(d => d.normalizedText.trim()).map(d => ({ kind: kinds[d.kind], text: d.normalizedText })),
-  });
+  }), ...(plan.contextEnhancement ? { contextEnhancement: plan.contextEnhancement } : {}) };
 }
 
 export async function findReusableAnalysis(client: SupabaseClient, ownerId: string, plan: ApplicationCasePlan) {
@@ -37,6 +37,11 @@ export async function findReusableAnalysis(client: SupabaseClient, ownerId: stri
   for (const row of data ?? []) {
     const parsed = resultDocumentSchema.safeParse(row.result_data);
     if (!parsed.success || parsed.data.revisionQuality?.inputFingerprint !== fingerprints.inputFingerprint) continue;
+    // Same owner/input/settings can reuse a recent successful lookup without
+    // another payment. The result shows the original lookup timestamp.
+    if (plan.contextEnhancement && (parsed.data.contextResearch?.status !== "available"
+      || Date.parse(parsed.data.contextResearch.checkedAt) > Date.now()
+      || Date.now() - Date.parse(parsed.data.contextResearch.checkedAt) > 6 * 60 * 60 * 1000)) continue;
     const { data: run, error: runError } = await client.from("analysis_runs").select("id")
       .eq("id", row.analysis_run_id).eq("owner_user_id", ownerId).eq("status", "COMPLETED").maybeSingle();
     if (runError) throw new Error("REUSE_RUN_LOOKUP_FAILED");

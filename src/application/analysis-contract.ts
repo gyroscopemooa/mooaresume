@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ContextEnhancement, ContextResearch } from "@/domain/context-enhancement";
 import type { ResultDocument } from "@/domain/result-document";
 import { writingStyleSchema } from "@/domain/writing-style";
 import { editingStanceSchema } from "@/domain/editing-stance";
@@ -44,6 +45,8 @@ export const analysisRequestSchema = z.object({
 // Server-resolved only: the public request parser strips this field, so a
 // caller cannot assert ownership or claim its text was previously approved.
 export type AnalysisRequest = z.infer<typeof analysisRequestSchema> & {
+  contextEnhancement?: ContextEnhancement;
+  contextResearch?: ContextResearch;
   previousRevision?: { runId: string; relationship: "same_input" | "previous_revision"; result: ResultDocument };
 };
 

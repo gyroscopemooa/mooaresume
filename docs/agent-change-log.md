@@ -1,5 +1,26 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-05 — Codex: QUICK 작성 유형 UI 원상 복원 (사용자 지시)
+
+- 사용자 지시: 작성 유형은 기존 UI를 유지하고 문구만 수정. 5b3709e에서 추가한 QUICK 드롭다운·추가 설명 줄·전용 CSS만 제거한다. 기존 onboarding 유형 선택 및 선택값 저장 오류 수정은 유지한다.
+- 기준/복구: 47e3e08 및 5b3709e의 해당 6줄/스타일. 이전 구현은 Git에서 복구 가능. 진행 중 외부 맥락 BETA 변경은 보존하되 이번 UI 확인 중 배포는 하지 않는다.
+- 파일: quick-input-page.tsx, quick.module.css, quick-mode-selection.test.tsx. 유형 유지·제목 문구 회귀 테스트 및 lint 통과. 사용자 재개 지시 후 전체 웹 테스트에서도 통과.
+
+## 2026-10-05 — Codex: 기업·직무 맥락 보강 BETA (로컬 구현 완료, 운영 DB 권한 대기)
+
+- 승인: 검색 추가 원가 설명 후 QUICK 포함 전 상품 적용. 첨삭 전 선택형 BETA, 기본 OFF. 회사·직무명만 외부 질의하며 지원자 원문을 검색 도구에 전달하지 않는다.
+- 기준/복구: 47e3e08 / codex/revision-consistency-20261005. 공유 원본 dirty tree 및 기존 기능 보존. 설정·실행 자료를 분석 건에 고정하고 실패 시 자료 기반 첨삭 유지.
+- 계획: 선택 UI/제출 계약, 분석 run 설정·외부 자료 저장 migration, 독립 제한 검색 단계, 작성·검수 동일 보조 근거, 출처·조회 시점·실패 안내, 회귀 테스트. 신규 테이블 없이 기존 analysis_runs에 필요한 실행 자료만 추가한다.
+- 정책: 제출 공고 우선, 외부 자료로 필수요건·지원자 사실·결함을 만들지 않음. 출처 없는 결과/동명 회사 불명확 시 미반영. 비용 호출·토큰 상한, 반복 polling 재검색 금지. 검증·배포 상태는 완료 후 갱신.
+- 구현 파일: domain/context-enhancement, application/{analysis-contract,application-case-handoff}, components/{context-enhancement-option,context-research-notice,analysis-preparation,application-case-handoff,result-workspace-complete}, domain/result-document, server/ai/context-research 및 quick/{prompt,provider,revision-quality}, server/analysis/{supabase-quick-analysis-run-repository,quick-background-execution}, api/analysis-runs/{advance,quick/execute}, server/application-cases/reuse-analysis, 관련 테스트, .env.example, migration 20261005010000, scripts/verify-context-enhancement.mjs, evals/context-research.live.test.ts.
+- 검증: 전체 웹 Vitest 220개 파일/1,922개 테스트 통과(기존 Expo 설치 없는 mobile 및 유료 live 제외), TypeScript 통과, 전체 ESLint 오류 0/기존 경고 3. 새 DB migration을 로컬 PostgreSQL(PGlite)로 실행하여 3개 상품 opt-in, 기존 OFF 호환, 타 사용자 차단, 브라우저 UPDATE 차단, 위조 research INSERT 무효화 통과. pg_cron 미지원 등에 따른 기존 harness migration 5개 제외는 별도 출력되며 신규 migration 실패를 숨기지 않음.
+- 실제 API: 공개 회사·직무명만 사용한 도화엔지니어링/토목 설계 live eval 1건 통과(고객 원문 미사용). Responses에서 미지원 URI JSON Schema format을 제거하고 로컬 URL 검증 유지. 실제 건당 원가는 계측 완료로 주장하지 않음.
+- 최종 보강: 최대 검색 2회/출력 2,500토큰/25초, 자동 재검색 없음. run에 조회 스냅샷 저장, 경합 시 DB read-back 우선, 같은 고객·원문·설정의 성공 결과는 최대 6시간 재사용, 실패 응답 사용량 보존, 세션 내 같은 초안만 opt-in 복원. 신규 테이블/패키지 추가 없음.
+- 배포 차단: 재개 후에도 Supabase link가 LegacyLinkProjectStatusError(계정의 프로젝트 관리 API 권한 없음)를 반환함. 프로젝트 oiucnkrknedqyktnwbce의 권한 있는 CLI 로그인 필요. DB 미적용 상태에서 새 컬럼을 읽는 코드가 운영 분석을 깨뜨리므로 main 푸시/운영 배포 금지. 코드 브랜치만 보존하며 권한 복구 후 migration dry-run 검토 → DB 적용 → 코드 배포 순서로 재개.
+- 운영 상태: 기존 efde260 / Worker c377bc45-b0de-42fa-8906-d04ac6e96472 유지. UI 원복도 현재 로컬/브랜치 변경이며 운영 반영 아님. 신규 기능의 인증·결제 포함 운영 E2E는 DB 적용 후 남음.
+- 추가 검증: 실패 JSON의 사용량 보존 회귀를 추가한 context-research 테스트 7개 통과, 관련 lint 통과. OpenNext Cloudflare 운영 빌드 성공. next-env 자동 생성 변경은 원상 복원. 아래 과거 릴리스의 ‘검색 미구현/비용 승인 대기’ 항목은 이번 로컬 구현·사용자 비용 승인으로 대체되며, 운영에는 아직 미반영이다.
+- 최종 패키징: Wrangler deploy --dry-run 통과(513개 자산, gzip 5,558.66 KiB), 실제 업로드 없음. 최종 TypeScript 재검증 통과. 로컬 개발 서버 종료, 유료 작업/배포 실행 중인 프로세스 없음.
+
 ## 2026-10-05 — Codex: 내용 보완·반복 첨삭·공고 본문·응원 탭 개선
 
 - 사용자 승인: 전체 대화의 유형 전달/QUICK 실제 보완/분량/재첨삭 일관성/점수 대신 범위 있는 설명을 구현하고 커밋·푸시·배포.
