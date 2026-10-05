@@ -6,7 +6,7 @@
 - 기준/복구: 47e3e08 및 5b3709e의 해당 6줄/스타일. 이전 구현은 Git에서 복구 가능. 진행 중 외부 맥락 BETA 변경은 보존하되 이번 UI 확인 중 배포는 하지 않는다.
 - 파일: quick-input-page.tsx, quick.module.css, quick-mode-selection.test.tsx. 유형 유지·제목 문구 회귀 테스트 및 lint 통과. 사용자 재개 지시 후 전체 웹 테스트에서도 통과.
 
-## 2026-10-05 — Codex: 기업·직무 맥락 보강 BETA (로컬 구현 완료, 운영 DB 권한 대기)
+## 2026-10-05 — Codex: 기업·직무 맥락 보강 BETA (운영 배포 완료)
 
 - 승인: 검색 추가 원가 설명 후 QUICK 포함 전 상품 적용. 첨삭 전 선택형 BETA, 기본 OFF. 회사·직무명만 외부 질의하며 지원자 원문을 검색 도구에 전달하지 않는다.
 - 기준/복구: 47e3e08 / codex/revision-consistency-20261005. 공유 원본 dirty tree 및 기존 기능 보존. 설정·실행 자료를 분석 건에 고정하고 실패 시 자료 기반 첨삭 유지.
@@ -20,6 +20,11 @@
 - 운영 상태: 기존 efde260 / Worker c377bc45-b0de-42fa-8906-d04ac6e96472 유지. UI 원복도 현재 로컬/브랜치 변경이며 운영 반영 아님. 신규 기능의 인증·결제 포함 운영 E2E는 DB 적용 후 남음.
 - 추가 검증: 실패 JSON의 사용량 보존 회귀를 추가한 context-research 테스트 7개 통과, 관련 lint 통과. OpenNext Cloudflare 운영 빌드 성공. next-env 자동 생성 변경은 원상 복원. 아래 과거 릴리스의 ‘검색 미구현/비용 승인 대기’ 항목은 이번 로컬 구현·사용자 비용 승인으로 대체되며, 운영에는 아직 미반영이다.
 - 최종 패키징: Wrangler deploy --dry-run 통과(513개 자산, gzip 5,558.66 KiB), 실제 업로드 없음. 최종 TypeScript 재검증 통과. 로컬 개발 서버 종료, 유료 작업/배포 실행 중인 프로세스 없음.
+- 재개: 사용자가 다른 계정으로 CLI 로그인 후 프로젝트 연결 성공. 위 권한 차단은 해소됨. `db push --dry-run`에서는 운영 전용 20260924010000과 로컬의 과거 5개 이력 불일치가 발견됨. 실제 livesub_reward_grants/result_style_tips/admin_test_grants/interview_packs는 존재하므로 과거 migration 재실행·일괄 history repair를 하지 않았다.
+- 운영 DB 적용: 검증된 `20261005010000_context_enhancement.sql` 하나만 linked `db query --file`로 트랜잭션 적용. 컬럼 2개, 제출 함수 반영, initialize_context_research 트리거를 read-back 확인 후 이 버전 하나만 applied로 기록했다. 기존 고객 행/결제/다른 기능 스키마 변경 없음. 과거 migration 이력 정합성 정리는 별도 작업으로 남김.
+- 코드: 26cb9dd를 전용 브랜치와 main에 fast-forward 푸시. 배포 직전 실제 운영 최신 Worker는 65275c55-5b00-4f68-9524-268e129eb4a9였으므로 코드 롤백 참조는 이 버전이다. DB 추가 컬럼은 하위 호환이며 Worker 롤백 시 삭제하지 않는다.
+- 배포 완료: Worker 2e61282b-22d5-4914-8fa5-869903c8d8c7, 주석 context-enhancement-26cb9dd. keep-vars로 기존 변수 유지. 513개 자산 중 4개 갱신, gzip 5,558.66 KiB, startup 28ms. 앞선 권한 대기/로컬 한정 상태는 이 기록으로 대체됨.
+- 운영 확인: /quick, /result/sample, /analysis/prepare 200; 비로그인 /api/application-cases POST 401; /dev/interview-pro-v2 404. 실제 브라우저 QUICK 화면에서 추가 작성 유형 드롭다운 제거 확인. 실고객 자료 재분석·결제·결과 수정은 하지 않았다. 선택 UI/검색/저장 경계는 자동 테스트·실 API 단독 검증으로 확인했고, 운영 결제부터 전체 AI 완료까지의 신규 유료 E2E는 실행하지 않았다.
 
 ## 2026-10-05 — Codex: 내용 보완·반복 첨삭·공고 본문·응원 탭 개선
 
