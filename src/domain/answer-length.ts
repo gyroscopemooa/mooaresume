@@ -1,6 +1,8 @@
 /** Employer constraints and a desired writing length are different contracts. */
 export function readAnswerLimit(prompt: string) {
-  const max = prompt.match(/최대\s*([\d,]+)\s*자/) ?? prompt.match(/([\d,]+)\s*자\s*(?:이내|이하)/);
+  // 저장된 문항 중에는 "(최소 100자, 최대 500"처럼 끝의 "자 입력가능)"이 잘린 것이
+  // 있습니다. 문구가 거기서 끝나면 그 숫자도 최대 글자 수로 읽습니다.
+  const max = prompt.match(/최대\s*([\d,]+)\s*자/) ?? prompt.match(/최대\s*([\d,]+)\s*$/) ?? prompt.match(/([\d,]+)\s*자\s*(?:이내|이하)/);
   const min = prompt.match(/최소\s*([\d,]+)\s*자/);
   const number = (value?: string) => value ? Number(value.replaceAll(",", "")) : null;
   return { max: number(max?.[1]), min: number(min?.[1]), basis: /공백\s*제외/.test(prompt) ? "compact" : /공백\s*포함/.test(prompt) ? "inclusive" : "unknown" } as const;

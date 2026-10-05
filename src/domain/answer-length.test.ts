@@ -8,6 +8,9 @@ describe("employer limits are not desired length", () => {
   it("reads both ends of a hospital-style constraint", () => {
     expect(readAnswerLimit("(최소 100자, 최대 500자 입력가능)")).toEqual({ min: 100, max: 500, basis: "unknown" });
     expect(readAnswerLimit("공백 포함 1,000자 이내").max).toBe(1000);
+    // 일산병원 결과처럼 저장된 문구가 숫자에서 잘린 경우
+    expect(readAnswerLimit("작성하여 주시기 바랍니다. (최소 100자, 최대 500")).toMatchObject({ min: 100, max: 500 });
+    expect(readAnswerLimit("최대 500명과 협업한 경험")).toMatchObject({ max: null });
   });
   it("does not label a short but valid answer defective", () => {
     expect(describeAnswerLength("가".repeat(365), "최소 100자, 최대 500자 공백 제외", 700)).toContain("기재된 분량 조건 충족");

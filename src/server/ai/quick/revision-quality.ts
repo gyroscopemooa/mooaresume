@@ -117,10 +117,11 @@ validLengthNote는 그 문항의 lengthNote가 원문에도 실제로 부족한 
 export const qualityScore = (scores: z.infer<typeof scoreSchema>) => Object.values(scores).reduce((sum, value) => sum + value, 0) * 5;
 
 /** 거절된 문항: 원문을 유지하되 확실한 띄어쓰기·겹친 글자만 옮깁니다(mechanical-fixes.ts). */
-function keepOriginalWithMechanicalFixes(answer: string, candidate: string) {
+function keepOriginalWithMechanicalFixes(answer: string, candidate: string, suggestedSubheading: string | null) {
   const { text, fixes } = applyMechanicalFixes(answer, candidate);
   return {
-    revisedAnswer: text, subheading: null, highlightedPhrases: [],
+    // 수정안이 거절돼도 소제목 제안은 별개의 제안이라 남깁니다(원문에 소제목이 없을 때만).
+    revisedAnswer: text, subheading: /^\s*\[/.test(text) ? null : suggestedSubheading, highlightedPhrases: [],
     reasons: fixes.length === 0 ? [] : [{
       reason: `문장은 원문을 유지하고, 확실한 오탈자 ${fixes.length}곳(띄어쓰기·겹쳐 쓴 글자)만 바로잡았습니다.`,
       evidenceQuote: fixes[0].snippet, category: "qualitative" as const,
@@ -151,7 +152,7 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
   const revisions = verdicts.map((v) => { const { q, r, draft } = v; return ({
     ...draft,
     originalAnnotations: draft.originalAnnotations.filter((_, index) => r.validAnnotationIndexes.includes(index)),
-    ...(accepted(v) ? { reasons: normalizeRevisionText(q.answer) === normalizeRevisionText(draft.revisedAnswer) ? [] : [{ reason: r.reason, evidenceQuote: r.sourceQuote, category: "qualitative" as const }] } : keepOriginalWithMechanicalFixes(q.answer, draft.revisedAnswer)),
+    ...(accepted(v) ? { reasons: normalizeRevisionText(q.answer) === normalizeRevisionText(draft.revisedAnswer) ? [] : [{ reason: r.reason, evidenceQuote: r.sourceQuote, category: "qualitative" as const }] } : keepOriginalWithMechanicalFixes(q.answer, draft.revisedAnswer, draft.subheading ?? null)),
     lengthNote: r.validLengthNote ? draft.lengthNote : null,
   }); });
   const beforeScore = Math.round(verdicts.reduce((sum, v) => sum + qualityScore(v.r.before), 0) / verdicts.length);

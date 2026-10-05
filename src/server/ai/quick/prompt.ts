@@ -1,6 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { hasJobPostingText } from "@/domain/job-posting-source";
 import { EDITING_QUALITY_RULES } from "./revision-quality";
+import { OPERATOR_COMMON_RULES } from "./operator-common-rules";
 import { EDITING_STANCE_INSTRUCTION, RED_TEAM_HANDLING_INSTRUCTION, resolveEditingStance } from "@/domain/editing-stance";
 import {
   expandsFromOwnContent,
@@ -13,7 +14,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.2";
+export const QUICK_PROMPT_VERSION = "quick-4.3";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -296,6 +297,8 @@ ${LENGTH_INTEGRITY_RULE}`,
     "지원자에게 직무와 이어지는 일 경험이 있는데 답변이 학점·수업·공부 방법 이야기로 채워져 있으면, 일 경험을 앞세우고 학업은 한 문단 정도로 줄이도록 consultingAdvice에 제안하세요. 기업은 학생이 아니라 실무자를 뽑습니다.",
     "다만 무조건 경력이 우선인 것은 아닙니다. 학업 쪽이 지원 직무와 더 가까우면(전공 과목, 실습, 자격 취득 과정, 관련 동아리) 그쪽을 앞세우는 편이 낫습니다. 기준은 최신순이나 경력 여부가 아니라 이 직무와 얼마나 이어지는가입니다.",
     "일 경험이 전혀 없는 지원자라면 학업으로 쓰는 것이 정상입니다. 그 경우에도 직무와 이어지는 전공 과목·실습·동아리·자격 과정을 고르도록 제안하고, 공부법이나 성적 관리 이야기에 머무르지 않게 하세요.",
+    // 운영자 실무 공통사항 중 비어 있던 것(operator-common-rules.ts, 2026-10-05).
+    OPERATOR_COMMON_RULES,
     "문항이 요구하는 형식을 그대로 따르세요. 문항 질문에 '경력 위주로', '항목별로', '3가지로', '담당업무와 실적 중심으로' 같은 지시가 있으면 그 형식으로 씁니다. 예를 들어 경력사항 문항은 이야기하듯 풀어 쓰지 말고 소속·기간·고용형태·담당업무·실적을 항목으로 정리하세요.",
     "같은 경험을 여러 문항에 써야 한다면 문항마다 다른 측면을 쓰세요. 한 문항이 그 경험의 의미와 배움을 다뤘다면 다른 문항에서는 사실 정보(소속·기간·역할·담당업무)만 정리하는 식으로 나눕니다. 같은 이야기를 같은 방식으로 두 번 쓰면 지원서 전체가 소재가 하나뿐인 것처럼 읽힙니다.",
     "highlightedPhrases에는 해당 문항의 revisedAnswer에 글자 그대로 등장하는 문구만 넣으세요. 요약하거나 바꿔 쓰지 말고 원문에서 그대로 복사하세요.",

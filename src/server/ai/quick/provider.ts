@@ -108,7 +108,8 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
         originalAnswer: question.answer,
         // Dropped when the model returns null, which is what it is told to do
         // when the question's own format leaves no room for a title.
-        subheading: revision.subheading?.trim() || undefined,
+        // 지원자가 이미 [소제목]을 쓴 답변에 제안 소제목까지 붙이면 복사·DOCX에 두 줄로 나갑니다.
+        subheading: /^\s*\[[^\]\n]{1,80}\]/.test(revision.revisedAnswer) ? undefined : revision.subheading?.trim() || undefined,
         // 목표를 채우지 못한 이유. 충분히 채웠으면 모델이 null을 줍니다.
         lengthNote: revision.lengthNote?.trim() || undefined,
         revisedAnswer: revision.revisedAnswer,
