@@ -1,0 +1,15 @@
+/* 입력·결과·안내 화면 헤더를 메인 랜딩 헤더와 같은 입체 디자인으로 통일합니다.
+   각 화면 헤더에 붙인 data-site-header / data-brand 표식만 대상으로 하며,
+   `html` 접두로 화면별 모듈 CSS보다 우선합니다. 스크롤 상태는 HeaderMotion이 data-scrolled로 알립니다. */
+html header[data-site-header]{position:sticky;top:0;z-index:41;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(247,251,249,.78));backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid rgba(21,48,35,.08);box-shadow:0 1px 0 rgba(255,255,255,.85) inset,0 8px 24px rgba(21,48,35,.04);transition:box-shadow .25s ease,background .25s ease,min-height .25s ease,height .25s ease;animation:site-header-in .5s cubic-bezier(.2,.7,.2,1) both}
+html header[data-site-header][data-scrolled="true"]{background:rgba(255,255,255,.86);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 12px 32px rgba(21,48,35,.1)}
+html header[data-site-header] a[data-brand]{display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:800;letter-spacing:-.55px;white-space:nowrap;color:#17221d;transition:transform .2s ease}
+html header[data-site-header] a[data-brand]:hover{transform:translateY(-1px)}
+html header[data-site-header] a[data-brand]>span:first-child{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;color:#fff;font-size:15px;font-weight:800;background:linear-gradient(145deg,#2a8a62,#0f5138);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 7px 16px rgba(23,107,74,.25);transition:transform .25s ease,box-shadow .25s ease}
+html header[data-site-header] a[data-brand]:hover>span:first-child{transform:rotate(-6deg) scale(1.06);box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 10px 22px rgba(23,107,74,.32)}
+html header[data-site-header] a[data-brand] b{color:#176b4a;font-weight:800}
+html header[data-site-header]>a:not([data-brand]),html header[data-site-header] nav a{transition:color .2s}
+html header[data-site-header]>a:not([data-brand]):hover,html header[data-site-header] nav a:hover{color:#176b4a}
+@keyframes site-header-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@media(max-width:680px){html header[data-site-header] a[data-brand]>span:first-child{width:28px;height:28px;border-radius:9px;font-size:13px}html header[data-site-header] a[data-brand]{font-size:14px;gap:7px}}
+@media(prefers-reduced-motion:reduce){html header[data-site-header]{animation:none}html header[data-site-header] a[data-brand],html header[data-site-header] a[data-brand]>span:first-child{transition:none}}

@@ -8237,3 +8237,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Live HTTPS: /, /app?source=twa, /quick, /final/polish, /result/sample, manifest return 200; unauthenticated admin/HQ return 401. Authenticated admin report returns production, enabled and mooa.analytics.v1. Unique synthetic Android/TWA event accepted once, replay accepts zero, cross-origin rejects 403; withdrawal removes only this test event and database read verifies none remains. Browser confirms actual TWA input, existing app navigation and consent/reject controls. No live payment, AI call or applicant record mutation.
 - Android final 1.0.12 / versionCode 13 rebuilt after variables; APK/AAB signed and verified. Native source commit 223ec28, release/checksum documentation b58d832 and 6c20ebd, no Android Git remote configured. Files: C:/6.mooaresume-android/releases/1.0.12/mooaresume-1.0.12-v13.apk and .aab. Native intro hash, Korean label, package and website signer checked. No Play Console upload or physical-device verification.
 - Security incident: a server-only generated environment file was accidentally printed to tool output during inspection. Values are not repeated here. Public asset scan (117 files) and released Git diff contain zero matches for local server secrets. .env.local/.open-next remain ignored; keys were not rotated without authorization.
+
+## 2026-10-05 — Claude: 헤더 입체 통일 + Google Play 스타일 앱 배너
+- Status: committed from isolated worktree off origin/main (`feat/header-unify-20261005`), pushed to main.
+- Files: `src/app/site-header-modern.css`(신규), `src/components/header-motion.tsx`(신규), `src/app/layout.tsx`(import 2줄+`<HeaderMotion/>`), 입력·안내 화면 헤더에 `data-site-header`/`data-brand` 속성만 추가(quick/pro-input/analysis-preparation/pro-create-wizard/guide/begin/entry/onboarding/pro/create/result-workspace-complete/career-layout-shell), `app-launch-banner.tsx/.module.css`(Google Play 카드 디자인).
+- Reason: 메인 랜딩처럼 입체(그라디언트 로고·블러 헤더)·스크롤 반응으로 통일, 플레이 배너를 스토어 디자인으로.
+- Validation: `tsc --noEmit` 통과, `vitest src/components` 237 통과. 실기기·시각 확인은 배포 후.
+- Rollback: 위 커밋 revert.

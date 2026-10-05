@@ -175,8 +175,8 @@ export function AnalysisPreparation() {
   const styleLabel = writingStyleConfig[guest?.writingStyle ?? "BALANCED"].label;
   return (
     <main className={styles.page}>
-      <header>
-        <Link href="/" className={styles.brand}>
+      <header data-site-header>
+        <Link href="/" className={styles.brand} data-brand>
           <span>M</span>MOOA <b>Resume</b>
         </Link>
         <span>

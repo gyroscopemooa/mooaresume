@@ -513,8 +513,8 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   }
 
   return <main className={styles.page}>
-    <header className={styles.header}>
-      <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
+    <header className={styles.header} data-site-header>
+      <Link href="/" className={styles.brand} data-brand><span>M</span>MOOA <b>Resume</b></Link>
       <div><button onClick={() => sampleBlocked() || copy("all", finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={() => sampleBlocked() || downloadDocx()}><Download/> DOCX 저장</button><button onClick={() => sampleBlocked() || download()}><Download/> TXT 저장</button></div>
     </header>
 

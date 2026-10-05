@@ -29,8 +29,8 @@ export const metadata: Metadata = {
 
 export default function GuidePage() {
   return <main className={styles.page}>
-    <header className={styles.header}>
-      <Link href="/" className={styles.brand}><span>M</span> MOOA <b>Resume</b></Link>
+    <header className={styles.header} data-site-header>
+      <Link href="/" className={styles.brand} data-brand><span>M</span> MOOA <b>Resume</b></Link>
       <Link href="/" className={styles.back}><ArrowLeft /> 홈으로</Link>
     </header>
     <div className={styles.container}>

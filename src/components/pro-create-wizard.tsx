@@ -119,8 +119,8 @@ export function ProCreateWizard() {
           : Boolean(materialAttachments.length || notes.trim() || freeformAttachments.length);
 
   return <main className={styles.page}>
-    <header>
-      <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
+    <header data-site-header>
+      <Link href="/" className={styles.brand} data-brand><span>M</span>MOOA <b>Resume</b></Link>
       <small>PRO · 처음부터 작성</small>
     </header>
 

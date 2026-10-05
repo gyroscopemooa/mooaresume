@@ -422,7 +422,7 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
       </div>
     </div>}
 
-    {!inApp && <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span>{product} · 기업 지원서 1건 · {product === "FINAL" ? "19,900원" : "12,900원"}</span></header>}
+    {!inApp && <header data-site-header><Link href="/" className={styles.brand} data-brand><span>M</span>MOOA <b>Resume</b></Link><span>{product} · 기업 지원서 1건 · {product === "FINAL" ? "19,900원" : "12,900원"}</span></header>}
     <div className={styles.container}>
       {inApp
         ? anythingEntered && <div className={styles.topRow}><span/><button type="button" className={styles.reset} onClick={resetDraft}><RotateCcw/> 새로 시작하기</button></div>

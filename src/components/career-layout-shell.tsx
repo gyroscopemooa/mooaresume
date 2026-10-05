@@ -28,8 +28,8 @@ export function CareerLayoutShell({ children }: Readonly<{ children: React.React
 
   return (
     <div className={styles.shell}>
-      <header className={styles.header}>
-        <Link href="/" className={styles.brand}><span>M</span> MOOA <b>Resume</b></Link>
+      <header className={styles.header} data-site-header>
+        <Link href="/" className={styles.brand} data-brand><span>M</span> MOOA <b>Resume</b></Link>
         <nav style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/career" style={{ color: "#65746a", fontSize: 11 }}>커리어 검사 홈</Link>
           <Link href="/career/assessments" style={{ color: "#65746a", fontSize: 11 }}>검사 목록</Link>

@@ -113,7 +113,7 @@ export function QuickInputPage({ variant = "web" }: Props) {
   const quote = createQuickCheckoutQuote(totalCharacters);
 
   return <main className={inApp ? `${styles.page} ${styles.appPage}` : styles.page}>
-    {!inApp && <header><Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link><span><ShieldCheck/> 입력 자료는 공개되지 않아요</span></header>}
+    {!inApp && <header data-site-header><Link href="/" className={styles.brand} data-brand><span>M</span>MOOA <b>Resume</b></Link><span><ShieldCheck/> 입력 자료는 공개되지 않아요</span></header>}
     <div className={styles.container}>
       {!inApp && <div className={styles.topRow}>
         <Link href="/onboarding" className={styles.back}><ArrowLeft/> 상품 선택으로</Link>

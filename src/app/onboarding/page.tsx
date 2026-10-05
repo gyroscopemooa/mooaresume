@@ -113,8 +113,8 @@ export default function OnboardingPage() {
   return (
     <main className={styles.page}>
       <AppOnboardingRedirect />
-      <header>
-        <Link href="/" className={styles.brand}><span>M</span>MOOA <b>Resume</b></Link>
+      <header data-site-header>
+        <Link href="/" className={styles.brand} data-brand><span>M</span>MOOA <b>Resume</b></Link>
         <Link href="/examples">첨삭 예시</Link>
       </header>
       <div className={`${styles.container} ${activeMode ? styles.hasStickyCta : ""}`}>
