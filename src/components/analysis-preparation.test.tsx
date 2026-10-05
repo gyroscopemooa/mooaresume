@@ -34,6 +34,14 @@ function seedDraft(answerLength: number, overrides: Record<string, unknown> = {}
 const findNotice = () => screen.queryByText(/문항당 목표 분량의/);
 
 describe("분량이 부족한 채로 최종 첨삭을 고른 경우", () => {
+  it("a URL alone is not ready and proceeding without the body requires acknowledgement", async () => {
+    seedDraft(640);
+    sessionStorage.setItem("mooa:guest-job-posting:v1", "https://example.com/jobs");
+    render(<AnalysisPreparation />);
+    await screen.findByText(/본문 미확보/);
+    const checkbox = screen.getByRole("checkbox", { name: /공고 요구사항 대조 없이 진행/ }) as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+  });
   it("결제 전에 문항당 채움 비율과 더 맞는 유형을 알린다", async () => {
     // 두 문항 합계는 860자로 700자를 넘지만, 문항당으로는 61%다. 합계로만
     // 보면 "다 썼다"로 보이는 것이 이 안내가 필요한 이유다.

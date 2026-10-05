@@ -12,6 +12,7 @@ import { MaterialUpload } from "@/components/material-upload";
 import { GuidedCreateForm } from "@/components/guided-create-form";
 import { createGuidedCreateDraft, type GuidedCreateDraft } from "@/domain/guided-create";
 import { isLinkOnlyPosting } from "@/domain/job-posting-source";
+import { findPostingUrl, removePostingUrlLine } from "@/domain/posting-link";
 import { createCoverLetterQuestion, resolveDraftTargetLength, serializeQuestionAnswers, type CoverLetterQuestion } from "@/domain/cover-letter-question";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import {
@@ -334,7 +335,7 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
       revisionRequest: [carriedRequest.trim(), simpleDirection.trim()].filter(Boolean).join("\n") || undefined,
     });
     sessionStorage.setItem("mooa:guest-job-posting:v1", effective.posting);
-    sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: inputMode === "SIMPLE" ? "" : postingUrl, text: effective.posting, filenames: effective.postingFilenames }));
+    sessionStorage.setItem("mooa:guest-job-posting-source:v1", JSON.stringify({ url: inputMode === "SIMPLE" ? findPostingUrl(simpleDraft) ?? "" : postingUrl, text: effective.posting, filenames: effective.postingFilenames }));
     sessionStorage.setItem(materialStorageKey, JSON.stringify({ schemaVersion: "1.0", freeformNotes: inputMode === "SIMPLE" ? simpleNoteText : freeformNotes, freeformAttachments: effective.freeformAttachments, experiences: inputMode === "SIMPLE" ? [] : experiences, profileEntries: inputMode === "SIMPLE" ? [] : profileEntries, materialAttachments: effective.materialAttachments }));
     router.push("/analysis/prepare");
   }
@@ -371,7 +372,8 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
   const simpleTargetLengthValue = Number(simpleTargetLength) >= 100 ? Number(simpleTargetLength) : null;
     // 참고 정보로 고르면 이 글은 자소서 자리에서 빠지고 첨부 파일이 첨삭
   // 대상이 됩니다. 글 자체는 아래에서 사실 자료로 함께 넘어갑니다.
-  const simpleLetterDraft = simpleDraftRole === "NOTE" && simpleFiles.some((file) => file.kind === "COVER_LETTER") ? "" : simpleDraft;
+  const pendingPostingUrl = findPostingUrl(simpleDraft);
+  const simpleLetterDraft = simpleDraftRole === "NOTE" && simpleFiles.some((file) => file.kind === "COVER_LETTER") ? "" : pendingPostingUrl ? removePostingUrlLine(simpleDraft, pendingPostingUrl) : simpleDraft;
   const simpleMapping = inputMode === "SIMPLE" ? mapSimpleIntake(simpleLetterDraft, simpleFiles, simpleTargetLengthValue, simpleTargets) : null;
   const simpleLengthPlans = simpleMapping ? planQuestionLengths(simpleMapping) : [];
   const simpleGaps = simpleMapping ? describeSimpleIntakeGaps(simpleMapping) : [];
@@ -485,7 +487,7 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
 
         <div className={inputMode === "SIMPLE" ? styles.hiddenPane : undefined}>
         <JobPostingInput url={postingUrl} text={posting} filenames={postingFilenames} onUrlChange={setPostingUrl} onTextChange={setPosting} onFilenamesChange={setPostingFilenames}/>
-        {linkOnlyPosting && <p className={styles.postingWarning}><b>링크만으로는 공고 내용을 읽을 수 없어요.</b> 이 서비스는 링크를 열지 않고 입력된 글자만 분석합니다. 지금 진행하면 공고 요구사항 대조는 제공되지 않습니다. 위 &lsquo;링크 내용 불러오기&rsquo;를 누르거나, 공고 상세 내용을 복사해 붙여넣어 주세요.</p>}
+        {linkOnlyPosting && <p className={styles.postingWarning}><b>공고 본문이 아직 준비되지 않았어요.</b> 링크 본문을 자동으로 읽고 입력 자료에 반영합니다. 이미지·접근 제한 등으로 읽지 못하면 본문을 붙여넣어 주세요. 그대로 진행하면 결제 전 확인 후 공고 요구사항 대조 없이 분석합니다.</p>}
         <div className={styles.targetFields}>
           <label><span>지원 회사 <b>선택</b></span><input value={companyName} maxLength={120} onChange={(event) => setCompanyName(event.target.value)} placeholder="예: 롯데테크"/></label>
           <label><span>지원 직무 <b>선택</b></span><input value={roleName} maxLength={120} onChange={(event) => setRoleName(event.target.value)} placeholder="예: 안전관리자"/></label>

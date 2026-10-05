@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { hasJobPostingText } from "@/domain/job-posting-source";
 import { createClient } from "@/lib/supabase/server";
+import { buildApplicationCasePlan, guestApplicationHandoffSchema } from "@/application/application-case-handoff";
+import { findReusableAnalysis } from "@/server/application-cases/reuse-analysis";
 import {
   ApplicationCasePersistenceError,
   persistGuestApplicationHandoff,
@@ -40,6 +43,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const input = guestApplicationHandoffSchema.parse(body);
+    if (input.product !== "QUICK" && !hasJobPostingText(input.jobPosting.text) && !input.allowMissingPosting) {
+      return NextResponse.json({ code: "POSTING_BODY_NOT_READY", error: "공고 본문이 준비되지 않았습니다. 본문을 추가하거나 공고 대조 없이 진행하는 데 동의해 주세요." }, { status: 409 });
+    }
+    const plan = buildApplicationCasePlan(input);
+    const existingRunId = await findReusableAnalysis(supabase, authData.user.id, plan);
+    if (existingRunId) return NextResponse.json({ reusedAnalysisRunId: existingRunId });
     const result = await persistGuestApplicationHandoff(body, async (plan) => {
       const { data, error } = await supabase.rpc("create_application_case_from_plan", {
         p_plan: plan,
@@ -51,6 +61,9 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("REUSE_")) {
+      return NextResponse.json({ error: "기존 결과를 확인하지 못해 결제를 진행하지 않았습니다. 잠시 후 다시 시도해 주세요.", code: "REUSE_LOOKUP_FAILED" }, { status: 503 });
+    }
     if (error instanceof ZodError) {
       return NextResponse.json({
         error: "저장할 입력 내용을 다시 확인해 주세요.",

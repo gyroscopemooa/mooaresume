@@ -1,5 +1,20 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-05 — Codex: 내용 보완·반복 첨삭·공고 본문·응원 탭 개선
+
+- 사용자 승인: 전체 대화의 유형 전달/QUICK 실제 보완/분량/재첨삭 일관성/점수 대신 범위 있는 설명을 구현하고 커밋·푸시·배포.
+- 기준/복구: origin/main e4a4cba1, 격리 브랜치 codex/revision-consistency-20261005. 공유 작업공간의 미커밋 변경 보존.
+- 변경 범위: onboarding/quick/결제 전 동일결과 조회, 문항·분량 도메인, QUICK 프롬프트·검수, 결과 UI와 회귀 테스트. 기존 품질 규칙은 사실 보존·취향 변경 금지를 유지하며 문항별 판정과 최종 조합 검증으로 개선.
+- 정책: QUICK BUILD도 원문 사실 안에서 실제 보완. 확인 질문과 별도 작성 예시는 제출본과 분리. 제한보다 짧다는 이유만으로 부족 판정 금지. 공개 종합 점수 대신 검토 범위/수정/유지/확인 표시. 과거 결과 불변.
+- 추가 승인 범위: 공고 URL 자동 읽기·본문 실제 제출 반영·본문 미확보 시 결제 전 명시적 확인과 결과 범위 표시. 공개 recruiter API의 이미지 전용 공고는 성공으로 오인하지 않으며 유료 OCR은 실행하지 않음.
+- 추가 승인 범위: 결과 마지막 응원 탭, 자체 작성 응원 문구 60개 무작위 전환, 기존 제공 기능 안내와 현직자·재직자 연계 준비 중 표시(신청/결제/개인정보 수집 없음).
+- 추가 승인 범위: 직무·산업·회사 맥락 코칭. 개발/현장/보건/조경설계/서비스/행정 관점을 조건부로 적용하고 공고 근거/일반 직무 관점/확인 필요를 구분한다. 기존 reframe 예시의 사고 당사자 변경은 사실 날조를 유도하므로 사건·주체 보존 지침으로 교정(기존 버전은 기준 커밋에 보존). 실시간 검색 추가 비용 승인 여부는 별도 확인 중.
+- 파일: src/app/onboarding, quick, result 및 api/application-cases, api/job-postings/fetch; src/application/application-case-handoff; src/components/*input*, simple-intake, analysis-preparation, application-case-handoff, result-workspace-complete, result-encouragement; src/domain/answer-length, cover-letter-parser, cover-letter-question, revision-quality, job-posting-source, encouragement; src/lib/use-posting-link; src/server/application-cases/reuse-analysis, ai/quick/{prompt,questions,revision-quality,provider,role-coaching}, analysis/supabase-quick-analysis-run-repository, job-posting/{extract-posting-text,fetch-posting}; 관련 회귀 테스트.
+- 검증: 웹 Vitest 219개 파일 1,907개 통과 후 공고 누락/조언 정합성/결제 전 확인 3개 회귀 테스트 추가. 루트 설치에 Expo 설정이 없는 기존 mobile 테스트 2개는 제외. 기존 면접 포커스 타이밍 테스트 1회 실패 후 단독 및 전체 재실행 통과. TypeScript 통과, ESLint 오류 0(내부 이동 권고 1 및 기존 미사용 변수 2 경고). OpenNext 운영 빌드 1회 통과, 최종 사소한 UI/중복 지침 정리 후 재빌드 중.
+- 수동 검증: 로컬 실제 결과 샘플에서 마지막 응원 탭·60개 문구·준비 중 표시 확인. 실제 도화 공고 공개 API는 이미지 전용 본문이므로 로컬 fetch API가 IMAGE_ONLY를 반환함을 확인. 성공 경로는 합성 본문 fixture로 자동 읽기→입력 콜백→제출 계획 반영 검증.
+- 경계: 저장된 고객 결과/문서/결제/DB 스키마는 변경하지 않음. 실고객 원문은 fixture/커밋에 포함하지 않음. 유료 신규 AI/OCR 호출 없음. 실시간 외부 회사·산업 검색은 비용 승인 대기이며 이번 코드가 검색 완료를 가장하지 않도록 지침에 명시.
+- 배포: 사용자 승인에 따라 커밋·main 푸시·운영 배포 진행. 직전 운영 Worker 롤백 버전 cd806ec5-d71b-4197-99c4-72c29aeec052. 완료 버전은 후속 로그에 기록.
+
 ## 2026-09-29 — Codex: 최신 main + 면접 PRO 통합 검증
 
 - 통합: `origin/main`의 FINAL 상단 광고바 최신 2커밋을 면접 PRO 릴리스 브랜치에 병합했다. 양쪽 구현을 그대로 보존했고 충돌은 없었다.

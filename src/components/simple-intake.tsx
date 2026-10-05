@@ -20,6 +20,7 @@ import {
 } from "@/domain/upload-limits";
 import { countNonWhitespaceCharacters } from "@/domain/usage-entitlement";
 import { findPostingUrl, removePostingUrlLine } from "@/domain/posting-link";
+import { usePostingLink } from "@/lib/use-posting-link";
 import type { QuestionLengthPlan } from "@/domain/simple-intake-mapping";
 import styles from "./simple-intake.module.css";
 
@@ -140,8 +141,6 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
   // 포커스는 `:focus-visible`에 걸리지 않아 마우스용 말풍선이 아예 열리지
   // 않습니다.
   const [helpOpen, setHelpOpen] = useState(false);
-  const [loadingLink, setLoadingLink] = useState(false);
-  const [linkMessage, setLinkMessage] = useState("");
   const postingUrl = findPostingUrl(draft);
 
   useEffect(() => {
@@ -158,48 +157,11 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
     };
   }, [helpOpen]);
 
-  /**
-   * 공고를 읽어 자료 목록에 한 장으로 넣습니다.
-   *
-   * 분석이 링크를 여는 것이 아닙니다. 여기서 한 번 읽어 글자로 바꿔 두고,
-   * 그 뒤로는 다른 첨부와 똑같이 취급합니다 — 손님이 내용을 확인하고 고칠 수도
-   * 있어야 하기 때문입니다.
-   */
-  async function loadPostingLink() {
-    if (!postingUrl || loadingLink) return;
-    setLoadingLink(true);
-    setLinkMessage("");
-    try {
-      const response = await fetch("/api/job-postings/fetch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: postingUrl }),
-      });
-      const body = await response.json().catch(() => ({})) as { ok?: boolean; text?: string; title?: string };
-      if (body.ok !== true || typeof body.text !== "string" || !body.text.trim()) {
-        // 그림으로 올린 공고나 스크립트로 그리는 공고는 읽을 것이 없습니다.
-        // 못 읽었다고 말하고 붙여넣기를 권합니다 — 조용히 넘어가면 손님은
-        // 공고를 넣은 줄 압니다.
-        setLinkMessage(" 이 주소에서는 내용을 읽지 못했습니다. 공고 본문을 복사해 붙여넣어 주세요.");
-        return;
-      }
-      const host = (() => { try { return new URL(postingUrl).hostname.replace(/^www\./, ""); } catch { return "채용공고"; } })();
-      onFilesChange([...files, {
-        id: `posting-link-${Date.now()}`,
-        filename: body.title?.trim() || `${host} 채용공고`,
-        extension: "link",
-        sizeBytes: body.text.length,
-        text: body.text,
-        kind: "JOB_POSTING",
-        basis: "content",
-      }]);
-      onDraftChange(removePostingUrlLine(draft, postingUrl));
-    } catch {
-      setLinkMessage(" 지금은 불러오지 못했습니다. 공고 본문을 복사해 붙여넣어 주세요.");
-    } finally {
-      setLoadingLink(false);
-    }
-  }
+  const { loading: loadingLink, message: linkMessage, retry: loadPostingLink } = usePostingLink(postingUrl, (text, url) => {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    onFilesChange([...files, { id: `posting-link-${Date.now()}`, filename: `${host} 채용공고`, extension: "link", sizeBytes: new TextEncoder().encode(text).length, text: `${url}\n\n${text}`, kind: "JOB_POSTING", basis: "content" }]);
+    onDraftChange(removePostingUrlLine(draft, url));
+  });
 
   const limitFieldId = useId();
   const [busy, setBusy] = useState(false);
@@ -349,9 +311,8 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
           그 줄은 자기소개서 본문으로 읽혔습니다 — 공고를 넣었다고 생각한 사람이
           공고 대조 없는 결과를 받았습니다.
 
-          자동으로 불러오지는 않습니다. 붙여넣는 중에 주소가 잠깐 완성되는
-          순간마다 남의 서버를 두드리게 되고, 무엇보다 손님이 시키지 않은 일을
-          하게 됩니다. 찾았다고 말하고 누를 것을 내밀기만 합니다. */}
+          주소 입력이 멈춘 뒤 자동으로 본문을 읽고, 성공한 본문만 공고 자료에
+          추가합니다. 실패한 주소는 제출 전 확인을 위해 별도로 보존합니다. */}
       {/* 자소서 파일이 있는데 이 칸에도 글이 있으면, 둘 중 무엇을 첨삭할지
           손님에게 묻습니다.
 
@@ -392,13 +353,14 @@ export function SimpleIntake({ draft, onDraftChange, targetLength, onTargetLengt
       {postingUrl && (
         <div className={styles.linkFound}>
           <LinkIcon />
-          <span><b>채용공고 주소를 찾았어요.</b>{linkMessage || " 불러오면 공고 요구사항까지 함께 봅니다."}</span>
+          <span role="status"><b>채용공고 자동 읽기</b> {linkMessage}</span>
           <button type="button" disabled={loadingLink} onClick={() => void loadPostingLink()}>
-            {loadingLink ? "불러오는 중..." : "공고 불러오기"}
+            {loadingLink ? "불러오는 중..." : "다시 불러오기"}
           </button>
         </div>
       )}
 
+      {!postingUrl && linkMessage && <p role="status">{linkMessage}</p>}
       {/* Optional, and one number for the whole form, because that is what most
           application forms actually say. A question that prints its own limit
           keeps it — see applyDefaultTargetLength. Making this required would

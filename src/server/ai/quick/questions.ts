@@ -1,6 +1,7 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import { splitCoverLetterDraft } from "@/domain/cover-letter-parser";
 import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
+import { readAnswerLimit } from "@/domain/answer-length";
 
 // Documents beyond the cover letter and the posting. Lives here rather than in
 // prompt.ts because getAnalysisQuestions also needs to know whether they exist
@@ -80,9 +81,8 @@ export function hasProCapabilities(request: AnalysisRequest) {
 }
 
 /**
- * PRO BUILD is the only mode that writes missing content. QUICK BUILD still
- * points out what is missing without filling it, because filling honestly needs
- * the supporting-material cross-check that only PRO collects.
+ * QUICK BUILD elaborates from the cover letter. PRO/FINAL BUILD may also use
+ * supplied supporting evidence and fill blank questions.
  */
 /**
  * Whether the run should write each answer up to its target length.
@@ -114,8 +114,7 @@ export function expandsToTargetLength(request: AnalysisRequest) {
  * up.
  */
 export function expandsFromOwnContent(request: AnalysisRequest) {
-  return hasProCapabilities(request)
-    && request.writingMode === "POLISH"
+  return ((hasProCapabilities(request) && request.writingMode === "POLISH") || (request.product === "QUICK" && request.writingMode === "BUILD"))
     && hasSeparatedQuestions(request);
 }
 
@@ -153,7 +152,7 @@ export function getAnalysisQuestions(request: AnalysisRequest): AnalysisQuestion
     .map((question, index) => ({
       ...question,
       order: index + 1,
-      targetLength: question.targetLength ?? request.targetLength,
+      targetLength: readAnswerLimit(`${question.prompt} ${question.title}`).max ?? question.targetLength ?? request.targetLength,
     }));
 }
 

@@ -6,6 +6,7 @@ import { writingStyleSchema } from "@/domain/writing-style";
 import { editingStanceSchema, type EditingStance } from "@/domain/editing-stance";
 
 export const guestApplicationHandoffSchema = z.object({
+  allowMissingPosting: z.boolean().optional(),
   title: z.string().trim().min(1).max(120).default("새 지원서"),
   companyName: z.string().trim().max(120).optional(),
   roleName: z.string().trim().max(120).optional(),

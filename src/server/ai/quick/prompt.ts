@@ -1,4 +1,5 @@
 import type { AnalysisRequest } from "@/application/analysis-contract";
+import { hasJobPostingText } from "@/domain/job-posting-source";
 import { EDITING_QUALITY_RULES } from "./revision-quality";
 import { EDITING_STANCE_INSTRUCTION, RED_TEAM_HANDLING_INSTRUCTION, resolveEditingStance } from "@/domain/editing-stance";
 import {
@@ -12,7 +13,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-3.4";
+export const QUICK_PROMPT_VERSION = "quick-4.1";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -33,7 +34,7 @@ const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> =
   // BUILD used to behave like POLISH: it read the materials and still left the
   // blank question blank. "내용 보완"이라는 이름값을 하도록 바꾼 결정은
   // docs/build-mode-fill-in-decision.md 참고.
-  BUILD: "작성 단계: 내용 보완. 비어 있거나 분량이 부족한 문항을 실제로 채워 완성된 답변을 만드세요. 지원자가 이미 쓴 문장은 유지하고 그 뒤를 이어서 씁니다. 이 단계에서 글을 압축하거나 요약하지 마세요.",
+  BUILD: "작성 단계: 내용 보완. 질문에 답하는 데 빠진 설명과 근거를 제공된 사실로 실제 보완하세요. 기존 핵심 사실·말투는 유지하고 필요한 위치에 추가하세요. 분량만을 위한 덧붙임이나 불필요한 압축은 금지합니다. 이미 충실한 문항은 유지하고 그 이유를 설명하세요.",
   // In this stage the "원문" is not a draft: it is the ordered notes the
   // applicant filled in on the guided screen. Treating it as prose to polish
   // returns the notes back almost unchanged.
@@ -70,7 +71,7 @@ const revisionRequestText = (request: AnalysisRequest) =>
     .slice(0, 2_000);
 
 const hasJobPosting = (request: AnalysisRequest) =>
-  request.documents.some((document) => document.kind === "job_posting" && document.text.trim().length > 0);
+  request.documents.some((document) => document.kind === "job_posting" && hasJobPostingText(document.text));
 
 /**
  * What FINAL is for.
@@ -192,6 +193,12 @@ ${LENGTH_INTEGRITY_RULE}`
         : `목표 글자 수: 공백 제외 ${request.targetLength}자. 원문의 정보량이 부족하면 억지로 분량을 채우지 말고 확인 질문을 남기세요.
 ${LENGTH_INTEGRITY_RULE}`,
     WRITING_MODE_INSTRUCTION[request.writingMode],
+    "위 분량 지시에서 목표는 희망 분량입니다. 문항에 명시된 최소·최대 제한이 우선하며 상한은 반드시 채울 최소 분량이 아닙니다. 계산 기준이 없으면 공백 포함·제외를 단정하지 말고 채용 입력창 확인을 안내하세요. 분량이 짧다는 이유만으로 핵심 문제를 만들지 마세요.",
+    request.product === "QUICK" && request.writingMode === "BUILD"
+      ? "QUICK 내용 보완: 현재 자기소개서에 명시된 사실만으로 생략된 설명·논리 연결을 실제로 보완하세요. 없는 행동·동기·배운 점을 추측하지 마세요. 추가 사실이 필요한 문항은 lengthNote에 부족한 정보와 구체적인 확인 질문을 쓰세요. 길이를 억지로 채우거나 기존 사실을 삭제하지 마세요."
+      : "제공된 자료 범위 안에서 선택한 작성 단계에 맞게 작업하세요.",
+    "readiness는 내부 글 품질 비교용입니다. label과 summary에서 완벽·합격·제출 가능을 선언하지 마세요. 검토한 문항의 구체적 강점과 남은 확인 사항만 설명하세요.",
+    "lengthNote는 최종 채택될 원문에도 유효한 추가 사실 질문만 적으세요. 후보문 글자 수나 후보에서 삭제한 정보를 다시 요구하지 마세요. 실제 추가 정보가 필요한 문항에는 consultingAdvice.guidance에 '참고 작성 틀 — 본인 사실 확인 후 작성'이라고 표시하고 [실제 행동], [확인 가능한 변화] 형태의 예시 구조를 제시하세요. 예시는 revisedAnswer에 넣지 않습니다. 조언은 실행 제안으로 쓰세요. '삭제한 문장', '이미 보완했습니다'처럼 수정안의 채택을 미리 가정하지 마세요.",
     // A posting for a large employer often covers several positions at once.
     // Without this the analysis matches every requirement on the page.
     ...(request.roleName?.trim()
@@ -255,7 +262,7 @@ ${LENGTH_INTEGRITY_RULE}`,
     // consultant from a checker, and it invents nothing: if the applicant did
     // not witness it, they cannot write it. See §2 of the notes — "내가
     // 다쳤다"는 부주의로, "목격했다"는 동기로 읽힌다.
-    "consultingAdvice의 reframe 유형은 사실을 바꾸지 않고 같은 경험을 다른 각도에서 배치하도록 제안하는 것입니다. 예를 들어 안전 직무 지원자가 '내가 작업 중 다쳤다'라고 쓴 경우, 사실을 지우라는 것이 아니라 '동료의 사고를 현장에서 목격하고 그 뒤의 어려움을 함께 겪었다'처럼 지원자가 실제로 겪은 범위 안에서 읽히는 방향을 바꿀 수 있는지 제안합니다. 같은 문장이 읽는 사람에게 어떻게 도착하는지가 달라지기 때문입니다.",
+    "consultingAdvice의 reframe 유형은 사건과 주체를 유지한 채 같은 경험의 실제 행동·판단에 초점을 맞추는 것입니다. 예를 들어 '내가 작업 중 다쳤다'를 '동료의 사고를 목격했다'로 바꾸면 사실 날조이므로 금지합니다. 원문에 실제로 있는 사고 후 보고·대응·배운 점으로 초점을 옮기거나, 그 정보가 없으면 지원자에게 질문하세요.",
     "reframe 제안은 반드시 지원자가 실제로 겪은 사실 안에서만 하세요. 지원자가 목격하지 않은 일을 목격했다고 쓰게 하거나, 역할을 바꿔 말하게 하는 제안은 금지입니다. 확인이 필요하면 그 자체를 verificationQuestions에 남기세요.",
 
     // A subheading on question 1 and none on question 3 reads as an unfinished

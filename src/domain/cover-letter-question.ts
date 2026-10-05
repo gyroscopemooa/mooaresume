@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readAnswerLimit } from "./answer-length";
 
 export const coverLetterQuestionSchema = z.object({
   id: z.string().min(1),
@@ -79,6 +80,8 @@ const TARGET_LENGTH_READ = /\s*[[(]?\s*(\d{3,4})\s*자\s*(?:이내|이하|내외
 
 /** Reads the marker back off a heading, returning the heading without it. */
 export function readTargetLengthMarker(heading: string): { heading: string; targetLength: number | null } {
+  const stated = readAnswerLimit(heading).max;
+  if (stated && stated >= 100 && stated <= 3000) return { heading, targetLength: stated };
   const match = heading.match(TARGET_LENGTH_READ);
   if (!match) return { heading, targetLength: null };
   return { heading: heading.replace(TARGET_LENGTH_READ, "").trim(), targetLength: Number(match[1]) };

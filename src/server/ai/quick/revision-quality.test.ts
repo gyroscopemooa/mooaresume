@@ -13,12 +13,44 @@ export function qualityTestCandidate(answer = revised): QuickGatewayResult {
   return { output: { schemaVersion: "1.0", readiness: { score: 70, label: "검토", summary: "원칙 준수와 도움을 설명했습니다.", reasons: [original] }, priorities: [], verificationQuestions: [], consultingAdvice: [], revision: { originalAnnotations: [], subheading: null, lengthNote: null, revisedAnswer: answer, highlightedPhrases: [], reasons: [], verificationNote: null } }, execution: { responseId: "writer", model: "test", promptVersion: "quick-3.4", rubricVersion: "quick-rubric-1.0", schemaVersion: "1.0", inputTokens: 10, outputTokens: 20, totalTokens: 30 } };
 }
 export function qualityTestReview(): RevisionReview {
-  return { diagnosis: { readiness: qualityTestCandidate().output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 }, after: { questionFit: 3, evidence: 3, logic: 3, readability: 4, specificity: 3 }, meaningfulImprovement: true, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "실제 전달력 개선을 확인했습니다.", sourceQuote: original, candidateQuote: revised, previousErrorQuote: null, validAnnotationIndexes: [] }], crossQuestionRegression: false, validAdviceIndexes: [] };
+  return { diagnosis: { readiness: qualityTestCandidate().output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 }, after: { questionFit: 3, evidence: 3, logic: 3, readability: 4, specificity: 3 }, meaningfulImprovement: true, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "실제 전달력 개선을 확인했습니다.", sourceQuote: original, candidateQuote: revised, previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, validAdviceIndexes: [], adviceCorrections: [] };
 }
 const reviewer = { responseId: "reviewer", model: "test" };
 const apply = (review: RevisionReview, request = qualityTestRequest, candidate = qualityTestCandidate()) => applyRevisionReview(request, candidate, review, reviewer);
 
 describe("independent revision adoption", () => {
+  it("corrects advice that falsely describes a rejected edit as completed", () => {
+    const candidate = qualityTestCandidate();
+    candidate.output.consultingAdvice = [{ kind: "clarify", title: "문맥 확인", guidance: "삭제한 문장을 확인하세요.", rationale: original, priority: "low" }];
+    const review = qualityTestReview();
+    review.questions[0].lostFactOrVoice = true;
+    review.validAdviceIndexes = [0];
+    review.adviceCorrections = [{ index: 0, guidance: "원문의 해당 표현을 정리할 경우 의미를 유지해 주세요." }];
+    const result = apply(review, qualityTestRequest, candidate);
+    expect(result.output.revision.revisedAnswer).toBe(original);
+    expect(result.output.consultingAdvice?.[0].guidance).toContain("정리할 경우");
+  });
+  it("discloses URL-only posting analysis and removes unsupported requirement matches", () => {
+    const candidate = qualityTestCandidate();
+    candidate.output.requirementMatches = [{ requirement: "확인되지 않은 조건", status: "missing", evidence: "없음", recommendation: "확인" }];
+    const result = createQuickAnalysisResult({ ...qualityTestRequest, product: "PRO", documents: [...qualityTestRequest.documents, { kind: "job_posting", text: "https://example.com/jobs" }] }, candidate);
+    expect(result.requirementMatches).toEqual([]);
+    expect(result.coverageNotes.join(" ")).toContain("채용공고 본문이 없는 상태");
+  });
+  it("adopts only passing questions and keeps valid clarification notes on rejected ones", () => {
+    const request = { ...qualityTestRequest, writingMode: "BUILD" as const, questions: Array.from({ length: 6 }, (_, i) => ({ id: String(i), title: "경험", prompt: "경험을 설명하세요.", targetLength: 500, answer: original })) };
+    const candidate = qualityTestCandidate();
+    candidate.output.revisions = Array.from({ length: 6 }, (_, i) => ({ ...candidate.output.revision, questionOrder: i + 1, lengthNote: "실제 담당한 역할은 무엇인가요?" }));
+    const review = qualityTestReview();
+    review.questions = Array.from({ length: 6 }, (_, i) => ({ ...review.questions[0], order: i + 1, lostFactOrVoice: i > 0, validLengthNote: i === 1 }));
+    const result = apply(review, request, candidate);
+    expect(result.output.revisions?.map(q => q.revisedAnswer)).toEqual([revised, original, original, original, original, original]);
+    expect(result.output.revisions?.[1].lengthNote).toBe("실제 담당한 역할은 무엇인가요?");
+    expect(result.output.revisions?.[2].lengthNote).toBeNull();
+    expect(result.revisionQuality?.decision).toBe("adopt");
+    expect(quickAnalysisOutputSchema.safeParse(result.output).success).toBe(true);
+    expect(() => createQuickAnalysisResult(request, result)).not.toThrow();
+  });
   it.each(["QUICK", "PRO", "FINAL"] as const)("adopts evidenced improvement for %s", product => {
     const result = apply(qualityTestReview(), { ...qualityTestRequest, product });
     expect(result.revisionQuality?.decision).toBe("adopt");

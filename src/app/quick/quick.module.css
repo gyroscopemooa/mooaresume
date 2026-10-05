@@ -30,3 +30,6 @@
 .appPage .overSoftLimit { background: transparent; }
 .appPage .submit { min-height: 52px; font-size: 15px; }
 .appPage .scope { margin: 16px 14px 0; }
+.modeSelector { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 13px; font-weight: 700; }
+.modeSelector select { min-height: 44px; padding: 8px 12px; border: 1px solid #a8c6b7; border-radius: 8px; background: #fff; color: #17221d; font: inherit; }
+.modeHelp { margin: 12px 0 24px; color: #68756f; font-size: 13px; line-height: 1.7; }

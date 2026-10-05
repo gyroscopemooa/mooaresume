@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
-import {
-  deriveCandidateUrls,
-  evaluateExtraction,
-  htmlToText,
-  isFetchableUrl,
-  type PostingExtraction,
-} from "@/server/job-posting/extract-posting-text";
+import { isFetchableUrl } from "@/server/job-posting/extract-posting-text";
+import { fetchPosting } from "@/server/job-posting/fetch-posting";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const bodySchema = z.object({ url: z.string().min(1).max(2000) });
-
-const FETCH_TIMEOUT_MS = 12_000;
-const MAX_BYTES = 3_000_000;
-const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 function isSameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
@@ -31,22 +21,6 @@ function isSameOrigin(request: NextRequest) {
   } catch {
     return false;
   }
-}
-
-async function readPosting(url: string): Promise<PostingExtraction> {
-  const response = await fetch(url, {
-    headers: { "User-Agent": BROWSER_USER_AGENT, "Accept-Language": "ko-KR,ko;q=0.9" },
-    redirect: "follow",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!response.ok) return { ok: false, reason: "UNREADABLE" };
-
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!/text\/html|text\/plain|application\/xhtml/i.test(contentType)) return { ok: false, reason: "UNREADABLE" };
-
-  const body = await response.text();
-  // A posting page that is megabytes long is an application, not a document.
-  return evaluateExtraction(htmlToText(body.slice(0, MAX_BYTES)), url);
 }
 
 /**
@@ -70,16 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, reason: "INVALID_URL" }, { status: 400 });
     }
 
-    for (const candidate of deriveCandidateUrls(url)) {
-      try {
-        const extraction = await readPosting(candidate);
-        if (extraction.ok) return NextResponse.json(extraction);
-      } catch {
-        // Try the next candidate; a single unreachable address is not a failure
-        // of the whole attempt.
-      }
-    }
-    return NextResponse.json({ ok: false, reason: "UNREADABLE" });
+    return NextResponse.json(await fetchPosting(url));
   } catch (error) {
     if (error instanceof ZodError) return NextResponse.json({ ok: false, reason: "INVALID_URL" }, { status: 400 });
     return NextResponse.json({ ok: false, reason: "UNREADABLE" }, { status: 502 });

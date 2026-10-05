@@ -38,8 +38,9 @@ describe("isLinkOnlyPosting", () => {
     expect(isLinkOnlyPosting({ url: saramin, text: "", filenames: [] })).toBe(true);
   });
 
-  it("본문이나 첨부가 있으면 분석할 내용이 있다", () => {
+  it("본문이 있어야 준비된 것으로 보며 파일명은 본문이 아니다", () => {
     expect(isLinkOnlyPosting({ url: saramin, text: "안전관리자 모집", filenames: [] })).toBe(false);
-    expect(isLinkOnlyPosting({ url: saramin, text: "", filenames: ["공고.pdf"] })).toBe(false);
+    expect(isLinkOnlyPosting({ url: saramin, text: "", filenames: ["공고.pdf"] })).toBe(true);
+    expect(isLinkOnlyPosting({ url: "", text: saramin })).toBe(true);
   });
 });

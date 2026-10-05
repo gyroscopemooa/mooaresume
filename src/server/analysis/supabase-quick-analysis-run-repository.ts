@@ -85,9 +85,13 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     // add a column for this. One extra primary-key read instead: `begin` runs
     // once per start or retry, never in a poll loop.
     const { data: run } = await client().from("analysis_runs").select("attempt_count, created_at").eq("id", parsed.analysisRunId).maybeSingle();
+    const request = validateAnalysisRequest(parsed.request);
+    const { data: applicationCase, error: caseError } = await client().from("application_cases")
+      .select("company_name, role_name").eq("id", request.requestId).eq("owner_user_id", this.ownerUserId).maybeSingle();
+    if (caseError) throw new Error("REVISION_CASE_CONTEXT_FAILED");
     return {
       analysisRunId: parsed.analysisRunId,
-      request: await this.withPreviousRevision(validateAnalysisRequest(parsed.request), run?.created_at ?? new Date().toISOString()),
+      request: await this.withPreviousRevision({ ...request, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined }, run?.created_at ?? new Date().toISOString()),
       attemptCount: (run?.attempt_count as number | undefined) ?? 1,
     };
   }

@@ -62,7 +62,10 @@ export function isFetchableUrl(rawUrl: string) {
   try {
     const parsed = new URL(rawUrl);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
-    return !PRIVATE_HOST.test(parsed.hostname);
+    const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+    if (parsed.username || parsed.password || (parsed.port && !["80", "443"].includes(parsed.port))) return false;
+    if (!host.includes(".") || host.includes(":") || /^[\d.]+$/.test(host) || /\.(?:localhost|local|internal|test|invalid)$/.test(host)) return false;
+    return !PRIVATE_HOST.test(host);
   } catch {
     return false;
   }
@@ -76,7 +79,7 @@ export const POSTING_TEXT_LIMIT = 20_000;
 
 export type PostingExtraction =
   | { ok: true; text: string; sourceUrl: string; truncated: boolean }
-  | { ok: false; reason: "UNREADABLE" };
+  | { ok: false; reason: "UNREADABLE" | "IMAGE_ONLY" };
 
 /**
  * Accepts an extraction only when it looks like a posting rather than a page of

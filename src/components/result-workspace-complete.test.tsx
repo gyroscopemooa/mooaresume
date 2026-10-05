@@ -27,6 +27,15 @@ vi.mock("@/lib/local-document", () => {
 afterEach(cleanup);
 
 describe("ResultWorkspaceComplete 제출본 탭", () => {
+  it("scopes the review without displaying a score or a submission guarantee", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, readiness: { ...sampleResultDocument.readiness, score: 95, label: "완벽한 제출 준비", summary: "문제 없음" } }}/>);
+    expect(screen.queryByText("완벽한 제출 준비")).toBeNull();
+    expect(screen.queryByText("문제 없음")).toBeNull();
+    expect(screen.getByText("제공된 글의 검토 결과")).toBeTruthy();
+    expect(screen.getByText(/이 검토로 예측하지 않습니다/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+    expect(screen.queryByText(/분량 보완 필요/)).toBeNull();
+  });
   it("renders zero issues and unchanged answers without forced criticism", () => {
     const result = { ...sampleResultDocument, priorities: [], consultingAdvice: [], verificationQuestions: [], questions: sampleResultDocument.questions.map(q => ({ ...q, revisedAnswer: q.originalAnswer, revisionReasons: [] })) };
     render(<ResultWorkspaceComplete result={result}/>);
@@ -260,7 +269,7 @@ describe("ResultWorkspaceComplete 채운 부분 표시", () => {
     render(<ResultWorkspaceComplete result={filled}/>);
     fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
 
-    expect(screen.getByText(/비어 있던 부분을 채운 제안이 포함되어 있습니다/)).toBeTruthy();
+    expect(screen.getByText(/원문을 보완한 문장이 포함되어 있습니다/)).toBeTruthy();
     // The point of filling is a draft that can be submitted as it stands.
     expect(screen.getByText(filled.questions[0].revisedAnswer)).toBeTruthy();
   });

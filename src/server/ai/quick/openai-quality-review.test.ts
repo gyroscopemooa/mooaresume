@@ -8,7 +8,7 @@ const candidate: QuickGatewayResult = {
   execution: { responseId: "writer", model: "test", promptVersion: "test", rubricVersion: "test", schemaVersion: "1.0", inputTokens: 10, outputTokens: 20, totalTokens: 30 },
 };
 const scores = { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 };
-const review = { diagnosis: { readiness: candidate.output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: scores, after: scores, meaningfulImprovement: false, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "추가 개선이 없습니다.", sourceQuote: "원문을 유지합니다.", candidateQuote: "원문을 유지합니다.", previousErrorQuote: null, validAnnotationIndexes: [] }], crossQuestionRegression: false, validAdviceIndexes: [] };
+const review = { diagnosis: { readiness: candidate.output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: scores, after: scores, meaningfulImprovement: false, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "추가 개선이 없습니다.", sourceQuote: "원문을 유지합니다.", candidateQuote: "원문을 유지합니다.", previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, validAdviceIndexes: [], adviceCorrections: [] };
 const envelope = (body: unknown = review, status = "completed") => new Response(JSON.stringify({ id: "reviewer", model: "test", status, output_text: JSON.stringify(body), usage: { input_tokens: 3, output_tokens: 4, total_tokens: 7 } }));
 
 describe("independent evaluator API boundary", () => {

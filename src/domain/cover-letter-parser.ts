@@ -76,8 +76,18 @@ export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
     // The plan writes each question's own limit into its heading, because the
     // analysis request carries one number for the whole draft and there is
     // nowhere else for a per-question limit to survive the round trip.
-    const { heading, targetLength } = readTargetLengthMarker(match?.[2]?.trim() ?? "");
-    const bodyLines = lines.slice(start + 1, end);
+    let headingLine = match?.[2]?.trim() ?? "";
+    let bodyStart = start + 1;
+    // A hard-wrapped prompt can split a word (업무분담문\n제). Join only
+    // adjacent nonempty lines until the instruction closes; never cross a blank.
+    while (!/(?:바랍니다|주십시오|주세요|하시오|입력가능|이내)[.。)\]\s]*$/.test(headingLine)
+      && (headingLine.match(/\(/g)?.length ?? 0) > (headingLine.match(/\)/g)?.length ?? 0)
+      && bodyStart < end && lines[bodyStart].trim() && !/^\s*\[/.test(lines[bodyStart])) {
+      headingLine += lines[bodyStart].trim();
+      bodyStart++;
+    }
+    const { heading, targetLength } = readTargetLengthMarker(headingLine);
+    const bodyLines = lines.slice(bodyStart, end);
     const counter = bodyLines.find((line) => /^\s*현재\s*\d+\s*자\s*\/\s*\d+\s*[~～-]\s*\d+\s*자\s*이내\s*$/.test(line));
     const counterLimit = counter?.match(/[~～-]\s*(\d+)\s*자/);
     const extractedBody = bodyLines.filter((line) => line !== counter).join("\n").trim();

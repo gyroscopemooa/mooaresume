@@ -133,6 +133,7 @@ export default function OnboardingPage() {
               onClick={() => {
                 setMode(id);
                 setIsTemporarySelection(false);
+                saveGuestDraft({ ...(loadGuestDraft() ?? { draftText: draft, targetLength: target }), temporaryWritingMode: id });
               }}
             >
               <span className={styles.radio} aria-hidden="true" />
@@ -231,7 +232,7 @@ export default function OnboardingPage() {
                   {activeMode === "POLISH" && <em>추천</em>}
                   <small>QUICK · 5,900원</small>
                   <b>작성한 글을 빠르게 첨삭</b>
-                  <p>다음 화면에서 글을 입력하거나 파일을 올려 최종 첨삭을 진행해요.</p>
+                  <p>{activeMode === "BUILD" ? "현재 글의 사실로 설명과 논리를 보완해요. 새 자료 활용은 PRO에서 가능합니다." : "현재 글의 오류와 표현을 점검하고 좋은 문장은 유지해요."}</p>
                   <span>QUICK 시작 <ArrowRight /></span>
                 </Link>
               ) : (

@@ -122,6 +122,12 @@ export function QuickInputPage({ variant = "web" }: Props) {
           제목으로 한 번 더 세우면 입력칸이 화면 밖으로 밀려납니다. */}
       {!inApp && <div className={styles.heading}><span>QUICK · 5,900원 · {writingMode === "BUILD" ? "내용 보완" : "최종 첨삭"}</span><h1>{writingMode === "BUILD" ? "현재 초안을 바탕으로 부족한 내용을 보완합니다." : "작성한 글을 빠르고 정확하게 고칩니다."}</h1><p>{writingMode === "BUILD" ? "새로운 경험을 임의로 만들지 않고 현재 글 안에서 논리와 구체성을 강화합니다." : "말투와 사실을 보존하면서 문장, 글자 수, 논리와 최종 수정본에 집중합니다."}</p></div>}
       <section className={styles.form}>
+        <label className={styles.modeSelector}>작성 유형 <select aria-label="작성 유형" value={writingMode} disabled={!restored} onChange={(event) => {
+          const mode = event.target.value === "BUILD" ? "BUILD" : "POLISH";
+          setWritingMode(mode);
+          saveGuestDraft({ ...(loadGuestDraft() ?? { draftText: "", targetLength: 700 }), temporaryWritingMode: mode });
+        }}><option value="BUILD">2유형 · 내용 보완</option><option value="POLISH">3유형 · 최종 첨삭</option></select></label>
+        <p className={styles.modeHelp}>{writingMode === "BUILD" ? "현재 글에 있는 사실로 부족한 설명과 논리를 보완합니다. 추가 사실이 필요하면 구체적인 질문과 별도 작성 가이드를 제공합니다." : "오류와 어색한 표현을 고치고, 이미 좋은 문장은 근거와 함께 유지합니다."}</p>
         <ResumeIntake key={resetKey} questions={questions} onChange={(next) => { setQuestions(next); setError(""); }} attachment={file} onAttachmentChange={setFile} onError={setError} onReset={resetDraft} showReset={Boolean(file || questions.some((question) => question.answer.trim()))}/>
         <div className={`${styles.usage} ${totalCharacters > QUICK_SOFT_LIMIT_CHARS ? styles.overSoftLimit : ""}`}>
           <div><span>현재 지원서 전체</span><b>공백 제외 {totalCharacters.toLocaleString()}자</b></div>

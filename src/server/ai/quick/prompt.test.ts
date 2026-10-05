@@ -150,7 +150,7 @@ describe("BUILD 채우기", () => {
     const instructions = buildQuickAnalysisInstructions(buildRequest);
 
     expect(instructions).toContain("questionOrder 1부터 2까지");
-    expect(instructions).toContain("비어 있거나 분량이 부족한 문항을 실제로 채워");
+    expect(instructions).toContain("빠진 설명과 근거를 제공된 사실로 실제 보완");
     expect(instructions).toContain("빈칸이나 대괄호 표기를 남기지 마세요");
   });
 
@@ -169,10 +169,10 @@ describe("BUILD 채우기", () => {
     expect(buildQuickAnalysisInstructions(buildRequest)).not.toContain("아직 작성되지 않은 문항은 revisions에 넣지 마세요");
   });
 
-  it("QUICK BUILD는 채우지 않고 기존대로 동작한다", () => {
+  it("QUICK BUILD는 원문 사실로 보완하고 빈 문항은 제외한다", () => {
     const instructions = buildQuickAnalysisInstructions({ ...buildRequest, product: "QUICK" });
 
-    expect(instructions).toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+    expect(instructions).toContain("QUICK 내용 보완: 현재 자기소개서에 명시된 사실만으로");
     expect(instructions).not.toContain("빈칸이나 대괄호 표기를 남기지 마세요");
     expect(instructions).toContain("questionOrder 1부터 1까지");
   });
@@ -443,7 +443,8 @@ describe("상담 노트에서 추가한 규칙", () => {
   it("프레이밍 제안이 사실을 바꾸지 못하게 막는다", () => {
     // 이 기능의 가치와 위험이 같은 자리에 있다. 각도를 바꾸는 것과
     // 없던 일을 만드는 것의 경계를 프롬프트가 직접 그어야 한다.
-    expect(instructions()).toContain("reframe 유형은 사실을 바꾸지 않고");
+    expect(instructions()).toContain("reframe 유형은 사건과 주체를 유지한 채");
+    expect(instructions()).toContain("사실 날조이므로 금지합니다");
     expect(instructions()).toContain("지원자가 목격하지 않은 일을 목격했다고 쓰게 하거나");
   });
 

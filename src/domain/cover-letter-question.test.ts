@@ -48,7 +48,8 @@ describe("공고에 적힌 글자 수 읽기", () => {
     // sight and still treated as unstated.
     for (const heading of ["지원 동기 [500자]", "지원 동기 (500자)", "지원 동기 500자 이내", "성장과정(500자)"]) {
       expect(readTargetLengthMarker(heading).targetLength, heading).toBe(500);
-      expect(readTargetLengthMarker(heading).heading, heading).not.toContain("500");
+      if (heading.includes("이내")) expect(readTargetLengthMarker(heading).heading).toContain("500자 이내");
+      else expect(readTargetLengthMarker(heading).heading, heading).not.toContain("500");
     }
   });
 

@@ -1,6 +1,7 @@
 import type { AnalysisRequest, ResumeAnalysisProvider } from "@/application/analysis-contract";
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
 import { resolveOriginalAnnotations } from "@/domain/result-original-annotations";
+import { hasJobPostingText } from "@/domain/job-posting-source";
 import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
 import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
@@ -80,11 +81,13 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
   const missingOrders = questions.filter((question) => !revisions.has(question.order)).map((question) => question.order);
   if (missingOrders.length > 0) throw new QuickQuestionResultMissingError(missingOrders, questions.length);
 
+  const postingReady = request.documents.some(document => document.kind === "job_posting" && hasJobPostingText(document.text));
   const coverageNotes = getUnansweredQuestions(request).map((question) => {
     const label = question.title.trim() || question.prompt.trim();
     return `"${label}" 문항은 작성된 내용이 없어 이번 분석에서 제외했습니다.`;
   });
 
+  if (request.product !== "QUICK" && !postingReady) coverageNotes.push("채용공고 본문이 없는 상태로 진행했습니다. 공고 요구사항 대조는 제외했으며, 입력한 자소서와 지원 자료를 기준으로 분석했습니다.");
   return resultDocumentSchema.parse({
     revisionQuality: gatewayResult.revisionQuality,
     schemaVersion: "1.0", caseId: request.requestId, product: request.product, writingMode: request.writingMode, isSample: false, ...describeSubject(request, source.filename), analyzedAt: new Date().toISOString(),
@@ -114,7 +117,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
         verificationNote: revision.verificationNote ?? undefined,
       };
     }),
-    requirementMatches: (output.requirementMatches ?? []).map((match, index) => ({ id: `requirement-${index + 1}`, ...match })),
+    requirementMatches: (postingReady ? output.requirementMatches ?? [] : []).map((match, index) => ({ id: `requirement-${index + 1}`, ...match })),
     verificationQuestions: output.verificationQuestions,
     editSummary: output.editSummary ?? [],
     consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })),

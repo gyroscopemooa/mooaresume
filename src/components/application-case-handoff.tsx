@@ -71,6 +71,8 @@ type Props = {
    * is exactly why it reads as if it might.
    */
   runActive?: boolean;
+  postingReady?: boolean;
+  allowMissingPosting?: boolean;
   /**
    * 이 지원 건이 지금 필요로 하는 추가 블록 수 (analysis-preparation.tsx가
    * 이미 계산해 화면에 값을 보여주고 있는 그 quote.extraBlocks). Google Play
@@ -123,7 +125,7 @@ const subscribeToNothing = () => () => {};
 const readNoAuthError = () => null;
 const readAuthError = () => new URLSearchParams(window.location.search).get("auth_error");
 
-export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = false, extraBlocks = 0 }: Props) {
+export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = false, extraBlocks = 0, postingReady = true, allowMissingPosting = false }: Props) {
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -475,6 +477,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           companyName: guest.companyName,
           roleName: guest.roleName,
           product: guest.selectedProduct ?? "QUICK",
+          allowMissingPosting,
           writingMode: guest.temporaryWritingMode ?? "POLISH",
           writingStyle: guest.writingStyle,
           editingStance: guest.editingStance,
@@ -498,6 +501,11 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           ? result.error
           : "지원 건을 저장하지 못했습니다.";
         setMessage(errorMessage);
+        return;
+      }
+      if (result && typeof result === "object" && "reusedAnalysisRunId" in result && typeof result.reusedAnalysisRunId === "string") {
+        setMessage("같은 입력과 설정의 기존 결과를 찾았습니다. 결제 없이 결과를 엽니다.");
+        window.location.assign(`/result?analysisRunId=${encodeURIComponent(result.reusedAnalysisRunId)}&reused=1`);
         return;
       }
       if (result && typeof result === "object" && "applicationCaseId" in result && typeof result.applicationCaseId === "string") {
@@ -582,7 +590,8 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           </span>
         </p>
       )}
-      <button type="button" disabled={busy || runActive || !guest || !consentDecided} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "저장 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
+      <p>같은 원문·설정·분석 기준의 기존 결과가 확인되면 추가 결제나 이용권 사용 없이 엽니다.</p>
+      <button type="button" disabled={busy || runActive || !guest || !consentDecided || (!postingReady && !allowMissingPosting)} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "기존 결과 확인 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
       {guest && !consentDecided && !busy && !runActive && <p className={styles.noDraft}>위에서 하나를 골라 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL
           directly — or in a new tab — arrives with nothing to analyse and a

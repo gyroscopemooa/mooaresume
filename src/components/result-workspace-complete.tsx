@@ -6,7 +6,8 @@ import Link from "next/link";
 import { WritingHomeLink } from "@/components/writing-home-link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
-import { buildFinalDocumentText, countCharactersWithWhitespace, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
+import { buildFinalDocumentText, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
+import { describeAnswerLength } from "@/domain/answer-length";
 import { recommendNextStep } from "@/domain/next-step";
 import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
@@ -33,8 +34,9 @@ import type { PackSampleId } from "@/fixtures/interview-pack-samples";
 import { ResearchConsent } from "./research-consent";
 import { ReferralPanel } from "./referral-panel";
 import { RuntimeEventSlot } from "./runtime-event-slot";
+import { ResultEncouragement } from "./result-encouragement";
 
-type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final";
+type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final" | "encouragement";
 
 const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
   good: "좋은 표현",
@@ -331,15 +333,15 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
     [analysisRunId, interviewPackSampleId],
   );
   const showInterviewPack = interviewPackEnabled && result.product === "FINAL" && !adminPreview && interviewPackApi !== null;
-  const isFilledResult = result.writingMode === "BUILD";
+  const isFilledResult = result.writingMode === "BUILD" && result.questions.some(q => q.originalAnswer !== q.revisedAnswer);
   const applicationLabel = resolveApplicationLabel(result);
   // The shared builder is left untouched for the other result screens; the
   // resolved subject is handed to it instead of the stored placeholders.
   // Under 70% of what the company asked for. Computed once: the next-step card
   // needs both the count and the length it was judged against.
   const shortQuestions = useMemo(
-    () => result.questions.filter((question) => countCompactCharacters(answers[question.id] ?? question.revisedAnswer) < question.targetLength * 0.7),
-    [answers, result.questions],
+    () => result.questions.filter((question) => Boolean(question.lengthNote)),
+    [result.questions],
   );
   const nextStep = useMemo(() => recommendNextStep({
     product: result.product,
@@ -536,7 +538,9 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
             FINAL만 판다. 가격표가 약속한 기능이라 여기 있어야 한다. */}
         {result.product === "FINAL" && !adminPreview && <button onClick={() => setView("mockInterview")} className={view === "mockInterview" ? styles.active : ""}>모의면접<small>FINAL</small></button>}
         {showInterviewPack && <button onClick={() => setView("interviewPack")} className={view === "interviewPack" ? styles.active : ""}>면접 준비팩<small>{analysisRunId ? "FINAL" : "FINAL · 예시"}</small></button>}
+        <button onClick={() => setView("encouragement")} className={view === "encouragement" ? styles.active : ""}>당신을 응원해요</button>
       </nav>
+      {view === "encouragement" && <ResultEncouragement onReview={() => setView("revision")} onFinal={() => setView("final")} />}
 
       {view === "verification" && result.product === "FINAL" && (
         <FinalVerification result={result} hasResume={result.suppliedResume} />
@@ -557,7 +561,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
       {view === "overview" && <section className={styles.overview}>
         <div className={styles.score}><div>{/* Said "· 샘플" on every result, paid ones included — telling a customer
               the score they just bought was a mock. */}
-          <small>지원서 준비도{result.isSample ? " · 샘플" : ""}</small><strong>{result.readiness.score}<span>/100</span></strong><em>{result.readiness.label}</em></div><p>{result.readiness.summary}</p></div>
+          <small>{result.product} · {result.writingMode === "BUILD" ? "내용 보완" : result.writingMode === "CREATE" ? "처음부터 작성" : "최종 첨삭"}{result.isSample ? " · 샘플" : ""}</small><h2>제공된 글의 검토 결과</h2><p>보완한 문항 {result.questions.filter(q => q.originalAnswer !== q.revisedAnswer).length}개 · 유지한 문항 {result.questions.filter(q => q.originalAnswer === q.revisedAnswer).length}개 · 확인 질문 {result.verificationQuestions.length}개</p></div><p>{result.product === "QUICK" ? "자기소개서의 문항 답변·논리·표현을 검토했습니다. 자격·스펙과 공고 적합성은 검토 범위에 포함되지 않습니다." : "제공된 글과 지원자료 범위에서 문항 답변·근거·공고 연결을 검토했습니다."} 채용 결과는 지원 자격, 경력, 경쟁 상황 등에도 영향을 받으며 이 검토로 예측하지 않습니다.</p></div>
         <div className={styles.overviewGrid}>
           <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다.</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
           <aside>
@@ -599,7 +603,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
 
       {view === "revision" && <section className={styles.workspace}>
         <div className={styles.title}><div><span className={styles.eyebrow}>BEFORE → AFTER</span><h2>문항별 첨삭 결과</h2></div><button type="button" className={styles.diffToggle} aria-pressed={showChanges} onClick={() => setShowChanges((current) => !current)}><GitCompareArrows/>{showChanges ? "\uBCC0\uACBD\uC810 \uC228\uAE30\uAE30" : "\uBCC0\uACBD\uC810 \uD45C\uC2DC"}</button><p>기본은 읽기 모드입니다. 필요한 문항만 직접 수정하세요.</p></div>
-        {isFilledResult && <p className={styles.filledLegend}><mark className={styles.filled}>파란색</mark>은 <b>원문에서 달라진 부분</b>입니다. 표현만 다듬은 곳도 포함되니, 새로 채워진 내용인지는 왼쪽 원문과 비교해 확인해 주세요. 없는 경험·수치는 넣지 않았지만 <b>제안</b>이므로 사실과 다르면 직접 고치시면 됩니다.</p>}
+        {isFilledResult && <p className={styles.filledLegend}><mark className={styles.filled}>파란색</mark>은 <b>원문에서 달라진 부분</b>입니다. 표현만 다듬은 곳도 포함되니, 새로 채워진 내용인지는 왼쪽 원문과 비교해 확인해 주세요. 제공한 사실을 바탕으로 작성한 AI <b>제안</b>입니다. 사실과 맞는지 확인하고 다르면 직접 고쳐 주세요.</p>}
         {result.questions.map((question) => {
           const answer = answers[question.id] ?? question.revisedAnswer;
           const isEditing = editing === question.id;
@@ -614,17 +618,17 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
           //
           // 10% 안쪽으로 모자란 것은 말하지 않습니다. 700자에 30자 모자란
           // 것까지 짚으면 매 문항이 경고처럼 보입니다.
-          const remaining = question.targetLength - countCompactCharacters(answer);
-          const showLengthGap = remaining > question.targetLength * 0.1 && result.revisionQuality?.decision !== "keep_current";
+
+          const showLengthGap = Boolean(question.lengthNote);
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
-            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다.</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
+            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
             {showLengthGap && <div className={styles.lengthGap}>
-              <div><b>{remaining.toLocaleString()}자 남음</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
-              <p>{question.lengthNote ?? "원문에서 확인되는 사실만 써서 여기까지 왔습니다. 근거 없이 채우면 오히려 감점이라 늘리지 않았어요."}</p>
-              <span>알려주시면 그 내용으로 채워 다시 첨삭해 드립니다.</span>
+              <div><b>보완에 필요한 정보</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
+              <p>{question.lengthNote}</p>
+              <span>본인의 실제 경험을 확인해 직접 보완할 수 있습니다. 아래 작성 가이드는 제출본에 자동 포함되지 않습니다.</span>
             </div>}
             <footer>{!adminPreview && <>{changed && <button onClick={() => setAnswers((current) => ({...current,[question.id]:question.revisedAnswer}))}><RotateCcw/> AI 수정본으로 되돌리기</button>}<span/><button onClick={() => setEditing((current) => current === question.id ? null : question.id)}><PencilLine/> {isEditing ? "수정 완료" : "직접 수정"}</button></>}<button className={styles.copy} onClick={() => copy(question.id,normalizeAnswerParagraphs(answer))}>{copied === question.id ? <Check/> : <Clipboard/>}{copied === question.id ? "복사됨" : "이 문항 복사"}</button></footer>
           </article>;
@@ -635,7 +639,7 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
         </section>}
       </section>}
 
-      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div>{result.requirementMatches.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>대조할 채용공고가 없습니다.</b> 이 항목은 공고의 요구사항을 지원서·지원자료와 하나씩 맞춰 보는 자리라, 공고가 없으면 볼 것이 없습니다. 공고 원문을 넣고 다시 분석하시면 요구사항마다 근거가 있는지 확인해 드립니다. 없는 요구사항을 지어내지 않으려고 비워 두었습니다.</p></div>}<RequirementMatches matches={result.requirementMatches}/><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
+      {view === "fit" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>JOB FIT</span><h2>공고 요구와 경험 연결</h2></div><p>공고 요구와 지원서에 실제로 있는 근거를 비교했습니다.</p></div>{result.requirementMatches.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>표시할 공고 대조 항목이 없습니다.</b> 링크나 파일명을 넣었더라도 본문을 확보하지 못하면 요구사항을 대조할 수 없습니다. 제출 자료에 공고 본문이 실제로 포함됐는지 확인해 주세요. 본문이 있는 경우에도 확인 가능한 대조 항목이 없으면 비워 둡니다.</p></div>}<RequirementMatches matches={result.requirementMatches}/><div className={styles.fact}><LockKeyhole/><p><b>지원자료에 있는 사실만 사용합니다.</b> 근거가 없는 역량은 문장으로 만들지 않고 확인 필요 상태로 남깁니다.</p></div></section>}
 
       {view === "interview" && <section className={styles.workspace}><div className={styles.title}><div><span className={styles.eyebrow}>INTERVIEW PREVIEW</span><h2>지원서에서 이어질 예상질문</h2></div><p>작성한 내용의 진위와 판단 과정을 확인할 가능성이 높은 질문입니다.</p></div>{result.interviewQuestions.length === 0 && <div className={styles.fact}><AlertCircle/><p><b>이번 분석에서는 면접 예상질문을 만들지 못했습니다.</b> 지원서에 실제로 적힌 내용에서만 질문을 뽑기 때문에, 문항을 보완한 뒤 다시 분석하면 근거와 답변 포인트까지 함께 제공합니다.</p></div>}<div className={styles.interviews}>{result.interviewQuestions.map((item,index) => <article key={item.id}><span>Q{index+1}</span><div><h3>{item.question}</h3><p>{item.reason}</p><section><b>답변에 포함할 내용</b>{item.answerGuide.map((guide) => <em key={guide}>{guide}</em>)}</section></div></article>)}</div>
         {/* Sold on the pricing table as PRO's 면접 리스크 분석. A risk is not another
@@ -660,22 +664,19 @@ export function ResultWorkspaceComplete({ result = sampleResultDocument, analysi
           {result.questions.map((question) => {
             const answer = answers[question.id] ?? question.revisedAnswer;
             const copyId = `final-${question.id}`;
-            const answerLength = countCompactCharacters(answer);
-            const answerLengthWithSpaces = countCharactersWithWhitespace(answer);
-            const isShort = answerLength < question.targetLength * .7;
             return <article key={question.id}>
               <span>{String(question.order).padStart(2,"0")}</span>
               <div>
                 <div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,normalizeAnswerParagraphs(answer))}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>
                 {question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}
                 <div className={styles.finalBody}>{splitIntoParagraphs(answer).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>{!adminPreview && <ConnectorMergeHint answer={answer} analysisRunId={analysisRunId} questionId={question.id} applied={mergeUndo[question.id]?.after === answer} onApply={(next) => applyConnectorMerge(question.id, answer, next)} onUndo={() => undoConnectorMerge(question.id)} />}
-                <small data-short={isShort}>공백 제외 {answerLength.toLocaleString()} / {question.targetLength.toLocaleString()}자 · 공백 포함 {answerLengthWithSpaces.toLocaleString()}자{isShort ? " · 분량 보완 필요" : ""}</small>
+                <small>{describeAnswerLength(answer, question.prompt, question.targetLength)}</small>
               </div>
             </article>;
           })}
         </div>
-        {isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>비어 있던 부분을 채운 제안이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}
-        <footer><CheckCircle2/><p><b>이 화면의 문장이 복붙용 최종 첨삭본입니다.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer>
+        {isFilledResult && <p className={styles.filledNotice}><AlertCircle/><span><b>원문을 보완한 문장이 포함되어 있습니다.</b> 어디를 채웠는지는 <b>문항별 첨삭</b>에서 색으로 확인할 수 있습니다. 제출 전에 사실과 맞는지 확인해 주세요.</span></p>}
+        <footer><CheckCircle2/><p><b>사실관계와 채용 입력 조건을 확인한 뒤 사용해 주세요.</b> 문항별 첨삭에서 직접 고친 내용도 여기에 자동 반영됩니다.</p><span>DOCX는 한글(HWP)에서도 바로 열립니다 · PDF 내보내기 예정</span></footer>
       </section>}
       {/* Sits before the next-step card because it acts on the draft in hand
           rather than moving to another stage. Only on the final tab, and only

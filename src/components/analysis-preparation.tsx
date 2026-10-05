@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { WritingHomeLink } from "@/components/writing-home-link";
+import { hasJobPostingText } from "@/domain/job-posting-source";
 import {
   ArrowLeft,
   ArrowRight,
@@ -41,7 +42,8 @@ const scope = {
     "핵심 개선점 3개",
     "문항별 Before/After",
     "최종 첨삭본",
-    "부족한 부분 지적 (내용을 대신 채우지는 않습니다)",
+    "내용 보완 선택 시 현재 글의 사실로 설명·논리 보완",
+    "추가 사실이 필요하면 구체적인 질문·작성 가이드 제공",
   ],
   PRO: [
     "첨삭·개선점·Before/After·최종본 전부",
@@ -63,6 +65,7 @@ const scope = {
 export function AnalysisPreparation() {
   const [guest, setGuest] = useState<GuestDraft | null>(null);
   const [postingLength, setPostingLength] = useState(0);
+  const [allowMissingPosting, setAllowMissingPosting] = useState(false);
   const [materialSummary, setMaterialSummary] = useState<string[]>([]);
   const [confirmedProduct, setConfirmedProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [hasResumeMaterial, setHasResumeMaterial] = useState(true);
@@ -76,12 +79,12 @@ export function AnalysisPreparation() {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setGuest(loadGuestDraft());
-      setPostingLength(
-        (sessionStorage.getItem("mooa:guest-job-posting:v1") ?? "").replace(
-          /\s/g,
-          "",
-        ).length,
-      );
+      let posting = sessionStorage.getItem("mooa:guest-job-posting:v1") ?? "";
+      try {
+        const source: unknown = JSON.parse(sessionStorage.getItem("mooa:guest-job-posting-source:v1") ?? "null");
+        if (source && typeof source === "object" && "text" in source && typeof source.text === "string") posting = source.text;
+      } catch { /* The server validates malformed drafts before payment. */ }
+      setPostingLength(hasJobPostingText(posting) ? posting.replace(/\s/g, "").length : 0);
       // The résumé is what makes a PRO run different — it is the document that
       // catches a mismatch between the letter and the applicant's own record —
       // so it has to appear in the list of what is about to be analysed.
@@ -200,7 +203,7 @@ export function AnalysisPreparation() {
                   grey line below the price. Wrong-mode runs are unrecoverable
                   — the analysis is paid for and consumed — so the mode belongs
                   beside the product name, not in the fine print. */}
-              <span>{product}{product === "PRO" && <em className={styles.mode}>{modeLabel}</em>}</span>
+              <span>{product}<em className={styles.mode}>{modeLabel}</em></span>
               <strong>{price}</strong>
               <small>
                 기업 지원서 1건 · {modeLabel} · {styleLabel}
@@ -213,7 +216,7 @@ export function AnalysisPreparation() {
               // Informing, never blocking. A short answer can be a deliberate
               // choice; a wrong mode cannot be undone after payment.
               <p className={styles.shortNotice}>
-                문항당 목표 분량의 <b>{Math.round(fillRatio * 100)}%</b>가 작성돼 있습니다. 최종 첨삭은 <b>이미 쓰신 내용을 풀어 쓰는 데까지만</b> 합니다. 이력서에서 새 소재를 가져와 채우려면 <b>내용 보완</b>이 맞습니다.
+                문항당 목표 분량의 <b>{Math.round(fillRatio * 100)}%</b>가 작성돼 있습니다. 목표보다 짧아도 내용 부족을 뜻하지 않습니다. 빠진 설명을 보완하려면 <b>내용 보완</b>, 현재 글의 오류·표현을 점검하려면 <b>최종 첨삭</b>을 선택하세요. 이력서 등 추가 자료 활용은 PRO·FINAL 범위입니다.
                 <WritingHomeLink preselect={{ product, mode: "BUILD" }}>유형 다시 고르기 <ArrowRight /></WritingHomeLink>
               </p>
             )}
@@ -291,7 +294,7 @@ export function AnalysisPreparation() {
                   <FileText />
                   <span>
                     <strong>채용공고</strong>
-                    <small>공백 제외 {postingLength}자</small>
+                    <small>{postingLength > 0 ? `본문 ${postingLength}자 준비됨 · 지원 직무 포함 여부를 확인해 주세요` : "본문 미확보 · 링크나 파일명만으로는 공고 대조가 되지 않습니다"}</small>
                   </span>
                   {postingLength > 0 && <Check />}
                 </article>
@@ -364,7 +367,13 @@ export function AnalysisPreparation() {
                 </li>
               ))}
             </ul>
-            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)} extraBlocks={quote.extraBlocks}/>
+            {product !== "QUICK" && postingLength === 0 && !runActive && !creditRunId && (
+              <div role="alert">
+                <p>채용공고 본문이 없습니다. 본문을 추가하거나 아래 내용을 확인하고 진행해 주세요. 결과에는 공고 대조가 제외됐다고 표시됩니다.</p>
+                <label><input type="checkbox" checked={allowMissingPosting} onChange={event => setAllowMissingPosting(event.target.checked)} /> 공고 요구사항 대조 없이 진행하는 것을 확인했습니다.</label>
+              </div>
+            )}
+            <ApplicationCaseHandoff guest={guest} onCreditRunStarted={setCreditRunId} runActive={runActive || Boolean(creditRunId)} extraBlocks={quote.extraBlocks} postingReady={product === "QUICK" || postingLength > 0} allowMissingPosting={allowMissingPosting}/>
             {/* /result/sample rather than /result: with no id, /result falls
                 back to the visitor's most recent analysis, so a returning
                 customer pressing "샘플 보기" was shown their own past result. And

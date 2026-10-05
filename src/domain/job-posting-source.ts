@@ -25,10 +25,14 @@ export function parseJobPostingInput(value: string): JobPostingSource {
 }
 
 /**
- * True when the only thing we have is a link. Nothing in this product ever
- * opens that link, so the analysis would receive the address as its entire
- * "posting" and could not match a single requirement.
+ * A supplied URL is not evidence until automatic reading or manual entry
+ * supplies the actual body. Filenames alone are not extracted text.
  */
 export function isLinkOnlyPosting(source: { url: string; text: string; filenames?: readonly string[] }) {
-  return Boolean(source.url.trim()) && !source.text.trim() && !source.filenames?.length;
+  return Boolean(source.url.trim() || findJobPostingUrl(source.text)) && !hasJobPostingText(source.text);
+}
+
+/** A filename or a URL is not extracted content. Never count either as ready. */
+export function hasJobPostingText(text: string) {
+  return text.replace(new RegExp(URL_PATTERN.source, "gi"), "").trim().length > 0;
 }

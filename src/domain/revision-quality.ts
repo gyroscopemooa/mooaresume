@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-export const REVISION_RUBRIC_VERSION = "revision-quality-1.0";
+export const REVISION_RUBRIC_VERSION = "revision-quality-2.0";
 export const revisionQualitySchema = z.object({
-  version: z.literal(REVISION_RUBRIC_VERSION),
+  version: z.enum(["revision-quality-1.0", "revision-quality-2.0"]),
   reviewerResponseId: z.string(),
   reviewerModel: z.string(),
   decision: z.enum(["adopt", "keep_current"]),

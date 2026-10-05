@@ -14,9 +14,9 @@ import { shouldShowInterviewPackTab } from "@/server/interview-pack/visibility";
 export default async function ResultPage({
   searchParams,
 }: {
-  searchParams: Promise<{ analysisRunId?: string }>;
+  searchParams: Promise<{ analysisRunId?: string; reused?: string }>;
 }) {
-  const { analysisRunId } = await searchParams;
+  const { analysisRunId, reused } = await searchParams;
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) {
@@ -68,5 +68,5 @@ export default async function ResultPage({
     isAdmin: await isAdmin().catch(() => false),
   });
 
-  return <ResultWorkspaceComplete result={parsed.data} analysisRunId={resolvedRunId} interviewPackEnabled={interviewPackEnabled}/>;
+  return <>{reused === "1" && <p role="status" style={{ margin: 0, padding: "16px 24px", background: "#edf7f1", color: "#176b4a" }}>같은 입력·설정의 기존 결과입니다. 새 분석·추가 결제·이용권 사용 없이 열었습니다.</p>}<ResultWorkspaceComplete result={parsed.data} analysisRunId={resolvedRunId} interviewPackEnabled={interviewPackEnabled}/></>;
 }
