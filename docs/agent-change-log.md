@@ -10,11 +10,13 @@
 - 추가 승인 범위: 결과 마지막 응원 탭, 자체 작성 응원 문구 60개 무작위 전환, 기존 제공 기능 안내와 현직자·재직자 연계 준비 중 표시(신청/결제/개인정보 수집 없음).
 - 추가 승인 범위: 직무·산업·회사 맥락 코칭. 개발/현장/보건/조경설계/서비스/행정 관점을 조건부로 적용하고 공고 근거/일반 직무 관점/확인 필요를 구분한다. 기존 reframe 예시의 사고 당사자 변경은 사실 날조를 유도하므로 사건·주체 보존 지침으로 교정(기존 버전은 기준 커밋에 보존). 실시간 검색 추가 비용 승인 여부는 별도 확인 중.
 - 파일: src/app/onboarding, quick, result 및 api/application-cases, api/job-postings/fetch; src/application/application-case-handoff; src/components/*input*, simple-intake, analysis-preparation, application-case-handoff, result-workspace-complete, result-encouragement; src/domain/answer-length, cover-letter-parser, cover-letter-question, revision-quality, job-posting-source, encouragement; src/lib/use-posting-link; src/server/application-cases/reuse-analysis, ai/quick/{prompt,questions,revision-quality,provider,role-coaching}, analysis/supabase-quick-analysis-run-repository, job-posting/{extract-posting-text,fetch-posting}; 관련 회귀 테스트.
-- 검증: 웹 Vitest 219개 파일 1,907개 통과 후 공고 누락/조언 정합성/결제 전 확인 3개 회귀 테스트 추가. 루트 설치에 Expo 설정이 없는 기존 mobile 테스트 2개는 제외. 기존 면접 포커스 타이밍 테스트 1회 실패 후 단독 및 전체 재실행 통과. TypeScript 통과, ESLint 오류 0(내부 이동 권고 1 및 기존 미사용 변수 2 경고). OpenNext 운영 빌드 1회 통과, 최종 사소한 UI/중복 지침 정리 후 재빌드 중.
+- 검증: 웹 Vitest 219개 파일 1,907개 통과. 이후 추가한 공고 누락/조언 정합성/결제 전 확인 3개 및 이전 검수 응답 호환성 1개는 관련 파일 재실행(29개 및 8개 테스트)으로 통과. 루트 설치에 Expo 설정이 없는 기존 mobile 테스트 2개는 제외. 기존 면접 포커스 타이밍 테스트 1회 실패 후 단독 및 전체 재실행 통과. 최종 TypeScript·OpenNext 운영 빌드·Wrangler dry-run 통과. ESLint 오류 0(내부 이동 권고 1 및 기존 미사용 변수 2 경고); 마지막 gateway/호환성 테스트 파일은 별도 lint 통과. 호환성 테스트 데이터의 타입 추론 오류는 Record<string, unknown>으로 명시 후 빌드 재검증.
 - 수동 검증: 로컬 실제 결과 샘플에서 마지막 응원 탭·60개 문구·준비 중 표시 확인. 실제 도화 공고 공개 API는 이미지 전용 본문이므로 로컬 fetch API가 IMAGE_ONLY를 반환함을 확인. 성공 경로는 합성 본문 fixture로 자동 읽기→입력 콜백→제출 계획 반영 검증.
 - 경계: 저장된 고객 결과/문서/결제/DB 스키마는 변경하지 않음. 실고객 원문은 fixture/커밋에 포함하지 않음. 유료 신규 AI/OCR 호출 없음. 실시간 외부 회사·산업 검색은 비용 승인 대기이며 이번 코드가 검색 완료를 가장하지 않도록 지침에 명시.
 - 배포 경계 보강: ai/quick/openai-responses-gateway는 배포 전에 시작된 quick-3.x 검수 응답의 새 필드만 보수적으로 기본값 처리하여 진행 중 결과가 스키마 변경만으로 실패하지 않도록 함. 신규 4.x 응답은 엄격 검증 유지. 해당 회귀 테스트 포함.
-- 배포: 사용자 승인에 따라 커밋·main 푸시·운영 배포 진행. 직전 운영 Worker 롤백 버전 cd806ec5-d71b-4197-99c4-72c29aeec052. 완료 버전은 후속 로그에 기록.
+- 배포 완료: main에 5b3709e → 2df8ec4 → efde260 푸시. 운영 코드 efde260, Worker c377bc45-b0de-42fa-8906-d04ac6e96472, 주석 revision-consistency-efde260. 513개 자산, gzip 5,526.16 KiB. 기존 vars/secrets 유지. 직전 운영 Worker 롤백 버전 cd806ec5-d71b-4197-99c4-72c29aeec052.
+- 운영 확인: /result/sample 및 /quick 200, 응원 탭과 유형 선택 노출. 실제 브라우저에서 마지막 응원 탭·다른 응원 전환 확인. 공고 fetch는 도화 URL에 IMAGE_ONLY, 내부 주소 400 INVALID_URL. 비로그인 application-cases 401. 개발 면접 페이지/API는 404 유지. 공유 원본 작업트리는 건드리지 않았고 격리 트리의 자동 생성 next-env 변경은 원래대로 복원.
+- 남은 결정: 실시간 외부 검색은 미구현/미활성화. 회사명·직무명만 보내는 별도 검색 단계, 출처와 조회 시점 표시, 개인정보 검색 배제, 비용 상한 및 실패 시 자료 기반 대체가 필요하며 PRO·FINAL 적용/전 상품 적용/추가 비용 없음 중 사용자 답변 대기.
 
 ## 2026-09-29 — Codex: 최신 main + 면접 PRO 통합 검증
 
