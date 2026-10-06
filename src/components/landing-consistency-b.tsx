@@ -1,7 +1,7 @@
 import { ArrowDown, Check, Fingerprint } from "lucide-react";
 import styles from "./landing-consistency-b.module.css";
 
-/** 비교용 B안. 사용자 선택 전까지 운영 홈에 연결하지 않는다. */
+/** 사용자 승인으로 운영 홈의 A 섹션 바로 아래에도 표시하는 B안. */
 export function LandingConsistencyB() {
   return <section className={`container ${styles.root}`} aria-labelledby="consistency-b-title">
     <div className={styles.intro}>

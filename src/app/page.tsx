@@ -12,6 +12,7 @@ import { HomePromoVideo } from "@/components/home-promo-video";
 import { AppLaunchBanner } from "@/components/app-launch-banner";
 import { PricingComparison } from "@/components/pricing-comparison";
 import { LandingConsistency } from "@/components/landing-consistency";
+import { LandingConsistencyB } from "@/components/landing-consistency-b";
 import { isFinalEnabled } from "@/domain/final-availability";
 import landingStyles from "./landing-sections.module.css";
 import outcomeStyles from "./outcome-learning.module.css";
@@ -354,6 +355,7 @@ export default function HomePage() {
       {/* "같은 기준, 내 말투" — 판단은 같아야 하고 표현은 달라도 된다는 첨삭 철학을 방문자 말로.
           판단 기준을 말하는 바로 위 섹션 다음, 사실을 지킨다는 아래 섹션 앞에 둔다. */}
       <LandingConsistency />
+      <LandingConsistencyB />
 
       <section className={"container " + landingStyles.narrative}>
         <div className={landingStyles.narrativeIntro}>
