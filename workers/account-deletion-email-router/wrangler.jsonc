@@ -1,0 +1,20 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "mooa-account-deletion-email-router",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "addresses": ["support@mooaresume.com"],
+  "secrets": {
+    "required": ["INBOUND_SECRET", "FORWARD_TO"]
+  },
+  "vars": {
+    "APP_WEBHOOK_URL": "https://mooaresume.com/api/webhooks/account-deletion-email",
+    "INBOUND_ADDRESS": "support@mooaresume.com"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

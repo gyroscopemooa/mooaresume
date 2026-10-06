@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-07 — Codex: 인증된 삭제요청 메일 자동 처리 (진행 중)
+
+- 사용자 승인: 추가 고정비용 없이 삭제요청 메일 도착 시 자동 처리. 기존 `support@mooaresume.com` 메일은 운영자 Gmail로 계속 전달.
+- 정책: Cloudflare Email Routing의 DMARC 검증을 통과한 envelope 발신주소가 가입 이메일과 정확히 같은 요청만 즉시 삭제한다. 계정 미발견·다른 이메일·처리 실패는 관리자 큐에 남긴다. 메일 본문·첨부는 앱으로 보내거나 저장하지 않는다.
+- 구현: 별도 Email Worker가 모든 support 메일을 기존 검증 주소로 전달하고, 삭제 제목의 최소 메타데이터만 비밀값으로 인증된 앱 웹훅에 전송. 웹훅은 Message-ID 멱등 등록 후 `READY` 요청만 기존 원자적 삭제 경로로 실행하고 완료 메일을 보낸다.
+- 검증: 웹훅·Email Worker Vitest 2파일 8개 통과, 앱/Worker TypeScript와 변경 파일 ESLint 통과, Email Worker Wrangler dry-run 및 전체 Next.js 프로덕션 빌드 통과. 실제 고객 계정 삭제 테스트는 하지 않는다.
+- 배포: 진행 중.
+
 ## 2026-10-07 — Codex: 관리자 계정 삭제 요청 처리 (릴리스 진행)
 
 - 사용자 요청: 이메일로 접수된 계정 삭제 요청을 `/meensoo`에서 등록·확인·처리하고, 완료 시 간단한 안내 메일을 발송하도록 구현 후 커밋·푸시·운영 배포.

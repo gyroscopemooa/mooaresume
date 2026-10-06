@@ -1,0 +1,2 @@
+INBOUND_SECRET=local-only-placeholder
+FORWARD_TO=operator@example.invalid

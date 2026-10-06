@@ -44,3 +44,9 @@
 제목에 `계정 삭제 요청`이 없는 일반 문의는 무시한다.
 
 외부 메일 라우팅이 연결되기 전에도 관리자 화면에서 메일 주소를 직접 등록해 처리할 수 있다.
+
+## 자동 처리 정책
+
+Cloudflare Email Routing이 `support@mooaresume.com` 메일을 전용 Worker로 전달한다. Worker는 원본 메일을 기존 검증된 운영자 Gmail로 그대로 전달하고, 제목·envelope 발신주소·수신주소·Message-ID만 인증 웹훅에 보낸다. 본문과 첨부는 앱으로 보내거나 저장하지 않는다.
+
+Cloudflare가 인증한 envelope 발신주소와 가입 이메일이 정확히 일치해 요청이 `READY`가 된 경우에만 즉시 삭제한다. 계정이 없거나 발신주소가 가입 이메일과 다르면 `NEEDS_ACCOUNT_EMAIL` 상태로 관리자 큐에 남긴다. 동일 Message-ID 재전송은 기존 요청을 재사용해 중복 삭제를 막는다.

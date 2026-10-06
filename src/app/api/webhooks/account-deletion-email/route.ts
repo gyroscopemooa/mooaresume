@@ -1,12 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createAccountDeletionRequest } from "@/server/account/admin-account-deletion";
+import { ACCOUNT_DELETION_CONFIRMATION } from "@/lib/account-deletion";
+import { createAccountDeletionRequest, executeAdminAccountDeletion } from "@/server/account/admin-account-deletion";
 
 const inboundSchema = z.object({
   messageId: z.string().trim().min(1).max(500),
   from: z.string().trim().toLowerCase().email().max(254),
+  to: z.literal("support@mooaresume.com"),
   subject: z.string().trim().max(500),
+  authenticated: z.literal(true),
 });
 
 function authorized(request: Request): boolean {
@@ -33,7 +36,21 @@ export async function POST(request: Request) {
       source: "EMAIL_WEBHOOK",
       sourceMessageId: parsed.data.messageId,
     });
-    return NextResponse.json({ accepted: true, requestId: deletionRequest.id });
+    if (deletionRequest.status === "READY") {
+      const result = await executeAdminAccountDeletion(deletionRequest.id, ACCOUNT_DELETION_CONFIRMATION);
+      return NextResponse.json({
+        accepted: true,
+        requestId: deletionRequest.id,
+        autoDeleted: true,
+        noticeSent: result.noticeSent,
+      });
+    }
+    return NextResponse.json({
+      accepted: true,
+      requestId: deletionRequest.id,
+      autoDeleted: deletionRequest.status === "COMPLETED",
+      reviewRequired: !["COMPLETED", "PROCESSING"].includes(deletionRequest.status),
+    });
   } catch (error) {
     console.error("account_deletion_email_ingest_failed", error instanceof Error ? error.message : "UNKNOWN");
     return NextResponse.json({ error: "요청을 등록하지 못했습니다." }, { status: 500 });
