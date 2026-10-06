@@ -117,7 +117,7 @@
 3. 검토 AI 둘이 같은 글에 다르게 판정합니다(첫 검토가 권한 방향을 두 번째 검토가 거절한 사례 있음). 다시 쓰기의 통과율 25%의 큰 이유입니다.
 4. 표본이 작습니다: 합성 글 1개, 회당 4~9번, 다시 쓴 문항 8개. 숫자는 방향만 믿어야 합니다.
 5. 회사·직무·웹조사가 붙은 입력과 PRO·FINAL은 이 실험에서 재지 않았습니다.
-6. 이번 검증에서 전체 Vitest 중 `interview-feedback-panel.test.tsx` 1건이 부하 때문에 한 번 실패했고 단독 3회는 통과했습니다(이 변경과 무관한 시간 의존 테스트).
+6. 전체 Vitest에서 `src/components/interview-prototype/interview-feedback-panel.test.tsx`의 "focuses the returned result and respects reduced motion (true)" 1건이 6번 중 2번 실패했습니다(한 번은 유료 검증이 동시에 돌던 중). 나머지 4번과 단독 3번은 통과했고, 기준 커밋 `2c0552e`의 전체 실행 1번도 통과했습니다. 이 브랜치의 코드와 닿는 곳이 없어 시간 의존 테스트(testing-library 기본 1초 대기)로 보지만, **기존 문제인지 이 브랜치가 부하를 늘려서인지는 단정하지 못했습니다.** 이 테스트를 반복 실행해 보고 판단을 알려 주세요.
 
 ## 9. 확인 방법
 
