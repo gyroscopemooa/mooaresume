@@ -14,7 +14,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.4";
+export const QUICK_PROMPT_VERSION = "quick-4.5";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -322,7 +322,10 @@ ${LENGTH_INTEGRITY_RULE}`,
     // across. Applying this rule there would order the model to do both.
     ...(request.writingMode === "CREATE"
       ? []
-      : ["각 문항에서 원문 문장 중 최소 하나는 거의 그대로 유지하세요. 지원자가 쓴 문장이 하나도 남지 않은 첨삭본은 첨삭이 아니라 대필입니다. 원문 전체를 쓸 수 없다고 판단했다면 그렇게 판단한 이유를 consultingAdvice에 적으세요."]),
+      : ["각 문항에서 원문 문장 중 최소 하나는 거의 그대로 유지하세요. 지원자가 쓴 문장이 하나도 남지 않은 첨삭본은 첨삭이 아니라 대필입니다. 원문 전체를 쓸 수 없다고 판단했다면 그렇게 판단한 이유를 consultingAdvice에 적으세요.",
+        // 같은 글 6번에서 작성 AI는 단정이 많은 문항을 거의 새로 썼고(원문과 유사도 0.4대), 그때마다 지원자의 구체적 제안과 기관
+        // 연결이 사라져 검토 AI가 거절했다. 고칠 문장만, 그 안의 문제 낱말만 고치게 해서 수정이 통과하기 쉬운 크기로 만든다.
+        "문제가 없는 문장은 글자 그대로 두고, 고쳐야 할 문장만 고치세요. 고칠 때도 그 문장 안에서 문제가 되는 낱말·구절만 바꾸고, 지원자가 쓴 구체적인 제안·방법·기관명·고유명사·수치는 낱말 그대로 남기세요. 문장 순서와 문단 구성은 질문에 답하지 못하거나 읽기 어려울 때만 바꾸세요. 분량 때문에 덜어낼 때도 같은 원칙입니다. 한 문항의 대부분 문장을 다시 썼다면 그만큼 큰 문제가 그 문항에 있어야 합니다."]),
     "각 revision의 originalAnnotations에는 제출 원문에서 짚어줄 표현을 최대 10개까지 넣으세요. 개수를 채우기 위해 억지로 만들지 마세요.",
     "originalAnnotations.phrase는 해당 문항의 원문 답변에 실제로 한 번만 등장하는 문구를 토씨와 띄어쓰기까지 그대로 복사하세요. 낱말 하나만 잘라내지 말고, 문제나 강점이 드러나는 구절이나 문장 단위로 잡으세요.",
     "originalAnnotations.type은 good, delete, vague, revise, fact, polish 중 하나만 사용하세요.",

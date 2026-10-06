@@ -11,9 +11,13 @@ describe("QUICK live Korean eval", () => {
     }
 
     const gateway = createOpenAIResponsesGatewayFromEnv();
+    // 비용을 줄이려면 QUICK_EVAL_ONLY=id1,id2 로 일부 사례만 돌린다(프롬프트 한 줄을 바꾼 뒤의 빠른 점검용).
+    const only = process.env.QUICK_EVAL_ONLY?.split(",").map((id) => id.trim()).filter(Boolean);
+    const fixtures = only?.length ? quickEvalFixtures.filter((fixture) => only.includes(fixture.id)) : quickEvalFixtures;
+    if (only?.length && fixtures.length === 0) throw new Error(`QUICK_EVAL_ONLY에 맞는 사례가 없습니다: ${only.join(", ")}`);
     const results = await runQuickLiveEval(
       gateway,
-      quickEvalFixtures,
+      fixtures,
       (result) => {
         console.info(JSON.stringify({
           caseId: result.caseId,
@@ -43,6 +47,6 @@ describe("QUICK live Korean eval", () => {
     }));
 
     expect(summary.failures, JSON.stringify(summary.failures)).toEqual([]);
-    expect(summary.passed).toBe(quickEvalFixtures.length);
+    expect(summary.passed).toBe(fixtures.length);
   }, 600_000);
 });

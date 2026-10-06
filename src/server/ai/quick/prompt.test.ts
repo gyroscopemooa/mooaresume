@@ -748,3 +748,27 @@ describe("오탈자 유형", () => {
     expect(buildQuickAnalysisInput(heavy)).toContain("자격증: 정보처리기사");
   });
 });
+
+describe("고치는 크기와 단정 다루기", () => {
+  it("문제 없는 문장은 그대로 두고 구체적 제안·기관명·수치는 낱말 그대로 남기게 한다", () => {
+    const polish = buildQuickAnalysisInstructions({ ...request, writingMode: "POLISH" });
+    const build = buildQuickAnalysisInstructions({ ...request, writingMode: "BUILD" });
+
+    for (const instructions of [polish, build]) {
+      expect(instructions).toContain("문제가 없는 문장은 글자 그대로 두고, 고쳐야 할 문장만 고치세요");
+      expect(instructions).toContain("구체적인 제안·방법·기관명·고유명사·수치는 낱말 그대로 남기세요");
+    }
+  });
+
+  it("CREATE에는 원문 유지 규칙을 걸지 않는다(메모를 그대로 옮기지 않는 단계다)", () => {
+    expect(buildQuickAnalysisInstructions({ ...request, writingMode: "CREATE" })).not.toContain("문제가 없는 문장은 글자 그대로 두고");
+  });
+
+  it("근거 없는 단정은 지우지 말고 낮춰 쓰라는 같은 기준을 작성과 검토가 함께 읽는다", async () => {
+    const { REVISION_REVIEW_INSTRUCTIONS } = await import("./revision-quality");
+    const rule = "범위·조건·가능성 표현으로 낮춰 쓰는 것이 올바른 수정입니다";
+    expect(buildQuickAnalysisInstructions(request)).toContain(rule);
+    expect(REVISION_REVIEW_INSTRUCTIONS).toContain(rule);
+    expect(REVISION_REVIEW_INSTRUCTIONS).toContain("낮춰 쓴 것을 내용 손실로 보지 말고");
+  });
+});
