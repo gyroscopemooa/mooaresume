@@ -5,6 +5,7 @@ import { createQuickAnalysisResult } from "./provider";
 import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
 import type { QuickGatewayResult } from "./openai-responses-gateway";
 import { quickAnalysisOutputSchema } from "./schema";
+import { stabilityQuestions } from "@/fixtures/quick-stability-case";
 
 const original = "원칙을 양보하는 대신 아이가 포기하지 않도록 곁에서 도왔습니다.";
 const revised = "원칙을 지키면서 아이가 포기하지 않도록 곁에서 도왔습니다.";
@@ -168,6 +169,16 @@ describe("tolerant quotation grounding", () => {
     expect(quoteAppearsIn(text, "지역경제의 기반은  보고서가 아니라 현장에 있다는 것을 체감했습니다.")).toBe(true);
     expect(quoteAppearsIn(text, "이때부터 “공공 개발” 업무에 관심을 갖게 되었습니다")).toBe(true);
     expect(quoteAppearsIn(text, "이때부터 공공개발 업무에 관심을 갖게 되었습니다.")).toBe(true);
+  });
+
+  it("accepts the shape real reviews used: two sentences from the answer joined with \" ... \"", () => {
+    // 실제 검토 응답에서 글자 그대로 일치하지 않아 거절된 9개 인용이 모두 이 모양(떨어진 두 구절을 말줄임표로 이음)이었다.
+    const answer = stabilityQuestions[4].answer;
+    expect(quoteAppearsIn(answer, "대부분의 지방 상권은 유동인구가 줄고 청년 창업은 거의 불가능한 상태가 되었습니다. ... 상권이 반드시 살아날 것입니다.")).toBe(true);
+    expect(quoteAppearsIn(answer, "대부분의 지방 상권은 유동인구가 줄고 청년 창업은 거의 불가능한 상태가 되었습니다. … 공공이 임대료 안정 구역을 지정하고 컨설팅을 지원하면 상권이 반드시 살아날 것입니다.")).toBe(true);
+    // 앞뒤 순서가 바뀌었거나 없는 문장을 이은 것은 여전히 통과하지 못한다.
+    expect(quoteAppearsIn(answer, "상권이 반드시 살아날 것입니다. ... 대부분의 지방 상권은 유동인구가 줄고")).toBe(false);
+    expect(quoteAppearsIn(answer, "대부분의 지방 상권은 유동인구가 줄고 ... 공사가 모든 소상공인을 지원합니다.")).toBe(false);
   });
 
   it("accepts a quote joined with an ellipsis when the pieces appear in order", () => {

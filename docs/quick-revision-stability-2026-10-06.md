@@ -35,11 +35,13 @@
 ## 방법
 
 - 입력: 합성 자소서 5문항 `src/fixtures/quick-stability-case.ts`(기관·지원자 모두 지어낸 것, 실제 고객 글 사용 안 함). QUICK · POLISH · BALANCED, 회사·직무 없음, 문항별 글자 수 550/550/450/450/450. 문항마다 결함의 종류와 크기를 다르게 두었다(비유·막연한 포부 / "어떤 기업이든" 과일반화 / 오탈자와 결과 부재 / 거의 완성 / "대부분·아주·반드시" 단정).
-- 경로: 운영과 같은 코드(`OpenAIResponsesGateway.analyze` = 작성 AI + 별도 검토 AI), 모델 `gpt-5.6-terra`, 프롬프트 `quick-4.3`, 검토 `revision-quality-2.0`.
+- 경로: 운영과 같은 코드(`OpenAIResponsesGateway.analyze` = 작성 AI + 별도 검토 AI), 모델 `gpt-5.6-terra`, 검토 `revision-quality-2.0`. 프롬프트는 실험 1~3이 `quick-4.3`, 실험 4가 `quick-4.4`.
 - 실험 1: 전체 5회 + 첫 수정안 하나를 **검토 AI에게만** 4회 다시 보여주기.
 - 실험 2: 전체 1회 + 그 수정안을 검토 AI에게만 5회, 이번에는 채택 조건 두 가지(인용 일치, 5개 항목 점수 하락)를 따로 기록.
-- 비용: 전체 1회(작성+검토) 약 3.0만~3.2만 토큰, 검토만 1회 약 1만 토큰. 두 실험 합계 약 30만 토큰.
-- 재실행: `RUN_LIVE_EVAL=1 STABILITY_OUT=<파일> vitest run --config vitest.live.config.ts src/evals/quick-stability.live.test.ts` (유료, 환경변수 `OPENAI_API_KEY`·`OPENAI_MODEL` 필요, `STABILITY_RUNS`·`STABILITY_REVIEW_REPEATS`로 횟수 조절).
+- 실험 3(규칙 고치기 전 원본 수집): 전체 3회 + 수정안마다 검토 AI에게만 2회. 작성 AI 수정안과 검토 AI 응답 원본을 저장해, 채택 규칙을 고친 뒤 **유료 호출 없이** 같은 원본에 다시 적용해 비교했다(`quick-stability-replay.test.ts`).
+- 실험 4(고친 코드 확인): 프롬프트 `quick-4.4`와 고친 채택 규칙으로 전체 4회 + 수정안마다 검토 AI에게만 1회(아래 "고친 뒤").
+- 비용: 전체 1회(작성+검토) 약 3.0만~3.2만 토큰, 검토만 1회 약 1만 토큰. 실험 1·2 합계 약 30만 토큰, 실험 3 약 15만 토큰, 실험 4 약 16만 토큰.
+- 재실행: `RUN_LIVE_EVAL=1 STABILITY_OUT=<파일> vitest run --config vitest.live.config.ts src/evals/quick-stability.live.test.ts` (유료, 환경변수 `OPENAI_API_KEY`·`OPENAI_MODEL` 필요, `STABILITY_RUNS`·`STABILITY_REVIEW_REPEATS`(수정안당 검토만 반복 횟수)로 조절, 원본은 `<STABILITY_OUT>.raw.json`에 저장). 저장한 원본을 현재 규칙으로 다시 계산: `STABILITY_RAW_IN=<raw 파일> STABILITY_ROWS_IN=<요약 파일> STABILITY_REPLAY_OUT=<결과 파일> vitest run src/evals/quick-stability-replay.test.ts`(무료).
 
 ## 결과
 
@@ -105,7 +107,7 @@
 원래 권고 5가지 중 아래 둘을 이 브랜치에서 진행했다(운영 결과가 바뀌는 변경이라 배포는 사용자 승인 후).
 
 1. **진행: 채택 규칙의 기계적 오류 보정.**
-   - 인용 일치를 띄어쓰기·따옴표·말줄임표 차이까지 허용(`quoteAppearsIn`). 같은 수정안을 검토 AI에게 보여준 30건 중 4건이 이 때문에 거절됐고 그중 2건은 총점이 5~7점 오른 수정이었다.
+   - 인용 일치를 띄어쓰기·따옴표·말줄임표 차이까지 허용(`quoteAppearsIn`). 같은 수정안을 검토 AI에게 보여준 30건 중 4건이 이 때문에 거절됐고 그중 2건은 총점이 5~7점 오른 수정이었다. 실험 3에서 인용이 일치하지 않아 걸린 9개를 열어 보니 **전부 떨어진 두 구절을 " ... "로 이어 붙인 인용**이었다(낱말이 틀린 인용은 없었다).
    - 문서 전체 충돌 판정(`crossQuestionRegression`)이 모든 수정을 되돌리던 것을, 검토 AI가 관여한 문항을 짚으면(`crossQuestionOrders`) 그 문항만 되돌리도록. 짚지 못하면 예전처럼 전부 되돌린다.
    - **"5개 항목 중 하나도 내려가면 안 된다"는 규칙은 그대로 뒀다.** 이 규칙 하나만으로 거절된 문항은 30건 중 1건뿐이라 얻는 것이 작고, 취향·구체성을 지키려는 정책과 맞닿아 있다.
 2. **진행: 단정은 지우지 말고 낮춰 쓰기**(`quick-4.4`, 작성·검토 AI가 같이 읽는 편집 규칙). 실험의 5번 문항은 작성 AI가 지원자의 주장을 지우고 일반론으로 다시 써서(원문과 유사도 0.39~0.45) 검토 AI가 사실·말투 손실로 거절했다. 운영 분석 한 건(회사 정보가 있던 경우)에서는 같은 유형의 단정을 낮추는 수정이 채택됐다.
