@@ -115,6 +115,9 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
 
   private finishReview(request: AnalysisRequest, candidate: QuickGatewayResult, envelope: z.infer<typeof responsesEnvelopeSchema>): QuickGatewayResult {
     let raw: unknown = JSON.parse(extractOutputText(envelope));
+    // `crossQuestionOrders`는 이 칸이 생기기 전에 시작된 검토 응답에는 없다. 비운 채로 받는다 — 비어 있으면
+    // 예전처럼 문항 간 충돌 판정이 모든 수정을 되돌리므로 진행 중이던 검토가 스키마 변경만으로 실패하지 않는다.
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) raw = { crossQuestionOrders: [], ...(raw as Record<string, unknown>) };
     // A review started before deployment can finish afterwards. Preserve the
     // old validated verdict, but never assume its unreviewed length note is valid.
     if (/^quick-3\./.test(candidate.execution.promptVersion) && raw && typeof raw === "object" && !Array.isArray(raw)) {

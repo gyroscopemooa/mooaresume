@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analysisRequestSchema, type AnalysisRequest } from "@/application/analysis-contract";
-import { applyRevisionReview, matchPreviousRevision, revisionFingerprints, revisionReviewSchema, type RevisionReview } from "./revision-quality";
+import { applyRevisionReview, matchPreviousRevision, quoteAppearsIn, revisionFingerprints, revisionReviewSchema, type RevisionReview } from "./revision-quality";
 import { createQuickAnalysisResult } from "./provider";
 import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
 import type { QuickGatewayResult } from "./openai-responses-gateway";
@@ -13,7 +13,7 @@ export function qualityTestCandidate(answer = revised): QuickGatewayResult {
   return { output: { schemaVersion: "1.0", readiness: { score: 70, label: "검토", summary: "원칙 준수와 도움을 설명했습니다.", reasons: [original] }, priorities: [], verificationQuestions: [], consultingAdvice: [], revision: { originalAnnotations: [], subheading: null, lengthNote: null, revisedAnswer: answer, highlightedPhrases: [], reasons: [], verificationNote: null } }, execution: { responseId: "writer", model: "test", promptVersion: "quick-3.4", rubricVersion: "quick-rubric-1.0", schemaVersion: "1.0", inputTokens: 10, outputTokens: 20, totalTokens: 30 } };
 }
 export function qualityTestReview(): RevisionReview {
-  return { diagnosis: { readiness: qualityTestCandidate().output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 }, after: { questionFit: 3, evidence: 3, logic: 3, readability: 4, specificity: 3 }, meaningfulImprovement: true, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "실제 전달력 개선을 확인했습니다.", sourceQuote: original, candidateQuote: revised, previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, validAdviceIndexes: [], adviceCorrections: [] };
+  return { diagnosis: { readiness: qualityTestCandidate().output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 }, after: { questionFit: 3, evidence: 3, logic: 3, readability: 4, specificity: 3 }, meaningfulImprovement: true, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "실제 전달력 개선을 확인했습니다.", sourceQuote: original, candidateQuote: revised, previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, crossQuestionOrders: [], validAdviceIndexes: [], adviceCorrections: [] };
 }
 const reviewer = { responseId: "reviewer", model: "test" };
 const apply = (review: RevisionReview, request = qualityTestRequest, candidate = qualityTestCandidate()) => applyRevisionReview(request, candidate, review, reviewer);
@@ -157,5 +157,87 @@ describe("exact owner-history context matching", () => {
     expect(analysisRequestSchema.parse({ ...qualityTestRequest, previousRevision: { runId: "other-user" } })).not.toHaveProperty("previousRevision");
     const result = stored(); delete result.revisionQuality;
     expect(matchPreviousRevision(qualityTestRequest, [{ runId: "old", result }])).toBeUndefined();
+  });
+});
+
+describe("tolerant quotation grounding", () => {
+  const text = "지역 경제의 기반은 보고서가 아니라 현장에 있다는 것을 체감했습니다. 이때부터 '공공 개발' 업무에 관심을 갖게 되었습니다.";
+
+  it("accepts a quote that differs only in spacing, quote marks or punctuation", () => {
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 보고서가 아니라 현장에 있다는 것을 체감했습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "지역경제의 기반은  보고서가 아니라 현장에 있다는 것을 체감했습니다.")).toBe(true);
+    expect(quoteAppearsIn(text, "이때부터 “공공 개발” 업무에 관심을 갖게 되었습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "이때부터 공공개발 업무에 관심을 갖게 되었습니다.")).toBe(true);
+  });
+
+  it("accepts a quote joined with an ellipsis when the pieces appear in order", () => {
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 … 현장에 있다는 것을 체감했습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 ... 관심을 갖게 되었습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "관심을 갖게 되었습니다 … 지역 경제의 기반은")).toBe(false);
+  });
+
+  it("still rejects a quote with different words, a made-up sentence or nothing", () => {
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 보고서에 있다고 느꼈습니다")).toBe(false);
+    expect(quoteAppearsIn(text, "원문에 없는 모순")).toBe(false);
+    expect(quoteAppearsIn(text, "   ")).toBe(false);
+    expect(quoteAppearsIn(text, "…")).toBe(false);
+  });
+
+  it("adopts an evidenced improvement whose quotes were typed with different spacing and quote marks", () => {
+    const review = qualityTestReview();
+    review.questions[0].sourceQuote = `“${original.replace(/ /g, "  ")}”`;
+    review.questions[0].candidateQuote = `${revised.slice(0, 12)} … ${revised.slice(-14)}`;
+    const result = apply(review);
+    expect(result.revisionQuality?.decision).toBe("adopt");
+    expect(result.output.revision.revisedAnswer).toBe(revised);
+  });
+
+  it("keeps rejecting an improvement whose quote is not in the text", () => {
+    const review = qualityTestReview(); review.questions[0].candidateQuote = "후보에 없는 문장입니다";
+    expect(apply(review).revisionQuality?.decision).toBe("keep_current");
+  });
+});
+
+describe("scoped cross-question veto", () => {
+  const request = { ...qualityTestRequest, writingMode: "BUILD" as const, questions: Array.from({ length: 3 }, (_, i) => ({ id: String(i), title: "경험", prompt: "경험을 설명하세요.", targetLength: 500, answer: original })) };
+  const candidate = () => {
+    const base = qualityTestCandidate();
+    base.output.revisions = Array.from({ length: 3 }, (_, i) => ({ ...base.output.revision, questionOrder: i + 1 }));
+    return base;
+  };
+  const review = () => {
+    const base = qualityTestReview();
+    base.questions = Array.from({ length: 3 }, (_, i) => ({ ...base.questions[0], order: i + 1 }));
+    return base;
+  };
+
+  it("reverts only the questions the reviewer named", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [2];
+    const result = apply(flagged, request, candidate());
+    expect(result.output.revisions?.map(q => q.revisedAnswer)).toEqual([revised, original, revised]);
+    expect(result.revisionQuality?.decision).toBe("adopt");
+  });
+
+  it("reverts every question when the reviewer did not say which ones (the earlier behavior)", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [];
+    const result = apply(flagged, request, candidate());
+    expect(result.output.revisions?.map(q => q.revisedAnswer)).toEqual([original, original, original]);
+    expect(result.revisionQuality?.decision).toBe("keep_current");
+  });
+
+  it("treats numbers that match no question as not saying which ones", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [9];
+    expect(apply(flagged, request, candidate()).revisionQuality?.decision).toBe("keep_current");
+  });
+
+  it("ignores the named questions when no cross-question problem was reported", () => {
+    const clean = review(); clean.crossQuestionOrders = [1];
+    expect(apply(clean, request, candidate()).output.revisions?.map(q => q.revisedAnswer)).toEqual([revised, revised, revised]);
+  });
+
+  it("still lets a question that failed on its own stay rejected inside a scoped veto", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [2];
+    flagged.questions[2].lostFactOrVoice = true;
+    expect(apply(flagged, request, candidate()).output.revisions?.map(q => q.revisedAnswer)).toEqual([revised, original, original]);
   });
 });
