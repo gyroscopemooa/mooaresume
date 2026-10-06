@@ -8,6 +8,17 @@ export function readAnswerLimit(prompt: string) {
   return { max: number(max?.[1]), min: number(min?.[1]), basis: /공백\s*제외/.test(prompt) ? "compact" : /공백\s*포함/.test(prompt) ? "inclusive" : "unknown" } as const;
 }
 
+/**
+ * 공백 제외 글자 수가 목표를 넘은 만큼. 넘지 않았거나 목표가 없으면 0.
+ *
+ * 화면의 "N / M자"는 숫자만 보여 줘서, 원문을 그대로 둔 문항이 목표를 훌쩍 넘어도
+ * 손님은 그 사실을 어디서도 읽지 못했습니다. 이 값이 0보다 크면 안내를 붙입니다.
+ */
+export function countOverTarget(answer: string, target: number | null | undefined) {
+  if (!target || target <= 0) return 0;
+  return Math.max(0, answer.replace(/\s/g, "").length - target);
+}
+
 export function describeAnswerLength(answer: string, prompt: string, target: number) {
   const limit = readAnswerLimit(prompt);
   const compact = answer.replace(/\s/g, "").length;

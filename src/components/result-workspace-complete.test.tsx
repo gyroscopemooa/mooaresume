@@ -615,3 +615,85 @@ describe("ResultWorkspaceComplete 선택 제안의 컨설턴트 설명", () => {
     expect(tipCalls(fetchMock)).toHaveLength(1);
   });
 });
+
+describe("ResultWorkspaceComplete 답변 앞 질문 줄과 글자 수 초과 안내", () => {
+  const QUESTION_1 = "한빛지역개발공사 체험형 인턴에 지원한 이유를 기술해 주십시오.";
+  const QUESTION_2 = "구성원 간 의견 차이로 갈등이 생겼을 때 소통으로 해결한 경험을 기술해 주십시오.";
+  const KEPT_BODY = "대학 시절 전통시장 점포 40곳을 방문하고 상인분들을 인터뷰했습니다. 현장의 목소리가 정책으로 이어지는 과정을 배우고 싶습니다.";
+  const EDITED_BODY = "교내 전시 행사에서 현수막 예산 문제로 팀원과 의견이 갈렸고, 입구에만 현수막을 쓰는 절충안으로 해결했습니다.";
+  const base = sampleResultDocument.questions[0];
+  const marked = {
+    ...sampleResultDocument,
+    isSample: false,
+    questions: [
+      { ...base, id: "kept", order: 1, title: "지원동기", prompt: "지원동기", targetLength: 450, originalAnswer: `질문: ${QUESTION_1}\n${KEPT_BODY}`, revisedAnswer: `질문: ${QUESTION_1}\n${KEPT_BODY}`, revisionReasons: [], highlightedPhrases: [], originalAnnotations: undefined },
+      { ...base, id: "edited", order: 2, title: "갈등 해결 경험", prompt: "갈등 해결 경험", targetLength: 450, originalAnswer: `질문: ${QUESTION_2}\n교내 전시 행사에서 현수막 문제로 팀원과 갈등이 있었고 절충안으로 해결했습니다.`, revisedAnswer: EDITED_BODY, revisionReasons: ["상황과 해결 방법을 한 문장에 담았습니다."], highlightedPhrases: [], originalAnnotations: undefined },
+    ],
+  };
+
+  it("원문을 그대로 둔 문항도 수정한 문항처럼 질문 줄 없이 질문 칸에 질문을 보여 준다", () => {
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    expect(document.body.textContent).not.toContain("질문:");
+    expect(screen.getByText(QUESTION_1)).toBeTruthy();
+    expect(screen.getByText(QUESTION_2)).toBeTruthy();
+    // 유지한 문항은 여전히 "유지"이고, 수정한 문항은 여전히 "왜 바뀌었나요?"이다.
+    expect(screen.getAllByText("현재 문장 유지")).toHaveLength(1);
+    expect(screen.getAllByText("왜 바뀌었나요?")).toHaveLength(1);
+    // 글자 수는 질문 줄을 빼고 센다.
+    expect(screen.getByText(`${KEPT_BODY.replace(/\s/g, "").length} / 450자`)).toBeTruthy();
+  });
+
+  it("이 문항 복사와 전체 복사에 질문 줄이 딸려 가지 않는다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /이 문항 복사/ })[0]);
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toBe(KEPT_BODY);
+
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "전체 복사" })[0]);
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
+    expect(writeText.mock.calls[1][0]).not.toContain("질문:");
+    expect(writeText.mock.calls[1][0]).toContain(KEPT_BODY);
+  });
+
+  it("제출본 탭에서는 원문에서 빠진 질문을 질문 칸으로 보여 준다", () => {
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "제출본" }));
+    expect(screen.getByText(QUESTION_1)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("질문:");
+  });
+
+  it("목표 글자 수를 넘은 문항은 몇 자 넘었는지와 줄이는 방법을 알려 준다", () => {
+    const over = { ...marked, questions: [{ ...marked.questions[0], targetLength: 40 }, marked.questions[1]] };
+    render(<ResultWorkspaceComplete result={over}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    const overBy = KEPT_BODY.replace(/\s/g, "").length - 40;
+    expect(screen.getByText(`목표 40자보다 ${overBy}자 깁니다.`)).toBeTruthy();
+    expect(screen.getByText(/이번 검토에서는 이 문항의 문장을 바꾸지 않아 분량도 그대로입니다/)).toBeTruthy();
+    expect(screen.getAllByRole("note")).toHaveLength(1);
+  });
+
+  it("목표 안에 들어오는 문항에는 초과 안내를 붙이지 않는다", () => {
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
+  it("직접 줄여서 목표 안에 들어오면 초과 안내가 사라진다", () => {
+    const over = { ...marked, questions: [{ ...marked.questions[0], targetLength: 40 }] };
+    render(<ResultWorkspaceComplete result={over}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getAllByRole("note")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /직접 수정/ }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "전통시장 점포 40곳을 방문했습니다." } });
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+});

@@ -7,7 +7,8 @@ import { WritingHomeLink } from "@/components/writing-home-link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
 import { buildFinalDocumentText, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
-import { describeAnswerLength } from "@/domain/answer-length";
+import { countOverTarget, describeAnswerLength } from "@/domain/answer-length";
+import { normalizeQuestionMarkers } from "@/domain/question-marker";
 import { recommendNextStep } from "@/domain/next-step";
 import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
@@ -133,6 +134,22 @@ function FilledAnswer({ original, revised }: { original: string; revised: string
     .map((part, index) => part.type === "added"
       ? <mark key={index} className={styles.filled}>{part.value}</mark>
       : <span key={index}>{part.value}</span>)}</p>;
+}
+
+/**
+ * 목표 글자 수(공백 제외)를 넘긴 문항에 붙는 안내. 넘지 않았으면 아무것도 그리지 않는다.
+ *
+ * 원문을 그대로 두기로 한 문항은 분량도 그대로여서, 목표를 훌쩍 넘고도 "현재 문장 유지"
+ * 한 줄만 보였다. 줄이는 일은 지원자의 몫이라 AI가 대신하지 않고, 대신 얼마나 넘었는지와
+ * 줄일 수 있는 자리를 알려 준다. 직접 줄이면 이 안내도 같이 사라진다.
+ */
+function LengthOverNotice({ answer, target, unchanged }: { answer: string; target: number; unchanged: boolean }) {
+  const over = countOverTarget(answer, target);
+  if (over <= 0) return null;
+  return <div className={styles.lengthOver} role="note">
+    <AlertCircle/>
+    <p><b>목표 {target}자보다 {over}자 깁니다.</b> {unchanged ? "이번 검토에서는 이 문항의 문장을 바꾸지 않아 분량도 그대로입니다. " : ""}제출 양식의 글자 수 제한을 넘지 않도록 &lsquo;직접 수정&rsquo;으로 줄여 주세요.</p>
+  </div>;
 }
 
 /** A question that started empty has no original to diff against at all. */
@@ -281,11 +298,14 @@ function readCarriedMaterialCount(): number {
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
 export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
-  const result = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
+  const boundaryRestored = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
+  // 답변 맨 앞의 "질문:" 줄을 질문 칸으로 옮긴 화면용 사본. 저장된 결과는 그대로이고,
+  // 화면·글자 수·복사·내보내기가 모두 이 사본을 읽어 문항마다 같은 모양이 된다.
+  const result = useMemo(() => normalizeQuestionMarkers(boundaryRestored), [boundaryRestored]);
   useEffect(() => { if (!result.isSample && !adminPreview) trackWeb('result_viewed', { product: result.product }); }, [result.isSample, result.product, adminPreview]);
   // Keep prior local edits intact rather than restoring the broken prefix over
   // the repaired view. Production storage keys are unchanged.
-  const storageKey = "mooa:result-edits:" + result.caseId + ":v1" + (result !== sourceResult ? ":question-boundary-local" : "");
+  const storageKey = "mooa:result-edits:" + result.caseId + ":v1" + (boundaryRestored !== sourceResult ? ":question-boundary-local" : "") + (result !== boundaryRestored ? ":question-marker-local" : "");
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
   const [editing, setEditing] = useState<string | null>(null);
@@ -588,8 +608,11 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
           const annotations = deriveFallbackOriginalAnnotations(question, resultStoresAnnotations);
           const usingFallback = storedAnnotations.length === 0 && annotations.length > 0;
           const { groups, marks } = groupOriginalAnnotations(annotations);
+          // 원문 맨 앞의 질문 줄을 질문 칸으로 옮긴 문항은 이 탭의 원문에서 질문이 빠지므로 칸으로 보여 준다.
+          const movedPrompt = sourceResult.questions.find((candidate) => candidate.id === question.id)?.prompt !== question.prompt;
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div></header>
+            {movedPrompt && <p className={styles.prompt}>{question.prompt}</p>}
             <div className={styles.submissionCompare}>
               <section><small>제출한 원문</small>{question.originalAnswer.trim() ? <AnnotatedOriginal text={question.originalAnswer} marks={marks}/> : <p className={styles.blankOriginal}>이 문항은 비워 두셨습니다. 오른쪽 첨삭본은 다른 문항과 지원자료의 사실로 새로 쓴 <b>제안</b>이니, 사실과 맞는지 확인해 주세요.</p>}</section>
               <aside>
@@ -632,6 +655,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
+            <LengthOverNotice answer={answer} target={question.targetLength} unchanged={question.originalAnswer === question.revisedAnswer && !changed}/>
             {showLengthGap && <div className={styles.lengthGap}>
               <div><b>보완에 필요한 정보</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
               <p>{question.lengthNote}</p>
