@@ -23,6 +23,7 @@ import {
   Star,
   ShieldAlert,
   Users,
+  UserRoundX,
   X,
 } from "lucide-react";
 import styles from "./admin.module.css";
@@ -40,11 +41,12 @@ const NAV = [
   { href: "/meensoo/research", label: "축적 데이터", Icon: Database },
   { href: "/meensoo/feedback", label: "분석 후기", Icon: Star, badgeKey: "feedback" as const },
   { href: "/meensoo/inquiries", label: "문의", Icon: MessageSquare, badgeKey: "inquiries" as const },
+  { href: "/meensoo/account-deletions", label: "계정 삭제 요청", Icon: UserRoundX, badgeKey: "accountDeletions" as const },
   { href: "/meensoo/community-reports", label: "커뮤니티 신고", Icon: ShieldAlert },
   { href: "/meensoo/waitlist", label: "사전 신청", Icon: Users },
 ];
 
-type Props = { children: React.ReactNode; newInquiries?: number; newFeedback?: number };
+type Props = { children: React.ReactNode; newInquiries?: number; newFeedback?: number; accountDeletionRequests?: number };
 
 const THEME_KEY = "mooa:admin-theme";
 const THEME_EVENT = "mooa:admin-theme-change";
@@ -76,7 +78,7 @@ const readTheme = (): "dark" | "light" => {
 
 const readServerTheme = (): "dark" | "light" => "dark";
 
-export function AdminShell({ children, newInquiries = 0, newFeedback = 0 }: Props) {
+export function AdminShell({ children, newInquiries = 0, newFeedback = 0, accountDeletionRequests = 0 }: Props) {
   const theme = useSyncExternalStore(subscribeTheme, readTheme, readServerTheme);
 
   function toggleTheme() {
@@ -165,6 +167,9 @@ export function AdminShell({ children, newInquiries = 0, newFeedback = 0 }: Prop
               )}
               {badgeKey === "feedback" && newFeedback > 0 && (
                 <span className={`${styles.badge} ${styles.label}`}>{newFeedback}</span>
+              )}
+              {badgeKey === "accountDeletions" && accountDeletionRequests > 0 && (
+                <span className={`${styles.badge} ${styles.label}`}>{accountDeletionRequests}</span>
               )}
             </Link>
           );

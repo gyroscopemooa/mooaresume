@@ -110,7 +110,7 @@ export default function PrivacyPage() {
         <section className={styles.section}>
           <h2>3. 보관 기간</h2>
           <ul>
-            <li>계정과 지원 자료, 분석 기록은 <b>회원 탈퇴 시 지체 없이 파기</b>합니다.</li>
+            <li>계정과 지원 자료, 분석 기록은 <b>회원 탈퇴 처리가 완료되면 지체 없이 파기</b>합니다. 이메일로 요청하신 경우 본인 확인 후 10일 이내에 처리하고 결과를 알려 드립니다.</li>
             <li>지원 자료는 <a href="mailto:support@mooaresume.com">support@mooaresume.com</a>으로 요청하시면 탈퇴 없이 개별 삭제해 드립니다.</li>
             <li>계정과 데이터 삭제를 요청하는 방법은 <Link href="/account-deletion">계정 및 데이터 삭제 요청</Link> 페이지에 안내되어 있습니다.</li>
             <li>결제·환불 기록은 전자상거래 등에서의 소비자보호에 관한 법률에 따라 <b>5년</b>간 보관합니다. 이 기간에는 삭제 요청이 있어도 법령상 보관해야 합니다.</li>

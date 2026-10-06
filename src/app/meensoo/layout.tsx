@@ -3,6 +3,7 @@ import { isAdmin } from "@/server/admin/admin-session";
 import { getSummary } from "@/server/admin/admin-repository";
 import { AdminLogin } from "./admin-login";
 import { AdminShell } from "./admin-shell";
+import { countOpenAccountDeletionRequests } from "@/server/account/admin-account-deletion";
 
 export const metadata: Metadata = {
   title: "MOOA 관리자",
@@ -21,7 +22,10 @@ export default async function MeensooLayout({ children }: { children: React.Reac
 
   // A count the operator should see without opening the tab; a failure to read
   // it must not take the whole console down.
-  const summary = await getSummary().catch(() => null);
+  const [summary, accountDeletionRequests] = await Promise.all([
+    getSummary().catch(() => null),
+    countOpenAccountDeletionRequests().catch(() => 0),
+  ]);
 
-  return <AdminShell newInquiries={summary?.newInquiries ?? 0} newFeedback={summary?.newFeedback ?? 0}>{children}</AdminShell>;
+  return <AdminShell newInquiries={summary?.newInquiries ?? 0} newFeedback={summary?.newFeedback ?? 0} accountDeletionRequests={accountDeletionRequests}>{children}</AdminShell>;
 }

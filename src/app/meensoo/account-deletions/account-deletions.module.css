@@ -1,0 +1,30 @@
+.registerForm { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(200px, 1fr) auto; gap: 12px; align-items: end; padding: 18px; }
+.registerForm label { color: var(--admin-muted); font-size: 12px; }
+.registerForm input, .linkAccount input { width: 100%; margin-top: 7px; padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-input); color: var(--admin-text); font: inherit; }
+.registerForm input:focus, .linkAccount input:focus { outline: 2px solid var(--admin-accent); outline-offset: 1px; }
+.registerForm button, .linkAccount button, .actions button { padding: 10px 14px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-raise); color: var(--admin-text); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.registerForm > button { background: var(--admin-accent); color: var(--admin-pill-ok); border-color: transparent; }
+.registerForm button:disabled, .linkAccount button:disabled, .actions button:disabled { opacity: .55; cursor: default; }
+.message { margin: 0 0 18px; padding: 12px 14px; border: 1px solid var(--admin-line); border-radius: 9px; background: var(--admin-input); color: var(--admin-text); font-size: 13px; }
+.queue { display: grid; }
+.request { padding: 17px 19px; border-top: 1px solid var(--admin-line); }
+.request:first-child { border-top: 0; }
+.requestHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.requestHead > div { display: grid; gap: 4px; min-width: 0; }
+.requestHead b { overflow-wrap: anywhere; font-size: 14px; }
+.requestHead small { color: var(--admin-muted); font-size: 11.5px; }
+.requestHead > span { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--admin-warn-bg); color: var(--admin-warn); font-size: 11px; font-weight: 700; }
+.request[data-status="COMPLETED"] .requestHead > span { background: var(--admin-ok-bg); color: var(--admin-accent); }
+.request[data-status="FAILED"] .requestHead > span { background: var(--admin-bad-bg); color: var(--admin-danger); }
+.warning, .error { margin: 12px 0 0; color: var(--admin-warn); font-size: 12px; }
+.error { color: var(--admin-danger); }
+.linkAccount { display: grid; grid-template-columns: minmax(180px, 360px) auto; gap: 8px; align-items: end; margin-top: 13px; }
+.preview { display: grid; grid-template-columns: repeat(6, minmax(90px, 1fr)); gap: 8px; margin: 14px 0 0; }
+.preview div { padding: 10px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-input); }
+.preview dt { color: var(--admin-muted); font-size: 10.5px; }
+.preview dd { margin: 5px 0 0; color: var(--admin-text); font-size: 13px; font-weight: 700; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.actions .danger { background: var(--admin-bad-bg); border-color: var(--admin-pill-bad); color: var(--admin-danger); }
+.actions small { color: var(--admin-muted); font-size: 11.5px; }
+@media (max-width: 900px) { .registerForm { grid-template-columns: 1fr; } .registerForm > button { justify-self: start; } .preview { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 520px) { .preview { grid-template-columns: repeat(2, 1fr); } .linkAccount { grid-template-columns: 1fr; } }
