@@ -6,7 +6,7 @@
 - 정책: Cloudflare Email Routing의 DMARC 검증을 통과한 envelope 발신주소가 가입 이메일과 정확히 같은 요청만 즉시 삭제한다. 계정 미발견·다른 이메일·처리 실패는 관리자 큐에 남긴다. 메일 본문·첨부는 앱으로 보내거나 저장하지 않는다.
 - 구현: 별도 Email Worker가 모든 support 메일을 기존 검증 주소로 전달하고, 삭제 제목의 최소 메타데이터만 비밀값으로 인증된 앱 웹훅에 전송. 웹훅은 Message-ID 멱등 등록 후 `READY` 요청만 기존 원자적 삭제 경로로 실행하고 완료 메일을 보낸다.
 - 검증: 웹훅·Email Worker Vitest 2파일 8개 통과, 앱/Worker TypeScript와 변경 파일 ESLint 통과, Email Worker Wrangler dry-run 및 전체 Next.js 프로덕션 빌드 통과. 실제 고객 계정 삭제 테스트는 하지 않는다.
-- 배포: 진행 중.
+- 배포 완료: 앱 커밋 `18162d4`를 `origin/main`에 fast-forward 푸시하고 Cloudflare Worker `221b2d62-53d0-4b3d-b7d2-27f6b1808ff5` 배포. 전용 Email Worker `9b5940bb-caf9-46e9-bc83-04c28a6c256f` 배포 및 `support@mooaresume.com` 규칙 연결. 앱/메일 Worker 공유 비밀값과 기존 검증 Gmail 전달 비밀값 존재, 미인증 웹훅 401, 활성 라우팅 대상이 Email Worker임을 확인. 실제 고객 메일·삭제 실행 없음.
 
 ## 2026-10-07 — Codex: 관리자 계정 삭제 요청 처리 (릴리스 진행)
 
