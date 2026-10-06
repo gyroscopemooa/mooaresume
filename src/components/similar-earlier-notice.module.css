@@ -1,0 +1,53 @@
+/* 결과 맨 위의 "비슷한 글" 안내.
+ *
+ * 경고가 아니라 참고라서, 결과 화면의 샘플 안내(.sampleNotice)와 같은 옅은 초록 띠로 둡니다.
+ * 안내 문장과 "전에 첨삭한 결과 보기" 링크 하나만 있고, 닫기 버튼은 두지 않습니다(한 줄이라 가리지 않습니다). */
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  width: min(1180px, calc(100% - 44px));
+  margin: 14px auto 0;
+  padding: 14px 20px;
+  border: 1px solid #cfe4d8;
+  border-radius: 13px;
+  background: #f2f9f5;
+}
+.notice p {
+  margin: 0;
+  max-width: 760px;
+  color: #4c6459;
+  font-size: 12.5px;
+  line-height: 1.8;
+  word-break: keep-all;
+}
+.notice p b {
+  color: #0f4b33;
+}
+.notice a {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 14px;
+  border: 1px solid #cfe4d8;
+  border-radius: 9px;
+  background: #fff;
+  color: #176b4a;
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.notice a:hover {
+  background: #e9f4ee;
+}
+@media (max-width: 760px) {
+  .notice {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .notice a {
+    justify-content: center;
+  }
+}
