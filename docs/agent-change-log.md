@@ -1,5 +1,23 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-06 — Claude: 유지 문항의 질문 줄 정리 · 글자 수 초과 안내 · 같은 입력 반복 실험 · 홈 "같은 기준, 내 말투" 섹션 (로컬 커밋, 미배포)
+
+- 요청: 같은 계정의 두 QUICK 분석(f9dd67b1…, dc093d88…)에서 고쳐진 문항이 달라진 이유 조사 → (1) 원문을 그대로 둔 문항에 "질문:" 줄이 남는 문제 (2) 글자 수 초과 안내 부재 (3) 같은 입력 반복 실험 (4) 홈에 "첨삭 결과는 같아야 할까요?" 소개 섹션 추가.
+- 기준/격리: origin/main `2c0552e`에서 새 worktree `.claude/worktrees/consistency-fixes`, 브랜치 `claude/consistency-fixes-20261006`. 공유 트리(`codex/analytics-port-20261003`, main보다 81커밋 뒤, 미커밋 변경 다수)는 읽기만 했고 변경하지 않음. node_modules 정션 없음. 푸시·배포·DB 쓰기·운영 설정 변경 없음.
+- 원인(1): QUICK 입력이 문항 질문을 답변 앞 "질문: …" 줄로 직렬화(`serializeQuestionAnswers`)하고 서버 파서가 이를 질문 칸으로 되돌리지 않아 결과 `originalAnswer`에 남는다. 작성 AI는 이 줄을 형식 표시로 보고 수정본에서 빼지만, 검토 AI가 거절한 문항은 원문이 통째로(`keepOriginalWithMechanicalFixes`) 나가 한 화면에 질문 줄이 있는 문항과 없는 문항이 섞이고, 글자 수에 질문이 들어가고(저장된 두 결과에서 유지 문항 표시 글자 수가 49~86자 부풀어 있었음), 복사·TXT·DOCX에도 질문이 딸려 갔다. 소제목 `[...]` 줄은 수정 문항에도 남아 있어 문제가 아니다.
+- 변경(전부 additive, 저장된 분석 결과·DB·프롬프트·AI 판정 로직 불변):
+  - 신규 `src/domain/question-marker.ts`(+test): 화면용 사본에서만 답변 맨 앞 "질문:" 한 줄을 질문 칸(`prompt`)으로 옮김. 원문·수정본에서 같이 떼므로 "유지"는 유지로 남음. 원문 위치로 저장된 주석(`start/end`)은 같은 글자를 가리키도록 옮기고, 어긋나면 버림. 줄이 하나이고 본문이 남을 때만 동작(그 밖의 모양은 건드리지 않음), 바뀐 게 없으면 같은 객체 반환.
+  - `src/components/result-workspace-complete.tsx`: `restoreLocalResultQuestionBoundaries` 결과에 위 사본을 한 번 더 적용(`boundaryRestored → result`), 사본이 달라진 경우에만 sessionStorage 키에 `:question-marker-local` 접미사(이전 직접 수정과 섞이지 않게; 기존 `:question-boundary-local` 의미는 그대로). 제출본 탭에 옮겨진 질문을 질문 칸으로 표시. 문항별 첨삭 카드에 `LengthOverNotice`(목표 글자 수 초과 시 몇 자 넘었는지·직접 수정 안내, 직접 줄이면 사라짐). 신규 CSS는 `result-workspace-complete.module.css` 끝에 `.lengthOver` 4줄 추가만.
+  - `src/domain/answer-length.ts`: `countOverTarget` 추가(기존 함수 불변).
+  - 신규 `src/components/landing-consistency.tsx` + `.module.css`(+test), `src/app/page.tsx`에 import 한 줄과 `<LandingConsistency />` 한 줄(FIELD 기준 섹션 다음, FACT TO VALUE 앞). 문구는 철학 문서 기준으로, "항상 같게 나온다"는 보장 대신 기준으로 표현.
+  - 신규 평가 도구: `src/fixtures/quick-stability-case.ts`(+test, 지어낸 5문항), `src/evals/quick-stability.live.test.ts`(유료, `RUN_LIVE_EVAL=1`일 때만), 결과 `docs/quick-revision-stability-2026-10-06.md`.
+- 실험 요약(상세는 위 문서): 같은 글 6회 → 고쳐진 문항 0~4개·5가지 조합, 준비도 67~79, 진단 우선순위 5가지. 같은 수정안을 검토 AI에게만 9회 → 문항 채택은 대체로 같지만 점수 73~85. 채택 조건(인용 글자 일치, 5개 항목 하락 없음)이 판정과 무관하게 거절한 경우 확인. 같은 글 재분석의 점수 안전장치(낮거나 5점 초과 차이면 실패)는 측정된 흔들림으로는 약 1/3만 통과(인용 예외 제외, 운영에서는 아직 실행된 적 없음). 유료 AI 호출 약 30만 토큰, 사용자 승인 하에 실행.
+- 보호/충돌 주의: 공유 트리의 Codex 미커밋 변경(`result-workspace-complete.tsx/.module.css`, `result-document.ts`, `cover-letter-parser.ts`, `answer-readability-preview`)과 같은 파일을 만짐. 이 브랜치는 main 기준이라 그 변경을 가져오거나 덮어쓰지 않음. 통합 시 `result-workspace-complete.tsx`의 `result` 선언부와 storageKey 줄, `agent-change-log.md` 맨 위가 충돌할 수 있음.
+- 검증: `tsc --noEmit` 오류 0, 변경·신규 파일 ESLint 통과, 전체 Vitest 232파일 2,016테스트 통과(Expo 의존성이 없는 `apps/mobile/src/analytics.test.ts`, `src/server/mobile/mobile.test.ts` 2파일은 이 PC에서 늘 실패하는 기존 문제). 저장된 실제 결과 2건(10문항)에 읽기 전용으로 적용해 질문 줄 잔존 0, 유지/수정 구분 불변, 주석 수 불변, 질문이 질문 칸에 채워짐, f9dd67b1의 3번이 520자/450자(70자 초과)로 표시됨을 확인. CSS는 PostCSS 파싱만 확인했고 **브라우저 화면 확인은 하지 않음**(미리보기 도구가 이 worktree를 띄울 수 없고, 화면 확인은 사용자 몫으로 합의).
+- 미리보기: 이 worktree에서 `npm run dev -- -p 3105` 후 `/`(홈 중간 섹션)와 해당 분석 결과 화면. 결과 화면은 관리자 로그인 필요.
+- 롤백: 브랜치를 버리거나 해당 커밋 revert. 기존 저장 결과·DB는 건드리지 않아 데이터 복구가 필요 없음.
+- 상태: 로컬 커밋 완료, 푸시·배포 안 함(사용자 승인 대기). 권고 5가지(채택 규칙 보정, 판정 고정, 점수 안전장치 완화, 문장 단위 채택, 다른 표현 보기)는 운영 결과가 바뀌므로 승인 전 미착수.
+
 ## 2026-10-05 — Codex: 입력 경계 확인 실제 연결 (배포 완료)
 
 - 사용자 승인: 로컬 한 줄 안내 시안을 실제 복붙/PDF 입력에 연결·검증·커밋·푸시·배포. 기준 origin/main 7bbb6aa, 격리 codex/input-boundary-release-20261005. 공유 로컬 시안과 타 작업은 보존.
