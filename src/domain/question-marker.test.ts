@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sampleResultDocument } from "@/fixtures/result-document";
 import { countOverTarget } from "./answer-length";
-import { normalizeQuestionMarkers, splitLeadingQuestionMarker } from "./question-marker";
+import { normalizeQuestionMarkers, normalizeSavedQuestionAnswer, splitLeadingQuestionMarker } from "./question-marker";
 import { buildFinalDocumentText, countCompactCharacters, type ResultDocument, type ResultQuestion } from "./result-document";
 
 const QUESTION = "한빛지역개발공사 체험형 인턴에 지원한 이유를 기술해 주십시오.";
@@ -48,6 +48,38 @@ describe("splitLeadingQuestionMarker", () => {
 });
 
 describe("normalizeQuestionMarkers", () => {
+  it("명백한 두 줄 질문은 함께 옮기고 본문·소제목은 보존한다", () => {
+    const prompt = "갈등 상황을 설명하고\n해결 과정과 결과를 기술하세요.";
+    const body = `[함께 찾은 해답]\n${BODY}`;
+    const original = `질문: ${prompt}\n\n${body}`;
+    const normalized = normalizeQuestionMarkers(documentOf(question({ originalAnswer: original, revisedAnswer: original })));
+    expect(normalized.questions[0].prompt).toBe(prompt.replace("\n", " "));
+    expect(normalized.questions[0].revisedAnswer).toBe(body);
+    expect(buildFinalDocumentText(normalized, {})).not.toContain("기술하세요");
+  });
+
+  it("별도로 저장된 여러 줄 질문은 전체를 근거로 분리한다", () => {
+    const prompt = "당시 어려웠던 점은 무엇인가요?\n본인의 역할은 무엇인가요?\n해결 결과도 알려주세요.";
+    const original = `질문: ${prompt}\n${BODY}`;
+    const normalized = normalizeQuestionMarkers(documentOf(question({ prompt, originalAnswer: original, revisedAnswer: original })));
+    expect(normalized.questions[0].revisedAnswer).toBe(BODY);
+    expect(normalized.questions[0].prompt).toBe(prompt);
+  });
+
+  it("불완전한 질문 뒤의 답변을 추측해서 삭제하지 않는다", () => {
+    const text = `질문: 갈등 상황을 설명하고\n${BODY}`;
+    expect(splitLeadingQuestionMarker(text)).toBeNull();
+  });
+
+  it("직접 수정한 글은 동일한 질문 접두사만 제거하고 빈 글·다른 질문도 보존한다", () => {
+    const original = `질문: ${QUESTION}\n${BODY}`;
+    const edited = "사용자가 직접 고친 소중한 문장입니다.";
+    expect(normalizeSavedQuestionAnswer(`질문: ${QUESTION}\n${edited}`, original, QUESTION)).toBe(edited);
+    expect(normalizeSavedQuestionAnswer(edited, original, QUESTION)).toBe(edited);
+    expect(normalizeSavedQuestionAnswer("", original, QUESTION)).toBe("");
+    const different = `질문: 제가 던진 질문입니다.\n${edited}`;
+    expect(normalizeSavedQuestionAnswer(different, original, QUESTION)).toBe(different);
+  });
   it("원문을 그대로 둔 문항도 질문 줄이 빠지고, 여전히 원문과 같다", () => {
     const [normalized] = normalizeQuestionMarkers(documentOf(question({}))).questions;
     expect(normalized.originalAnswer).toBe(BODY);

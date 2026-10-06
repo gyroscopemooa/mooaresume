@@ -10,8 +10,8 @@ import type { ResultDocument } from "./result-document";
  * 나가서 한 화면에 질문 줄이 있는 문항과 없는 문항이 섞이고, 글자 수에도 질문이
  * 들어가며, "이 문항 복사"에 질문까지 딸려 갔습니다.
  *
- * 줄이 하나이고 그 뒤에 본문이 남을 때만 질문으로 읽습니다. 그렇지 않은 모양은
- * 건드리지 않습니다(두 줄에 걸친 질문은 첫 줄만 떼면 조각이 남아 더 어색합니다).
+ * 저장된 실제 질문과 일치하면 여러 줄도 함께 옮깁니다. 질문 칸이 없는 과거 결과는
+ * 명백한 작성 지시로 이어지는 줄만 합치며, 경계가 애매하면 원문을 보존합니다.
  */
 const LEADING_QUESTION_MARKER = /^\s*질문[ \t]*[:：][ \t]*(\S[^\r\n]*?)[ \t]*(?:\r?\n|$)\s*/;
 const MAX_QUESTION_LENGTH = 1000;
@@ -25,13 +25,42 @@ export type SplitQuestionMarker = {
   removed: number;
 };
 
-export function splitLeadingQuestionMarker(text: string): SplitQuestionMarker | null {
+const normalizedQuestion = (text: string) => text.replace(/\s+/g, " ").trim();
+const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const instructionEnd = /(?:[?？]|(?:주세요|주십시오|하시오|하십시오|바랍니다|쓰세요|기술하세요|설명하세요|서술하세요)[.!。]?)\s*$/;
+
+export function splitLeadingQuestionMarker(text: string, knownQuestion?: string): SplitQuestionMarker | null {
+  // 질문이 별도 저장된 경우 그 전체와 일치하는 접두사만 제거한다. 본문을 추측하지 않는다.
+  if (knownQuestion?.trim() && knownQuestion.length <= MAX_QUESTION_LENGTH) {
+    const pattern = knownQuestion.trim().split(/\s+/).map(escapeRegex).join("\\s+");
+    const known = new RegExp(`^\\s*질문[ \\t]*[:：][ \\t]*${pattern}[ \\t]*\\r?\\n\\s*`).exec(text);
+    if (known && text.slice(known[0].length).trim()) {
+      return { question: normalizedQuestion(knownQuestion), body: text.slice(known[0].length), removed: known[0].length };
+    }
+  }
   const match = LEADING_QUESTION_MARKER.exec(text);
   if (!match) return null;
-  const question = match[1].replace(/\s+/g, " ").trim();
-  const body = text.slice(match[0].length);
+  let question = normalizedQuestion(match[1]);
+  let removed = match[0].length;
+  let body = text.slice(removed);
+  // "설명하고\n해결 과정을 기술하세요."를 첫 줄만 잘라서는 안 된다.
+  if (/(?:하고|하며|으며|그리고|또는|및|대해|관해|경험을|과정을|이유를)\s*$/.test(question)) {
+    const continuation = /^([^\r\n]+)(?:\r?\n)\s*/.exec(body);
+    if (!continuation || !instructionEnd.test(continuation[1]) || question.length + continuation[1].length > MAX_QUESTION_LENGTH) return null;
+    question = `${question} ${continuation[1].trim()}`;
+    removed += continuation[0].length;
+    body = text.slice(removed);
+  }
   if (!question || question.length > MAX_QUESTION_LENGTH || !body.trim()) return null;
-  return { question, body, removed: match[0].length };
+  return { question, body, removed };
+}
+
+/** 로컬 직접 수정은 그대로 보존하고, 원문과 동일한 질문 접두사만 제거한다. */
+export function normalizeSavedQuestionAnswer(answer: string, originalAnswer: string, prompt: string): string {
+  const original = splitLeadingQuestionMarker(originalAnswer, prompt);
+  if (!original) return answer;
+  const saved = splitLeadingQuestionMarker(answer, original.question);
+  return saved && normalizedQuestion(saved.question) === normalizedQuestion(original.question) ? saved.body : answer;
 }
 
 /**
@@ -46,11 +75,11 @@ export function splitLeadingQuestionMarker(text: string): SplitQuestionMarker | 
 export function normalizeQuestionMarkers(result: ResultDocument): ResultDocument {
   let changed = false;
   const questions = result.questions.map((question) => {
-    const original = splitLeadingQuestionMarker(question.originalAnswer);
+    const original = splitLeadingQuestionMarker(question.originalAnswer, question.prompt !== question.title ? question.prompt : undefined);
     if (!original) return question;
     changed = true;
 
-    const revised = splitLeadingQuestionMarker(question.revisedAnswer);
+    const revised = splitLeadingQuestionMarker(question.revisedAnswer, original.question);
     // 질문 칸이 제목과 같은 한 줄(또는 비어 있음)이면 실제 질문으로 채웁니다.
     // 이미 따로 저장된 질문이 있으면 그것을 존중합니다.
     const prompt = !question.prompt.trim() || question.prompt.trim() === question.title.trim() ? original.question : question.prompt;
@@ -66,7 +95,7 @@ export function normalizeQuestionMarkers(result: ResultDocument): ResultDocument
       ...question,
       prompt,
       originalAnswer: original.body,
-      revisedAnswer: revised ? revised.body : question.revisedAnswer,
+      revisedAnswer: revised && normalizedQuestion(revised.question) === normalizedQuestion(original.question) ? revised.body : question.revisedAnswer,
       ...(originalAnnotations ? { originalAnnotations } : {}),
     };
   });

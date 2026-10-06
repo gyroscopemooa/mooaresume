@@ -68,9 +68,12 @@ export type PreviousRevisionContext = {
 };
 export const normalizeRevisionText = (value: string) => value.normalize("NFC").replace(/\s+/g, " ").trim();
 
-// 띄어쓰기·따옴표·괄호·문장부호는 글의 뜻이 아니라 표기라서, 인용이 "글에 있는가"를 볼 때는 지운다.
+// 표기 잡음은 무시하되 숫자는 부호·소수점·범위를 포함한 하나의 토큰으로 보존한다.
 const QUOTE_NOISE = /[\s"'“”‘’「」『』《》〈〉()（）[\]【】.,·ㆍ・、，。!?！？:;：；~\-–—_/*]/g;
-const looseQuoteKey = (value: string) => value.normalize("NFC").toLowerCase().replace(QUOTE_NOISE, "");
+const looseQuoteKey = (value: string) => value.normalize("NFC").toLowerCase()
+  .replace(/(?:[+−-]\s*)?\d+(?:[.,/:~–—-]\d+)*/g, number =>
+    `\uE000${Array.from(number.replace(/\s/g, ""), char => char.charCodeAt(0).toString(16).padStart(4, "0")).join("")}\uE001`)
+  .replace(QUOTE_NOISE, "");
 
 /**
  * 검토 AI가 댄 인용이 글에 실제로 있는가.
@@ -83,7 +86,6 @@ const looseQuoteKey = (value: string) => value.normalize("NFC").toLowerCase().re
  */
 export function quoteAppearsIn(text: string, quote: string): boolean {
   if (!quote.trim()) return false;
-  if (normalizeRevisionText(text).includes(normalizeRevisionText(quote))) return true;
   const haystack = looseQuoteKey(text);
   const parts = quote.split(/…|⋯|\.{3,}/).map(looseQuoteKey).filter(Boolean);
   if (parts.length === 0) return false;

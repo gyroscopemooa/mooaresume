@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
 import { buildFinalDocumentText, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultQuestion, type ResultRequirementMatch } from "@/domain/result-document";
 import { countOverTarget, describeAnswerLength } from "@/domain/answer-length";
-import { normalizeQuestionMarkers } from "@/domain/question-marker";
+import { normalizeQuestionMarkers, normalizeSavedQuestionAnswer } from "@/domain/question-marker";
 import { recommendNextStep } from "@/domain/next-step";
 import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
@@ -311,9 +311,9 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   // 화면·글자 수·복사·내보내기가 모두 이 사본을 읽어 문항마다 같은 모양이 된다.
   const result = useMemo(() => normalizeQuestionMarkers(boundaryRestored), [boundaryRestored]);
   useEffect(() => { if (!result.isSample && !adminPreview) trackWeb('result_viewed', { product: result.product }); }, [result.isSample, result.product, adminPreview]);
-  // Keep prior local edits intact rather than restoring the broken prefix over
-  // the repaired view. Production storage keys are unchanged.
-  const storageKey = "mooa:result-edits:" + result.caseId + ":v1" + (boundaryRestored !== sourceResult ? ":question-boundary-local" : "") + (result !== boundaryRestored ? ":question-marker-local" : "");
+  // 새 키가 없으면 기존 편집본을 읽어 질문 접두사만 정리한다. 이전 키는 복구용으로 보존한다.
+  const legacyStorageKey = "mooa:result-edits:" + result.caseId + ":v1" + (boundaryRestored !== sourceResult ? ":question-boundary-local" : "");
+  const storageKey = legacyStorageKey + (result !== boundaryRestored ? ":question-marker-local" : "");
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
   const [editing, setEditing] = useState<string | null>(null);
@@ -340,23 +340,31 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       try {
-        const saved: unknown = JSON.parse(sessionStorage.getItem(storageKey) ?? "null");
+        let saved: unknown = null;
+        for (const key of new Set([storageKey, legacyStorageKey])) {
+          try {
+            const parsed: unknown = JSON.parse(sessionStorage.getItem(key) ?? "null");
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) { saved = parsed; break; }
+          } catch { /* 읽을 수 없는 새 저장본 때문에 복구 가능한 이전 편집을 버리지 않는다. */ }
+        }
         if (saved && typeof saved === "object" && !Array.isArray(saved)) {
           setAnswers(Object.fromEntries(result.questions.map((question) => {
             const value = (saved as Record<string, unknown>)[question.id];
-            return [question.id, typeof value === "string" ? value : question.revisedAnswer];
+            const original = boundaryRestored.questions.find(item => item.id === question.id);
+            return [question.id, typeof value === "string" ? normalizeSavedQuestionAnswer(value, original?.originalAnswer ?? "", question.prompt) : question.revisedAnswer];
           })));
         }
-      } catch {
-        sessionStorage.removeItem(storageKey);
-      }
+      } catch { /* 브라우저 저장소가 차단돼도 결과는 열고 기존 저장본은 삭제하지 않는다. */ }
       setRestored(true);
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [result.questions, storageKey]);
+  }, [result.questions, boundaryRestored.questions, storageKey, legacyStorageKey]);
 
   useEffect(() => {
-    if (restored) sessionStorage.setItem(storageKey, JSON.stringify(answers));
+    if (restored) {
+      try { sessionStorage.setItem(storageKey, JSON.stringify(answers)); }
+      catch { /* 저장 불가 환경에서도 현재 편집과 복사는 유지한다. */ }
+    }
   }, [answers, restored, storageKey]);
 
   const subject = useMemo(() => resolveResultSubject(result), [result]);
@@ -619,11 +627,11 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
           const annotations = deriveFallbackOriginalAnnotations(question, resultStoresAnnotations);
           const usingFallback = storedAnnotations.length === 0 && annotations.length > 0;
           const { groups, marks } = groupOriginalAnnotations(annotations);
-          // 원문 맨 앞의 질문 줄을 질문 칸으로 옮긴 문항은 이 탭의 원문에서 질문이 빠지므로 칸으로 보여 준다.
-          const movedPrompt = sourceResult.questions.find((candidate) => candidate.id === question.id)?.prompt !== question.prompt;
+          // 질문이 이미 별도 저장돼 있었는지와 무관하게 보여 준다. 제목과 같으면 중복하지 않는다.
+          const showPrompt = Boolean(question.prompt.trim()) && question.prompt.trim() !== resolveQuestionTitle(question).trim();
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div></header>
-            {movedPrompt && <p className={styles.prompt}>{question.prompt}</p>}
+            {showPrompt && <p className={styles.prompt}>{question.prompt}</p>}
             <div className={styles.submissionCompare}>
               <section><small>제출한 원문</small>{question.originalAnswer.trim() ? <AnnotatedOriginal text={question.originalAnswer} marks={marks}/> : <p className={styles.blankOriginal}>이 문항은 비워 두셨습니다. 오른쪽 첨삭본은 다른 문항과 지원자료의 사실로 새로 쓴 <b>제안</b>이니, 사실과 맞는지 확인해 주세요.</p>}</section>
               <aside>

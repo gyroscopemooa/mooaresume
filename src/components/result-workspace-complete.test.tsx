@@ -618,6 +618,8 @@ describe("ResultWorkspaceComplete 선택 제안의 컨설턴트 설명", () => {
 });
 
 describe("ResultWorkspaceComplete 답변 앞 질문 줄과 글자 수 초과 안내", () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
   const QUESTION_1 = "한빛지역개발공사 체험형 인턴에 지원한 이유를 기술해 주십시오.";
   const QUESTION_2 = "구성원 간 의견 차이로 갈등이 생겼을 때 소통으로 해결한 경험을 기술해 주십시오.";
   const KEPT_BODY = "대학 시절 전통시장 점포 40곳을 방문하고 상인분들을 인터뷰했습니다. 현장의 목소리가 정책으로 이어지는 과정을 배우고 싶습니다.";
@@ -631,6 +633,55 @@ describe("ResultWorkspaceComplete 답변 앞 질문 줄과 글자 수 초과 안
       { ...base, id: "edited", order: 2, title: "갈등 해결 경험", prompt: "갈등 해결 경험", targetLength: 450, originalAnswer: `질문: ${QUESTION_2}\n교내 전시 행사에서 현수막 문제로 팀원과 갈등이 있었고 절충안으로 해결했습니다.`, revisedAnswer: EDITED_BODY, revisionReasons: ["상황과 해결 방법을 한 문장에 담았습니다."], highlightedPhrases: [], originalAnnotations: undefined },
     ],
   };
+
+  it("기존 직접 수정본을 복원하고 구 저장본은 보존한다", async () => {
+    const oldKey = `mooa:result-edits:${marked.caseId}:v1`;
+    const newKey = `${oldKey}:question-marker-local`;
+    sessionStorage.removeItem(newKey);
+    const edited = "제가 직접 수정한 내용은 사라지면 안 됩니다.";
+    const saved = JSON.stringify({ kept: `질문: ${QUESTION_1}\n${edited}`, edited: EDITED_BODY });
+    sessionStorage.setItem(oldKey, saved);
+    const view = render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    await waitFor(() => expect(document.body.textContent).toContain(edited));
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(newKey) ?? "{}").kept).toBe(edited));
+    expect(sessionStorage.getItem(oldKey)).toBe(saved);
+    view.unmount();
+    sessionStorage.removeItem(oldKey);
+    sessionStorage.removeItem(newKey);
+  });
+
+  it("질문이 별도 저장돼 있어도 본문에서 분리한 뒤 제출본 탭에 표시한다", () => {
+    const result = { ...marked, questions: [{ ...marked.questions[0], prompt: QUESTION_1 }] };
+    render(<ResultWorkspaceComplete result={result}/>);
+    fireEvent.click(screen.getByRole("button", { name: "제출본" }));
+    expect(screen.getByText(QUESTION_1)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("질문:");
+  });
+
+  it("새 저장본이 손상돼도 이전 직접 수정본을 복구한다", async () => {
+    const oldKey = `mooa:result-edits:${marked.caseId}:v1`;
+    sessionStorage.setItem(oldKey, JSON.stringify({ kept: "복구 가능한 이전 편집본" }));
+    sessionStorage.setItem(`${oldKey}:question-marker-local`, "{broken");
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    await waitFor(() => expect(document.body.textContent).toContain("복구 가능한 이전 편집본"));
+    expect(JSON.parse(sessionStorage.getItem(oldKey) ?? "{}").kept).toBe("복구 가능한 이전 편집본");
+  });
+
+  it("새 저장본이 있으면 이전 편집본으로 덮어쓰지 않는다", async () => {
+    const oldKey = `mooa:result-edits:${marked.caseId}:v1`;
+    const newKey = `${oldKey}:question-marker-local`;
+    sessionStorage.setItem(oldKey, JSON.stringify({ kept: "오래된 편집" }));
+    sessionStorage.setItem(newKey, JSON.stringify({ kept: "가장 최근 직접 수정본" }));
+    const view = render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    await waitFor(() => expect(document.body.textContent).toContain("가장 최근 직접 수정본"));
+    expect(screen.queryByText("오래된 편집")).toBeNull();
+    view.unmount();
+    sessionStorage.removeItem(oldKey);
+    sessionStorage.removeItem(newKey);
+  });
 
   it("원문을 그대로 둔 문항도 수정한 문항처럼 질문 줄 없이 질문 칸에 질문을 보여 준다", () => {
     render(<ResultWorkspaceComplete result={marked}/>);

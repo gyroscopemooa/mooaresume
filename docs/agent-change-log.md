@@ -1,5 +1,22 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-07 — Codex: 최종 검수 후 보완 및 랜딩 B 비교안 (로컬 구현·검증 완료, 미배포)
+
+- 승인: 사용자 요청에 따라 Claude 작업을 이어받아 기존 철학·A안을 보존하고 확인된 결함 보완 및 별도 B 미리보기 제작.
+- 격리/복구: `codex/consistency-followup-20261007`, `.claude/worktrees/codex-consistency-followup`, 기준 `d6223489`. Claude 브랜치와 공유 트리 불변. 기존 구현은 해당 커밋에서 복구 가능.
+- 수정 전 계획: `revision-quality.ts`의 인용 비교에서 숫자 의미 보존, `question-marker.ts`의 여러 줄 질문 경계 및 `result-workspace-complete.tsx`의 기존 로컬 편집 복원 보완. 기존 문단/복사 공통 함수 재사용. 관련 회귀 테스트 추가.
+- 별도 변형: 랜딩 A 컴포넌트/운영 홈은 변경하지 않고 B 컴포넌트와 개발 전용 A/B 미리보기 추가. 선택 전 운영 반영 없음.
+- 로컬 미리보기: `next.config.ts`에 개발 모드 + 명시적 `MOOA_PREVIEW_ROOT`가 모두 있을 때만 Turbopack 의존성 루트를 지정하는 선택 설정 추가. 기본/운영 설정은 동일. 임시 하드코딩 대신 부모 `node_modules`를 쓰는 격리 작업 폴더에서도 실행 가능하게 함.
+- 제외: 재작성 활성화, 문장 단위 채택, 결제/재사용 정책, 유료 AI 호출, 배포, DB 변경. 일반 오탈자 교정 확대는 문항 단위 채택 정책에 닿으므로 자동 단어 치환으로 우회하지 않음.
+- 실제 보완: 숫자를 부호·소수점·범위를 포함한 토큰으로 비교하여 `1.5/15`, `-10/10`, `150/50` 인용 오인 방지(기존 공백·말줄임표 허용 유지). 저장된 전체 질문 또는 명백한 두 줄 작성 지시만 함께 분리하고 불명확한 경계는 보존. 원문과 다른 질문 접두사는 수정본에서 임의 제거하지 않음. 질문이 이미 별도 저장된 경우도 제출본 탭에 표시(제목 중복 제외). 기존 편집 키 복원, 동일 질문 접두사만 정리, 새 편집 우선, 손상된 새 저장본은 이전 편집으로 복구, 이전 저장본 삭제 없음. 저장소 사용 불가 시 화면 동작 유지.
+- 파일: 위 3개 소스와 해당 `.test.ts/.test.tsx`; 신규 `src/components/landing-consistency-b.tsx`, `.module.css`, `.test.tsx`; 신규 `src/app/dev/landing-consistency-preview/page.tsx`, `page.test.tsx`, `preview.module.css`; 로컬 실행 설정 `next.config.ts`; 본 기록. 운영 `src/app/page.tsx` 및 A 컴포넌트/스타일은 기준 커밋과 diff 없음.
+- 검증: 최종 웹 Vitest **241파일 2,182개 통과, 1파일/1테스트 건너뜀**(모바일 영역 제외, 유료 live 테스트 실행 안 함). 변경 파일 ESLint 및 `tsc --noEmit --incremental false` 확인. `git diff --check` 통과. B 카피/모바일 viewport/개발 전용 차단 단위 테스트 포함. 운영 빌드·실결제·실제 AI 재측정은 하지 않음.
+- 브라우저: 개발 서버에서 B 모바일 세로·데스크톱 두 열 배치, A/B 전환 확인. 전역 모바일 nav 숨김 규칙과 충돌한 비교 링크는 미리보기 범위에서만 복구. 결과 화면의 합성 문항 직접 편집 → 새로고침 → 최종 첨삭본 복원 확인. 복사 버튼 완료 상태는 브라우저로, 복사 문자열·질문 제외·문단 형식은 기존/추가 자동 테스트로 확인.
+- 미리보기: `http://127.0.0.1:3110/dev/landing-consistency-preview?variant=a` / `?variant=b`. A는 질문형 설명·두 카드, B는 핵심 문장 선두·사실 보존/표현 정리 중심의 편집형 구성. 둘 다 결과 동일성/합격을 보장하지 않으며 다른 표현 선택 기능을 광고하지 않음. 개발 외 환경은 `notFound()`로 차단.
+- 재실행(PowerShell, 이 worktree에서): `$env:MOOA_PREVIEW_ROOT='C:/6.mooaresume'; $env:XDG_CONFIG_HOME='C:/Users/jeonm/AppData/Local/Temp/mooa-codex-preview-runtime'; node C:/6.mooaresume/node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3110`. 실제 서비스 키 없이 합성 미리보기만 사용. 기존 Claude의 임시 next.config 변경은 가져오지 않음.
+- 남은 의사결정: 일반 단어 오탈자·과장·초과 분량 교정을 거절된 문항에서 모두 살리는 것은 기존 구조의 한계로 유지((나) 별도 승인 필요). 재작성의 조합 검토/포기 비용 기록 한계도 활성화 전에 별도 해결 필요. 결제 전 동일 결과 재사용 정책은 이번 작업에서 변경 안 함. 새 철학 충돌을 이유로 중단한 보완은 없음. A/B 운영 선택·재작성 활성화·배포는 사용자 결정 전까지 보류.
+- 상태: 별도 Codex worktree의 로컬 변경. 공유 작업·Claude 원본·운영·DB 불변. 푸시/배포/유료 호출 없음.
+
 ## 2026-10-07 — Claude: 탈락 문항 다시 쓰기(기본 꺼짐) + "같은 계정에 비슷한 글" 안내 + Codex 검수 요청문 (로컬 커밋, 미배포)
 
 - 요청: (가) 검토 AI의 거절 이유를 작성 AI에게 돌려 그 문항만 다시 쓰게 하기(다시 쓰는 주체는 AI이고 손님이 아니다), 안내문구만 A안으로(같은 계정에서 전에 비슷한 글을 첨삭한 적이 있을 때만), 끝나면 이 브랜치를 Codex가 검수할 요청문. "다른 표현 보기"는 제외 유지.

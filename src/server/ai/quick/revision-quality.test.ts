@@ -210,6 +210,24 @@ describe("tolerant quotation grounding", () => {
   });
 });
 
+describe("numeric quotation grounding", () => {
+  it.each([
+    ["매출이 1.5배 증가했습니다.", "매출이 15배 증가했습니다."],
+    ["성과는 -10%였습니다.", "성과는 10%였습니다."],
+    ["성과는 -10%였습니다.", "10%"],
+    ["성과는 - 10%였습니다.", "성과는 10%였습니다."],
+    ["총 150명이 참여했습니다.", "50명"],
+    ["기간은 1~3년입니다.", "기간은 13년입니다."],
+    ["2025/10/01에 시작했습니다.", "20251001에 시작했습니다."],
+  ])("rejects a changed numeric token: %s / %s", (source, quote) => {
+    expect(quoteAppearsIn(source, quote)).toBe(false);
+  });
+  it("keeps genuine numeric quotations and ellipses", () => {
+    expect(quoteAppearsIn("매출이 1.5배 증가했습니다. 성과는 -10%였습니다.", "매출이 1.5배 … 성과는 -10%였습니다")).toBe(true);
+    expect(quoteAppearsIn("참여자는 150명입니다.", "“150명”")).toBe(true);
+  });
+});
+
 describe("record of rewritten questions", () => {
   it("leaves the stored record exactly as before when nothing was rewritten", () => {
     const result = apply(qualityTestReview());
