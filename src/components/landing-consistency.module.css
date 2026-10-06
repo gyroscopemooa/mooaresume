@@ -1,0 +1,164 @@
+/* 홈 소개 섹션 "같은 기준, 내 말투".
+ *
+ * 앞 섹션(판단 기준)과 뒤 섹션(진한 초록 카드) 사이에 놓여서, 이 자리는 밝게 둡니다.
+ * 색은 사이트 공통 토큰(--green, --muted, --line)만 쓰고 새 색을 들이지 않습니다.
+ * 모바일에서는 두 카드를 세로로 쌓습니다. */
+.root {
+  margin: 0 auto 105px;
+  padding-top: 8px;
+  text-align: center;
+}
+.label {
+  display: inline-flex;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.title {
+  margin: 14px 0 18px;
+  font-size: clamp(28px, 3.4vw, 40px);
+  line-height: 1.32;
+  letter-spacing: -0.045em;
+  color: var(--ink);
+}
+.title em {
+  font-style: normal;
+  color: var(--green);
+}
+.lead {
+  max-width: 660px;
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: clamp(14px, 1.3vw, 16px);
+  line-height: 1.85;
+  word-break: keep-all;
+}
+.question {
+  max-width: 660px;
+  margin: 22px auto 0;
+  color: var(--ink);
+  font-size: clamp(15px, 1.4vw, 17px);
+  font-weight: 800;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+.answer {
+  margin: 34px auto 0;
+  max-width: 880px;
+  padding: 30px 34px 28px;
+  border: 1px solid #d3e7dc;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #f5fbf8, #eaf5ef);
+  text-align: left;
+}
+.answerLabel {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.card {
+  padding: 22px 24px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+.same {
+  border-color: #b9dccb;
+  box-shadow: 0 8px 22px rgba(23, 107, 74, 0.08);
+}
+.tag {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: var(--mint);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 800;
+}
+.free .tag {
+  background: #f1f3f2;
+  color: #55635b;
+}
+.card ul {
+  margin: 14px 0 12px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+.card li {
+  position: relative;
+  padding-left: 16px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.card li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.free li::before {
+  background: #9aa8a0;
+}
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.75;
+  word-break: keep-all;
+}
+.closing {
+  margin: 20px 0 0;
+  text-align: center;
+  color: var(--green);
+  font-size: clamp(15px, 1.4vw, 17px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.note {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  max-width: 660px;
+  margin: 22px auto 0;
+  color: #6b7872;
+  font-size: 12.5px;
+  line-height: 1.7;
+  text-align: left;
+  word-break: keep-all;
+}
+.note svg {
+  flex: none;
+  width: 15px;
+  margin-top: 3px;
+  color: var(--green);
+}
+
+@media (max-width: 760px) {
+  .root {
+    margin-bottom: 70px;
+  }
+  .answer {
+    padding: 22px 18px 22px;
+  }
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
