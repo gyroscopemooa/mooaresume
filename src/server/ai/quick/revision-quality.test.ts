@@ -6,6 +6,7 @@ import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
 import type { QuickGatewayResult } from "./openai-responses-gateway";
 import { quickAnalysisOutputSchema } from "./schema";
 import { stabilityQuestions } from "@/fixtures/quick-stability-case";
+import { revisionQualitySchema } from "@/domain/revision-quality";
 
 const original = "원칙을 양보하는 대신 아이가 포기하지 않도록 곁에서 도왔습니다.";
 const revised = "원칙을 지키면서 아이가 포기하지 않도록 곁에서 도왔습니다.";
@@ -206,6 +207,29 @@ describe("tolerant quotation grounding", () => {
   it("keeps rejecting an improvement whose quote is not in the text", () => {
     const review = qualityTestReview(); review.questions[0].candidateQuote = "후보에 없는 문장입니다";
     expect(apply(review).revisionQuality?.decision).toBe("keep_current");
+  });
+});
+
+describe("record of rewritten questions", () => {
+  it("leaves the stored record exactly as before when nothing was rewritten", () => {
+    const result = apply(qualityTestReview());
+    expect(result.revisionQuality).not.toHaveProperty("repairedOrders");
+    expect(applyRevisionReview(qualityTestRequest, qualityTestCandidate(), qualityTestReview(), reviewer, { repairedOrders: [] }).revisionQuality).not.toHaveProperty("repairedOrders");
+  });
+
+  it("records which questions were rewritten once after a review", () => {
+    const result = applyRevisionReview(qualityTestRequest, qualityTestCandidate(), qualityTestReview(), reviewer, { repairedOrders: [1] });
+    expect(result.revisionQuality?.repairedOrders).toEqual([1]);
+  });
+
+  it("is an optional field, so a record saved before it existed still parses and one with it survives a round trip", () => {
+    const withField = applyRevisionReview(qualityTestRequest, qualityTestCandidate(), qualityTestReview(), reviewer, { repairedOrders: [1] }).revisionQuality;
+    const without = apply(qualityTestReview()).revisionQuality;
+    expect(revisionQualitySchema.safeParse(withField).success).toBe(true);
+    expect(revisionQualitySchema.safeParse(without).success).toBe(true);
+    // 칸을 모르는 예전 코드가 읽어도(알 수 없는 칸은 버려진다) 나머지는 그대로 통과한다.
+    const rest = Object.fromEntries(Object.entries(withField ?? {}).filter(([key]) => key !== "repairedOrders"));
+    expect(revisionQualitySchema.safeParse(rest).success).toBe(true);
   });
 });
 

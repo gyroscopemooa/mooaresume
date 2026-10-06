@@ -163,7 +163,7 @@ function keepOriginalWithMechanicalFixes(answer: string, candidate: string, sugg
   };
 }
 
-export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGatewayResult, review: RevisionReview, reviewer: { responseId: string; model: string }): QuickGatewayResult {
+export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGatewayResult, review: RevisionReview, reviewer: { responseId: string; model: string }, meta: { repairedOrders?: number[] } = {}): QuickGatewayResult {
   const questions = getAnalysisQuestions(request);
   const proposed = candidate.output.revisions ?? [{ ...candidate.output.revision, questionOrder: 1 }];
   if (review.questions.length !== questions.length || new Set(review.questions.map(q => q.order)).size !== questions.length || questions.some(q => !review.questions.some(r => r.order === q.order))) throw new Error("REVISION_REVIEW_QUESTION_MISMATCH");
@@ -225,6 +225,8 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
       reason: verdicts.map(v => `${v.q.order}번: ${v.r.reason}`).join("\n"), beforeScore, candidateScore,
       ...revisionFingerprints(request), parentAnalysisRunId: request.previousRevision?.runId ?? null,
       relationship: request.previousRevision?.relationship ?? "new",
+      // 검토 의견을 반영해 한 번 더 쓴 문항(revision-repair.ts). 없으면 칸 자체를 두지 않아 예전 결과와 모양이 같다.
+      ...(meta.repairedOrders?.length ? { repairedOrders: meta.repairedOrders } : {}),
     },
   };
 }

@@ -48,6 +48,11 @@ export type AnalysisRequest = z.infer<typeof analysisRequestSchema> & {
   contextEnhancement?: ContextEnhancement;
   contextResearch?: ContextResearch;
   previousRevision?: { runId: string; relationship: "same_input" | "previous_revision"; result: ResultDocument };
+  /**
+   * 검토에서 탈락한 문항을 한 번 더 쓰게 할 때만 서버가 붙인다(revision-repair.ts). 공개 요청 파서는 이 칸을 받지 않는다.
+   * 각 항목은 지난번 수정안과, 별도 검토자가 그것을 탈락시킨 이유다.
+   */
+  repair?: { notes: { order: number; reason: string; previousAnswer: string }[] };
 };
 
 export interface ResumeAnalysisProvider {

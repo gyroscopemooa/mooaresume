@@ -168,7 +168,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       .filter((document) => run.product !== "QUICK" || !supportingKinds.has(document.kind));
     const { data: applicationCase } = await client().from("application_cases").select("company_name, role_name").eq("id", run.application_case_id).maybeSingle();
     const request = validateAnalysisRequest({ requestId: run.application_case_id, product: run.product, writingMode: run.writing_mode, writingStyle: run.writing_style, editingStance: run.editing_stance ?? undefined, targetLength: run.target_length, companyName: applicationCase?.company_name ?? undefined, roleName: applicationCase?.role_name ?? undefined, documents: requestDocuments });
-    return { analysisRunId: run.id, responseId: run.response_id, attemptCount: run.attempt_count as number, request: await this.withPreviousRevision(await this.withContextResearch(request, run, false), run.created_at) };
+    return { analysisRunId: run.id, responseId: run.response_id, attemptCount: run.attempt_count as number, startedAt: (run.started_at as string | null) ?? null, request: await this.withPreviousRevision(await this.withContextResearch(request, run, false), run.created_at) };
   }
 
   async complete(analysisRunId: string, result: unknown) {
