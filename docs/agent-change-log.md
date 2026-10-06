@@ -1,11 +1,12 @@
 # Agent Change Log and Variant Registry
 
-## 2026-10-07 — Codex: 운영 랜딩 A 아래 B 추가 (배포 준비)
+## 2026-10-07 — Codex: 운영 랜딩 A 아래 B 추가 (배포 완료)
 
 - 사용자 명시 승인: "그냥 a 밑에 b 넣어라 커밋푸시배포". 이전 A만 운영/B 비교 전용 결정은 이 요청으로 변경. A를 교체하거나 삭제하지 않고 B를 바로 다음에 추가.
 - 기준/복구: `d3c7d3b`. 배포 전 최신 운영 Worker `12047f0d-676f-40b8-b5a2-60d2bf5addc1` 확인(이전 `136258b3`와 바인딩 동일, origin/main 추가 변경 없음). 해당 기능 커밋 revert로 A만 노출 복구 가능.
 - 변경: `src/app/page.tsx`에서 기존 B 컴포넌트 import/렌더 추가, B 컴포넌트의 미적용 주석 갱신. 두 안의 문구·디자인과 개발 전용 비교 페이지는 보존. 첨삭·결제·DB·재작성 플래그 변경 없음.
-- 검증: 관련 Vitest 3파일 6개, 변경 파일 ESLint, TypeScript 통과. 로컬 운영 빌드 홈페이지 HTTP 200 및 브라우저에서 A→B→FACT TO VALUE 순서 확인. OpenNext 패키징 후 배포 예정.
+- 검증: 관련 Vitest 3파일 6개, 변경 파일 ESLint, TypeScript, Next/OpenNext 빌드 및 Wrangler dry-run 통과. 로컬 운영 빌드 홈페이지 HTTP 200 및 브라우저에서 A→B→FACT TO VALUE 순서 확인. 빌드 자동 생성 next-env.d.ts는 기존 값으로 복원.
+- 완료: `6ff8350`을 main에 푸시하고 Worker `65747143-7b31-4d91-8b74-260c24cfff45` 배포. 운영 홈페이지 200, A→B 순서와 BUILD_ID 일치 확인. 배포 전후 바인딩 메타데이터 동일, 재작성 꺼짐 유지. 로컬 운영 검수 서버 종료.
 
 ## 2026-10-07 — Codex: 첨삭 일관성 보완 병합·운영 릴리스 (배포 완료)
 
