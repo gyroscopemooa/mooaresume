@@ -6,8 +6,9 @@ import Link from "next/link";
 import { WritingHomeLink } from "@/components/writing-home-link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
-import { buildFinalDocumentText, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
-import { describeAnswerLength } from "@/domain/answer-length";
+import { buildFinalDocumentText, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultQuestion, type ResultRequirementMatch } from "@/domain/result-document";
+import { countOverTarget, describeAnswerLength } from "@/domain/answer-length";
+import { normalizeQuestionMarkers, normalizeSavedQuestionAnswer } from "@/domain/question-marker";
 import { recommendNextStep } from "@/domain/next-step";
 import { summarizeEdits } from "@/domain/edit-summary";
 import { saveGuestDraft } from "@/lib/guest-draft";
@@ -133,6 +134,30 @@ function FilledAnswer({ original, revised }: { original: string; revised: string
     .map((part, index) => part.type === "added"
       ? <mark key={index} className={styles.filled}>{part.value}</mark>
       : <span key={index}>{part.value}</span>)}</p>;
+}
+
+/**
+ * 목표 글자 수(공백 제외)를 넘긴 문항에 붙는 안내. 넘지 않았으면 아무것도 그리지 않는다.
+ *
+ * 원문을 그대로 두기로 한 문항은 분량도 그대로여서, 목표를 훌쩍 넘고도 "현재 문장 유지"
+ * 한 줄만 보였다. 줄이는 일은 지원자의 몫이라 AI가 대신하지 않고, 대신 얼마나 넘었는지와
+ * 줄일 수 있는 자리를 알려 준다. 직접 줄이면 이 안내도 같이 사라진다.
+ */
+function LengthOverNotice({ answer, target, unchanged }: { answer: string; target: number; unchanged: boolean }) {
+  const over = countOverTarget(answer, target);
+  if (over <= 0) return null;
+  return <div className={styles.lengthOver} role="note">
+    <AlertCircle/>
+    <p><b>목표 {target}자보다 {over}자 깁니다.</b> {unchanged ? "이번 검토에서는 이 문항의 문장을 바꾸지 않아 분량도 그대로입니다. " : ""}제출 양식의 글자 수 제한을 넘지 않도록 &lsquo;직접 수정&rsquo;으로 줄여 주세요.</p>
+  </div>;
+}
+
+/**
+ * 원문에서 "고칠 곳"으로 짚은 표시 수(잘한 곳 good은 세지 않는다).
+ * 문장을 그대로 둔 문항에 이 수가 있으면 "고칠 곳이 없다"가 아니라 "짚었지만 문장은 안 바꿨다"는 뜻이다.
+ */
+function flaggedSpots(question: Pick<ResultQuestion, "originalAnnotations">) {
+  return (question.originalAnnotations ?? []).filter((annotation) => annotation.type !== "good").length;
 }
 
 /** A question that started empty has no original to diff against at all. */
@@ -281,11 +306,14 @@ function readCarriedMaterialCount(): number {
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
 export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
-  const result = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
+  const boundaryRestored = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
+  // 답변 맨 앞의 "질문:" 줄을 질문 칸으로 옮긴 화면용 사본. 저장된 결과는 그대로이고,
+  // 화면·글자 수·복사·내보내기가 모두 이 사본을 읽어 문항마다 같은 모양이 된다.
+  const result = useMemo(() => normalizeQuestionMarkers(boundaryRestored), [boundaryRestored]);
   useEffect(() => { if (!result.isSample && !adminPreview) trackWeb('result_viewed', { product: result.product }); }, [result.isSample, result.product, adminPreview]);
-  // Keep prior local edits intact rather than restoring the broken prefix over
-  // the repaired view. Production storage keys are unchanged.
-  const storageKey = "mooa:result-edits:" + result.caseId + ":v1" + (result !== sourceResult ? ":question-boundary-local" : "");
+  // 새 키가 없으면 기존 편집본을 읽어 질문 접두사만 정리한다. 이전 키는 복구용으로 보존한다.
+  const legacyStorageKey = "mooa:result-edits:" + result.caseId + ":v1" + (boundaryRestored !== sourceResult ? ":question-boundary-local" : "");
+  const storageKey = legacyStorageKey + (result !== boundaryRestored ? ":question-marker-local" : "");
   const [view, setView] = useState<View>("overview");
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
   const [editing, setEditing] = useState<string | null>(null);
@@ -312,23 +340,31 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       try {
-        const saved: unknown = JSON.parse(sessionStorage.getItem(storageKey) ?? "null");
+        let saved: unknown = null;
+        for (const key of new Set([storageKey, legacyStorageKey])) {
+          try {
+            const parsed: unknown = JSON.parse(sessionStorage.getItem(key) ?? "null");
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) { saved = parsed; break; }
+          } catch { /* 읽을 수 없는 새 저장본 때문에 복구 가능한 이전 편집을 버리지 않는다. */ }
+        }
         if (saved && typeof saved === "object" && !Array.isArray(saved)) {
           setAnswers(Object.fromEntries(result.questions.map((question) => {
             const value = (saved as Record<string, unknown>)[question.id];
-            return [question.id, typeof value === "string" ? value : question.revisedAnswer];
+            const original = boundaryRestored.questions.find(item => item.id === question.id);
+            return [question.id, typeof value === "string" ? normalizeSavedQuestionAnswer(value, original?.originalAnswer ?? "", question.prompt) : question.revisedAnswer];
           })));
         }
-      } catch {
-        sessionStorage.removeItem(storageKey);
-      }
+      } catch { /* 브라우저 저장소가 차단돼도 결과는 열고 기존 저장본은 삭제하지 않는다. */ }
       setRestored(true);
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [result.questions, storageKey]);
+  }, [result.questions, boundaryRestored.questions, storageKey, legacyStorageKey]);
 
   useEffect(() => {
-    if (restored) sessionStorage.setItem(storageKey, JSON.stringify(answers));
+    if (restored) {
+      try { sessionStorage.setItem(storageKey, JSON.stringify(answers)); }
+      catch { /* 저장 불가 환경에서도 현재 편집과 복사는 유지한다. */ }
+    }
   }, [answers, restored, storageKey]);
 
   const subject = useMemo(() => resolveResultSubject(result), [result]);
@@ -570,7 +606,10 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
               the score they just bought was a mock. */}
           <small>{result.product} · {result.writingMode === "BUILD" ? "내용 보완" : result.writingMode === "CREATE" ? "처음부터 작성" : "최종 첨삭"}{result.isSample ? " · 샘플" : ""}</small><h2>제공된 글의 검토 결과</h2><strong aria-label={`준비도 ${result.readiness.score}점`}>{result.readiness.score}<span>/100</span></strong><p>보완한 문항 {result.questions.filter(q => q.originalAnswer !== q.revisedAnswer).length}개 · 유지한 문항 {result.questions.filter(q => q.originalAnswer === q.revisedAnswer).length}개 · 확인 질문 {result.verificationQuestions.length}개</p></div><p>{result.product === "QUICK" ? "자기소개서의 문항 답변·논리·표현을 검토했습니다. 자격·스펙과 공고 적합성은 검토 범위에 포함되지 않습니다." : "제공된 글과 지원자료 범위에서 문항 답변·근거·공고 연결을 검토했습니다."} 채용 결과는 지원 자격, 경력, 경쟁 상황 등에도 영향을 받으며 이 검토로 예측하지 않습니다.</p><p className={styles.scoreBasis}>준비도 점수 기준: 질문에 맞게 답했는가 · 근거가 있는가 · 논리가 이어지는가 · 읽기 쉬운가 · 구체적인가, 다섯 가지를 각 20점으로 채점합니다. 글의 완성도만 본 점수라 높게 나와도 합격을 뜻하지 않고, 자격·스펙·경쟁률은 반영하지 않습니다.</p></div>
         <div className={styles.overviewGrid}>
-          <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다.</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
+          <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>{result.priorities.length > 0
+            // 개선점을 짚어 놓고 "수정 이득이 없어 유지했다"고만 하면 말이 어긋난다. 고칠 곳이 있는데 문장이 그대로인 까닭과 할 일을 같이 말한다.
+            ? "이번에는 AI가 제안한 수정이 검토를 통과하지 못해 문장은 그대로입니다. 위 개선점은 직접 반영하셔야 하니, 문항별 첨삭에서 문항마다의 이유를 확인해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다."
+            : "추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다."}</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
             <section className={styles.panel}><span className={styles.eyebrow}>분석한 원본</span>{result.attachments.map((file) => <div className={styles.file} key={file.id}><FileText/><span><b>{file.filename}</b><small>{file.extension} · {(file.sizeBytes/1024).toFixed(0)}KB · {file.sectionCount}개 문항</small></span><em><CheckCircle2/> 읽기 완료</em></div>)}<p className={styles.privacy}><LockKeyhole/> 원본은 수정하지 않고 결과와 분리해 보관합니다.</p></section>
@@ -588,8 +627,11 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
           const annotations = deriveFallbackOriginalAnnotations(question, resultStoresAnnotations);
           const usingFallback = storedAnnotations.length === 0 && annotations.length > 0;
           const { groups, marks } = groupOriginalAnnotations(annotations);
+          // 질문이 이미 별도 저장돼 있었는지와 무관하게 보여 준다. 제목과 같으면 중복하지 않는다.
+          const showPrompt = Boolean(question.prompt.trim()) && question.prompt.trim() !== resolveQuestionTitle(question).trim();
           return <article className={styles.question} key={question.id}>
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div></header>
+            {showPrompt && <p className={styles.prompt}>{question.prompt}</p>}
             <div className={styles.submissionCompare}>
               <section><small>제출한 원문</small>{question.originalAnswer.trim() ? <AnnotatedOriginal text={question.originalAnswer} marks={marks}/> : <p className={styles.blankOriginal}>이 문항은 비워 두셨습니다. 오른쪽 첨삭본은 다른 문항과 지원자료의 사실로 새로 쓴 <b>제안</b>이니, 사실과 맞는지 확인해 주세요.</p>}</section>
               <aside>
@@ -631,7 +673,8 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
-            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
+            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}{question.originalAnswer === question.revisedAnswer && flaggedSpots(question) > 0 && <p><AlertCircle/> 원문에서 짚은 곳이 {flaggedSpots(question)}곳 있습니다. 문장은 그대로 두었으니 &lsquo;제출본&rsquo; 탭에서 확인해 직접 반영해 주세요.</p>}</div></div>
+            <LengthOverNotice answer={answer} target={question.targetLength} unchanged={question.originalAnswer === question.revisedAnswer && !changed}/>
             {showLengthGap && <div className={styles.lengthGap}>
               <div><b>보완에 필요한 정보</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
               <p>{question.lengthNote}</p>

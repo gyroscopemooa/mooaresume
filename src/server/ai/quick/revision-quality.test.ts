@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { analysisRequestSchema, type AnalysisRequest } from "@/application/analysis-contract";
-import { applyRevisionReview, matchPreviousRevision, revisionFingerprints, revisionReviewSchema, type RevisionReview } from "./revision-quality";
+import { applyRevisionReview, matchPreviousRevision, quoteAppearsIn, revisionFingerprints, revisionReviewSchema, type RevisionReview } from "./revision-quality";
 import { createQuickAnalysisResult } from "./provider";
 import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
 import type { QuickGatewayResult } from "./openai-responses-gateway";
 import { quickAnalysisOutputSchema } from "./schema";
+import { stabilityQuestions } from "@/fixtures/quick-stability-case";
+import { revisionQualitySchema } from "@/domain/revision-quality";
 
 const original = "원칙을 양보하는 대신 아이가 포기하지 않도록 곁에서 도왔습니다.";
 const revised = "원칙을 지키면서 아이가 포기하지 않도록 곁에서 도왔습니다.";
@@ -13,7 +15,7 @@ export function qualityTestCandidate(answer = revised): QuickGatewayResult {
   return { output: { schemaVersion: "1.0", readiness: { score: 70, label: "검토", summary: "원칙 준수와 도움을 설명했습니다.", reasons: [original] }, priorities: [], verificationQuestions: [], consultingAdvice: [], revision: { originalAnnotations: [], subheading: null, lengthNote: null, revisedAnswer: answer, highlightedPhrases: [], reasons: [], verificationNote: null } }, execution: { responseId: "writer", model: "test", promptVersion: "quick-3.4", rubricVersion: "quick-rubric-1.0", schemaVersion: "1.0", inputTokens: 10, outputTokens: 20, totalTokens: 30 } };
 }
 export function qualityTestReview(): RevisionReview {
-  return { diagnosis: { readiness: qualityTestCandidate().output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 }, after: { questionFit: 3, evidence: 3, logic: 3, readability: 4, specificity: 3 }, meaningfulImprovement: true, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "실제 전달력 개선을 확인했습니다.", sourceQuote: original, candidateQuote: revised, previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, validAdviceIndexes: [], adviceCorrections: [] };
+  return { diagnosis: { readiness: qualityTestCandidate().output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 }, after: { questionFit: 3, evidence: 3, logic: 3, readability: 4, specificity: 3 }, meaningfulImprovement: true, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "실제 전달력 개선을 확인했습니다.", sourceQuote: original, candidateQuote: revised, previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, crossQuestionOrders: [], validAdviceIndexes: [], adviceCorrections: [] };
 }
 const reviewer = { responseId: "reviewer", model: "test" };
 const apply = (review: RevisionReview, request = qualityTestRequest, candidate = qualityTestCandidate()) => applyRevisionReview(request, candidate, review, reviewer);
@@ -157,5 +159,138 @@ describe("exact owner-history context matching", () => {
     expect(analysisRequestSchema.parse({ ...qualityTestRequest, previousRevision: { runId: "other-user" } })).not.toHaveProperty("previousRevision");
     const result = stored(); delete result.revisionQuality;
     expect(matchPreviousRevision(qualityTestRequest, [{ runId: "old", result }])).toBeUndefined();
+  });
+});
+
+describe("tolerant quotation grounding", () => {
+  const text = "지역 경제의 기반은 보고서가 아니라 현장에 있다는 것을 체감했습니다. 이때부터 '공공 개발' 업무에 관심을 갖게 되었습니다.";
+
+  it("accepts a quote that differs only in spacing, quote marks or punctuation", () => {
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 보고서가 아니라 현장에 있다는 것을 체감했습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "지역경제의 기반은  보고서가 아니라 현장에 있다는 것을 체감했습니다.")).toBe(true);
+    expect(quoteAppearsIn(text, "이때부터 “공공 개발” 업무에 관심을 갖게 되었습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "이때부터 공공개발 업무에 관심을 갖게 되었습니다.")).toBe(true);
+  });
+
+  it("accepts the shape real reviews used: two sentences from the answer joined with \" ... \"", () => {
+    // 실제 검토 응답에서 글자 그대로 일치하지 않아 거절된 9개 인용이 모두 이 모양(떨어진 두 구절을 말줄임표로 이음)이었다.
+    const answer = stabilityQuestions[4].answer;
+    expect(quoteAppearsIn(answer, "대부분의 지방 상권은 유동인구가 줄고 청년 창업은 거의 불가능한 상태가 되었습니다. ... 상권이 반드시 살아날 것입니다.")).toBe(true);
+    expect(quoteAppearsIn(answer, "대부분의 지방 상권은 유동인구가 줄고 청년 창업은 거의 불가능한 상태가 되었습니다. … 공공이 임대료 안정 구역을 지정하고 컨설팅을 지원하면 상권이 반드시 살아날 것입니다.")).toBe(true);
+    // 앞뒤 순서가 바뀌었거나 없는 문장을 이은 것은 여전히 통과하지 못한다.
+    expect(quoteAppearsIn(answer, "상권이 반드시 살아날 것입니다. ... 대부분의 지방 상권은 유동인구가 줄고")).toBe(false);
+    expect(quoteAppearsIn(answer, "대부분의 지방 상권은 유동인구가 줄고 ... 공사가 모든 소상공인을 지원합니다.")).toBe(false);
+  });
+
+  it("accepts a quote joined with an ellipsis when the pieces appear in order", () => {
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 … 현장에 있다는 것을 체감했습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 ... 관심을 갖게 되었습니다")).toBe(true);
+    expect(quoteAppearsIn(text, "관심을 갖게 되었습니다 … 지역 경제의 기반은")).toBe(false);
+  });
+
+  it("still rejects a quote with different words, a made-up sentence or nothing", () => {
+    expect(quoteAppearsIn(text, "지역 경제의 기반은 보고서에 있다고 느꼈습니다")).toBe(false);
+    expect(quoteAppearsIn(text, "원문에 없는 모순")).toBe(false);
+    expect(quoteAppearsIn(text, "   ")).toBe(false);
+    expect(quoteAppearsIn(text, "…")).toBe(false);
+  });
+
+  it("adopts an evidenced improvement whose quotes were typed with different spacing and quote marks", () => {
+    const review = qualityTestReview();
+    review.questions[0].sourceQuote = `“${original.replace(/ /g, "  ")}”`;
+    review.questions[0].candidateQuote = `${revised.slice(0, 12)} … ${revised.slice(-14)}`;
+    const result = apply(review);
+    expect(result.revisionQuality?.decision).toBe("adopt");
+    expect(result.output.revision.revisedAnswer).toBe(revised);
+  });
+
+  it("keeps rejecting an improvement whose quote is not in the text", () => {
+    const review = qualityTestReview(); review.questions[0].candidateQuote = "후보에 없는 문장입니다";
+    expect(apply(review).revisionQuality?.decision).toBe("keep_current");
+  });
+});
+
+describe("numeric quotation grounding", () => {
+  it.each([
+    ["매출이 1.5배 증가했습니다.", "매출이 15배 증가했습니다."],
+    ["성과는 -10%였습니다.", "성과는 10%였습니다."],
+    ["성과는 -10%였습니다.", "10%"],
+    ["성과는 - 10%였습니다.", "성과는 10%였습니다."],
+    ["총 150명이 참여했습니다.", "50명"],
+    ["기간은 1~3년입니다.", "기간은 13년입니다."],
+    ["2025/10/01에 시작했습니다.", "20251001에 시작했습니다."],
+  ])("rejects a changed numeric token: %s / %s", (source, quote) => {
+    expect(quoteAppearsIn(source, quote)).toBe(false);
+  });
+  it("keeps genuine numeric quotations and ellipses", () => {
+    expect(quoteAppearsIn("매출이 1.5배 증가했습니다. 성과는 -10%였습니다.", "매출이 1.5배 … 성과는 -10%였습니다")).toBe(true);
+    expect(quoteAppearsIn("참여자는 150명입니다.", "“150명”")).toBe(true);
+  });
+});
+
+describe("record of rewritten questions", () => {
+  it("leaves the stored record exactly as before when nothing was rewritten", () => {
+    const result = apply(qualityTestReview());
+    expect(result.revisionQuality).not.toHaveProperty("repairedOrders");
+    expect(applyRevisionReview(qualityTestRequest, qualityTestCandidate(), qualityTestReview(), reviewer, { repairedOrders: [] }).revisionQuality).not.toHaveProperty("repairedOrders");
+  });
+
+  it("records which questions were rewritten once after a review", () => {
+    const result = applyRevisionReview(qualityTestRequest, qualityTestCandidate(), qualityTestReview(), reviewer, { repairedOrders: [1] });
+    expect(result.revisionQuality?.repairedOrders).toEqual([1]);
+  });
+
+  it("is an optional field, so a record saved before it existed still parses and one with it survives a round trip", () => {
+    const withField = applyRevisionReview(qualityTestRequest, qualityTestCandidate(), qualityTestReview(), reviewer, { repairedOrders: [1] }).revisionQuality;
+    const without = apply(qualityTestReview()).revisionQuality;
+    expect(revisionQualitySchema.safeParse(withField).success).toBe(true);
+    expect(revisionQualitySchema.safeParse(without).success).toBe(true);
+    // 칸을 모르는 예전 코드가 읽어도(알 수 없는 칸은 버려진다) 나머지는 그대로 통과한다.
+    const rest = Object.fromEntries(Object.entries(withField ?? {}).filter(([key]) => key !== "repairedOrders"));
+    expect(revisionQualitySchema.safeParse(rest).success).toBe(true);
+  });
+});
+
+describe("scoped cross-question veto", () => {
+  const request = { ...qualityTestRequest, writingMode: "BUILD" as const, questions: Array.from({ length: 3 }, (_, i) => ({ id: String(i), title: "경험", prompt: "경험을 설명하세요.", targetLength: 500, answer: original })) };
+  const candidate = () => {
+    const base = qualityTestCandidate();
+    base.output.revisions = Array.from({ length: 3 }, (_, i) => ({ ...base.output.revision, questionOrder: i + 1 }));
+    return base;
+  };
+  const review = () => {
+    const base = qualityTestReview();
+    base.questions = Array.from({ length: 3 }, (_, i) => ({ ...base.questions[0], order: i + 1 }));
+    return base;
+  };
+
+  it("reverts only the questions the reviewer named", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [2];
+    const result = apply(flagged, request, candidate());
+    expect(result.output.revisions?.map(q => q.revisedAnswer)).toEqual([revised, original, revised]);
+    expect(result.revisionQuality?.decision).toBe("adopt");
+  });
+
+  it("reverts every question when the reviewer did not say which ones (the earlier behavior)", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [];
+    const result = apply(flagged, request, candidate());
+    expect(result.output.revisions?.map(q => q.revisedAnswer)).toEqual([original, original, original]);
+    expect(result.revisionQuality?.decision).toBe("keep_current");
+  });
+
+  it("treats numbers that match no question as not saying which ones", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [9];
+    expect(apply(flagged, request, candidate()).revisionQuality?.decision).toBe("keep_current");
+  });
+
+  it("ignores the named questions when no cross-question problem was reported", () => {
+    const clean = review(); clean.crossQuestionOrders = [1];
+    expect(apply(clean, request, candidate()).output.revisions?.map(q => q.revisedAnswer)).toEqual([revised, revised, revised]);
+  });
+
+  it("still lets a question that failed on its own stay rejected inside a scoped veto", () => {
+    const flagged = review(); flagged.crossQuestionRegression = true; flagged.crossQuestionOrders = [2];
+    flagged.questions[2].lostFactOrVoice = true;
+    expect(apply(flagged, request, candidate()).output.revisions?.map(q => q.revisedAnswer)).toEqual([revised, original, original]);
   });
 });

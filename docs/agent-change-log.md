@@ -1,5 +1,15 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-07 — Codex: 첨삭 일관성 보완 병합·운영 릴리스 (검증 중)
+
+- 승인: 사용자 "완료되면 병합하고 깃 커밋 푸시 배포". 최신 `origin/main` `33b7f2c`에 검수 완료한 Claude 계보 및 Codex `de08436`을 병합. 격리 브랜치 `codex/consistency-release-20261007`; 공유 루트/Claude 작업공간/로컬 A·B 미리보기는 보존.
+- 병합 전 확인: 양쪽 변경 파일의 교집합은 이 기록 문서뿐. 양쪽 항목을 모두 남기며 계정 삭제·이메일 기능은 변경하지 않음. 별도 Email Worker 재배포·DB 변경 없음.
+- 운영 범위: Claude 랜딩 A 유지, B는 개발 전용 404 차단. QUICK 재작성은 `QUICK_REVISION_REPAIR` 꺼짐 유지. 결제·재사용 정책·문장 단위 채택·유료 AI 호출은 변경/실행하지 않음.
+- 복구 기준: main `33b7f2c`, Worker `cfff7a65-ca3d-4cfc-872c-6e74aeebc8cb`. 병합 커밋은 첫 부모 기준 revert 가능. 기존 vars/secrets 유지.
+- 병합 검증: Vitest 246파일 2,200개 통과, 1파일/1테스트 건너뜀(모바일·유료 live 제외). 변경 파일 ESLint, 전체 TypeScript, Next.js 및 OpenNext 운영 빌드 통과. 별도 lockfile 설치로 공유 의존성 불변. 빌드가 변경한 next-env.d.ts 경로는 원래 값으로 복원하여 불필요한 소스 변경 제외.
+- 운영 모드 로컬 확인: 홈/QUICK/결과 진입 200, 홈 A 노출 및 B 비노출, 두 랜딩 미리보기와 결과 미리보기 404. 새 브라우저 번들의 Supabase 공개 연결값 두 개가 현재 운영 번들과 일치함을 값 출력 없이 확인. 운영 `QUICK_REVISION_REPAIR` 바인딩 없음(기본 꺼짐).
+- 배포 패키지: Wrangler dry-run 통과(517개 자산, gzip 5,600.02 KiB). keep-vars 보존 확인. 커밋·푸시·운영 배포 진행. 아래 미배포 기록은 각 작업 당시의 이력이며, 최종 릴리스 상태는 이 항목에서 추적.
+
 ## 2026-10-07 — Codex: 인증된 삭제요청 메일 자동 처리 (진행 중)
 
 - 사용자 승인: 추가 고정비용 없이 삭제요청 메일 도착 시 자동 처리. 기존 `support@mooaresume.com` 메일은 운영자 Gmail로 계속 전달.
@@ -16,6 +26,79 @@
 - 복구: 이 릴리스 커밋 revert. DB 테이블 롤백은 처리 이력 보존 여부를 확인한 뒤 별도 마이그레이션으로 수행.
 - 검증: 관련 Vitest 7파일 23개 통과, 변경 파일 ESLint 오류 0, 전체 TypeScript 통과, Next.js 프로덕션 빌드 통과. 운영 DB에 `20261007010000` 적용 후 요청 테이블·삭제 함수·마이그레이션 이력·RLS 활성화를 각각 확인. 실제 고객 삭제·메일 발송 없음.
 - 배포 완료: 기능 커밋 `9b61193`을 `origin/main`에 fast-forward 푸시. Cloudflare Worker 버전 `bbfae11f-0c16-4088-914d-5f5c79d4995b`. 운영 `/meensoo/account-deletions` 200, 비인증 관리자 API 401, 비밀값 없는 수신 웹훅 401 확인.
+
+## 2026-10-07 — Codex: 최종 검수 후 보완 및 랜딩 B 비교안 (로컬 구현·검증 완료, 미배포)
+
+- 승인: 사용자 요청에 따라 Claude 작업을 이어받아 기존 철학·A안을 보존하고 확인된 결함 보완 및 별도 B 미리보기 제작.
+- 격리/복구: `codex/consistency-followup-20261007`, `.claude/worktrees/codex-consistency-followup`, 기준 `d6223489`. Claude 브랜치와 공유 트리 불변. 기존 구현은 해당 커밋에서 복구 가능.
+- 수정 전 계획: `revision-quality.ts`의 인용 비교에서 숫자 의미 보존, `question-marker.ts`의 여러 줄 질문 경계 및 `result-workspace-complete.tsx`의 기존 로컬 편집 복원 보완. 기존 문단/복사 공통 함수 재사용. 관련 회귀 테스트 추가.
+- 별도 변형: 랜딩 A 컴포넌트/운영 홈은 변경하지 않고 B 컴포넌트와 개발 전용 A/B 미리보기 추가. 선택 전 운영 반영 없음.
+- 로컬 미리보기: `next.config.ts`에 개발 모드 + 명시적 `MOOA_PREVIEW_ROOT`가 모두 있을 때만 Turbopack 의존성 루트를 지정하는 선택 설정 추가. 기본/운영 설정은 동일. 임시 하드코딩 대신 부모 `node_modules`를 쓰는 격리 작업 폴더에서도 실행 가능하게 함.
+- 제외: 재작성 활성화, 문장 단위 채택, 결제/재사용 정책, 유료 AI 호출, 배포, DB 변경. 일반 오탈자 교정 확대는 문항 단위 채택 정책에 닿으므로 자동 단어 치환으로 우회하지 않음.
+- 실제 보완: 숫자를 부호·소수점·범위를 포함한 토큰으로 비교하여 `1.5/15`, `-10/10`, `150/50` 인용 오인 방지(기존 공백·말줄임표 허용 유지). 저장된 전체 질문 또는 명백한 두 줄 작성 지시만 함께 분리하고 불명확한 경계는 보존. 원문과 다른 질문 접두사는 수정본에서 임의 제거하지 않음. 질문이 이미 별도 저장된 경우도 제출본 탭에 표시(제목 중복 제외). 기존 편집 키 복원, 동일 질문 접두사만 정리, 새 편집 우선, 손상된 새 저장본은 이전 편집으로 복구, 이전 저장본 삭제 없음. 저장소 사용 불가 시 화면 동작 유지.
+- 파일: 위 3개 소스와 해당 `.test.ts/.test.tsx`; 신규 `src/components/landing-consistency-b.tsx`, `.module.css`, `.test.tsx`; 신규 `src/app/dev/landing-consistency-preview/page.tsx`, `page.test.tsx`, `preview.module.css`; 로컬 실행 설정 `next.config.ts`; 본 기록. 운영 `src/app/page.tsx` 및 A 컴포넌트/스타일은 기준 커밋과 diff 없음.
+- 검증: 최종 웹 Vitest **241파일 2,182개 통과, 1파일/1테스트 건너뜀**(모바일 영역 제외, 유료 live 테스트 실행 안 함). 변경 파일 ESLint 및 `tsc --noEmit --incremental false` 확인. `git diff --check` 통과. B 카피/모바일 viewport/개발 전용 차단 단위 테스트 포함. 운영 빌드·실결제·실제 AI 재측정은 하지 않음.
+- 브라우저: 개발 서버에서 B 모바일 세로·데스크톱 두 열 배치, A/B 전환 확인. 전역 모바일 nav 숨김 규칙과 충돌한 비교 링크는 미리보기 범위에서만 복구. 결과 화면의 합성 문항 직접 편집 → 새로고침 → 최종 첨삭본 복원 확인. 복사 버튼 완료 상태는 브라우저로, 복사 문자열·질문 제외·문단 형식은 기존/추가 자동 테스트로 확인.
+- 미리보기: `http://127.0.0.1:3110/dev/landing-consistency-preview?variant=a` / `?variant=b`. A는 질문형 설명·두 카드, B는 핵심 문장 선두·사실 보존/표현 정리 중심의 편집형 구성. 둘 다 결과 동일성/합격을 보장하지 않으며 다른 표현 선택 기능을 광고하지 않음. 개발 외 환경은 `notFound()`로 차단.
+- 재실행(PowerShell, 이 worktree에서): `$env:MOOA_PREVIEW_ROOT='C:/6.mooaresume'; $env:XDG_CONFIG_HOME='C:/Users/jeonm/AppData/Local/Temp/mooa-codex-preview-runtime'; node C:/6.mooaresume/node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 3110`. 실제 서비스 키 없이 합성 미리보기만 사용. 기존 Claude의 임시 next.config 변경은 가져오지 않음.
+- 남은 의사결정: 일반 단어 오탈자·과장·초과 분량 교정을 거절된 문항에서 모두 살리는 것은 기존 구조의 한계로 유지((나) 별도 승인 필요). 재작성의 조합 검토/포기 비용 기록 한계도 활성화 전에 별도 해결 필요. 결제 전 동일 결과 재사용 정책은 이번 작업에서 변경 안 함. 새 철학 충돌을 이유로 중단한 보완은 없음. A/B 운영 선택·재작성 활성화·배포는 사용자 결정 전까지 보류.
+- 상태: 별도 Codex worktree의 로컬 변경. 공유 작업·Claude 원본·운영·DB 불변. 푸시/배포/유료 호출 없음.
+
+## 2026-10-07 — Claude: 탈락 문항 다시 쓰기(기본 꺼짐) + "같은 계정에 비슷한 글" 안내 + Codex 검수 요청문 (로컬 커밋, 미배포)
+
+- 요청: (가) 검토 AI의 거절 이유를 작성 AI에게 돌려 그 문항만 다시 쓰게 하기(다시 쓰는 주체는 AI이고 손님이 아니다), 안내문구만 A안으로(같은 계정에서 전에 비슷한 글을 첨삭한 적이 있을 때만), 끝나면 이 브랜치를 Codex가 검수할 요청문. "다른 표현 보기"는 제외 유지.
+- 기준/복구: 같은 브랜치 `claude/consistency-fixes-20261006`(`2c0552e` 기준). 커밋: `45d9071`((가) 본체), `a8a22c5`(평가 도구 재생 모드), `dadb9e4`(안내), 이 항목과 측정 기록·검수 요청문 커밋. 되돌리려면 커밋 단위 revert. (가)는 환경변수가 없으면 새 코드 경로를 타지 않으므로 코드가 배포돼도 동작은 그대로다. origin/main은 그 사이 두 커밋(`9b61193`, `57b9380` 계정 삭제 관리자) 앞서 있고, 이 브랜치와 **겹치는 파일은 이 문서(`docs/agent-change-log.md`) 하나**뿐이다(양쪽 모두 맨 위에 항목을 더했다).
+- (가) 변경:
+  - 신규 `src/server/ai/quick/revision-repair.ts`(+test): 대상 고르기 `planRepair`(**QUICK·POLISH에서만** — 재어 본 범위이고, 같은 진행 코드를 타는 PRO·FINAL은 재작성 호출 하나가 훨씬 크며 BUILD·CREATE는 원문이 메모라서 "지우지 말라"의 뜻이 다르다. 작성 AI가 실제로 바꾼 문항 중 검토 AI가 `lostFactOrVoice` 또는 `newError`로 거절한 것. `preferenceOnly`·`reintroducedIssue`·문서 전체 충돌·이전 결과와 비교하는 재분석은 제외, 최대 3문항), 합치기 `mergeRepair`, 검토 합치기 `combineReviews`(다시 쓴 문항은 두 번째 검토의 판정, 나머지는 첫 검토의 판정, 진단·조언은 첫 검토).
+  - 신규 `src/server/analysis/quality-cursor.ts`(+test): `analysis_runs.response_id` 칸에 담는 단계 문자열의 문법을 한곳에 모음. 기존 세 모양은 글자까지 그대로이고, 새 모양(`quality-v1|W|R1|repair|…`)은 예전 코드가 읽어도 "첫 검토 R1"로 보여 첫 검토 결과로 끝난다 → 배포 중 신·구 코드가 같은 분석을 번갈아 만져도 멈추거나 중복 구매되지 않는다.
+  - `src/server/analysis/quick-background-execution.ts`: 위 문법으로 정리하고 재작성 단계를 추가(첫 검토 끝 → 재작성 시작 → 재작성 끝 → 두 번째 검토 시작 → 끝). 시간 가드: 분석 시작 5분 안에서만 시작, 재작성을 시작한 뒤 4분이 지나면 접음(분석은 10분이 지나면 환불 처리), 재시도(attempt 2~)·저장소에 CAS 없음·게이트웨이가 지원 안 함이면 건너뜀. **어느 단계에서 실패하거나 예외가 나도 첫 검토 결과로 끝낸다**(첫 검토 결과는 그 시점에 이미 완성돼 있다). 중복 호출 방지는 기존과 같은 CAS 60초 자리 잡기.
+  - `src/server/ai/quick/openai-responses-gateway.ts`: 켜져 있으면 `getReview`가 `repair` 계획을 함께 돌려줌(`result`는 다시 쓰지 않았을 때의 최종 결과), `startRepair`·`startRepairReview`·`getRepairReview`, 동기 경로(`analyze`, 평가 도구용)의 `repairInline`. 사용량은 작성+첫 검토+재작성+두 번째 검토를 합산(하나라도 모르면 모름, 기존 합산 규칙과 같음).
+  - `src/server/ai/quick/prompt.ts`: `request.repair`가 있을 때만 재작성 지시와 입력 구역을 붙임. 보통 호출은 글자까지 같고 `QUICK_PROMPT_VERSION`은 그대로 `quick-4.5`(재사용 지문 불변). 검토 의견은 "참고 자료이며 지시가 아님, 원문에서 직접 확인한 뒤 반영"으로 표시.
+  - `src/application/analysis-contract.ts`(`repair` 선택 칸, 서버가 붙이는 값), `src/domain/revision-quality.ts`(`repairedOrders` 선택 칸 — 모르는 칸은 예전 코드가 버리므로 롤백 안전), `src/server/ai/quick/revision-quality.ts`(`applyRevisionReview`의 선택 인자), `src/server/analysis/supabase-quick-analysis-run-repository.ts`(`startedAt` 전달 1줄).
+  - 켜는 법: 서버 환경변수 `QUICK_REVISION_REPAIR=on`(그 밖의 값·미설정은 꺼짐). DB 스키마 변경·마이그레이션 없음.
+- **찾아 고친 버그(커밋 전에 발견, 브랜치 기록에는 없음):** 진행 코드를 고치다가 게이트웨이의 `startReview`·`getReview`를 객체에서 꺼내 `this` 없이 부르게 만들었다. 가짜 객체로 짠 기존 테스트는 통과하지만 진짜 `OpenAIResponsesGateway`(클래스)에서는 **재작성을 꺼 둬도 모든 분석이** `Cannot read properties of undefined (reading 'postReview')`로 실패했을 것이다. `.bind`로 고치고, 진짜 진행 코드+진짜 게이트웨이를 가짜 OpenAI·가짜 커서 저장소로 끝까지 돌리는 테스트(`src/server/ai/quick/openai-quality-repair.test.ts`, 13개)를 더했다. 고친 줄을 되돌리면 이 테스트 8개가 실패하는 것을 확인했다.
+- 안내 변경(재작성과 무관, 조회 전용): 결과 맨 위에 "같은 계정에서 전에 첨삭한 비슷한 글이 있어요. 같은 글도 AI 첨삭은 표현과 일부 판단이 조금 달라질 수 있어요." 한 줄과 그 결과로 가는 링크. 신규 `src/domain/text-similarity.ts`·`src/domain/similar-earlier-analysis.ts`(글자 두 개 묶음 겹침 0.8 이상이 지금 글 문항의 60% 이상이면 "비슷한 글", 40자 미만 답변은 비교 안 함), `src/server/analysis/similar-earlier-analysis.ts`(같은 계정 `owner_user_id`만, 이번 결과보다 먼저 만들어진 다른 분석 최근 10건의 문항 본문만 읽음, 어떤 실패도 "안내 없음"), `src/components/similar-earlier-notice.tsx`/`.module.css`, `src/app/result/page.tsx`(select에 `created_at` 추가, 조회·표시), `src/app/dev/result-consistency-preview/page.tsx`(`?variant=similar`). **"이전 결과를 기준점으로 삼았다"는 말은 쓰지 않는다**: 글자까지 같은 입력이 아니면 이전 결과를 기준으로 쓰지 않기 때문이다(테스트로 고정). 다른 사람의 글과는 비교하지 않고, 샘플·"같은 입력 기존 결과(reused=1)" 안내가 이미 뜨는 경우에는 붙이지 않는다. 저장 형식·점수·재사용 판정에 영향 없음.
+- 측정(합성 글, 상세는 `docs/quick-revision-stability-2026-10-06.md` "실험 6"): 현재 규칙(quick-4.5)에서 다시 쓰기 대상이 생기는 비율은 7번 중 3번. 다시 쓴 8문항 중 두 번째 검토를 통과한 것은 2문항(25%). 대상이 된 분석은 토큰이 약 2배(33,192 → 64,373)이고 시간이 약 2분 늘며, 한 번은 4분을 넘겨 접었다. 탈락 이유는 "다시 썼더니 원문과 거의 같아 고칠 이유가 없음"과 "구체적 제안·말투를 또 지움", 그리고 첫 검토가 권한 방향을 두 번째 검토가 거절하는 검토 AI끼리의 판정 불일치였다. **그래서 기본 꺼짐으로 두고, 켤지는 비용을 감수할 만한지 보고 사용자가 정한다.**
+- 일부러 하지 않은 것: (가)를 켜는 것, (가)를 PRO·FINAL·BUILD·CREATE로 넓히는 것(그 범위로는 재 보지 않았다), 두 번째 검토를 다시 쓴 문항만으로 줄이는 비용 최적화, 재작성이 접힐 때 이미 나간 재작성 호출의 취소(비용은 나가지만 기록 안 됨 — 아래 한계), 이전 결과를 기준점으로 쓰는 것, 다른 계정과의 비교, 다른 표현 보기.
+- 알려진 한계: (1) 재작성이 중간에 접히면 그때까지 쓴 재작성·검토 토큰이 `execution` 합계에 들어가지 않는다(OpenAI 청구는 나간다). 켜기 전에 정할 일. (2) 다시 쓴 문항의 준비도 점수(`before`)는 두 번째 검토 것이라 같은 글이어도 점수가 몇 점 달라질 수 있다(기존 실행 간 폭 12점 안쪽). (3) 안내는 결과 화면을 열 때마다 이전 결과 최대 10건의 문항 본문을 읽는다(결과가 많은 계정에서 열림이 느려지면 줄이거나 저장해 두는 방법으로 바꿀 것).
+- 배포 시 영향/주의: ① `QUICK_PROMPT_VERSION`이 `quick-4.5`라 배포 후 이미 분석한 같은 글을 다시 넣으면 재사용되지 않고 새로 분석된다(이전 항목과 같음). ② 합칠 때 `docs/agent-change-log.md`만 충돌한다(양쪽 항목 모두 남길 것). ③ 임시로 넣은 `next.config.ts`의 `turbopack.root`(미커밋)를 배포 전에 되돌릴 것(`git checkout next.config.ts next-env.d.ts`). ④ 푸시·배포·환경변수 변경은 하지 않았다(사용자 승인 대기).
+- 검증: `tsc --noEmit` 오류 0, 변경·신규 파일 ESLint 통과, 전체 Vitest 239파일 2,152테스트 통과(Expo 의존 2파일은 이 PC에서 늘 실패하는 기존 문제, `src/components/interview-prototype/interview-feedback-panel.test.tsx`의 "reduced motion (true)" 1건은 전체 실행 6번 중 2번 실패(한 번은 유료 검증이 동시에 돌던 중)하고 나머지 4번과 단독 3번은 통과 — 이 변경과 무관한 시간 의존 테스트로 보이며, 기준 커밋 `2c0552e`의 전체 실행 1번은 통과했으나 한 번으로는 기존 문제인지 단정하지 못한다). **유료 AI 호출(합성 글, 약 21만 토큰, 사용자 승인 범위 안):** 운영과 같은 경로 3회 + 재작성 단계만 저장한 수정안 3개로 3회. 화면: 로컬 3105 `/dev/result-consistency-preview?variant=similar`에서 안내 띠와 링크 확인(실제 `/result`는 로그인 필요).
+- 상태: 로컬 커밋 완료, 푸시·배포 안 함. Codex 검수 요청문은 `docs/codex-review-request-consistency-fixes-2026-10-07.md`.
+
+## 2026-10-06 — Claude: "수정이 없는 결과" 줄이기 — 검토 규칙의 기계적 탈락 보정 + 단정은 낮춰 쓰기 + 고칠 곳만 고치기 (quick-4.5, 로컬 커밋, 미배포)
+
+- 요청: "요즘 첨삭 결과에 수정이 없고, 비슷한 글인데 고쳐지는 문항이 달라진다" → 앞선 조사(아래 항목)에서 합의한 1단계를 같은 브랜치에서 개발. 근거와 수치는 `docs/quick-revision-stability-2026-10-06.md`.
+- 확인한 사실: 저장된 실제 결과의 문항 수정 비율이 검토 규칙 도입 전 99%, 도입 후~10-05 낮 0/23(7건 전부 수정 없음), 문항별 채택(`5b3709e`) 배포 뒤 QUICK 2건 4/10. 같은 합성 글 6회에서는 고쳐진 문항이 0~4개로 갈렸다.
+- 기준/복구: 같은 브랜치 `claude/consistency-fixes-20261006`(origin/main `2c0552e` 기준). 이 단계의 커밋은 `ef5c4ad`(검토 규칙+프롬프트 4.4), `7688cb2`(결과 화면 문구), `62f5a8e`·`2f8d36b`·`c0b65eb`·`2a33872`(평가 도구·테스트), `f687d0d`(개발 전용 미리보기), `5d0dcbc`(작성 규칙 4.5). 되돌리려면 해당 커밋을 revert. 저장된 결과·DB는 건드리지 않음.
+- 변경:
+  - `src/server/ai/quick/revision-quality.ts`: (1) `quoteAppearsIn` — 검토 AI의 인용이 글에 있는지 볼 때 띄어쓰기·따옴표·문장부호를 무시하고 말줄임표로 이은 조각은 순서대로 있으면 인정(실제로 거절된 인용 9개가 전부 두 구절을 " ... "로 이은 모양이었다). 없는 문장·다른 낱말은 여전히 불통과. (2) `crossQuestionOrders` — 문서 전체 충돌 판정이 모든 수정을 되돌리던 것을, 검토 AI가 관여한 문항을 짚으면 그 문항만 되돌리도록(짚지 못하면 예전처럼 전부). 검토 AI 지시문에 이 칸을 적는 문장 추가. (3) 작성·검토 AI가 같이 읽는 편집 규칙에 "근거 없는 단정은 문장째 지우지 말고 주장은 남긴 채 범위를 낮춰 쓰기, 낮춰 쓴 것을 손실로 보지 말기" 한 줄.
+  - `src/server/ai/quick/openai-responses-gateway.ts`: 이 칸이 생기기 전에 시작된 검토 응답은 빈 목록으로 읽어 진행 중이던 분석이 스키마 변경만으로 실패하지 않게 함(테스트로 고정).
+  - `src/server/ai/quick/prompt.ts`: `QUICK_PROMPT_VERSION` quick-4.3 → quick-4.4(편집 규칙에 단정 낮춰 쓰기) → quick-4.5(작성 규칙: 문제 없는 문장은 그대로 두고 고칠 낱말만 고치며 지원자의 구체적 제안·기관명·수치는 낱말 그대로 남기기, CREATE 제외).
+  - `src/components/result-workspace-complete.tsx`: 개선점을 짚고도 문장을 유지한 결과의 개요 문구를 "수정 이득이 없어 유지"에서 "제안된 수정이 검토를 통과하지 못해 문장은 그대로, 위 개선점은 직접 반영"으로(개선점이 없으면 예전 문구), 문장을 그대로 둔 문항에서 원문에 짚은 곳이 있으면 제출본 탭 안내.
+  - 평가 도구: `src/evals/quick-stability.live.test.ts`(수정안당 검토 반복, 원본 저장), `src/evals/quick-stability-replay.test.ts`(저장한 원본에 현재 규칙을 무료로 다시 적용).
+- 일부러 바꾸지 않은 것: "5개 항목 점수가 하나라도 내려가면 탈락" 규칙(그 규칙만으로 거절된 문항은 30건 중 1건, 취향·구체성 정책과 맞닿음), 사실·말투 손실·취향 판정, 재분석 점수 안전장치, 결제 전 동일 결과 재사용(`findReusableAnalysis`).
+- 배포 시 영향: `QUICK_PROMPT_VERSION`이 재사용 지문(`contextFingerprint`)에 들어 있어, 배포 후 **이미 분석한 같은 글을 다시 넣으면 재사용되지 않고 새로 분석(결제)된다.** 이는 프롬프트 버전을 올릴 때마다 생기는 기존 설계의 결과이며 이번 변경이 새로 만든 것은 아니다.
+- 검증: `tsc --noEmit` 오류 0, 변경·신규 파일 ESLint 통과, 전체 Vitest 233파일 2,054테스트 통과(Expo 의존성이 없는 `apps/mobile/src/analytics.test.ts`, `src/server/mobile/mobile.test.ts` 2파일은 이 PC에서 늘 실패하는 기존 문제). **실제 AI 호출 검증**(합성 5문항 글, 운영과 같은 경로): 고치기 전 독립 9회 → 고친 뒤 `quick-4.4` 4회 → `quick-4.5` 4회에서 회당 고쳐진 문항 2.2 → 2.5 → 3.25개, 5번(단정이 문장마다 있는 문항) 채택 1/9 → 1/4 → 3/4, 2·3번(분명한 결함) 8/9 → 4/4 → 4/4, 인용 때문에 거절된 개선 0건(전: 검토 30건 중 4건), 모든 수정이 취소된 결과 0건(전: 9회 중 1회), 의미 단위 문단(빈 줄) 5문항 모두 유지. 고치기 전 검토 응답 9건을 같은 원본으로 새 규칙에 다시 적용(무료)하면 새로 채택되는 문항 3개, 빠지는 문항 0개. 새 `crossQuestionOrders` 칸은 실제 API의 엄격 스키마로 받아들여졌다(새 코드로 한 호출 모두 성공). 다만 문서 전체 충돌 판정이 새 실행에서 한 번도 나오지 않아 "관여한 문항만 되돌리기"는 단위 테스트로만 확인했다. 기존 라이브 안전 점검(`quick-live-eval`, 사실 보존 4사례 부분 실행, main과 같은 사례를 같이 돌려 비교): 사례 통과 main 4/8, 브랜치 3/8, 실패는 양쪽 모두 전부 `MISSING_PRIORITY`(필요한 우선순위 범주 없음 — 같은 사례도 실행마다 갈리는 기존 기대치 문제)이고 사실 날조·보존 실패는 0건. 유료 AI 호출은 사용자 승인 하에 누적 약 97만 토큰(고치기 전 측정 약 38만, 고친 뒤 확인 약 29만, 안전 점검 약 25만 — main 비교 포함)이며 합성 글과 저장소의 평가 사례만 보냈다. 표본이 작고(글 1개, 회당 4~9회) 결함이 몰린 5번에 맞춘 글이라 숫자는 방향만 믿는다.
+- 미리보기: 워크트리에서 Turbopack이 `node_modules`를 못 찾아(부모 폴더에 있음) `next.config.ts`에 `turbopack.root` 한 줄을 **미커밋으로** 임시 추가해 둠. `--webpack`은 기존 `home-mobile-header.module.css`의 `:global()` 선택자 때문에 안 됨. 커밋·배포 전에 `git checkout next.config.ts next-env.d.ts`로 되돌릴 것.
+- 상태: 로컬 커밋, 푸시·배포 안 함(사용자 승인 대기). 다음 큰 후보: 문장 단위로 고치고 문장 단위로 채택(프롬프트·스키마·화면 변경). "다른 표현 보기"는 사용자 결정으로 제외.
+
+## 2026-10-06 — Claude: 유지 문항의 질문 줄 정리 · 글자 수 초과 안내 · 같은 입력 반복 실험 · 홈 "같은 기준, 내 말투" 섹션 (로컬 커밋, 미배포)
+
+- 요청: 같은 계정의 두 QUICK 분석(f9dd67b1…, dc093d88…)에서 고쳐진 문항이 달라진 이유 조사 → (1) 원문을 그대로 둔 문항에 "질문:" 줄이 남는 문제 (2) 글자 수 초과 안내 부재 (3) 같은 입력 반복 실험 (4) 홈에 "첨삭 결과는 같아야 할까요?" 소개 섹션 추가.
+- 기준/격리: origin/main `2c0552e`에서 새 worktree `.claude/worktrees/consistency-fixes`, 브랜치 `claude/consistency-fixes-20261006`. 공유 트리(`codex/analytics-port-20261003`, main보다 81커밋 뒤, 미커밋 변경 다수)는 읽기만 했고 변경하지 않음. node_modules 정션 없음. 푸시·배포·DB 쓰기·운영 설정 변경 없음.
+- 원인(1): QUICK 입력이 문항 질문을 답변 앞 "질문: …" 줄로 직렬화(`serializeQuestionAnswers`)하고 서버 파서가 이를 질문 칸으로 되돌리지 않아 결과 `originalAnswer`에 남는다. 작성 AI는 이 줄을 형식 표시로 보고 수정본에서 빼지만, 검토 AI가 거절한 문항은 원문이 통째로(`keepOriginalWithMechanicalFixes`) 나가 한 화면에 질문 줄이 있는 문항과 없는 문항이 섞이고, 글자 수에 질문이 들어가고(저장된 두 결과에서 유지 문항 표시 글자 수가 49~86자 부풀어 있었음), 복사·TXT·DOCX에도 질문이 딸려 갔다. 소제목 `[...]` 줄은 수정 문항에도 남아 있어 문제가 아니다.
+- 변경(전부 additive, 저장된 분석 결과·DB·프롬프트·AI 판정 로직 불변):
+  - 신규 `src/domain/question-marker.ts`(+test): 화면용 사본에서만 답변 맨 앞 "질문:" 한 줄을 질문 칸(`prompt`)으로 옮김. 원문·수정본에서 같이 떼므로 "유지"는 유지로 남음. 원문 위치로 저장된 주석(`start/end`)은 같은 글자를 가리키도록 옮기고, 어긋나면 버림. 줄이 하나이고 본문이 남을 때만 동작(그 밖의 모양은 건드리지 않음), 바뀐 게 없으면 같은 객체 반환.
+  - `src/components/result-workspace-complete.tsx`: `restoreLocalResultQuestionBoundaries` 결과에 위 사본을 한 번 더 적용(`boundaryRestored → result`), 사본이 달라진 경우에만 sessionStorage 키에 `:question-marker-local` 접미사(이전 직접 수정과 섞이지 않게; 기존 `:question-boundary-local` 의미는 그대로). 제출본 탭에 옮겨진 질문을 질문 칸으로 표시. 문항별 첨삭 카드에 `LengthOverNotice`(목표 글자 수 초과 시 몇 자 넘었는지·직접 수정 안내, 직접 줄이면 사라짐). 신규 CSS는 `result-workspace-complete.module.css` 끝에 `.lengthOver` 4줄 추가만.
+  - `src/domain/answer-length.ts`: `countOverTarget` 추가(기존 함수 불변).
+  - 신규 `src/components/landing-consistency.tsx` + `.module.css`(+test), `src/app/page.tsx`에 import 한 줄과 `<LandingConsistency />` 한 줄(FIELD 기준 섹션 다음, FACT TO VALUE 앞). 문구는 철학 문서 기준으로, "항상 같게 나온다"는 보장 대신 기준으로 표현.
+  - 신규 평가 도구: `src/fixtures/quick-stability-case.ts`(+test, 지어낸 5문항), `src/evals/quick-stability.live.test.ts`(유료, `RUN_LIVE_EVAL=1`일 때만), 결과 `docs/quick-revision-stability-2026-10-06.md`.
+- 실험 요약(상세는 위 문서): 같은 글 6회 → 고쳐진 문항 0~4개·5가지 조합, 준비도 67~79, 진단 우선순위 5가지. 같은 수정안을 검토 AI에게만 9회 → 문항 채택은 대체로 같지만 점수 73~85. 채택 조건(인용 글자 일치, 5개 항목 하락 없음)이 판정과 무관하게 거절한 경우 확인. 같은 글 재분석의 점수 안전장치(낮거나 5점 초과 차이면 실패)는 측정된 흔들림으로는 약 1/3만 통과(인용 예외 제외, 운영에서는 아직 실행된 적 없음). 유료 AI 호출 약 30만 토큰, 사용자 승인 하에 실행.
+- 보호/충돌 주의: 공유 트리의 Codex 미커밋 변경(`result-workspace-complete.tsx/.module.css`, `result-document.ts`, `cover-letter-parser.ts`, `answer-readability-preview`)과 같은 파일을 만짐. 이 브랜치는 main 기준이라 그 변경을 가져오거나 덮어쓰지 않음. 통합 시 `result-workspace-complete.tsx`의 `result` 선언부와 storageKey 줄, `agent-change-log.md` 맨 위가 충돌할 수 있음.
+- 검증: `tsc --noEmit` 오류 0, 변경·신규 파일 ESLint 통과, 전체 Vitest 232파일 2,016테스트 통과(Expo 의존성이 없는 `apps/mobile/src/analytics.test.ts`, `src/server/mobile/mobile.test.ts` 2파일은 이 PC에서 늘 실패하는 기존 문제). 저장된 실제 결과 2건(10문항)에 읽기 전용으로 적용해 질문 줄 잔존 0, 유지/수정 구분 불변, 주석 수 불변, 질문이 질문 칸에 채워짐, f9dd67b1의 3번이 520자/450자(70자 초과)로 표시됨을 확인. CSS는 PostCSS 파싱만 확인했고 **브라우저 화면 확인은 하지 않음**(미리보기 도구가 이 worktree를 띄울 수 없고, 화면 확인은 사용자 몫으로 합의).
+- 미리보기: 이 worktree에서 `npm run dev -- -p 3105` 후 `/`(홈 중간 섹션)와 해당 분석 결과 화면. 결과 화면은 관리자 로그인 필요.
+- 롤백: 브랜치를 버리거나 해당 커밋 revert. 기존 저장 결과·DB는 건드리지 않아 데이터 복구가 필요 없음.
+- 상태: 로컬 커밋 완료, 푸시·배포 안 함(사용자 승인 대기). 권고 4가지(채택 규칙 보정, 판정 고정, 점수 안전장치 완화, 문장 단위 채택)는 운영 결과가 바뀌므로 승인 전 미착수. "다른 표현 보기"는 사용자 결정(서비스 상업상 부적절)으로 권고에서 제외.
 
 ## 2026-10-05 — Codex: 입력 경계 확인 실제 연결 (배포 완료)
 

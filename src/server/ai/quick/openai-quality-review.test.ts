@@ -8,7 +8,7 @@ const candidate: QuickGatewayResult = {
   execution: { responseId: "writer", model: "test", promptVersion: "test", rubricVersion: "test", schemaVersion: "1.0", inputTokens: 10, outputTokens: 20, totalTokens: 30 },
 };
 const scores = { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 };
-const review = { diagnosis: { readiness: candidate.output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: scores, after: scores, meaningfulImprovement: false, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "추가 개선이 없습니다.", sourceQuote: "원문을 유지합니다.", candidateQuote: "원문을 유지합니다.", previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, validAdviceIndexes: [], adviceCorrections: [] };
+const review = { diagnosis: { readiness: candidate.output.readiness, priorities: [], verificationQuestions: [] }, questions: [{ order: 1, before: scores, after: scores, meaningfulImprovement: false, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false, reason: "추가 개선이 없습니다.", sourceQuote: "원문을 유지합니다.", candidateQuote: "원문을 유지합니다.", previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false }], crossQuestionRegression: false, crossQuestionOrders: [], validAdviceIndexes: [], adviceCorrections: [] };
 const envelope = (body: unknown = review, status = "completed") => new Response(JSON.stringify({ id: "reviewer", model: "test", status, output_text: JSON.stringify(body), usage: { input_tokens: 3, output_tokens: 4, total_tokens: 7 } }));
 
 describe("independent evaluator API boundary", () => {
@@ -18,6 +18,19 @@ describe("independent evaluator API boundary", () => {
     const gateway = new OpenAIResponsesGateway({ apiKey: "test", model: "test", fetchImplementation: vi.fn().mockResolvedValue(envelope(oldReview)) });
     const oldCandidate = { ...candidate, execution: { ...candidate.execution, promptVersion: "quick-3.4" } };
     expect((await gateway.getReview("reviewer", request, oldCandidate)).status).toBe("completed");
+  });
+  it("accepts a review that was already running before the cross-question orders field existed", async () => {
+    const olderReview = Object.fromEntries(Object.entries(review).filter(([key]) => key !== "crossQuestionOrders"));
+    const gateway = new OpenAIResponsesGateway({ apiKey: "test", model: "test", fetchImplementation: vi.fn().mockResolvedValue(envelope(olderReview)) });
+    expect((await gateway.getReview("reviewer", request, candidate)).status).toBe("completed");
+  });
+  it("asks the reviewer which questions a cross-question problem involves", async () => {
+    const fetchImplementation = vi.fn().mockResolvedValue(envelope(review, "queued"));
+    const gateway = new OpenAIResponsesGateway({ apiKey: "test", model: "test", fetchImplementation });
+    await gateway.startReview(request, candidate);
+    const body = JSON.parse(fetchImplementation.mock.calls[0][1].body);
+    expect(body.instructions).toContain("crossQuestionOrders");
+    expect(body.text.format.schema.required).toContain("crossQuestionOrders");
   });
   it("sends a separate strict request with the same evidence and no previous_response_id", async () => {
     const fetchImplementation = vi.fn().mockResolvedValue(envelope(review, "queued"));

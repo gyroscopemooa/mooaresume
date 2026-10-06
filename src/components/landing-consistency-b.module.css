@@ -1,0 +1,35 @@
+.root { display: grid; grid-template-columns: 1.05fr 1fr; gap: 32px 64px; padding-top: 64px; padding-bottom: 64px; color: var(--ink); }
+.intro { align-self: center; }
+.eyebrow { margin: 0 0 20px; color: var(--green); font-size: 13px; font-weight: 800; letter-spacing: .08em; }
+.intro h2 { margin: 0; font-size: clamp(30px, 3.3vw, 43px); line-height: 1.35; letter-spacing: -.055em; word-break: keep-all; }
+.intro em { color: var(--green); font-style: normal; }
+.lead { margin: 26px 0 18px; font-size: 17px; line-height: 1.8; font-weight: 600; word-break: keep-all; }
+.description { max-width: 430px; margin: 0; color: var(--muted); font-size: 15px; line-height: 1.95; word-break: keep-all; }
+.signature { display: flex; align-items: center; gap: 14px; margin-top: 34px; color: var(--green); font-size: 13px; line-height: 1.7; }
+.signature svg { width: 36px; height: 36px; stroke-width: 1.25; }
+.signature strong { font-weight: 700; }
+.paper { padding: 27px 30px 0; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(135deg, #fff, #f2f8f4); box-shadow: 0 16px 48px #153c2410; }
+.paperTop { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 23px; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+.label { display: inline-block; color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: .06em; }
+.paper h3 { margin: 9px 0 11px; font-size: 21px; line-height: 1.5; letter-spacing: -.035em; word-break: keep-all; }
+.paper article p { margin: 0; font-size: 14px; line-height: 1.9; color: var(--muted); word-break: keep-all; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.tags span { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 6px; background: var(--mint); color: var(--green); font-size: 11px; font-weight: 700; }
+.tags svg { width: 12px; height: 12px; }
+.transition { display: flex; align-items: center; gap: 14px; color: #81a28e; margin: 24px 0; }
+.transition span { flex: 1; height: 1px; background: var(--line); }
+.transition svg { width: 16px; height: 16px; }
+.bottom { margin: 27px -30px 0; padding: 20px 30px; border-radius: 0 0 21px 21px; background: #173e30; color: #d7e7df; font-size: 13px; line-height: 1.8; }
+.bottom strong { color: #fff; font-weight: 600; }
+.note { grid-column: 1 / -1; max-width: 740px; margin: 8px auto 0; color: var(--muted); font-size: 12px; line-height: 1.85; text-align: center; word-break: keep-all; }
+@media (max-width: 760px) {
+  .root { grid-template-columns: 1fr; gap: 30px; padding-top: 32px; padding-bottom: 36px; }
+  .intro h2 { font-size: clamp(28px, 7.5vw, 38px); }
+  .lead { font-size: 15px; margin-top: 20px; }
+  .description { max-width: none; font-size: 14px; }
+  .signature { margin-top: 22px; }
+  .paper { padding: 23px 22px 0; }
+  .paper h3 { font-size: 20px; }
+  .bottom { margin-left: -22px; margin-right: -22px; padding-left: 22px; padding-right: 22px; }
+  .note { text-align: left; font-size: 11px; }
+}

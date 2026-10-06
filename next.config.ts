@@ -19,6 +19,9 @@ const privatePaths = [
 ];
 
 const nextConfig: NextConfig = {
+  // Optional local worktree preview; production config and the default root stay unchanged.
+  ...(process.env.NODE_ENV === "development" && process.env.MOOA_PREVIEW_ROOT
+    ? { turbopack: { root: process.env.MOOA_PREVIEW_ROOT } } : {}),
   poweredByHeader: false,
   allowedDevOrigins: ["local.mooaresume.com", "dev.mooaresume.com"],
   async redirects() {

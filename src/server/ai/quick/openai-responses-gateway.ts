@@ -13,7 +13,8 @@ import { resolveMaxOutputTokens } from "./output-budget";
 import { getQuickAnalysisJsonSchema, parseQuickAnalysisOutput, type QuickAnalysisOutput } from "./schema";
 import { resolveModelConfig } from "../model-config";
 import type { RevisionQuality } from "@/domain/revision-quality";
-import { applyRevisionReview, buildRevisionReviewInput, REVISION_REVIEW_INSTRUCTIONS, revisionReviewSchema } from "./revision-quality";
+import { applyRevisionReview, buildRevisionReviewInput, REVISION_REVIEW_INSTRUCTIONS, revisionReviewSchema, type RevisionReview } from "./revision-quality";
+import { combineReviews, isRepairEnabled, mergeRepair, planRepair, withRepair, type RepairPlan } from "./revision-repair";
 import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
 
 const responsesEnvelopeSchema = z.object({
@@ -35,6 +36,8 @@ const responsesEnvelopeSchema = z.object({
   }).passthrough().nullable().optional(),
 });
 
+type ResponsesEnvelope = z.infer<typeof responsesEnvelopeSchema>;
+
 export type QuickGatewayResult = {
   revisionQuality?: RevisionQuality;
   output: QuickAnalysisOutput;
@@ -52,7 +55,9 @@ export type QuickGatewayResult = {
 
 export type QuickBackgroundResponse =
   | { status: "pending"; responseId: string }
-  | { status: "completed"; result: QuickGatewayResult }
+  // `repair`가 있으면 첫 검토에서 탈락한 문항 중 검토 의견을 반영해 한 번 더 쓸 수 있는 것이 있다는 뜻이다(꺼져 있으면 항상 없음).
+  // `result`는 그 재작성 없이 끝냈을 때의 완성된 결과라서, 재작성을 하지 않거나 중간에 실패해도 그대로 쓴다.
+  | { status: "completed"; result: QuickGatewayResult; repair?: RepairPlan }
   | { status: "failed"; responseId: string; reason: string; execution?: QuickGatewayResult["execution"] };
 
 export interface QuickAnalysisGateway {
@@ -96,7 +101,13 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
     this.fetchImplementation = options.fetchImplementation ?? fetch;
   }
 
-  async startReview(request: AnalysisRequest, candidate: QuickGatewayResult, background = true): Promise<string | QuickGatewayResult> {
+  async startReview(request: AnalysisRequest, candidate: QuickGatewayResult, background = true, onReview?: (review: RevisionReview) => void): Promise<string | QuickGatewayResult> {
+    const envelope = await this.postReview(request, candidate, background);
+    if (background) return envelope.id;
+    return this.finishReview(request, candidate, envelope, onReview);
+  }
+
+  private async postReview(request: AnalysisRequest, candidate: QuickGatewayResult, background: boolean): Promise<ResponsesEnvelope> {
     const { model, reasoningEffort } = resolveModelConfig(request.product, this.options.model);
     const response = await this.fetchImplementation("https://api.openai.com/v1/responses", {
       method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" },
@@ -108,13 +119,15 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
       }),
     });
     if (!response.ok) throw new Error(`OpenAI Responses API quality review failed: status=${response.status}`);
-    const envelope = responsesEnvelopeSchema.parse(await response.json());
-    if (background) return envelope.id;
-    return this.finishReview(request, candidate, envelope);
+    return responsesEnvelopeSchema.parse(await response.json());
   }
 
-  private finishReview(request: AnalysisRequest, candidate: QuickGatewayResult, envelope: z.infer<typeof responsesEnvelopeSchema>): QuickGatewayResult {
+  /** 검토 응답에서 판정을 읽는다. 이 칸이 생기기 전에 시작된 응답도 읽을 수 있게 빠진 칸을 채운다. */
+  private readReview(candidate: QuickGatewayResult, envelope: ResponsesEnvelope): RevisionReview {
     let raw: unknown = JSON.parse(extractOutputText(envelope));
+    // `crossQuestionOrders`는 이 칸이 생기기 전에 시작된 검토 응답에는 없다. 비운 채로 받는다 — 비어 있으면
+    // 예전처럼 문항 간 충돌 판정이 모든 수정을 되돌리므로 진행 중이던 검토가 스키마 변경만으로 실패하지 않는다.
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) raw = { crossQuestionOrders: [], ...(raw as Record<string, unknown>) };
     // A review started before deployment can finish afterwards. Preserve the
     // old validated verdict, but never assume its unreviewed length note is valid.
     if (/^quick-3\./.test(candidate.execution.promptVersion) && raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -123,7 +136,12 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
         ? legacy.questions.map(question => question && typeof question === "object" && !Array.isArray(question)
           ? { validLengthNote: false, ...question } : question) : legacy.questions };
     }
-    const review = revisionReviewSchema.parse(raw);
+    return revisionReviewSchema.parse(raw);
+  }
+
+  private finishReview(request: AnalysisRequest, candidate: QuickGatewayResult, envelope: ResponsesEnvelope, onReview?: (review: RevisionReview) => void): QuickGatewayResult {
+    const review = this.readReview(candidate, envelope);
+    onReview?.(review);
     const result = applyRevisionReview(request, candidate, review, { responseId: envelope.id, model: envelope.model });
     const sum = (a: number | null, b: number | undefined) => a === null || b === undefined ? null : a + b;
     return { ...result, execution: { ...result.execution,
@@ -148,11 +166,105 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
     };
     if (envelope.status !== "completed") return { status: "failed", responseId, reason: "QUALITY_REVIEW_FAILED", execution };
     try {
-      return { status: "completed", result: this.finishReview(request, candidate, envelope) };
+      const captured: { review?: RevisionReview } = {};
+      const result = this.finishReview(request, candidate, envelope, (parsed) => { captured.review = parsed; });
+      // 다시 쓸 문항이 있으면 알려 준다. 쓸지 말지는 진행을 맡은 쪽이 정하고, 안 쓰면 `result`가 그대로 최종 결과다.
+      const repair = captured.review && isRepairEnabled() ? planRepair(request, candidate, captured.review) : null;
+      return { status: "completed", result, ...(repair ? { repair } : {}) };
     } catch (error) {
       // Malformed/contradictory reviews are never presented as an approval.
       const reason = error instanceof Error && error.message.startsWith("REVISION_REVIEW_") ? error.message : "QUALITY_REVIEW_INVALID";
       return { status: "failed", responseId, reason, execution };
+    }
+  }
+
+  /**
+   * 첫 검토에서 탈락한 문항을 검토 의견과 함께 한 번 더 쓰게 한다(백그라운드 응답 ID를 돌려준다).
+   * 진행을 맡은 쪽이 `getReview`가 알려 준 `repair` 계획을 넘겨 부른다. 결과는 `getBackground`로 읽는다.
+   */
+  async startRepair(request: AnalysisRequest, plan: RepairPlan): Promise<string> {
+    return this.startBackground(withRepair(request, plan), 1);
+  }
+
+  /** 다시 쓴 글을 첫 수정안에 합친 후보를 만들어 두 번째 검토를 시작한다. 합칠 수 없으면 던진다 — 부른 쪽이 첫 검토 결과로 끝낸다. */
+  async startRepairReview(request: AnalysisRequest, candidate: QuickGatewayResult, repaired: QuickGatewayResult, firstReviewId: string): Promise<string> {
+    const { merged } = await this.mergeRepaired(request, candidate, repaired, firstReviewId);
+    const reviewId = await this.startReview(request, merged);
+    if (typeof reviewId !== "string") throw new Error("REVISION_REPAIR_REVIEW_ID_REQUIRED");
+    return reviewId;
+  }
+
+  /** 두 번째 검토를 읽어 최종 결과를 만든다. 다시 쓴 문항은 두 번째 판정, 나머지는 첫 판정을 쓴다(combineReviews). */
+  async getRepairReview(reviewId: string, request: AnalysisRequest, candidate: QuickGatewayResult, repaired: QuickGatewayResult, firstReviewId: string): Promise<QuickBackgroundResponse> {
+    const envelope = await this.fetchEnvelope(reviewId);
+    if (!envelope.status || envelope.status === "queued" || envelope.status === "in_progress") return { status: "pending", responseId: reviewId };
+    if (envelope.status !== "completed") return { status: "failed", responseId: reviewId, reason: "REVISION_REPAIR_REVIEW_FAILED" };
+    try {
+      const { plan, firstReview, firstEnvelope, merged } = await this.mergeRepaired(request, candidate, repaired, firstReviewId);
+      const combined = combineReviews(firstReview, this.readReview(merged, envelope), plan);
+      if (!combined) throw new Error("REVISION_REPAIR_REVIEW_INCOMPLETE");
+      const result = applyRevisionReview(request, merged, combined, { responseId: envelope.id, model: envelope.model }, { repairedOrders: plan.orders });
+      // 비용은 작성 + 첫 검토 + 재작성 + 두 번째 검토를 모두 더한다. 하나라도 모르면 모른다고 둔다(기존 합산과 같은 규칙).
+      const add = (...values: Array<number | null | undefined>) => values.some((value) => value === null || value === undefined) ? null : values.reduce<number>((total, value) => total + (value as number), 0);
+      return { status: "completed", result: { ...result, execution: { ...result.execution,
+        inputTokens: add(candidate.execution.inputTokens, firstEnvelope.usage?.input_tokens, repaired.execution.inputTokens, envelope.usage?.input_tokens),
+        outputTokens: add(candidate.execution.outputTokens, firstEnvelope.usage?.output_tokens, repaired.execution.outputTokens, envelope.usage?.output_tokens),
+        totalTokens: add(candidate.execution.totalTokens, firstEnvelope.usage?.total_tokens, repaired.execution.totalTokens, envelope.usage?.total_tokens),
+      } } };
+    } catch (error) {
+      return { status: "failed", responseId: reviewId, reason: error instanceof Error && error.message.startsWith("REVISION_") ? error.message : "REVISION_REPAIR_INVALID" };
+    }
+  }
+
+  private async fetchEnvelope(responseId: string): Promise<ResponsesEnvelope> {
+    const response = await this.fetchImplementation(`https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`, {
+      headers: { Authorization: `Bearer ${this.options.apiKey}` }, signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) throw new Error(`OpenAI Responses API poll failed: status=${response.status}`);
+    return responsesEnvelopeSchema.parse(await response.json());
+  }
+
+  /** 첫 검토를 다시 읽어 같은 계획을 세우고(같은 입력이면 같은 결과) 다시 쓴 글을 합친다. 합친 글이 기본 검증을 못 넘으면 던진다. */
+  private async mergeRepaired(request: AnalysisRequest, candidate: QuickGatewayResult, repaired: QuickGatewayResult, firstReviewId: string) {
+    const firstEnvelope = await this.fetchEnvelope(firstReviewId);
+    if (firstEnvelope.status !== "completed") throw new Error("REVISION_REPAIR_FIRST_REVIEW_NOT_COMPLETED");
+    const firstReview = this.readReview(candidate, firstEnvelope);
+    const plan = planRepair(request, candidate, firstReview);
+    if (!plan) throw new Error("REVISION_REPAIR_PLAN_MISSING");
+    const merged = mergeRepair(candidate, repaired, plan);
+    if (!merged) throw new Error("REVISION_REPAIR_MERGE_FAILED");
+    if (validateQuickAnalysis(request, merged.output).some((issue) => BLOCKING_VALIDATION_CODES.has(issue.code) || issue.code === "QUESTION_MISMATCH")) throw new Error("REVISION_REPAIR_INVALID");
+    return { plan, firstReview, firstEnvelope, merged };
+  }
+
+  /** 동기 경로(평가 도구)의 재작성: 같은 규칙을 기다리며 돌린다. 어느 단계든 실패하면 첫 검토 결과를 그대로 돌려준다. */
+  private async repairInline(request: AnalysisRequest, candidate: QuickGatewayResult, firstReview: RevisionReview, firstPass: QuickGatewayResult): Promise<QuickGatewayResult> {
+    const plan = planRepair(request, candidate, firstReview);
+    if (!plan) return firstPass;
+    try {
+      const repairId = await this.startRepair(request, plan);
+      let repaired: QuickGatewayResult | null = null;
+      for (let attempt = 0; attempt < 120 && !repaired; attempt += 1) {
+        const polled = await this.getBackground(repairId);
+        if (polled.status === "completed") repaired = polled.result;
+        else if (polled.status === "failed") return firstPass;
+        else await new Promise((resolve) => setTimeout(resolve, 4_000));
+      }
+      if (!repaired) return firstPass;
+      const merged = mergeRepair(candidate, repaired, plan);
+      if (!merged || validateQuickAnalysis(request, merged.output).some((issue) => BLOCKING_VALIDATION_CODES.has(issue.code) || issue.code === "QUESTION_MISMATCH")) return firstPass;
+      const envelope = await this.postReview(request, merged, false);
+      const combined = combineReviews(firstReview, this.readReview(merged, envelope), plan);
+      if (!combined) return firstPass;
+      const result = applyRevisionReview(request, merged, combined, { responseId: envelope.id, model: envelope.model }, { repairedOrders: plan.orders });
+      const add = (...values: Array<number | null | undefined>) => values.some((value) => value === null || value === undefined) ? null : values.reduce<number>((total, value) => total + (value as number), 0);
+      return { ...result, execution: { ...result.execution,
+        inputTokens: add(firstPass.execution.inputTokens, repaired.execution.inputTokens, envelope.usage?.input_tokens),
+        outputTokens: add(firstPass.execution.outputTokens, repaired.execution.outputTokens, envelope.usage?.output_tokens),
+        totalTokens: add(firstPass.execution.totalTokens, repaired.execution.totalTokens, envelope.usage?.total_tokens),
+      } };
+    } catch {
+      return firstPass;
     }
   }
 
@@ -207,9 +319,10 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
       },
     };
     if (validateQuickAnalysis(request, candidate.output).some(issue => BLOCKING_VALIDATION_CODES.has(issue.code))) return candidate;
-    const reviewed = await this.startReview(request, candidate, false);
+    const captured: { review?: RevisionReview } = {};
+    const reviewed = await this.startReview(request, candidate, false, (review) => { captured.review = review; });
     if (typeof reviewed === "string") throw new Error("QUALITY_REVIEW_NOT_COMPLETED");
-    return reviewed;
+    return isRepairEnabled() && captured.review ? this.repairInline(request, candidate, captured.review, reviewed) : reviewed;
   }
   /**
    * 실패한 응답의 본문을 짧게 붙입니다.

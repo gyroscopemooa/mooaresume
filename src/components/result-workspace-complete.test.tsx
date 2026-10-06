@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { sampleResultDocument } from "@/fixtures/result-document";
+import type { ResultOriginalAnnotation } from "@/domain/result-document";
 import { ResultWorkspaceComplete } from "./result-workspace-complete";
 
 // 재첨삭 요청이 결과 화면에서 분석 준비 화면으로 넘어가므로 컴포넌트가
@@ -613,5 +614,187 @@ describe("ResultWorkspaceComplete 선택 제안의 컨설턴트 설명", () => {
 
     expect(await screen.findByText(new RegExp(aiText.slice(0, 20)))).toBeTruthy();
     expect(tipCalls(fetchMock)).toHaveLength(1);
+  });
+});
+
+describe("ResultWorkspaceComplete 답변 앞 질문 줄과 글자 수 초과 안내", () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
+  const QUESTION_1 = "한빛지역개발공사 체험형 인턴에 지원한 이유를 기술해 주십시오.";
+  const QUESTION_2 = "구성원 간 의견 차이로 갈등이 생겼을 때 소통으로 해결한 경험을 기술해 주십시오.";
+  const KEPT_BODY = "대학 시절 전통시장 점포 40곳을 방문하고 상인분들을 인터뷰했습니다. 현장의 목소리가 정책으로 이어지는 과정을 배우고 싶습니다.";
+  const EDITED_BODY = "교내 전시 행사에서 현수막 예산 문제로 팀원과 의견이 갈렸고, 입구에만 현수막을 쓰는 절충안으로 해결했습니다.";
+  const base = sampleResultDocument.questions[0];
+  const marked = {
+    ...sampleResultDocument,
+    isSample: false,
+    questions: [
+      { ...base, id: "kept", order: 1, title: "지원동기", prompt: "지원동기", targetLength: 450, originalAnswer: `질문: ${QUESTION_1}\n${KEPT_BODY}`, revisedAnswer: `질문: ${QUESTION_1}\n${KEPT_BODY}`, revisionReasons: [], highlightedPhrases: [], originalAnnotations: undefined },
+      { ...base, id: "edited", order: 2, title: "갈등 해결 경험", prompt: "갈등 해결 경험", targetLength: 450, originalAnswer: `질문: ${QUESTION_2}\n교내 전시 행사에서 현수막 문제로 팀원과 갈등이 있었고 절충안으로 해결했습니다.`, revisedAnswer: EDITED_BODY, revisionReasons: ["상황과 해결 방법을 한 문장에 담았습니다."], highlightedPhrases: [], originalAnnotations: undefined },
+    ],
+  };
+
+  it("기존 직접 수정본을 복원하고 구 저장본은 보존한다", async () => {
+    const oldKey = `mooa:result-edits:${marked.caseId}:v1`;
+    const newKey = `${oldKey}:question-marker-local`;
+    sessionStorage.removeItem(newKey);
+    const edited = "제가 직접 수정한 내용은 사라지면 안 됩니다.";
+    const saved = JSON.stringify({ kept: `질문: ${QUESTION_1}\n${edited}`, edited: EDITED_BODY });
+    sessionStorage.setItem(oldKey, saved);
+    const view = render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    await waitFor(() => expect(document.body.textContent).toContain(edited));
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(newKey) ?? "{}").kept).toBe(edited));
+    expect(sessionStorage.getItem(oldKey)).toBe(saved);
+    view.unmount();
+    sessionStorage.removeItem(oldKey);
+    sessionStorage.removeItem(newKey);
+  });
+
+  it("질문이 별도 저장돼 있어도 본문에서 분리한 뒤 제출본 탭에 표시한다", () => {
+    const result = { ...marked, questions: [{ ...marked.questions[0], prompt: QUESTION_1 }] };
+    render(<ResultWorkspaceComplete result={result}/>);
+    fireEvent.click(screen.getByRole("button", { name: "제출본" }));
+    expect(screen.getByText(QUESTION_1)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("질문:");
+  });
+
+  it("새 저장본이 손상돼도 이전 직접 수정본을 복구한다", async () => {
+    const oldKey = `mooa:result-edits:${marked.caseId}:v1`;
+    sessionStorage.setItem(oldKey, JSON.stringify({ kept: "복구 가능한 이전 편집본" }));
+    sessionStorage.setItem(`${oldKey}:question-marker-local`, "{broken");
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    await waitFor(() => expect(document.body.textContent).toContain("복구 가능한 이전 편집본"));
+    expect(JSON.parse(sessionStorage.getItem(oldKey) ?? "{}").kept).toBe("복구 가능한 이전 편집본");
+  });
+
+  it("새 저장본이 있으면 이전 편집본으로 덮어쓰지 않는다", async () => {
+    const oldKey = `mooa:result-edits:${marked.caseId}:v1`;
+    const newKey = `${oldKey}:question-marker-local`;
+    sessionStorage.setItem(oldKey, JSON.stringify({ kept: "오래된 편집" }));
+    sessionStorage.setItem(newKey, JSON.stringify({ kept: "가장 최근 직접 수정본" }));
+    const view = render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    await waitFor(() => expect(document.body.textContent).toContain("가장 최근 직접 수정본"));
+    expect(screen.queryByText("오래된 편집")).toBeNull();
+    view.unmount();
+    sessionStorage.removeItem(oldKey);
+    sessionStorage.removeItem(newKey);
+  });
+
+  it("원문을 그대로 둔 문항도 수정한 문항처럼 질문 줄 없이 질문 칸에 질문을 보여 준다", () => {
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    expect(document.body.textContent).not.toContain("질문:");
+    expect(screen.getByText(QUESTION_1)).toBeTruthy();
+    expect(screen.getByText(QUESTION_2)).toBeTruthy();
+    // 유지한 문항은 여전히 "유지"이고, 수정한 문항은 여전히 "왜 바뀌었나요?"이다.
+    expect(screen.getAllByText("현재 문장 유지")).toHaveLength(1);
+    expect(screen.getAllByText("왜 바뀌었나요?")).toHaveLength(1);
+    // 글자 수는 질문 줄을 빼고 센다.
+    expect(screen.getByText(`${KEPT_BODY.replace(/\s/g, "").length} / 450자`)).toBeTruthy();
+  });
+
+  it("이 문항 복사와 전체 복사에 질문 줄이 딸려 가지 않는다", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /이 문항 복사/ })[0]);
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toBe(KEPT_BODY);
+
+    fireEvent.click(screen.getByRole("button", { name: "최종 첨삭본" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "전체 복사" })[0]);
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
+    expect(writeText.mock.calls[1][0]).not.toContain("질문:");
+    expect(writeText.mock.calls[1][0]).toContain(KEPT_BODY);
+  });
+
+  it("제출본 탭에서는 원문에서 빠진 질문을 질문 칸으로 보여 준다", () => {
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "제출본" }));
+    expect(screen.getByText(QUESTION_1)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("질문:");
+  });
+
+  it("목표 글자 수를 넘은 문항은 몇 자 넘었는지와 줄이는 방법을 알려 준다", () => {
+    const over = { ...marked, questions: [{ ...marked.questions[0], targetLength: 40 }, marked.questions[1]] };
+    render(<ResultWorkspaceComplete result={over}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+
+    const overBy = KEPT_BODY.replace(/\s/g, "").length - 40;
+    expect(screen.getByText(`목표 40자보다 ${overBy}자 깁니다.`)).toBeTruthy();
+    expect(screen.getByText(/이번 검토에서는 이 문항의 문장을 바꾸지 않아 분량도 그대로입니다/)).toBeTruthy();
+    expect(screen.getAllByRole("note")).toHaveLength(1);
+  });
+
+  it("목표 안에 들어오는 문항에는 초과 안내를 붙이지 않는다", () => {
+    render(<ResultWorkspaceComplete result={marked}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+
+  it("직접 줄여서 목표 안에 들어오면 초과 안내가 사라진다", () => {
+    const over = { ...marked, questions: [{ ...marked.questions[0], targetLength: 40 }] };
+    render(<ResultWorkspaceComplete result={over}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getAllByRole("note")).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /직접 수정/ }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "전통시장 점포 40곳을 방문했습니다." } });
+    expect(screen.queryByRole("note")).toBeNull();
+  });
+});
+
+describe("ResultWorkspaceComplete 수정이 없는 결과의 설명", () => {
+  const keepCurrent = {
+    version: "revision-quality-2.0" as const, reviewerResponseId: "reviewer", reviewerModel: "test", decision: "keep_current" as const,
+    reason: "1번: 후보가 원문의 핵심 사실을 줄여 원문을 유지합니다.", beforeScore: 80, candidateScore: 80,
+    inputFingerprint: "input", contextFingerprint: "context", parentAnalysisRunId: null, relationship: "new" as const,
+  };
+  const body = "대학 시절 전통시장 점포 40곳을 방문하고 상인분들을 인터뷰했습니다.";
+  const base = sampleResultDocument.questions[0];
+  const keptQuestion = (originalAnnotations: ResultOriginalAnnotation[]) => ({
+    ...base, id: "kept", order: 1, title: "지원동기", prompt: "지원 동기를 쓰세요.", targetLength: 450,
+    originalAnswer: body, revisedAnswer: body, revisionReasons: [], highlightedPhrases: [], originalAnnotations,
+  });
+  const annotation = (type: ResultOriginalAnnotation["type"]): ResultOriginalAnnotation => ({
+    id: `a-${type}`, phrase: "점포 40곳", type, comment: "설명입니다.", start: body.indexOf("점포 40곳"), end: body.indexOf("점포 40곳") + "점포 40곳".length,
+  });
+
+  it("개선점을 짚어 놓고 수정 이득이 없다고만 말하지 않는다", () => {
+    expect(sampleResultDocument.priorities.length).toBeGreaterThan(0);
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, revisionQuality: keepCurrent, questions: [keptQuestion([])] }}/>);
+    expect(screen.getByText(/AI가 제안한 수정이 검토를 통과하지 못해 문장은 그대로입니다/)).toBeTruthy();
+    expect(screen.getByText(/위 개선점은 직접 반영하셔야 하니/)).toBeTruthy();
+    expect(screen.queryByText(/추가 수정의 이득이 충분히 확인되지 않아/)).toBeNull();
+  });
+
+  it("짚은 개선점이 없으면 예전 문구를 그대로 쓴다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, priorities: [], revisionQuality: keepCurrent, questions: [keptQuestion([])] }}/>);
+    expect(screen.getByText(/추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다/)).toBeTruthy();
+    expect(screen.queryByText(/위 개선점은 직접 반영하셔야 하니/)).toBeNull();
+  });
+
+  it("문장을 그대로 둔 문항에서 짚은 곳이 있으면 제출본 탭을 안내한다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, questions: [keptQuestion([annotation("vague"), annotation("good")])] }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getByText(/원문에서 짚은 곳이 1곳 있습니다/)).toBeTruthy();
+  });
+
+  it("잘한 곳만 표시한 문항이나 수정한 문항에는 이 안내를 붙이지 않는다", () => {
+    const goodOnly = render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, questions: [keptQuestion([annotation("good")])] }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.queryByText(/원문에서 짚은 곳이/)).toBeNull();
+    goodOnly.unmount();
+
+    const edited = { ...keptQuestion([annotation("revise")]), revisedAnswer: "대학 시절 전통시장 점포 40곳을 직접 방문해 상인 인터뷰를 했습니다.", revisionReasons: ["표현을 다듬었습니다."] };
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, questions: [edited] }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.queryByText(/원문에서 짚은 곳이/)).toBeNull();
   });
 });
