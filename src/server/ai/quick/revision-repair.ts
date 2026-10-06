@@ -16,6 +16,8 @@ import { normalizeRevisionText, type RevisionReview } from "./revision-quality";
  *  - 한 분석에서 한 번만, 최대 3문항만. 두 번째 탈락은 원문 유지다(핑퐁 금지).
  *  - 어느 단계에서 실패해도 첫 검토 결과로 끝낸다. 재작성은 덤이지 필수가 아니다.
  *  - 취향 판정·재등장·단순 "이득 없음"은 다시 써도 같은 판정이 나므로 대상이 아니다.
+ *  - 재어 본 범위(QUICK · POLISH)에서만 쓴다. 같은 진행 코드를 타는 PRO·FINAL은 재작성 호출 하나가 훨씬 크고,
+ *    BUILD·CREATE는 원문이 완성된 글이 아니라 메모라서 "지우지 말라"는 이유의 뜻이 다르다. 넓히려면 먼저 그 범위로 재야 한다.
  */
 
 /** 이 환경변수가 "on"일 때만 켜진다. 기본은 꺼짐(배포와 켜기를 따로 하려는 것). */
@@ -36,6 +38,7 @@ export type RepairPlan = { orders: number[]; notes: RepairNote[] };
  * 둘 다 "무엇을 되살리고 무엇을 빼라"는 구체적 이유가 따라오는 거절이다.
  */
 export function planRepair(request: AnalysisRequest, candidate: QuickGatewayResult, review: RevisionReview): RepairPlan | null {
+  if (request.product !== "QUICK" || request.writingMode !== "POLISH") return null;
   // 이전 결과와 비교하는 재분석은 점수·진단 일관성 규칙이 따로 걸려 있어 여기서 손대지 않는다.
   if (request.previousRevision) return null;
   // 문서 전체 충돌 판정은 한 문항을 다시 쓴다고 풀리지 않는다.

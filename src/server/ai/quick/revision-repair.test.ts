@@ -72,6 +72,17 @@ describe("planRepair", () => {
     expect(planRepair(previous, candidate(rewritten), flagged)).toBeNull();
   });
 
+  it.each([
+    ["PRO", "POLISH"],
+    ["FINAL", "POLISH"],
+    ["QUICK", "BUILD"],
+    ["QUICK", "CREATE"],
+  ] as const)("only runs for QUICK POLISH, the range that was measured (%s %s does nothing)", (product, writingMode) => {
+    const flagged = review([verdict(1, { lostFactOrVoice: true }), verdict(2), verdict(3)]);
+    expect(planRepair({ ...request(), product, writingMode }, candidate(rewritten), flagged)).toBeNull();
+    expect(planRepair(request(), candidate(rewritten), flagged)).not.toBeNull();
+  });
+
   it("repairs at most three questions, lowest numbers first", () => {
     const five = ["a1", "a2", "a3", "a4", "a5"].map((text) => `${text} 고침`);
     const plan = planRepair(request(5), candidate(five), review([1, 2, 3, 4, 5].map((order) => verdict(order, { lostFactOrVoice: true }))));
