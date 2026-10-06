@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { sampleResultDocument } from "@/fixtures/result-document";
+import type { ResultOriginalAnnotation } from "@/domain/result-document";
 import { ResultWorkspaceComplete } from "./result-workspace-complete";
 
 // 재첨삭 요청이 결과 화면에서 분석 준비 화면으로 넘어가므로 컴포넌트가
@@ -695,5 +696,54 @@ describe("ResultWorkspaceComplete 답변 앞 질문 줄과 글자 수 초과 안
     fireEvent.click(screen.getByRole("button", { name: /직접 수정/ }));
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "전통시장 점포 40곳을 방문했습니다." } });
     expect(screen.queryByRole("note")).toBeNull();
+  });
+});
+
+describe("ResultWorkspaceComplete 수정이 없는 결과의 설명", () => {
+  const keepCurrent = {
+    version: "revision-quality-2.0" as const, reviewerResponseId: "reviewer", reviewerModel: "test", decision: "keep_current" as const,
+    reason: "1번: 후보가 원문의 핵심 사실을 줄여 원문을 유지합니다.", beforeScore: 80, candidateScore: 80,
+    inputFingerprint: "input", contextFingerprint: "context", parentAnalysisRunId: null, relationship: "new" as const,
+  };
+  const body = "대학 시절 전통시장 점포 40곳을 방문하고 상인분들을 인터뷰했습니다.";
+  const base = sampleResultDocument.questions[0];
+  const keptQuestion = (originalAnnotations: ResultOriginalAnnotation[]) => ({
+    ...base, id: "kept", order: 1, title: "지원동기", prompt: "지원 동기를 쓰세요.", targetLength: 450,
+    originalAnswer: body, revisedAnswer: body, revisionReasons: [], highlightedPhrases: [], originalAnnotations,
+  });
+  const annotation = (type: ResultOriginalAnnotation["type"]): ResultOriginalAnnotation => ({
+    id: `a-${type}`, phrase: "점포 40곳", type, comment: "설명입니다.", start: body.indexOf("점포 40곳"), end: body.indexOf("점포 40곳") + "점포 40곳".length,
+  });
+
+  it("개선점을 짚어 놓고 수정 이득이 없다고만 말하지 않는다", () => {
+    expect(sampleResultDocument.priorities.length).toBeGreaterThan(0);
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, revisionQuality: keepCurrent, questions: [keptQuestion([])] }}/>);
+    expect(screen.getByText(/AI가 제안한 수정이 검토를 통과하지 못해 문장은 그대로입니다/)).toBeTruthy();
+    expect(screen.getByText(/위 개선점은 직접 반영하셔야 하니/)).toBeTruthy();
+    expect(screen.queryByText(/추가 수정의 이득이 충분히 확인되지 않아/)).toBeNull();
+  });
+
+  it("짚은 개선점이 없으면 예전 문구를 그대로 쓴다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, priorities: [], revisionQuality: keepCurrent, questions: [keptQuestion([])] }}/>);
+    expect(screen.getByText(/추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다/)).toBeTruthy();
+    expect(screen.queryByText(/위 개선점은 직접 반영하셔야 하니/)).toBeNull();
+  });
+
+  it("문장을 그대로 둔 문항에서 짚은 곳이 있으면 제출본 탭을 안내한다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, questions: [keptQuestion([annotation("vague"), annotation("good")])] }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getByText(/원문에서 짚은 곳이 1곳 있습니다/)).toBeTruthy();
+  });
+
+  it("잘한 곳만 표시한 문항이나 수정한 문항에는 이 안내를 붙이지 않는다", () => {
+    const goodOnly = render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, questions: [keptQuestion([annotation("good")])] }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.queryByText(/원문에서 짚은 곳이/)).toBeNull();
+    goodOnly.unmount();
+
+    const edited = { ...keptQuestion([annotation("revise")]), revisedAnswer: "대학 시절 전통시장 점포 40곳을 직접 방문해 상인 인터뷰를 했습니다.", revisionReasons: ["표현을 다듬었습니다."] };
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, questions: [edited] }}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.queryByText(/원문에서 짚은 곳이/)).toBeNull();
   });
 });

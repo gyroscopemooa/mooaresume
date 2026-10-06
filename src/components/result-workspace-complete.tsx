@@ -6,7 +6,7 @@ import Link from "next/link";
 import { WritingHomeLink } from "@/components/writing-home-link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, ArrowRight, Check, CheckCheck, CheckCircle2, Clipboard, Download, FileText, GitCompareArrows, Lightbulb, LockKeyhole, PencilLine, RotateCcw } from "lucide-react";
-import { buildFinalDocumentText, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultRequirementMatch } from "@/domain/result-document";
+import { buildFinalDocumentText, countCompactCharacters, normalizeAnswerParagraphs, splitIntoParagraphs, type ResultDocument, type ResultOriginalAnnotation, type ResultQuestion, type ResultRequirementMatch } from "@/domain/result-document";
 import { countOverTarget, describeAnswerLength } from "@/domain/answer-length";
 import { normalizeQuestionMarkers } from "@/domain/question-marker";
 import { recommendNextStep } from "@/domain/next-step";
@@ -150,6 +150,14 @@ function LengthOverNotice({ answer, target, unchanged }: { answer: string; targe
     <AlertCircle/>
     <p><b>목표 {target}자보다 {over}자 깁니다.</b> {unchanged ? "이번 검토에서는 이 문항의 문장을 바꾸지 않아 분량도 그대로입니다. " : ""}제출 양식의 글자 수 제한을 넘지 않도록 &lsquo;직접 수정&rsquo;으로 줄여 주세요.</p>
   </div>;
+}
+
+/**
+ * 원문에서 "고칠 곳"으로 짚은 표시 수(잘한 곳 good은 세지 않는다).
+ * 문장을 그대로 둔 문항에 이 수가 있으면 "고칠 곳이 없다"가 아니라 "짚었지만 문장은 안 바꿨다"는 뜻이다.
+ */
+function flaggedSpots(question: Pick<ResultQuestion, "originalAnnotations">) {
+  return (question.originalAnnotations ?? []).filter((annotation) => annotation.type !== "good").length;
 }
 
 /** A question that started empty has no original to diff against at all. */
@@ -590,7 +598,10 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
               the score they just bought was a mock. */}
           <small>{result.product} · {result.writingMode === "BUILD" ? "내용 보완" : result.writingMode === "CREATE" ? "처음부터 작성" : "최종 첨삭"}{result.isSample ? " · 샘플" : ""}</small><h2>제공된 글의 검토 결과</h2><strong aria-label={`준비도 ${result.readiness.score}점`}>{result.readiness.score}<span>/100</span></strong><p>보완한 문항 {result.questions.filter(q => q.originalAnswer !== q.revisedAnswer).length}개 · 유지한 문항 {result.questions.filter(q => q.originalAnswer === q.revisedAnswer).length}개 · 확인 질문 {result.verificationQuestions.length}개</p></div><p>{result.product === "QUICK" ? "자기소개서의 문항 답변·논리·표현을 검토했습니다. 자격·스펙과 공고 적합성은 검토 범위에 포함되지 않습니다." : "제공된 글과 지원자료 범위에서 문항 답변·근거·공고 연결을 검토했습니다."} 채용 결과는 지원 자격, 경력, 경쟁 상황 등에도 영향을 받으며 이 검토로 예측하지 않습니다.</p><p className={styles.scoreBasis}>준비도 점수 기준: 질문에 맞게 답했는가 · 근거가 있는가 · 논리가 이어지는가 · 읽기 쉬운가 · 구체적인가, 다섯 가지를 각 20점으로 채점합니다. 글의 완성도만 본 점수라 높게 나와도 합격을 뜻하지 않고, 자격·스펙·경쟁률은 반영하지 않습니다.</p></div>
         <div className={styles.overviewGrid}>
-          <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다.</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
+          <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>{result.priorities.length > 0
+            // 개선점을 짚어 놓고 "수정 이득이 없어 유지했다"고만 하면 말이 어긋난다. 고칠 곳이 있는데 문장이 그대로인 까닭과 할 일을 같이 말한다.
+            ? "이번에는 AI가 제안한 수정이 검토를 통과하지 못해 문장은 그대로입니다. 위 개선점은 직접 반영하셔야 하니, 문항별 첨삭에서 문항마다의 이유를 확인해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다."
+            : "추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다."}</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
             <section className={styles.panel}><span className={styles.eyebrow}>분석한 원본</span>{result.attachments.map((file) => <div className={styles.file} key={file.id}><FileText/><span><b>{file.filename}</b><small>{file.extension} · {(file.sizeBytes/1024).toFixed(0)}KB · {file.sectionCount}개 문항</small></span><em><CheckCircle2/> 읽기 완료</em></div>)}<p className={styles.privacy}><LockKeyhole/> 원본은 수정하지 않고 결과와 분리해 보관합니다.</p></section>
@@ -654,7 +665,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
             <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
-            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}</div></div>
+            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}{question.originalAnswer === question.revisedAnswer && flaggedSpots(question) > 0 && <p><AlertCircle/> 원문에서 짚은 곳이 {flaggedSpots(question)}곳 있습니다. 문장은 그대로 두었으니 &lsquo;제출본&rsquo; 탭에서 확인해 직접 반영해 주세요.</p>}</div></div>
             <LengthOverNotice answer={answer} target={question.targetLength} unchanged={question.originalAnswer === question.revisedAnswer && !changed}/>
             {showLengthGap && <div className={styles.lengthGap}>
               <div><b>보완에 필요한 정보</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
