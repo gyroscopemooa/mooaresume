@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { contextEnhancementSchema, type ContextEnhancement } from "@/domain/context-enhancement";
 import styles from "./context-enhancement-option.module.css";
 
 export function ContextEnhancementOption({ disabled, draftKey = "", defaultCompany = "", defaultRole = "", onChange }: { disabled: boolean; draftKey?: string; /** 이미 입력받은 회사·직무. 있으면 스위치만 켜면 되도록 미리 채웁니다. */ defaultCompany?: string; defaultRole?: string; onChange: (value: ContextEnhancement | undefined, invalid: boolean) => void }) {
   const [enabled, setEnabled] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const switchId = useId();
   const [company, setCompany] = useState(defaultCompany.slice(0, 80));
   const [role, setRole] = useState(defaultRole.slice(0, 80));
   const prefilled = Boolean(defaultCompany.trim() && defaultRole.trim());
@@ -32,10 +34,20 @@ export function ContextEnhancementOption({ disabled, draftKey = "", defaultCompa
     onChange(active && parsed.success ? parsed.data : undefined, active && !parsed.success);
   };
   return <fieldset className={styles.option} disabled={disabled}>
-    <label className={styles.heading}><span>기업·산업·직무 분석 강화</span>
-      <input type="checkbox" role="switch" aria-label="기업·산업·직무 분석 강화" checked={enabled} onChange={event => { setEnabled(event.target.checked); update(event.target.checked, company, role); }} />
-    </label>
-    <p>공개 기업·산업 자료를 참고해 직무 관점의 코칭을 보강합니다. 추가 결제 없이 선택할 수 있습니다.</p>
+    <div className={styles.heading}><label htmlFor={switchId}>기업·산업·직무 분석 강화</label>
+      <button type="button" className={styles.info} aria-expanded={infoOpen} onClick={() => setInfoOpen(open => !open)}>{infoOpen ? "접기" : "자세히"}</button>
+      <input id={switchId} type="checkbox" role="switch" aria-label="기업·산업·직무 분석 강화" checked={enabled} onChange={event => { setEnabled(event.target.checked); update(event.target.checked, company, role); }} />
+    </div>
+    {infoOpen && <div className={styles.details}>
+      <p>회사·직무명으로 공개된 기업·산업 자료를 찾아 코칭 참고로 더합니다. 추가 결제는 없습니다.</p>
+      <b>알아둘 점</b>
+      <ul>
+        <li>공개 자료라 부정확하거나 오래됐을 수 있고, 사실 검증을 거친 정보가 아닙니다. 제출한 공고와 자료가 항상 우선입니다.</li>
+        <li>이름이 같은 다른 회사가 섞일 수 있어 정확한 회사명이 필요합니다.</li>
+        <li>조회에는 회사·직무명만 쓰이며, 처리 시간이 조금 늘어납니다.</li>
+        <li>자료를 못 찾으면 제출한 자료만으로 첨삭하고 결과에 안내합니다.</li>
+      </ul>
+    </div>}
     {enabled && <>
       {prefilled && !editingNames && contextEnhancementSchema.safeParse({ company, role }).success
         ? <p>분석 대상: <b>{company}</b> · <b>{role}</b> <button type="button" onClick={() => setEditingNames(true)}>수정</button></p>
@@ -43,10 +55,8 @@ export function ContextEnhancementOption({ disabled, draftKey = "", defaultCompa
         <label>지원 회사<input value={company} maxLength={80} placeholder="정확한 회사명" onChange={event => { setCompany(event.target.value); update(true, event.target.value, role); }} /></label>
         <label>지원 직무<input value={role} maxLength={80} placeholder="예: 토목 설계" onChange={event => { setRole(event.target.value); update(true, company, event.target.value); }} /></label>
       </div>}
-      <p>회사·직무명만 외부 조회에 사용합니다. 이름·연락처·자소서 내용은 이 칸에 넣지 마세요. 동명 회사 혼동을 줄이도록 정확히 입력해 주세요.</p>
-      <p>외부 자료는 부정확하거나 오래됐을 수 있어 제출 공고를 우선합니다. 자료를 확보하지 못하면 기존 자료만으로 첨삭하며 결과에 안내합니다. 처리 시간이 추가될 수 있습니다.</p>
+      <p className={styles.note}>회사·직무명만 입력하세요. 이름·연락처·자소서 내용은 넣지 마세요.</p>
       {!contextEnhancementSchema.safeParse({ company, role }).success && <p role="status">회사·직무명을 모두 입력해 주세요. 이메일·전화번호·문서 내용은 사용할 수 없습니다.</p>}
     </>}
-    {!enabled && <p>현재 OFF · 제출한 자료만으로 첨삭합니다.</p>}
   </fieldset>;
 }

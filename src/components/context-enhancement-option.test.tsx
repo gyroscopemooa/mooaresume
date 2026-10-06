@@ -41,3 +41,11 @@ it("uses the company and role already entered so ON is a single click", () => {
   fireEvent.click(screen.getByRole("button", { name: "수정" }));
   expect((screen.getByLabelText("지원 회사") as HTMLInputElement).value).toBe("도화엔지니어링");
 });
+it("keeps the downsides behind an expandable 자세히 button", () => {
+  render(<ContextEnhancementOption disabled={false} onChange={vi.fn()}/>);
+  expect(screen.queryByText(/알아둘 점/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "자세히" }));
+  expect(screen.getByText(/알아둘 점/)).toBeTruthy();
+  expect(screen.getByText(/사실 검증을 거친 정보가 아닙니다/)).toBeTruthy();
+  expect((screen.getByRole("switch") as HTMLInputElement).checked).toBe(false);
+});

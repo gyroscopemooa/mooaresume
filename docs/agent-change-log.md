@@ -8244,3 +8244,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Reason: 메인 랜딩처럼 입체(그라디언트 로고·블러 헤더)·스크롤 반응으로 통일, 플레이 배너를 스토어 디자인으로.
 - Validation: `tsc --noEmit` 통과, `vitest src/components` 237 통과. 실기기·시각 확인은 배포 후.
 - Rollback: 위 커밋 revert.
+
+## 2026-10-06 — Claude: 기업·산업·직무 분석 강화 스위치를 간결한 한 줄 형태로
+
+- Status: 사용자 승인으로 커밋·main 푸시(배포 요청). Branch `claude/context-option-simple-20261006`, baseline `origin/main` 920f030.
+- Reason: 사용자 요청 — 박스형 카드(제목·설명·"현재 OFF"·안내 2문단)가 길어서 심플하게.
+- Files: `src/components/context-enhancement-option.tsx`, `context-enhancement-option.module.css`, `analysis-preparation.tsx`(공고 본문 없음 알림을 체크박스 한 줄 "공고 요구사항 대조 없이 진행"으로 축약, 기존 상태·진행 차단 로직·테스트 문구 그대로), `analysis-preparation.module.css`(.postingGate 추가). 동작(스위치 role, 입력 칸, onChange 계약, 기본 OFF, sessionStorage 복원)은 그대로. 표시만 변경: 카드 박스→위아래 구분선, 체크박스→토글 스위치 모양, 꺼짐일 때는 제목+토글 한 줄만(설명은 켠 뒤에만 표시), OFF 문구 삭제, 안내 두 문단→한 문단(개인정보 금지·참고용·실패 시 안내 의미 유지).
+- Validation: tsc·ESLint 오류 없음, 전체 Vitest 1989 tests 통과(229 files). 실패 2 suite(`apps/mobile/src/analytics.test.ts`, `src/server/mobile/mobile.test.ts`)는 이 PC에 Expo tsconfig가 없어서 생기는 기존 환경 문제로 이번 변경과 무관. 로컬(3050)에서 모바일 폭 OFF/ON 화면 확인. 데스크톱 폭·다크모드는 확인하지 않음.
+- Rollback: 두 파일을 `origin/main` 버전으로 되돌림.
+- 추가(같은 날, 사용자 요청): 두 줄 모두 "자세히/접기" 버튼으로 펼침. 공고 없음 줄은 "공고 링크·저장된 본문을 찾지 못했다, 공고를 다시 확인해 입력 화면에서 본문을 넣어 달라, 진행하면 대조가 빠지고 결과에 표시된다" 안내. 분석 강화 줄은 하는 일 + 알아둘 점(공개 자료라 부정확·오래됨·사실 검증 아님, 동명 회사 혼동, 조회에 회사·직무명만 쓰이고 처리시간 증가, 못 찾으면 제출 자료만으로 첨삭하고 안내). 스위치 켠 뒤에는 입력 칸과 한 줄 주의만. `.scope button` 전역 규칙(width 100%)이 새 버튼을 늘려서 선택자 우선순위를 높임. 테스트 1개 추가.
+- 추가(사용자 지적): 공고 없음 줄은 기능이 아니라 경고·확인이라 호박색 경고 바(⚠ 아이콘, 기존 "이력서 없이 진행합니다" 경고와 같은 색)로, 분석 강화는 선택 기능이라 박스 없이 얇은 줄로 구분. 두 줄 간격을 맞춤(위 아래 여백 10px).

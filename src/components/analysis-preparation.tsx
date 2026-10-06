@@ -68,6 +68,7 @@ export function AnalysisPreparation() {
   const [guest, setGuest] = useState<GuestDraft | null>(null);
   const [postingLength, setPostingLength] = useState(0);
   const [allowMissingPosting, setAllowMissingPosting] = useState(false);
+  const [postingInfoOpen, setPostingInfoOpen] = useState(false);
   const [contextEnhancement, setContextEnhancement] = useState<ContextEnhancement>();
   const [contextInvalid, setContextInvalid] = useState(false);
   const [materialSummary, setMaterialSummary] = useState<string[]>([]);
@@ -372,9 +373,13 @@ export function AnalysisPreparation() {
               ))}
             </ul>
             {product !== "QUICK" && postingLength === 0 && !runActive && !creditRunId && (
-              <div role="alert">
-                <p>채용공고 본문이 없습니다. 본문을 추가하거나 아래 내용을 확인하고 진행해 주세요. 결과에는 공고 대조가 제외됐다고 표시됩니다.</p>
-                <label><input type="checkbox" checked={allowMissingPosting} onChange={event => setAllowMissingPosting(event.target.checked)} /> 공고 요구사항 대조 없이 진행하는 것을 확인했습니다.</label>
+              <div role="alert" className={styles.postingGate}>
+                <div className={styles.postingGateRow}>
+                  <TriangleAlert aria-hidden="true" />
+                  <label><input type="checkbox" checked={allowMissingPosting} onChange={event => setAllowMissingPosting(event.target.checked)} /> <span>공고 요구사항 대조 없이 진행</span></label>
+                  <button type="button" aria-expanded={postingInfoOpen} onClick={() => setPostingInfoOpen(open => !open)}>{postingInfoOpen ? "접기" : "자세히"}</button>
+                </div>
+                {postingInfoOpen && <p>채용공고 링크나 저장된 공고 본문을 찾지 못했습니다. 공고를 다시 확인해 입력 화면에서 본문을 넣어 주세요. 그대로 진행하면 공고 요구사항 대조는 빠지고, 결과에 대조가 제외됐다고 표시됩니다.</p>}
               </div>
             )}
             {!runActive && !creditRunId && guest && <ContextEnhancementOption key={guest.savedAt} draftKey={guest.savedAt} defaultCompany={guest.companyName} defaultRole={guest.roleName} disabled={false} onChange={(value, invalid) => { setContextEnhancement(value); setContextInvalid(invalid); }} />}
