@@ -22,8 +22,8 @@ export const EDITING_QUALITY_RULES = [
   "의미 있는 추가 수정 이득이 작으면 Stop Editing: revisedAnswer는 원문 그대로, reasons는 []가 가능합니다. priorities는 0~3, consultingAdvice는 0~8, verificationQuestions와 문제 annotation도 0개가 정상입니다. 준비도 reasons에는 문제가 아닌 강점·판정 근거를 적어도 됩니다.",
   "이전 MOOA 첨삭본도 정답은 아닙니다. 실제 오류는 수정하되 이전 선택을 뒤집으려면 문맥에 근거한 구체적 이유가 필요합니다. 횟수 때문에 점수를 올리거나 100점·완벽·자동 완성을 선언하지 마세요.",
   "상한 글자 수는 반드시 채울 최소 분량이 아닙니다. 스스로 불필요하게 줄인 뒤 짧다며 사용자에게 경험을 요구하지 마세요. 핵심 역할·행동·사실·개성을 보존하세요.",
-  // 같은 글에서 "대부분·아주·반드시"로 범위를 넓힌 문항이 가장 자주 원문 유지로 끝났다. 작성 AI가 단정을 낮추는 대신
-  // 주장째 지우면 검토 AI가 사실·말투 손실로 거절하기 때문이다. 둘이 같은 기준을 보도록 이 줄이 양쪽에 같이 실린다.
+  // 같은 글에서 "대부분·아주·반드시"가 문장마다 들어 있던 문항이 6번 중 5번 원문 유지로 끝났다. 작성 AI가 단정을 낮추는
+  // 대신 주장째 지우면 검토 AI가 사실·말투 손실로 거절하기 때문이다. 둘이 같은 기준을 보도록 이 줄이 양쪽에 같이 실린다.
   "근거 없이 범위를 넓히는 단정('대부분', '모두', '반드시', '가장 확실한', '아주' 등)은 문장째 지우지 마세요. 지원자의 주장·견해·제안은 남기고 범위·조건·가능성 표현으로 낮춰 쓰는 것이 올바른 수정입니다(예: '대부분의 기업이 취약합니다' → '자본력이 넉넉하지 않은 기업은 취약할 수 있습니다'). 검토할 때는 낮춰 쓴 것을 내용 손실로 보지 말고, 주장 자체를 지운 것을 손실로 보세요. 확인이 필요한 제도명·수치 같은 세부는 지우지 말고 확인할 점으로 남기세요.",
   "CREATE/BUILD의 사실 메모·빈 답변을 유지하는 것은 완성된 작성이 아닙니다. 해당 모드가 요구하는 실제 작성/보완은 개선으로 평가하고, POLISH는 남은 실제 문제 크기만큼만 수정하세요.",
 ].join("\n");
@@ -56,7 +56,7 @@ export const revisionReviewSchema = z.object({
   crossQuestionRegression: z.boolean(),
   // crossQuestionRegression이 true일 때 그 문제에 관여한 문항 번호. 비어 있으면(이전 응답, 또는 짚지 못함)
   // 예전처럼 모든 수정을 되돌린다. 한두 문항 때문에 문서 전체의 수정이 사라지는 것을 막으려는 칸이다.
-  crossQuestionOrders: z.array(z.number().int().positive()).max(20),
+  crossQuestionOrders: z.array(z.number().int().min(1)).max(20),
   validAdviceIndexes: z.array(z.number().int().nonnegative()).max(8),
   adviceCorrections: z.array(z.object({ index: z.number().int().nonnegative(), guidance: z.string().min(1) })).max(8),
 });

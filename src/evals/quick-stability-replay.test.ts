@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import type { QuickGatewayResult } from "@/server/ai/quick/openai-responses-gateway";
@@ -12,7 +12,7 @@ import { parseQuickAnalysisOutput } from "@/server/ai/quick/schema";
  * 채택 규칙을 고친 뒤 "같은 입력에서 고쳐지는 문항이 어떻게 달라지는가"를 같은 원본 위에서 비교하려는 도구다.
  * 원본은 `quick-stability.live.test.ts`가 `STABILITY_RAW_OUT`으로 저장한다.
  *
- * 실행: STABILITY_RAW_IN=<raw 파일> [STABILITY_ROWS_IN=<그때의 요약 파일>] vitest run src/evals/quick-stability-replay.test.ts
+ * 실행: STABILITY_RAW_IN=<raw 파일> [STABILITY_ROWS_IN=<그때의 요약 파일>] [STABILITY_REPLAY_OUT=<결과 파일>] vitest run src/evals/quick-stability-replay.test.ts
  * 환경변수가 없으면 건너뛴다.
  */
 const rawPath = process.env.STABILITY_RAW_IN;
@@ -68,7 +68,10 @@ describe.skipIf(!rawPath)("QUICK stability replay (offline)", () => {
         lines.push(`${raw.kind} 수정안#${raw.candidate}: 계산 실패 ${error instanceof Error ? error.message : String(error)}`);
       }
     }
-    console.info(`[replay]\n${lines.join("\n")}\n비교 ${compared}건: 새로 채택된 문항 ${flippedToAccepted}개, 더는 채택되지 않은 문항 ${flippedToRejected}개`);
+    const summary = `${lines.join("\n")}\n비교 ${compared}건: 새로 채택된 문항 ${flippedToAccepted}개, 더는 채택되지 않은 문항 ${flippedToRejected}개`;
+    console.info(`[replay]\n${summary}`);
+    // 콘솔 출력이 보이지 않는 실행 환경을 위해 파일로도 남긴다.
+    if (process.env.STABILITY_REPLAY_OUT) writeFileSync(process.env.STABILITY_REPLAY_OUT, summary);
     expect(lines.length).toBeGreaterThan(0);
   });
 });
