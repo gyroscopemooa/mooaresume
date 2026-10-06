@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, it } from "vitest";
 import { buildStabilityRequest } from "@/fixtures/quick-stability-case";
 import { OpenAIResponsesGateway, type QuickGatewayResult } from "@/server/ai/quick/openai-responses-gateway";
@@ -131,7 +132,8 @@ describe("QUICK revision stability (live)", () => {
     const fullRuns = Number(process.env.STABILITY_RUNS ?? 5);
     // 수정안 하나당 검토 AI만 다시 돌리는 횟수.
     const reviewRepeats = Number(process.env.STABILITY_REVIEW_REPEATS ?? 2);
-    const outFile = process.env.STABILITY_OUT ?? "tmp/quick-stability.json";
+    // 저장소 안(git이 추적하는 폴더)에 결과 파일이 생기지 않도록 기본 위치는 운영체제 임시 폴더다.
+    const outFile = process.env.STABILITY_OUT ?? join(tmpdir(), "quick-stability.json");
     const rawFile = process.env.STABILITY_RAW_OUT ?? `${outFile.replace(/\.json$/, "")}.raw.json`;
 
     const request = buildStabilityRequest();
