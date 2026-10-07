@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAnalysis, type AdminAnalysisDetail } from "@/server/admin/admin-repository";
 import { ResultWorkspaceComplete } from "@/components/result-workspace-complete";
+import { AdminEditingExperiments } from "@/components/admin-editing-experiments";
 import { resultDocumentSchema } from "@/domain/result-document";
 import styles from "../../admin.module.css";
 import { MODE_LABEL, kst } from "../../format";
@@ -167,6 +168,7 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
       </section>
 
       <InputSnapshot detail={detail} />
+      <AdminEditingExperiments runId={run.id} />
 
       {parsedResult.success && (
         <section className={styles.adminResultPreview}>

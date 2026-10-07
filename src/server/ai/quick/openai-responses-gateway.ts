@@ -224,6 +224,13 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
     return responsesEnvelopeSchema.parse(await response.json());
   }
 
+  /** Read-only evidence retrieval for consent-gated administrator experiments; never starts an AI call. */
+  async readStoredReview(responseId: string, candidate: QuickGatewayResult): Promise<RevisionReview> {
+    const envelope = await this.fetchEnvelope(responseId);
+    if (envelope.status !== "completed") throw new Error("STORED_REVIEW_UNAVAILABLE");
+    return this.readReview(candidate, envelope);
+  }
+
   /** 첫 검토를 다시 읽어 같은 계획을 세우고(같은 입력이면 같은 결과) 다시 쓴 글을 합친다. 합친 글이 기본 검증을 못 넘으면 던진다. */
   private async mergeRepaired(request: AnalysisRequest, candidate: QuickGatewayResult, repaired: QuickGatewayResult, firstReviewId: string) {
     const firstEnvelope = await this.fetchEnvelope(firstReviewId);
