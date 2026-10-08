@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Award, Briefcase, Check, FileCheck2, FileSearch, FileUp, ListChecks, Mic, Repeat2, ScanSearch, ShieldCheck, SquareCheckBig, Target, UploadCloud, UserRoundSearch, Users } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
+import { HomeHeaderWordmark } from "@/components/home-header-wordmark";
 import { LaunchPriceBanner } from "@/components/launch-price-banner";
 import { RuntimeEventSlot } from "@/components/runtime-event-slot";
 import { CareerAssessmentDrawer } from "@/components/career-assessment-drawer";
@@ -101,7 +102,7 @@ export default function HomePage() {
       <LegalToolsDrawer />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}/>
       <header className="site-header">
-        <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
+        <HomeHeaderWordmark />
         {/* One panel instead of a row of links. The phone rule hid every
             non-button link in the bar, so 요금 was unreachable on the device
             most visitors arrive on, and the list keeps growing — 커리어 검사,

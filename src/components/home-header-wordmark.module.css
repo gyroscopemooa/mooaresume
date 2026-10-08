@@ -1,0 +1,181 @@
+.wordmark {
+  --wordmark-ease: cubic-bezier(.22, 1, .36, 1);
+  position: relative;
+  isolation: isolate;
+  gap: 9px;
+  min-width: 0;
+  color: #14251d;
+}
+
+.emblem {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  border: 1px solid rgba(255, 255, 255, .58);
+  background:
+    radial-gradient(circle at 72% 22%, rgba(153, 235, 193, .58), transparent 27%),
+    linear-gradient(145deg, #237b57 0%, #0e4a33 72%);
+  box-shadow:
+    0 8px 18px rgba(13, 75, 51, .2),
+    inset 0 1px 0 rgba(255, 255, 255, .3);
+  transition: transform 420ms var(--wordmark-ease), box-shadow 420ms ease;
+}
+
+.emblem::before {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 7px;
+  content: "";
+}
+
+.emblem::after {
+  position: absolute;
+  top: -45%;
+  left: -70%;
+  width: 45%;
+  height: 190%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+  content: "";
+  transform: rotate(18deg);
+  transition: left 640ms var(--wordmark-ease);
+}
+
+.glyph,
+.name {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transition: opacity 340ms ease, transform 420ms var(--wordmark-ease);
+}
+
+.glyph {
+  color: #fff;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: -.08em;
+  line-height: 1;
+}
+
+.glyphEnglish {
+  opacity: 0;
+  transform: translateY(115%) rotate(8deg);
+}
+
+.names {
+  position: relative;
+  display: grid;
+  width: 93px;
+  height: 25px;
+  overflow: hidden;
+  flex: none;
+}
+
+.name {
+  justify-content: start;
+  white-space: nowrap;
+}
+
+.nameKorean {
+  font-size: 18px;
+  font-variation-settings: "wght" 850;
+  font-weight: 850;
+  letter-spacing: -.085em;
+}
+
+.nameEnglish {
+  color: #176b4a;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .105em;
+  opacity: 0;
+  transform: translateY(115%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wordmark:hover .emblem {
+    transform: translateY(-1px) rotate(-3deg);
+    box-shadow:
+      0 11px 24px rgba(13, 75, 51, .25),
+      inset 0 1px 0 rgba(255, 255, 255, .34);
+  }
+
+  .wordmark:hover .emblem::after {
+    left: 130%;
+  }
+
+  .wordmark:hover .glyphKorean,
+  .wordmark:hover .nameKorean {
+    opacity: 0;
+    transform: translateY(-115%);
+  }
+
+  .wordmark:hover .glyphEnglish,
+  .wordmark:hover .nameEnglish {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+}
+
+.wordmark:focus-visible {
+  border-radius: 12px;
+  outline: 3px solid rgba(35, 123, 87, .25);
+  outline-offset: 5px;
+}
+
+.wordmark:focus-visible .glyphKorean,
+.wordmark:focus-visible .nameKorean {
+  opacity: 0;
+  transform: translateY(-115%);
+}
+
+.wordmark:focus-visible .glyphEnglish,
+.wordmark:focus-visible .nameEnglish {
+  opacity: 1;
+  transform: translateY(0) rotate(0);
+}
+
+@media (max-width: 430px) {
+  .names {
+    width: 78px;
+    height: 22px;
+  }
+
+  .nameKorean {
+    font-size: 15.5px;
+  }
+
+  .nameEnglish {
+    font-size: 8.7px;
+    letter-spacing: .08em;
+  }
+}
+
+@media (max-width: 360px) {
+  .wordmark {
+    gap: 5px;
+  }
+
+  .names {
+    width: 70px;
+  }
+
+  .nameKorean {
+    font-size: 14px;
+  }
+
+  .nameEnglish {
+    font-size: 7.9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emblem,
+  .emblem::after,
+  .glyph,
+  .name {
+    transition-duration: .01ms;
+  }
+}
