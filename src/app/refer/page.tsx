@@ -25,7 +25,7 @@ export default function ReferPage() {
   return (
     <main className="home-page">
       <header className="site-header">
-        <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
+        <Link href="/" className="brand" data-brand aria-label="무아레쥬메 (MOOA Resume) 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
         <nav aria-label="주요 메뉴"><Link href="/guide">이용 방법</Link><HeaderAccount /><Link href="/analyze" className="button button-small">시작하기</Link></nav>
       </header>
 

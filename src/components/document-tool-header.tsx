@@ -15,7 +15,7 @@ import Link from "next/link";
  */
 export function DocumentToolHeader() {
   return <header className="site-header">
-    <Link href="/" className="brand" aria-label="MOOA Resume 홈">
+    <Link href="/" className="brand" data-brand aria-label="무아레쥬메 (MOOA Resume) 홈">
       <span className="brand-mark">M</span><span>MOOA <b>Resume</b></span>
     </Link>
     {/* 자소서 첨삭은 단추로 둡니다. 홈의 모바일 규칙(`home-mobile-header`)이

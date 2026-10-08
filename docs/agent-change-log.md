@@ -8392,3 +8392,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Rollback: 두 파일을 `origin/main` 버전으로 되돌림.
 - 추가(같은 날, 사용자 요청): 두 줄 모두 "자세히/접기" 버튼으로 펼침. 공고 없음 줄은 "공고 링크·저장된 본문을 찾지 못했다, 공고를 다시 확인해 입력 화면에서 본문을 넣어 달라, 진행하면 대조가 빠지고 결과에 표시된다" 안내. 분석 강화 줄은 하는 일 + 알아둘 점(공개 자료라 부정확·오래됨·사실 검증 아님, 동명 회사 혼동, 조회에 회사·직무명만 쓰이고 처리시간 증가, 못 찾으면 제출 자료만으로 첨삭하고 안내). 스위치 켠 뒤에는 입력 칸과 한 줄 주의만. `.scope button` 전역 규칙(width 100%)이 새 버튼을 늘려서 선택자 우선순위를 높임. 테스트 1개 추가.
 - 추가(사용자 지적): 공고 없음 줄은 기능이 아니라 경고·확인이라 호박색 경고 바(⚠ 아이콘, 기존 "이력서 없이 진행합니다" 경고와 같은 색)로, 분석 강화는 선택 기능이라 박스 없이 얇은 줄로 구분. 두 줄 간격을 맞춤(위 아래 여백 10px).
+
+## 2026-10-08 — Codex: 공개 헤더 한글 로고 통일 및 요금표 초과요금 고지
+
+- Status: 구현·검증 완료. 사용자 요청에 따라 내부 관리자 가격·과거 문서는 이번 범위에서 제외했다.
+- Baseline/rollback: `codex/header-logo-20261008`의 `712b487`; 이 항목의 소스 커밋을 revert하면 복구된다.
+- Intended changes: `/result/sample`, `/career`를 포함한 공개 서비스 헤더의 기본 표기를 `무아레쥬메`로 통일하고 호버·키보드 포커스 시 `MOOA RESUME`으로 전환한다. 초록 엠블럼은 `무` 대신 `M`으로 고정하고 한글 자간·굵기를 자연스럽게 조정한다. 공개 요금표에는 기본가를 `부터`로 표시하고 상품별 포함 글자 수와 초과 블록 가격을 명시한다.
+- Files: `src/components/home-header-wordmark.*`, `src/app/site-header-modern.css`, `src/components/pricing-comparison.tsx`, 공개 전역 헤더의 접근성 라벨 파일, 이 변경 기록.
+- Validation: typecheck 통과, ESLint 0 errors/기존 warnings 5개, 전용 Vitest 1개 통과, Next.js production build 통과. 로컬 브라우저에서 `/result/sample`의 `M` 엠블럼과 `무아레쥬메` 한글 로고를 시각 확인했고, 홈 요금표의 세 상품 모두 `부터`·포함 분량·초과요금이 접근성 트리와 화면에 표시됨을 확인했다. `/career`의 로컬 시각 검증은 격리 worktree에 공개 Supabase 환경변수가 없어 클라이언트 초기화 단계에서 중단됐지만 동일한 `data-site-header`/`data-brand` 공통 규칙 적용은 소스·타입·빌드로 확인했다.
+- Deployment: pending commit/push/production release.

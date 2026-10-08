@@ -31,7 +31,7 @@ export default function FinalLandingPage() {
   return (
     <main>
       <header className="site-header">
-        <Link href="/" className="brand" aria-label="MOOA Resume 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
+        <Link href="/" className="brand" data-brand aria-label="무아레쥬메 (MOOA Resume) 홈"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></Link>
         <SiteNav />
       </header>
 

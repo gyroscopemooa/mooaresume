@@ -6,11 +6,11 @@ export function HomeHeaderWordmark() {
     <Link
       href="/"
       className={`brand ${styles.wordmark}`}
+      data-kinetic-wordmark
       aria-label="무아레쥬메 (MOOA Resume) 홈"
     >
       <span className={`brand-mark ${styles.emblem}`} aria-hidden="true">
-        <span className={`${styles.glyph} ${styles.glyphKorean}`}>무</span>
-        <span className={`${styles.glyph} ${styles.glyphEnglish}`}>M</span>
+        <span className={styles.glyph}>M</span>
       </span>
       <div className={styles.names} aria-hidden="true">
         <span className={`${styles.name} ${styles.nameKorean}`}>무아레쥬메</span>

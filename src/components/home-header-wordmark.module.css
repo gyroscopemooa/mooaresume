@@ -79,10 +79,11 @@
 }
 
 .nameKorean {
-  font-size: 18px;
-  font-variation-settings: "wght" 850;
-  font-weight: 850;
-  letter-spacing: -.085em;
+  font-family: var(--font-sans), "Pretendard", "Noto Sans KR", sans-serif;
+  font-size: 17px;
+  font-variation-settings: "wght" 780;
+  font-weight: 780;
+  letter-spacing: -.045em;
 }
 
 .nameEnglish {
@@ -106,13 +107,11 @@
     left: 130%;
   }
 
-  .wordmark:hover .glyphKorean,
   .wordmark:hover .nameKorean {
     opacity: 0;
     transform: translateY(-115%);
   }
 
-  .wordmark:hover .glyphEnglish,
   .wordmark:hover .nameEnglish {
     opacity: 1;
     transform: translateY(0) rotate(0);
@@ -125,13 +124,11 @@
   outline-offset: 5px;
 }
 
-.wordmark:focus-visible .glyphKorean,
 .wordmark:focus-visible .nameKorean {
   opacity: 0;
   transform: translateY(-115%);
 }
 
-.wordmark:focus-visible .glyphEnglish,
 .wordmark:focus-visible .nameEnglish {
   opacity: 1;
   transform: translateY(0) rotate(0);
