@@ -22,6 +22,8 @@ export const EDITING_QUALITY_RULES = [
   "의미 있는 추가 수정 이득이 작으면 Stop Editing: revisedAnswer는 원문 그대로, reasons는 []가 가능합니다. priorities는 0~3, consultingAdvice는 0~8, verificationQuestions와 문제 annotation도 0개가 정상입니다. 준비도 reasons에는 문제가 아닌 강점·판정 근거를 적어도 됩니다.",
   "이전 MOOA 첨삭본도 정답은 아닙니다. 실제 오류는 수정하되 이전 선택을 뒤집으려면 문맥에 근거한 구체적 이유가 필요합니다. 횟수 때문에 점수를 올리거나 100점·완벽·자동 완성을 선언하지 마세요.",
   "상한 글자 수는 반드시 채울 최소 분량이 아닙니다. 스스로 불필요하게 줄인 뒤 짧다며 사용자에게 경험을 요구하지 마세요. 핵심 역할·행동·사실·개성을 보존하세요.",
+  "높은 검증 위험을 발견했으면 결과 안에서 행동이 일치해야 합니다. 제공 자료로 안전하게 고칠 수 있으면 위험 문구만 완화하고 나머지 목표·경험·개성은 보존하세요. 사용자 확인 없이는 고칠 수 있으면 원문을 임의 확정하거나 '수정할 것이 없다'고 결론내리지 말고 확인 필요를 분명히 남기세요.",
+  "BUILD에서는 제출 자료에서 확인되는 사실을 먼저 최대한 활용한 실질적 보완을 취향 차이로 거절하지 마세요. 자료로 확인되지 않는 부분을 명시적인 교체용 임의 예시로 분리 표시하고 확인 질문까지 남긴 후보는 날조가 아니라 문장 제안입니다. 반대로 자료가 충분한데 원문을 거의 유지하거나 임의 예시로 대신한 결과는 완성된 내용 보완으로 평가하지 마세요.",
   // 같은 글에서 "대부분·아주·반드시"가 문장마다 들어 있던 문항이 6번 중 5번 원문 유지로 끝났다. 작성 AI가 단정을 낮추는
   // 대신 주장째 지우면 검토 AI가 사실·말투 손실로 거절하기 때문이다. 둘이 같은 기준을 보도록 이 줄이 양쪽에 같이 실린다.
   "근거 없이 범위를 넓히는 단정('대부분', '모두', '반드시', '가장 확실한', '아주' 등)은 문장째 지우지 마세요. 지원자의 주장·견해·제안은 남기고 범위·조건·가능성 표현으로 낮춰 쓰는 것이 올바른 수정입니다(예: '대부분의 기업이 취약합니다' → '자본력이 넉넉하지 않은 기업은 취약할 수 있습니다'). 검토할 때는 낮춰 쓴 것을 내용 손실로 보지 말고, 주장 자체를 지운 것을 손실로 보세요. 확인이 필요한 제도명·수치 같은 세부는 지우지 말고 확인할 점으로 남기세요.",
@@ -219,7 +221,11 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
       revisions, revision: revisions[0],
       consultingAdvice: (candidate.output.consultingAdvice ?? []).flatMap((advice, index) => review.validAdviceIndexes.includes(index) ? [{ ...advice, guidance: review.adviceCorrections.find(c => c.index === index)?.guidance ?? advice.guidance }] : []),
       rejectionRisks: candidate.output.rejectionRisks?.map(risk => verdicts.every(accepted) || risk.handling === "needs_applicant" || risk.handling === "kept_by_choice" ? risk : { ...risk, handling: "needs_applicant" as const, fix: `일부 수정안을 채택하지 않았으므로 해당 제안의 반영 여부를 최종본에서 확인해 주세요. ${risk.fix}` }),
-      editSummary: adopt ? [`개선이 확인된 ${verdicts.filter(v => accepted(v) && v.changed).length}개 문항의 수정만 반영했습니다. 나머지는 원문을 유지했습니다. 문항별 수정·유지 이유를 확인해 주세요.`] : ["추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 남아 있는 확인 사항은 별도로 검토해 주세요."],
+      editSummary: adopt ? [`개선이 확인된 ${verdicts.filter(v => accepted(v) && v.changed).length}개 문항의 수정만 반영했습니다. 나머지는 원문을 유지했습니다. 문항별 수정·유지 이유를 확인해 주세요.`] : request.writingMode === "BUILD" && review.diagnosis.priorities.length > 0
+        ? ["내용 보완 후보의 안전한 개선 이득을 확인하지 못해 입력한 글을 유지했습니다. 아래 우선순위와 확인 질문이 해결되기 전에는 보완 완료본으로 보지 마세요."]
+        : review.diagnosis.priorities.some(priority => priority.severity === "high")
+          ? ["입력한 글은 유지했지만 중요한 확인 사항이 남아 있습니다. 해당 내용을 확인하거나 안전한 표현으로 바꾸기 전에는 최종 제출본으로 확정하지 마세요."]
+          : ["추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 남아 있는 확인 사항은 별도로 검토해 주세요."],
     },
     revisionQuality: {
       version: REVISION_RUBRIC_VERSION, reviewerResponseId: reviewer.responseId, reviewerModel: reviewer.model,

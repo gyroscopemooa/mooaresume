@@ -91,6 +91,37 @@ describe("independent revision adoption", () => {
     expect(stored.questions[0].revisionReasons).toEqual([]);
     expect(stored.consultingAdvice).toEqual([]);
   });
+  it("does not persist a false short-answer note once the requested length is met", () => {
+    const answer = "가".repeat(500);
+    const request = { ...qualityTestRequest, documents: [{ kind: "cover_letter" as const, text: answer }] };
+    const candidate = qualityTestCandidate(answer);
+    candidate.output.revision.lengthNote = "목표 분량보다 짧습니다.";
+
+    const stored = createQuickAnalysisResult(request, candidate);
+
+    expect(stored.questions[0].targetLength).toBe(500);
+    expect(stored.questions[0].lengthNote).toBeUndefined();
+  });
+  it("warns against final submission when unchanged text still has a high-priority issue", () => {
+    const candidate = qualityTestCandidate(original);
+    const review = qualityTestReview();
+    review.questions[0].meaningfulImprovement = false;
+    review.diagnosis.priorities = [{ title: "회사 정보 확인", description: "제공 자료에서 확인되지 않습니다.", category: "verification", severity: "high", evidenceQuote: original }];
+
+    expect(apply(review, qualityTestRequest, candidate).output.editSummary?.[0]).toContain("최종 제출본으로 확정하지 마세요");
+  });
+  it("does not present an unchanged BUILD result with unresolved issues as completed supplementation", () => {
+    const request = { ...qualityTestRequest, product: "PRO" as const, writingMode: "BUILD" as const };
+    const candidate = qualityTestCandidate(original);
+    const review = qualityTestReview();
+    review.questions[0].meaningfulImprovement = false;
+    review.diagnosis.priorities = [{ title: "실제 행동 보완", description: "역할과 행동을 더 구체화해야 합니다.", category: "evidence", severity: "medium", evidenceQuote: original }];
+
+    const result = apply(review, request, candidate);
+
+    expect(result.revisionQuality?.decision).toBe("keep_current");
+    expect(result.output.editSummary?.[0]).toContain("보완 완료본으로 보지 마세요");
+  });
   it("ten preference-only rewrites retain the original instead of ping-pong", () => {
     let text = original;
     for (let i = 0; i < 10; i++) {

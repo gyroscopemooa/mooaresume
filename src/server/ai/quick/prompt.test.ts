@@ -151,7 +151,7 @@ describe("BUILD 채우기", () => {
 
     expect(instructions).toContain("questionOrder 1부터 2까지");
     expect(instructions).toContain("빠진 설명과 근거를 제공된 사실로 실제 보완");
-    expect(instructions).toContain("빈칸이나 대괄호 표기를 남기지 마세요");
+    expect(instructions).toContain("빈칸으로 방치하지 말고 [임의 예시·교체 필요:");
   });
 
   it("채울 때도 없는 수치와 고유명사는 금지한다", () => {
@@ -163,6 +163,15 @@ describe("BUILD 채우기", () => {
     expect(instructions).toContain("표현을 바꾸거나 순서를 정리하는 것은 분량을 채운 것이 아닙니다");
     expect(instructions).toContain("첨삭본이 원문보다 짧아지면 안 됩니다");
     expect(instructions).not.toContain("억지로 분량을 채우지 말고 확인 질문을 남기세요");
+  });
+
+  it("제출 자료를 먼저 활용하고 부족한 부분만 교체용 임의 예시로 표시한다", () => {
+    const instructions = buildQuickAnalysisInstructions(buildRequest);
+
+    expect(instructions).toContain("제출 자료에서 확인되는 사실을 먼저 최대한 활용");
+    expect(instructions).toContain("[임의 예시·교체 필요:");
+    expect(instructions).toContain("자료가 충분한데 임의 예시로 대신해서는 안 됩니다");
+    expect(instructions).toContain("verificationNote와 verificationQuestions");
   });
 
   it("채우는 문항에는 제외 안내를 붙이지 않는다", () => {
@@ -203,6 +212,7 @@ describe("다른 작성 단계는 그대로 유지된다", () => {
 
     expect(instructions).toContain("지원자가 단계별로 입력한 사실 메모입니다");
     expect(instructions).not.toContain("실제로 채워 완성된 답변을 만드세요");
+    expect(instructions).not.toContain("[임의 예시·교체 필요:");
   });
 
   it("CREATE에는 원문 문장 유지 규칙을 걸지 않는다", () => {

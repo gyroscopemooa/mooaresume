@@ -62,6 +62,29 @@ describe("PRO supporting-material validation", () => {
     expect(issues.some((issue) => issue.code === "INVALID_EVIDENCE")).toBe(true);
   });
 });
+
+describe("내용 보완 목표 분량", () => {
+  const request: AnalysisRequest = {
+    ...proRequest,
+    questions: [{ id: "q1", title: "지원 동기", prompt: "지원 동기를 작성해 주세요.", answer: "고객 응대 경험을 바탕으로 지원했습니다.", targetLength: 500 }],
+  };
+
+  it("짧은 원문을 500자로 보완해 달랬는데 두세 줄만 반환하면 완료 처리하지 않는다", () => {
+    const issues = validateQuickAnalysis(request, output("고객 응대 경험을 살려 지원했습니다.", "고객 응대 경험"));
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("목표 500자의 90%"))).toBe(true);
+    expect(BLOCKING_VALIDATION_CODES.has("ANSWER_TOO_SHORT")).toBe(true);
+  });
+
+  it("목표의 90%를 채운 BUILD 결과는 분량 하한을 통과한다", () => {
+    const issues = validateQuickAnalysis(request, output(`고객 응대 ${"가".repeat(446)}`, "고객 응대 경험"));
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
+  });
+
+  it("POLISH에는 BUILD 전용 목표 하한을 강제하지 않는다", () => {
+    const issues = validateQuickAnalysis({ ...request, writingMode: "POLISH" }, output("고객 응대 경험을 살려 지원했습니다.", "고객 응대 경험"));
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
+  });
+});
 describe("껍데기 첨삭", () => {
   const longAnswer = "가".repeat(1700);
   const output = (revised: string) => ({

@@ -60,4 +60,22 @@ describe("splitCoverLetterDraft", () => {
     expect(result).toHaveLength(2);
     expect(result[1].answer).toBe("둘째 답변");
   });
+
+  it("4번 답변 안에서 1부터 다시 시작한 번호 목차를 가짜 문항으로 분리하지 않는다", () => {
+    const text = [
+      "1. 지원동기", "첫 답변",
+      "2. 직무 역량", "둘째 답변",
+      "3. 성격의 장단점", "셋째 답변",
+      "4. 경력사항과 보유기술", "1. 경력 개요", "생산 현장 경험입니다.",
+      "2. 주요 담당 업무", "설비를 점검했습니다.",
+      "3. 보유 기술", "공정 기준을 확인했습니다.",
+      "4. 직무 역량", "이상 징후를 기록했습니다.",
+    ].join("\n");
+
+    const result = splitCoverLetterDraft(text);
+
+    expect(result).toHaveLength(4);
+    expect(result[3].answer).toContain("1. 경력 개요");
+    expect(result[3].answer).toContain("4. 직무 역량");
+  });
 });

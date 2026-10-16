@@ -8,15 +8,23 @@ function compactHeading(line: string) {
   return line.replace(/\s/g, "");
 }
 
-function isQuestionLine(line: string) {
-  const match = line.match(QUESTION_LINE);
-  return Boolean(match && /[가-힣A-Za-z]{2}/.test(match[2]));
-}
-
 function questionNumber(line: string): number | null {
   const match = line.match(QUESTION_LINE);
   if (!match || !/[가-힣A-Za-z]{2}/.test(match[2])) return null;
   return Number(match[1]);
+}
+
+/** 답변 안에서 1번부터 다시 시작한 번호 목차를 새 문항으로 늘리지 않는다. */
+function increasingQuestionStarts(lines: readonly string[]) {
+  const starts: number[] = [];
+  let lastQuestionNumber = 0;
+  for (let index = 0; index < lines.length; index += 1) {
+    const number = questionNumber(lines[index]);
+    if (number === null || number <= lastQuestionNumber) continue;
+    starts.push(index);
+    lastQuestionNumber = number;
+  }
+  return starts;
 }
 
 /**
@@ -61,7 +69,7 @@ function readQuestionStarts(text: string): { lines: string[]; offset: number; st
   const coverLetterHeading = allLines.findIndex((line) => compactHeading(line) === "자기소개서");
   const offset = coverLetterHeading >= 0 ? coverLetterHeading + 1 : 0;
   const lines = allLines.slice(offset, findLetterEnd(allLines, offset));
-  return { lines, offset, starts: lines.flatMap((line, index) => isQuestionLine(line) ? [index] : []) };
+  return { lines, offset, starts: increasingQuestionStarts(lines) };
 }
 
 export function splitCoverLetterDraft(text: string): CoverLetterQuestion[] {
