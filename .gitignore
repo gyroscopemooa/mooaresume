@@ -5,6 +5,7 @@ out/
 !.env.example
 coverage/
 *.log
+.venv-komos/
 
 *.tsbuildinfo
 supabase/.temp/

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "mooa-interview-model-manifest-1.0",
+  "generatedAt": "2026-10-17",
+  "models": [
+    {
+      "id": "mediapipe-face-landmarker-float16-1",
+      "file": "/interview-analysis/mediapipe/face_landmarker.task",
+      "bytes": 3758596,
+      "sha256": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
+      "runtime": "@mediapipe/tasks-vision@0.10.32",
+      "execution": "browser-wasm",
+      "purpose": "face landmarks and coarse face-direction observations",
+      "licenseNotice": "/interview-analysis/mediapipe/LICENSE.txt",
+      "limits": "Not eye gaze, emotion, personality, attractiveness, or identity analysis"
+    },
+    {
+      "id": "mediapipe-pose-landmarker-lite-float16-1",
+      "file": "/interview-analysis/mediapipe/pose_landmarker_lite.task",
+      "bytes": 5777746,
+      "sha256": "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a",
+      "runtime": "@mediapipe/tasks-vision@0.10.32",
+      "execution": "browser-wasm",
+      "purpose": "visible shoulder and torso landmark observations",
+      "licenseNotice": "/interview-analysis/mediapipe/LICENSE.txt",
+      "limits": "Invisible body parts and medical or personality judgments are unsupported"
+    },
+    {
+      "id": "silero-vad-legacy",
+      "file": "/interview-analysis/vad/silero_vad_legacy.onnx",
+      "bytes": 1807522,
+      "sha256": "a35ebf52fd3ce5f1469b2a36158dba761bc47b973ea3382b3186ca15b1f5af28",
+      "runtime": "@ricky0123/vad-web@0.0.31 and onnxruntime-web@1.30.0",
+      "execution": "browser-wasm",
+      "purpose": "speech and non-speech interval detection",
+      "license": "MIT model and ISC integration package",
+      "limits": "Not pronunciation, confidence, emotion, or content analysis"
+    }
+  ],
+  "downloadedAtRuntime": [
+    {
+      "runtime": "@huggingface/transformers@4.3.1 from jsDelivr",
+      "models": [
+        "onnx-community/cohere-transcribe-03-2026-ONNX",
+        "onnx-community/whisper-large-v3-turbo",
+        "onnx-community/whisper-base"
+      ],
+      "execution": "browser-webgpu-or-wasm",
+      "dataFlow": "runtime and weights download to the browser; decoded interview PCM is posted only to the same browser worker",
+      "verificationState": "model revisions, weight hashes, Korean benchmark accuracy, and redistribution terms require release verification"
+    },
+    {
+      "runtime": "@huggingface/transformers@4.3.1 bundled worker",
+      "models": [
+        "HuggingFaceTB/SmolVLM-256M-Instruct"
+      ],
+      "execution": "browser-webgpu-development-only",
+      "dataFlow": "three JPEG frames are created in browser memory and passed to the same browser worker; weights download from Hugging Face Hub",
+      "license": "Apache-2.0",
+      "verificationState": "actual q4f16 and q4 inference ran on one recorded answer, but outputs were empty or irrelevant; production coaching disabled"
+    }
+  ],
+  "developerPcOnly": [
+    {
+      "model": "upskyy/komos@0.0.2",
+      "runtime": "onnxruntime 1.23.2 CPUExecutionProvider in .venv-komos",
+      "weights": "model.onnx, 1236613444 bytes, not downloaded until explicit fixture evaluation",
+      "license": "MIT",
+      "purpose": "overall Korean listening-quality MOS research only",
+      "verificationState": "runtime installed and imported; no real labeled Korean fixture inference yet; not pronunciation or ending-syllable analysis"
+    }
+  ]
+}

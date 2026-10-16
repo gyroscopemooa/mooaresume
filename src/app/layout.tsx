@@ -86,6 +86,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             plain blocking <script src> gives for free — creating the tag by
             hand and hooking its own onload reproduces that without needing a
             client boundary. */}
+        {/* Local/private development must not send file names or measurement DOM to analytics. */}
+        {process.env.NODE_ENV === "production" && <>
         <Script id="naver-wcslog" strategy="afterInteractive">
           {`(function(){
   var s = document.createElement("script");
@@ -129,6 +131,7 @@ gtag('config', 'AW-18415179469');
 // 광고 태그까지 함께 흔들립니다 — 측정 ID만 하나 더 붙이면 됩니다.
 gtag('config', 'G-XF0JRSBBZX');`}
         </Script>
+        </>}
       </body>
     </html>
   );
