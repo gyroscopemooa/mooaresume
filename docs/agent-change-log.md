@@ -18,6 +18,8 @@
   - 예시 글(placeholder): 실제 입력보다 0.9배·옅은 색. 한글 글꼴은 기울임꼴이 없어 기울이면 억지로 눕힌 모양이라 기울임은 쓰지 않음.
   - 적용 범위 확인: `/pro/build`·`/pro/polish`·`/final/build`(+`/final/create`·`/final/polish` 같은 컴포넌트)에 속성 있음. `/pro/create`는 마법사 전용이라 미적용.
   - 파일 추가 변경: `pro-input-page.tsx`(prop 1개), `pro-input-page.module.css`, `job-posting-input.module.css`, `resume-intake.module.css`, `material-upload.module.css`, `additional-info-input.module.css`, `blocked-action.module.css`. 복구: 각 파일 끝 `정돈 2차 (2026-10-19)` 블록 삭제 + prop 제거.
+- 3차 시도·철회(2026-10-19): 같은 레이어를 `/pro/create` 1~5단계와 `/analysis/prepare`에도 넓혔으나 사용자 판단 "글자 크기만 커진 느낌"으로 철회. 이 브랜치에는 넣지 않았고, 시도본은 로컬 브랜치 `backup/create-prepare-polish-20261019`(9fa9500)에만 남아 있음. 두 화면은 origin/main 그대로.
+- 배포 기준: 이 항목의 변경은 origin/main(9921320) 기준 브랜치 `claude/design-polish-20261019`로 옮겨 커밋·푸시(공유 폴더 브랜치는 origin/main보다 뒤처져 있어 그대로 쓰지 않음).
 
 ## 2026-10-16 — Codex: 실제 연속 유료 첨삭 기반 결과 정합성·내용 보완 강화
 
