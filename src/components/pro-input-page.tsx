@@ -409,7 +409,9 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
     || experiences.length > 0 || profileEntries.length > 0 || freeformNotes.trim()
     || freeformAttachments.length > 0 || materialAttachments.length > 0);
 
-  return <main className={inApp ? `${styles.page} ${styles.appPage}` : styles.page}>
+  // data-pro-polish: the web page's unified spacing/type layer (bottom of each
+  // input stylesheet). The app shell keeps its own tuned layout, so it is web-only.
+  return <main className={inApp ? `${styles.page} ${styles.appPage}` : styles.page} data-pro-polish={inApp ? undefined : ""}>
     {gapPrompt && <div className={styles.gapOverlay} role="dialog" aria-modal="true" aria-labelledby="gap-prompt-title">
       <div className={styles.gapDialog}>
         <b id="gap-prompt-title">이대로 진행할까요?</b>
@@ -514,7 +516,7 @@ export function ProInputPage({ mode, product = "PRO", variant = "web" }: Props) 
         </section>
         <section className={styles.experienceSection}>
           <div className={styles.sectionTitle}><div><span>추가로 알려주고 싶은 경험·정보 <b>선택</b></span><h3>직접 적거나 가지고 있는 자료를 한 번에 첨부하세요.</h3></div><small>PDF · DOCX · TXT · MD</small></div>
-          <AdditionalInfoInput text={freeformNotes} attachments={freeformAttachments} onTextChange={setFreeformNotes} onAttachmentsChange={setFreeformAttachments}/>
+          <AdditionalInfoInput text={freeformNotes} attachments={freeformAttachments} onTextChange={setFreeformNotes} onAttachmentsChange={setFreeformAttachments} fileHintLayout={inApp ? undefined : "collapsible"}/>
           <p className={styles.freeformHelp}>많이 알려주실수록 더 적합한 소재를 찾는 데 도움이 됩니다. 입력 내용은 바로 자기소개서에 쓰지 않고 경험 후보로 정리한 뒤, 필요한 사실만 다시 확인합니다.</p>
         </section>
         <details className={styles.structuredInputs}><summary><Plus/> 경험을 하나씩 자세히 추가하기 <span>선택</span></summary><div className={styles.structuredBody}>

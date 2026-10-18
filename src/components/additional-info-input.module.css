@@ -14,3 +14,23 @@
   .composer footer .hintToggle b{color:#176b4a}
   .composer footer .fileHint[data-collapsible]:not([data-open]){display:none}
 }
+
+/* 정돈 레이어 (data-pro-polish) — 2026-10-18. PRO 웹 입력 화면에서만 켜집니다.
+   값과 이유는 pro-input-page.module.css 끝의 같은 이름 블록에 있습니다. */
+[data-pro-polish] .composer{border-color:var(--pp-field,#d6dfda);border-radius:var(--pp-r-field,10px)}
+[data-pro-polish] .composer:focus-within{box-shadow:var(--pp-focus)}
+[data-pro-polish] .composer textarea{min-height:88px;padding:13px 14px;font-size:var(--pp-input,12px);line-height:1.65}
+[data-pro-polish] .composer footer{gap:6px 10px;padding:8px 10px;border-top-color:var(--pp-line,#e3e9e5)}
+[data-pro-polish] .composer footer label{gap:5px;padding:5px 9px;border-radius:7px;font-size:var(--pp-meta,10px)!important;font-weight:800}
+[data-pro-polish] .composer footer>span{color:var(--pp-faint,#8a958f);font-size:var(--pp-meta,10px)}
+[data-pro-polish] .files{gap:6px;padding:10px 12px 0}
+[data-pro-polish] .files>span{padding:6px 9px;border-radius:8px;font-size:var(--pp-meta,10px)}
+[data-pro-polish] .fileHint{padding:2px 0 0;color:var(--pp-faint,#8a958f);font-size:var(--pp-meta,10px);line-height:1.6}
+[data-pro-polish] .error{padding:9px 12px;font-size:var(--pp-meta,10px)}
+@media(max-width:760px){[data-pro-polish] .composer footer .hintToggle{font-size:var(--pp-meta,10px)}}
+@media(max-width:640px){[data-pro-polish] .composer textarea{font-size:16px}}
+
+/* 정돈 2차 (2026-10-19): 파일 안내는 넓은 화면에서도 '자세히'로 접어 둡니다. */
+[data-pro-polish] .composer footer .hintToggle{display:inline-flex;align-items:center;gap:4px;order:2;flex:1 1 100%;margin:2px 0 0;padding:6px 8px;border:0;border-radius:6px;background:#f4f7f5;color:#4a5f55;font-size:var(--pp-meta,10px);font-weight:700;text-align:left;cursor:pointer}
+[data-pro-polish] .composer footer .hintToggle b{color:#176b4a}
+[data-pro-polish] .composer footer .fileHint[data-collapsible]:not([data-open]){display:none}

@@ -1,5 +1,24 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-18 — Claude: PRO 상세 입력 화면 간격·글자·테두리 통일 (정돈 레이어)
+
+- 요청: `/pro/build` 상세 입력 화면이 버튼·입력칸이 많아 지저분해 보임. 기능·문구·UX는 유지하고 테두리-글자 간격, 글자 크기, 디자인 통일감만 깔끔하게.
+- 문제: 같은 역할의 요소가 파일마다 따로 자라 글자 7~12.5px, 구역 간격 9~23px, 모서리 6~14px가 섞임. 채용공고만 회색 상자, 나머지는 위 선 구분, 스타일 섹션은 아래 선 구분. 첨삭 방향 카드는 소개문(12.5px)·항목(11.5px)이 카드 설명(8px)보다 커서 위계가 뒤집힘. 구역 제목 h3가 400 굵기라 초록 머리표보다 약해 보임.
+- 변경(추가만, 기존 규칙 수정 없음): `<main>`에 `data-pro-polish` 속성(웹 전용, 앱 셸 `inApp`은 제외)을 달고, 그 아래에서만 켜지는 블록을 각 CSS 끝에 추가. 토큰 하나로 통일 — 글자 머리표10·보조10·안내10.5·본문11.5·입력12·제목14(700), 큰 구역 28px + 같은 위 선, 머리→내용 14, 칸 사이 12, 상자 12 / 입력칸·버튼 10 / 칩 999 모서리. 채용공고 상자 배경·테두리 제거로 다른 구역과 같은 형식. 폰(640px 이하)은 토큰 한 단계 크게, 입력칸 16px(iOS 확대 방지) 유지.
+- 파일: `src/components/pro-input-page.tsx`(속성 1개), `pro-input-page.module.css`, `job-posting-input.module.css`, `resume-intake.module.css`, `additional-info-input.module.css`, `material-upload.module.css`, `question-editor.module.css`, `attachment-card.module.css`, `blocked-action.module.css`, `.claude/launch.json`(3002 실행 설정 추가), 본 기록.
+- 영향 범위: 공유 컴포넌트지만 규칙이 `[data-pro-polish]` 아래에만 걸려 `/quick`, `/pro/create-wizard`, 결과 화면, 앱 셸은 그대로(로컬에서 `/quick`에 속성 없음 확인). `/pro/create`·`/pro/polish`는 같은 페이지 컴포넌트라 함께 적용됨(GuidedCreateForm 내부는 미변경).
+- 검증: 로컬 3002 `/pro/build` 상세 입력 데스크톱(1280)·모바일(375) 스크린샷 확인, 가로 스크롤 없음, 모바일 보이는 입력칸 전부 16px, h3 700 적용 확인. 콘솔 오류는 기존 live-sub CORS뿐. 테스트·린트는 CSS 전용이라 미실행. 커밋·배포 안 함.
+- 복구: `pro-input-page.tsx`의 `data-pro-polish` 속성 한 줄만 빼면 즉시 이전 모습. 완전 제거는 각 파일 끝 `정돈 레이어 (data-pro-polish) — 2026-10-18` 블록 삭제.
+- 상태: 로컬 적용·미커밋, 사용자 확인 대기.
+- 2차(2026-10-19, 사용자 요청 "개발 느낌 설명은 지우고 자소서 관련은 두기 · 구역 번호 · 예시 글 차별화"):
+  - 숨김(CSS `display:none`, 문구 원문은 컴포넌트에 그대로): 채용공고 아래 "지금은 서버나 AI로 전송하지 않습니다…", 출처 감지 칸의 "실제 페이지 읽기·문서 추출·AI 분석은 결제 후…", 자기소개서 머리 "내부에서는 문항별로 정리", 지원자료 "PDF·DOCX·TXT·MD를 읽습니다. … 종류별로 구분해 전달됩니다.", 하단 "아직 서버로 전송하지 않습니다 / 로그인·결제 경계", 경험 추가 후 "Experience Bank 후보로 정리됩니다".
+  - 접기: 추가 경험·정보의 긴 파일 안내(ZIP·HWP 등)는 지우지 않고 기존 `fileHintLayout="collapsible"` 토글("어떤 파일을 올릴 수 있나요? 자세히")로 넓은 화면에서도 접음. `pro-input-page.tsx`에서 웹일 때만 이 속성 전달.
+  - 유지: 문항 구분 안내, 지원 직무 안내, 추가 경험 활용 설명, 입력 방식 안내 등 자소서 작성 관련 문구.
+  - 구역 번호: CSS 카운터 `pp-section`으로 1 채용공고 · 2 현재 자기소개서 · 3 선택 지원자료 · 4 추가 경험·정보 · 5 작성 스타일 · 6 첨삭 방향(접힘 상자 안 소구역 제외, 간편 입력에선 숨은 구역이라 번호 없음).
+  - 예시 글(placeholder): 실제 입력보다 0.9배·옅은 색. 한글 글꼴은 기울임꼴이 없어 기울이면 억지로 눕힌 모양이라 기울임은 쓰지 않음.
+  - 적용 범위 확인: `/pro/build`·`/pro/polish`·`/final/build`(+`/final/create`·`/final/polish` 같은 컴포넌트)에 속성 있음. `/pro/create`는 마법사 전용이라 미적용.
+  - 파일 추가 변경: `pro-input-page.tsx`(prop 1개), `pro-input-page.module.css`, `job-posting-input.module.css`, `resume-intake.module.css`, `material-upload.module.css`, `additional-info-input.module.css`, `blocked-action.module.css`. 복구: 각 파일 끝 `정돈 2차 (2026-10-19)` 블록 삭제 + prop 제거.
+
 ## 2026-10-16 — Codex: 실제 연속 유료 첨삭 기반 결과 정합성·내용 보완 강화
 
 - 요청/근거: 같은 사용자의 연속 PRO 첨삭에서 4번 경력 문항 안의 `1. 경력 개요`~`4. 직무 역량`이 가짜 4~7번 문항으로 분리됐고, 목표 분량을 채운 답변에 분량 부족 안내가 남았으며, 높은 확인 위험과 “수정 이득 없음” 요약이 충돌했다. 특히 짧게 작성한 원문을 목표 글자 수까지 채우는 `내용 보완`의 실제 효용을 강화한다.

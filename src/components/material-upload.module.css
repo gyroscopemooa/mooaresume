@@ -22,3 +22,19 @@
 /* 좁은 화면에서 3열로 두면 칸이 105px밖에 안 돼 "이력서(입사지원서)"가
    글자 단위로 쪼개집니다. 모바일에서는 한 줄에 하나씩 놓습니다. */
 @media(max-width:760px){.buttons{grid-template-columns:1fr}}
+
+/* 정돈 레이어 (data-pro-polish) — 2026-10-18. PRO 웹 입력 화면에서만 켜집니다.
+   값과 이유는 pro-input-page.module.css 끝의 같은 이름 블록에 있습니다. */
+[data-pro-polish] .upload{gap:10px}
+[data-pro-polish] .buttons{gap:10px}
+[data-pro-polish] .buttons label{padding:12px;border-color:var(--pp-field,#d6dfda);border-radius:var(--pp-r-field,10px);background:#fff;font-size:var(--pp-label,11px);font-weight:700}
+[data-pro-polish] .buttons small{font-size:var(--pp-meta,10px)}
+[data-pro-polish] .list{gap:8px}
+[data-pro-polish] .list li{gap:10px;padding:10px 13px;border-color:var(--pp-line,#e3e9e5);border-radius:var(--pp-r-field,10px)}
+[data-pro-polish] .list b{font-size:var(--pp-label,11px)}
+[data-pro-polish] .list small{font-size:var(--pp-meta,10px)}
+[data-pro-polish] .error{font-size:var(--pp-help,10.5px)}
+[data-pro-polish] .hint{color:var(--pp-faint,#8a958f);font-size:var(--pp-help,10.5px);line-height:1.65}
+
+/* 정돈 2차 (2026-10-19): 개발 안내 문구 숨김. */
+[data-pro-polish] .hint{display:none}

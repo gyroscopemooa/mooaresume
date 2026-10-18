@@ -1,1 +1,30 @@
 .intake{display:grid;gap:12px}.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}.head>div>span{color:#176b4a;font-size:9px;font-weight:900}.head>div>span b{margin-left:4px;padding:3px 6px;border-radius:10px;background:#e8f4ed}.head h3{margin:6px 0 0;font-size:13px}.head>small{color:#839089;font-size:8px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tabs button,.tabs label{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;margin:0!important;padding:11px;border:1px solid #dbe4df;border-radius:8px;background:#fff;color:#65736c;font-size:9px;font-weight:900;cursor:pointer}.tabs .active{border-color:#176b4a;background:#edf7f1;color:#176b4a}.tabs svg{width:14px}.tabs input,.secondaryUpload input{position:absolute;width:1px;height:1px;opacity:0}.intake>textarea{width:100%;padding:14px;border:1px solid #dbe4df;border-radius:9px;outline:0;resize:vertical;line-height:1.65}.intake>textarea:focus{border-color:#176b4a;box-shadow:0 0 0 3px rgba(23,107,74,.07)}.bulkFoot{display:flex;align-items:center;justify-content:space-between}.bulkFoot>span{color:#75827b;font-size:8px}.bulkActions{display:flex;align-items:center;gap:7px}.bulkFoot button{display:flex;align-items:center;gap:5px;padding:9px 11px;border:0;border-radius:7px;background:#176b4a;color:#fff;font-size:9px;font-weight:900;cursor:pointer}.bulkFoot button:disabled{background:#cbd4cf}.bulkFoot svg{width:13px}.resetInline{background:transparent!important;border:1px solid #dbe4df!important;color:#65736c!important}.help{margin:-4px 0 0;color:#7c8982;font-size:8px;line-height:1.5}.found{display:flex;align-items:center;gap:8px;padding:11px;border-radius:8px;background:#edf7f1}.found>svg{width:15px;color:#176b4a}.found>span{display:flex;flex:1;flex-direction:column}.found b{font-size:9px}.found small{margin-top:2px;color:#68776f;font-size:8px}.foundActions{display:flex;align-items:center;gap:7px}.foundActions button{display:flex;align-items:center;gap:5px;padding:8px 10px;border:1px solid #bcd6c6;border-radius:7px;background:#fff;color:#176b4a;font-size:8px;font-weight:900;cursor:pointer;white-space:nowrap}.foundActions svg{width:13px}.secondaryUpload{position:relative;display:flex!important;align-items:center;justify-content:center;gap:5px;margin:0!important;padding:9px;border:1px dashed #b8c9c0;border-radius:8px;color:#176b4a;font-size:8px;font-weight:900;cursor:pointer}.secondaryUpload svg{width:13px}.total{display:flex;justify-content:space-between;padding:11px 12px;border-radius:8px;background:#f5f8f6;font-size:9px}.total span{color:#69776f}.total b{font-size:10px}@media(max-width:700px){.head{align-items:flex-start;flex-direction:column}.tabs{grid-template-columns:1fr}.bulkFoot{align-items:flex-start;gap:8px;flex-direction:column}.found{align-items:flex-start;flex-wrap:wrap}.foundActions{margin-left:23px}}
+
+/* 정돈 레이어 (data-pro-polish) — 2026-10-18. PRO 웹 입력 화면에서만 켜집니다.
+   값과 이유는 pro-input-page.module.css 끝의 같은 이름 블록에 있습니다. */
+[data-pro-polish] .intake{gap:var(--pp-gap,12px)}
+[data-pro-polish] .head{gap:16px;margin-bottom:2px}
+[data-pro-polish] .head>div>span{display:inline-flex;align-items:center;font-size:var(--pp-eyebrow,10px);font-weight:800}
+[data-pro-polish] .head>div>span b{margin-left:6px;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:800}
+[data-pro-polish] .head h3{margin:7px 0 0;font-weight:700;font-size:var(--pp-title,14px);line-height:1.45;letter-spacing:-.01em}
+[data-pro-polish] .head>small{color:var(--pp-faint,#8a958f);font-size:var(--pp-meta,10px)}
+[data-pro-polish] .tabs{gap:8px}
+[data-pro-polish] .tabs button,[data-pro-polish] .tabs label{padding:11px 12px;border-color:var(--pp-field,#d6dfda);border-radius:var(--pp-r-field,10px);font-size:var(--pp-label,11px);font-weight:800}
+[data-pro-polish] .intake>textarea{padding:14px;border-color:var(--pp-field,#d6dfda);border-radius:var(--pp-r-field,10px);font-size:var(--pp-input,12px);line-height:1.7}
+[data-pro-polish] .intake>textarea:focus{box-shadow:var(--pp-focus)}
+[data-pro-polish] .bulkFoot{gap:10px}
+[data-pro-polish] .bulkFoot>span{color:var(--pp-faint,#8a958f);font-size:var(--pp-meta,10px)}
+[data-pro-polish] .bulkFoot button{padding:9px 13px;border-radius:var(--pp-r-field,10px);font-size:var(--pp-meta,10px);font-weight:800}
+[data-pro-polish] .help{margin:0;color:var(--pp-faint,#8a958f);font-size:var(--pp-help,10.5px);line-height:1.65}
+[data-pro-polish] .found{gap:10px;padding:12px 14px;border-radius:var(--pp-r-field,10px)}
+[data-pro-polish] .found b{font-size:var(--pp-label,11px)}
+[data-pro-polish] .found small{margin-top:3px;font-size:var(--pp-meta,10px)}
+[data-pro-polish] .foundActions button{padding:8px 12px;border-radius:8px;font-size:var(--pp-meta,10px);font-weight:800}
+[data-pro-polish] .secondaryUpload{padding:11px;border-radius:var(--pp-r-field,10px);font-size:var(--pp-meta,10px);font-weight:800}
+[data-pro-polish] .total{padding:12px 14px;border-radius:var(--pp-r-field,10px);background:var(--pp-soft,#f6f9f7);font-size:var(--pp-meta,10px)}
+[data-pro-polish] .total b{font-size:var(--pp-label,11px)}
+@media(max-width:640px){[data-pro-polish] .intake>textarea{font-size:16px}}
+
+/* 정돈 2차 (2026-10-19): 개발 안내 문구 숨김 + 구역 번호. */
+[data-pro-polish] .head>small{display:none}
+[data-pro-polish] .head>div>span::before{counter-increment:pp-section;content:counter(pp-section);display:inline-grid;place-items:center;width:17px;height:17px;margin-right:7px;border-radius:50%;background:var(--pp-green,#176b4a);color:#fff;font-size:9.5px;font-weight:800;line-height:1}

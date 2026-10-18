@@ -216,3 +216,180 @@
   .gapDialog li{font-size:11px;line-height:1.6}
   .gapCancel,.gapGo{padding:12px 6px;font-size:12.5px;white-space:nowrap}
 }
+
+/* ==================================================================
+   정돈 레이어 (data-pro-polish) — 2026-10-18
+   ------------------------------------------------------------------
+   위 규칙은 한 줄씩 따로 자라서 글자 7~12.5px, 간격 9~23px, 모서리
+   6~14px가 섞여 있었습니다. 같은 역할은 같은 값으로 묶습니다.
+   웹 상세 입력 화면(<main data-pro-polish>)에서만 켜지고, 위 규칙은
+   그대로 두었으므로 이 블록과 각 입력 컴포넌트 끝의 같은 이름 블록을
+   지우거나 속성을 빼면 이전 모습으로 돌아갑니다.
+
+   글자: 머리표 10 · 보조 10 · 안내 10.5 · 본문 11.5 · 입력 12 · 제목 14
+   간격: 큰 구역 28 · 머리→내용 14 · 칸 사이 12 · 상자 안 16~18
+   모서리: 구역 상자 12 · 입력칸/버튼 10 · 칩 999
+   ================================================================== */
+.page[data-pro-polish]{
+  --pp-ink:#17221d;--pp-text:#3c4a43;--pp-muted:#69766f;--pp-faint:#8a958f;
+  --pp-line:#e3e9e5;--pp-field:#d6dfda;--pp-soft:#f6f9f7;--pp-green:#176b4a;--pp-mint:#edf7f1;
+  --pp-eyebrow:10px;--pp-meta:10px;--pp-help:10.5px;--pp-body:11.5px;--pp-input:12px;--pp-label:11px;--pp-title:14px;
+  --pp-section:28px;--pp-head-gap:14px;--pp-gap:12px;
+  --pp-r-box:12px;--pp-r-field:10px;
+  --pp-focus:0 0 0 3px rgba(23,107,74,.09);
+}
+
+/* 머리말 · 진행 순서 */
+.page[data-pro-polish] .heading{padding:40px 0 24px}
+.page[data-pro-polish] .heading small{font-size:var(--pp-eyebrow);letter-spacing:.02em}
+.page[data-pro-polish] .heading h1{margin:8px 0 10px}
+.page[data-pro-polish] .heading p{margin:0;font-size:12px;line-height:1.75}
+.page[data-pro-polish] .flow{margin-bottom:16px;padding:24px;border-radius:14px}
+.page[data-pro-polish] .flow>div small{font-size:var(--pp-eyebrow)}
+.page[data-pro-polish] .flow h2{margin:6px 0 16px;font-size:16px}
+.page[data-pro-polish] .flow ol{gap:10px}
+.page[data-pro-polish] .flow li{padding:14px;border-radius:10px}
+.page[data-pro-polish] .flow li>span{font-size:var(--pp-eyebrow)}
+.page[data-pro-polish] .flow b{margin-top:8px;font-size:var(--pp-label);line-height:1.4}
+.page[data-pro-polish] .flow p{margin-top:5px;font-size:var(--pp-meta);line-height:1.6}
+
+/* 폼 카드 */
+.page[data-pro-polish] .form{padding:32px;border-color:var(--pp-line);border-radius:16px;box-shadow:0 1px 2px rgba(23,34,29,.03)}
+.page[data-pro-polish] .modeSwitch{margin-bottom:var(--pp-section);padding-bottom:var(--pp-section);border-bottom:1px solid var(--pp-line)}
+.page[data-pro-polish] .modeSwitch small{margin-top:10px;color:var(--pp-faint);font-size:var(--pp-help);line-height:1.65}
+
+/* 모든 구역 머리: 머리표 · 제목 · 오른쪽 보조 */
+.page[data-pro-polish] .sectionTitle{align-items:flex-end;gap:16px;margin-bottom:var(--pp-head-gap)}
+.page[data-pro-polish] .sectionTitle>div>span{display:inline-flex;align-items:center;font-size:var(--pp-eyebrow);font-weight:800;letter-spacing:.01em}
+.page[data-pro-polish] .sectionTitle>div>span b{margin-left:6px;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:800}
+.page[data-pro-polish] .sectionTitle h3{margin:7px 0 0;font-weight:700;font-size:var(--pp-title);line-height:1.45;letter-spacing:-.01em}
+.page[data-pro-polish] .sectionTitle>small{flex:none;color:var(--pp-faint);font-size:var(--pp-meta);white-space:nowrap}
+
+/* 구역 사이: 같은 선 하나, 같은 간격 하나 */
+.page[data-pro-polish] .questionSection,
+.page[data-pro-polish] .optionalMaterials,
+.page[data-pro-polish] .experienceSection,
+.page[data-pro-polish] .styleSection{margin-top:var(--pp-section);padding-top:var(--pp-section);padding-bottom:0;border-top:1px solid var(--pp-line);border-bottom:0}
+
+/* 지원 회사·직무 */
+.page[data-pro-polish] .targetFields{gap:var(--pp-gap);margin-top:20px}
+.page[data-pro-polish] .targetFields label{gap:7px}
+.page[data-pro-polish] .targetFields span{color:var(--pp-text);font-size:var(--pp-label);font-weight:700}
+.page[data-pro-polish] .targetFields span b{margin-left:4px;color:var(--pp-faint);font-size:var(--pp-meta);font-weight:600}
+.page[data-pro-polish] .targetFields input{padding:11px 13px;border-color:var(--pp-field);border-radius:var(--pp-r-field);font-size:var(--pp-input)}
+.page[data-pro-polish] .targetFields input:focus{box-shadow:var(--pp-focus)}
+.page[data-pro-polish] .targetHint{margin:8px 0 0;color:var(--pp-faint);font-size:var(--pp-help);line-height:1.65}
+
+/* 경고·안내 상자 */
+.page[data-pro-polish] .postingWarning{margin:var(--pp-gap) 0 0;padding:13px 16px;border-radius:var(--pp-r-field);font-size:var(--pp-help);line-height:1.7}
+.page[data-pro-polish] .postingWarning b{margin-bottom:4px;font-size:var(--pp-label)}
+.page[data-pro-polish] .carriedRequest{margin:var(--pp-section) 0 0;border-radius:var(--pp-r-box)}
+.page[data-pro-polish] .carriedRequest>span{font-size:var(--pp-eyebrow)}
+.page[data-pro-polish] .carriedRequest small{font-size:var(--pp-meta)}
+.page[data-pro-polish] .freeformHelp{margin:10px 0 0;color:var(--pp-faint);font-size:var(--pp-help);line-height:1.7}
+.page[data-pro-polish] .emptyExperience{margin-top:var(--pp-gap);padding:12px 14px;border-radius:var(--pp-r-field);color:var(--pp-muted);font-size:var(--pp-help)}
+
+/* 경험 하나씩 추가하기 (접힘 상자) */
+.page[data-pro-polish] .structuredInputs{margin-top:20px;border-color:var(--pp-line);border-radius:var(--pp-r-box);background:var(--pp-soft)}
+.page[data-pro-polish] .structuredInputs>summary{gap:8px;padding:15px 18px;font-size:var(--pp-body);font-weight:800}
+.page[data-pro-polish] .structuredInputs>summary svg{width:14px}
+.page[data-pro-polish] .structuredInputs>summary span{padding:2px 8px;border-radius:999px;font-size:9px;font-weight:800}
+.page[data-pro-polish] .structuredBody{padding:0 18px 20px}
+.page[data-pro-polish] .structuredBody>.experienceSection:first-child{margin-top:0;padding-top:18px;border-top:1px solid var(--pp-line)}
+.page[data-pro-polish] .structuredBody>.experienceSection + .experienceSection{margin-top:24px;padding-top:24px}
+
+/* 항목 추가 칩 */
+.page[data-pro-polish] .categoryGrid{gap:8px}
+.page[data-pro-polish] .categoryGrid button{gap:5px;padding:8px 12px;border-color:var(--pp-field);border-radius:999px;font-size:var(--pp-help);font-weight:700}
+.page[data-pro-polish] .categoryGrid svg{width:12px}
+
+/* 추가한 항목 카드 */
+.page[data-pro-polish] .experienceList{gap:var(--pp-gap);margin-top:var(--pp-head-gap)}
+.page[data-pro-polish] .experienceList:empty{display:none}
+.page[data-pro-polish] .experienceList>article{padding:18px;border-color:var(--pp-line);border-radius:var(--pp-r-box);background:#fff}
+.page[data-pro-polish] .experienceList article>header{margin-bottom:var(--pp-head-gap)}
+.page[data-pro-polish] .experienceList article>header div{gap:8px}
+.page[data-pro-polish] .experienceList article>header span{padding:3px 9px;border-radius:999px;font-size:9.5px;font-weight:800}
+.page[data-pro-polish] .experienceList article>header b{font-size:var(--pp-body)}
+.page[data-pro-polish] .experienceGrid{gap:var(--pp-gap)}
+.page[data-pro-polish] .experienceGrid label>span{margin-bottom:6px;color:var(--pp-text);font-size:var(--pp-label);font-weight:700}
+.page[data-pro-polish] .experienceGrid label>span b{margin-left:4px;color:var(--pp-faint);font-size:var(--pp-meta);font-weight:600}
+.page[data-pro-polish] .experienceGrid input,
+.page[data-pro-polish] .experienceGrid textarea{padding:10px 12px;border-color:var(--pp-field);border-radius:var(--pp-r-field);font-size:var(--pp-body);line-height:1.6}
+.page[data-pro-polish] .experienceGrid input:focus,
+.page[data-pro-polish] .experienceGrid textarea:focus{box-shadow:var(--pp-focus)}
+.page[data-pro-polish] .experienceDetails{margin-top:var(--pp-head-gap);padding-top:var(--pp-head-gap);border-top-color:var(--pp-line)}
+.page[data-pro-polish] .experienceDetails summary{font-size:var(--pp-help);font-weight:800}
+.page[data-pro-polish] .experienceDetails summary span{font-size:var(--pp-meta)}
+.page[data-pro-polish] .experienceDetails>div{margin-top:var(--pp-gap)}
+.page[data-pro-polish] .bankNotice{gap:10px;margin-top:var(--pp-gap);padding:13px 16px;border-radius:var(--pp-r-field)}
+.page[data-pro-polish] .bankNotice>svg{width:15px}
+.page[data-pro-polish] .bankNotice b{font-size:var(--pp-label)}
+.page[data-pro-polish] .bankNotice small{margin-top:3px;font-size:var(--pp-meta);line-height:1.6}
+
+/* PRO 결과에 포함 */
+.page[data-pro-polish] .included{gap:8px;margin-top:var(--pp-section);padding:16px 18px;border-radius:var(--pp-r-box);background:var(--pp-soft)}
+.page[data-pro-polish] .included>b{margin-bottom:2px;font-size:var(--pp-label)}
+.page[data-pro-polish] .included span{gap:4px;padding:5px 10px;border:1px solid var(--pp-line);border-radius:999px;color:var(--pp-text);font-size:var(--pp-meta)}
+.page[data-pro-polish] .included svg{width:11px}
+
+/* 작성 스타일 · 첨삭 방향 카드 */
+.page[data-pro-polish] .styleGrid{gap:10px}
+.page[data-pro-polish] .styleGrid>button{padding:16px 16px 17px;border-color:var(--pp-line);border-radius:var(--pp-r-box);transition:border-color .15s ease,background .15s ease}
+.page[data-pro-polish] .styleGrid>button.styleSelected{border-color:var(--pp-green);background:#f2f9f5}
+.page[data-pro-polish] .styleGrid b{gap:6px;padding-right:22px;font-size:12px;line-height:1.4}
+.page[data-pro-polish] .styleGrid b em{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:800}
+.page[data-pro-polish] .styleGrid p{margin:8px 0 0;font-size:var(--pp-meta);line-height:1.65}
+.page[data-pro-polish] .styleRadio{right:14px;top:15px}
+.page[data-pro-polish] .stanceIntro{margin:0 0 var(--pp-head-gap);color:var(--pp-muted);font-size:var(--pp-body);line-height:1.75}
+.page[data-pro-polish] .stancePoints{margin:10px 0 0;padding:10px 0 0 14px;border-top:1px dashed var(--pp-line);gap:4px}
+.page[data-pro-polish] .stancePoints li{color:var(--pp-muted);font-size:var(--pp-meta);line-height:1.6}
+.page[data-pro-polish] .styleSafety,
+.page[data-pro-polish] .polishConstraint{gap:6px;margin:var(--pp-gap) 0 0;font-size:var(--pp-help);line-height:1.6}
+.page[data-pro-polish] .styleSafety svg{width:13px;flex:none}
+.page[data-pro-polish] .polishConstraint{padding:11px 14px;border-radius:var(--pp-r-field)}
+
+/* 마지막: 전송 안내 · 진행 버튼 */
+.page[data-pro-polish] .notice{gap:10px;margin:var(--pp-section) 0 var(--pp-gap);padding:14px 16px;border-radius:var(--pp-r-box)}
+.page[data-pro-polish] .notice>svg{width:16px;flex:none}
+.page[data-pro-polish] .notice b{font-size:var(--pp-label)}
+.page[data-pro-polish] .notice small{margin-top:3px;font-size:var(--pp-meta);line-height:1.6}
+.page[data-pro-polish] .submit{min-height:50px;padding:14px;border-radius:var(--pp-r-field);font-size:13px}
+
+/* 정돈 2차 (2026-10-19)
+   - 개발 과정 설명(서버 전송 여부·결제 경계·내부 용어)은 지원자에게 할 일이
+     아니라서 숨깁니다. 자소서 작성에 관한 안내는 그대로 둡니다.
+   - 큰 구역마다 순서 번호. 채용공고·자기소개서 머리는 각자 컴포넌트에서,
+     나머지는 아래에서 같은 카운터를 올립니다. 접힘 상자 안의 소구역은 제외.
+   - 입력칸 예시 글은 실제 입력보다 한 단계 작고 옅게. 한글 글꼴엔 진짜 기울임꼴이
+     없어 기울이면 억지로 눕힌 모양이 되므로 크기·색으로만 구분합니다. */
+.page[data-pro-polish] .notice,
+.page[data-pro-polish] .bankNotice{display:none}
+.page[data-pro-polish] .form{counter-reset:pp-section}
+.page[data-pro-polish] .sectionTitle>div>span::before{counter-increment:pp-section;content:counter(pp-section);display:inline-grid;place-items:center;width:17px;height:17px;margin-right:7px;border-radius:50%;background:var(--pp-green);color:#fff;font-size:9.5px;font-weight:800;line-height:1}
+.page[data-pro-polish] .structuredBody .sectionTitle>div>span::before{content:none;counter-increment:none}
+.page[data-pro-polish] .submit{margin-top:var(--pp-section)}
+.page[data-pro-polish] p + div > .submit{margin-top:0}
+.page[data-pro-polish] input::placeholder,
+.page[data-pro-polish] textarea::placeholder{color:#a7b1ac;font-size:.9em}
+
+@media (max-width:640px){
+  /* 폰은 한 단계씩 크게 — 위 640px 블록이 올려 둔 크기보다 작아지지 않게. */
+  .page[data-pro-polish]{--pp-section:24px;--pp-eyebrow:10.5px;--pp-meta:11px;--pp-help:11.5px;--pp-body:12.5px;--pp-label:12px;--pp-title:14.5px}
+  .page[data-pro-polish] .heading{padding:24px 0 18px}
+  .page[data-pro-polish] .heading p{font-size:12.5px}
+  .page[data-pro-polish] .flow b{font-size:11.5px;min-height:2.8em}
+  .page[data-pro-polish] .flow p{font-size:10.5px}
+  .page[data-pro-polish] .styleGrid b{font-size:12.5px}
+  .page[data-pro-polish] .flow{padding:18px}
+  .page[data-pro-polish] .form{padding:20px 18px}
+  .page[data-pro-polish] .sectionTitle{align-items:flex-start;gap:4px}
+  .page[data-pro-polish] .sectionTitle>small{white-space:normal}
+  .page[data-pro-polish] .structuredInputs>summary{padding:14px}
+  .page[data-pro-polish] .structuredBody{padding:0 14px 16px}
+  .page[data-pro-polish] .experienceList>article{padding:15px}
+  /* iOS는 16px보다 작은 입력칸을 누르면 화면을 확대한 채 두므로 입력 글자만 16px. */
+  .page[data-pro-polish] .targetFields input,
+  .page[data-pro-polish] .experienceGrid input,
+  .page[data-pro-polish] .experienceGrid textarea{font-size:16px}
+}

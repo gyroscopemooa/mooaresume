@@ -9,3 +9,34 @@
 @keyframes job-posting-spin{to{transform:rotate(360deg)}}
 .linkMessage{margin:0;padding:9px 11px 10px;border-top:1px solid #e4ece8;background:#f4f8f6;color:#2f4a3d;font-size:9px;line-height:1.7}
 .composer footer{height:auto;min-height:36px;flex-wrap:wrap;gap:7px;padding:6px 9px;overflow:visible}
+
+/* 정돈 레이어 (data-pro-polish) — 2026-10-18. PRO 웹 입력 화면에서만 켜집니다.
+   값과 이유는 pro-input-page.module.css 끝의 같은 이름 블록에 있습니다. */
+[data-pro-polish] .box{margin-bottom:0;padding:0;border:0;border-radius:0;background:transparent}
+[data-pro-polish] .heading{align-items:flex-end;gap:16px;margin-bottom:var(--pp-head-gap,14px)}
+[data-pro-polish] .heading>div>span{display:inline-flex;align-items:center;font-size:var(--pp-eyebrow,10px);font-weight:800}
+[data-pro-polish] .heading>div>span b{margin-left:6px;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:800}
+[data-pro-polish] .heading h3{margin:7px 0 4px;font-weight:700;font-size:var(--pp-title,14px);line-height:1.45;letter-spacing:-.01em}
+[data-pro-polish] .heading p{color:var(--pp-muted,#69766f);font-size:var(--pp-help,10.5px);line-height:1.6}
+[data-pro-polish] .heading>small{color:var(--pp-faint,#8a958f);font-size:var(--pp-meta,10px)}
+[data-pro-polish] .composer{border-color:var(--pp-field,#d6dfda);border-radius:var(--pp-r-field,10px)}
+[data-pro-polish] .composer:focus-within{box-shadow:var(--pp-focus)}
+[data-pro-polish] .composer textarea{min-height:76px;padding:13px 14px;font-size:var(--pp-input,12px);line-height:1.65}
+[data-pro-polish] .composer footer{gap:8px;padding:8px 10px;border-top-color:var(--pp-line,#e3e9e5)}
+[data-pro-polish] .composer footer label{gap:5px;padding:5px 9px;border-radius:7px;font-size:var(--pp-meta,10px)!important;font-weight:800}
+[data-pro-polish] .composer footer>span{color:var(--pp-faint,#8a958f);font-size:var(--pp-meta,10px)}
+[data-pro-polish] .dropHint{padding:7px 12px 8px;border-top-color:var(--pp-line,#e3e9e5);color:var(--pp-faint,#8a958f);font-size:var(--pp-meta,10px);line-height:1.5}
+[data-pro-polish] .files{gap:6px;padding:10px 12px 0}
+[data-pro-polish] .files>span{padding:6px 9px;border-radius:8px;font-size:var(--pp-meta,10px)}
+[data-pro-polish] .detected{gap:8px;margin-top:10px;padding:11px 13px;border-radius:var(--pp-r-field,10px)}
+[data-pro-polish] .detected b{font-size:var(--pp-label,11px)}
+[data-pro-polish] .detected small{margin-top:3px;font-size:var(--pp-meta,10px)}
+[data-pro-polish] .privacy{margin:10px 0 0;color:var(--pp-faint,#8a958f);font-size:var(--pp-help,10.5px);line-height:1.65}
+[data-pro-polish] .linkLoad{padding:6px 11px;border-radius:7px;font-size:var(--pp-meta,10px)}
+[data-pro-polish] .linkLoad small{font-size:9px}
+[data-pro-polish] .linkMessage{padding:10px 12px;font-size:var(--pp-help,10.5px)}
+@media(max-width:640px){[data-pro-polish] .composer textarea{font-size:16px}}
+
+/* 정돈 2차 (2026-10-19): 개발 안내 문구 숨김 + 구역 번호. */
+[data-pro-polish] .privacy,[data-pro-polish] .detected small{display:none}
+[data-pro-polish] .heading>div>span::before{counter-increment:pp-section;content:counter(pp-section);display:inline-grid;place-items:center;width:17px;height:17px;margin-right:7px;border-radius:50%;background:var(--pp-green,#176b4a);color:#fff;font-size:9.5px;font-weight:800;line-height:1}
