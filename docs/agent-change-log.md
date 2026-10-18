@@ -20,6 +20,7 @@
   - 파일 추가 변경: `pro-input-page.tsx`(prop 1개), `pro-input-page.module.css`, `job-posting-input.module.css`, `resume-intake.module.css`, `material-upload.module.css`, `additional-info-input.module.css`, `blocked-action.module.css`. 복구: 각 파일 끝 `정돈 2차 (2026-10-19)` 블록 삭제 + prop 제거.
 - 3차 시도·철회(2026-10-19): 같은 레이어를 `/pro/create` 1~5단계와 `/analysis/prepare`에도 넓혔으나 사용자 판단 "글자 크기만 커진 느낌"으로 철회. 이 브랜치에는 넣지 않았고, 시도본은 로컬 브랜치 `backup/create-prepare-polish-20261019`(9fa9500)에만 남아 있음. 두 화면은 origin/main 그대로.
 - 배포 기준: 이 항목의 변경은 origin/main(9921320) 기준 브랜치 `claude/design-polish-20261019`로 옮겨 커밋·푸시(공유 폴더 브랜치는 origin/main보다 뒤처져 있어 그대로 쓰지 않음).
+- 배포(2026-10-19 00:40 KST 푸시): 사용자 요청으로 `claude/design-polish-20261019`를 `main`에 fast-forward(9921320..830d5f2). 배포 전 `tsc --noEmit` 통과, `pro-input-page.tsx` eslint 통과, `vitest run src/components` 34파일 268테스트 통과. Cloudflare 자동 빌드 후 00:47에 `https://mooaresume.com/pro/build`의 `_next/static` CSS에서 `data-pro-polish` 확인 = 운영 반영. 되돌리기: `pro-input-page.tsx`의 속성 한 줄 제거 후 재배포, 또는 d764656 revert.
 
 ## 2026-10-16 — Codex: 실제 연속 유료 첨삭 기반 결과 정합성·내용 보완 강화
 
