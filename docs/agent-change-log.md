@@ -8539,3 +8539,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: 배너 및 자동 검수 3파일 15테스트, 대상 ESLint 통과. 빌드/배포 결과 후속 기록. 유료 합성 평가 미실행 상태는 유지.
 - Rollback: 배너는 c42edf0 대비 이번 네 파일 diff만 복구. 자동 검수는 별도 kill switch로 중지 가능하며 저장 기록을 삭제하지 않는다.
 - 완료: 배너 커밋 `0bb468b`, 운영 확인 기록 `0adf7df` main/작업 브랜치 push, OpenNext production build/TypeScript 성공. Worker `713f56d1-6543-49b3-bd5c-458c9bbb0936` 배포. 운영 홈에서 요금 비교 직전 배너 문구/색상/조건 안내 실제 렌더링 확인. 인증된 advance 호출 HTTP 200, secondReview idle 확인. DB RLS/trigger/minute cron 모두 true. 2차 자동 발송 없음. 새 실제 고객 입력의 자동 작성 품질은 아직 검증 전이며 유료 합성 평가 미실행. 로컬 3001 개발 서버 재시작.
+
+## 2026-10-20 — Claude: /pro/create(처음부터 작성) 입체 카드 디자인 + 한 줄 정리
+
+- 요청(민수오빠): 운영 /pro/create가 애매하고 글자가 어중간하게 두 줄로 접힘 → 최대한 한 줄, 입체감 있고 깔끔한 클로드 스타일. 공유 폴더 로컬(3001)에서 먼저 확인 후 "디자인 좋아, origin/main 기준 배포 준비" 승인.
+- Branch: `claude/create-polish-20261020` (origin/main `dbbb180` 기준 격리 worktree `.claude/worktrees/create-polish`). 아직 푸시·배포 안 함.
+- Files: `src/components/pro-create-wizard.tsx`(사이드바 짧은 이름 `short`: 지원 공고/회사·직무/내 자료, main에 `data-pro-polish`·`data-create-polish`, 진행 막대 div 1개; main의 `data-site-header`·`data-brand`는 유지), `src/components/pro-create-wizard.module.css`(파일 끝에 `data-create-polish` 블록 추가만).
+- 디자인: 따뜻한 바탕+떠 있는 흰 카드(겹 그림자), 진한 초록 사이드바→흰 카드+세로 진행선, 진행 막대, 입체 버튼·말투 선택 카드, 글자 9~11px→12~15px. 채용공고 상자 안 구역번호(1)·끌어다놓기 안내는 이 페이지에서만 숨김(공용 컴포넌트는 안 건드림). 헤더·로고는 공용 `site-header-modern.css`에 맡김(로컬 공유 폴더판의 헤더 규칙은 운영 로고 font-size:0 처리를 깨서 이 브랜치에선 뺌).
+- Validation: 공유 폴더 3001 dev에서 1320px 5단계 제목·설명·사이드바 한 줄, 375px 가로 넘침 0 확인. 이 브랜치: `tsc --noEmit` 통과, ESLint 통과, vitest 254파일 통과 / 2파일 실패(apps/mobile analytics, src/server/mobile — Expo 의존성 없는 이 PC 고질, 무관). 운영 헤더 조합 화면은 이 worktree에서 dev로 직접 보지는 않음.
+- Rollback: 이 커밋 revert, 또는 main의 두 data 속성만 제거.

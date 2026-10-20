@@ -51,9 +51,9 @@ export function ProCreateWizard() {
 
   const guidedSteps = useMemo(() => buildGuidedSteps(draft), [draft]);
   const intro = [
-    { id: "posting", title: "지원할 공고가 있나요?", help: "있으면 더 맞춤으로 작성합니다. 아직 없다면 건너뛰어도 됩니다." },
-    { id: "target", title: "희망 회사와 직무를 알려주세요.", help: "모르면 비워도 됩니다. 예: 고객응대, 사무보조, 생산관리" },
-    { id: "materials", title: "가진 자료가 있으면 올려주세요.", help: "이력서도 자격증도 없어도 됩니다. 기억나는 걸 아래에 대충 적어두면 다음 질문이 쉬워집니다." },
+    { id: "posting", short: "지원 공고", title: "지원할 공고가 있나요?", help: "있으면 더 맞춤으로 작성합니다. 아직 없다면 건너뛰어도 됩니다." },
+    { id: "target", short: "회사·직무", title: "희망 회사와 직무를 알려주세요.", help: "모르면 비워도 됩니다. 예: 고객응대, 사무보조, 생산관리" },
+    { id: "materials", short: "내 자료", title: "가진 자료가 있으면 올려주세요.", help: "이력서도 자격증도 없어도 됩니다. 기억나는 걸 아래에 대충 적어두면 다음 질문이 쉬워집니다." },
   ];
   const total = intro.length + guidedSteps.length + 1;
   const current = Math.min(stepIndex, total - 1);
@@ -118,7 +118,10 @@ export function ProCreateWizard() {
           ? Boolean(company.trim() || role.trim())
           : Boolean(materialAttachments.length || notes.trim() || freeformAttachments.length);
 
-  return <main className={styles.page}>
+  // data-pro-polish reuses the shared input components' tidy layer;
+  // data-create-polish is this page's own layered-card design (bottom of the
+  // CSS file). Removing both attributes restores the previous look.
+  return <main className={styles.page} data-pro-polish="" data-create-polish="">
     <header data-site-header>
       <Link href="/" className={styles.brand} data-brand><span>M</span>MOOA <b>Resume</b></Link>
       <small>PRO · 처음부터 작성</small>
@@ -129,7 +132,7 @@ export function ProCreateWizard() {
         <b>작성 진행</b>
         {intro.map((item, index) => (
           <button key={item.id} data-active={index === current} data-done={index < current} onClick={() => setStepIndex(index)}>
-            <span>{index < current ? <Check /> : index + 1}</span>{item.title.replace(/[?.].*$/, "")}
+            <span>{index < current ? <Check /> : index + 1}</span>{item.short}
           </button>
         ))}
         {/* The interview is many steps; listing every one would bury the shape
@@ -150,6 +153,7 @@ export function ProCreateWizard() {
             because you could not start. The five stages are the real shape;
             the interview's own position is shown in the sidebar. */}
         <small>처음부터 작성 · {stage + 1}단계 / {intro.length + 2}단계{guidedStep && ` · 질문 ${guidedIndex + 1}/${guidedSteps.length}`}</small>
+        <div className={styles.progressBar} aria-hidden="true"><i style={{ width: `${((stage + 1) / (intro.length + 2)) * 100}%` }} /></div>
         <h1>{heading.title}</h1>
         <p>{heading.help}</p>
 

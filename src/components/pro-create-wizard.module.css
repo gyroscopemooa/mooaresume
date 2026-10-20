@@ -65,3 +65,105 @@
   .layout aside button{width:100%}
   .layout h1{font-size:22px;text-wrap:balance}
 }
+
+/* ── 입체 카드 디자인 (data-create-polish) — 2026-10-20 ─────────────────────
+   따뜻한 바탕 위에 흰 카드가 살짝 떠 있는 깔끔한 구성. 진한 초록 사이드바를
+   흰 카드 + 세로 진행선으로 바꾸고, 글자는 한 줄에 들어가게 짧게·읽히게 키웁니다.
+   main의 data-create-polish(와 data-pro-polish)를 빼면 이전 모습으로 돌아갑니다. */
+.page[data-create-polish]{
+  --pp-ink:#1d2420;--pp-text:#3d4742;--pp-muted:#6b736e;--pp-faint:#959b97;
+  --pp-line:#ebe9e3;--pp-field:#dedbd3;--pp-green:#176b4a;--pp-mint:#eef6f1;
+  --pp-eyebrow:11.5px;--pp-meta:12px;--pp-help:13px;--pp-input:14px;--pp-label:13px;--pp-title:16px;
+  --pp-head-gap:16px;--pp-r-field:14px;--pp-r-box:14px;
+  --pp-focus:0 0 0 4px rgba(23,107,74,.10);
+  --cp-shadow:0 1px 2px rgba(28,25,20,.04),0 4px 12px -2px rgba(28,25,20,.05),0 18px 40px -16px rgba(28,25,20,.12);
+  --cp-shadow-sm:0 1px 2px rgba(28,25,20,.05),0 2px 6px -1px rgba(28,25,20,.05);
+  background:#f6f5f1;color:var(--pp-ink);
+}
+/* 헤더 막·로고는 공용 site-header-modern.css(data-site-header)가 맡습니다.
+   여기서 글자 크기를 주면 로고의 font-size:0 처리가 깨져 이름이 두 번 보입니다. */
+.page[data-create-polish]>header small{padding:6px 12px;border-radius:999px;background:var(--pp-mint);font-size:12px;letter-spacing:-.01em;white-space:nowrap}
+
+.page[data-create-polish] .layout{grid-template-columns:220px minmax(0,760px);gap:28px;width:min(1040px,calc(100% - 40px));margin:40px auto 64px}
+
+/* 사이드바: 흰 카드 + 세로 진행선 */
+.page[data-create-polish] .layout aside{position:sticky;top:96px;padding:22px 16px 18px;border:1px solid rgba(28,25,20,.06);border-radius:20px;background:#fff;color:var(--pp-ink);box-shadow:var(--cp-shadow)}
+.page[data-create-polish] .layout aside>b{display:block;margin:0 8px 10px;color:var(--pp-faint);font-size:12px;font-weight:700;letter-spacing:.02em}
+.page[data-create-polish] .layout aside button{position:relative;gap:12px;margin-top:2px;padding:10px;border-radius:12px;color:var(--pp-muted);font-size:14px;font-weight:600;white-space:nowrap;transition:background .15s,color .15s}
+.page[data-create-polish] .layout aside button:hover{background:#f6f5f1;color:var(--pp-ink)}
+/* 번호 사이를 잇는 세로선 */
+.page[data-create-polish] .layout aside button:not(:last-of-type)::after{content:"";position:absolute;left:21px;top:36px;width:2px;height:12px;border-radius:2px;background:#ebe9e3}
+.page[data-create-polish] .layout aside button[data-done=true]::after{background:#bcdccb}
+.page[data-create-polish] .layout aside span{flex:none;width:24px;height:24px;border:1.5px solid #dedbd3;background:#fff;color:var(--pp-faint);font-size:11.5px;font-weight:700;box-sizing:border-box}
+.page[data-create-polish] .layout aside button[data-done=true]{color:var(--pp-text)}
+.page[data-create-polish] .layout aside button[data-done=true] span{border-color:transparent;background:var(--pp-mint);color:var(--pp-green)}
+.page[data-create-polish] .layout aside button[data-active=true]{background:var(--pp-mint);color:var(--pp-green);font-weight:800}
+.page[data-create-polish] .layout aside button[data-active=true] span{border-color:transparent;background:var(--pp-green);color:#fff;box-shadow:0 3px 8px -2px rgba(23,107,74,.5)}
+.page[data-create-polish] .layout aside svg{width:12px;height:12px;stroke-width:3}
+.page[data-create-polish] .layout aside em{color:var(--pp-faint);font-size:11.5px;font-weight:700}
+.page[data-create-polish] .layout aside button[data-active=true] em{color:var(--pp-green)}
+.page[data-create-polish] .layout aside p{margin:16px 8px 0;padding-top:14px;border-top:1px solid var(--pp-line);color:var(--pp-faint);font-size:12px;line-height:1.65;word-break:keep-all;text-wrap:balance}
+
+/* 본문 카드 */
+.page[data-create-polish] .layout>section{padding:40px 44px 32px;border:1px solid rgba(28,25,20,.06);border-radius:24px;background:#fff;box-shadow:var(--cp-shadow)}
+.page[data-create-polish] .layout>section>small{display:block;color:var(--pp-green);font-size:13px;font-weight:700;letter-spacing:-.005em}
+.page[data-create-polish] .progressBar{height:4px;margin:12px 0 22px;border-radius:99px;background:#efede8;overflow:hidden}
+.page[data-create-polish] .progressBar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#1f8a5f,#176b4a);transition:width .35s ease}
+.page[data-create-polish] .layout h1{margin:0 0 10px;font-size:28px;font-weight:700;line-height:1.3;letter-spacing:-.025em;word-break:keep-all;text-wrap:balance}
+.page[data-create-polish] .layout h1+p{margin:0 0 28px;color:var(--pp-muted);font-size:14.5px;line-height:1.65;word-break:keep-all;text-wrap:balance}
+
+/* 채용공고 입력 상자: 카드 안에 한 겹 들어간 면. 구역 번호(1)는 단계 번호와
+   겹쳐서 숨기고, 첨부 버튼과 같은 말을 반복하는 끌어다 놓기 안내도 숨깁니다. */
+.page[data-create-polish] .layout>section>section{padding:20px 20px 18px;border:1px solid var(--pp-line);border-radius:18px;background:#fbfaf8}
+.page[data-create-polish] .layout>section>section>div:first-child>div>span::before{display:none}
+.page[data-create-polish] .layout>section>section>div:first-child>small{white-space:nowrap}
+.page[data-create-polish] .layout>section>section>div:nth-of-type(2){background:#fff;box-shadow:var(--cp-shadow-sm)}
+.page[data-create-polish] .layout>section>section>div:nth-of-type(2)>p:first-of-type{display:none}
+/* 안내문 두 줄이 스크롤 없이 다 보이는 높이 */
+.page[data-create-polish] .layout>section>section textarea{min-height:112px}
+
+/* 입력칸(회사·직무) */
+.page[data-create-polish] .layout>section>label{gap:8px;margin:0 0 16px;color:var(--pp-text);font-size:13px;font-weight:700}
+.page[data-create-polish] .layout>section>label input{padding:14px 16px;border-color:var(--pp-field);border-radius:14px;background:#fff;font-size:15px;box-shadow:var(--cp-shadow-sm);outline:0;transition:border-color .15s,box-shadow .15s}
+.page[data-create-polish] .layout>section>label input:focus{border-color:var(--pp-green);box-shadow:var(--pp-focus)}
+
+/* 안내 상자들 */
+.page[data-create-polish] .hint{margin:0 0 20px;padding:14px 16px;border:1px solid #dcebe2;border-radius:14px;background:var(--pp-mint);color:#38554a;font-size:13px;line-height:1.7;word-break:keep-all}
+.page[data-create-polish] .blocked{padding:14px 16px;border-radius:14px;font-size:13px}
+.page[data-create-polish] .blocked button{padding:8px 13px;border-radius:10px;font-size:12px}
+.page[data-create-polish] .safe{align-items:center;gap:7px;margin-top:20px;color:var(--pp-muted);font-size:13px}
+.page[data-create-polish] .safe svg{width:15px}
+
+/* 말투 선택: 떠 있는 선택 카드 */
+.page[data-create-polish] .styles{gap:12px}
+.page[data-create-polish] .styles button{flex:1;justify-content:center;padding:18px 14px;border:1.5px solid var(--pp-line);border-radius:16px;background:#fff;color:var(--pp-text);font-size:14px;box-shadow:var(--cp-shadow-sm);transition:transform .15s,box-shadow .15s,border-color .15s}
+.page[data-create-polish] .styles button:hover{transform:translateY(-1px);box-shadow:var(--cp-shadow)}
+.page[data-create-polish] .styles button[data-active=true]{border-color:var(--pp-green);background:var(--pp-mint);color:var(--pp-green);box-shadow:0 0 0 3px rgba(23,107,74,.10)}
+
+/* 하단: 구분선 + 입체 버튼 */
+.page[data-create-polish] .layout>section>footer{margin-top:32px;padding-top:24px;border-top:1px solid var(--pp-line)}
+.page[data-create-polish] .layout>section>footer button{min-width:112px;padding:13px 20px;border:1px solid var(--pp-field);border-radius:14px;background:#fff;color:var(--pp-text);font-size:14px;box-shadow:var(--cp-shadow-sm);transition:transform .15s,box-shadow .15s}
+.page[data-create-polish] .layout>section>footer button:last-child{border-color:#145c40;background:linear-gradient(180deg,#1f7d55,#166443);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 6px 16px -6px rgba(23,107,74,.6)}
+.page[data-create-polish] .layout>section>footer button:not(:disabled):hover{transform:translateY(-1px)}
+.page[data-create-polish] .layout>section>footer button:last-child:not(:disabled):hover{box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 10px 22px -8px rgba(23,107,74,.65)}
+.page[data-create-polish] .layout>section>footer button:disabled{box-shadow:none;opacity:.4}
+.page[data-create-polish] .layout>section>footer svg{width:15px}
+.page[data-create-polish] .status{color:var(--pp-faint);font-size:12.5px;white-space:nowrap}
+
+@media(max-width:760px){
+  .page[data-create-polish]>header small{padding:5px 10px;font-size:11px}
+  .page[data-create-polish] .layout{grid-template-columns:minmax(0,1fr);gap:14px;width:calc(100% - 32px);margin:16px auto 40px}
+  .page[data-create-polish] .layout aside{position:static;padding:8px;border-radius:16px}
+  .page[data-create-polish] .layout aside button{margin:0}
+  .page[data-create-polish] .layout aside button::after{display:none}
+  /* 위 data-create-polish의 display:block이 모바일 숨김을 덮어 칩이 화면 밖으로 밀렸습니다. */
+  .page[data-create-polish] .layout aside>b,.page[data-create-polish] .layout aside p{display:none}
+  /* 좁은 화면에선 상자 안의 상자를 풀어 글자 폭을 확보하고, 단어 중간에서 줄이 끊기지 않게 합니다. */
+  .page[data-create-polish] .layout>section>section{padding:0;border:0;background:transparent;word-break:keep-all}
+  .page[data-create-polish] .layout>section>section>div:first-child>small{align-self:flex-start;margin-top:-6px}
+  .page[data-create-polish] .layout>section{padding:24px 18px 20px;border-radius:20px}
+  .page[data-create-polish] .layout h1{font-size:23px}
+  .page[data-create-polish] .layout h1+p{margin-bottom:22px;font-size:14px}
+  .page[data-create-polish] .layout>section>footer{margin-top:24px;padding-top:18px}
+  .page[data-create-polish] .layout>section>footer button{min-width:88px;padding:12px 14px}
+}
