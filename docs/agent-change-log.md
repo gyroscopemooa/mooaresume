@@ -8508,3 +8508,5 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 배포 범위: 이 격리 브랜치의 최근 첨삭 개선 및 수신자 제한 전달만. 기존 루트 작업/다른 에이전트 변경은 포함하지 않는다. 기준 b1b46d4. 검증·커밋·배포 결과는 후속 기록한다.
 - 서명 키는 관리자 비밀번호와 분리된 신규 `SECOND_REVIEW_SIGNING_SECRET`를 서버 secret으로 생성한다(기존 자격증명 변경 없음). 결과 전달 경로에만 외부 추적 차단 CSP 및 자체 analytics 제외를 적용한다.
 - 사용자 추가 요청에 따라 메일 제목에 ‘추가 비용 없는 무료 2차 첨삭본’, 본문에 별도 결제가 필요 없음을 명시한다.
+- Validation/outcome: 관련 25파일 423테스트, typecheck, 대상 ESLint 및 OpenNext 운영 빌드 통과. 구현 커밋 `ab64c1f`를 main 및 작업 브랜치에 fast-forward push했다. Worker `mooaresume` 버전 `04abc15d-82e3-4ab7-8fc8-5fd206026f2f` 배포 완료.
+- 운영 확인: 비로그인 결과 링크가 로그인 화면만 제공하고 본문을 노출하지 않음, no-store/no-referrer/CSP, 비인증 발송 요청 401 확인. 승인된 테스트 주소 한 곳에 발송하여 제공자 메시지 ID 수신(접수 성공). 별도 제공자 상태 조회는 401이므로 실제 받은편지함 도착 여부는 미확인이며 중복 발송하지 않는다. 기존 고객 결과 변경·실제 고객 발송 없음.
