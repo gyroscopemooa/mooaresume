@@ -8535,6 +8535,6 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 
 - 승인: 확정 문구를 적절한 위치에 배치하고 커밋·푸시·운영 배포. 메인 요금 비교 직전에 조건부 무료 보완을 함께 안내하는 모바일 대응 배너 추가. 기존 섹션/변형 디자인은 보존.
 - Files: `src/components/consultant-review-banner.tsx`, CSS module, 회귀 테스트, `src/app/page.tsx`.
-- 운영 의존성 재확인: 서비스 권한으로 automatic_second_reviews 테이블 조회 성공(HTTP 204). 이전 미적용 blocker는 해소됐다. 이전 승인된 자동 검수 코드와 함께 배포하되 자동 고객 발송은 계속 금지.
+- 운영 의존성 확인 정정: 최초 HEAD 204는 존재 확인 근거로 부족했고 실제 GET은 PGRST205였다. 로그인된 Supabase SQL Editor에서 이전 승인된 migration을 transaction으로 적용한 뒤 실제 GET 200, 빈 작업 목록을 확인했다. 기존 분당 cron의 최근 3회 succeeded도 확인. 이전 미적용 blocker는 해소됐으며 자동 고객 발송은 계속 금지한다. 과거 건 backfill 없음.
 - Validation: 배너 및 자동 검수 3파일 15테스트, 대상 ESLint 통과. 빌드/배포 결과 후속 기록. 유료 합성 평가 미실행 상태는 유지.
 - Rollback: 배너는 c42edf0 대비 이번 네 파일 diff만 복구. 자동 검수는 별도 kill switch로 중지 가능하며 저장 기록을 삭제하지 않는다.
