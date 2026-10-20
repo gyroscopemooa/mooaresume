@@ -12,6 +12,7 @@ import { LandingEntry } from "@/components/landing-entry";
 import { HomePromoVideo } from "@/components/home-promo-video";
 import { AppLaunchBanner } from "@/components/app-launch-banner";
 import { PricingComparison } from "@/components/pricing-comparison";
+import { ConsultantReviewBanner } from "@/components/consultant-review-banner";
 import { LandingConsistency } from "@/components/landing-consistency";
 import { LandingConsistencyB } from "@/components/landing-consistency-b";
 import { isFinalEnabled } from "@/domain/final-availability";
@@ -234,6 +235,7 @@ export default function HomePage() {
         <Link href="/career" className={careerCtaStyles.cta}>무료 커리어 검사 <ArrowRight /></Link>
       </section>
 
+      <ConsultantReviewBanner />
       <PricingComparison />
 
       {/* 세 번째 FINAL 소개 자리(히어로 링크·예시 카드·기능 목록에 이어). 가격표를 막 본 사람에게

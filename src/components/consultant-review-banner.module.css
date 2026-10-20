@@ -1,0 +1,18 @@
+.banner { display: flex; align-items: center; gap: 24px; margin-block: 40px; padding: 32px; border: 1px solid #cbded5; border-radius: 20px; background: #edf6f0; color: #173e30; }
+.icon { display: grid; place-items: center; flex: 0 0 56px; height: 56px; border-radius: 16px; background: #d9ebdf; }
+.icon svg { width: 28px; height: 28px; }
+.copy { flex: 1; min-width: 0; }
+.label { font-size: 12px; font-weight: 700; color: #34624c; }
+.copy h2 { margin: 8px 0 12px; font-size: clamp(20px, 2.3vw, 28px); line-height: 1.45; letter-spacing: -.04em; word-break: keep-all; }
+.copy p { margin: 0; max-width: 760px; font-size: 15px; line-height: 1.8; word-break: keep-all; }
+.copy .note { margin-top: 12px; font-size: 12px; color: #4d685a; }
+.badge { flex-shrink: 0; padding: 16px 20px; border-radius: 12px; background: #fff; color: #276048; font-size: 13px; line-height: 1.8; text-align: center; }
+@media (max-width: 640px) {
+  .banner { align-items: flex-start; flex-wrap: wrap; gap: 16px; padding: 24px 20px; }
+  .icon { flex-basis: 40px; height: 40px; border-radius: 12px; }
+  .icon svg { width: 24px; height: 24px; }
+  .copy { flex-basis: calc(100% - 56px); }
+  .copy h2 { font-size: 21px; }
+  .badge { margin-left: 56px; padding: 8px 14px; }
+  .badge br { display: none; }
+}
