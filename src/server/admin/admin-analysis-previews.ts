@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { adminAnalysisPreviewInputSchema, type AdminAnalysisPreview, type AdminAnalysisPreviewInput } from "@/domain/admin-analysis-preview";
+import { adminAnalysisPreviewInputSchema, latestAdminAnalysisPreviewSummaryByRun, type AdminAnalysisPreview, type AdminAnalysisPreviewInput, type AdminAnalysisPreviewSummary } from "@/domain/admin-analysis-preview";
 import { serviceClient } from "./admin-repository";
 
 const rowSchema = z.object({
@@ -30,6 +30,22 @@ export async function listAdminAnalysisPreviews(analysisRunId: string): Promise<
     .eq("analysis_run_id", analysisRunId).order("created_at", { ascending: false }).limit(20);
   if (error) throw new Error("ADMIN_PREVIEW_STORAGE_UNAVAILABLE");
   return (data ?? []).map(row => present(rowSchema.parse(row)));
+}
+
+export async function listLatestAdminAnalysisPreviewSummaries(analysisRunIds: string[]): Promise<Record<string, AdminAnalysisPreviewSummary>> {
+  if (analysisRunIds.length === 0) return {};
+  const { data, error } = await serviceClient().from("admin_analysis_previews")
+    .select("id,analysis_run_id,title,created_at")
+    .in("analysis_run_id", analysisRunIds)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error("ADMIN_PREVIEW_STORAGE_UNAVAILABLE");
+  const summaryRow = rowSchema.pick({ id: true, analysis_run_id: true, title: true, created_at: true });
+  const summaries: AdminAnalysisPreviewSummary[] = [];
+  for (const value of data ?? []) {
+    const row = summaryRow.parse(value);
+    summaries.push({ id: row.id, analysisRunId: row.analysis_run_id, title: row.title, createdAt: row.created_at });
+  }
+  return latestAdminAnalysisPreviewSummaryByRun(summaries);
 }
 
 export async function createAdminAnalysisPreview(input: AdminAnalysisPreviewInput): Promise<AdminAnalysisPreview> {

@@ -39,9 +39,9 @@ export function AdminAnalysisPreviews({ runId, questions }: { runId: string; que
     finally { setBusy(false); }
   }
 
-  return <section className={styles.panel}>
-    <h2>관리자 전용 개선본</h2>
-    <p>고객에게 전달된 결과·결제·이용권은 바뀌지 않습니다. 이 화면과 API는 관리자 인증에서만 접근할 수 있습니다.</p>
+  return <section className={styles.panel} id="secondary-review">
+    <div className={styles.reviewHead}><div><span>CONSULTANT AI REVIEW</span><h2>2차 첨삭본</h2></div><strong>검토 초안 · 고객 미전달</strong></div>
+    <p>완성된 AI 첨삭을 컨설턴트 관점에서 한 번 더 확인한 개선본입니다. 고객에게 전달된 기존 결과·결제·이용권은 바뀌지 않으며, 현재는 관리자만 볼 수 있습니다.</p>
     <button type="button" disabled={busy} onClick={refresh}>개선본 기록 조회</button>
     {loaded && <div className={styles.experiment}>
       <label>이름<input value={title} maxLength={120} onChange={event => setTitle(event.target.value)} /></label>
@@ -54,9 +54,9 @@ export function AdminAnalysisPreviews({ runId, questions }: { runId: string; que
     </div>}
     {error && <p role="alert">{error}</p>}
     {previews.map(preview => <article className={styles.experiment} key={preview.id}>
-      <h3>{preview.title}</h3><p>{new Date(preview.createdAt).toLocaleString("ko-KR")} · 고객 미적용</p>
+      <div className={styles.savedHead}><div><span>SECOND REVIEW</span><h3>{preview.title}</h3></div><strong>{new Date(preview.createdAt).toLocaleString("ko-KR")} · 고객 미전달</strong></div>
       {questions.map(question => <div className={styles.question} key={question.order}><h4>{question.order}. {question.title}</h4><div className={styles.columns}><div><h5>고객 제공본</h5><p>{question.delivered}</p></div><div><h5>관리자 개선본</h5><p>{preview.revisedAnswers.find(answer => answer.questionOrder === question.order)?.revisedAnswer}</p></div></div></div>)}
-      {preview.notes && <p>{preview.notes}</p>}
+      {preview.notes && <aside className={styles.reviewNote}><b>컨설턴트 검토 메모</b><p>{preview.notes}</p></aside>}
     </article>)}
   </section>;
 }

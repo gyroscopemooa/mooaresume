@@ -17,3 +17,11 @@ export const adminAnalysisPreviewInputSchema = z.object({
 
 export type AdminAnalysisPreviewInput = z.infer<typeof adminAnalysisPreviewInputSchema>;
 export type AdminAnalysisPreview = AdminAnalysisPreviewInput & { id: string; createdAt: string; updatedAt: string };
+export type AdminAnalysisPreviewSummary = Pick<AdminAnalysisPreview, "id" | "analysisRunId" | "title" | "createdAt">;
+
+export function latestAdminAnalysisPreviewSummaryByRun(items: AdminAnalysisPreviewSummary[]): Record<string, AdminAnalysisPreviewSummary> {
+  return [...items].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).reduce<Record<string, AdminAnalysisPreviewSummary>>((latest, item) => {
+    if (!latest[item.analysisRunId]) latest[item.analysisRunId] = item;
+    return latest;
+  }, {});
+}

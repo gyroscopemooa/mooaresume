@@ -8443,3 +8443,10 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Production DB: 사용자가 Supabase SQL Editor에서 `admin_analysis_previews` 테이블·RLS·service_role 전용 권한·인덱스를 직접 적용했다고 확인했다. CLI migration ledger에는 기록되지 않았으므로 저장소 migration은 수동 적용 SQL과 동일하게 `IF NOT EXISTS`를 사용해 향후 정상 CLI 적용 시 재실행 충돌을 피한다.
 - Deployment: commits `293b2a8`, `d23a52b`, `c72523a`를 `https://github.com/gyroscopemooa/mooaresume.git` main에 push했다. OpenNext production build와 TypeScript가 통과했고 Cloudflare Worker version `df150f79-96dc-459a-ace2-a548a7c2ccfd`를 배포했다. 첫 빌드는 격리 worktree의 독립 `node_modules` 부재로 배포 전 중단됐으며 `npm ci` 후 정상 완료했다.
 - Admin preview: analysis run `04911e27-02fe-4dbd-8094-15aeca4203d8`에 `제출용 문체·중복·작성메모 개선본`을 저장했다. 원문 2,300자 메모를 목표 700자 수준의 합니다체 제출본으로 재구성하고, 중복 문단·입력 항목명·미확정 근무기간 메모를 제거했다. 운영 관리자 화면에서 저장 시각과 `고객 미적용`, 기존 제공본과 개선본 병렬 표시를 확인했다.
+
+## 2026-10-20 — Codex: 2차 첨삭본 운영 목록 연결 및 가독성 보정
+
+- Status: 구현 중. 메일 발송과 고객 공개는 이번 범위에서 하지 않는다.
+- User intent: 컨설턴트 AI가 완료 결과를 다시 확인해 보완한 건을 향후 고객에게 2차 첨삭본으로 전달한다. 현재 관리자 상세의 숨은 기록이 아니라 `전체 첨삭` 목록에서 원본 실행과 연결된 별도 상태로 보여야 하며, 결과 화면처럼 읽기 쉬워야 한다.
+- Intended changes: 관리자 전용 개선본이 있는 실행을 전체 첨삭 표와 요약 카드에 `2차 첨삭 · 검토 초안 · 고객 미전달`로 표시하고 상세로 바로 이동시킨다. 상세 비교 카드의 고정 흰 배경/낮은 대비를 관리자 테마 변수로 교체한다. 기존 고객 결과와 저장 데이터는 변경하지 않는다.
+- Future boundary: 이메일 문구와 실제 고객 전달/공개 상태 전환은 별도 승인·구현 대상이다. 이번에는 발송 버튼이나 고객 노출 경로를 만들지 않는다.

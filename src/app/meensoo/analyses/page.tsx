@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listAnalyses, type AdminAnalysis, type AdminAnalysisAttempt } from "@/server/admin/admin-repository";
+import { listLatestAdminAnalysisPreviewSummaries } from "@/server/admin/admin-analysis-previews";
 import { readModelPricingFromEnv, RISK_LABEL, type RunCostRisk } from "@/domain/analysis-cost";
 import styles from "../admin.module.css";
 import { MODE_LABEL, kst } from "../format";
@@ -137,6 +138,8 @@ function AttentionList({ items }: { items: AdminAnalysis[] }) {
 
 export default async function AnalysesPage() {
   const analyses = await listAnalyses(200);
+  const previewByRun = await listLatestAdminAnalysisPreviewSummaries(analyses.map(analysis => analysis.id));
+  const secondReviewCount = Object.keys(previewByRun).length;
   const stuck = analyses.filter((analysis) => analysis.status === "PENDING" || analysis.status === "RUNNING");
   const failed = analyses.filter((analysis) => analysis.status === "FAILED");
 
@@ -180,6 +183,11 @@ export default async function AnalysesPage() {
           <strong>{attention.length}건</strong>
           <small>원가 초과 · 마진 얇음 · 무료 과다</small>
         </div>
+        <div className={styles.card}>
+          <span>2차 첨삭</span>
+          <strong>{secondReviewCount}건</strong>
+          <small>컨설턴트 검토 초안 · 고객 미전달</small>
+        </div>
       </div>
 
       {!pricingConfigured && (
@@ -206,7 +214,7 @@ export default async function AnalysesPage() {
                 <tr>
                   <th>시작</th><th>신청자</th><th>회사</th><th>상품 · 단계</th>
                   <th>상태</th><th>완료</th><th>모델 · 프롬프트</th>
-                  <th>시도 내역</th><th>원가 · 마진</th><th></th>
+                  <th>시도 내역</th><th>원가 · 마진</th><th>2차 첨삭</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -225,6 +233,16 @@ export default async function AnalysesPage() {
                     <td className={styles.mono}>{analysis.model ?? "—"}<br />{analysis.promptVersion ?? ""}</td>
                     <td><AttemptList attempts={analysis.attempts} /></td>
                     <td><CostCell analysis={analysis} /></td>
+                    <td>
+                      {previewByRun[analysis.id] ? (
+                        <div className={styles.secondReviewCell}>
+                          <span className={`${styles.pill} ${styles.pillWarn}`}>검토 초안</span>
+                          <strong>{previewByRun[analysis.id].title}</strong>
+                          <small>{kst(previewByRun[analysis.id].createdAt)} · 고객 미전달</small>
+                          <Link href={`/meensoo/analyses/${analysis.id}#secondary-review`}>2차 첨삭본 보기</Link>
+                        </div>
+                      ) : <span className={styles.mono}>—</span>}
+                    </td>
                     <td>{analysis.hasResult && <Link href={`/meensoo/analyses/${analysis.id}`}>결과 보기</Link>}</td>
                   </tr>
                 ))}

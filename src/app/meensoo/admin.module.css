@@ -409,6 +409,10 @@
 .costCell strong { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .costCell .pill { justify-self: start; }
 .costCell small { color: var(--admin-muted); font-size: 11px; line-height: 1.55; }
+.secondReviewCell { display: grid; gap: 5px; min-width: 190px; }
+.secondReviewCell strong { color: var(--admin-text); font-size: 12px; line-height: 1.45; }
+.secondReviewCell small { color: var(--admin-muted); font-size: 11px; line-height: 1.45; }
+.secondReviewCell a { color: var(--admin-accent); font-size: 12px; font-weight: 650; text-decoration: none; }
 
 /* 단가가 없을 때의 안내. 표 위에 한 줄로 두어, 금액 칸이 비어 있는 이유를
    찾아 헤매지 않게 합니다. */
