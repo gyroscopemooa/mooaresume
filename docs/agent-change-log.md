@@ -8431,3 +8431,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: typecheck 통과, ESLint 0 errors/기존 warnings 5개, 전용 Vitest 1개 통과, Next.js production build 통과. 로컬 브라우저에서 `/result/sample`의 `M` 엠블럼과 `무아레쥬메` 한글 로고를 시각 확인했고, 홈 요금표의 세 상품 모두 `부터`·포함 분량·초과요금이 접근성 트리와 화면에 표시됨을 확인했다. `/career`의 로컬 시각 검증은 격리 worktree에 공개 Supabase 환경변수가 없어 클라이언트 초기화 단계에서 중단됐지만 동일한 `data-site-header`/`data-brand` 공통 규칙 적용은 소스·타입·빌드로 확인했다.
 - Deployment: source commit `e15c6c4` pushed to `origin/main`; production Worker version `3287bdf8-b102-4a18-a92d-5731e917f5e0` deployed. 운영 `/result/sample`과 `/career`는 200 및 한글 브랜드 문자열 포함, 홈은 200 및 `5,900원부터`·`초과 7,000자당 2,900원` 반영을 확인했다. 첫 배포 시도는 로컬 Next 개발 프로세스가 `.open-next/assets`를 잠가 중단됐고, 해당 worktree의 확인된 개발 프로세스만 종료하고 생성물을 재생성해 성공했다.
 - Incident/recovery: 위 첫 운영 빌드는 격리 worktree에 공개 빌드 변수 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 없어 HTTP 200 응답 뒤 브라우저에서 Zod 초기화 오류와 공통 오류 화면이 발생했다. 기존 운영 환경 파일에서 `NEXT_PUBLIC_*` 항목만 프로세스 환경에 주입해 다시 빌드·배포했으며 서버 전용 비밀값은 복사하거나 출력하지 않았다. 복구된 production Worker version은 `f694eefc-8daf-44ae-a493-519e0ae1e892`이다. 새 브라우저 세션에서 `/`, `/result/sample`, `/career`의 실제 렌더링을 확인했고 `/career` 콘솔 error는 0건이었다. 잘못된 첫 Worker 버전은 rollback 대상으로 사용하지 않는다.
+## 2026-10-20 — Codex: 최근 PRO 처음부터 작성 결과 복구 및 관리자 전용 개선본
+
+- Status: 진행 중. 운영 배포·DB 변경 전이며 기존 고객 결과·결제·이용권은 보존한다.
+- Baseline: `origin/main` `dbbb180dedf079bb2324c239da0f1117cb90d270`, 별도 브랜치 `codex/recent-editing-remediation-20261020`.
+- 실제 근거: 2026-10-20 한국콘텐츠진흥원 PRO·CREATE 건에서 목표 700자에 2,292자 원문이 그대로 제공됐고, 결과는 `유지`인데 설명에는 `후보문 채택`이 남았다. 작성 메모와 중복 문단도 최종본에 유지됐다.
+- Intended transformation: CREATE/BUILD에서 실질적 작성 없이 원문을 유지하거나 목표 상한을 크게 넘긴 결과, 채택 상태와 설명이 모순되는 결과를 완료 처리하지 않는다. 해당 실행 ID에는 기존 결과를 변경하지 않는 관리자 전용 개선본을 별도로 표시한다.
+- Protected scope: 사용자에게 전달된 결과, 결제/이용권, 원본 Snapshot, 기존 관리자 첨삭 시험과 다른 에이전트 변경은 교체하지 않는다.
+- Validation: 관련 Vitest 3파일 74테스트, 전체 TypeScript, 대상 ESLint, `git diff --check` 통과. 실제 운영 migration·배포·관리자 저장은 사용자 승인 전 수행하지 않음.
+- Rollback: 이 항목에 기록될 좁은 검증/관리자 미리보기 변경만 되돌린다.

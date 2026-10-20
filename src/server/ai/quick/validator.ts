@@ -66,6 +66,7 @@ function sentenceKeys(text: string): string[] {
 }
 
 const compactLength = (value: string) => value.replace(/\s/g, "").length;
+const normalizedDraft = (value: string) => value.replace(/\s+/g, "").replace(/[\p{P}\p{S}]/gu, "");
 const numericTokens = (value: string) => new Set(value.match(/\d+(?:[.,]\d+)?%?/g) ?? []);
 const normalizeEvidence = (value: string) => value.replace(/\s+/g, " ").trim();
 const compactEvidence = (value: string) => normalizeEvidence(value).replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
@@ -128,9 +129,22 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
     // 원문이 비어 있는 문항(CREATE·BUILD가 채워 주는 자리)은 견줄 것이 없으니
     // 건너뜁니다.
     const originalLength = compactLength(question.answer);
+    const revisedLength = compactLength(revision.revisedAnswer);
+    if (request && (request.writingMode === "CREATE" || request.writingMode === "BUILD") && question.answer.trim()
+      && normalizedDraft(question.answer) === normalizedDraft(revision.revisedAnswer)) {
+      issues.push({
+        code: "ANSWER_TOO_SHORT",
+        message: `문항 ${question.order}은 ${request.writingMode === "CREATE" ? "처음부터 작성" : "내용 보완"}을 요청했지만 입력 메모가 그대로 반환되었습니다. 제출용 답변으로 재구성해야 합니다.`,
+      });
+    }
+    if (request && expandsToTargetLength(request) && question.targetLength > 0 && revisedLength > Math.ceil(question.targetLength * 1.15)) {
+      issues.push({
+        code: "ANSWER_TOO_SHORT",
+        message: `문항 ${question.order} 결과가 목표 ${question.targetLength}자를 크게 초과했습니다(${revisedLength}자). 핵심 사실을 보존해 허용 범위 안으로 다시 작성해야 합니다.`,
+      });
+    }
     if (request && expandsToTargetLength(request) && request.writingMode === "BUILD" && question.targetLength > 0) {
       const minimumBuildLength = Math.floor(question.targetLength * MIN_BUILD_TARGET_RATIO);
-      const revisedLength = compactLength(revision.revisedAnswer);
       if (revisedLength < minimumBuildLength) {
         issues.push({
           code: "ANSWER_TOO_SHORT",

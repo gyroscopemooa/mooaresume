@@ -152,6 +152,21 @@ describe("independent revision adoption", () => {
     const review = qualityTestReview(); review.questions[0].newError = true;
     expect(() => apply(review, request)).toThrow("EMPTY_FALLBACK");
   });
+  it("does not complete CREATE when the reviewed candidate was not actually rewritten", () => {
+    const request = { ...qualityTestRequest, product: "PRO" as const, writingMode: "CREATE" as const };
+    const review = qualityTestReview();
+    review.questions[0].meaningfulImprovement = false;
+    expect(() => apply(review, request, qualityTestCandidate(original))).toThrow("REQUIRED_REWRITE_REJECTED");
+  });
+  it("keeps a rejected BUILD candidate but does not describe it as adopted", () => {
+    const request = { ...qualityTestRequest, product: "PRO" as const, writingMode: "BUILD" as const };
+    const review = qualityTestReview();
+    review.questions[0].lostFactOrVoice = true;
+    const result = apply(review, request);
+    expect(result.revisionQuality?.decision).toBe("keep_current");
+    expect(result.output.editSummary?.[0]).toContain("입력한 글을 유지했습니다");
+    expect(result.output.editSummary?.[0]).not.toContain("채택");
+  });
   it("blocks unexplained score drops without silently raising the score", () => {
     const previous = createQuickAnalysisResult(qualityTestRequest, apply(qualityTestReview()));
     const request = { ...qualityTestRequest, documents: [{ kind: "cover_letter" as const, text: revised }], previousRevision: { runId: "old", relationship: "previous_revision" as const, result: previous } };

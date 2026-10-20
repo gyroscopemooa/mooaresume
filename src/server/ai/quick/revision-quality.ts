@@ -182,7 +182,8 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
     const previous = request.previousRevision?.relationship === "previous_revision" ? request.previousRevision.result.questions.find(p => p.order === q.order) : undefined;
     const reversal = previous && normalizeRevisionText(previous.originalAnswer) !== normalizeRevisionText(q.answer) && normalizeRevisionText(draft.revisedAnswer) === normalizeRevisionText(previous.originalAnswer);
     const previousErrorProven = Boolean(r.previousErrorQuote?.trim() && normalizeRevisionText(q.answer).includes(normalizeRevisionText(r.previousErrorQuote)));
-    return { q, r, draft, changed, acceptable: !changed || (quoted && noRegression && (!reversal || previousErrorProven) && r.meaningfulImprovement && !r.newError && !r.lostFactOrVoice && !r.reintroducedIssue && !r.preferenceOnly) };
+    const unchangedAllowed = request.writingMode === "POLISH";
+    return { q, r, draft, changed, acceptable: (!changed && unchangedAllowed) || (changed && quoted && noRegression && (!reversal || previousErrorProven) && r.meaningfulImprovement && !r.newError && !r.lostFactOrVoice && !r.reintroducedIssue && !r.preferenceOnly) };
   });
   // 문항 간 충돌 판정은 그 문제에 관여한 문항을 짚었을 때만 그 문항으로 좁힌다. 짚지 않았으면 예전처럼
   // 전부 되돌린다(어느 문항 탓인지 모르면 어느 쪽도 믿을 수 없다). 한 번의 판정으로 다섯 문항의 수정이
@@ -192,6 +193,11 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
   const accepted = (v: typeof verdicts[number]) => v.acceptable && !(review.crossQuestionRegression && (!crossScoped || crossOrders.has(v.q.order)));
   const adopt = verdicts.some(v => accepted(v) && v.changed);
   if (verdicts.some(v => !accepted(v) && !v.q.answer.trim())) throw new Error("REVISION_REVIEW_EMPTY_FALLBACK");
+  // CREATE sells a newly composed answer, not an assessment of the applicant's
+  // notes. Returning those notes unchanged is never a completed deliverable.
+  // BUILD may safely retain a non-empty draft while clearly reporting the
+  // unresolved issue, so its existing fallback remains available.
+  if (!adopt && request.writingMode === "CREATE") throw new Error("REVISION_REVIEW_REQUIRED_REWRITE_REJECTED");
   const revisions = verdicts.map((v) => { const { q, r, draft } = v; return ({
     ...draft,
     originalAnnotations: draft.originalAnnotations.filter((_, index) => r.validAnnotationIndexes.includes(index)),

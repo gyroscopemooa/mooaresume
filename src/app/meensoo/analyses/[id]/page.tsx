@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getAnalysis, type AdminAnalysisDetail } from "@/server/admin/admin-repository";
 import { ResultWorkspaceComplete } from "@/components/result-workspace-complete";
 import { AdminEditingExperiments } from "@/components/admin-editing-experiments";
+import { AdminAnalysisPreviews } from "@/components/admin-analysis-previews";
 import { resultDocumentSchema } from "@/domain/result-document";
 import styles from "../../admin.module.css";
 import { MODE_LABEL, kst } from "../../format";
@@ -169,6 +170,11 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
 
       <InputSnapshot detail={detail} />
       <AdminEditingExperiments runId={run.id} />
+      {questions.length > 0 && <AdminAnalysisPreviews runId={run.id} questions={questions.map((question, index) => ({
+        order: question.order ?? index + 1,
+        title: question.title ?? `문항 ${index + 1}`,
+        delivered: question.revisedAnswer?.trim() || question.originalAnswer?.trim() || "",
+      }))} />}
 
       {parsedResult.success && (
         <section className={styles.adminResultPreview}>

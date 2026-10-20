@@ -85,6 +85,34 @@ describe("내용 보완 목표 분량", () => {
     expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT")).toBe(false);
   });
 });
+
+describe("처음부터 작성 완료 조건", () => {
+  const memo = `[지원 계기]\n콘텐츠와 아티스트가 관객을 만나는 과정을 지원하고 싶습니다.\n\n[경험]\n${"매장 운영 경험을 정리한 작성 메모입니다. ".repeat(45)}`;
+  const request: AnalysisRequest = {
+    ...proRequest,
+    writingMode: "CREATE",
+    targetLength: 700,
+    questions: [{ id: "q1", title: "자유 문항", prompt: "자유롭게 작성하세요.", answer: memo, targetLength: 700 }],
+  };
+
+  it("작성 메모를 그대로 돌려주면 완료 처리하지 않는다", () => {
+    const issues = validateQuickAnalysis(request, output(memo, "콘텐츠와 아티스트"));
+    expect(issues.some(issue => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("입력 메모가 그대로"))).toBe(true);
+    expect(BLOCKING_VALIDATION_CODES.has("ANSWER_TOO_SHORT")).toBe(true);
+  });
+
+  it("목표보다 크게 긴 CREATE 결과를 완료 처리하지 않는다", () => {
+    const issues = validateQuickAnalysis(request, output(`${"지원 경험을 정리했습니다. ".repeat(100)}`, "콘텐츠와 아티스트"));
+    expect(issues.some(issue => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("목표 700자를 크게 초과"))).toBe(true);
+    expect(BLOCKING_VALIDATION_CODES.has("ANSWER_TOO_SHORT")).toBe(true);
+  });
+
+  it("목표 범위 안에서 새로 구성한 결과는 두 검사를 통과한다", () => {
+    const revised = `콘텐츠 지원 동기와 매장 운영 경험을 연결했습니다. ${"제공한 경험을 바탕으로 맡은 업무를 정확하게 수행하겠습니다. ".repeat(10)}`;
+    const issues = validateQuickAnalysis(request, output(revised, "콘텐츠와 아티스트"));
+    expect(issues.some(issue => issue.message.includes("입력 메모가 그대로") || issue.message.includes("목표 700자를 크게 초과"))).toBe(false);
+  });
+});
 describe("껍데기 첨삭", () => {
   const longAnswer = "가".repeat(1700);
   const output = (revised: string) => ({
