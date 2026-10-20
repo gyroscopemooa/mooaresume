@@ -35,11 +35,11 @@ const WRITING_MODE_INSTRUCTION: Record<AnalysisRequest["writingMode"], string> =
   // BUILD used to behave like POLISH: it read the materials and still left the
   // blank question blank. "내용 보완"이라는 이름값을 하도록 바꾼 결정은
   // docs/build-mode-fill-in-decision.md 참고.
-  BUILD: "작성 단계: 내용 보완. 질문에 답하는 데 빠진 설명과 근거를 제공된 사실로 실제 보완하세요. 기존 핵심 사실·말투는 유지하고 필요한 위치에 추가하세요. 분량만을 위한 덧붙임이나 불필요한 압축은 금지합니다. 이미 충실한 문항은 유지하고 그 이유를 설명하세요.",
+  BUILD: "작성 단계: 내용 보완. 질문에 답하는 데 빠진 설명과 근거를 제공된 사실로 실제 보완하세요. 기존 핵심 사실은 유지하고 필요한 위치에 추가하세요. 별도 말투 요청이 없다면 제출용 자기소개서에 맞게 '-습니다/-합니다'체로 통일하세요. 분량만을 위한 덧붙임이나 불필요한 압축은 금지합니다. 이미 충실한 문항은 유지하고 그 이유를 설명하세요.",
   // In this stage the "원문" is not a draft: it is the ordered notes the
   // applicant filled in on the guided screen. Treating it as prose to polish
   // returns the notes back almost unchanged.
-  CREATE: "작성 단계: 처음부터 작성. 각 문항의 원문은 완성된 글이 아니라 지원자가 단계별로 입력한 사실 메모입니다([지원 계기], [경험 ①] 같은 머리말이 붙어 있습니다). 메모와 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험)에 있는 사실을 근거로, 문항 질문에 답하는 완결된 자기소개서 문장을 새로 작성하세요. 메모 문장을 그대로 옮기지 말고, 단어 나열이나 짧은 조각이어도 완결된 문장으로 풀어 쓰세요. 메모에도 자료에도 없는 경험·자격·수치는 만들지 말고 확인 질문으로 남기세요.",
+  CREATE: "작성 단계: 처음부터 작성. 각 문항의 원문은 완성된 글이 아니라 지원자가 단계별로 입력한 사실 메모입니다([지원 계기], [경험 ①] 같은 머리말이 붙어 있습니다). 메모와 함께 제출된 지원자료(이력서·경력기술서·포트폴리오·추가 경험)에 있는 사실을 근거로, 문항 질문에 답하는 완결된 자기소개서 문장을 새로 작성하세요. 별도 말투 요청이 없다면 제출용 자기소개서에 맞게 '-습니다/-합니다'체로 일관되게 쓰세요. '경험 종류:', '내가 한 행동:', '별도 기입', '미정' 같은 입력 항목명과 작성 메모는 최종본에서 제거하세요. 같은 문장이나 문단을 반복하지 마세요. 메모 문장을 그대로 옮기지 말고, 단어 나열이나 짧은 조각이어도 완결된 문장으로 풀어 쓰세요. 메모에도 자료에도 없는 경험·자격·수치는 만들지 말고 확인 질문으로 남기세요.",
 };
 export const QUICK_RUBRIC_VERSION = "quick-rubric-2.0";
 export const QUICK_SCHEMA_VERSION = "1.0";

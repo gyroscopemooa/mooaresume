@@ -215,6 +215,14 @@ describe("다른 작성 단계는 그대로 유지된다", () => {
     expect(instructions).not.toContain("[임의 예시·교체 필요:");
   });
 
+  it("CREATE 결과를 제출용 합니다체로 만들고 입력 메모와 반복을 제거한다", () => {
+    const instructions = buildQuickAnalysisInstructions({ ...request, writingMode: "CREATE" });
+
+    expect(instructions).toContain("-습니다/-합니다");
+    expect(instructions).toContain("입력 항목명과 작성 메모는 최종본에서 제거");
+    expect(instructions).toContain("같은 문장이나 문단을 반복하지 마세요");
+  });
+
   it("CREATE에는 원문 문장 유지 규칙을 걸지 않는다", () => {
     // The memo is not prose to preserve; CREATE is told the opposite, and both
     // rules at once is a contradiction.

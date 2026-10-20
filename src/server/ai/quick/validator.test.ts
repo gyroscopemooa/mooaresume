@@ -112,6 +112,30 @@ describe("처음부터 작성 완료 조건", () => {
     const issues = validateQuickAnalysis(request, output(revised, "콘텐츠와 아티스트"));
     expect(issues.some(issue => issue.message.includes("입력 메모가 그대로") || issue.message.includes("목표 700자를 크게 초과"))).toBe(false);
   });
+
+  it("처음부터 작성 결과가 '-다/-한다'체로 남으면 제출 완료로 보지 않는다", () => {
+    const revised = `콘텐츠 산업의 성장 과정을 지원하고 싶다. 매장 운영 경험을 바탕으로 자료와 일정을 정확하게 관리한다. 맡은 업무를 책임감 있게 수행하겠다.`;
+    const issues = validateQuickAnalysis(request, output(revised, "콘텐츠와 아티스트"));
+    expect(issues.some(issue => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("-습니다/-합니다"))).toBe(true);
+  });
+
+  it("입력 항목명과 미완성 작성 메모가 남으면 제출 완료로 보지 않는다", () => {
+    const revised = `경험 종류: 아르바이트\n매장 운영 업무를 정확하게 수행했습니다. 정확한 근무 시작일과 종료일은 별도 기입.`;
+    const issues = validateQuickAnalysis(request, output(revised, "콘텐츠와 아티스트"));
+    expect(issues.some(issue => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("작성 메모"))).toBe(true);
+  });
+
+  it("한 문항 안에 같은 긴 문장이 반복되면 제출 완료로 보지 않는다", () => {
+    const repeated = "상품 정보 입력과 재고 확인을 정확하게 수행하며 매장 운영을 지원했습니다.";
+    const issues = validateQuickAnalysis(request, output(`${repeated} ${repeated}`, "콘텐츠와 아티스트"));
+    expect(issues.some(issue => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("같은 문장"))).toBe(true);
+  });
+
+  it("일관된 합니다체 결과는 문체 검사에 걸리지 않는다", () => {
+    const revised = `콘텐츠 산업의 성장 과정을 지원하고 싶습니다. 매장 운영 경험을 바탕으로 자료와 일정을 정확하게 관리합니다. 맡은 업무를 책임감 있게 수행하겠습니다.`;
+    const issues = validateQuickAnalysis(request, output(revised, "콘텐츠와 아티스트"));
+    expect(issues.some(issue => issue.message.includes("종결어미"))).toBe(false);
+  });
 });
 describe("껍데기 첨삭", () => {
   const longAnswer = "가".repeat(1700);

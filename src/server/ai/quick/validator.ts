@@ -56,6 +56,8 @@ const RATIO_FLOOR_CHARACTERS = 200;
  * 30자는 그 사이입니다: 관용구는 넘기고, 통째로 복사한 문장은 잡습니다.
  */
 const DUPLICATE_SENTENCE_MINIMUM = 30;
+const DRAFT_FIELD_LINE = /^\s*(?:경험 종류|소속[·ㆍ・]기간[·ㆍ・]역할|맡은 역할 및 업무|상황과 과제|내가 한 행동|결과와 배운 점)\s*:/m;
+const UNRESOLVED_DRAFT_NOTE = /(?:별도|추후)\s*기입|정확한\s+[^.\n]{0,30}\s*기입|작성\s*(?:필요|예정)|미정/;
 
 /** 문장 단위로 자르고, 비교에 방해되는 것(공백·문장부호)을 뗍니다. */
 function sentenceKeys(text: string): string[] {
@@ -63,6 +65,18 @@ function sentenceKeys(text: string): string[] {
     .split(/(?<=[.!?])\s+|\n+/)
     .map((sentence) => sentence.replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase())
     .filter((sentence) => sentence.length >= DUPLICATE_SENTENCE_MINIMUM);
+}
+
+function sentenceEndingStyles(text: string) {
+  const sentences = text.split(/(?<=[.!?])(?:\s+|$)|\n+/).map((sentence) => sentence.trim()).filter(Boolean);
+  let polite = 0;
+  let plain = 0;
+  for (const sentence of sentences) {
+    const body = sentence.replace(/[.!?]+$/, "").trim();
+    if (/(?:습니다|입니다|겠습니다|드립니다|합니다|됩니다|있습니다|없습니다)$/.test(body)) polite += 1;
+    else if (/(?:다|한다|했다|된다|싶다|있다|없다)$/.test(body)) plain += 1;
+  }
+  return { plain, polite };
 }
 
 const compactLength = (value: string) => value.replace(/\s/g, "").length;
@@ -136,6 +150,33 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
         code: "ANSWER_TOO_SHORT",
         message: `문항 ${question.order}은 ${request.writingMode === "CREATE" ? "처음부터 작성" : "내용 보완"}을 요청했지만 입력 메모가 그대로 반환되었습니다. 제출용 답변으로 재구성해야 합니다.`,
       });
+    }
+    if (request && (request.writingMode === "CREATE" || request.writingMode === "BUILD")) {
+      const endingStyles = sentenceEndingStyles(revision.revisedAnswer);
+      if (endingStyles.plain >= 2 && endingStyles.plain > endingStyles.polite) {
+        issues.push({
+          code: "ANSWER_TOO_SHORT",
+          message: `문항 ${question.order} 제출본의 종결어미가 '-다/-한다'체로 남아 있습니다. 별도 말투 요청이 없다면 지원서에 맞는 '-습니다/-합니다'체로 일관되게 다시 작성해야 합니다.`,
+        });
+      }
+      if (DRAFT_FIELD_LINE.test(revision.revisedAnswer) || UNRESOLVED_DRAFT_NOTE.test(revision.revisedAnswer)) {
+        issues.push({
+          code: "ANSWER_TOO_SHORT",
+          message: `문항 ${question.order} 결과에 입력용 항목명이나 '별도 기입/미정' 같은 작성 메모가 남아 있습니다. 해당 표기를 제거하고 제출 가능한 문장으로 완성해야 합니다.`,
+        });
+      }
+      const seenSentences = new Set<string>();
+      const duplicatedSentence = sentenceKeys(revision.revisedAnswer).find((key) => {
+        if (seenSentences.has(key)) return true;
+        seenSentences.add(key);
+        return false;
+      });
+      if (duplicatedSentence) {
+        issues.push({
+          code: "ANSWER_TOO_SHORT",
+          message: `문항 ${question.order} 안에 같은 문장이 그대로 반복되었습니다(${duplicatedSentence.length}자). 중복을 제거하고 행동과 결과를 각각 한 번만 서술해야 합니다.`,
+        });
+      }
     }
     if (request && expandsToTargetLength(request) && question.targetLength > 0 && revisedLength > Math.ceil(question.targetLength * 1.15)) {
       issues.push({
