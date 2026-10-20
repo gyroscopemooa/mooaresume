@@ -97,7 +97,19 @@ export function hasProCapabilities(request: AnalysisRequest) {
 export function expandsToTargetLength(request: AnalysisRequest) {
   return hasProCapabilities(request)
     && (request.writingMode === "BUILD" || request.writingMode === "CREATE")
+    && !hasAmbiguousMultiSectionTarget(request)
     && hasSeparatedQuestions(request);
+}
+
+/** Guided notes may be stored under one default 700-char target, not an employer limit. */
+export function hasAmbiguousMultiSectionTarget(request: AnalysisRequest) {
+  const questions = readQuestions(request);
+  if (questions.length !== 1) return false;
+  const question = questions[0];
+  const headings = [...question.answer.matchAll(/^\s*\[[^\]\r\n]+\]/gm)];
+  if (headings.length < 3 || readAnswerLimit(question.prompt).max !== null) return false;
+  return !request.documents.some(document => document.kind === "revision_request"
+    && /(?:전체|총|각|문항별)?\s*\d[\d,]*\s*자/.test(document.text));
 }
 
 /**

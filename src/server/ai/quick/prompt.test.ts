@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisRequest } from "@/application/analysis-contract";
+import { expandsToTargetLength, hasAmbiguousMultiSectionTarget } from "./questions";
 import {
   buildQuickAnalysisInput,
   buildQuickAnalysisInstructions,
@@ -19,6 +20,20 @@ const request: AnalysisRequest = {
     },
   ],
 };
+
+describe("first-pass consultant safeguards", () => {
+  it("does not force a default total target onto multiple guided topics", () => {
+    const multi: AnalysisRequest = { ...request, writingMode: "CREATE", targetLength: 700,
+      questions: [{ id:"one",title:"자유 형식",prompt:"",targetLength:700,answer:"[지원 계기]\n음악\n[하고 싶은 일]\n운영\n[경험 ①]\n매장\n[강점]\n확인\n[입사 후 목표]\n지원" }] };
+    expect(hasAmbiguousMultiSectionTarget(multi)).toBe(true);
+    expect(expandsToTargetLength(multi)).toBe(false);
+    expect(hasAmbiguousMultiSectionTarget({...multi,documents:[...multi.documents,{kind:"revision_request",text:"전체 700자로 작성해 주세요."}]})).toBe(false);
+    expect(hasAmbiguousMultiSectionTarget({...multi,questions:[{...multi.questions![0],prompt:"최대 700자"}]})).toBe(false);
+    const rules = buildQuickAnalysisInstructions(multi);
+    expect(rules).toContain("1차에서부터 제출 가능한 전체 결과");
+    expect(rules).toContain("근무처별 경험의 경계를");
+  });
+});
 
 describe("QUICK prompt question coverage", () => {
   it("requires one revision for every parsed question", () => {

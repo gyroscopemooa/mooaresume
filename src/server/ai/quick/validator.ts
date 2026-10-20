@@ -67,7 +67,7 @@ function sentenceKeys(text: string): string[] {
     .filter((sentence) => sentence.length >= DUPLICATE_SENTENCE_MINIMUM);
 }
 
-function sentenceEndingStyles(text: string) {
+export function sentenceEndingStyles(text: string) {
   const sentences = text.split(/(?<=[.!?])(?:\s+|$)|\n+/).map((sentence) => sentence.trim()).filter(Boolean);
   let polite = 0;
   let plain = 0;

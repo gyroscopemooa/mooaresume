@@ -2,7 +2,7 @@ import type { AnalysisRequest, ResumeAnalysisProvider } from "@/application/anal
 import { resultDocumentSchema, type ResultDocument } from "@/domain/result-document";
 import { resolveOriginalAnnotations } from "@/domain/result-original-annotations";
 import { hasJobPostingText } from "@/domain/job-posting-source";
-import { getAnalysisQuestions, getUnansweredQuestions } from "./questions";
+import { getAnalysisQuestions, getUnansweredQuestions, hasAmbiguousMultiSectionTarget } from "./questions";
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
 import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
 
@@ -82,6 +82,9 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
   if (missingOrders.length > 0) throw new QuickQuestionResultMissingError(missingOrders, questions.length);
 
   const postingReady = request.documents.some(document => document.kind === "job_posting" && hasJobPostingText(document.text));
+  const ambiguousLengthNote = hasAmbiguousMultiSectionTarget(request)
+    ? "여러 작성 항목이 한 입력에 포함되어 있습니다. 표시된 목표 글자 수는 공식 전체 제한으로 확인되지 않았습니다. 실제 지원서 질문과 문항별 제한을 확인해 주세요."
+    : undefined;
   const coverageNotes = getUnansweredQuestions(request).map((question) => {
     const label = question.title.trim() || question.prompt.trim();
     return `"${label}" 문항은 작성된 내용이 없어 이번 분석에서 제외했습니다.`;
@@ -115,16 +118,16 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
         // 지원자가 이미 [소제목]을 쓴 답변에 제안 소제목까지 붙이면 복사·DOCX에 두 줄로 나갑니다.
         subheading: /^\s*\[[^\]\n]{1,80}\]/.test(revision.revisedAnswer) ? undefined : revision.subheading?.trim() || undefined,
         // 목표를 채우지 못한 이유. 충분히 채웠으면 모델이 null을 줍니다.
-        lengthNote: usableLengthNote,
+        lengthNote: ambiguousLengthNote ?? usableLengthNote,
         revisedAnswer: revision.revisedAnswer,
         highlightedPhrases: revision.highlightedPhrases.map((phrase) => recoverHighlight(revision.revisedAnswer, phrase)).filter((phrase): phrase is string => phrase !== null),
         originalAnnotations: resolveOriginalAnnotations(question.answer, revision.originalAnnotations, `${questionId}-annotation`),
         revisionReasons: revision.reasons.map((reason) => reason.reason),
-        verificationNote: revision.verificationNote ?? undefined,
+        verificationNote: [ambiguousLengthNote, revision.verificationNote].filter(Boolean).join("\n") || undefined,
       };
     }),
     requirementMatches: (postingReady ? output.requirementMatches ?? [] : []).map((match, index) => ({ id: `requirement-${index + 1}`, ...match })),
-    verificationQuestions: output.verificationQuestions,
+    verificationQuestions: [...(ambiguousLengthNote ? [ambiguousLengthNote] : []), ...output.verificationQuestions],
     editSummary: output.editSummary ?? [],
     consultingAdvice: (output.consultingAdvice ?? []).map((item, index) => ({ id: `quick-advice-${index + 1}`, ...item })),
     interviewQuestions: (output.interviewQuestions ?? []).map((item, index) => ({ id: `interview-${index + 1}`, ...item })),

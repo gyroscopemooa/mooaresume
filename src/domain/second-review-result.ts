@@ -4,6 +4,7 @@ import type { ResultDocument } from "./result-document";
 /** Saved sections are independently reviewed items, not inferred official questions. */
 export function buildSecondReviewResult(source: ResultDocument, preview: AdminAnalysisPreview): ResultDocument {
   const sectioned = preview.revisedAnswers.every(answer => answer.section);
+  const maintained = preview.revisedAnswers.filter(answer => answer.section?.disposition === "maintained").length;
   const questions = sectioned
     ? preview.revisedAnswers.map(answer => ({
       id: `review-${preview.id}-${answer.questionOrder}`,
@@ -48,7 +49,7 @@ export function buildSecondReviewResult(source: ResultDocument, preview: AdminAn
       // Old suggestions must not masquerade as findings on the revised text.
       consultingAdvice: [],
       coverageNotes: [
-        `제공해 주신 ${questions.length}개 작성 항목을 유지하면서 표현과 구성을 보완했습니다.`,
+        `제공해 주신 ${questions.length}개 작성 항목을 검토했습니다.${maintained ? ` ${maintained}개 항목은 유지 근거를 확인해 원문을 유지했습니다.` : " 표현과 구성을 보완했습니다."}`,
         "제출 전 채용공고의 실제 문항·글자 제한과 근무기간 등 확인 사항을 점검해 주세요.",
       ],
     } : {}),

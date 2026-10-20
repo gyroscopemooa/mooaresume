@@ -37,5 +37,15 @@ describe("review delivery authorization and mail", () => {
       body: expect.stringContaining("무아레쥬메 AI 취업 컨설턴트의 검토 과정에서 기존 첨삭 결과의 일부 보완 사항이 확인되어 개선 작업을 진행하였습니다."),
     }));
     expect(mocks.record).toHaveBeenCalledOnce();
+    const mailBody = mocks.send.mock.calls[0][0].body;
+    expect(mailBody).toContain(`https://mooaresume.com/feedback/${body.runId}`);
+    expect(mailBody).toContain("더 나은 첨삭을 위한 안내");
+    expect(mailBody).toContain("지원서의 요구사항과 본인의 경험이 더욱 효과적으로 반영될 수 있도록 참고 사항을 정리했습니다. 다음 첨삭 요청 시 활용해 주세요.");
+    expect(mailBody).toContain("지원서의 실제 질문을 문항별로");
+    expect(mailBody).toContain("문항별 글자 제한");
+    expect(mailBody).toContain("경험은 근무처별로");
+    expect(mailBody).toContain("‘확인 필요’");
+    expect(mailBody).toContain("채용공고와 지원서 양식");
+    expect(mailBody).toContain("이미 후기를 남기셨다면");
   });
 });

@@ -11,10 +11,11 @@ import {
   getAnalysisQuestions,
   getUnansweredQuestions,
   hasSupportingMaterials,
+  hasAmbiguousMultiSectionTarget,
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.6";
+export const QUICK_PROMPT_VERSION = "quick-4.7";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -168,7 +169,9 @@ export function buildQuickAnalysisInstructions(request: AnalysisRequest) {
     // rewriting it in place would change what that mode does. CREATE writes
     // every answer from scratch, so the company's length is its target too —
     // it was previously told not to pad and never told to reach the length.
-    expandsToTargetLength(request)
+    hasAmbiguousMultiSectionTarget(request)
+      ? "분량 적용 범위 확인 필요: 여러 작성 항목이 한 입력에 들어 있습니다. 저장된 목표 글자 수만으로 전체를 축약하지 마세요. 각 항목의 핵심 내용을 보존하고 실제 공식 문항과 문항별 제한을 확인 질문에 남기세요."
+      : expandsToTargetLength(request)
       // The first version of this line ended with an escape hatch, and the
       // model took it: a 540-character answer came back at 503 against a 700
       // target. Shrinking is now named as the failure it is, and the way to

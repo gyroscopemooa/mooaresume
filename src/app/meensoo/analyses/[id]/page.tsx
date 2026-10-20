@@ -4,6 +4,7 @@ import { getAnalysis, type AdminAnalysisDetail } from "@/server/admin/admin-repo
 import { ResultWorkspaceComplete } from "@/components/result-workspace-complete";
 import { AdminEditingExperiments } from "@/components/admin-editing-experiments";
 import { AdminAnalysisPreviews } from "@/components/admin-analysis-previews";
+import { AdminAutomaticReview } from "@/components/admin-automatic-review";
 import { resultDocumentSchema } from "@/domain/result-document";
 import styles from "../../admin.module.css";
 import { MODE_LABEL, kst } from "../../format";
@@ -192,6 +193,7 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
         </section>
       )}
 
+      <AdminAutomaticReview runId={run.id} />
       {!parsedResult.success && questions.length > 0 && (
         <section className={styles.panel}>
           <div className={styles.panelHead}><h2>문항별 결과</h2><small>{questions.length}문항</small></div>

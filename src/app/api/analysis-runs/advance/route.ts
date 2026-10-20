@@ -9,6 +9,7 @@ import { recordAnalysisAttempt } from "@/server/analysis/attempt-ledger";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
 import { selectStrandedPaidRuns, type PendingRun } from "@/server/analysis/stranded-paid-runs";
 import { SupabaseQuickAnalysisRunRepository } from "@/server/analysis/supabase-quick-analysis-run-repository";
+import { advanceAutomaticReviewBatch } from "@/server/second-review/automatic-repository";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -288,7 +289,15 @@ export async function POST(request: NextRequest) {
       console.error(`advance_start_batch_failed:${startError instanceof Error ? startError.message : "UNKNOWN_ERROR"}`);
     }
 
-    return NextResponse.json({ examined: results.length, results, started });
+    let secondReview: { status: string; runId?: string } = { status: "not_run" };
+    try {
+      secondReview = await advanceAutomaticReviewBatch();
+    } catch {
+      // This cannot fail/refund the already-completed customer's first result.
+      console.error("automatic_second_review_step_failed");
+      secondReview = { status: "error" };
+    }
+    return NextResponse.json({ examined: results.length, results, started, secondReview });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "UNKNOWN_ERROR";
     console.error(`advance_batch_failed:${detail}`);

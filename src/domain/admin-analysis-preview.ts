@@ -8,6 +8,7 @@ export const adminAnalysisPreviewAnswerSchema = z.object({
     originalAnswer: z.string().min(1).max(12_000),
     revisionReasons: z.array(z.string().trim().min(1)).min(1).max(10),
     verificationNote: z.string().max(2_000),
+    disposition: z.enum(["improved", "alternative", "maintained"]).optional(),
   }).optional(),
 });
 
@@ -23,8 +24,11 @@ export const adminAnalysisPreviewInputSchema = z.object({
     context.addIssue({ code: "custom", message: "INCOMPLETE_SECTION_REVIEW" });
   }
   for (const answer of value.revisedAnswers) {
-    if (answer.section && !compareSecondReviewAnswer(answer.section.originalAnswer, answer.revisedAnswer).changed) {
+    if (answer.section && answer.section.disposition !== "maintained" && !compareSecondReviewAnswer(answer.section.originalAnswer, answer.revisedAnswer).changed) {
       context.addIssue({ code: "custom", message: "SECTION_REWRITE_UNCHANGED" });
+    }
+    if (answer.section?.disposition === "maintained" && compareSecondReviewAnswer(answer.section.originalAnswer, answer.revisedAnswer).changed) {
+      context.addIssue({ code: "custom", message: "FALSE_MAINTAINED_ANSWER" });
     }
   }
 });

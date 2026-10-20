@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listAnalyses, type AdminAnalysis, type AdminAnalysisAttempt } from "@/server/admin/admin-repository";
 import { listLatestAdminAnalysisPreviewSummaries } from "@/server/admin/admin-analysis-previews";
+import { listAutomaticReviewStatuses } from "@/server/second-review/automatic-repository";
 import { readModelPricingFromEnv, RISK_LABEL, type RunCostRisk } from "@/domain/analysis-cost";
 import styles from "../admin.module.css";
 import { MODE_LABEL, kst } from "../format";
@@ -140,6 +141,7 @@ export default async function AnalysesPage() {
   const analyses = await listAnalyses(200);
   const previewByRun = await listLatestAdminAnalysisPreviewSummaries(analyses.map(analysis => analysis.id));
   const secondReviewCount = Object.keys(previewByRun).length;
+  const automatic = await listAutomaticReviewStatuses(analyses.map(analysis => analysis.id));
   const stuck = analyses.filter((analysis) => analysis.status === "PENDING" || analysis.status === "RUNNING");
   const failed = analyses.filter((analysis) => analysis.status === "FAILED");
 
@@ -199,6 +201,8 @@ export default async function AnalysesPage() {
       )}
 
       <AttentionList items={attention} />
+      <p className={styles.hint}>신규 완료 건은 AI 컨설턴트가 별도 검수합니다. 2차본은 관리자 확인 전 고객에게 자동 공개·발송하지 않습니다. 2차 검수 토큰은 별도 표시되며 위 1차 원가 합계에는 포함되지 않습니다.</p>
+      {!automatic.available && <p className={styles.hint}>자동 2차 검수 저장소를 확인할 수 없습니다. 운영 설정을 확인해 주세요.</p>}
 
       <section className={styles.panel}>
         <div className={styles.panelHead}>
@@ -234,6 +238,12 @@ export default async function AnalysesPage() {
                     <td><AttemptList attempts={analysis.attempts} /></td>
                     <td><CostCell analysis={analysis} /></td>
                     <td>
+                      {automatic.items[analysis.id] && <div className={styles.mono}>
+                        {automatic.items[analysis.id].status === "completed" ? "자동 검증 통과 · 관리자 확인 대기" :
+                          automatic.items[analysis.id].status === "needs_attention" ? "자동 검수 중단 · 확인 필요" : "자동 검수 진행 중"}
+                        {automatic.items[analysis.id].failure && <small> · {automatic.items[analysis.id].failure}</small>}
+                        <small> · 2차 {automatic.items[analysis.id].tokens?.toLocaleString("ko-KR") ?? "집계 대기"} 토큰</small>
+                      </div>}
                       {previewByRun[analysis.id] ? (
                         <div className={styles.secondReviewCell}>
                           <span className={`${styles.pill} ${styles.pillWarn}`}>검토 초안</span>
