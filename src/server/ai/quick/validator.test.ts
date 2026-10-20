@@ -32,6 +32,15 @@ const proRequest: AnalysisRequest = {
 };
 
 describe("PRO supporting-material validation", () => {
+  it("blocks even one remaining plain-style sentence in a default submission draft", () => {
+    const issues = validateQuickAnalysis({ ...proRequest, writingMode: "CREATE" }, output("고객 응대를 경험했습니다. 현장을 지원하고 싶다.", "고객 응대"));
+    expect(issues.some(issue => issue.message.includes("종결어미"))).toBe(true);
+  });
+  it("respects an explicit plain-style request without inferring it from candidate source text", () => {
+    const request: AnalysisRequest = { ...proRequest, writingMode: "CREATE", documents: [...proRequest.documents, { kind: "revision_request", text: "한다체로 작성해 주세요." }] };
+    const issues = validateQuickAnalysis(request, output("고객 응대를 경험했다. 현장을 지원하고 싶다.", "고객 응대"));
+    expect(issues.some(issue => issue.message.includes("종결어미"))).toBe(false);
+  });
   it("accepts a period and evidence supplied in the applicant's additional material", () => {
     const issues = validateQuickAnalysis(
       proRequest,

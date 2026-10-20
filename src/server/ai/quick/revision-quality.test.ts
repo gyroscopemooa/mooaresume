@@ -21,6 +21,14 @@ const reviewer = { responseId: "reviewer", model: "test" };
 const apply = (review: RevisionReview, request = qualityTestRequest, candidate = qualityTestCandidate()) => applyRevisionReview(request, candidate, review, reviewer);
 
 describe("independent revision adoption", () => {
+  it("does not complete CREATE when one question passes but another falls back to its memo", () => {
+    const request = { ...qualityTestRequest, writingMode: "CREATE" as const, questions: [1, 2].map(i => ({ id: String(i), title: "경험", prompt: "경험", targetLength: 500, answer: original })) };
+    const candidate = qualityTestCandidate();
+    candidate.output.revisions = [1, 2].map(questionOrder => ({ ...candidate.output.revision, questionOrder }));
+    const review = qualityTestReview();
+    review.questions = [1, 2].map(order => ({ ...review.questions[0], order, lostFactOrVoice: order === 2 }));
+    expect(() => apply(review, request, candidate)).toThrow("REVISION_REVIEW_REQUIRED_REWRITE_REJECTED");
+  });
   it("corrects advice that falsely describes a rejected edit as completed", () => {
     const candidate = qualityTestCandidate();
     candidate.output.consultingAdvice = [{ kind: "clarify", title: "문맥 확인", guidance: "삭제한 문장을 확인하세요.", rationale: original, priority: "low" }];

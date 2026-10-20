@@ -32,6 +32,13 @@ export async function listAdminAnalysisPreviews(analysisRunId: string): Promise<
   return (data ?? []).map(row => present(rowSchema.parse(row)));
 }
 
+export async function getAdminAnalysisPreview(analysisRunId: string, previewId: string): Promise<AdminAnalysisPreview | null> {
+  const { data, error } = await serviceClient().from("admin_analysis_previews").select("*")
+    .eq("id", previewId).eq("analysis_run_id", analysisRunId).maybeSingle();
+  if (error) throw new Error("ADMIN_PREVIEW_STORAGE_UNAVAILABLE");
+  return data ? present(rowSchema.parse(data)) : null;
+}
+
 export async function listLatestAdminAnalysisPreviewSummaries(analysisRunIds: string[]): Promise<Record<string, AdminAnalysisPreviewSummary>> {
   if (analysisRunIds.length === 0) return {};
   const { data, error } = await serviceClient().from("admin_analysis_previews")

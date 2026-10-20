@@ -227,7 +227,8 @@ function RequirementMatches({ matches }: { matches: readonly ResultRequirementMa
   </div>;
 }
 
-function CoverageNotice({ notes }: { notes: readonly string[] }) {
+function CoverageNotice({ notes, reviewed = false }: { notes: readonly string[]; reviewed?: boolean }) {
+  if (reviewed) return <section className={styles.coverageNotice}><AlertCircle/><div><b>2차 검토 범위</b>{notes.map(note => <p key={note}>{note}</p>)}</div></section>;
   return <section className={styles.coverageNotice}><AlertCircle/><div>
     <b>빈 문항은 첨삭 대상이 아닙니다</b>
     {notes.map((note) => <p key={note}>{note}</p>)}
@@ -305,7 +306,7 @@ function readCarriedMaterialCount(): number {
 
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
-export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
+export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, initialView = "overview", editionLabel, sectionReview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Opens a saved result on the tab the surrounding workflow links to. */ initialView?: View; /** Identifies a reviewed edition without changing the shared result layout. */ editionLabel?: string; /** Reviewed writing sections; official question count/limits and new numerical scores are unverified. */ sectionReview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
   const boundaryRestored = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
   // 답변 맨 앞의 "질문:" 줄을 질문 칸으로 옮긴 화면용 사본. 저장된 결과는 그대로이고,
   // 화면·글자 수·복사·내보내기가 모두 이 사본을 읽어 문항마다 같은 모양이 된다.
@@ -314,7 +315,8 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   // 새 키가 없으면 기존 편집본을 읽어 질문 접두사만 정리한다. 이전 키는 복구용으로 보존한다.
   const legacyStorageKey = "mooa:result-edits:" + result.caseId + ":v1" + (boundaryRestored !== sourceResult ? ":question-boundary-local" : "");
   const storageKey = legacyStorageKey + (result !== boundaryRestored ? ":question-marker-local" : "");
-  const [view, setView] = useState<View>("overview");
+  const [view, setView] = useState<View>(initialView);
+  const isReviewedEdition = Boolean(editionLabel);
   const [answers, setAnswers] = useState<Record<string, string>>(() => Object.fromEntries(result.questions.map((question) => [question.id, question.revisedAnswer])));
   const [editing, setEditing] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -339,6 +341,13 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      // Read-only previews must render the stored edition, never a customer's
+      // browser draft sharing the same ApplicationCase and question ids.
+      if (adminPreview) {
+        setAnswers(Object.fromEntries(result.questions.map(question => [question.id, question.revisedAnswer])));
+        setRestored(true);
+        return;
+      }
       try {
         let saved: unknown = null;
         for (const key of new Set([storageKey, legacyStorageKey])) {
@@ -358,14 +367,14 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
       setRestored(true);
     }, 0);
     return () => window.clearTimeout(timeout);
-  }, [result.questions, boundaryRestored.questions, storageKey, legacyStorageKey]);
+  }, [result.questions, boundaryRestored.questions, storageKey, legacyStorageKey, adminPreview]);
 
   useEffect(() => {
-    if (restored) {
+    if (restored && !adminPreview) {
       try { sessionStorage.setItem(storageKey, JSON.stringify(answers)); }
       catch { /* 저장 불가 환경에서도 현재 편집과 복사는 유지한다. */ }
     }
-  }, [answers, restored, storageKey]);
+  }, [answers, restored, storageKey, adminPreview]);
 
   const subject = useMemo(() => resolveResultSubject(result), [result]);
   // 면접 준비팩은 이 FINAL 실행 하나에 묶인다. 탭이 열릴 때 저장된 것을 읽기만 하고 AI 는 부르지 않는다.
@@ -403,7 +412,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
     () => buildFinalDocumentText({ ...result, company: subject.name, role: subject.qualifier ?? applicationLabel, questions: result.questions.map((question) => ({ ...question, title: resolveQuestionTitle(question) })) }, answers),
     [answers, applicationLabel, result, subject],
   );
-  const baseFilename = `MOOA_${toFilenameToken(subject.name)}_최종첨삭본`;
+  const baseFilename = `MOOA_${toFilenameToken(subject.name)}_${editionLabel ? "2차첨삭본" : "최종첨삭본"}`;
   // Counted from what is stored, so the numbers move with hand edits and
   // nothing has to be taken on trust.
   const editCounts = useMemo(() => summarizeEdits(result, answers), [result, answers]);
@@ -565,7 +574,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
     <div className={styles.container}>
       {!adminPreview && <WritingHomeLink className={styles.back}><ArrowLeft/> 작성 단계로 돌아가기</WritingHomeLink>}
       <section className={styles.hero}>
-        <div><span>{result.isSample ? "가상 지원서 · 결과 화면 샘플" : "분석 완료"}</span><h1>{subject.name}{subject.qualifier && <> <em>{subject.qualifier}</em></>}</h1><p>{applicationLabel} · {result.questions.length}개 문항 · {result.product}</p></div>
+        <div><span>{editionLabel ?? (result.isSample ? "가상 지원서 · 결과 화면 샘플" : "분석 완료")}</span><h1>{subject.name}{subject.qualifier && <> <em>{subject.qualifier}</em></>}</h1><p>{applicationLabel} · {result.questions.length}개 {sectionReview ? "작성 항목" : "문항"} · {result.product}{editionLabel ? " · 2차 첨삭" : ""}</p></div>
         <button onClick={() => setView("final")}>최종 첨삭본 보기 <ArrowRight/></button>
       </section>
       {!adminPreview && <RuntimeEventSlot slot="result_top_banner" sample={result.isSample} />}
@@ -582,7 +591,9 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
         {showInterviewPack && <button onClick={() => setView("interviewPack")} className={view === "interviewPack" ? styles.active : ""}>면접 준비팩<small>{analysisRunId ? "FINAL" : "FINAL · 예시"}</small></button>}
         {!result.isSample && <button onClick={() => setView("encouragement")} className={view === "encouragement" ? styles.active : ""}>한 장 더</button>}
       </nav>
-      <ContextResearchNotice research={result.contextResearch} />
+      {!isReviewedEdition && <ContextResearchNotice research={result.contextResearch} />}
+      {isReviewedEdition && ["overview", "fit", "interview", "verification"].includes(view) && <p className={styles.fallbackNotice}>{sectionReview ? (view === "overview" ? "기존 첨삭본을 다시 검토하여 표현과 구성을 보완했습니다. 항목별 수정 이유와 제출 전 확인 사항을 함께 확인해 주세요." : "이 탭은 1차 분석 당시의 참고 자료입니다. 이번 2차 첨삭에서 새로 평가한 내용은 아니며, 보완된 문장은 ‘문항별 첨삭’과 ‘최종 첨삭본’에서 확인할 수 있습니다.") : "이번 2차본은 자기소개서 문장을 보완한 결과입니다. 준비도 점수·공고 분석·면접 준비·검증 자료는 1차 분석 당시의 참고 자료이며, 이번에 새로 평가한 내용은 아닙니다."}</p>}
+      {isReviewedEdition && view === "submission" && <p className={styles.fallbackNotice}>이번 비교의 원문은 고객에게 제공된 1차 첨삭본입니다. 표시되는 변경 구간은 1차본과 2차본의 문장 차이입니다.</p>}
       {view === "encouragement" && !result.isSample && <ResultOneMore onReview={() => setView("revision")} onFinal={() => setView("final")} />}
 
       {view === "verification" && result.product === "FINAL" && (
@@ -602,9 +613,10 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
       )}
 
       {view === "overview" && <section className={styles.overview}>
+        {sectionReview ? <div className={styles.score}><div><small>2차 첨삭 · 항목별 검토</small><h2>원문의 작성 항목을 보존했습니다</h2><strong>{result.questions.length}<span>개 항목</span></strong><p>항목별 수정문 · 수정 이유 · 남은 확인 사항</p></div><p>지원자가 제공한 경험을 바탕으로 문장을 재작성했습니다. 문항별 첨삭에서 실제 변경 내용을 확인할 수 있습니다.</p><p className={styles.scoreBasis}>공식 채용 문항 수와 분량 제한을 확정한 결과는 아닙니다. 검토하지 않은 점수나 합격 가능성을 제시하지 않습니다.</p></div> :
         <div className={styles.score}><div>{/* Said "· 샘플" on every result, paid ones included — telling a customer
               the score they just bought was a mock. */}
-          <small>{result.product} · {result.writingMode === "BUILD" ? "내용 보완" : result.writingMode === "CREATE" ? "처음부터 작성" : "최종 첨삭"}{result.isSample ? " · 샘플" : ""}</small><h2>제공된 글의 검토 결과</h2><strong aria-label={`준비도 ${result.readiness.score}점`}>{result.readiness.score}<span>/100</span></strong><p>보완한 문항 {result.questions.filter(q => q.originalAnswer !== q.revisedAnswer).length}개 · 유지한 문항 {result.questions.filter(q => q.originalAnswer === q.revisedAnswer).length}개 · 확인 질문 {result.verificationQuestions.length}개</p></div><p>{result.product === "QUICK" ? "자기소개서의 문항 답변·논리·표현을 검토했습니다. 자격·스펙과 공고 적합성은 검토 범위에 포함되지 않습니다." : "제공된 글과 지원자료 범위에서 문항 답변·근거·공고 연결을 검토했습니다."} 채용 결과는 지원 자격, 경력, 경쟁 상황 등에도 영향을 받으며 이 검토로 예측하지 않습니다.</p><p className={styles.scoreBasis}>준비도 점수 기준: 질문에 맞게 답했는가 · 근거가 있는가 · 논리가 이어지는가 · 읽기 쉬운가 · 구체적인가, 다섯 가지를 각 20점으로 채점합니다. 글의 완성도만 본 점수라 높게 나와도 합격을 뜻하지 않고, 자격·스펙·경쟁률은 반영하지 않습니다.</p></div>
+          <small>{result.product} · {result.writingMode === "BUILD" ? "내용 보완" : result.writingMode === "CREATE" ? "처음부터 작성" : "최종 첨삭"}{result.isSample ? " · 샘플" : ""}</small><h2>제공된 글의 검토 결과</h2><strong aria-label={`준비도 ${result.readiness.score}점`}>{result.readiness.score}<span>/100</span></strong><p>보완한 문항 {result.questions.filter(q => q.originalAnswer !== q.revisedAnswer).length}개 · 유지한 문항 {result.questions.filter(q => q.originalAnswer === q.revisedAnswer).length}개 · 확인 질문 {result.verificationQuestions.length}개</p></div><p>{result.product === "QUICK" ? "자기소개서의 문항 답변·논리·표현을 검토했습니다. 자격·스펙과 공고 적합성은 검토 범위에 포함되지 않습니다." : "제공된 글과 지원자료 범위에서 문항 답변·근거·공고 연결을 검토했습니다."} 채용 결과는 지원 자격, 경력, 경쟁 상황 등에도 영향을 받으며 이 검토로 예측하지 않습니다.</p><p className={styles.scoreBasis}>준비도 점수 기준: 질문에 맞게 답했는가 · 근거가 있는가 · 논리가 이어지는가 · 읽기 쉬운가 · 구체적인가, 다섯 가지를 각 20점으로 채점합니다. 글의 완성도만 본 점수라 높게 나와도 합격을 뜻하지 않고, 자격·스펙·경쟁률은 반영하지 않습니다.</p></div>}
         <div className={styles.overviewGrid}>
           <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>{result.priorities.length > 0
             // 개선점을 짚어 놓고 "수정 이득이 없어 유지했다"고만 하면 말이 어긋난다. 고칠 곳이 있는데 문장이 그대로인 까닭과 할 일을 같이 말한다.
@@ -613,7 +625,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
             <section className={styles.panel}><span className={styles.eyebrow}>분석한 원본</span>{result.attachments.map((file) => <div className={styles.file} key={file.id}><FileText/><span><b>{file.filename}</b><small>{file.extension} · {(file.sizeBytes/1024).toFixed(0)}KB · {file.sectionCount}개 문항</small></span><em><CheckCircle2/> 읽기 완료</em></div>)}<p className={styles.privacy}><LockKeyhole/> 원본은 수정하지 않고 결과와 분리해 보관합니다.</p></section>
-            {result.coverageNotes.length > 0 && <CoverageNotice notes={result.coverageNotes}/>}
+            {result.coverageNotes.length > 0 && <CoverageNotice notes={result.coverageNotes} reviewed={sectionReview}/>}
             {result.verificationQuestions.length > 0 && <section className={styles.warning}><AlertCircle/><div><b>확인이 필요한 사실</b><p>{result.verificationQuestions[0]}</p><small>확인되지 않은 성과는 만들지 않았습니다.</small></div></section>}
           </aside>
         </div>
@@ -621,7 +633,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
 
       {view === "submission" && <section className={styles.workspace}>
         <div className={styles.title}><div><span className={styles.eyebrow}>ORIGINAL</span><h2>제출본 피드백</h2></div><p>실제로 분석한 원문에서 좋은 표현과 보완이 필요한 부분을 확인합니다.</p></div>
-        {result.coverageNotes.length > 0 && <CoverageNotice notes={result.coverageNotes}/>}
+        {result.coverageNotes.length > 0 && <CoverageNotice notes={result.coverageNotes} reviewed={sectionReview}/>}
         {result.questions.map((question) => {
           const storedAnnotations = question.originalAnnotations ?? [];
           const annotations = deriveFallbackOriginalAnnotations(question, resultStoresAnnotations);
@@ -651,7 +663,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
       </section>}
 
       {view === "revision" && <section className={styles.workspace}>
-        <div className={styles.title}><div><span className={styles.eyebrow}>BEFORE → AFTER</span><h2>문항별 첨삭 결과</h2></div><button type="button" className={styles.diffToggle} aria-pressed={showChanges} onClick={() => setShowChanges((current) => !current)}><GitCompareArrows/>{showChanges ? "\uBCC0\uACBD\uC810 \uC228\uAE30\uAE30" : "\uBCC0\uACBD\uC810 \uD45C\uC2DC"}</button><p>기본은 읽기 모드입니다. 필요한 문항만 직접 수정하세요.</p></div>
+        <div className={styles.title}><div><span className={styles.eyebrow}>BEFORE → AFTER</span><h2>{isReviewedEdition ? "1차·2차 첨삭 비교" : "문항별 첨삭 결과"}</h2></div><button type="button" className={styles.diffToggle} aria-pressed={showChanges} onClick={() => setShowChanges((current) => !current)}><GitCompareArrows/>{showChanges ? "\uBCC0\uACBD\uC810 \uC228\uAE30\uAE30" : "\uBCC0\uACBD\uC810 \uD45C\uC2DC"}</button><p>{isReviewedEdition ? "왼쪽은 기존 1차 첨삭본, 오른쪽은 새로 보완한 2차 첨삭본입니다." : "기본은 읽기 모드입니다. 필요한 문항만 직접 수정하세요."}</p></div>
         {isFilledResult && <p className={styles.filledLegend}><mark className={styles.filled}>파란색</mark>은 <b>원문에서 달라진 부분</b>입니다. 표현만 다듬은 곳도 포함되니, 새로 채워진 내용인지는 왼쪽 원문과 비교해 확인해 주세요. 제공한 사실을 바탕으로 작성한 AI <b>제안</b>입니다. 사실과 맞는지 확인하고 다르면 직접 고쳐 주세요.</p>}
         {result.questions.map((question) => {
           const answer = answers[question.id] ?? question.revisedAnswer;
@@ -670,11 +682,11 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
 
           const showLengthGap = Boolean(question.lengthNote);
           return <article className={styles.question} key={question.id}>
-            <header><div><span>문항 {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div></header>
+            <header><div><span>{sectionReview ? "항목" : "문항"} {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)}{sectionReview ? "자 · 제한 확인 필요" : ` / ${question.targetLength}자`}</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
-            <div className={styles.compare}><section><small>첨삭 전</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>첨삭 후</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
+            <div className={styles.compare}><section><small>{isReviewedEdition ? "1차 첨삭본" : "첨삭 전"}</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>{isReviewedEdition ? "2차 첨삭본" : "첨삭 후"}</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}{question.originalAnswer === question.revisedAnswer && flaggedSpots(question) > 0 && <p><AlertCircle/> 원문에서 짚은 곳이 {flaggedSpots(question)}곳 있습니다. 문장은 그대로 두었으니 &lsquo;제출본&rsquo; 탭에서 확인해 직접 반영해 주세요.</p>}</div></div>
-            <LengthOverNotice answer={answer} target={question.targetLength} unchanged={question.originalAnswer === question.revisedAnswer && !changed}/>
+            {!sectionReview && <LengthOverNotice answer={answer} target={question.targetLength} unchanged={question.originalAnswer === question.revisedAnswer && !changed}/>}
             {showLengthGap && <div className={styles.lengthGap}>
               <div><b>보완에 필요한 정보</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>
               <p>{question.lengthNote}</p>
@@ -684,6 +696,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
           </article>;
         })}
         {result.consultingAdvice.length > 0 && <section className={styles.consulting}>
+          {isReviewedEdition && <p className={styles.fallbackNotice}>아래는 1차 검토의 추가 피드백입니다. 2차본에 대한 항목별 반영 여부는 아직 검증되지 않았습니다.</p>}
           <div><span className={styles.eyebrow}>{"\uCD94\uAC00 \uCEE8\uC124\uD305 \uD53C\uB4DC\uBC31"}</span><h3>{"\uB354 \uC88B\uC544\uC9C0\uAE30 \uC704\uD55C \uC2E4\uD589 \uC81C\uC548"}</h3></div>
           <div className={styles.adviceGrid}>{result.consultingAdvice.map((item, index) => <article key={item.id} data-priority={item.priority}><span>{String(index + 1).padStart(2, "0")}</span><div><h4>{item.title}</h4><p>{item.guidance}</p><small>{item.rationale}</small></div></article>)}</div>
         </section>}
@@ -707,7 +720,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
 
       {view === "final" && <section className={styles.final}>
         <header>
-          <div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>최종 첨삭본</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div>
+          <div><span className={styles.eyebrow}>제출용 최종 문장</span><h2>{isReviewedEdition ? "2차 최종 첨삭본" : "최종 첨삭본"}</h2><p>비교와 피드백을 제외하고 복사·제출할 답변만 모았습니다.</p></div>
           <div><button onClick={() => sampleBlocked() || copy("all",finalText)}>{copied === "all" ? <Check/> : <Clipboard/>}{copied === "all" ? "복사됨" : "전체 복사"}</button><button onClick={() => sampleBlocked() || downloadDocx()}><Download/> DOCX 저장</button><button onClick={() => sampleBlocked() || download()}><Download/> TXT 저장</button></div>
         </header>
         <div className={styles.finalDocument}>
@@ -720,7 +733,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
                 <div className={styles.finalQuestionHead}><h3>{resolveQuestionTitle(question)}</h3><button onClick={() => copy(copyId,normalizeAnswerParagraphs(answer))}>{copied === copyId ? <Check/> : <Clipboard/>}{copied === copyId ? "복사됨" : "이 문항 복사"}</button></div>
                 {question.subheading && <p className={styles.subheading}><b>소제목 제안</b>{question.subheading}</p>}
                 <div className={styles.finalBody}>{splitIntoParagraphs(answer).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>{!adminPreview && <ConnectorMergeHint answer={answer} analysisRunId={analysisRunId} questionId={question.id} applied={mergeUndo[question.id]?.after === answer} onApply={(next) => applyConnectorMerge(question.id, answer, next)} onUndo={() => undoConnectorMerge(question.id)} />}
-                <small>{describeAnswerLength(answer, question.prompt, question.targetLength)}</small>
+                <small>{sectionReview ? `${countCompactCharacters(answer)}자 · 공식 글자 제한 확인 필요` : describeAnswerLength(answer, question.prompt, question.targetLength)}</small>
               </div>
             </article>;
           })}
@@ -736,7 +749,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
             character count, so its work is invisible — 650 in, 650 out, and a
             reasonable "what did I pay for?". These counts come from stored
             data; the lines under them are the analysis's own account. */}
-        <span className={styles.eyebrow}>이번 첨삭에서</span>
+        <span className={styles.eyebrow}>{isReviewedEdition ? "이번 2차 첨삭에서" : "이번 첨삭에서"}</span>
         <ul>
           <li>문장 {editCounts.totalSentences}개 중 <b>{editCounts.rewrittenSentences}개</b>를 다시 썼습니다.</li>
           {editCounts.annotations.length > 0 && <li>

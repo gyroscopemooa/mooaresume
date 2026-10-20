@@ -21,6 +21,14 @@ function bodyOf(send: ReturnType<typeof vi.fn>, call = 0) {
 }
 
 describe("sendManualEmail 첨부파일", () => {
+  it("uses the same per-recipient idempotency key for a delivery retry", async () => {
+    const send = vi.fn().mockResolvedValue({ ok: true });
+    const input = { to: ["test@example.com"], subject: "무료 2차 첨삭본", body: "추가 비용 없음", idempotencyKey: "delivery-1" };
+    await sendManualEmail(input, send as never);
+    await sendManualEmail(input, send as never);
+    expect(send.mock.calls[0][1].headers["Idempotency-Key"]).toBe("delivery-1/test@example.com");
+    expect(send.mock.calls[1][1].headers["Idempotency-Key"]).toBe("delivery-1/test@example.com");
+  });
   it("첨부가 없으면 attachments 키 자체를 보내지 않는다", async () => {
     // The text-only send is what /MAIL has always done; it must not change shape.
     const send = vi.fn().mockResolvedValue({ ok: true });

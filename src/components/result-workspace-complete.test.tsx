@@ -28,6 +28,52 @@ vi.mock("@/lib/local-document", () => {
 afterEach(cleanup);
 
 describe("ResultWorkspaceComplete 제출본 탭", () => {
+  it("항목별 2차 검토는 기존 점수와 미확인 분량 제한을 새 판정처럼 표시하지 않는다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, coverageNotes: ["작성 항목을 보존했습니다."] }} adminPreview sectionReview editionLabel="2차 첨삭 검토본" />);
+    expect(screen.queryByLabelText(`준비도 ${sampleResultDocument.readiness.score}점`)).toBeNull();
+    expect(screen.getByRole("heading", { name: "원문의 작성 항목을 보존했습니다" })).toBeTruthy();
+    expect(screen.getByText("2차 검토 범위")).toBeTruthy();
+    expect(screen.queryByText("빈 문항은 첨삭 대상이 아닙니다")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getAllByText(/자 · 제한 확인 필요/).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /^최종 첨삭본$/ }));
+    expect(screen.getAllByText(/공식 글자 제한 확인 필요/).length).toBeGreaterThan(0);
+  });
+  it("관리자 2차 미리보기는 같은 지원서의 저장된 1차 브라우저 초안으로 덮어쓰지 않는다", async () => {
+    const question = sampleResultDocument.questions[0];
+    const key = `mooa:result-edits:${sampleResultDocument.caseId}:v1`;
+    const stale = JSON.stringify({ [question.id]: "콘텐츠를 배우고 싶다." });
+    sessionStorage.setItem(key, stale);
+    const result = {
+      ...sampleResultDocument,
+      questions: [{ ...question, originalAnswer: "콘텐츠를 배우고 싶다.", revisedAnswer: "콘텐츠 사업 운영을 배우고 싶습니다." }],
+    };
+    render(<ResultWorkspaceComplete result={result} adminPreview initialView="final" editionLabel="2차 첨삭 완료" />);
+    await new Promise(resolve => setTimeout(resolve, 30));
+    await waitFor(() => expect(screen.getByText("콘텐츠 사업 운영을 배우고 싶습니다.")).toBeTruthy());
+    expect(screen.queryByText("콘텐츠를 배우고 싶다.")).toBeNull();
+    expect(sessionStorage.getItem(key)).toBe(stale);
+    sessionStorage.removeItem(key);
+  });
+
+  it("2차 첨삭도 정규 대시보드 탭을 유지하고 승계 자료의 검토 시점을 명시한다", () => {
+    render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false }} adminPreview initialView="final" editionLabel="2차 첨삭 완료"/>);
+
+    expect(screen.getByRole("button", { name: "문항별 첨삭" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^최종 첨삭본$/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "제출본" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /공고·경험 분석/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /면접 준비/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "한 장 더" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "2차 최종 첨삭본" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getAllByText("1차 첨삭본").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("2차 첨삭본").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "한눈에 보기" }));
+    expect(screen.getByText(/1차 분석 당시의 참고 자료이며, 이번에 새로 평가한 내용은 아닙니다/)).toBeTruthy();
+  });
+
   it("shows the score with its basis but no inflated label or guarantee", () => {
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, readiness: { ...sampleResultDocument.readiness, score: 95, label: "완벽한 제출 준비", summary: "문제 없음" } }}/>);
     expect(screen.queryByText("완벽한 제출 준비")).toBeNull();

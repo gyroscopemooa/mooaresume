@@ -239,7 +239,7 @@ export default async function AnalysesPage() {
                           <span className={`${styles.pill} ${styles.pillWarn}`}>검토 초안</span>
                           <strong>{previewByRun[analysis.id].title}</strong>
                           <small>{kst(previewByRun[analysis.id].createdAt)} · 고객 미전달</small>
-                          <Link href={`/meensoo/analyses/${analysis.id}#secondary-review`}>2차 첨삭본 보기</Link>
+                          <Link href={`/meensoo/analyses/${analysis.id}/second-review/${previewByRun[analysis.id].id}`}>2차 첨삭본 보기</Link>
                         </div>
                       ) : <span className={styles.mono}>—</span>}
                     </td>

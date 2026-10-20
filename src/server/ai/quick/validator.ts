@@ -129,7 +129,7 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
   for (const priority of output.priorities) if (!evidenceMatchesSource(normalizedSource, priority.evidenceQuote)) issues.push({ code: "INVALID_EVIDENCE", message: `우선순위의 근거가 원문에서 확인되지 않습니다: "${priority.evidenceQuote}"` });
   const revisionList = output.revisions ?? (output.revision ? [{ ...output.revision, questionOrder: 1 }] : []);
   const revisions = new Map(revisionList.map((revision) => [revision.questionOrder, revision]));
-  if (revisions.size !== questions.length || questions.some((question) => !revisions.has(question.order))) issues.push({ code: "QUESTION_MISMATCH", message: "입력한 모든 문항의 첨삭 결과가 필요합니다." });
+  if (revisionList.length !== questions.length || revisions.size !== questions.length || questions.some((question) => !revisions.has(question.order))) issues.push({ code: "QUESTION_MISMATCH", message: "입력한 모든 문항의 첨삭 결과가 중복 없이 하나씩 필요합니다." });
   for (const question of questions) {
     const revision = revisions.get(question.order); if (!revision) continue;
     const sourceNumbers = numericTokens(sourceText);
@@ -153,7 +153,9 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
     }
     if (request && (request.writingMode === "CREATE" || request.writingMode === "BUILD")) {
       const endingStyles = sentenceEndingStyles(revision.revisedAnswer);
-      if (endingStyles.plain >= 2 && endingStyles.plain > endingStyles.polite) {
+      const explicitlyRequestedPlainStyle = request.documents.some(document =>
+        document.kind === "revision_request" && /(?:해라체|한다체|평서체|다체)(?:로|를)\s*(?:작성|유지|통일|바꿔|변경)/.test(document.text));
+      if (endingStyles.plain > 0 && !explicitlyRequestedPlainStyle) {
         issues.push({
           code: "ANSWER_TOO_SHORT",
           message: `문항 ${question.order} 제출본의 종결어미가 '-다/-한다'체로 남아 있습니다. 별도 말투 요청이 없다면 지원서에 맞는 '-습니다/-합니다'체로 일관되게 다시 작성해야 합니다.`,

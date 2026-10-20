@@ -10,7 +10,7 @@ export type ManualEmailAttachment = {
   inline?: boolean;
 };
 
-export type ManualEmailInput = { to: string[]; subject: string; body: string; replyTo?: string; attachments?: ManualEmailAttachment[] };
+export type ManualEmailInput = { to: string[]; subject: string; body: string; replyTo?: string; attachments?: ManualEmailAttachment[]; idempotencyKey?: string };
 
 function escapeHtml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
@@ -83,7 +83,7 @@ export async function sendManualEmail(input: ManualEmailInput, fetchImplementati
     try {
       const response = await fetchImplementation(RESEND_ENDPOINT, {
         method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", ...(input.idempotencyKey ? { "Idempotency-Key": `${input.idempotencyKey}/${to}` } : {}) },
         // A 5MB attachment on a slow line needs longer than a text-only send.
         signal: AbortSignal.timeout(files.length > 0 ? 60_000 : 15_000),
         body: JSON.stringify({ from: `MOOA Resume <${from}>`, to: [to], subject, text: body, html, ...(replyTo ? { reply_to: replyTo } : {}), ...(files.length > 0 ? { attachments: files } : {}) }),

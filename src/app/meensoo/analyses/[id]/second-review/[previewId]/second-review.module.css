@@ -1,0 +1,6 @@
+.adminBar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:0 0 14px; padding:10px 14px; border:1px solid var(--admin-line); border-radius:9px; background:var(--admin-panel); }
+.adminBar a { color:var(--admin-accent); font-size:11.5px; font-weight:750; text-decoration:none; }
+.adminBar span { color:var(--admin-muted); font-size:11px; text-align:center; }
+@media (max-width:720px) { .adminBar { align-items:flex-start; flex-direction:column; }.adminBar span { text-align:left; } }
+.customerResult { overflow:hidden; border:1px solid var(--admin-line); border-radius:12px; background:#f6f8f7; }
+.customerResult :global(main) { min-height:0; }

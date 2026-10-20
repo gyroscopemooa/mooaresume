@@ -28,6 +28,9 @@ export const EDITING_QUALITY_RULES = [
   // 대신 주장째 지우면 검토 AI가 사실·말투 손실로 거절하기 때문이다. 둘이 같은 기준을 보도록 이 줄이 양쪽에 같이 실린다.
   "근거 없이 범위를 넓히는 단정('대부분', '모두', '반드시', '가장 확실한', '아주' 등)은 문장째 지우지 마세요. 지원자의 주장·견해·제안은 남기고 범위·조건·가능성 표현으로 낮춰 쓰는 것이 올바른 수정입니다(예: '대부분의 기업이 취약합니다' → '자본력이 넉넉하지 않은 기업은 취약할 수 있습니다'). 검토할 때는 낮춰 쓴 것을 내용 손실로 보지 말고, 주장 자체를 지운 것을 손실로 보세요. 확인이 필요한 제도명·수치 같은 세부는 지우지 말고 확인할 점으로 남기세요.",
   "CREATE/BUILD의 사실 메모·빈 답변을 유지하는 것은 완성된 작성이 아닙니다. 해당 모드가 요구하는 실제 작성/보완은 개선으로 평가하고, POLISH는 남은 실제 문제 크기만큼만 수정하세요.",
+  "입력 문항과 메모의 소제목을 구분하세요. 한 입력칸에 여러 소제목이 있어도 공식 채용 문항 수라고 단정하지 마세요. 반대로 한 문항으로 저장됐다는 이유로 지원 계기·하고 싶은 일·경험·강점·입사 후 목표의 핵심 내용을 누락하거나 하나의 짧은 요약으로 대체하지 마세요. 사용자가 항목 보존을 요청했으면 항목별 구조도 보존하세요. 문항 구분이나 전체/문항별 글자 제한이 불명확하면 확인 질문에 명시하고 확인 완료로 표현하지 마세요.",
+  "검수 시 입력의 각 핵심 주제와 구체적 사실이 최종문 어디에 반영됐는지 대조하세요. 단순 중복 삭제는 허용하되 핵심 주제·역할·개성이 빠진 요약은 lostFactOrVoice=true로 거절하세요. CREATE는 모든 문항이 실제 작성되어야 하며 일부 채택만으로 전체 완성을 선언하지 마세요.",
+  "이전 피드백은 항목별로 현재 최종문과 대조하세요. 반영된 수정은 해당 문장을 근거로 설명하고, 미해결 사실은 확인 질문으로 분리하며, 잘못된 기존 피드백은 이유와 함께 정정하세요. 종결어미 교정만으로 구조·중복·내용 누락까지 해결했다고 주장하지 마세요. 제출용 기본 문체는 합니다체이며 명시적인 다른 문체 요청은 존중하세요.",
 ].join("\n");
 
 const scoreSchema = z.object({
@@ -197,7 +200,7 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
   // notes. Returning those notes unchanged is never a completed deliverable.
   // BUILD may safely retain a non-empty draft while clearly reporting the
   // unresolved issue, so its existing fallback remains available.
-  if (!adopt && request.writingMode === "CREATE") throw new Error("REVISION_REVIEW_REQUIRED_REWRITE_REJECTED");
+  if (request.writingMode === "CREATE" && verdicts.some(v => !accepted(v) || !v.changed)) throw new Error("REVISION_REVIEW_REQUIRED_REWRITE_REJECTED");
   const revisions = verdicts.map((v) => { const { q, r, draft } = v; return ({
     ...draft,
     originalAnnotations: draft.originalAnnotations.filter((_, index) => r.validAnnotationIndexes.includes(index)),

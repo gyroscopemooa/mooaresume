@@ -32,10 +32,19 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return privatePaths.map((path) => ({
+    return [...privatePaths.map((path) => ({
       source: `/${path}/:path*`,
       headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
-    }));
+    })), {
+      source: "/result/second-review/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        // This document contains private review text and a recipient-bound grant.
+        // Do not load third-party analytics/session recording on the delivery route.
+        { key: "Content-Security-Policy", value: "script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'none'; img-src 'self' data: blob:" },
+      ],
+    }];
   },
 };
 

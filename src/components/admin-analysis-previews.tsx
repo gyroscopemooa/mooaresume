@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import type { AdminAnalysisPreview } from "@/domain/admin-analysis-preview";
 import styles from "./admin-editing-experiments.module.css";
@@ -55,7 +56,8 @@ export function AdminAnalysisPreviews({ runId, questions }: { runId: string; que
     {error && <p role="alert">{error}</p>}
     {previews.map(preview => <article className={styles.experiment} key={preview.id}>
       <div className={styles.savedHead}><div><span>SECOND REVIEW</span><h3>{preview.title}</h3></div><strong>{new Date(preview.createdAt).toLocaleString("ko-KR")} · 고객 미전달</strong></div>
-      {questions.map(question => <div className={styles.question} key={question.order}><h4>{question.order}. {question.title}</h4><div className={styles.columns}><div><h5>고객 제공본</h5><p>{question.delivered}</p></div><div><h5>관리자 개선본</h5><p>{preview.revisedAnswers.find(answer => answer.questionOrder === question.order)?.revisedAnswer}</p></div></div></div>)}
+      <Link href={`/meensoo/analyses/${runId}/second-review/${preview.id}`}>독립된 2차 첨삭 결과표로 보기 →</Link>
+      {preview.revisedAnswers.map(answer => <div className={styles.question} key={answer.questionOrder}><h4>{answer.questionOrder}. {answer.section?.title ?? questions.find(q => q.order === answer.questionOrder)?.title}</h4><div className={styles.columns}><div><h5>고객 제공본</h5><p>{answer.section?.originalAnswer ?? questions.find(q => q.order === answer.questionOrder)?.delivered}</p></div><div><h5>관리자 개선본</h5><p>{answer.revisedAnswer}</p>{answer.section && <ul>{answer.section.revisionReasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}</div></div></div>)}
       {preview.notes && <aside className={styles.reviewNote}><b>컨설턴트 검토 메모</b><p>{preview.notes}</p></aside>}
     </article>)}
   </section>;
