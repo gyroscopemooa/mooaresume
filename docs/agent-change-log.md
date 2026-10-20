@@ -8440,3 +8440,4 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Protected scope: 사용자에게 전달된 결과, 결제/이용권, 원본 Snapshot, 기존 관리자 첨삭 시험과 다른 에이전트 변경은 교체하지 않는다.
 - Validation: 추가 제출 준비도 회귀검사를 포함한 관련 Vitest 3파일 164테스트, 전체 TypeScript, 대상 ESLint, `git diff --check` 통과. 실제 운영 migration·배포·관리자 저장은 사용자 승인에 따라 후속 진행.
 - Rollback: 이 항목에 기록될 좁은 검증/관리자 미리보기 변경만 되돌린다.
+- Production DB: 사용자가 Supabase SQL Editor에서 `admin_analysis_previews` 테이블·RLS·service_role 전용 권한·인덱스를 직접 적용했다고 확인했다. CLI migration ledger에는 기록되지 않았으므로 저장소 migration은 수동 적용 SQL과 동일하게 `IF NOT EXISTS`를 사용해 향후 정상 CLI 적용 시 재실행 충돌을 피한다.

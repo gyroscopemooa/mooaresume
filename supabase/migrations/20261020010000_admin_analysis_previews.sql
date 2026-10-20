@@ -2,7 +2,7 @@ begin;
 
 -- Administrator-only recovery drafts. These never replace applicant results,
 -- analysis runs, billing, entitlements, or immutable input snapshots.
-create table public.admin_analysis_previews (
+create table if not exists public.admin_analysis_previews (
   id uuid primary key default gen_random_uuid(),
   analysis_run_id uuid not null references public.analysis_runs(id) on delete cascade,
   title text not null check (char_length(title) between 1 and 120),
@@ -16,7 +16,7 @@ alter table public.admin_analysis_previews enable row level security;
 revoke all on public.admin_analysis_previews from anon, authenticated;
 grant all on public.admin_analysis_previews to service_role;
 
-create index admin_analysis_previews_run_created_idx
+create index if not exists admin_analysis_previews_run_created_idx
   on public.admin_analysis_previews (analysis_run_id, created_at desc);
 
 commit;
