@@ -8433,7 +8433,7 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Incident/recovery: 위 첫 운영 빌드는 격리 worktree에 공개 빌드 변수 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 없어 HTTP 200 응답 뒤 브라우저에서 Zod 초기화 오류와 공통 오류 화면이 발생했다. 기존 운영 환경 파일에서 `NEXT_PUBLIC_*` 항목만 프로세스 환경에 주입해 다시 빌드·배포했으며 서버 전용 비밀값은 복사하거나 출력하지 않았다. 복구된 production Worker version은 `f694eefc-8daf-44ae-a493-519e0ae1e892`이다. 새 브라우저 세션에서 `/`, `/result/sample`, `/career`의 실제 렌더링을 확인했고 `/career` 콘솔 error는 0건이었다. 잘못된 첫 Worker 버전은 rollback 대상으로 사용하지 않는다.
 ## 2026-10-20 — Codex: 최근 PRO 처음부터 작성 결과 복구 및 관리자 전용 개선본
 
-- Status: 로컬 구현·검증 완료, 사용자가 운영 migration·배포·관리자 개선본 저장을 승인했다. 기존 고객 결과·결제·이용권은 보존한다.
+- Status: 운영 적용 완료. 기존 고객 결과·결제·이용권은 보존했고 관리자 전용 개선본만 별도 저장했다.
 - Baseline: `origin/main` `dbbb180dedf079bb2324c239da0f1117cb90d270`, 별도 브랜치 `codex/recent-editing-remediation-20261020`.
 - 실제 근거: 2026-10-20 한국콘텐츠진흥원 PRO·CREATE 건에서 목표 700자에 2,292자 원문이 그대로 제공됐고, 결과는 `유지`인데 설명에는 `후보문 채택`이 남았다. 작성 메모와 중복 문단도 최종본에 유지됐다.
 - Intended transformation: CREATE/BUILD에서 실질적 작성 없이 원문을 유지하거나 목표 상한을 크게 넘긴 결과, 채택 상태와 설명이 모순되는 결과를 완료 처리하지 않는다. 추가로 기본 제출 문체가 `-다/-한다`체로 남거나, 입력 항목명·미완성 메모·동일 문장이 최종본에 남은 결과도 재작성 대상으로 차단한다. 해당 실행 ID에는 기존 결과를 변경하지 않는 관리자 전용 개선본을 별도로 표시한다.
@@ -8441,3 +8441,5 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: 추가 제출 준비도 회귀검사를 포함한 관련 Vitest 3파일 164테스트, 전체 TypeScript, 대상 ESLint, `git diff --check` 통과. 실제 운영 migration·배포·관리자 저장은 사용자 승인에 따라 후속 진행.
 - Rollback: 이 항목에 기록될 좁은 검증/관리자 미리보기 변경만 되돌린다.
 - Production DB: 사용자가 Supabase SQL Editor에서 `admin_analysis_previews` 테이블·RLS·service_role 전용 권한·인덱스를 직접 적용했다고 확인했다. CLI migration ledger에는 기록되지 않았으므로 저장소 migration은 수동 적용 SQL과 동일하게 `IF NOT EXISTS`를 사용해 향후 정상 CLI 적용 시 재실행 충돌을 피한다.
+- Deployment: commits `293b2a8`, `d23a52b`, `c72523a`를 `https://github.com/gyroscopemooa/mooaresume.git` main에 push했다. OpenNext production build와 TypeScript가 통과했고 Cloudflare Worker version `df150f79-96dc-459a-ace2-a548a7c2ccfd`를 배포했다. 첫 빌드는 격리 worktree의 독립 `node_modules` 부재로 배포 전 중단됐으며 `npm ci` 후 정상 완료했다.
+- Admin preview: analysis run `04911e27-02fe-4dbd-8094-15aeca4203d8`에 `제출용 문체·중복·작성메모 개선본`을 저장했다. 원문 2,300자 메모를 목표 700자 수준의 합니다체 제출본으로 재구성하고, 중복 문단·입력 항목명·미확정 근무기간 메모를 제거했다. 운영 관리자 화면에서 저장 시각과 `고객 미적용`, 기존 제공본과 개선본 병렬 표시를 확인했다.
