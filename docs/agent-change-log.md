@@ -8549,3 +8549,4 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: 공유 폴더 3001 dev에서 1320px 5단계 제목·설명·사이드바 한 줄, 375px 가로 넘침 0 확인. 이 브랜치: `tsc --noEmit` 통과, ESLint 통과, vitest 254파일 통과 / 2파일 실패(apps/mobile analytics, src/server/mobile — Expo 의존성 없는 이 PC 고질, 무관). 운영 헤더 조합 화면은 이 worktree에서 dev로 직접 보지는 않음.
 - Rollback: 이 커밋 revert, 또는 main의 두 data 속성만 제거.
 - 2026-10-21 후속: 창 폭 ~800px에서 채용공고 상자 설명이 단어 중간에서 끊기던 것 수정 — `.layout>section>section`에 `word-break:keep-all` 한 줄 추가(배포판·공유 폴더판 동일). 3004 dev 800px에서 단어 단위 줄바꿈 확인. Rollback: 해당 속성 제거.
+- 2026-10-21 후속2: 좁은 창에서 채용공고 입력칸 안내문이 접혀 스크롤바가 보이던 것 수정 — 입력칸 `field-sizing:content`(안내문·내용 높이만큼 자람, 최대 420px) + 최소 높이 128/172(≤1100px)/190px(≤760px, 미지원 브라우저 대비). 배포판·공유 폴더판 동일. 3004 dev 800·1024·1320px에서 scrollHeight=clientHeight, 최소 높이 제거해도 안내문 높이로 자람 확인. 실제 폰 폭은 창이 숨겨져 에뮬레이션 불가로 미확인. Rollback: 해당 줄 원복(min-height:112px).

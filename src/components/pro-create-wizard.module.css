@@ -120,7 +120,10 @@
 .page[data-create-polish] .layout>section>section>div:nth-of-type(2){background:#fff;box-shadow:var(--cp-shadow-sm)}
 .page[data-create-polish] .layout>section>section>div:nth-of-type(2)>p:first-of-type{display:none}
 /* 안내문 두 줄이 스크롤 없이 다 보이는 높이 */
-.page[data-create-polish] .layout>section>section textarea{min-height:112px}
+.page[data-create-polish] .layout>section>section textarea{min-height:128px;field-sizing:content;max-height:420px}
+/* 좁은 화면에선 안내문이 여러 줄로 접혀 스크롤바가 생겨서 그만큼 더 높입니다. */
+@media(max-width:1100px){.page[data-create-polish] .layout>section>section textarea{min-height:172px}}
+@media(max-width:760px){.page[data-create-polish] .layout>section>section textarea{min-height:190px}}
 
 /* 입력칸(회사·직무) */
 .page[data-create-polish] .layout>section>label{gap:8px;margin:0 0 16px;color:var(--pp-text);font-size:13px;font-weight:700}
