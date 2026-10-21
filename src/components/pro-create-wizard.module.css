@@ -153,6 +153,25 @@
 .page[data-create-polish] .layout>section>footer svg{width:15px}
 .page[data-create-polish] .status{color:var(--pp-faint);font-size:12.5px;white-space:nowrap}
 
+/* 이 사이트는 body에 zoom:1.25를 걸어서(globals.css) 실제 창 800px이 레이아웃상
+   640px처럼 좁습니다. 미디어 쿼리는 실제 창 폭 기준입니다.
+   761~1023px: 사이드바를 숨기고 카드를 한 줄로(단계·진행 막대가 위치를 대신 알려줌).
+   1024~1200px: 사이드바와 카드 여백을 줄입니다. 두 구간 모두 채용공고 제목 옆 안내를
+   아래로 내려 제목이 세 줄로 쪼개지지 않게 합니다. */
+.page[data-create-polish] .layout>section>section>div:first-child>div>span b{white-space:nowrap}
+@media(min-width:761px) and (max-width:1200px){
+  .page[data-create-polish] .layout>section{padding:32px 28px 26px}
+  .page[data-create-polish] .layout h1{font-size:25px}
+  .page[data-create-polish] .layout>section>section>div:first-child{flex-direction:column;align-items:flex-start;gap:6px}
+}
+@media(min-width:761px) and (max-width:1023px){
+  .page[data-create-polish] .layout{grid-template-columns:minmax(0,1fr);width:calc(100% - 40px);max-width:760px;margin-top:28px}
+  .page[data-create-polish] .layout aside{display:none}
+}
+@media(min-width:1024px) and (max-width:1200px){
+  .page[data-create-polish] .layout{grid-template-columns:192px minmax(0,1fr);gap:20px}
+}
+
 @media(max-width:760px){
   .page[data-create-polish]>header small{padding:5px 10px;font-size:11px}
   .page[data-create-polish] .layout{grid-template-columns:minmax(0,1fr);gap:14px;width:calc(100% - 32px);margin:16px auto 40px}
