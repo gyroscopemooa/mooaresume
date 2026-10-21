@@ -8548,3 +8548,4 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 디자인: 따뜻한 바탕+떠 있는 흰 카드(겹 그림자), 진한 초록 사이드바→흰 카드+세로 진행선, 진행 막대, 입체 버튼·말투 선택 카드, 글자 9~11px→12~15px. 채용공고 상자 안 구역번호(1)·끌어다놓기 안내는 이 페이지에서만 숨김(공용 컴포넌트는 안 건드림). 헤더·로고는 공용 `site-header-modern.css`에 맡김(로컬 공유 폴더판의 헤더 규칙은 운영 로고 font-size:0 처리를 깨서 이 브랜치에선 뺌).
 - Validation: 공유 폴더 3001 dev에서 1320px 5단계 제목·설명·사이드바 한 줄, 375px 가로 넘침 0 확인. 이 브랜치: `tsc --noEmit` 통과, ESLint 통과, vitest 254파일 통과 / 2파일 실패(apps/mobile analytics, src/server/mobile — Expo 의존성 없는 이 PC 고질, 무관). 운영 헤더 조합 화면은 이 worktree에서 dev로 직접 보지는 않음.
 - Rollback: 이 커밋 revert, 또는 main의 두 data 속성만 제거.
+- 2026-10-21 후속: 창 폭 ~800px에서 채용공고 상자 설명이 단어 중간에서 끊기던 것 수정 — `.layout>section>section`에 `word-break:keep-all` 한 줄 추가(배포판·공유 폴더판 동일). 3004 dev 800px에서 단어 단위 줄바꿈 확인. Rollback: 해당 속성 제거.

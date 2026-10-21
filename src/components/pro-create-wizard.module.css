@@ -114,7 +114,7 @@
 
 /* 채용공고 입력 상자: 카드 안에 한 겹 들어간 면. 구역 번호(1)는 단계 번호와
    겹쳐서 숨기고, 첨부 버튼과 같은 말을 반복하는 끌어다 놓기 안내도 숨깁니다. */
-.page[data-create-polish] .layout>section>section{padding:20px 20px 18px;border:1px solid var(--pp-line);border-radius:18px;background:#fbfaf8}
+.page[data-create-polish] .layout>section>section{padding:20px 20px 18px;border:1px solid var(--pp-line);border-radius:18px;background:#fbfaf8;word-break:keep-all}
 .page[data-create-polish] .layout>section>section>div:first-child>div>span::before{display:none}
 .page[data-create-polish] .layout>section>section>div:first-child>small{white-space:nowrap}
 .page[data-create-polish] .layout>section>section>div:nth-of-type(2){background:#fff;box-shadow:var(--cp-shadow-sm)}
