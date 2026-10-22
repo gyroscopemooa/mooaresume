@@ -32,7 +32,7 @@ describe("ResultWorkspaceComplete 제출본 탭", () => {
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, coverageNotes: ["작성 항목을 보존했습니다."] }} adminPreview sectionReview editionLabel="2차 첨삭 검토본" />);
     expect(screen.queryByLabelText(`준비도 ${sampleResultDocument.readiness.score}점`)).toBeNull();
     expect(screen.getByRole("heading", { name: "원문의 작성 항목을 보존했습니다" })).toBeTruthy();
-    expect(screen.getByText("2차 검토 범위")).toBeTruthy();
+    expect(screen.getByText("추가 첨삭 범위")).toBeTruthy();
     expect(screen.queryByText("빈 문항은 첨삭 대상이 아닙니다")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
     expect(screen.getAllByText(/자 · 제한 확인 필요/).length).toBeGreaterThan(0);
@@ -65,11 +65,11 @@ describe("ResultWorkspaceComplete 제출본 탭", () => {
     expect(screen.getByRole("button", { name: /공고·경험 분석/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: /면접 준비/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "한 장 더" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "2차 최종 첨삭본" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "추가 첨삭본" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
     expect(screen.getAllByText("1차 첨삭본").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("2차 첨삭본").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("추가 첨삭본").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "한눈에 보기" }));
     expect(screen.getByText(/1차 분석 당시의 참고 자료이며, 이번에 새로 평가한 내용은 아닙니다/)).toBeTruthy();
   });

@@ -36,7 +36,7 @@ export function buildSecondReviewResult(source: ResultDocument, preview: AdminAn
     revisionQuality: undefined,
     questions,
     priorities: [{
-      id: `review-${preview.id}`, title: "2차 첨삭 안내",
+      id: `review-${preview.id}`, title: "추가 첨삭 안내",
       description: "기존 결과와 이번 첨삭본을 비교하고, 제출 전 확인 사항을 살펴봐 주세요.",
       category: "clarity", severity: "medium",
     }],
@@ -49,7 +49,7 @@ export function buildSecondReviewResult(source: ResultDocument, preview: AdminAn
       // Old suggestions must not masquerade as findings on the revised text.
       consultingAdvice: [],
       coverageNotes: [
-        `제공해 주신 ${questions.length}개 작성 항목을 검토했습니다.${maintained ? ` ${maintained}개 항목은 유지 근거를 확인해 원문을 유지했습니다.` : " 표현과 구성을 보완했습니다."}`,
+        `제공해 주신 ${questions.length}개 작성 항목을 검토했습니다.${maintained ? ` ${maintained}개 항목은 유지 근거를 확인해 원문을 유지했습니다.` : " 다른 시각에서 표현과 구성을 달리 제안했습니다."}`,
         "제출 전 채용공고의 실제 문항·글자 제한과 근무기간 등 확인 사항을 점검해 주세요.",
       ],
     } : {}),

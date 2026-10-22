@@ -33,8 +33,8 @@ describe("review delivery authorization and mail", () => {
     const response = await POST(request({ ...body, send: true }));
     expect(response.status).toBe(200);
     expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({
-      to: ["test@example.com"], subject: "[무아레쥬메] 추가 비용 없는 무료 2차 첨삭본을 전달드립니다", idempotencyKey: body.requestId,
-      body: expect.stringContaining("무아레쥬메 AI 취업 컨설턴트의 검토 과정에서 기존 첨삭 결과의 일부 보완 사항이 확인되어 개선 작업을 진행하였습니다."),
+      to: ["test@example.com"], subject: "[무아레쥬메] 다른 시각으로 본 추가 첨삭본을 전달드립니다", idempotencyKey: body.requestId,
+      body: expect.stringContaining("1차 첨삭보다 개선되었다는 의미가 아닙니다."),
     }));
     expect(mocks.record).toHaveBeenCalledOnce();
     const mailBody = mocks.send.mock.calls[0][0].body;
@@ -47,5 +47,7 @@ describe("review delivery authorization and mail", () => {
     expect(mailBody).toContain("‘확인 필요’");
     expect(mailBody).toContain("채용공고와 지원서 양식");
     expect(mailBody).toContain("이미 후기를 남기셨다면");
+    expect(mailBody).toContain("24시간 내로 임의로 선별된 첨삭본을 다른 시각을 통해 추가 첨삭을 진행합니다.");
+    expect(mailBody).not.toMatch(/2차|보완된 첨삭본|개선 작업/);
   });
 });

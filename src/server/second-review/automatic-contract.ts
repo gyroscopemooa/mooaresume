@@ -127,7 +127,7 @@ export function validateVerification(context: ReviewContext, verification: Revie
 export function toAutomaticPreview(runId: string, context: ReviewContext, draft: ReviewDraft) {
   validateDraft(context, draft);
   return adminAnalysisPreviewInputSchema.parse({
-    analysisRunId: runId, title: "AI 컨설턴트 2차 검토본 · 관리자 확인 대기",
+    analysisRunId: runId, title: "AI 컨설턴트 추가 첨삭본 · 관리자 확인 대기",
     notes: `${AUTO_REVIEW_VERSION}\n${draft.summary}\n자동 검증 통과 후 관리자 확인 대기. 고객 미전달. 점수 재산정 없음.`,
     revisedAnswers: context.units.map(unit => {
       const answer = draft.answers.find(a => a.order === unit.order)!;
@@ -160,7 +160,7 @@ units의 모든 order를 정확히 한 번씩 출력하세요. 한 문항에 여
 targetLength는 저장된 목표이며 공식 최대 제한을 확인한 근거가 아닐 수 있습니다. 자료에 명시된 실제 공식 제한만 적용하고, 여러 항목을 임의로 총 700자로 줄이지 마세요. 불명확하면 확인 필요를 남기세요.
 improved는 firstAnswer의 실제 결함(사실 오류, 문항 의도 미충족, 논리 비약, 근거 부족, 의미 있는 중복, 문법 오류)을 고친 경우이며 reasons에 그 결함을 firstAnswer 문구로 지목하세요. alternative는 결함이 아닌 합리적 다른 구성이며 reasons에 대안임을 명시하세요. 좋은 문장을 억지로 바꾸지 마세요. maintained면 firstAnswer를 그대로 출력하고 유지한 근거를 쓰세요.
 각 항목에는 실제 제출 가능한 전체 revisedAnswer, 구체적인 변경 이유 또는 유지 근거, 남은 사실 확인 사항을 작성하세요. 점수·합격확률·외부 공고 검증 완료를 새로 주장하지 마세요.
-화면에 표시될 reasons/verificationNote에는 API·모델·Codex·내부 운영 메모를 넣지 마세요.`;
+화면에 표시될 reasons/verificationNote에는 API·모델·Codex·내부 운영 메모를 넣지 마세요. 고객에게는 '추가 첨삭'으로 안내되며 1차보다 낫다는 뜻이 아닙니다. reasons에 '2차', '개선본', '더 나아졌다' 같은 우열 표현을 쓰지 말고 무엇을 어떤 시각에서 다르게 보았는지만 쓰세요.`;
 export const VERIFY_RULES = `당신은 작성자와 별개인 엄격한 검수자입니다. candidate의 자기평가를 믿지 마세요.
 ${CONSULTANT_RULES}
 이번에는 재작성하지 말고 original context와 candidate를 대조한 구조화 검증만 반환하세요.

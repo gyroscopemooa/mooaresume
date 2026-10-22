@@ -41,7 +41,7 @@ export function AdminAnalysisPreviews({ runId, questions }: { runId: string; que
   }
 
   return <section className={styles.panel} id="secondary-review">
-    <div className={styles.reviewHead}><div><span>CONSULTANT AI REVIEW</span><h2>2차 첨삭본</h2></div><strong>검토 초안 · 고객 미전달</strong></div>
+    <div className={styles.reviewHead}><div><span>CONSULTANT AI REVIEW</span><h2>추가 첨삭본</h2></div><strong>검토 초안 · 고객 미전달</strong></div>
     <p>완성된 AI 첨삭을 컨설턴트 관점에서 한 번 더 확인한 개선본입니다. 고객에게 전달된 기존 결과·결제·이용권은 바뀌지 않으며, 현재는 관리자만 볼 수 있습니다.</p>
     <button type="button" disabled={busy} onClick={refresh}>개선본 기록 조회</button>
     {loaded && <div className={styles.experiment}>
@@ -56,7 +56,7 @@ export function AdminAnalysisPreviews({ runId, questions }: { runId: string; que
     {error && <p role="alert">{error}</p>}
     {previews.map(preview => <article className={styles.experiment} key={preview.id}>
       <div className={styles.savedHead}><div><span>SECOND REVIEW</span><h3>{preview.title}</h3></div><strong>{new Date(preview.createdAt).toLocaleString("ko-KR")} · 고객 미전달</strong></div>
-      <Link href={`/meensoo/analyses/${runId}/second-review/${preview.id}`}>독립된 2차 첨삭 결과표로 보기 →</Link>
+      <Link href={`/meensoo/analyses/${runId}/second-review/${preview.id}`}>독립된 추가 첨삭 결과표로 보기 →</Link>
       {preview.revisedAnswers.map(answer => <div className={styles.question} key={answer.questionOrder}><h4>{answer.questionOrder}. {answer.section?.title ?? questions.find(q => q.order === answer.questionOrder)?.title}</h4><div className={styles.columns}><div><h5>고객 제공본</h5><p>{answer.section?.originalAnswer ?? questions.find(q => q.order === answer.questionOrder)?.delivered}</p></div><div><h5>관리자 개선본</h5><p>{answer.revisedAnswer}</p>{answer.section && <ul>{answer.section.revisionReasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}</div></div></div>)}
       {preview.notes && <aside className={styles.reviewNote}><b>컨설턴트 검토 메모</b><p>{preview.notes}</p></aside>}
     </article>)}

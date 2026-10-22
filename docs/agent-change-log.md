@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: '2차 첨삭' → '추가 첨삭' 명칭·발송 메일 문구 변경
+
+- 요청(민수오빠): 2차는 1차보다 낫다는 뜻으로 읽혀 리스크가 있음. '추가 첨삭'으로 부르고, 메일은 "24시간 내로 임의로 선별된 첨삭본을 다른 시각을 통해 추가 첨삭… 1차 첨삭보다 개선을 의미하지 않으며 본인 스타일과 맞는 또는 종합하여 판단하기 위한 첨삭본" 취지로.
+- 변경: 관리자 전체 첨삭 목록·미리보기·자동 검수 카드, 고객 열람 페이지(`/result/second-review/[token]`), 결과 화면의 검토본 라벨·파일명(추가첨삭본)·안내문, `second-review-result.ts` 안내 제목/요약에서 '2차/보완' 표현을 '추가 첨삭/다른 시각'으로 교체. 발송 메일 제목 `[무아레쥬메] 다른 시각으로 본 추가 첨삭본을 전달드립니다`, 본문 첫 단락을 운영자 지정 문구로 교체('개선 작업 진행' 문구 삭제), 무료 안내·열람 안내·작성 팁·후기 안내는 유지. 추가 첨삭 AI 지시에 '2차/개선본/더 나아졌다' 같은 우열 표현 금지 추가. 내부 코드·DB 이름(second-review, automatic_second_reviews)은 그대로.
+- 파일: `src/app/api/meensoo/second-review-delivery/route.ts`/`.test.ts`, `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/analyses/[id]/second-review/[previewId]/page.tsx`, `src/app/result/second-review/[token]/page.tsx`, `src/components/admin-analysis-previews.tsx`, `admin-automatic-review.tsx`, `result-workspace-complete.tsx`/`.test.tsx`, `src/domain/second-review-result.ts`, `src/server/second-review/automatic-contract.ts`, 본 기록.
+- 검증: vitest 127파일 1125 통과, `tsc --noEmit` 통과, 대상 ESLint 통과. 운영 배포 전이라 실제 사이트는 아직 '2차' 표기.
+- 겹침: `result-workspace-complete.tsx`는 `claude/recommendation-sentences-20261022`·`claude/hide-internal-keep-reason-20261022`와 다른 줄만 수정.
+- 복구: 이 커밋 revert.
+
 ## 2026-10-22 — Claude: 자동 2차 검수 품질 가드 (consultant-review-1.1)
 
 - 요청(민수오빠): 10/22 첫 고객 자동 2차(QUICK POLISH, ISC)가 1차보다 나빠짐 — 1번은 취향 변경(2/3→3분의 2, '이 경험을 통해' 추가, "30→70 향상"을 "70점 받음"으로 약화)을 improved로 표시, 4번은 연이은 두 문장 '관심을 갖게 되었습니다' 반복·공고 키워드 'Concept' 삭제·지원 동기 일반화. 모델 검증은 전부 통과시켰다. 원인: (1) 1차 결과 전체를 넘기며 고객이 못 받은 내부 심사 메모 `revisionQuality`(거절된 후보 설명)까지 들어가 2차가 '1차 피드백'으로 오인해 반박, (2) 원문이 좋을 때 무엇을 개선해야 하는지 지침이 없어 표현만 바꿈, (3) 검증에 취향/핵심어/반복 항목이 없음.
