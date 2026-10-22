@@ -9,6 +9,7 @@
 - 한계: "30점에서 70점으로 향상"처럼 숫자는 남고 비교만 약해진 경우는 코드가 아니라 검증 모델(keyContentPreserved)에 맡김. 숫자 표기만 바꾼 정당한 수정도 거부(실패 시 관리자 확인 필요로 남음, 고객 영향 없음). 1.0 형식으로 이미 진행 중인 verify 응답은 새 스키마 불일치로 needs_attention 처리될 수 있음.
 - 복구: 브랜치 `claude/second-review-guards-20261022`(origin/main bf76033 기준) 커밋을 revert. 운영 중지는 기존대로 `AUTO_SECOND_REVIEW_ENABLED=false`.
 - 상태: 별도 worktree `.claude/worktrees/second-review-guards`에 로컬 커밋, 미푸시·미배포, 사용자 결정 대기.
+- 2026-10-22 유료 평가(사용자 승인, draft+verify 각 1회, 총 약 1.9만 토큰): 10/22 건을 익명화(회사→A사, 캠프·업체·과목명 일반화, 내부 메모 포함해 제거 확인)한 4문항 샘플. 새 2차는 1·2·4번 maintained(취향 변경·삭제 없음), 3번만 improved로 '창의적 사고' 연결 문장 추가, 코드 검사 통과. 독립 검증은 3번의 '주변 환경도 원인이 될 수 있다고 보고 관찰했고'를 원문에 없는 사고 과정 추가로 판정해 전체 거부(noInventedFacts·noRegression·dispositionAccurate false). 결론: 이전 2차의 퇴행은 사라졌고 검증도 제대로 엄격해졌으나, 원문이 좋은 글에서 고객에게 보일 2차본은 이번에도 생성되지 않음. 평가 스크립트는 저장소에 추가하지 않음(임시 파일 삭제).
 
 ## 2026-10-18 — Claude: PRO 상세 입력 화면 간격·글자·테두리 통일 (정돈 레이어)
 
