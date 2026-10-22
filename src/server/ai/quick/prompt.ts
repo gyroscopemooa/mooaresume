@@ -15,7 +15,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.8";
+export const QUICK_PROMPT_VERSION = "quick-4.9";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -370,6 +370,7 @@ polish: 위 여섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
     "recommendations는 revisedAnswer와 별개로, 원문을 바꾸지 않고 옆에 보여 줄 추천 문장입니다. 문항마다 1~3개를 쓰되 원문에 실제로 다듬을 곳이 있는 만큼만 쓰고, 개수를 채우려고 비슷한 문장을 늘리지 마세요. revisedAnswer에 이미 반영한 수정을 되풀이하지 마세요.",
     "원문이 이미 좋아 고칠 곳이 없어도 1개는 다른 각도의 추천을 주세요. 문항이 묻는 역량을 직접 말해 주는 문장, 행동과 결과의 인과를 잇는 문장, 경험을 지원 직무와 잇는 문장처럼 원문에 이미 있는 사실을 다른 각도에서 살리는 한 문장입니다.",
     "recommendations.anchorQuote에는 추천 문장이 대신하거나 뒤에 붙을 원문 문장을 토씨와 띄어쓰기까지 그대로 복사하세요.",
+    "추천 문장은 '해결 방식', '구조', '역량', '환경 변수'처럼 뭉뚱그린 말로 쓰지 말고, 원문에 있는 구체적인 행동·대상·숫자(예: '수업 직후 12명이 함께 문제를 풀었다', '에어컨 바람에 제품이 휘었다')로 쓰세요. 원문 표현을 가져오더라도 그 문장만 읽어서 무엇을 했는지 알 수 있어야 합니다. 지원 동기처럼 결론을 먼저 말해야 잘 읽히는 문항에서 원문이 배경부터 시작한다면, 지원 이유를 첫 문장에서 먼저 밝히는 두괄식 첫 문장을 추천 하나로 주세요(anchorQuote는 원문 첫 문장, 원문에 있는 이유만 사용).",
     "kind=improve는 원문에 있는 사실만으로 다시 쓴 문장이며 needsConfirmation은 null입니다. anchorQuote의 숫자·영문 용어·고유명사·전후 비교(예: 30점에서 70점으로)는 그대로 남기고 약하게 만들지 마세요.",
     "kind=add는 원문에 없는 생각·과정·수치·사실이 들어가는 문장입니다. 그 부분은 sentence 안에서 [확인 필요: 무엇]으로 표시하고, needsConfirmation에 지원자가 무엇을 확인해야 이 문장을 쓸 수 있는지 적으세요. 확인 표시 없이 새 사실을 단정하지 마세요.",
     "recommendations는 화면에 '다른 시각 추천안'으로 보이고 지원자가 고릅니다. recommendations.why에는 원문과 어떤 다른 시각인지 한 문장으로 적고, 원문보다 낫다거나 개선이라고 단정하지 마세요. 동의어 교체, 숫자 표기 변경, '이 경험을 통해' 같은 상투적 연결, 의미 없이 늘이기, 앞 문장과 같은 서술어로 끝나는 문장은 추천이 아닙니다.",

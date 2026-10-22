@@ -1,6 +1,5 @@
 .list{display:grid;gap:8px;padding:14px 17px;border-top:1px solid #e5ebe8;background:#fbfcfb}
-.list>header{display:grid;grid-template-columns:17px 1fr;gap:8px}
-.mark{width:17px;height:17px;display:grid;place-items:center;border-radius:5px;background:#176b4a;color:#fff;font:800 10px/1 Georgia,serif}
+.list>header{display:block}
 .list>header b{font-size:12px}
 .list>header small{margin-left:4px;padding:2px 6px;border-radius:10px;background:#e7f3ec;color:#176b4a;font-size:8px;font-weight:800}
 .list>header p{margin:4px 0 0;color:#68756f;font-size:10px;line-height:1.5}

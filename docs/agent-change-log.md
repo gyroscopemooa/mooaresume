@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 추천안 다듬기(로고 제거·추가 첨삭 안내문·구체어/두괄식 규칙)
+
+- 요청(민수오빠): 추천안 앞 M 로고 위치가 어색 → 제거. 추가 첨삭에 1차의 keep_current 안내문이 그대로 나옴 → 추가 첨삭용 문구로. 추천 문장이 '문제의 해결 방식을 만든', '환경 변수가 불량으로 이어지는'처럼 뭉뚱그려져 무엇을 했는지 흐림. 지원 동기는 두괄식 추천이 가능해야 함.
+- 변경: `RecommendationList`에서 M 마크 제거(머리·빈 안내 모두). `editionBadge`(추가 첨삭) 화면의 keep_current 안내를 '추가 첨삭은 1차 문장을 바꾸지 않고 문항마다 다른 시각 추천안을 더했습니다…'로. 1차(quick-4.9)·추가 첨삭(consultant-review-1.4) 추천 규칙: 추상어 대신 원문의 구체 행동·대상·숫자로, 결론이 먼저 와야 하는 지원 동기는 두괄식 첫 문장 추천 1개(원문 이유만). 검토/검증 AI: 뭉뚱그린 추천은 탈락.
+- 파일: `src/components/recommendation-list.tsx`/`.module.css`/`.test.tsx`, `src/components/result-workspace-complete.tsx`, `src/server/ai/quick/prompt.ts`, `revision-quality.ts`, `src/server/second-review/automatic-contract.ts`, 본 기록.
+- 검증: vitest 1473 통과, tsc 통과. 배포·메일은 사용자 확인 후.
+- 복구: 이 커밋 revert.
+
 ## 2026-10-22 — Claude: 추가 첨삭 = 1차 결과 그대로 + 다른 시각 추천안, 1차 판단 뒤집기 금지 (consultant-review-1.3)
 
 - 요청(민수오빠): 추가 첨삭 화면이 1차보다 허전함(좋은 표현·확인 필요·개선점이 사라짐). 추가 첨삭은 1차를 그대로 두고 문항별 다른 시각 추천안만 더할 것. 1차가 좋다/나쁘다/확인 필요라 한 판단을 뒤집는 것은 절대 금지(1차가 말하지 않은 곳의 새 의견은 허용). 추천안 아이콘은 반짝이 대신 무아레쥬메 마크.

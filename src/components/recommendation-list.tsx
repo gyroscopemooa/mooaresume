@@ -15,12 +15,12 @@ export function RecommendationList({ items, kept }: { items?: readonly ResultRec
   const [copied, setCopied] = useState<string | null>(null);
   // 추천안이 생기기 전 결과에는 칸 자체가 없다. 빈 배열은 만들어 봤지만 검사를 통과한 추천이 없다는 뜻이다.
   if (!items) return null;
-  if (items.length === 0) return <p className={styles.none}><span className={styles.mark} aria-hidden="true">M</span>이 문항은 지금 문장 그대로 충분해 따로 드릴 다른 시각 추천안이 없습니다.</p>;
+  if (items.length === 0) return <p className={styles.none}>이 문항은 지금 문장 그대로 충분해 따로 드릴 다른 시각 추천안이 없습니다.</p>;
   const copy = async (item: ResultRecommendation) => {
     try { await navigator.clipboard.writeText(item.sentence); setCopied(item.id); } catch { setCopied(null); }
   };
   return <section className={styles.list} aria-label="다른 시각 추천안">
-    <header><span className={styles.mark} aria-hidden="true">M</span><div><b>다른 시각 추천안 <small>선택</small></b><p>{kept
+    <header><div><b>다른 시각 추천안 <small>선택</small></b><p>{kept
       ? "지금 문장 그대로도 충분합니다. 아래는 다른 시각에서 본 표현이니, 본인 스타일에 맞는 것만 골라 쓰세요."
       : "아래는 다른 시각에서 본 표현입니다. 본인 스타일에 맞는 것만 골라 쓰세요."}</p></div></header>
     {items.map(item => <article key={item.id} data-kind={item.kind}>

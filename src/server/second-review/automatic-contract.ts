@@ -4,7 +4,7 @@ import { adminAnalysisPreviewInputSchema } from "@/domain/admin-analysis-preview
 import { sentenceEndingStyles } from "@/server/ai/quick/validator";
 import { selectRecommendations } from "@/server/ai/quick/recommendations";
 
-export const AUTO_REVIEW_VERSION = "consultant-review-1.3";
+export const AUTO_REVIEW_VERSION = "consultant-review-1.4";
 export const unitSchema = z.object({
   order: z.number().int().positive(), sourceQuestionOrder: z.number().int().positive(),
   title: z.string(), sourceText: z.string(), firstAnswer: z.string(),
@@ -192,6 +192,7 @@ units의 모든 order를 정확히 한 번씩 출력하세요. 한 문항에 여
 연이은 두 문장을 같은 서술어(예: '관심을 갖게 되었습니다')로 끝내지 마세요.
 원문에 없는 생각·의도·관찰 과정(예: '~일 수 있다고 보고 관찰했다')은 사실처럼 본문에 쓰지 마세요. 그런 연결이 도움이 되면 본문은 두고 recommendations에 kind=add로 남기세요.
 recommendations는 revisedAnswer를 바꾸지 않고 옆에 보여 줄 '다른 시각 추천안'이며 고객이 고릅니다. 항목마다 1~3개를 쓰되, 원문이 이미 좋아도 1개는 다른 각도(문항이 묻는 역량을 직접 말하기, 행동과 결과의 인과 잇기, 직무와 잇기)를 주세요. 개수를 채우려고 비슷한 문장을 늘리지 마세요.
+추천 문장은 '해결 방식', '구조', '역량', '환경 변수'처럼 뭉뚱그린 말로 쓰지 말고, 원문에 있는 구체적인 행동·대상·숫자(예: '수업 직후 12명이 함께 문제를 풀었다', '에어컨 바람에 제품이 휘었다')로 쓰세요. 원문 표현을 가져오더라도 그 문장만 읽어서 무엇을 했는지 알 수 있어야 합니다. 지원 동기처럼 결론을 먼저 말해야 잘 읽히는 문항에서 원문이 배경부터 시작한다면, 지원 이유를 첫 문장에서 먼저 밝히는 두괄식 첫 문장을 추천 하나로 주세요(anchorQuote는 원문 첫 문장, 원문에 있는 이유만 사용).
 recommendations.anchorQuote는 revisedAnswer 안의 문장을 토씨까지 그대로 복사하세요. kind=improve는 그 문장의 사실만으로 다시 쓴 문장이고 needsConfirmation은 null이며, 숫자·영문 용어·고유명사·전후 비교를 지우거나 약하게 만들지 마세요. kind=add는 원문에 없는 생각·과정·수치가 들어가는 문장이며, 그 부분을 [확인 필요: 무엇]으로 표시하고 needsConfirmation에 고객이 무엇을 확인해야 쓸 수 있는지 적으세요.
 recommendations.why에는 어떤 다른 시각인지 한 문장으로 적고, 원문보다 낫다거나 개선이라고 단정하지 마세요. 동의어 교체, 숫자 표기 변경, 상투적 연결, 앞 문장과 같은 서술어로 끝나는 문장은 추천이 아닙니다.
 제출용 기본 문체는 합니다체입니다. 지원자가 명시한 문체 요구가 있으면 존중하세요. '싶다→싶습니다'만 바꾸고 구조·누락·중복을 해결했다고 주장하지 마세요.
@@ -204,7 +205,7 @@ export const VERIFY_RULES = `당신은 작성자와 별개인 엄격한 검수�
 ${CONSULTANT_RULES}
 이번에는 재작성하지 말고 original context와 candidate를 대조한 구조화 검증만 반환하세요.
 모든 unit order를 정확히 한 번씩 검증하세요. 사실 누락/날조, 핵심 경험 축약, 질문 누락, 잘못된 문체, 근무처 혼합, 이전 피드백 미해결 은폐, 임의 분량 축약이 있으면 approved=false.
-validRecommendationIndexes: 각 항목 candidate recommendations 중 통과한 0 기반 번호입니다. anchorQuote가 revisedAnswer에 있고, 사실·수치·고유명사·전후 비교·말투를 약하게 만들지 않고, 원문에 없는 사실을 [확인 필요] 표시 없이 단정하지 않으며, 취향 교체·상투어·반복이 아니고, 대신하는 문장보다 나빠지지 않는 추천만 넣으세요. 추천이 나쁘다는 이유로 approved를 false로 하거나 다른 검사를 false로 하지 말고 번호에서 빼기만 하세요. 추천은 본문 판정(dispositionAccurate 등)의 근거가 아닙니다.
+validRecommendationIndexes: 각 항목 candidate recommendations 중 통과한 0 기반 번호입니다. anchorQuote가 revisedAnswer에 있고, 사실·수치·고유명사·전후 비교·말투를 약하게 만들지 않고, 원문에 없는 사실을 [확인 필요] 표시 없이 단정하지 않으며, 취향 교체·상투어·반복이 아니고, 대신하는 문장보다 나빠지지 않는 추천만 넣으세요. '해결 방식'·'구조'처럼 뭉뚱그린 말로 무엇을 했는지 흐려진 추천도 빼세요. 추천이 나쁘다는 이유로 approved를 false로 하거나 다른 검사를 false로 하지 말고 번호에서 빼기만 하세요. 추천은 본문 판정(dispositionAccurate 등)의 근거가 아닙니다.
 consistentWithFirst: 본문·reasons·verificationNote·recommendations 어디에서도 1차 판단을 뒤집지 않았을 때만 true. 1차 good 문구를 바꾸거나 깎아내림, 1차가 지적·확인 필요라 한 것을 괜찮다/확인됐다고 함, 1차가 짚지 않은 방향으로 본문을 고침은 false입니다.
 자료가 없어 남겨둔 사실 확인은 명확히 표시했다면 허용합니다. maintained의 실제 미해결 결함이나 alternative의 퇴행을 통과시키지 마세요.
 dispositionAccurate: improved가 firstAnswer의 실제 결함을 고쳤을 때만 true. 취향·표기·연결어 교체뿐이거나 결함을 지목하지 못하면 false.

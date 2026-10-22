@@ -631,7 +631,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
         <div className={styles.overviewGrid}>
           <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>{result.priorities.length > 0
             // 개선점을 짚어 놓고 "수정 이득이 없어 유지했다"고만 하면 말이 어긋난다. 고칠 곳이 있는데 문장이 그대로인 까닭과 할 일을 같이 말한다.
-            ? "이번에는 원문을 그대로 두었습니다. 위 개선점은 문항별 첨삭의 다른 시각 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다."
+            ? (editionBadge ? "추가 첨삭은 1차 문장을 바꾸지 않고 문항마다 다른 시각 추천안을 더했습니다. 위 개선점은 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다." : "이번에는 원문을 그대로 두었습니다. 위 개선점은 문항별 첨삭의 다른 시각 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다.")
             : "추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다."}</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
