@@ -38,6 +38,15 @@ describe("section-preserving second review", () => {
     expect(result.verificationQuestions).toEqual(["공식 분량을 확인하세요."]);
     expect(JSON.stringify(source)).toBe(snapshot);
   });
+  it("shows another-angle recommendations beside the kept 추가 첨삭 answer", () => {
+    const recommendation = { id: "r1", kind: "add" as const, anchorQuote: "지원 계기에 관한 메모다.", sentence: "다른 시각의 문장입니다.", why: "문항이 묻는 역량을 직접 말합니다.", needsConfirmation: "실제로 그랬다면 쓰세요." };
+    const withRecommendation = { ...preview, revisedAnswers: preview.revisedAnswers.map((answer, i) => i ? answer : { ...answer, section: { ...answer.section!, recommendations: [recommendation] } }) };
+    expect(adminAnalysisPreviewInputSchema.safeParse({ analysisRunId: preview.analysisRunId, title: preview.title, revisedAnswers: withRecommendation.revisedAnswers }).success).toBe(true);
+    const result = buildSecondReviewResult(sampleResultDocument, withRecommendation);
+    expect(result.questions[0].recommendations).toEqual([recommendation]);
+    expect(result.questions[1].recommendations).toBeUndefined();
+    expect(resultDocumentSchema.safeParse(result).success).toBe(true);
+  });
   it("keeps legacy saved previews readable", () => {
     const result = buildSecondReviewResult(sampleResultDocument, { ...preview, revisedAnswers: [{ questionOrder: 1, revisedAnswer: "기존 저장본입니다." }] });
     expect(result.questions[0].revisedAnswer).toBe("기존 저장본입니다.");

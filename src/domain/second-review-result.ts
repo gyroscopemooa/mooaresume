@@ -19,6 +19,7 @@ export function buildSecondReviewResult(source: ResultDocument, preview: AdminAn
       highlightedPhrases: [],
       revisionReasons: answer.section!.revisionReasons,
       verificationNote: answer.section!.verificationNote,
+      recommendations: answer.section!.recommendations,
     }))
     : source.questions.map(question => {
       const answer = preview.revisedAnswers.find(item => item.questionOrder === question.order);

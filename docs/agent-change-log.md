@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 추가 첨삭본에도 '다른 시각 추천안' 카드 표시
+
+- 요청(민수오빠): 추가 첨삭 메일을 열어 보니 추천 문장이 안 보임. 원인: 추가 첨삭 미리보기 항목에 추천 칸이 없어 추천 문장을 확인 사항 한 줄(verificationNote)에 넣었음.
+- 변경: `adminAnalysisPreviewAnswerSchema.section.recommendations`(선택, 최대 3, 1차와 같은 모양) 추가, `buildSecondReviewResult`가 이를 결과 문항 `recommendations`로 넘겨 기존 `RecommendationList` 카드로 표시. DB는 jsonb라 마이그레이션 없음, 과거 미리보기는 칸이 없어 그대로.
+- 파일: `src/domain/admin-analysis-preview.ts`, `src/domain/second-review-result.ts`/`.test.ts`, 본 기록.
+- 검증: 대상 vitest 128파일 1129 통과, 전체 vitest(기존 Expo 2파일 제외) 통과, `tsc --noEmit`·ESLint 통과.
+- 남은 것: 자동 추가 첨삭 생성 단계(draft 스키마)는 아직 추천안을 만들지 않음 — 이번 건은 검증 AI가 본문 변경을 거절한 문장을 관리자가 추천으로 옮긴 것.
+- 복구: 이 커밋 revert.
+
 ## 2026-10-22 — Claude: 추천안·추가 첨삭·내부 메모 숨기기 동시 배포
 
 - 요청(민수오빠, 테스트 메일 확인 후 승인): 세 브랜치를 main에 함께 배포.

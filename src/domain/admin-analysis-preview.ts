@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resultRecommendationSchema } from "./result-document";
 
 export const adminAnalysisPreviewAnswerSchema = z.object({
   questionOrder: z.number().int().positive(),
@@ -9,6 +10,8 @@ export const adminAnalysisPreviewAnswerSchema = z.object({
     revisionReasons: z.array(z.string().trim().min(1)).min(1).max(10),
     verificationNote: z.string().max(2_000),
     disposition: z.enum(["improved", "alternative", "maintained"]).optional(),
+    // 원문 옆에 보이는 다른 시각 추천안. 2026-10-22 이전 미리보기에는 없다.
+    recommendations: z.array(resultRecommendationSchema).max(3).optional(),
   }).optional(),
 });
 
