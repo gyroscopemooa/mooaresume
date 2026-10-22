@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AUTO_REVIEW_VERSION, contextSchema, draftSchema, verificationSchema, validateDraft, validateVerification, toAutomaticPreview, type ReviewContext } from "./automatic-contract";
+import { AUTO_REVIEW_VERSION, contextSchema, promptContext, draftSchema, verificationSchema, validateDraft, validateVerification, toAutomaticPreview, type ReviewContext } from "./automatic-contract";
 import type { AutomaticGateway } from "./automatic-gateway";
 import type { AdminAnalysisPreviewInput } from "@/domain/admin-analysis-preview";
 
@@ -30,7 +30,7 @@ export async function advanceAutomaticReview(job: AutomaticJob, repository: Auto
         version: AUTO_REVIEW_VERSION, model: gateway.model ?? "unspecified",
         promptVersion: AUTO_REVIEW_VERSION, rubricVersion: AUTO_REVIEW_VERSION, schemaVersion: AUTO_REVIEW_VERSION,
       } }, false);
-      const responseId = await gateway.start("draft", context);
+      const responseId = await gateway.start("draft", promptContext(context));
       await repository.save(job, { status: "draft_running", draft_response_id: responseId });
       return "draft_running";
     }
@@ -39,7 +39,7 @@ export async function advanceAutomaticReview(job: AutomaticJob, repository: Auto
       const draft = draftSchema.parse(job.draft);
       validateDraft(context, draft);
       await repository.save(job, { status: "verify_starting" }, false);
-      const responseId = await gateway.start("verify", { context, candidate: draft });
+      const responseId = await gateway.start("verify", { context: promptContext(context), candidate: draft });
       await repository.save(job, { status: "verify_running", verify_response_id: responseId });
       return "verify_running";
     }

@@ -1,5 +1,15 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 자동 2차 검수 품질 가드 (consultant-review-1.1)
+
+- 요청(민수오빠): 10/22 첫 고객 자동 2차(QUICK POLISH, ISC)가 1차보다 나빠짐 — 1번은 취향 변경(2/3→3분의 2, '이 경험을 통해' 추가, "30→70 향상"을 "70점 받음"으로 약화)을 improved로 표시, 4번은 연이은 두 문장 '관심을 갖게 되었습니다' 반복·공고 키워드 'Concept' 삭제·지원 동기 일반화. 모델 검증은 전부 통과시켰다. 원인: (1) 1차 결과 전체를 넘기며 고객이 못 받은 내부 심사 메모 `revisionQuality`(거절된 후보 설명)까지 들어가 2차가 '1차 피드백'으로 오인해 반박, (2) 원문이 좋을 때 무엇을 개선해야 하는지 지침이 없어 표현만 바꿈, (3) 검증에 취향/핵심어/반복 항목이 없음.
+- 변경: `reviewSource`/`promptContext`로 `revisionQuality`를 저장 context와 draft·verify 입력 모두에서 제외(이미 저장된 진행 중 작업도 호출 시 제외). `validateDraft`에 코드 검사 2개 추가 — 원문·1차에 있던 숫자/영문 용어가 사라지면 `SECOND_REVIEW_KEY_TERM_DROPPED`, 1차에 없던 연속 동일 서술어(끝 두 어절)가 생기면 `SECOND_REVIEW_REPEATED_ENDING`. 검증 스키마에 `dispositionAccurate`·`keyContentPreserved`·`noNewRepetition` 추가(하나라도 false면 거부). 작성 프롬프트에 고객이 받은 1차 피드백의 범위, 원문이 좋을 때 찾을 실제 개선 지점(문항 의도·논리 연결·직무 연결·의미 있는 중복)과 없으면 maintained + 어떤 사실이 필요한지 안내, 취향 예시 금지, 숫자·영문·전후 비교 약화 금지를 추가. 버전 `consultant-review-1.1`. 관리자 화면은 1.0 저장 기록도 읽도록 `verificationEvidenceSchema`(order·reason·remainingIssues만)로 읽음.
+- 파일: `src/server/second-review/automatic-contract.ts`, `automatic-worker.ts`, `automatic-repository.ts`, `automatic.test.ts`, `src/components/admin-automatic-review.tsx`, 본 기록.
+- 검증: `npx vitest run src/server/second-review src/components` 38파일 297테스트 통과, `tsc --noEmit` 통과, 대상 ESLint 통과, `git diff --check` 통과. 실제 10/22 2차 draft를 새 `validateDraft`에 재생하면 1번(2/3)·4번(Concept, 반복 1) 때문에 거부되고, promptContext에 revisionQuality가 없음을 확인. 유료 모델 재실행(eval 스크립트)·운영 배포는 하지 않음 — 새 프롬프트가 실제로 더 나은 2차를 만드는지는 아직 미검증.
+- 한계: "30점에서 70점으로 향상"처럼 숫자는 남고 비교만 약해진 경우는 코드가 아니라 검증 모델(keyContentPreserved)에 맡김. 숫자 표기만 바꾼 정당한 수정도 거부(실패 시 관리자 확인 필요로 남음, 고객 영향 없음). 1.0 형식으로 이미 진행 중인 verify 응답은 새 스키마 불일치로 needs_attention 처리될 수 있음.
+- 복구: 브랜치 `claude/second-review-guards-20261022`(origin/main bf76033 기준) 커밋을 revert. 운영 중지는 기존대로 `AUTO_SECOND_REVIEW_ENABLED=false`.
+- 상태: 별도 worktree `.claude/worktrees/second-review-guards`에 로컬 커밋, 미푸시·미배포, 사용자 결정 대기.
+
 ## 2026-10-18 — Claude: PRO 상세 입력 화면 간격·글자·테두리 통일 (정돈 레이어)
 
 - 요청: `/pro/build` 상세 입력 화면이 버튼·입력칸이 많아 지저분해 보임. 기능·문구·UX는 유지하고 테두리-글자 간격, 글자 크기, 디자인 통일감만 깔끔하게.
