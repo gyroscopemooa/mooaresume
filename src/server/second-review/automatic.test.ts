@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { sampleResultDocument } from "@/fixtures/result-document";
+import { z } from "zod";
+import { draftRequestSchema, verificationRequestSchema } from "./automatic-contract";
 import { buildReviewUnits, droppedKeyTerms, promptContext, repeatedEndings, reviewSource, splitWritingSections, validateDraft, validateVerification, toAutomaticPreview, type ReviewContext, type ReviewDraft } from "./automatic-contract";
 import { advanceAutomaticReview, type AutomaticJob, type AutomaticRepository } from "./automatic-worker";
 import type { AutomaticGateway } from "./automatic-gateway";
@@ -71,6 +73,25 @@ describe("automatic consultant review", () => {
   });
   it("lets the 2nd pass remove a term only the 1st pass added", () => {
     expect(droppedKeyTerms("성과를 냈습니다.", "성과 20%를 냈습니다.", "성과를 냈습니다.")).toEqual([]);
+  });
+  it("keeps only reviewer-passed recommendations on the 추가 첨삭 preview and never blocks on a weak one", () => {
+    const kept = "행사를 좋아합니다.";
+    const unit: ReviewContext = { ...context, units: [{ ...context.units[0], firstAnswer: kept }] };
+    const good = { anchorQuote: kept, kind: "improve" as const, sentence: "행사를 즐겨 찾았습니다.", why: "관심을 행동으로 보여 줍니다.", needsConfirmation: null };
+    const bad = { ...good, sentence: "행사를 기획해 1,000명을 모았습니다." };
+    const withRecs: ReviewDraft = { summary: "유지", answers: [{ order: 1, disposition: "maintained", revisedAnswer: kept, reasons: ["원문 유지"], verificationNote: "", recommendations: [bad, good] }] };
+    const passedOnlyGood = { ...verification, answers: [{ ...verification.answers[0], validRecommendationIndexes: [1] }] };
+    validateVerification(unit, passedOnlyGood);
+    const preview = toAutomaticPreview("11111111-1111-4111-8111-111111111111", unit, withRecs, passedOnlyGood);
+    expect(preview.revisedAnswers[0].section?.recommendations?.map(r => r.sentence)).toEqual([good.sentence]);
+    const legacy = toAutomaticPreview("11111111-1111-4111-8111-111111111111", unit, { ...withRecs, answers: [{ ...withRecs.answers[0], recommendations: undefined }] });
+    expect(legacy.revisedAnswers[0].section?.recommendations).toBeUndefined();
+  });
+  it("asks the model for one to three recommendations per item", () => {
+    const schema = JSON.stringify(z.toJSONSchema(draftRequestSchema));
+    expect(schema).toContain("\"recommendations\"");
+    expect(schema).toContain("\"minItems\":1");
+    expect(JSON.stringify(z.toJSONSchema(verificationRequestSchema))).toContain("validRecommendationIndexes");
   });
   it("persists start intent before buying generation and then saves the response cursor", async () => {
     const {repository,gateway}=mocks();

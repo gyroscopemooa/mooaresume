@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { AUTO_REVIEW_VERSION, CONSULTANT_RULES, VERIFY_RULES, draftSchema, verificationSchema } from "./automatic-contract";
+import { AUTO_REVIEW_VERSION, CONSULTANT_RULES, VERIFY_RULES, draftRequestSchema, verificationRequestSchema } from "./automatic-contract";
 
 const envelopeSchema = z.object({
   id: z.string(), model: z.string().optional(), status: z.string(),
@@ -22,7 +22,7 @@ export interface AutomaticGateway {
 export class AutomaticReviewGateway implements AutomaticGateway {
   constructor(private readonly apiKey: string, readonly model: string, private readonly transport: typeof fetch = fetch) {}
   async start(stage: "draft" | "verify", input: unknown) {
-    const schema = z.toJSONSchema(stage === "draft" ? draftSchema : verificationSchema);
+    const schema = z.toJSONSchema(stage === "draft" ? draftRequestSchema : verificationRequestSchema);
     const response = await this.transport("https://api.openai.com/v1/responses", {
       method: "POST", headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
       signal: AbortSignal.timeout(25_000),

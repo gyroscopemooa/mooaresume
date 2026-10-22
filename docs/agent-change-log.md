@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 추가 첨삭 자동 생성에도 '다른 시각 추천안' 1~3개 (consultant-review-1.2)
+
+- 요청(민수오빠): 추가 첨삭에도 1차처럼 모든 문항에 추천안을 자동으로 붙이고, 다시 메일로 보내 달라.
+- 변경: 추가 첨삭 draft 항목에 `recommendations`(1차와 같은 모양) 추가 — 모델 요청 스키마(`draftRequestSchema`)는 1~3개 필수, 저장 파싱(`draftSchema`)은 선택(1.1 이전 초안 호환). 검증 AI는 `validRecommendationIndexes`로 통과한 추천 번호만 돌려주며, 나쁜 추천은 빼기만 하고 승인 거부 사유가 되지 않음(요청 스키마 `verificationRequestSchema`는 필수, 저장 파싱은 선택). `toAutomaticPreview`가 검증 통과분을 1차와 같은 코드 필터 `selectRecommendations`로 한 번 더 거른 뒤 항목 `section.recommendations`에 저장(이미 배포된 화면 카드로 표시). 프롬프트: 확인이 필요한 연결은 본문 대신 kind=add 추천으로, 원문이 좋아도 다른 각도 1개, 개선이라 단정 금지. 버전 consultant-review-1.2.
+- 파일: `src/server/second-review/automatic-contract.ts`, `automatic-gateway.ts`, `automatic-worker.ts`, `automatic.test.ts`, 본 기록.
+- 검증: vitest 148파일 1528 통과, `tsc --noEmit`·ESLint 통과.
+- 복구: 이 커밋 revert(이전 버전 초안·미리보기는 추천 없이 그대로 읽힘).
+
 ## 2026-10-22 — Claude: 추가 첨삭본에도 '다른 시각 추천안' 카드 표시
 
 - 요청(민수오빠): 추가 첨삭 메일을 열어 보니 추천 문장이 안 보임. 원인: 추가 첨삭 미리보기 항목에 추천 칸이 없어 추천 문장을 확인 사항 한 줄(verificationNote)에 넣었음.

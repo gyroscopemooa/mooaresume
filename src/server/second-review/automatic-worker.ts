@@ -61,7 +61,7 @@ export async function advanceAutomaticReview(job: AutomaticJob, repository: Auto
     const verification = verificationSchema.parse(polled.output);
     await repository.save(job, { verification, execution }, false);
     validateVerification(context, verification);
-    const preview = toAutomaticPreview(job.analysis_run_id, context, draftSchema.parse(job.draft));
+    const preview = toAutomaticPreview(job.analysis_run_id, context, draftSchema.parse(job.draft), verification);
     await repository.finish(job, preview, verification, execution);
     return "completed";
   } catch (error) {

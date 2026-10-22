@@ -2,8 +2,9 @@ import { z } from "zod";
 import type { ResultDocument } from "@/domain/result-document";
 import { adminAnalysisPreviewInputSchema } from "@/domain/admin-analysis-preview";
 import { sentenceEndingStyles } from "@/server/ai/quick/validator";
+import { selectRecommendations } from "@/server/ai/quick/recommendations";
 
-export const AUTO_REVIEW_VERSION = "consultant-review-1.1";
+export const AUTO_REVIEW_VERSION = "consultant-review-1.2";
 export const unitSchema = z.object({
   order: z.number().int().positive(), sourceQuestionOrder: z.number().int().positive(),
   title: z.string(), sourceText: z.string(), firstAnswer: z.string(),
@@ -14,17 +15,27 @@ export const contextSchema = z.object({
   writingMode: z.string(), writingStyle: z.string(), targetLength: z.number().nullable(),
 });
 export type ReviewContext = z.infer<typeof contextSchema>;
+// Same shape as the 1st pass's 다른 시각 추천안: shown beside the answer, never merged into it.
+const recommendationSchema = z.object({ anchorQuote: z.string().min(1), kind: z.enum(["improve", "add"]), sentence: z.string().min(1), why: z.string().min(1), needsConfirmation: z.string().nullable() });
+const draftAnswerSchema = z.object({
+  order: z.number().int().positive(),
+  disposition: z.enum(["improved", "alternative", "maintained"]),
+  revisedAnswer: z.string().min(1).max(12000),
+  reasons: z.array(z.string().min(1)).min(1).max(10),
+  verificationNote: z.string().max(2000),
+  // Optional when parsing: drafts stored by 1.1 and earlier have none.
+  recommendations: z.array(recommendationSchema).max(3).optional(),
+});
 export const draftSchema = z.object({
   summary: z.string().min(1).max(2000),
-  answers: z.array(z.object({
-    order: z.number().int().positive(),
-    disposition: z.enum(["improved", "alternative", "maintained"]),
-    revisedAnswer: z.string().min(1).max(12000),
-    reasons: z.array(z.string().min(1)).min(1).max(10),
-    verificationNote: z.string().max(2000),
-  })).min(1).max(20),
+  answers: z.array(draftAnswerSchema).min(1).max(20),
 });
 export type ReviewDraft = z.infer<typeof draftSchema>;
+// What the model is asked for: at least one recommendation per item.
+export const draftRequestSchema = z.object({
+  summary: draftSchema.shape.summary,
+  answers: z.array(draftAnswerSchema.extend({ recommendations: z.array(recommendationSchema).min(1).max(3) })).min(1).max(20),
+});
 export const verificationSchema = z.object({
   approved: z.boolean(),
   answers: z.array(z.object({
@@ -32,11 +43,19 @@ export const verificationSchema = z.object({
     factsPreserved: z.boolean(), noInventedFacts: z.boolean(), feedbackResolvedOrFlagged: z.boolean(),
     appropriateStyle: z.boolean(), completeCoverage: z.boolean(), noRegression: z.boolean(),
     dispositionAccurate: z.boolean(), keyContentPreserved: z.boolean(), noNewRepetition: z.boolean(),
+    // Recommendations that passed; a weak one is dropped, never a reason to reject the item.
+    validRecommendationIndexes: z.array(z.number().int().nonnegative()).max(3).optional(),
     reason: z.string().min(1),
   })).min(1).max(20),
   remainingIssues: z.array(z.string()).max(20),
 });
 export type ReviewVerification = z.infer<typeof verificationSchema>;
+// Strict structured output needs every field required; stored 1.1 rows parse with the optional form above.
+export const verificationRequestSchema = verificationSchema.extend({
+  answers: z.array(verificationSchema.shape.answers.element.extend({
+    validRecommendationIndexes: z.array(z.number().int().nonnegative()).max(3),
+  })).min(1).max(20),
+});
 // Admin screens read stored rows of every rubric version; 1.0 rows lack the 1.1 checks.
 export const verificationEvidenceSchema = z.object({
   answers: z.array(z.object({ order: z.number().int().positive(), reason: z.string() })),
@@ -124,16 +143,20 @@ export function validateVerification(context: ReviewContext, verification: Revie
       || !a.appropriateStyle || !a.completeCoverage || !a.noRegression
       || !a.dispositionAccurate || !a.keyContentPreserved || !a.noNewRepetition)) throw new Error("SECOND_REVIEW_REJECTED");
 }
-export function toAutomaticPreview(runId: string, context: ReviewContext, draft: ReviewDraft) {
+export function toAutomaticPreview(runId: string, context: ReviewContext, draft: ReviewDraft, verification?: ReviewVerification) {
   validateDraft(context, draft);
   return adminAnalysisPreviewInputSchema.parse({
     analysisRunId: runId, title: "AI 컨설턴트 추가 첨삭본 · 관리자 확인 대기",
     notes: `${AUTO_REVIEW_VERSION}\n${draft.summary}\n자동 검증 통과 후 관리자 확인 대기. 고객 미전달. 점수 재산정 없음.`,
     revisedAnswers: context.units.map(unit => {
       const answer = draft.answers.find(a => a.order === unit.order)!;
+      const passed = verification?.answers.find(a => a.order === unit.order)?.validRecommendationIndexes ?? [];
+      const recommendations = selectRecommendations(answer.revisedAnswer,
+        (answer.recommendations ?? []).filter((_, index) => passed.includes(index)), `extra-${runId.slice(0, 8)}-${unit.order}-recommendation`);
       return { questionOrder: unit.order, revisedAnswer: answer.revisedAnswer, section: {
         title: unit.title, originalAnswer: unit.firstAnswer, revisionReasons: answer.reasons,
         verificationNote: answer.verificationNote, disposition: answer.disposition,
+        ...(recommendations.length ? { recommendations } : {}),
       } };
     }),
   });
@@ -155,7 +178,10 @@ units의 모든 order를 정확히 한 번씩 출력하세요. 한 문항에 여
 취향은 개선이 아닙니다: 숫자 표기(2/3→3분의 2), 연결어(접하고→접한 뒤), 동의어·어순 교체, '이 경험을 통해' 같은 상투적 연결 추가만 있으면 improved가 아닙니다.
 지원자 원문의 숫자·영문 용어·고유명사(공고 키워드일 수 있음)와 전후 비교(예: 30점에서 70점으로 향상)는 지우거나 약화하지 마세요. 확인이 필요하면 본문은 두고 verificationNote에 남기세요. 확인되지 않은 회사·직무 표현을 일반화해 지원 동기를 흐리게 만드는 것도 약화입니다.
 연이은 두 문장을 같은 서술어(예: '관심을 갖게 되었습니다')로 끝내지 마세요.
-원문에 없는 생각·의도·관찰 과정(예: '~일 수 있다고 보고 관찰했다')은 사실처럼 본문에 쓰지 마세요. 그런 연결이 도움이 되면 본문은 두고 verificationNote에 '[확인 필요] 실제로 그랬다면: …' 형태의 예시 문장으로 남기세요.
+원문에 없는 생각·의도·관찰 과정(예: '~일 수 있다고 보고 관찰했다')은 사실처럼 본문에 쓰지 마세요. 그런 연결이 도움이 되면 본문은 두고 recommendations에 kind=add로 남기세요.
+recommendations는 revisedAnswer를 바꾸지 않고 옆에 보여 줄 '다른 시각 추천안'이며 고객이 고릅니다. 항목마다 1~3개를 쓰되, 원문이 이미 좋아도 1개는 다른 각도(문항이 묻는 역량을 직접 말하기, 행동과 결과의 인과 잇기, 직무와 잇기)를 주세요. 개수를 채우려고 비슷한 문장을 늘리지 마세요.
+recommendations.anchorQuote는 revisedAnswer 안의 문장을 토씨까지 그대로 복사하세요. kind=improve는 그 문장의 사실만으로 다시 쓴 문장이고 needsConfirmation은 null이며, 숫자·영문 용어·고유명사·전후 비교를 지우거나 약하게 만들지 마세요. kind=add는 원문에 없는 생각·과정·수치가 들어가는 문장이며, 그 부분을 [확인 필요: 무엇]으로 표시하고 needsConfirmation에 고객이 무엇을 확인해야 쓸 수 있는지 적으세요.
+recommendations.why에는 어떤 다른 시각인지 한 문장으로 적고, 원문보다 낫다거나 개선이라고 단정하지 마세요. 동의어 교체, 숫자 표기 변경, 상투적 연결, 앞 문장과 같은 서술어로 끝나는 문장은 추천이 아닙니다.
 제출용 기본 문체는 합니다체입니다. 지원자가 명시한 문체 요구가 있으면 존중하세요. '싶다→싶습니다'만 바꾸고 구조·누락·중복을 해결했다고 주장하지 마세요.
 근무처별 업무를 섞지 마세요. 행동과 배운 점이 같으면 제공된 사실 내에서 역할을 분리하세요. 현재 인턴 업무와 장기 희망을 구분하세요.
 targetLength는 저장된 목표이며 공식 최대 제한을 확인한 근거가 아닐 수 있습니다. 자료에 명시된 실제 공식 제한만 적용하고, 여러 항목을 임의로 총 700자로 줄이지 마세요. 불명확하면 확인 필요를 남기세요.
@@ -166,6 +192,7 @@ export const VERIFY_RULES = `당신은 작성자와 별개인 엄격한 검수�
 ${CONSULTANT_RULES}
 이번에는 재작성하지 말고 original context와 candidate를 대조한 구조화 검증만 반환하세요.
 모든 unit order를 정확히 한 번씩 검증하세요. 사실 누락/날조, 핵심 경험 축약, 질문 누락, 잘못된 문체, 근무처 혼합, 이전 피드백 미해결 은폐, 임의 분량 축약이 있으면 approved=false.
+validRecommendationIndexes: 각 항목 candidate recommendations 중 통과한 0 기반 번호입니다. anchorQuote가 revisedAnswer에 있고, 사실·수치·고유명사·전후 비교·말투를 약하게 만들지 않고, 원문에 없는 사실을 [확인 필요] 표시 없이 단정하지 않으며, 취향 교체·상투어·반복이 아니고, 대신하는 문장보다 나빠지지 않는 추천만 넣으세요. 추천이 나쁘다는 이유로 approved를 false로 하거나 다른 검사를 false로 하지 말고 번호에서 빼기만 하세요. 추천은 본문 판정(dispositionAccurate 등)의 근거가 아닙니다.
 자료가 없어 남겨둔 사실 확인은 명확히 표시했다면 허용합니다. maintained의 실제 미해결 결함이나 alternative의 퇴행을 통과시키지 마세요.
 dispositionAccurate: improved가 firstAnswer의 실제 결함을 고쳤을 때만 true. 취향·표기·연결어 교체뿐이거나 결함을 지목하지 못하면 false.
 keyContentPreserved: firstAnswer의 숫자, 영문 용어·고유명사, 전후 비교, 본인 행동, 지원자 말투가 약해지지 않았을 때만 true.
