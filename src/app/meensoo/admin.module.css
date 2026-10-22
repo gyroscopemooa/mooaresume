@@ -479,3 +479,9 @@
   .inputSnapshot dl { grid-template-columns: 72px minmax(0, 1fr); }
   .inputText { max-height: 300px; font-size: 11px; }
 }
+/* 추가 첨삭 칸 압축 + 표 안에서 가로·세로 스크롤 (가로 스크롤 막대가 화면 안에 보이도록) — 2026-10-22 */
+.scrollBox { max-height: 72vh; overflow: auto; }
+.scrollBox thead th { position: sticky; top: 0; z-index: 1; background: var(--admin-panel); }
+.extraCell { white-space: nowrap; }
+.extraCell a { color: var(--admin-accent); font-size: 12px; font-weight: 650; text-decoration: none; }
+.extraCell small { display: block; color: var(--admin-muted); font-size: 11px; }

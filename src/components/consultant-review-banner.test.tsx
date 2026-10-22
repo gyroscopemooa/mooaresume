@@ -5,10 +5,11 @@ import { ConsultantReviewBanner } from "./consultant-review-banner";
 
 afterEach(cleanup);
 
-it("AI 추가 검수와 조건부 무료 보완을 함께 안내한다", () => {
+it("다른 시각의 추가 첨삭을 개선 약속 없이 안내한다", () => {
   render(<ConsultantReviewBanner />);
-  const banner = screen.getByRole("region", { name: "24시간, 첨삭 이후까지 살피는 AI 취업 컨설턴트" });
-  expect(banner.textContent).toContain("추가 비용 없이 더 나은 첨삭본");
-  expect(banner.textContent).toContain("추가 첨삭은 검토 결과에 따라 필요한 경우 제공됩니다.");
+  const banner = screen.getByRole("region", { name: "24시간 안에, 다른 시각의 추가 첨삭" });
+  expect(banner.textContent).toContain("추가 비용 없이 추가 첨삭본");
+  expect(banner.textContent).not.toMatch(/더 나은 첨삭본|보완이 필요한/);
+  expect(banner.textContent).toContain("1차보다 개선되었다는 의미가 아니며");
   expect(banner.textContent).not.toMatch(/3차|24시간 이내|사람이 직접|자동 발송/);
 });

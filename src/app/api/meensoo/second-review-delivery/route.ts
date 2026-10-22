@@ -2,15 +2,25 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminRequest } from "@/server/admin/admin-session";
 import { getAdminAnalysisPreview } from "@/server/admin/admin-analysis-previews";
-import { recordMailSends } from "@/server/admin/admin-repository";
+import { recordMailSends, serviceClient } from "@/server/admin/admin-repository";
 import { recipientDigest, reviewedContentDigest, signSecondReviewGrant } from "@/server/second-review/grant";
 import { sendManualEmail } from "@/server/notifications/manual-email";
 
+// `toOwner` sends to the account that owns the run, resolved here rather than typed by an admin,
+// so the "고객에게 보내기" button cannot reach a wrong address.
 const inputSchema = z.object({
-  runId: z.string().uuid(), previewId: z.string().uuid(), to: z.string().email(),
+  runId: z.string().uuid(), previewId: z.string().uuid(), to: z.string().email().optional(),
+  toOwner: z.boolean().default(false),
   expires: z.number().int().positive(), requestId: z.string().uuid(),
   send: z.boolean().default(false),
-}).strict();
+}).strict().refine(value => value.toOwner !== Boolean(value.to), { message: "ONE_RECIPIENT" });
+async function ownerEmail(runId: string) {
+  const db = serviceClient();
+  const run = await db.from("analysis_runs").select("owner_user_id").eq("id", runId).maybeSingle();
+  if (run.error || !run.data) return null;
+  const user = await db.auth.admin.getUserById(run.data.owner_user_id as string);
+  return user.data.user?.email ?? null;
+}
 const json = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
 export async function POST(request: Request) {
   if (!isAdminRequest(request)) return json({ error: "UNAUTHORIZED" }, 401);
@@ -18,7 +28,9 @@ export async function POST(request: Request) {
   const input = inputSchema.safeParse(await request.json().catch(() => null));
   if (!input.success) return json({ error: "INVALID_REQUEST" }, 400);
   const { runId, previewId, expires, requestId, send } = input.data;
-  const to = input.data.to.trim().toLowerCase();
+  const resolved = input.data.toOwner ? await ownerEmail(runId).catch(() => null) : input.data.to;
+  if (!resolved) return json({ error: "OWNER_EMAIL_UNAVAILABLE" }, 409);
+  const to = resolved.trim().toLowerCase();
   try {
     const preview = await getAdminAnalysisPreview(runId, previewId);
     if (!preview || !preview.revisedAnswers.every(answer => answer.section)) return json({ error: "REVIEW_NOT_READY" }, 409);

@@ -71,6 +71,21 @@ describe("section-preserving second review", () => {
     expect(result.questions[0].subheading).toBe("1차 소제목");
     expect(result.questions.slice(1).every(q => q.subheading === "다른 시각 소제목" || /^\s*\[/.test(q.revisedAnswer))).toBe(true);
   });
+  it("folds sectioned 추가 첨삭 items back onto their 1차 question", () => {
+    const source = structuredClone(sampleResultDocument);
+    source.questions = [{ ...source.questions[0], order: 1, revisedAnswer: ["[지원 계기]", "행사가 좋았습니다.", "[입사 후]", "배우겠습니다."].join("\n") }];
+    const rec = { id: "r", kind: "improve" as const, anchorQuote: "배우겠습니다.", sentence: "현장에서 배우겠습니다.", why: "다른 각도입니다." };
+    const extra = { ...preview, revisedAnswers: [
+      { questionOrder: 1, revisedAnswer: "행사가 좋았습니다.", section: { title: "지원 계기", originalAnswer: "행사가 좋았습니다.", revisionReasons: ["유지"], verificationNote: "", disposition: "maintained" as const, sourceQuestionOrder: 1 } },
+      { questionOrder: 2, revisedAnswer: "선배들께 배우겠습니다.", section: { title: "입사 후", originalAnswer: "배우겠습니다.", revisionReasons: ["다른 구성"], verificationNote: "", disposition: "alternative" as const, sourceQuestionOrder: 1, recommendations: [rec] } },
+    ] };
+    expect(keepsFirstResult(source, extra)).toBe(true);
+    const result = buildExtraReviewResult(source, extra);
+    expect(result.questions).toHaveLength(1);
+    expect(result.questions[0].revisedAnswer).toBe(["[지원 계기]", "행사가 좋았습니다.", "[입사 후]", "선배들께 배우겠습니다."].join("\n"));
+    expect(result.questions[0].revisionReasons).toEqual(["다른 구성"]);
+    expect(result.questions[0].recommendations).toEqual([rec]);
+  });
   it("keeps legacy saved previews readable", () => {
     const result = buildSecondReviewResult(sampleResultDocument, { ...preview, revisedAnswers: [{ questionOrder: 1, revisedAnswer: "기존 저장본입니다." }] });
     expect(result.questions[0].revisedAnswer).toBe("기존 저장본입니다.");

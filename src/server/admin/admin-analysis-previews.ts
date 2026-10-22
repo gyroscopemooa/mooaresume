@@ -17,11 +17,12 @@ function present(row: z.infer<typeof rowSchema>): AdminAnalysisPreview {
   return {
     id: row.id,
     analysisRunId: row.analysis_run_id,
-    title: row.title,
+    // The DB function that saves automatic reviews still writes the old "2차" title.
+    title: row.title.replace("2차 검토본", "추가 첨삭본"),
     revisedAnswers: row.revised_answers,
     notes: row.notes,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
   };
 }
 

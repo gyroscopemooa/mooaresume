@@ -14,6 +14,8 @@ export const adminAnalysisPreviewAnswerSchema = z.object({
     recommendations: z.array(resultRecommendationSchema).max(3).optional(),
     // 1차에 소제목 제안이 없던 문항에 추가 첨삭이 낸 다른 시각의 소제목.
     subheading: z.string().trim().min(1).max(60).optional(),
+    // 이 항목이 붙는 1차 문항 번호. 한 문항이 여러 작성 항목으로 나뉘어도 1차 결과 위에 다시 모을 수 있다.
+    sourceQuestionOrder: z.number().int().positive().optional(),
   }).optional(),
 });
 

@@ -3,38 +3,64 @@ import type { ResultDocument } from "./result-document";
 
 const same = (a: string, b: string) => a.normalize("NFC").replace(/\s+/g, " ").trim() === b.normalize("NFC").replace(/\s+/g, " ").trim();
 
-/**
- * 추가 첨삭이 1차 문항과 하나씩 짝지어지는가(각 항목의 비교 원문이 그 문항의 1차 첨삭본).
- * 그렇다면 추가 첨삭은 1차 결과를 그대로 두고 다른 시각 추천안만 더한 것으로 보여 준다.
- */
-export function keepsFirstResult(source: ResultDocument, preview: AdminAnalysisPreview) {
-  return preview.revisedAnswers.length === source.questions.length
-    && preview.revisedAnswers.every((answer, index) => answer.section && same(answer.section.originalAnswer, source.questions[index].revisedAnswer));
+type PreviewAnswer = AdminAnalysisPreview["revisedAnswers"][number];
+
+/** 항목을 붙일 1차 문항 순번(0부터). 저장된 문항 번호가 없던 예전 미리보기는 항목 순서 = 문항 순서. */
+function groupByQuestion(source: ResultDocument, preview: AdminAnalysisPreview) {
+  const groups = source.questions.map(() => [] as PreviewAnswer[]);
+  const tagged = preview.revisedAnswers.every(answer => answer.section?.sourceQuestionOrder);
+  if (!tagged && preview.revisedAnswers.length !== source.questions.length) return null;
+  for (const [index, answer] of preview.revisedAnswers.entries()) {
+    const at = tagged ? source.questions.findIndex(q => q.order === answer.section!.sourceQuestionOrder) : index;
+    if (at < 0 || !answer.section) return null;
+    groups[at].push(answer);
+  }
+  return groups;
 }
 
 /**
+ * 추가 첨삭 항목을 1차 문항 위에 다시 모을 수 있는가. 각 항목의 비교 원문이 그 문항 1차 첨삭본(또는 그 한 부분)이면
+ * 추가 첨삭은 1차 결과를 그대로 두고 다른 시각의 문장·추천안만 더한 것으로 보여 준다.
+ */
+export function keepsFirstResult(source: ResultDocument, preview: AdminAnalysisPreview) {
+  const groups = groupByQuestion(source, preview);
+  return Boolean(groups) && groups!.every((items, index) => items.length > 0
+    && items.every(item => items.length === 1 ? same(item.section!.originalAnswer, source.questions[index].revisedAnswer) : compact(source.questions[index].revisedAnswer).includes(compact(item.section!.originalAnswer))));
+}
+const compact = (text: string) => text.normalize("NFC").replace(/\s+/g, "");
+
+/**
  * 1차 결과(좋은 표현·확인 필요·개선점·조언·면접)를 하나도 빼지 않고, 문항마다 추가 첨삭의
- * 다른 시각 추천안을 붙인다. 1차 판단을 뒤집지 않는 것이 추가 첨삭의 약속이라 1차 표시를 그대로 쓴다.
+ * 다른 시각 문장·추천안·소제목을 붙인다. 1차 판단을 뒤집지 않는 것이 추가 첨삭의 약속이라 1차 표시를 그대로 쓴다.
+ * 한 문항이 여러 작성 항목으로 나뉘었으면, 바뀐 항목만 1차 문장 안에서 그 부분을 바꿔 끼운다.
  */
 export function buildExtraReviewResult(source: ResultDocument, preview: AdminAnalysisPreview): ResultDocument {
+  const groups = groupByQuestion(source, preview)!;
   return {
     ...source,
     analyzedAt: preview.createdAt,
     questions: source.questions.map((question, index) => {
-      const answer = preview.revisedAnswers[index];
-      const changed = !same(answer.revisedAnswer, question.revisedAnswer);
+      const items = groups[index];
+      const single = items.length === 1 ? items[0] : null;
+      const revisedAnswer = single ? single.revisedAnswer : items.reduce((text, item) =>
+        same(item.section!.originalAnswer, item.revisedAnswer) ? text : text.replace(item.section!.originalAnswer.trim(), item.revisedAnswer.trim()), question.revisedAnswer);
+      const changed = !same(revisedAnswer, question.revisedAnswer);
       return {
         ...question,
-        revisedAnswer: answer.revisedAnswer,
-        revisionReasons: changed ? answer.section!.revisionReasons : question.revisionReasons,
-        recommendations: answer.section!.recommendations ?? [],
-        // 1차 소제목이 있으면 그대로 두고, 없을 때만 추가 첨삭의 다른 시각 소제목을 보여 준다.
-        subheading: question.subheading ?? (/^\s*\[/.test(answer.revisedAnswer) ? undefined : answer.section!.subheading),
+        revisedAnswer,
+        revisionReasons: changed ? items.filter(item => !same(item.section!.originalAnswer, item.revisedAnswer)).flatMap(item => item.section!.revisionReasons) : question.revisionReasons,
+        recommendations: items.flatMap(item => item.section!.recommendations ?? []),
+        // 1차 소제목이 있으면 그대로 두고, 없을 때만 추가 첨삭의 다른 시각 소제목을 보여 준다(문항 하나에 항목 하나일 때만).
+        subheading: question.subheading ?? (single && !/^\s*\[/.test(single.revisedAnswer) ? single.section!.subheading : undefined),
       };
     }),
   };
 }
 
+/**
+ * 예전(2026-10-22 이전) 항목별 2차 화면. 새 추가 첨삭은 모두 위 방식으로 보이며, 이 함수는 이미 발송된 옛 링크와
+ * 관리자 기록 열람용으로만 남겨 둔다(그 링크들은 2026-10-27께 만료).
+ */
 /** Saved sections are independently reviewed items, not inferred official questions. */
 export function buildSecondReviewResult(source: ResultDocument, preview: AdminAnalysisPreview): ResultDocument {
   const sectioned = preview.revisedAnswers.every(answer => answer.section);

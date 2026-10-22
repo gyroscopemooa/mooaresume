@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { getAnalysis, type AdminAnalysisDetail } from "@/server/admin/admin-repository";
 import { ResultWorkspaceComplete } from "@/components/result-workspace-complete";
 import { AdminEditingExperiments } from "@/components/admin-editing-experiments";
-import { AdminAnalysisPreviews } from "@/components/admin-analysis-previews";
-import { AdminAutomaticReview } from "@/components/admin-automatic-review";
+import { AdminExtraReviewPanel } from "@/components/admin-extra-review-panel";
 import { resultDocumentSchema } from "@/domain/result-document";
 import styles from "../../admin.module.css";
 import { MODE_LABEL, kst } from "../../format";
@@ -156,6 +155,8 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
         <Link href="/meensoo/analyses" className={styles.mono}>← 목록으로</Link>
       </div>
 
+      {run.status === "COMPLETED" && <AdminExtraReviewPanel runId={run.id} ownerEmail={run.email} />}
+
       <section className={styles.panel}>
         <div className={styles.meta}>
           <div><span>상태</span><strong><Pill status={run.status} /></strong></div>
@@ -171,11 +172,6 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
 
       <InputSnapshot detail={detail} />
       <AdminEditingExperiments runId={run.id} />
-      {questions.length > 0 && <AdminAnalysisPreviews runId={run.id} questions={questions.map((question, index) => ({
-        order: question.order ?? index + 1,
-        title: question.title ?? `문항 ${index + 1}`,
-        delivered: question.revisedAnswer?.trim() || question.originalAnswer?.trim() || "",
-      }))} />}
 
       {parsedResult.success && (
         <section className={styles.adminResultPreview}>
@@ -193,7 +189,6 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
         </section>
       )}
 
-      <AdminAutomaticReview runId={run.id} />
       {!parsedResult.success && questions.length > 0 && (
         <section className={styles.panel}>
           <div className={styles.panelHead}><h2>문항별 결과</h2><small>{questions.length}문항</small></div>

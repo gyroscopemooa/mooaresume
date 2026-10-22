@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ admin: vi.fn(), preview: vi.fn(), send: vi.fn(), record: vi.fn() }));
+const mocks = vi.hoisted(() => ({ admin: vi.fn(), preview: vi.fn(), send: vi.fn(), record: vi.fn(), owner: vi.fn() }));
 vi.mock("@/server/admin/admin-session", () => ({ isAdminRequest: mocks.admin }));
 vi.mock("@/server/admin/admin-analysis-previews", () => ({ getAdminAnalysisPreview: mocks.preview }));
-vi.mock("@/server/admin/admin-repository", () => ({ recordMailSends: mocks.record }));
+vi.mock("@/server/admin/admin-repository", () => ({ recordMailSends: mocks.record, serviceClient: () => ({
+  from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { owner_user_id: "owner-1" }, error: null }) }) }) }),
+  auth: { admin: { getUserById: mocks.owner } },
+}) }));
 vi.mock("@/server/notifications/manual-email", () => ({ sendManualEmail: mocks.send }));
 import { POST } from "./route";
 const body = { runId: "11111111-1111-4111-8111-111111111111", previewId: "22222222-2222-4222-8222-222222222222", requestId: "33333333-3333-4333-8333-333333333333", to: "test@example.com", expires: Date.now() + 86400_000, send: false };
@@ -15,6 +18,17 @@ beforeEach(() => {
   mocks.send.mockResolvedValue({ sent: ["test@example.com"], failed: [], messageIds: { "test@example.com": "message-1" } });
 });
 describe("review delivery authorization and mail", () => {
+  it("sends to the run's own account when asked for the customer, never to a typed address", async () => {
+    mocks.owner.mockResolvedValue({ data: { user: { email: "Owner@Example.com" } } });
+    mocks.send.mockResolvedValue({ sent: ["owner@example.com"], failed: [], messageIds: { "owner@example.com": "m" } });
+    const { to: _typed, ...rest } = body;
+    const response = await POST(request({ ...rest, toOwner: true, send: true } as unknown as typeof body));
+    expect(response.status).toBe(200);
+    expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({ to: ["owner@example.com"] }));
+    expect((await POST(request({ ...body, toOwner: true } as unknown as typeof body))).status).toBe(400);
+    mocks.owner.mockResolvedValue({ data: { user: null } });
+    expect((await POST(request({ ...rest, toOwner: true } as unknown as typeof body))).status).toBe(409);
+  });
   it("rejects unauthorized and cross-origin operations before any read or send", async () => {
     mocks.admin.mockReturnValue(false);
     expect((await POST(request())).status).toBe(401);

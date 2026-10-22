@@ -1,0 +1,20 @@
+.panel { display: grid; gap: 10px; margin: 0 0 16px; padding: 14px 16px; border: 1px solid var(--admin-accent, #176b4a); border-radius: 10px; background: var(--admin-panel, #fff); }
+.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.panel h2 { margin: 0; font-size: 15px; }
+.panel > header span { color: var(--admin-muted, #68756f); font-size: 12px; }
+.panel > header .sent { color: var(--admin-accent, #176b4a); font-weight: 650; }
+.latest { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; font-size: 13px; }
+.latest small { color: var(--admin-muted, #68756f); }
+.latest a, .panel details a { color: var(--admin-accent, #176b4a); font-weight: 650; text-decoration: none; }
+.empty { margin: 0; color: var(--admin-muted, #68756f); font-size: 12px; }
+.send { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.send label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.send input { width: 220px; padding: 6px 8px; border: 1px solid var(--admin-line, #dfe6e2); border-radius: 6px; font-size: 12px; }
+.send button { padding: 7px 11px; border: 1px solid var(--admin-line, #dfe6e2); border-radius: 6px; background: transparent; font-size: 12px; font-weight: 650; cursor: pointer; }
+.send button.primary { border-color: var(--admin-accent, #176b4a); background: var(--admin-accent, #176b4a); color: #fff; }
+.send button:disabled { opacity: .5; cursor: default; }
+.send p { flex-basis: 100%; margin: 0; font-size: 12px; }
+.panel details { font-size: 12px; }
+.panel details summary { cursor: pointer; color: var(--admin-muted, #68756f); }
+.panel details ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; }
+@media (max-width: 640px) { .send input { width: 100%; } .send label { flex-basis: 100%; } }

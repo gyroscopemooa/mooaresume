@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { listAnalyses, type AdminAnalysis, type AdminAnalysisAttempt } from "@/server/admin/admin-repository";
 import { listLatestAdminAnalysisPreviewSummaries } from "@/server/admin/admin-analysis-previews";
+import { listExtraReviewRecipientsByRun } from "@/server/second-review/extra-review-admin";
 import { listAutomaticReviewStatuses } from "@/server/second-review/automatic-repository";
 import { readModelPricingFromEnv, RISK_LABEL, type RunCostRisk } from "@/domain/analysis-cost";
 import styles from "../admin.module.css";
@@ -142,6 +143,7 @@ export default async function AnalysesPage() {
   const previewByRun = await listLatestAdminAnalysisPreviewSummaries(analyses.map(analysis => analysis.id));
   const secondReviewCount = Object.keys(previewByRun).length;
   const automatic = await listAutomaticReviewStatuses(analyses.map(analysis => analysis.id));
+  const recipientsByRun = await listExtraReviewRecipientsByRun();
   const stuck = analyses.filter((analysis) => analysis.status === "PENDING" || analysis.status === "RUNNING");
   const failed = analyses.filter((analysis) => analysis.status === "FAILED");
 
@@ -188,7 +190,7 @@ export default async function AnalysesPage() {
         <div className={styles.card}>
           <span>추가 첨삭</span>
           <strong>{secondReviewCount}건</strong>
-          <small>컨설턴트 검토 초안 · 고객 미전달</small>
+          <small>다른 시각 추천안 · 발송은 상세 화면에서</small>
         </div>
       </div>
 
@@ -201,7 +203,7 @@ export default async function AnalysesPage() {
       )}
 
       <AttentionList items={attention} />
-      <p className={styles.hint}>신규 완료 건은 AI 컨설턴트가 별도 검수합니다. 추가 첨삭본은 관리자 확인 전 고객에게 자동 공개·발송하지 않습니다. 추가 첨삭 토큰은 별도 표시되며 위 1차 원가 합계에는 포함되지 않습니다.</p>
+      <p className={styles.hint}>완료 건은 24시간 안에 다른 시각의 추가 첨삭본이 자동으로 만들어집니다. 고객에게는 자동 발송하지 않으며, 상세 화면의 &lsquo;나에게 미리 보내기&rsquo;로 확인한 뒤 &lsquo;고객에게 보내기&rsquo;로 보냅니다. 추가 첨삭 토큰은 별도 표시되며 위 1차 원가 합계에는 포함되지 않습니다.</p>
       {!automatic.available && <p className={styles.hint}>자동 추가 첨삭 저장소를 확인할 수 없습니다. 운영 설정을 확인해 주세요.</p>}
 
       <section className={styles.panel}>
@@ -212,13 +214,13 @@ export default async function AnalysesPage() {
         {analyses.length === 0 ? (
           <p className={styles.empty}>아직 첨삭 기록이 없습니다.</p>
         ) : (
-          <div className={styles.scroll}>
+          <div className={`${styles.scroll} ${styles.scrollBox}`}>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>시작</th><th>신청자</th><th>회사</th><th>상품 · 단계</th>
-                  <th>상태</th><th>완료</th><th>모델 · 프롬프트</th>
-                  <th>시도 내역</th><th>원가 · 마진</th><th>추가 첨삭</th><th></th>
+                  <th>상태</th><th>추가 첨삭</th><th>완료</th><th>모델 · 프롬프트</th>
+                  <th>시도 내역</th><th>원가 · 마진</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -233,26 +235,16 @@ export default async function AnalysesPage() {
                       {analysis.failureCode && <div className={styles.mono}>{analysis.failureCode}</div>}
                       {analysis.attemptCount > 0 && <div className={styles.mono}>시도 {analysis.attemptCount + 1}회</div>}
                     </td>
+                    <td className={styles.extraCell}>
+                      {previewByRun[analysis.id] ? <>
+                        <Link href={`/meensoo/analyses/${analysis.id}#extra-review`}>추가 첨삭 확인</Link>
+                        <small>{(recipientsByRun[analysis.id] ?? []).includes(analysis.email.toLowerCase()) ? "고객 발송됨" : "미발송"}</small>
+                      </> : automatic.items[analysis.id] ? <small>{automatic.items[analysis.id].status === "needs_attention" ? "생성 중단" : "생성 중"}</small> : <span className={styles.mono}>—</span>}
+                    </td>
                     <td>{kst(analysis.completedAt)}</td>
                     <td className={styles.mono}>{analysis.model ?? "—"}<br />{analysis.promptVersion ?? ""}</td>
                     <td><AttemptList attempts={analysis.attempts} /></td>
                     <td><CostCell analysis={analysis} /></td>
-                    <td>
-                      {automatic.items[analysis.id] && <div className={styles.mono}>
-                        {automatic.items[analysis.id].status === "completed" ? "자동 검증 통과 · 관리자 확인 대기" :
-                          automatic.items[analysis.id].status === "needs_attention" ? "자동 검수 중단 · 확인 필요" : "자동 검수 진행 중"}
-                        {automatic.items[analysis.id].failure && <small> · {automatic.items[analysis.id].failure}</small>}
-                        <small> · 추가 첨삭 {automatic.items[analysis.id].tokens?.toLocaleString("ko-KR") ?? "집계 대기"} 토큰</small>
-                      </div>}
-                      {previewByRun[analysis.id] ? (
-                        <div className={styles.secondReviewCell}>
-                          <span className={`${styles.pill} ${styles.pillWarn}`}>검토 초안</span>
-                          <strong>{previewByRun[analysis.id].title}</strong>
-                          <small>{kst(previewByRun[analysis.id].createdAt)} · 고객 미전달</small>
-                          <Link href={`/meensoo/analyses/${analysis.id}/second-review/${previewByRun[analysis.id].id}`}>추가 첨삭본 보기</Link>
-                        </div>
-                      ) : <span className={styles.mono}>—</span>}
-                    </td>
                     <td>{analysis.hasResult && <Link href={`/meensoo/analyses/${analysis.id}`}>결과 보기</Link>}</td>
                   </tr>
                 ))}

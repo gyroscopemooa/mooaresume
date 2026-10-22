@@ -1,5 +1,16 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 옛 2차 정리 → 추가 첨삭 단일 흐름, 대시보드 압축, 발송 버튼
+
+- 요청(민수오빠 승인): 자동 2차(옛 방식)를 빼고 지금까지 정립한 추가 첨삭(1차 결과 그대로 + 다른 시각 문장·추천안·소제목)으로 통일. 홈 배너 문구 정리. 대시보드 추가 첨삭 칸 압축·위로. '나에게 미리 보내기'+'고객에게 보내기' 버튼.
+- 옛 2차 정리: 관리자 수동 2차 편집 칸(`src/components/admin-analysis-previews.tsx`, Codex 작성)과 상세 하단 자동 검수 카드(`admin-automatic-review.tsx`)를 삭제하고 상세 맨 위 `AdminExtraReviewPanel` 하나로 통합(최신본 보기·발송 버튼·발송 기록·이전 본·검증 근거, 나머지는 접힘). 추가 첨삭 미리보기에 `sourceQuestionOrder`를 저장하고 `keepsFirstResult`/`buildExtraReviewResult`가 여러 작성 항목으로 나뉜 문항도 1차 문항 위에 다시 모아(바뀐 항목만 1차 문장 안에서 교체) 항상 '1차 결과 그대로' 화면으로 보이게 함. 옛 항목별 2차 화면(`buildSecondReviewResult`, 결과 화면의 editionLabel/sectionReview 분기)은 2026-10-20 실제 고객에게 발송된 옛 링크(약 10/27 만료)와 관리자 기록 열람용으로만 남김. AI 지시문의 '2차' 표현 → '추가 첨삭'. DB 함수가 쓰는 제목 '2차 검토본'은 화면에서 '추가 첨삭본'으로 바꿔 보여 줌(마이그레이션 없음). 미리보기 날짜를 ISO로 정규화. `/api/meensoo/analysis-previews` 라우트는 남김(화면에서 더 이상 쓰지 않음).
+- 홈 배너(`consultant-review-banner.tsx`): '보완이 필요한 경우 더 나은 첨삭본' → '24시간 안에 임의로 선별된 첨삭본을 다른 시각으로… 1차 첨삭 내용은 그대로 두고 다른 시각의 추천 문장… 1차보다 개선되었다는 의미가 아니며'.
+- 대시보드: 전체 첨삭 표의 추가 첨삭 칸을 '상태' 바로 뒤로 옮기고 한 줄(추가 첨삭 확인 링크 + 고객 발송됨/미발송)로 압축, 표를 72vh 상자 안에서 스크롤(가로 스크롤 막대가 화면 안에, 머리글 고정). 상단 카드·안내 문구 갱신.
+- 발송: `ExtraReviewSend`(미리 받을 메일은 브라우저에 기억) — 나에게 미리 보내기는 입력 주소로, 고객에게 보내기는 확인 창(이미 보낸 횟수 경고) 뒤 `toOwner`로 요청해 서버가 실행 소유자 메일로 보냄(직접 입력 불가). 발송 API에 `toOwner` 추가(`to`와 둘 중 하나만). 발송 기록은 `mail_send_log`의 후기 링크로 실행별 조회.
+- 파일: `src/app/api/meensoo/second-review-delivery/route.ts`/`.test.ts`, `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/analyses/[id]/page.tsx`, `src/app/meensoo/admin.module.css`, 신규 `src/components/admin-extra-review-panel.tsx`, `extra-review-send.tsx`/`.test.tsx`, `admin-extra-review.module.css`, `src/server/second-review/extra-review-admin.ts`, `src/components/consultant-review-banner.tsx`/`.test.tsx`, `src/domain/admin-analysis-preview.ts`, `second-review-result.ts`/`.test.ts`, `src/server/admin/admin-analysis-previews.ts`, `src/server/second-review/automatic-contract.ts`, `src/server/ai/quick/revision-quality.ts`, 삭제 `src/components/admin-analysis-previews.tsx`, `admin-automatic-review.tsx`, 본 기록.
+- 검증: 전체 vitest 2384 통과(기존 Expo 2파일 제외), tsc·ESLint 통과. 관리자 화면 눈 확인은 운영 배포 후 민수오빠 확인 필요(로그인 필요 화면).
+- 복구: 이 커밋 revert(삭제한 두 컴포넌트도 함께 복원).
+
 ## 2026-10-22 — Claude: 소제목이 다듬기에서 안 나오는 문제 (quick-4.10, consultant-review-1.6)
 
 - 원인(저장된 OpenAI 응답 조회): 2026-10-05~21 다듬기(POLISH) 실행은 모델이 모든 문항 subheading을 null로 냄, CREATE/BUILD는 냄. 원문 유지·Stop Editing 규칙을 소제목에도 적용한 것으로 판단. 고객이 일부 문항에만 [소제목]을 쓴 경우의 일관성 규칙도 미작동.
