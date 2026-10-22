@@ -485,3 +485,4 @@
 .extraCell { white-space: nowrap; }
 .extraCell a { color: var(--admin-accent); font-size: 12px; font-weight: 650; text-decoration: none; }
 .extraCell small { display: block; color: var(--admin-muted); font-size: 11px; }
+.rowLink { color: var(--admin-accent); font-size: 12px; font-weight: 650; text-decoration: none; }

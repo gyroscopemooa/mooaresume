@@ -18,3 +18,6 @@
 .panel details summary { cursor: pointer; color: var(--admin-muted, #68756f); }
 .panel details ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; }
 @media (max-width: 640px) { .send input { width: 100%; } .send label { flex-basis: 100%; } }
+.compact { gap: 4px; margin-top: 4px; white-space: normal; }
+.compact button { padding: 4px 7px; font-size: 11px; }
+.compact p { max-width: 220px; font-size: 11px; }

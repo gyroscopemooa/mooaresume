@@ -17,6 +17,18 @@ describe("ExtraReviewSend", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({ to: "me@example.com", send: true, previewId: props.previewId });
     expect(localStorage.getItem("mooa:extra-review-preview-email")).toBe("me@example.com");
   });
+  it("compact list version asks for the preview address once and remembers it", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true, sent: 1 })));
+    const prompt = vi.spyOn(window, "prompt").mockReturnValue("me@example.com");
+    render(<ExtraReviewSend {...props} compact />);
+    expect(screen.queryByLabelText("미리 받을 메일")).toBeNull();
+    fireEvent.click(screen.getByText("나에게 미리 보내기"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).to).toBe("me@example.com");
+    fireEvent.click(screen.getByText("나에게 미리 보내기"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(prompt).toHaveBeenCalledOnce();
+  });
   it("asks before sending to the customer, warns about earlier sends, and never sends a typed address", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true, sent: 1 })));
     const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { listAnalyses, type AdminAnalysis, type AdminAnalysisAttempt } from "@/server/admin/admin-repository";
 import { listLatestAdminAnalysisPreviewSummaries } from "@/server/admin/admin-analysis-previews";
 import { listExtraReviewRecipientsByRun } from "@/server/second-review/extra-review-admin";
+import { ExtraReviewSend } from "@/components/extra-review-send";
 import { listAutomaticReviewStatuses } from "@/server/second-review/automatic-repository";
 import { readModelPricingFromEnv, RISK_LABEL, type RunCostRisk } from "@/domain/analysis-cost";
 import styles from "../admin.module.css";
@@ -220,7 +221,7 @@ export default async function AnalysesPage() {
                 <tr>
                   <th>시작</th><th>신청자</th><th>회사</th><th>상품 · 단계</th>
                   <th>상태</th><th>추가 첨삭</th><th>완료</th><th>모델 · 프롬프트</th>
-                  <th>시도 내역</th><th>원가 · 마진</th><th></th>
+                  <th>시도 내역</th><th>원가 · 마진</th>
                 </tr>
               </thead>
               <tbody>
@@ -228,7 +229,10 @@ export default async function AnalysesPage() {
                   <tr key={analysis.id}>
                     <td>{kst(analysis.createdAt)}</td>
                     <td>{analysis.email}</td>
-                    <td>{analysis.companyName || analysis.caseTitle || "—"}</td>
+                    <td>
+                      {analysis.companyName || analysis.caseTitle || "—"}
+                      {analysis.hasResult && <div><Link className={styles.rowLink} href={`/meensoo/analyses/${analysis.id}`}>결과 보기</Link></div>}
+                    </td>
                     <td>{analysis.product} · {MODE_LABEL[analysis.writingMode] ?? analysis.writingMode}</td>
                     <td>
                       <Pill status={analysis.status} />
@@ -237,15 +241,16 @@ export default async function AnalysesPage() {
                     </td>
                     <td className={styles.extraCell}>
                       {previewByRun[analysis.id] ? <>
-                        <Link href={`/meensoo/analyses/${analysis.id}#extra-review`}>추가 첨삭 확인</Link>
-                        <small>{(recipientsByRun[analysis.id] ?? []).includes(analysis.email.toLowerCase()) ? "고객 발송됨" : "미발송"}</small>
+                        <Link href={`/meensoo/analyses/${analysis.id}/second-review/${previewByRun[analysis.id].id}`}>추가 첨삭 확인</Link>
+                        <small>{(recipientsByRun[analysis.id] ?? []).filter(email => email === analysis.email.toLowerCase()).length > 0 ? "고객 발송됨" : "미발송"}</small>
+                        <ExtraReviewSend compact runId={analysis.id} previewId={previewByRun[analysis.id].id} ownerEmail={analysis.email}
+                          sentToOwner={(recipientsByRun[analysis.id] ?? []).filter(email => email === analysis.email.toLowerCase()).length} />
                       </> : automatic.items[analysis.id] ? <small>{automatic.items[analysis.id].status === "needs_attention" ? "생성 중단" : "생성 중"}</small> : <span className={styles.mono}>—</span>}
                     </td>
                     <td>{kst(analysis.completedAt)}</td>
                     <td className={styles.mono}>{analysis.model ?? "—"}<br />{analysis.promptVersion ?? ""}</td>
                     <td><AttemptList attempts={analysis.attempts} /></td>
                     <td><CostCell analysis={analysis} /></td>
-                    <td>{analysis.hasResult && <Link href={`/meensoo/analyses/${analysis.id}`}>결과 보기</Link>}</td>
                   </tr>
                 ))}
               </tbody>

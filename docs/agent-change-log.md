@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 첨삭 목록에서 바로 추가 첨삭 확인·발송, 결과 보기 앞으로
+
+- 요청(민수오빠, 스샷): 목록에서 결과 보기가 맨 오른쪽 끝이라 안 보이고, 발송 버튼 두 개가 어디 있는지 모름(상세 화면에만 있었음).
+- 변경: 목록 추가 첨삭 칸에 '추가 첨삭 확인'(추가 첨삭본 화면으로 바로) + 발송 상태 + `ExtraReviewSend compact`(입력칸 없이 '나에게 미리 보내기'는 처음 한 번만 주소를 묻고 기억, '고객에게 보내기'는 확인 창 뒤 서버가 소유자 메일로). '결과 보기'를 맨 끝 열에서 회사 칸 아래로 옮기고 빈 끝 열 제거.
+- 파일: `src/app/meensoo/analyses/page.tsx`, `src/app/meensoo/admin.module.css`, `src/components/extra-review-send.tsx`/`.test.tsx`, `src/components/admin-extra-review.module.css`, 본 기록.
+- 검증: vitest 175(관련) 통과, tsc·ESLint 통과.
+- 복구: 이 커밋 revert.
+
 ## 2026-10-22 — Claude: 옛 2차 정리 → 추가 첨삭 단일 흐름, 대시보드 압축, 발송 버튼
 
 - 요청(민수오빠 승인): 자동 2차(옛 방식)를 빼고 지금까지 정립한 추가 첨삭(1차 결과 그대로 + 다른 시각 문장·추천안·소제목)으로 통일. 홈 배너 문구 정리. 대시보드 추가 첨삭 칸 압축·위로. '나에게 미리 보내기'+'고객에게 보내기' 버튼.

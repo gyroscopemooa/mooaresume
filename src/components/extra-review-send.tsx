@@ -11,7 +11,8 @@ const LINK_DAYS = 7;
  * 추가 첨삭 발송 버튼. "나에게 미리 보내기"로 고객과 똑같은 메일을 먼저 받아 보고,
  * "고객에게 보내기"는 받는 사람을 서버가 이 첨삭의 계정 메일로 정한다(직접 입력 없음).
  */
-export function ExtraReviewSend({ runId, previewId, ownerEmail, sentToOwner }: { runId: string; previewId: string; ownerEmail: string; sentToOwner: number }) {
+/** `compact`: 목록 표 안에서 쓰는 모양. 메일 입력칸 없이, 처음 한 번만 미리 받을 주소를 묻고 기억한다. */
+export function ExtraReviewSend({ runId, previewId, ownerEmail, sentToOwner, compact = false }: { runId: string; previewId: string; ownerEmail: string; sentToOwner: number; compact?: boolean }) {
   const router = useRouter();
   // Remembered per admin browser; the server render has no storage, so the field fills in on the client.
   const [previewEmail, setPreviewEmail] = useState(() => { try { return typeof window === "undefined" ? "" : localStorage.getItem(PREVIEW_EMAIL_KEY) ?? ""; } catch { return ""; } });
@@ -35,7 +36,8 @@ export function ExtraReviewSend({ runId, previewId, ownerEmail, sentToOwner }: {
   }
 
   function sendToMe() {
-    const to = previewEmail.trim();
+    const to = (compact && !previewEmail.trim() ? window.prompt("미리 받을 메일 주소를 적어 주세요. 다음부터는 묻지 않습니다.") ?? "" : previewEmail).trim();
+    if (compact && to) setPreviewEmail(to);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { setMessage("미리 받을 메일 주소를 확인해 주세요."); return; }
     try { localStorage.setItem(PREVIEW_EMAIL_KEY, to); } catch { /* storage unavailable */ }
     void send({ to }, "미리 보내기");
@@ -46,8 +48,8 @@ export function ExtraReviewSend({ runId, previewId, ownerEmail, sentToOwner }: {
     void send({ toOwner: true }, "고객 발송");
   }
 
-  return <div className={styles.send}>
-    <label>미리 받을 메일<input type="email" suppressHydrationWarning value={previewEmail} onChange={event => setPreviewEmail(event.target.value)} placeholder="운영자 메일" /></label>
+  return <div className={compact ? `${styles.send} ${styles.compact}` : styles.send}>
+    {!compact && <label>미리 받을 메일<input type="email" suppressHydrationWarning value={previewEmail} onChange={event => setPreviewEmail(event.target.value)} placeholder="운영자 메일" /></label>}
     <button type="button" disabled={busy} onClick={sendToMe}>나에게 미리 보내기</button>
     <button type="button" className={styles.primary} disabled={busy} onClick={sendToCustomer}>고객에게 보내기</button>
     {message && <p role="status">{message}</p>}
