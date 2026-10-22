@@ -28,5 +28,5 @@ export default async function DeliveredSecondReviewPage({ params }: { params: Pr
   const source = resultDocumentSchema.safeParse(data?.result_data);
   if (error || !source.success) notFound();
   const result = buildSecondReviewResult(source.data, preview);
-  return <ResultWorkspaceComplete result={result} adminPreview initialView="overview" editionLabel="2차 첨삭본" sectionReview={preview.revisedAnswers.every(answer => answer.section)} />;
+  return <ResultWorkspaceComplete result={result} adminPreview initialView="overview" editionLabel="추가 첨삭본" sectionReview={preview.revisedAnswers.every(answer => answer.section)} />;
 }

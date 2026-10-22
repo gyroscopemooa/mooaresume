@@ -1,7 +1,7 @@
 import "server-only";
 import { serviceClient } from "@/server/admin/admin-repository";
 import { resultDocumentSchema } from "@/domain/result-document";
-import { buildReviewUnits, contextSchema } from "./automatic-contract";
+import { buildReviewUnits, contextSchema, reviewSource } from "./automatic-contract";
 import { AutomaticReviewGateway } from "./automatic-gateway";
 import { advanceAutomaticReview, jobSchema, type AutomaticRepository } from "./automatic-worker";
 
@@ -21,7 +21,7 @@ export function automaticRepository(): AutomaticRepository {
       if (docs.error) throw new Error("SECOND_REVIEW_DOCUMENTS_MISSING");
       const kinds = new Map(docs.data.map(d => [d.id,d.kind]));
       return contextSchema.parse({
-        units: buildReviewUnits(source), source,
+        units: buildReviewUnits(source), source: reviewSource(source),
         documents: versions.data.map(v => ({ kind: kinds.get(v.document_id) ?? "UNKNOWN", text: v.normalized_text ?? "" })),
         writingMode: run.data.writing_mode, writingStyle: run.data.writing_style ?? "DEFAULT",
         targetLength: run.data.target_length,

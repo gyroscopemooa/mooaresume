@@ -21,7 +21,7 @@ export default async function SecondReviewPage({ params }: { params: Promise<{ i
   return <>
     {latestByRun[id] && latestByRun[id].id !== preview.id && <aside className={styles.adminBar}>
       <span>이 화면은 이전 검토본입니다. 이후에 저장된 개선본이 있습니다.</span>
-      <Link href={`/meensoo/analyses/${id}/second-review/${latestByRun[id].id}`}>최신 2차 첨삭본 보기 →</Link>
+      <Link href={`/meensoo/analyses/${id}/second-review/${latestByRun[id].id}`}>최신 추가 첨삭본 보기 →</Link>
     </aside>}
     <nav className={styles.adminBar}>
       <Link href="/meensoo/analyses">← 전체 첨삭</Link>
@@ -29,7 +29,7 @@ export default async function SecondReviewPage({ params }: { params: Promise<{ i
       <Link href={`/meensoo/analyses/${id}`}>관리자 검수로 돌아가기</Link>
     </nav>
     <section className={styles.customerResult}>
-      <ResultWorkspaceComplete result={secondReviewResult} analysisRunId={id} adminPreview initialView="overview" editionLabel="2차 첨삭 검토본" sectionReview={preview.revisedAnswers.every(answer => answer.section)} />
+      <ResultWorkspaceComplete result={secondReviewResult} analysisRunId={id} adminPreview initialView="overview" editionLabel="추가 첨삭 검토본" sectionReview={preview.revisedAnswers.every(answer => answer.section)} />
     </section>
   </>;
 }

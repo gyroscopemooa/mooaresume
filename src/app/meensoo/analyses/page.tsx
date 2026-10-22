@@ -186,7 +186,7 @@ export default async function AnalysesPage() {
           <small>원가 초과 · 마진 얇음 · 무료 과다</small>
         </div>
         <div className={styles.card}>
-          <span>2차 첨삭</span>
+          <span>추가 첨삭</span>
           <strong>{secondReviewCount}건</strong>
           <small>컨설턴트 검토 초안 · 고객 미전달</small>
         </div>
@@ -201,8 +201,8 @@ export default async function AnalysesPage() {
       )}
 
       <AttentionList items={attention} />
-      <p className={styles.hint}>신규 완료 건은 AI 컨설턴트가 별도 검수합니다. 2차본은 관리자 확인 전 고객에게 자동 공개·발송하지 않습니다. 2차 검수 토큰은 별도 표시되며 위 1차 원가 합계에는 포함되지 않습니다.</p>
-      {!automatic.available && <p className={styles.hint}>자동 2차 검수 저장소를 확인할 수 없습니다. 운영 설정을 확인해 주세요.</p>}
+      <p className={styles.hint}>신규 완료 건은 AI 컨설턴트가 별도 검수합니다. 추가 첨삭본은 관리자 확인 전 고객에게 자동 공개·발송하지 않습니다. 추가 첨삭 토큰은 별도 표시되며 위 1차 원가 합계에는 포함되지 않습니다.</p>
+      {!automatic.available && <p className={styles.hint}>자동 추가 첨삭 저장소를 확인할 수 없습니다. 운영 설정을 확인해 주세요.</p>}
 
       <section className={styles.panel}>
         <div className={styles.panelHead}>
@@ -218,7 +218,7 @@ export default async function AnalysesPage() {
                 <tr>
                   <th>시작</th><th>신청자</th><th>회사</th><th>상품 · 단계</th>
                   <th>상태</th><th>완료</th><th>모델 · 프롬프트</th>
-                  <th>시도 내역</th><th>원가 · 마진</th><th>2차 첨삭</th><th></th>
+                  <th>시도 내역</th><th>원가 · 마진</th><th>추가 첨삭</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -242,14 +242,14 @@ export default async function AnalysesPage() {
                         {automatic.items[analysis.id].status === "completed" ? "자동 검증 통과 · 관리자 확인 대기" :
                           automatic.items[analysis.id].status === "needs_attention" ? "자동 검수 중단 · 확인 필요" : "자동 검수 진행 중"}
                         {automatic.items[analysis.id].failure && <small> · {automatic.items[analysis.id].failure}</small>}
-                        <small> · 2차 {automatic.items[analysis.id].tokens?.toLocaleString("ko-KR") ?? "집계 대기"} 토큰</small>
+                        <small> · 추가 첨삭 {automatic.items[analysis.id].tokens?.toLocaleString("ko-KR") ?? "집계 대기"} 토큰</small>
                       </div>}
                       {previewByRun[analysis.id] ? (
                         <div className={styles.secondReviewCell}>
                           <span className={`${styles.pill} ${styles.pillWarn}`}>검토 초안</span>
                           <strong>{previewByRun[analysis.id].title}</strong>
                           <small>{kst(previewByRun[analysis.id].createdAt)} · 고객 미전달</small>
-                          <Link href={`/meensoo/analyses/${analysis.id}/second-review/${previewByRun[analysis.id].id}`}>2차 첨삭본 보기</Link>
+                          <Link href={`/meensoo/analyses/${analysis.id}/second-review/${previewByRun[analysis.id].id}`}>추가 첨삭본 보기</Link>
                         </div>
                       ) : <span className={styles.mono}>—</span>}
                     </td>

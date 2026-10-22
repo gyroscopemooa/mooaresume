@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { sampleResultDocument } from "@/fixtures/result-document";
-import { buildReviewUnits, splitWritingSections, validateDraft, validateVerification, toAutomaticPreview, type ReviewContext, type ReviewDraft } from "./automatic-contract";
+import { buildReviewUnits, droppedKeyTerms, promptContext, repeatedEndings, reviewSource, splitWritingSections, validateDraft, validateVerification, toAutomaticPreview, type ReviewContext, type ReviewDraft } from "./automatic-contract";
 import { advanceAutomaticReview, type AutomaticJob, type AutomaticRepository } from "./automatic-worker";
 import type { AutomaticGateway } from "./automatic-gateway";
 
@@ -9,7 +9,7 @@ const context: ReviewContext = {
   source: {}, documents: [], writingMode: "CREATE", writingStyle: "BALANCED", targetLength: 700,
 };
 const draft: ReviewDraft = { summary: "문체 보완", answers: [{ order: 1, disposition: "improved", revisedAnswer: "행사를 좋아합니다.", reasons: ["제출 문체로 정리했습니다."], verificationNote: "공식 분량 확인 필요" }] };
-const verification = { approved: true, answers: [{ order: 1, factsPreserved: true, noInventedFacts: true, feedbackResolvedOrFlagged: true, appropriateStyle: true, completeCoverage: true, noRegression: true, reason: "경험 보존 확인" }], remainingIssues: [] };
+const verification = { approved: true, answers: [{ order: 1, factsPreserved: true, noInventedFacts: true, feedbackResolvedOrFlagged: true, appropriateStyle: true, completeCoverage: true, noRegression: true, dispositionAccurate: true, keyContentPreserved: true, noNewRepetition: true, reason: "경험 보존 확인" }], remainingIssues: [] };
 const makeJob = (status: AutomaticJob["status"]): AutomaticJob => ({
   analysis_run_id: "11111111-1111-4111-8111-111111111111", lease_token: "22222222-2222-4222-8222-222222222222",
   status, context, draft, execution: {}, draft_response_id: "resp_draft", verify_response_id: "resp_verify", created_at: new Date().toISOString(),
@@ -45,6 +45,32 @@ describe("automatic consultant review", () => {
     expect(() => validateVerification(context,{...verification,answers:[]})).toThrow();
     expect(() => validateVerification(context,{...verification,remainingIssues:["누락"]})).toThrow();
     expect(() => validateVerification(context,{...verification,answers:[{...verification.answers[0],noInventedFacts:false}]})).toThrow();
+  });
+  it.each(["dispositionAccurate","keyContentPreserved","noNewRepetition"] as const)("rejects when %s fails", check => {
+    expect(() => validateVerification(context,{...verification,answers:[{...verification.answers[0],[check]:false}]})).toThrow("REJECTED");
+  });
+  it("keeps the 1st pass's internal candidate review out of what the 2nd pass reads", () => {
+    const withMemo = { ...context, source: { questions: [], revisionQuality: { reason: "2번: 후보는 '장시간'을 삭제했습니다." } } };
+    expect(JSON.stringify(promptContext(withMemo))).not.toContain("장시간");
+    expect(reviewSource({ priorities: [] })).toEqual({ priorities: [] });
+    expect(reviewSource(null)).toBeNull();
+  });
+  // 2026-10-22 production 2nd draft (QUICK POLISH) that passed the model verifier.
+  const motive = "전공을 학습했습니다. 공정 개선에 관심을 갖게 되었습니다. 신규 Concept 구조 개발에 참여하겠습니다.";
+  const motiveUnit: ReviewContext = { ...context, units: [{ ...context.units[0], sourceText: motive, firstAnswer: motive }] };
+  it("rejects a draft that ends back-to-back sentences the same way", () => {
+    const repeated = "전공을 학습했습니다. 공정 개선에 관심을 갖게 되었습니다. 구조 개발 업무에 관심을 갖게 되었습니다. 신규 Concept 구조 개발에 참여하겠습니다.";
+    expect(repeatedEndings(repeated)).toBe(1);
+    expect(repeatedEndings("A를 했습니다. B를 했습니다.")).toBe(0);
+    expect(() => validateDraft(motiveUnit,{...draft,answers:[{...draft.answers[0],revisedAnswer:repeated}]})).toThrow("REPEATED_ENDING");
+  });
+  it("rejects a draft that drops the applicant's numbers or English terms", () => {
+    expect(droppedKeyTerms(motive, motive, motive.replace("Concept ", ""))).toEqual(["Concept"]);
+    expect(droppedKeyTerms("전체의 2/3가 백지였고 1.5배를 달성했습니다.", "전체의 2/3가 백지였고 1.5배를 달성했습니다.", "전체의 3분의 2가 백지였고 1.5 배를 달성했습니다.")).toEqual(["2/3"]);
+    expect(() => validateDraft(motiveUnit,{...draft,answers:[{...draft.answers[0],revisedAnswer:motive.replace("Concept ", "")}]})).toThrow("KEY_TERM_DROPPED");
+  });
+  it("lets the 2nd pass remove a term only the 1st pass added", () => {
+    expect(droppedKeyTerms("성과를 냈습니다.", "성과 20%를 냈습니다.", "성과를 냈습니다.")).toEqual([]);
   });
   it("persists start intent before buying generation and then saves the response cursor", async () => {
     const {repository,gateway}=mocks();
