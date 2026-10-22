@@ -8,6 +8,7 @@
 - 검증: vitest 127파일 1125 통과, `tsc --noEmit` 통과, 대상 ESLint 통과. 운영 배포 전이라 실제 사이트는 아직 '2차' 표기.
 - 겹침: `result-workspace-complete.tsx`는 `claude/recommendation-sentences-20261022`·`claude/hide-internal-keep-reason-20261022`와 다른 줄만 수정.
 - 복구: 이 커밋 revert.
+- 2026-10-22 운영 반영(사용자 요청 "대시보드에 추가첨삭 만들고 내 메일로 보내줘"): 10/22 건(run e79a358f)에 새 프롬프트(2af7078)로 유료 draft+verify 1회씩 실행. 코드 검사 통과, 검증 AI가 문항 3 본문 변경('작업 방식뿐 아니라 작업 환경에서도 원인을 찾아')을 원문 유지가 안전하다며 거부 → 그 판정대로 3번 본문은 1차 그대로, 해당 문장은 verificationNote의 '[다른 시각 추천안 · 선택]'으로 옮김(4문항 모두 maintained). 운영 DB `admin_analysis_previews`에 관리자 전용 미리보기 1건 추가(id 7ea9f0f5-09b1-4d4a-9a25-b3d8260602fd, notes에 수동 조정 사실 기록, 고객 미발송·고객 링크 미발급). jeonmeensoo@gmail.com으로 고객 메일 문구+완성본 테스트 메일 1통 발송(Resend, mail_send_log 미기록). 로컬에 SECOND_REVIEW_SIGNING_SECRET이 없어 실제 열람 링크는 넣지 않음. 일회성 스크립트는 삭제. 되돌리기: 해당 preview 행 삭제.
 
 ## 2026-10-22 — Claude: 자동 2차 검수 품질 가드 (consultant-review-1.1)
 
