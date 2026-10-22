@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 추가 첨삭 = 1차 결과 그대로 + 다른 시각 추천안, 1차 판단 뒤집기 금지 (consultant-review-1.3)
+
+- 요청(민수오빠): 추가 첨삭 화면이 1차보다 허전함(좋은 표현·확인 필요·개선점이 사라짐). 추가 첨삭은 1차를 그대로 두고 문항별 다른 시각 추천안만 더할 것. 1차가 좋다/나쁘다/확인 필요라 한 판단을 뒤집는 것은 절대 금지(1차가 말하지 않은 곳의 새 의견은 허용). 추천안 아이콘은 반짝이 대신 무아레쥬메 마크.
+- 원인: `buildSecondReviewResult`가 예전 본문 수정형 2차를 위해 1차 주석·우선순위·조언을 일부러 비웠음.
+- 변경: `keepsFirstResult`(추가 첨삭 항목이 1차 문항과 1:1, 비교 원문 = 1차 첨삭본)일 때 `buildExtraReviewResult`로 1차 결과 전체를 그대로 쓰고 문항별 `recommendations`만 더함(본문을 바꾼 항목만 추가 첨삭 이유 표시). 고객 열람·관리자 미리보기 페이지가 이 경우 `editionBadge`로 렌더(1차 화면과 동일, 머리 표시·파일명 '추가첨삭본'·안내문 '1차 첨삭 내용은 그대로… 개선 의미 아님'). 소제목 분할형(1:1 아님)은 기존 항목별 화면 유지. 추가 첨삭 AI 규칙: 1차 판단 고정, 본문은 기본 유지·바꾸면 1차가 짚은 문제를 같은 방향으로만, 1차 good 문구에는 '다른 시각' 추천만. 검증에 `consistentWithFirst`(요청 필수, 저장 파싱 선택) 추가, false면 거부. 코드 검사: 1차가 good으로 표시한 문구가 1차본에 있으면 추가 첨삭 본문에 그대로 남아야 함(`SECOND_REVIEW_FIRST_GOOD_CHANGED`). `RecommendationList` 머리 아이콘을 'M' 브랜드 마크로.
+- 파일: `src/domain/second-review-result.ts`/`.test.ts`, `src/app/result/second-review/[token]/page.tsx`, `src/app/meensoo/analyses/[id]/second-review/[previewId]/page.tsx`, `src/components/result-workspace-complete.tsx`(prop 1개·머리 표시·파일명·안내문), `src/components/recommendation-list.tsx`/`.module.css`/`.test.tsx`, `src/server/second-review/automatic-contract.ts`/`automatic.test.ts`, 본 기록.
+- 검증: 전체 vitest 2374 통과(기존 Expo 2파일 로드 실패 제외), `tsc --noEmit`·ESLint 통과.
+- 복구: 이 커밋 revert(저장된 미리보기는 그대로 읽힘).
+
 ## 2026-10-22 — Claude: 추가 첨삭 자동 생성에도 '다른 시각 추천안' 1~3개 (consultant-review-1.2)
 
 - 요청(민수오빠): 추가 첨삭에도 1차처럼 모든 문항에 추천안을 자동으로 붙이고, 다시 메일로 보내 달라.

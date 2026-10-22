@@ -3,7 +3,7 @@ import { ResultSignIn } from "@/components/result-sign-in";
 import { ResultWorkspaceComplete } from "@/components/result-workspace-complete";
 import { createClient } from "@/lib/supabase/server";
 import { resultDocumentSchema } from "@/domain/result-document";
-import { buildSecondReviewResult } from "@/domain/second-review-result";
+import { buildExtraReviewResult, buildSecondReviewResult, keepsFirstResult } from "@/domain/second-review-result";
 import { getAdminAnalysisPreview } from "@/server/admin/admin-analysis-previews";
 import { serviceClient } from "@/server/admin/admin-repository";
 import { canReadSecondReview, readSecondReviewGrant, reviewedContentDigest } from "@/server/second-review/grant";
@@ -27,6 +27,9 @@ export default async function DeliveredSecondReviewPage({ params }: { params: Pr
   const { data, error } = await serviceClient().from("analysis_results").select("result_data").eq("analysis_run_id", grant.run).maybeSingle();
   const source = resultDocumentSchema.safeParse(data?.result_data);
   if (error || !source.success) notFound();
+  if (keepsFirstResult(source.data, preview)) {
+    return <ResultWorkspaceComplete result={buildExtraReviewResult(source.data, preview)} adminPreview initialView="overview" editionBadge="추가 첨삭본" />;
+  }
   const result = buildSecondReviewResult(source.data, preview);
   return <ResultWorkspaceComplete result={result} adminPreview initialView="overview" editionLabel="추가 첨삭본" sectionReview={preview.revisedAnswers.every(answer => answer.section)} />;
 }

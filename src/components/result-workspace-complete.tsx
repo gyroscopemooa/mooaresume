@@ -316,7 +316,7 @@ function internalKeepNote(result: ResultDocument, order: number) {
   return result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${order}번:`));
 }
 
-export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, initialView = "overview", editionLabel, sectionReview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Opens a saved result on the tab the surrounding workflow links to. */ initialView?: View; /** Identifies a reviewed edition without changing the shared result layout. */ editionLabel?: string; /** Reviewed writing sections; official question count/limits and new numerical scores are unverified. */ sectionReview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
+export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, initialView = "overview", editionLabel, editionBadge, sectionReview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Opens a saved result on the tab the surrounding workflow links to. */ initialView?: View; /** Identifies a reviewed edition without changing the shared result layout. */ editionLabel?: string; /** 추가 첨삭: 1차 결과를 그대로 보여 주고 머리 표시와 안내만 바꾼다. */ editionBadge?: string; /** Reviewed writing sections; official question count/limits and new numerical scores are unverified. */ sectionReview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
   const boundaryRestored = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
   // 답변 맨 앞의 "질문:" 줄을 질문 칸으로 옮긴 화면용 사본. 저장된 결과는 그대로이고,
   // 화면·글자 수·복사·내보내기가 모두 이 사본을 읽어 문항마다 같은 모양이 된다.
@@ -422,7 +422,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
     () => buildFinalDocumentText({ ...result, company: subject.name, role: subject.qualifier ?? applicationLabel, questions: result.questions.map((question) => ({ ...question, title: resolveQuestionTitle(question) })) }, answers),
     [answers, applicationLabel, result, subject],
   );
-  const baseFilename = `MOOA_${toFilenameToken(subject.name)}_${editionLabel ? "추가첨삭본" : "최종첨삭본"}`;
+  const baseFilename = `MOOA_${toFilenameToken(subject.name)}_${editionLabel || editionBadge ? "추가첨삭본" : "최종첨삭본"}`;
   // Counted from what is stored, so the numbers move with hand edits and
   // nothing has to be taken on trust.
   const editCounts = useMemo(() => summarizeEdits(result, answers), [result, answers]);
@@ -584,7 +584,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
     <div className={styles.container}>
       {!adminPreview && <WritingHomeLink className={styles.back}><ArrowLeft/> 작성 단계로 돌아가기</WritingHomeLink>}
       <section className={styles.hero}>
-        <div><span>{editionLabel ?? (result.isSample ? "가상 지원서 · 결과 화면 샘플" : "분석 완료")}</span><h1>{subject.name}{subject.qualifier && <> <em>{subject.qualifier}</em></>}</h1><p>{applicationLabel} · {result.questions.length}개 {sectionReview ? "작성 항목" : "문항"} · {result.product}{editionLabel ? " · 추가 첨삭" : ""}</p></div>
+        <div><span>{editionBadge ?? editionLabel ?? (result.isSample ? "가상 지원서 · 결과 화면 샘플" : "분석 완료")}</span><h1>{subject.name}{subject.qualifier && <> <em>{subject.qualifier}</em></>}</h1><p>{applicationLabel} · {result.questions.length}개 {sectionReview ? "작성 항목" : "문항"} · {result.product}{editionLabel ? " · 추가 첨삭" : ""}</p></div>
         <button onClick={() => setView("final")}>최종 첨삭본 보기 <ArrowRight/></button>
       </section>
       {!adminPreview && <RuntimeEventSlot slot="result_top_banner" sample={result.isSample} />}
@@ -602,6 +602,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
         {!result.isSample && <button onClick={() => setView("encouragement")} className={view === "encouragement" ? styles.active : ""}>한 장 더</button>}
       </nav>
       {!isReviewedEdition && <ContextResearchNotice research={result.contextResearch} />}
+      {editionBadge && <p className={styles.fallbackNotice}>추가 첨삭본입니다. 1차 첨삭 내용은 그대로 두고, 문항마다 다른 시각 추천안을 더했습니다. 1차보다 개선되었다는 의미가 아니며, 본인 스타일에 맞는 문장을 골라 쓰실 수 있도록 드리는 참고안입니다.</p>}
       {isReviewedEdition && ["overview", "fit", "interview", "verification"].includes(view) && <p className={styles.fallbackNotice}>{sectionReview ? (view === "overview" ? "기존 첨삭본을 다시 검토하여 표현과 구성을 보완했습니다. 항목별 수정 이유와 제출 전 확인 사항을 함께 확인해 주세요." : "이 탭은 1차 분석 당시의 참고 자료입니다. 이번 추가 첨삭에서 새로 평가한 내용은 아니며, 추가 첨삭 문장은 ‘문항별 첨삭’과 ‘최종 첨삭본’에서 확인할 수 있습니다.") : "이번 추가 첨삭본은 자기소개서 문장을 다른 시각에서 다시 본 결과입니다. 준비도 점수·공고 분석·면접 준비·검증 자료는 1차 분석 당시의 참고 자료이며, 이번에 새로 평가한 내용은 아닙니다."}</p>}
       {isReviewedEdition && view === "submission" && <p className={styles.fallbackNotice}>이번 비교의 원문은 고객에게 제공된 1차 첨삭본입니다. 표시되는 변경 구간은 1차본과 추가 첨삭본의 문장 차이입니다.</p>}
       {view === "encouragement" && !result.isSample && <ResultOneMore onReview={() => setView("revision")} onFinal={() => setView("final")} />}

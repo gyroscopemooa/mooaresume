@@ -1,6 +1,38 @@
 import type { AdminAnalysisPreview } from "./admin-analysis-preview";
 import type { ResultDocument } from "./result-document";
 
+const same = (a: string, b: string) => a.normalize("NFC").replace(/\s+/g, " ").trim() === b.normalize("NFC").replace(/\s+/g, " ").trim();
+
+/**
+ * 추가 첨삭이 1차 문항과 하나씩 짝지어지는가(각 항목의 비교 원문이 그 문항의 1차 첨삭본).
+ * 그렇다면 추가 첨삭은 1차 결과를 그대로 두고 다른 시각 추천안만 더한 것으로 보여 준다.
+ */
+export function keepsFirstResult(source: ResultDocument, preview: AdminAnalysisPreview) {
+  return preview.revisedAnswers.length === source.questions.length
+    && preview.revisedAnswers.every((answer, index) => answer.section && same(answer.section.originalAnswer, source.questions[index].revisedAnswer));
+}
+
+/**
+ * 1차 결과(좋은 표현·확인 필요·개선점·조언·면접)를 하나도 빼지 않고, 문항마다 추가 첨삭의
+ * 다른 시각 추천안을 붙인다. 1차 판단을 뒤집지 않는 것이 추가 첨삭의 약속이라 1차 표시를 그대로 쓴다.
+ */
+export function buildExtraReviewResult(source: ResultDocument, preview: AdminAnalysisPreview): ResultDocument {
+  return {
+    ...source,
+    analyzedAt: preview.createdAt,
+    questions: source.questions.map((question, index) => {
+      const answer = preview.revisedAnswers[index];
+      const changed = !same(answer.revisedAnswer, question.revisedAnswer);
+      return {
+        ...question,
+        revisedAnswer: answer.revisedAnswer,
+        revisionReasons: changed ? answer.section!.revisionReasons : question.revisionReasons,
+        recommendations: answer.section!.recommendations ?? [],
+      };
+    }),
+  };
+}
+
 /** Saved sections are independently reviewed items, not inferred official questions. */
 export function buildSecondReviewResult(source: ResultDocument, preview: AdminAnalysisPreview): ResultDocument {
   const sectioned = preview.revisedAnswers.every(answer => answer.section);

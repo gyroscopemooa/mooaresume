@@ -4,7 +4,7 @@ import { ResultWorkspaceComplete } from "@/components/result-workspace-complete"
 import { getAdminAnalysisPreview, listLatestAdminAnalysisPreviewSummaries } from "@/server/admin/admin-analysis-previews";
 import { getAnalysis } from "@/server/admin/admin-repository";
 import { resultDocumentSchema } from "@/domain/result-document";
-import { buildSecondReviewResult } from "@/domain/second-review-result";
+import { buildExtraReviewResult, buildSecondReviewResult, keepsFirstResult } from "@/domain/second-review-result";
 import styles from "./second-review.module.css";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,8 @@ export default async function SecondReviewPage({ params }: { params: Promise<{ i
   if (!detail || !preview) notFound();
   const parsed = resultDocumentSchema.safeParse(detail.resultData);
   if (!parsed.success) notFound();
-  const secondReviewResult = buildSecondReviewResult(parsed.data, preview);
+  const keepsFirst = keepsFirstResult(parsed.data, preview);
+  const secondReviewResult = keepsFirst ? buildExtraReviewResult(parsed.data, preview) : buildSecondReviewResult(parsed.data, preview);
   if (!secondReviewResult) notFound();
 
   return <>
@@ -29,7 +30,9 @@ export default async function SecondReviewPage({ params }: { params: Promise<{ i
       <Link href={`/meensoo/analyses/${id}`}>관리자 검수로 돌아가기</Link>
     </nav>
     <section className={styles.customerResult}>
-      <ResultWorkspaceComplete result={secondReviewResult} analysisRunId={id} adminPreview initialView="overview" editionLabel="추가 첨삭 검토본" sectionReview={preview.revisedAnswers.every(answer => answer.section)} />
+      {keepsFirst
+        ? <ResultWorkspaceComplete result={secondReviewResult} analysisRunId={id} adminPreview initialView="overview" editionBadge="추가 첨삭 검토본" />
+        : <ResultWorkspaceComplete result={secondReviewResult} analysisRunId={id} adminPreview initialView="overview" editionLabel="추가 첨삭 검토본" sectionReview={preview.revisedAnswers.every(answer => answer.section)} />}
     </section>
   </>;
 }

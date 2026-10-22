@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Clipboard, Sparkles } from "lucide-react";
+import { Check, Clipboard } from "lucide-react";
 import type { ResultRecommendation } from "@/domain/result-document";
 import styles from "./recommendation-list.module.css";
 
@@ -18,7 +18,7 @@ export function RecommendationList({ items, kept }: { items: readonly ResultReco
     try { await navigator.clipboard.writeText(item.sentence); setCopied(item.id); } catch { setCopied(null); }
   };
   return <section className={styles.list} aria-label="다른 시각 추천안">
-    <header><Sparkles/><div><b>다른 시각 추천안 <small>선택</small></b><p>{kept
+    <header><span className={styles.mark} aria-hidden="true">M</span><div><b>다른 시각 추천안 <small>선택</small></b><p>{kept
       ? "지금 문장 그대로도 충분합니다. 아래는 다른 시각에서 본 표현이니, 본인 스타일에 맞는 것만 골라 쓰세요."
       : "아래는 다른 시각에서 본 표현입니다. 본인 스타일에 맞는 것만 골라 쓰세요."}</p></div></header>
     {items.map(item => <article key={item.id} data-kind={item.kind}>

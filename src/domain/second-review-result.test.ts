@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sampleResultDocument } from "@/fixtures/result-document";
 import { resultDocumentSchema } from "./result-document";
 import { adminAnalysisPreviewInputSchema, type AdminAnalysisPreview } from "./admin-analysis-preview";
-import { buildSecondReviewResult } from "./second-review-result";
+import { buildExtraReviewResult, buildSecondReviewResult, keepsFirstResult } from "./second-review-result";
 
 const preview: AdminAnalysisPreview = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -45,6 +45,21 @@ describe("section-preserving second review", () => {
     const result = buildSecondReviewResult(sampleResultDocument, withRecommendation);
     expect(result.questions[0].recommendations).toEqual([recommendation]);
     expect(result.questions[1].recommendations).toBeUndefined();
+    expect(resultDocumentSchema.safeParse(result).success).toBe(true);
+  });
+  it("추가 첨삭 lined up with 1차 questions keeps every 1차 judgment and only adds recommendations", () => {
+    const source = structuredClone(sampleResultDocument);
+    const recommendation = { id: "r1", kind: "improve" as const, anchorQuote: "앵커", sentence: "다른 시각 문장입니다.", why: "다른 각도입니다." };
+    const extra = { ...preview, revisedAnswers: source.questions.map((q, i) => ({ questionOrder: i + 1, revisedAnswer: q.revisedAnswer,
+      section: { title: q.title, originalAnswer: q.revisedAnswer, revisionReasons: ["원문 유지"], verificationNote: "", disposition: "maintained" as const, ...(i === 0 ? { recommendations: [recommendation] } : {}) } })) };
+    expect(keepsFirstResult(source, extra)).toBe(true);
+    expect(keepsFirstResult(source, preview)).toBe(false);
+    const result = buildExtraReviewResult(source, extra);
+    expect(result.priorities).toEqual(source.priorities);
+    expect(result.consultingAdvice).toEqual(source.consultingAdvice);
+    expect(result.questions.map(q => q.originalAnnotations)).toEqual(source.questions.map(q => q.originalAnnotations));
+    expect(result.questions.map(q => q.revisionReasons)).toEqual(source.questions.map(q => q.revisionReasons));
+    expect(result.questions[0].recommendations).toEqual([recommendation]);
     expect(resultDocumentSchema.safeParse(result).success).toBe(true);
   });
   it("keeps legacy saved previews readable", () => {

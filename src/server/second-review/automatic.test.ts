@@ -93,6 +93,16 @@ describe("automatic consultant review", () => {
     expect(schema).toContain("\"minItems\":1");
     expect(JSON.stringify(z.toJSONSchema(verificationRequestSchema))).toContain("validRecommendationIndexes");
   });
+  it("never lets 추가 첨삭 change what 1차 marked good, or pass when the verifier sees a flipped judgment", () => {
+    const first = "현장에서 문제를 직접 확인했습니다. 결과가 좋아졌습니다.";
+    const unit: ReviewContext = { ...context, units: [{ ...context.units[0], sourceText: first, firstAnswer: first }],
+      source: { questions: [{ order: 1, originalAnnotations: [{ type: "good", phrase: "현장에서 문제를 직접 확인했습니다." }] }] } };
+    const changedGood: ReviewDraft = { summary: "s", answers: [{ order: 1, disposition: "improved", revisedAnswer: "문제를 확인했습니다. 결과가 좋아졌습니다.", reasons: ["r"], verificationNote: "" }] };
+    expect(() => validateDraft(unit, changedGood)).toThrow("FIRST_GOOD_CHANGED");
+    validateDraft(unit, { ...changedGood, answers: [{ ...changedGood.answers[0], disposition: "improved", revisedAnswer: "현장에서 문제를 직접 확인했습니다. 결과가 눈에 띄게 좋아졌습니다." }] });
+    expect(() => validateVerification(context, { ...verification, answers: [{ ...verification.answers[0], consistentWithFirst: false }] })).toThrow("REJECTED");
+    expect(JSON.stringify(z.toJSONSchema(verificationRequestSchema))).toContain("consistentWithFirst");
+  });
   it("persists start intent before buying generation and then saves the response cursor", async () => {
     const {repository,gateway}=mocks();
     expect(await advanceAutomaticReview(makeJob("pending"),repository,gateway)).toBe("draft_running");

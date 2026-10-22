@@ -14,6 +14,7 @@ describe("RecommendationList", () => {
     expect(screen.getByText("확인 후 사용")).toBeTruthy();
     expect(screen.getByText("실제로 그랬는지 확인하세요.")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/개선안|더 좋/);
+    expect(document.querySelector("header span[aria-hidden]")?.textContent).toBe("M");
   });
   it("renders nothing when every recommendation was filtered out", () => {
     const { container } = render(<RecommendationList items={[]} kept/>);
