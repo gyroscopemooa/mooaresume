@@ -28,6 +28,8 @@ export function buildExtraReviewResult(source: ResultDocument, preview: AdminAna
         revisedAnswer: answer.revisedAnswer,
         revisionReasons: changed ? answer.section!.revisionReasons : question.revisionReasons,
         recommendations: answer.section!.recommendations ?? [],
+        // 1차 소제목이 있으면 그대로 두고, 없을 때만 추가 첨삭의 다른 시각 소제목을 보여 준다.
+        subheading: question.subheading ?? (/^\s*\[/.test(answer.revisedAnswer) ? undefined : answer.section!.subheading),
       };
     }),
   };

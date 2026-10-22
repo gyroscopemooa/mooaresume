@@ -15,7 +15,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.9";
+export const QUICK_PROMPT_VERSION = "quick-4.10";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -283,6 +283,10 @@ ${LENGTH_INTEGRITY_RULE}`,
     // A subheading on question 1 and none on question 3 reads as an unfinished
     // document. Judged per question, that inconsistency is invisible.
     "소제목은 지원서 전체에서 일관되게 다루세요. 한 문항에 소제목을 제안했다면 소제목이 어울리는 다른 문항에도 제안하고, 어울리지 않는 문항(항목 정리 형식 등)에만 null을 반환하세요.",
+    // 2026-10-22: 다듬기(POLISH) 실행의 저장된 응답을 보면 subheading이 모든 문항에서 null이었다(14건 중 13건).
+    // 원문 유지 규칙을 소제목에도 적용한 것으로 보인다. 소제목은 본문을 바꾸지 않는 별도 제안이다.
+    "subheading은 revisedAnswer를 고치는 것이 아니라 답변 위에 따로 보여 주는 별도 제안입니다. 다듬기(POLISH)든, revisedAnswer를 원문 그대로 두든(수정 이득이 작아 멈추는 경우 포함) subheading은 따로 판단해 제안하세요. '원문 그대로'와 '구조를 흔들지 말라'는 규칙은 subheading에 적용되지 않습니다. null은 지원자가 이미 [소제목]을 쓴 문항과 항목 정리 형식처럼 소제목이 어울리지 않는 문항에만 씁니다.",
+    "지원자가 일부 문항에만 [소제목]을 썼다면, 소제목이 없는 나머지 문항의 subheading에 같은 형식(비슷한 길이·문장형)의 소제목을 제안해 지원서 전체가 일관되게 하세요.",
 
     // The cover letter is read again in the interview room. Predicting the
     // questions is half of it; the notes describe steering them.

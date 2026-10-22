@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 소제목이 다듬기에서 안 나오는 문제 (quick-4.10, consultant-review-1.6)
+
+- 원인(저장된 OpenAI 응답 조회): 2026-10-05~21 다듬기(POLISH) 실행은 모델이 모든 문항 subheading을 null로 냄, CREATE/BUILD는 냄. 원문 유지·Stop Editing 규칙을 소제목에도 적용한 것으로 판단. 고객이 일부 문항에만 [소제목]을 쓴 경우의 일관성 규칙도 미작동.
+- 변경(민수오빠 승인 1~4): ① 1차 프롬프트: subheading은 본문 수정이 아닌 별도 제안, POLISH·원문 유지에도 따로 판단, null은 이미 [소제목]이 있거나 항목 정리 형식일 때만. Stop Editing 규칙에도 '소제목은 별개' 명시. ② 일부 문항에만 [소제목]이 있으면 나머지에 같은 형식 제안. ③ `polishSubheadingsMissing` — 다듬기 결과에서 대상 문항 소제목이 전부 비면 `quick_subheading_missing` 경고 로그(재생성·차단 없음). ④ 추가 첨삭: 1차 소제목이 없고 [소제목]도 없으면 다른 시각 소제목 제안(`subheading`, 요청 스키마 필수 nullable), 검증 `subheadingValid`가 true일 때만 미리보기에 저장(false면 소제목만 빼고 검토는 통과), 결과 화면은 1차 소제목이 없을 때만 표시.
+- 파일: `src/server/ai/quick/prompt.ts`, `revision-quality.ts`, `provider.ts`, 신규 `subheading-coverage.ts`/`.test.ts`, `src/server/second-review/automatic-contract.ts`/`automatic.test.ts`, `src/domain/admin-analysis-preview.ts`, `second-review-result.ts`/`.test.ts`, 본 기록.
+- 검증: 전체 vitest 2380 통과(기존 Expo 2파일 제외), tsc·ESLint 통과. 실제 모델이 다듬기에서 소제목을 내는지는 다음 고객 실행부터 로그로 확인.
+- 복구: 이 커밋 revert.
+
 ## 2026-10-22 — Claude: 추가 첨삭 안내문 정확도 (본문이 바뀐 문항이 있어도 맞는 문구)
 
 - 요청(민수오빠): 추가 첨삭 상단·개선점 아래 안내가 '1차 문장을 바꾸지 않고'인데 4번 본문이 두괄식으로 바뀌어 사실과 다름.

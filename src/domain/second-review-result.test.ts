@@ -62,6 +62,15 @@ describe("section-preserving second review", () => {
     expect(result.questions[0].recommendations).toEqual([recommendation]);
     expect(resultDocumentSchema.safeParse(result).success).toBe(true);
   });
+  it("shows the 추가 첨삭 소제목 only where 1차 had none", () => {
+    const source = structuredClone(sampleResultDocument);
+    source.questions = source.questions.map((q, i) => ({ ...q, subheading: i === 0 ? "1차 소제목" : undefined }));
+    const extra = { ...preview, revisedAnswers: source.questions.map((q, i) => ({ questionOrder: i + 1, revisedAnswer: q.revisedAnswer,
+      section: { title: q.title, originalAnswer: q.revisedAnswer, revisionReasons: ["유지"], verificationNote: "", subheading: "다른 시각 소제목" } })) };
+    const result = buildExtraReviewResult(source, extra);
+    expect(result.questions[0].subheading).toBe("1차 소제목");
+    expect(result.questions.slice(1).every(q => q.subheading === "다른 시각 소제목" || /^\s*\[/.test(q.revisedAnswer))).toBe(true);
+  });
   it("keeps legacy saved previews readable", () => {
     const result = buildSecondReviewResult(sampleResultDocument, { ...preview, revisedAnswers: [{ questionOrder: 1, revisedAnswer: "기존 저장본입니다." }] });
     expect(result.questions[0].revisedAnswer).toBe("기존 저장본입니다.");

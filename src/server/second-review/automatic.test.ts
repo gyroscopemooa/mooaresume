@@ -103,6 +103,16 @@ describe("automatic consultant review", () => {
     expect(() => validateVerification(context, { ...verification, answers: [{ ...verification.answers[0], consistentWithFirst: false }] })).toThrow("REJECTED");
     expect(JSON.stringify(z.toJSONSchema(verificationRequestSchema))).toContain("consistentWithFirst");
   });
+  it("carries a verified 다른 시각 소제목 and drops one the verifier rejected", () => {
+    const kept: ReviewDraft = { summary: "s", answers: [{ order: 1, disposition: "maintained", revisedAnswer: context.units[0].firstAnswer, reasons: ["유지"], verificationNote: "", subheading: "행사를 좋아하는 이유" }] };
+    const ok = { ...verification, answers: [{ ...verification.answers[0], subheadingValid: true }] };
+    const requested = { ...context, documents: [{ kind: "REVISION_REQUEST", text: "한다체로 유지해 주세요." }] };
+    expect(toAutomaticPreview("11111111-1111-4111-8111-111111111111", requested, kept, ok).revisedAnswers[0].section?.subheading).toBe("행사를 좋아하는 이유");
+    const rejected = { ...verification, answers: [{ ...verification.answers[0], subheadingValid: false }] };
+    validateVerification(context, rejected);
+    expect(toAutomaticPreview("11111111-1111-4111-8111-111111111111", requested, kept, rejected).revisedAnswers[0].section?.subheading).toBeUndefined();
+    expect(JSON.stringify(z.toJSONSchema(verificationRequestSchema))).toContain("subheadingValid");
+  });
   it("persists start intent before buying generation and then saves the response cursor", async () => {
     const {repository,gateway}=mocks();
     expect(await advanceAutomaticReview(makeJob("pending"),repository,gateway)).toBe("draft_running");

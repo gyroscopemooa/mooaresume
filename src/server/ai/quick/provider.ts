@@ -6,6 +6,7 @@ import { getAnalysisQuestions, getUnansweredQuestions, hasAmbiguousMultiSectionT
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
 import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
 import { selectRecommendations } from "./recommendations";
+import { polishSubheadingsMissing } from "./subheading-coverage";
 
 function getQuestions(request: AnalysisRequest) {
   const source = request.documents.find((document) => document.kind === "cover_letter");
@@ -92,6 +93,10 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
   });
 
   if (request.product !== "QUICK" && !postingReady) coverageNotes.push("채용공고 본문이 없는 상태로 진행했습니다. 공고 요구사항 대조는 제외했으며, 입력한 자소서와 지원 자료를 기준으로 분석했습니다.");
+  if (polishSubheadingsMissing(request.writingMode, [...revisions.values()])) {
+    // Observability only: a rerun costs money, so the result still ships.
+    console.warn(JSON.stringify({ event: "quick_subheading_missing", requestId: request.requestId, product: request.product, promptVersion: gatewayResult.execution.promptVersion }));
+  }
   return resultDocumentSchema.parse({
     contextResearch: request.contextResearch,
     revisionQuality: gatewayResult.revisionQuality,

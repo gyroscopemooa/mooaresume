@@ -12,6 +12,8 @@ export const adminAnalysisPreviewAnswerSchema = z.object({
     disposition: z.enum(["improved", "alternative", "maintained"]).optional(),
     // 원문 옆에 보이는 다른 시각 추천안. 2026-10-22 이전 미리보기에는 없다.
     recommendations: z.array(resultRecommendationSchema).max(3).optional(),
+    // 1차에 소제목 제안이 없던 문항에 추가 첨삭이 낸 다른 시각의 소제목.
+    subheading: z.string().trim().min(1).max(60).optional(),
   }).optional(),
 });
 
