@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 홈 Google Play 배너 위에 TranStream EDU 홍보 배너
+
+- 요청(민수오빠): 랜딩의 Google Play 앱 배너 위에 `https://transtream.app/edu#pricing`로 가는 TranStream EDU 홍보 배너(영화 보며 영화 공부, 드라마 보면서 외국어 공부).
+- 변경: `EduPromoBanner` 추가 — Play 배너와 같은 카드 틀(`.banner`)에 남색 변형(`.edu`, `.eduIcon`, `.eduMeta`, `.eduAction`), 새 탭으로 열림. 홈에서 `AppLaunchBanner` 바로 위에 배치.
+- 파일: `src/components/app-launch-banner.tsx`, `src/components/app-launch-banner.module.css`, `src/app/page.tsx`, 본 기록.
+- 검증: tsc·ESLint 통과, 로컬(3005)에서 데스크톱 배치와 375px 폭 가로 넘침 없음 확인.
+- 복구: 이 커밋 revert.
+
 ## 2026-10-22 — Claude: 추가 첨삭 발송 첫 클릭 실패(DELIVERY_FAILED_RETRY_SAME_REQUEST) 대응
 
 - 증상(민수오빠 스샷): 배포 직후 목록의 발송 버튼이 'DELIVERY_FAILED_RETRY_SAME_REQUEST'. 메일 기록 없음(발송 안 됨). 같은 요청을 연달아 보내면 첫 번째만 502, 이후 200 — 유휴 뒤 첫 요청에서 미리보기 읽기가 실패하는 것으로 보임(dry run에서도 재현).

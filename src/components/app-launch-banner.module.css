@@ -26,6 +26,11 @@
 .action span { display: flex; flex-direction: column; line-height: 1.05; }
 .action small { font-size: 9.5px; font-weight: 500; letter-spacing: .06em; }
 .action b { font-size: 19px; font-weight: 500; letter-spacing: -.01em; }
+/* TranStream EDU: 같은 카드, 남색 계열로 구분합니다. */
+.edu { border-color: #c7d6f5; background: linear-gradient(120deg, #f5f8ff, #fff 55%); }
+.eduIcon { background: linear-gradient(145deg, #3b82f6, #1e3a8a); box-shadow: 0 6px 14px rgba(30, 58, 138, .28); }
+.eduMeta { color: #1d4ed8; }
+.eduAction { padding: 6px 18px; border-color: #1e3a8a; background: #1e3a8a; }
 @media (max-width: 680px) {
   .banner { flex-wrap: wrap; gap: 12px; padding: 16px 16px; }
   .icon { flex-basis: 52px; height: 52px; border-radius: 13px; font-size: 24px; }

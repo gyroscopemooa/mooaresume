@@ -12,6 +12,29 @@ function PlayMark() {
   );
 }
 
+/** 자매 서비스 TranStream EDU 홍보 카드. Play 배너와 같은 카드 틀에 색만 달리합니다. */
+export function EduPromoBanner() {
+  return (
+    <a
+      className={`${styles.banner} ${styles.edu}`}
+      href="https://transtream.app/edu#pricing"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="TranStream EDU 요금 보기 (새 탭)"
+    >
+      <span className={`${styles.icon} ${styles.eduIcon}`} aria-hidden="true">T</span>
+      <span className={styles.copy}>
+        <strong>TranStream EDU</strong>
+        <span className={`${styles.meta} ${styles.eduMeta}`}>영화 · 드라마 · 외국어 공부</span>
+        <span className={styles.description}>영화 보며 영어 공부, 드라마 보면서 외국어 공부. 보던 영상 그대로 자막 번역으로 배워요</span>
+      </span>
+      <span className={`${styles.action} ${styles.eduAction}`}>
+        <span><small>TRANSTREAM</small><b>EDU 보기</b></span>
+      </span>
+    </a>
+  );
+}
+
 export function AppLaunchBanner() {
   return (
     <a
