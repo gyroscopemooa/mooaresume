@@ -17,6 +17,17 @@ describe("ExtraReviewSend", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({ to: "me@example.com", send: true, previewId: props.previewId });
     expect(localStorage.getItem("mooa:extra-review-preview-email")).toBe("me@example.com");
   });
+  it("retries a cold-start failure once with the same request id", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "DELIVERY_FAILED_RETRY_SAME_REQUEST" }), { status: 502 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, sent: 1 })));
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<ExtraReviewSend {...props} />);
+    fireEvent.click(screen.getByText("고객에게 보내기"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("고객 발송 완료"));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).requestId).toBe(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).requestId);
+  });
   it("compact list version asks for the preview address once and remembers it", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true, sent: 1 })));
     const prompt = vi.spyOn(window, "prompt").mockReturnValue("me@example.com");

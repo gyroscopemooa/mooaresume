@@ -22,11 +22,16 @@ export function ExtraReviewSend({ runId, previewId, ownerEmail, sentToOwner, com
   async function send(target: { to: string } | { toOwner: true }, label: string) {
     setBusy(true); setMessage("");
     try {
-      const response = await fetch("/api/meensoo/second-review-delivery", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runId, previewId, ...target, expires: Date.now() + LINK_DAYS * 24 * 3600 * 1000, requestId: crypto.randomUUID(), send: true }),
-      });
-      const data = await response.json().catch(() => ({}));
+      // Same requestId on the retry: the mail provider treats it as one send, so a retry never doubles a mail.
+      const payload = JSON.stringify({ runId, previewId, ...target, expires: Date.now() + LINK_DAYS * 24 * 3600 * 1000, requestId: crypto.randomUUID(), send: true });
+      const post = () => fetch("/api/meensoo/second-review-delivery", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
+      let response = await post();
+      let data = await response.json().catch(() => ({}));
+      if (response.status === 502 && data.error === "DELIVERY_FAILED_RETRY_SAME_REQUEST") {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        response = await post();
+        data = await response.json().catch(() => ({}));
+      }
       if (!response.ok || !data.ok) throw new Error(data.error ?? "SEND_FAILED");
       setMessage(`${label} 완료 · 링크는 ${LINK_DAYS}일 동안 열 수 있습니다.`);
       router.refresh();

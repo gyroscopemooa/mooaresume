@@ -1,5 +1,12 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 추가 첨삭 발송 첫 클릭 실패(DELIVERY_FAILED_RETRY_SAME_REQUEST) 대응
+
+- 증상(민수오빠 스샷): 배포 직후 목록의 발송 버튼이 'DELIVERY_FAILED_RETRY_SAME_REQUEST'. 메일 기록 없음(발송 안 됨). 같은 요청을 연달아 보내면 첫 번째만 502, 이후 200 — 유휴 뒤 첫 요청에서 미리보기 읽기가 실패하는 것으로 보임(dry run에서도 재현).
+- 변경: 발송 API가 추가 첨삭본 읽기를 실패 시 한 번 즉시 다시 읽음. 발송 버튼은 이 오류를 받으면 0.8초 뒤 같은 requestId로 한 번 자동 재시도(메일은 Resend Idempotency-Key로 한 통만 나감).
+- 파일: `src/app/api/meensoo/second-review-delivery/route.ts`, `src/components/extra-review-send.tsx`/`.test.tsx`, 본 기록. 검증: 관련 vitest 63 통과, tsc·ESLint 통과.
+- 복구: 이 커밋 revert.
+
 ## 2026-10-22 — Claude: 첨삭 목록에서 바로 추가 첨삭 확인·발송, 결과 보기 앞으로
 
 - 요청(민수오빠, 스샷): 목록에서 결과 보기가 맨 오른쪽 끝이라 안 보이고, 발송 버튼 두 개가 어디 있는지 모름(상세 화면에만 있었음).

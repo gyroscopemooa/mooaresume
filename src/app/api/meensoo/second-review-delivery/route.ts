@@ -32,7 +32,9 @@ export async function POST(request: Request) {
   if (!resolved) return json({ error: "OWNER_EMAIL_UNAVAILABLE" }, 409);
   const to = resolved.trim().toLowerCase();
   try {
-    const preview = await getAdminAnalysisPreview(runId, previewId);
+    // The first request after the Worker has been idle failed here on 2026-10-22; the same request worked
+    // right after. One immediate re-read keeps an admin click from failing for that reason alone.
+    const preview = await getAdminAnalysisPreview(runId, previewId).catch(() => getAdminAnalysisPreview(runId, previewId));
     if (!preview || !preview.revisedAnswers.every(answer => answer.section)) return json({ error: "REVIEW_NOT_READY" }, 409);
     const secret = process.env.SECOND_REVIEW_SIGNING_SECRET?.trim() ?? "";
     const token = signSecondReviewGrant({
