@@ -93,6 +93,27 @@ describe("ResultWorkspaceComplete 제출본 탭", () => {
     expect(screen.getAllByText("현재 문장 유지").length).toBeGreaterThan(0);
     expect(screen.queryByText("왜 바뀌었나요?")).toBeNull();
   });
+  it("원문 유지 이유에 1차 내부 검수 메모를 고객에게 보여주지 않는다", () => {
+    // 2026-10-22 실사례: 고객이 본 적 없는 후보 삭제를 반박하는 내부 메모가 그대로 노출됐다.
+    const internal = "1번: ‘장시간’은 근거 없는 과장이 아니라 실제 근무 시간을 적은 것이라 삭제 후보를 거절함";
+    const result = {
+      ...sampleResultDocument,
+      revisionQuality: {
+        version: "revision-quality-2.0" as const, reviewerResponseId: "r", reviewerModel: "m", decision: "keep_current" as const,
+        reason: internal, beforeScore: 80, candidateScore: 70, inputFingerprint: "i", contextFingerprint: "c",
+        parentAnalysisRunId: null, relationship: "new" as const,
+      },
+      questions: sampleResultDocument.questions.map(q => ({ ...q, order: 1, revisedAnswer: q.originalAnswer, revisionReasons: [] })).slice(0, 1),
+    };
+    const { unmount } = render(<ResultWorkspaceComplete result={result}/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.queryByText(/장시간/)).toBeNull();
+    expect(screen.getByText(/의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다/)).toBeTruthy();
+    unmount();
+    render(<ResultWorkspaceComplete result={result} adminPreview/>);
+    fireEvent.click(screen.getByRole("button", { name: "문항별 첨삭" }));
+    expect(screen.getByText(/내부 검수 메모\(관리자 전용\)/).textContent).toContain("장시간");
+  });
   it("저장된 구버전 결과도 실제 원문과 첨삭 차이로 표시한다", () => {
     // 주석이 한 문항에도 없는 결과라야 진짜 구버전이다. 샘플은 한 문항에만
     // 주석이 있어 이제 나머지 문항을 비워 두므로, 여기서는 전부 지워 쓴다.

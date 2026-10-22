@@ -306,6 +306,15 @@ function readCarriedMaterialCount(): number {
 
 // 보완은 어느 분석인지를 알아야 저장할 수 있습니다. 결과 문서 안에는 그 값이
 // 없어서(문서는 분석의 산출물이고 분석의 식별자가 아닙니다) 페이지에서 받습니다.
+/**
+ * revisionQuality.reason은 1차 내부 검수자가 고객이 본 적 없는 후보 수정을
+ * 왜 거절했는지 적은 메모다. 고객 화면에 그대로 내보내면 보지도 않은 삭제를
+ * 반박하는 엉뚱한 말이 되므로(2026-10-22 실사례), 관리자 미리보기에서만 쓴다.
+ */
+function internalKeepNote(result: ResultDocument, order: number) {
+  return result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${order}번:`));
+}
+
 export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDocument, analysisRunId = null, adminPreview = false, initialView = "overview", editionLabel, sectionReview = false, interviewPackEnabled = false, interviewPackSampleId = null }: { result?: ResultDocument; analysisRunId?: string | null; /** Admin-only: render the delivered UI without applicant mutations or upsells. */ adminPreview?: boolean; /** Opens a saved result on the tab the surrounding workflow links to. */ initialView?: View; /** Identifies a reviewed edition without changing the shared result layout. */ editionLabel?: string; /** Reviewed writing sections; official question count/limits and new numerical scores are unverified. */ sectionReview?: boolean; /** Decided on the server (flag, policy, test grant). The client never decides this itself. */ interviewPackEnabled?: boolean; /** Public marketing sample only (`/result/sample`): shows the tab with fixed example data, no network calls, no real analysis run. */ interviewPackSampleId?: PackSampleId | null }) {
   const boundaryRestored = useMemo(() => restoreLocalResultQuestionBoundaries(sourceResult), [sourceResult]);
   // 답변 맨 앞의 "질문:" 줄을 질문 칸으로 옮긴 화면용 사본. 저장된 결과는 그대로이고,
@@ -685,7 +694,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
             <header><div><span>{sectionReview ? "항목" : "문항"} {question.order}</span><h3>{resolveQuestionTitle(question)}</h3></div><div>{changed && <em>내 수정본</em>}<small>{countCompactCharacters(answer)}{sectionReview ? "자 · 제한 확인 필요" : ` / ${question.targetLength}자`}</small></div></header>
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>{isReviewedEdition ? "1차 첨삭본" : "첨삭 전"}</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>{isReviewedEdition ? "2차 첨삭본" : "첨삭 후"}</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
-            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}{question.originalAnswer === question.revisedAnswer && flaggedSpots(question) > 0 && <p><AlertCircle/> 원문에서 짚은 곳이 {flaggedSpots(question)}곳 있습니다. 문장은 그대로 두었으니 &lsquo;제출본&rsquo; 탭에서 확인해 직접 반영해 주세요.</p>}</div></div>
+            <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <><p>이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요.</p>{adminPreview && internalKeepNote(result, question.order) && <p><AlertCircle/> 내부 검수 메모(관리자 전용): {internalKeepNote(result, question.order)}</p>}</>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}{question.originalAnswer === question.revisedAnswer && flaggedSpots(question) > 0 && <p><AlertCircle/> 원문에서 짚은 곳이 {flaggedSpots(question)}곳 있습니다. 문장은 그대로 두었으니 &lsquo;제출본&rsquo; 탭에서 확인해 직접 반영해 주세요.</p>}</div></div>
             {!sectionReview && <LengthOverNotice answer={answer} target={question.targetLength} unchanged={question.originalAnswer === question.revisedAnswer && !changed}/>}
             {showLengthGap && <div className={styles.lengthGap}>
               <div><b>보완에 필요한 정보</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>

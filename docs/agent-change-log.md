@@ -8551,3 +8551,13 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 2026-10-21 후속: 창 폭 ~800px에서 채용공고 상자 설명이 단어 중간에서 끊기던 것 수정 — `.layout>section>section`에 `word-break:keep-all` 한 줄 추가(배포판·공유 폴더판 동일). 3004 dev 800px에서 단어 단위 줄바꿈 확인. Rollback: 해당 속성 제거.
 - 2026-10-21 후속2: 좁은 창에서 채용공고 입력칸 안내문이 접혀 스크롤바가 보이던 것 수정 — 입력칸 `field-sizing:content`(안내문·내용 높이만큼 자람, 최대 420px) + 최소 높이 128/172(≤1100px)/190px(≤760px, 미지원 브라우저 대비). 배포판·공유 폴더판 동일. 3004 dev 800·1024·1320px에서 scrollHeight=clientHeight, 최소 높이 제거해도 안내문 높이로 자람 확인. 실제 폰 폭은 창이 숨겨져 에뮬레이션 불가로 미확인. Rollback: 해당 줄 원복(min-height:112px).
 - 2026-10-21 후속3: 운영 확인 중 실제 창 800px에서 카드가 너무 좁아 채용공고 제목이 3줄·배지가 세로로 접히는 문제 발견. 원인: globals.css의 `body{zoom:1.25}` 때문에 실제 800px이 레이아웃상 640px. 실제 창 기준 761~1023px은 사이드바 숨김+카드 한 줄, 1024~1200px은 사이드바 192px·카드 여백 축소, 두 구간 모두 채용공고 제목 옆 안내를 아래로, 배지는 줄바꿈 금지. 3004 dev 800/1024/1280/1600px에서 제목·설명·공고 제목·공고 설명 모두 1줄, 입력칸 스크롤 없음, 가로 넘침 없음. 폰 폭은 숨김 창 에뮬레이션 한계로 미확인. 배포판·공유 폴더판 동일.
+
+## 2026-10-22 — Claude: 결과 화면 "현재 문장 유지"에 1차 내부 검수 메모 노출 차단
+
+- 문제: `src/components/result-workspace-complete.tsx`의 문항별 첨삭에서 `revisionReasons`가 비면 `result.revisionQuality.reason`의 `N번:` 줄을 고객에게 그대로 보여줬다. 이 값은 1차 내부 검수자가 고객이 본 적 없는 후보 수정을 왜 거절했는지 적은 메모라, 2026-10-22 실제 고객 결과에서 "2번: ‘장시간’은 근거 없는 과장이 아니라…"처럼 보지도 않은 삭제를 반박하는 엉뚱한 말이 노출됐다.
+- 변경(추가만): 고객 화면은 항상 기존 중립 안내문("의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다…")을 보여준다. 내부 메모는 `adminPreview`일 때만 "내부 검수 메모(관리자 전용)" 줄로 추가 표시. 메모 추출은 `internalKeepNote` 함수로 분리. `revisionQuality` 저장 형식·서버·프롬프트는 건드리지 않음. 2차 자동 검수 입력에서 이 필드를 빼는 작업은 별도 브랜치 `claude/second-review-guards-20261022`(27a4858)에 있고 이 브랜치와 겹치지 않는다.
+- Branch: `claude/hide-internal-keep-reason-20261022` (origin/main `bf76033` 기준 격리 worktree `.claude/worktrees/hide-keep-reason`). 로컬 커밋만, 푸시·배포 안 함(사용자 승인 대기).
+- Files: `src/components/result-workspace-complete.tsx`, `src/components/result-workspace-complete.test.tsx`(회귀 테스트 1개), 본 기록.
+- Validation: `vitest run src/components/result-workspace-complete.test.tsx` 59테스트 통과. 새 테스트는 수정 전 코드에서 실패함을 확인. `tsc --noEmit`에서 해당 파일 오류 없음. 브라우저 화면 확인은 안 함(관리자/실결과 데이터 필요).
+- Rollback: 이 커밋 revert.
+- 상태: 로컬 커밋, 푸시·배포 승인 대기.
