@@ -15,7 +15,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.7";
+export const QUICK_PROMPT_VERSION = "quick-4.8";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -364,6 +364,15 @@ polish: 위 여섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
     "originalAnnotations.comment에는 그 표현이 왜 문제인지(또는 왜 좋은지)만 적으세요. 다른 화면을 확인하라는 안내나 일반론은 넣지 마세요.",
     "originalAnnotations.suggestion에는 지원자가 그대로 참고할 수 있는 고쳐 쓴 예시 문장을 한 줄로 적으세요. 원문에 없는 경험·수치·성과를 넣지 말고, 예시를 제시할 수 없으면 null로 두세요. good과 fact처럼 고쳐 쓸 것이 없으면 null이 정상입니다.",
     "originalAnnotations.type이 fact인 항목의 suggestion에는 문장을 지어내지 말고, 확인이 되면 어떻게 쓰고 확인이 안 되면 어떻게 낮춰 쓸지를 적으세요.",
+    // 2026-10-22: 13번 중 10번 수정안이 거절돼 손님은 원문만 받았다. 거절 이유는 대부분 첨삭이
+    // 확인 안 되는 표현을 지우거나 줄인 것이었다. 지우는 대신 원문을 두고 옆에 추천을 붙인다.
+    "확인되지 않는다는 이유만으로 원문 표현을 지우거나 일반적인 말로 바꾸지 마세요. 확인이 필요하면 revisedAnswer에는 원문을 두고 fact 주석과 verificationNote로 남기세요.",
+    "recommendations는 revisedAnswer와 별개로, 원문을 바꾸지 않고 옆에 보여 줄 추천 문장입니다. 문항마다 1~3개를 쓰되 원문에 실제로 다듬을 곳이 있는 만큼만 쓰고, 개수를 채우려고 비슷한 문장을 늘리지 마세요. revisedAnswer에 이미 반영한 수정을 되풀이하지 마세요.",
+    "원문이 이미 좋아 고칠 곳이 없어도 1개는 다른 각도의 추천을 주세요. 문항이 묻는 역량을 직접 말해 주는 문장, 행동과 결과의 인과를 잇는 문장, 경험을 지원 직무와 잇는 문장처럼 원문에 이미 있는 사실을 다른 각도에서 살리는 한 문장입니다.",
+    "recommendations.anchorQuote에는 추천 문장이 대신하거나 뒤에 붙을 원문 문장을 토씨와 띄어쓰기까지 그대로 복사하세요.",
+    "kind=improve는 원문에 있는 사실만으로 다시 쓴 문장이며 needsConfirmation은 null입니다. anchorQuote의 숫자·영문 용어·고유명사·전후 비교(예: 30점에서 70점으로)는 그대로 남기고 약하게 만들지 마세요.",
+    "kind=add는 원문에 없는 생각·과정·수치·사실이 들어가는 문장입니다. 그 부분은 sentence 안에서 [확인 필요: 무엇]으로 표시하고, needsConfirmation에 지원자가 무엇을 확인해야 이 문장을 쓸 수 있는지 적으세요. 확인 표시 없이 새 사실을 단정하지 마세요.",
+    "recommendations는 화면에 '다른 시각 추천안'으로 보이고 지원자가 고릅니다. recommendations.why에는 원문과 어떤 다른 시각인지 한 문장으로 적고, 원문보다 낫다거나 개선이라고 단정하지 마세요. 동의어 교체, 숫자 표기 변경, '이 경험을 통해' 같은 상투적 연결, 의미 없이 늘이기, 앞 문장과 같은 서술어로 끝나는 문장은 추천이 아닙니다.",
     // The bar the product holds itself to: a delete suggestion must name a
     // real problem, not merely observe that a sentence could be cut.
     // The posting used to appear only in the PRO requirement-match field, so

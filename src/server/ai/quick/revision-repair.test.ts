@@ -21,7 +21,7 @@ const candidate = (revised: string[]): QuickGatewayResult => ({
 const scores = { questionFit: 3, evidence: 3, logic: 3, readability: 3, specificity: 3 };
 const verdict = (order: number, patch: Partial<RevisionReview["questions"][number]> = {}): RevisionReview["questions"][number] => ({
   order, before: scores, after: scores, meaningfulImprovement: false, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false,
-  reason: `${order}번 검토 이유`, sourceQuote: "q", candidateQuote: "q", previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false, ...patch,
+  reason: `${order}번 검토 이유`, sourceQuote: "q", candidateQuote: "q", previousErrorQuote: null, validAnnotationIndexes: [], validRecommendationIndexes: [], validLengthNote: false, ...patch,
 });
 const review = (verdicts: RevisionReview["questions"]): RevisionReview => ({
   diagnosis: { readiness: { score: 70, label: "검토", summary: "요약", reasons: ["이유"] }, priorities: [], verificationQuestions: [] },

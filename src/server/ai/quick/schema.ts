@@ -13,8 +13,18 @@ const quickOriginalAnnotationSchema = z.object({ phrase: z.string().min(1), type
 // reason originalAnnotations comes first. With the revision written first, the
 // annotations were produced after the fact and could praise a sentence the
 // revision had already deleted. Ordering only — nothing stored changes.
-const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), subheading: z.string().nullable(), lengthNote: z.string().nullable(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).max(5), verificationNote: z.string().nullable() });
+// Sentences offered beside the answer, never written into it. Most rewrites of a
+// strong original were rejected by the reviewer (10 of 13 runs to 2026-10-22),
+// and the applicant then received the original with nothing to act on. A
+// suggestion the applicant may ignore cannot make their document worse.
+// improve = the original's own facts from another angle; add = needs a fact the
+// applicant must confirm first, so it carries needsConfirmation.
+const quickRecommendationSchema = z.object({ anchorQuote: z.string().min(1), kind: z.enum(["improve", "add"]), sentence: z.string().min(1), why: z.string().min(1), needsConfirmation: z.string().nullable() });
+const quickRevisionSchema = z.object({ questionOrder: z.number().int().positive(), originalAnnotations: z.array(quickOriginalAnnotationSchema).max(10), subheading: z.string().nullable(), lengthNote: z.string().nullable(), revisedAnswer: z.string().min(1), highlightedPhrases: z.array(z.string().min(1)).max(5), reasons: z.array(quickEvidenceReasonSchema).max(5), verificationNote: z.string().nullable(), recommendations: z.array(quickRecommendationSchema).max(3).optional() });
 const legacyQuickRevisionSchema = quickRevisionSchema.omit({ questionOrder: true });
+// What the model is asked for: at least one per answer. Parsing above stays at
+// zero-or-more so results stored before recommendations existed still load.
+const requestRevisionSchema = quickRevisionSchema.extend({ recommendations: z.array(quickRecommendationSchema).min(1).max(3) });
 
 // PRO is sold on two things QUICK does not promise: matching the posting's
 // requirements against real evidence in the application, and previewing the
@@ -169,11 +179,16 @@ export const quickAnalysisOutputSchema = z.object({
   answerStructures: finalOutputShape.answerStructures.optional(),
 });
 
-const quickRequestSchema = z.object(baseOutputShape);
-const proRequestSchema = z.object({ ...baseOutputShape, ...proOutputShape });
+const requestOutputShape = {
+  ...baseOutputShape,
+  revisions: z.array(requestRevisionSchema).min(1).max(20).optional(),
+  revision: requestRevisionSchema.omit({ questionOrder: true }),
+};
+const quickRequestSchema = z.object(requestOutputShape);
+const proRequestSchema = z.object({ ...requestOutputShape, ...proOutputShape });
 // FINAL is PRO plus its own fields, never PRO minus anything: everything the
 // pricing table already promises at 9,900원 has to still be in the 14,900원 run.
-const finalRequestSchema = z.object({ ...baseOutputShape, ...proOutputShape, ...finalOutputShape });
+const finalRequestSchema = z.object({ ...requestOutputShape, ...proOutputShape, ...finalOutputShape });
 
 export type QuickAnalysisOutput = z.infer<typeof quickAnalysisOutputSchema>;
 
@@ -200,6 +215,7 @@ function addLegacyOriginalAnnotations(input: unknown): unknown {
     revision.originalAnnotations = normalizeAnnotations(revision.originalAnnotations);
     if (revision.subheading === undefined) revision.subheading = null;
     if (revision.lengthNote === undefined) revision.lengthNote = null;
+    if (revision.recommendations === undefined) revision.recommendations = [];
     output.revision = revision;
   }
   if (Array.isArray(output.revisions)) {
@@ -209,6 +225,7 @@ function addLegacyOriginalAnnotations(input: unknown): unknown {
       revision.originalAnnotations = normalizeAnnotations(revision.originalAnnotations);
       if (revision.subheading === undefined) revision.subheading = null;
     if (revision.lengthNote === undefined) revision.lengthNote = null;
+      if (revision.recommendations === undefined) revision.recommendations = [];
       return revision;
     });
   }

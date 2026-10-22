@@ -29,6 +29,7 @@ import styles from "./result-workspace-complete.module.css";
 import { FinalVerification } from "./final-verification";
 import { FinalWrapUp } from "./final-wrap-up";
 import { ConnectorMergeHint } from "./connector-merge-hint";
+import { RecommendationList } from "./recommendation-list";
 import { InteractiveInterview } from "./interactive-interview";
 import { InterviewPackPanel } from "./interview-pack/interview-pack-panel";
 import { createLiveApi, createSampleApi } from "@/lib/interview-pack/client-api";
@@ -620,7 +621,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
         <div className={styles.overviewGrid}>
           <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>{result.priorities.length > 0
             // 개선점을 짚어 놓고 "수정 이득이 없어 유지했다"고만 하면 말이 어긋난다. 고칠 곳이 있는데 문장이 그대로인 까닭과 할 일을 같이 말한다.
-            ? "이번에는 AI가 제안한 수정이 검토를 통과하지 못해 문장은 그대로입니다. 위 개선점은 직접 반영하셔야 하니, 문항별 첨삭에서 문항마다의 이유를 확인해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다."
+            ? "이번에는 원문을 그대로 두었습니다. 위 개선점은 문항별 첨삭의 다른 시각 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다."
             : "추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다."}</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
@@ -686,6 +687,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
             <p className={styles.prompt}>{question.prompt}</p>
             <div className={styles.compare}><section><small>{isReviewedEdition ? "1차 첨삭본" : "첨삭 전"}</small>{showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="before"/> : <p>{question.originalAnswer}</p>}</section><section><div><small>{isReviewedEdition ? "추가 첨삭본" : "첨삭 후"}</small>{isEditing ? <PencilLine/> : <CheckCheck/>}</div>{isEditing ? <textarea autoFocus rows={8} value={answer} onChange={(event) => setAnswers((current) => ({...current,[question.id]:event.target.value}))}/> : showChanges ? <DiffAnswer original={question.originalAnswer} revised={answer} side="after"/> : isFilledResult ? <FilledAnswer original={question.originalAnswer} revised={answer}/> : <HighlightedAnswer text={answer} phrases={question.highlightedPhrases}/>}{isFilledResult && <BlankOriginalNotice original={question.originalAnswer}/>}</section></div>
             <div className={styles.reasons}><Lightbulb/><div><b>{question.originalAnswer === question.revisedAnswer ? "현재 문장 유지" : "왜 바뀌었나요?"}</b>{question.revisionReasons.length > 0 ? <ul>{question.revisionReasons.map((reason) => <li key={reason}>{reason}</li>)}</ul> : <p>{result.revisionQuality?.reason.split("\n").find(line => line.startsWith(`${question.order}번:`)) ?? "이번 검토에서는 의미 있는 추가 수정이 확인되지 않아 원문을 유지했습니다. 문항별 원문 주석에서 유지할 강점과 확인 사항을 확인해 주세요."}</p>}{question.verificationNote && <p><AlertCircle/> {question.verificationNote}</p>}{question.originalAnswer === question.revisedAnswer && flaggedSpots(question) > 0 && <p><AlertCircle/> 원문에서 짚은 곳이 {flaggedSpots(question)}곳 있습니다. 문장은 그대로 두었으니 &lsquo;제출본&rsquo; 탭에서 확인해 직접 반영해 주세요.</p>}</div></div>
+            <RecommendationList items={question.recommendations ?? []} kept={question.originalAnswer === question.revisedAnswer}/>
             {!sectionReview && <LengthOverNotice answer={answer} target={question.targetLength} unchanged={question.originalAnswer === question.revisedAnswer && !changed}/>}
             {showLengthGap && <div className={styles.lengthGap}>
               <div><b>보완에 필요한 정보</b><small>{countCompactCharacters(answer)} / {question.targetLength}자</small></div>

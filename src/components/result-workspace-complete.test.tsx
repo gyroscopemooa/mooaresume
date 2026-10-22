@@ -815,15 +815,15 @@ describe("ResultWorkspaceComplete 수정이 없는 결과의 설명", () => {
   it("개선점을 짚어 놓고 수정 이득이 없다고만 말하지 않는다", () => {
     expect(sampleResultDocument.priorities.length).toBeGreaterThan(0);
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, revisionQuality: keepCurrent, questions: [keptQuestion([])] }}/>);
-    expect(screen.getByText(/AI가 제안한 수정이 검토를 통과하지 못해 문장은 그대로입니다/)).toBeTruthy();
-    expect(screen.getByText(/위 개선점은 직접 반영하셔야 하니/)).toBeTruthy();
+    expect(screen.getByText(/원문을 그대로 두었습니다. 위 개선점은 문항별 첨삭의 다른 시각 추천안/)).toBeTruthy();
+    expect(screen.getByText(/본인 스타일에 맞게 골라 반영해 주세요/)).toBeTruthy();
     expect(screen.queryByText(/추가 수정의 이득이 충분히 확인되지 않아/)).toBeNull();
   });
 
   it("짚은 개선점이 없으면 예전 문구를 그대로 쓴다", () => {
     render(<ResultWorkspaceComplete result={{ ...sampleResultDocument, isSample: false, priorities: [], revisionQuality: keepCurrent, questions: [keptQuestion([])] }}/>);
     expect(screen.getByText(/추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다/)).toBeTruthy();
-    expect(screen.queryByText(/위 개선점은 직접 반영하셔야 하니/)).toBeNull();
+    expect(screen.queryByText(/본인 스타일에 맞게 골라 반영해 주세요/)).toBeNull();
   });
 
   it("문장을 그대로 둔 문항에서 짚은 곳이 있으면 제출본 탭을 안내한다", () => {
