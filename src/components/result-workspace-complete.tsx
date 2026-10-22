@@ -602,7 +602,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
         {!result.isSample && <button onClick={() => setView("encouragement")} className={view === "encouragement" ? styles.active : ""}>한 장 더</button>}
       </nav>
       {!isReviewedEdition && <ContextResearchNotice research={result.contextResearch} />}
-      {editionBadge && <p className={styles.fallbackNotice}>추가 첨삭본입니다. 1차 첨삭 내용은 그대로 두고, 문항마다 다른 시각 추천안을 더했습니다. 1차보다 개선되었다는 의미가 아니며, 본인 스타일에 맞는 문장을 골라 쓰실 수 있도록 드리는 참고안입니다.</p>}
+      {editionBadge && <p className={styles.fallbackNotice}>추가 첨삭본입니다. 1차 첨삭의 판단은 그대로 두고, 다른 시각에서 본 문장과 문항별 추천안을 더했습니다. 문장이 바뀐 문항은 &lsquo;왜 바뀌었나요?&rsquo;에서 이유를 확인해 주세요. 1차보다 개선되었다는 의미가 아니며, 본인 스타일에 맞는 문장을 골라 쓰실 수 있도록 드리는 참고안입니다.</p>}
       {isReviewedEdition && ["overview", "fit", "interview", "verification"].includes(view) && <p className={styles.fallbackNotice}>{sectionReview ? (view === "overview" ? "기존 첨삭본을 다시 검토하여 표현과 구성을 보완했습니다. 항목별 수정 이유와 제출 전 확인 사항을 함께 확인해 주세요." : "이 탭은 1차 분석 당시의 참고 자료입니다. 이번 추가 첨삭에서 새로 평가한 내용은 아니며, 추가 첨삭 문장은 ‘문항별 첨삭’과 ‘최종 첨삭본’에서 확인할 수 있습니다.") : "이번 추가 첨삭본은 자기소개서 문장을 다른 시각에서 다시 본 결과입니다. 준비도 점수·공고 분석·면접 준비·검증 자료는 1차 분석 당시의 참고 자료이며, 이번에 새로 평가한 내용은 아닙니다."}</p>}
       {isReviewedEdition && view === "submission" && <p className={styles.fallbackNotice}>이번 비교의 원문은 고객에게 제공된 1차 첨삭본입니다. 표시되는 변경 구간은 1차본과 추가 첨삭본의 문장 차이입니다.</p>}
       {view === "encouragement" && !result.isSample && <ResultOneMore onReview={() => setView("revision")} onFinal={() => setView("final")} />}
@@ -631,7 +631,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
         <div className={styles.overviewGrid}>
           <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 확인하세요</span><h2>{result.priorities.length ? `핵심 개선점 ${result.priorities.length}가지` : "현재 글의 검토 결과"}</h2>{result.priorities.length === 0 && <p>이번 검토에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다. 제출 조건과 사실관계는 마지막으로 확인해 주세요.</p>}{result.priorities.map((item,index) => <article className={styles.priority} key={item.id}><span>{String(index+1).padStart(2,"0")}</span><div><h3>{item.title}</h3><p>{item.description}</p></div></article>)}{result.revisionQuality?.decision === "keep_current" && <p>{result.priorities.length > 0
             // 개선점을 짚어 놓고 "수정 이득이 없어 유지했다"고만 하면 말이 어긋난다. 고칠 곳이 있는데 문장이 그대로인 까닭과 할 일을 같이 말한다.
-            ? (editionBadge ? "추가 첨삭은 1차 문장을 바꾸지 않고 문항마다 다른 시각 추천안을 더했습니다. 위 개선점은 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다." : "이번에는 원문을 그대로 두었습니다. 위 개선점은 문항별 첨삭의 다른 시각 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다.")
+            ? (editionBadge ? "추가 첨삭은 1차의 판단을 그대로 두고 다른 시각에서 본 문장과 추천안을 더했습니다. 위 개선점은 문항별 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다." : "이번에는 원문을 그대로 두었습니다. 위 개선점은 문항별 첨삭의 다른 시각 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영해 주세요. 이는 완성이나 합격을 보장하는 판정은 아닙니다.")
             : "추가 수정의 이득이 충분히 확인되지 않아 입력한 글을 유지했습니다. 이는 완성이나 합격을 보장하는 판정은 아닙니다."}</p>}<button className={styles.wideButton} onClick={() => setView("revision")}>문항별 검토 내용 확인 <ArrowRight/></button></section>
           <aside>
             <CandidateProfileCard caseId={result.caseId} profile={result.candidateProfile} isSample={result.isSample}/>
