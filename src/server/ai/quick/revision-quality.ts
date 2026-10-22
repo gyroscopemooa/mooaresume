@@ -59,6 +59,7 @@ export const revisionReviewSchema = z.object({
     candidateQuote: z.string(),
     previousErrorQuote: z.string().nullable(),
     validAnnotationIndexes: z.array(z.number().int().nonnegative()).max(10),
+    validRecommendationIndexes: z.array(z.number().int().nonnegative()).max(3),
     validLengthNote: z.boolean(),
   })).min(1).max(20),
   crossQuestionRegression: z.boolean(),
@@ -153,7 +154,8 @@ export const REVISION_REVIEW_INSTRUCTIONS = `${EDITING_QUALITY_RULES}
 모든 문항을 before/after에 똑같은 5항목 기준(각 0~4)으로 평가하세요. 0 미응답/심각 결함, 1 큰 결함, 2 일부 부족, 3 충실, 4 근거와 전달이 매우 충실. 문체 취향이나 재첨삭 횟수는 점수 근거가 아닙니다. 기존 점수에 맞추거나 개선됐다고 가정하지 마세요.
 원문의 핵심 위험을 줄인 수정만 meaningfulImprovement=true. 원문과 후보의 실제 인용을 sourceQuote/candidateQuote로 주고 reason에 개선 또는 거절 근거를 쓰세요. 이미 해결한 위험의 재등장·새 오류·사실 또는 말투 손실·취향 교체를 각각 판정하세요. 문항 간 중복/연결 악화도 확인하세요. 시스템은 각 문항의 판정에 따라 통과 문항은 후보, 거절 문항은 원문으로 조합합니다. crossQuestionRegression은 이 최종 조합 전체에서 중복·논리·사실 충돌이 생기는지 판정하세요. true로 판정하면 그 문제에 관여한 문항 번호를 crossQuestionOrders에 모두 적으세요(예: 같은 문장이 되풀이되는 문항들, 사실이 서로 어긋나는 문항들). 한두 문항에서만 생기면 그 문항만 적고, 어느 문항 탓인지 가릴 수 없을 때만 비워 두세요. false이면 빈 배열입니다.
 diagnosis는 원문 기준입니다. 작성자의 지적을 검증하고 오독·허위 지적은 제거하세요. readiness reasons에는 강점도 포함할 수 있습니다. priorities는 실제 남은 핵심 문제만 0~3개. 문항 분리 실패를 지원자의 글 수준으로 감점하지 마세요.
-validAnnotationIndexes는 해당 문항 originalAnnotations 중 원문에 실제 존재하며 해석이 맞는 항목의 0 기반 번호. validAdviceIndexes는 consultingAdvice 중 원문 근거와 의미 있는 실행 이득이 있는 항목 번호. 배열을 채우려고 지적하지 마세요.
+validAnnotationIndexes는 해당 문항 originalAnnotations 중 원문에 실제 존재하며 해석이 맞는 항목의 0 기반 번호.
+validRecommendationIndexes는 해당 문항 candidate recommendations 중 통과한 0 기반 번호입니다. 추천은 원문을 바꾸지 않고 옆에 붙는 선택 제안이므로 후보 수정을 거절한 문항에서도 따로 판정하세요. anchorQuote가 원문에 있고, 원문의 사실·수치·고유명사·전후 비교·말투를 약하게 만들지 않고, 원문에 없는 사실을 [확인 필요] 표시 없이 단정하지 않으며, 취향 교체·상투어·반복이 아니고, 대신하는 원문 문장보다 나빠지지 않는 추천만 넣으세요. 채우려고 통과시키지 마세요. validAdviceIndexes는 consultingAdvice 중 원문 근거와 의미 있는 실행 이득이 있는 항목 번호. 배열을 채우려고 지적하지 마세요.
 validLengthNote는 그 문항의 lengthNote가 원문에도 실제로 부족한 정보를 질문하는 경우만 true입니다. 후보에서 지운 사실을 다시 요구하거나 글자 수가 적다는 이유뿐이면 false입니다. reason은 고객이 읽는 설명입니다. 후보를 거절했다면 원문의 어떤 강점·사실을 보존했는지 구체적으로 설명하세요.
 조언도 최종 조합 기준으로 검토하세요. 유효한 조언이 후보에서만 한 수정을 완료했다고 설명하거나 최종본에 남은 문장을 '삭제한 문장'이라고 부르면, adviceCorrections에 그 조언의 0 기반 index와 바로잡은 guidance 전체를 넣으세요. 확실치 않은 반영 상태는 완료로 단정하지 말고 '원문의 해당 표현을 정리할 경우'처럼 실행 제안으로 쓰세요. 내용 자체가 근거 없으면 validAdviceIndexes에서 제외하세요.
 이전 결과는 권위가 아닌 비교 자료입니다. 동일 조건·동일 글의 평가를 뒤집거나 이전 수정을 되돌릴 때는 기존 판단의 실제 오류를 현재 원문에서 previousErrorQuote로 인용하고 reason에 왜 오류인지 설명하세요. 실제 오류가 없으면 previousErrorQuote=null입니다. 새로운 자료나 사실이 없는 경우 취향만으로 핵심 완성도를 낮추지 마세요.`;
@@ -207,6 +209,7 @@ export function applyRevisionReview(request: AnalysisRequest, candidate: QuickGa
   const revisions = verdicts.map((v) => { const { q, r, draft } = v; return ({
     ...draft,
     originalAnnotations: draft.originalAnnotations.filter((_, index) => r.validAnnotationIndexes.includes(index)),
+    recommendations: (draft.recommendations ?? []).filter((_, index) => r.validRecommendationIndexes.includes(index)),
     ...(accepted(v) ? { reasons: normalizeRevisionText(q.answer) === normalizeRevisionText(draft.revisedAnswer) ? [] : [{ reason: r.reason, evidenceQuote: r.sourceQuote, category: "qualitative" as const }] } : keepOriginalWithMechanicalFixes(q.answer, draft.revisedAnswer, draft.subheading ?? null)),
     lengthNote: r.validLengthNote ? draft.lengthNote : null,
   }); });

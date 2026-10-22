@@ -1,5 +1,15 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 1차 첨삭 '다른 시각 추천안'(문항당 1~3개, 원문 옆 선택 제안)
+
+- 요청(민수오빠 승인, 최대 3개): 1차 후보 수정이 2026-09-22 이후 완료 13건 중 10건 거절(keep_current)돼 손님이 원문만 받음. 원인 조사 결과 첨삭 AI가 확인 안 되는 표현을 지우거나 압축·일반화해 검토 AI가 사실·말투 손실로 거절했고, 한 문항 안의 좋은 수정도 함께 버려졌으며, 거절 시 손님에게 줄 덧붙이는 제안 경로가 없었다. '개선'은 원문보다 낫다는 리스크 있는 표현이라 '다른 시각 추천안'으로 부르고 손님이 고른다.
+- 변경: 첨삭 출력에 문항별 `recommendations`(anchorQuote·kind improve/add·sentence·why·needsConfirmation) 추가. 모델 요청 스키마는 1~3개 필수, 저장·파싱은 0~3개(과거 결과 호환, 없으면 []). 검토 AI가 `validRecommendationIndexes`로 수정 채택과 별개로 추천을 판정(후보 거절 문항에서도 통과한 추천은 남음). 코드 필터 `selectRecommendations`: anchor가 원문에 있어야 함, 원문과 같은 문장·중복 제외, anchor의 숫자·영문 용어 삭제 금지, 원문에 없는 숫자·용어나 kind=add는 확인 문구 필수, 최대 3개. 프롬프트: 확인 안 된다는 이유만으로 지우지 말 것, 원문이 좋아도 다른 각도 1개, 상투어·표기 변경 금지, 개선이라 단정 금지. `QUICK_PROMPT_VERSION` quick-4.8. 결과 화면 문항 카드에 `RecommendationList`(다른 시각 추천안 · 선택, 확인 후 사용 표시, 문장 복사) 추가. keep_current 안내문을 '검토를 통과하지 못해' 대신 '원문을 그대로 두었습니다… 다른 시각 추천안과 이유를 참고해 본인 스타일에 맞게 골라 반영'으로 교체.
+- 파일: `src/server/ai/quick/schema.ts`, `prompt.ts`, `provider.ts`, `revision-quality.ts`, 신규 `recommendations.ts`/`.test.ts`, `src/domain/result-document.ts`, 신규 `src/components/recommendation-list.tsx`/`.module.css`/`.test.tsx`, `result-workspace-complete.tsx`(import 1줄·카드 1줄·안내문 1개), 리뷰 픽스처에 `validRecommendationIndexes: []` 추가(`openai-quality-repair/review.test.ts`, `revision-quality.test.ts`, `revision-repair.test.ts`), 기존 안내문 고정 테스트 문구 갱신(`result-workspace-complete.test.tsx`), 본 기록.
+- 겹침: `claude/hide-internal-keep-reason-20261022`(0b872df)가 같은 화면의 유지 이유 줄(688행)을 고침 — 그 줄은 건드리지 않고 다음 줄에 추가해 병합 충돌을 피함.
+- 검증: vitest 163파일 1600 통과(1 skip), `tsc --noEmit` 통과, 대상 ESLint 통과. 실제 모델 호출(유료)·화면 눈 확인·운영 배포는 안 함 — 실제로 추천이 몇 개, 어떤 품질로 나오는지는 미검증.
+- 복구: 브랜치 `claude/recommendation-sentences-20261022`(origin/main bf76033 기준) 커밋 revert. 화면만 끄려면 `RecommendationList` 한 줄 제거.
+- 상태: 별도 worktree `.claude/worktrees/recommendation-sentences` 로컬 커밋, 미푸시·미배포.
+
 ## 2026-10-18 — Claude: PRO 상세 입력 화면 간격·글자·테두리 통일 (정돈 레이어)
 
 - 요청: `/pro/build` 상세 입력 화면이 버튼·입력칸이 많아 지저분해 보임. 기능·문구·UX는 유지하고 테두리-글자 간격, 글자 크기, 디자인 통일감만 깔끔하게.

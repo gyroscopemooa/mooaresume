@@ -5,6 +5,7 @@ import { hasJobPostingText } from "@/domain/job-posting-source";
 import { getAnalysisQuestions, getUnansweredQuestions, hasAmbiguousMultiSectionTarget } from "./questions";
 import type { QuickAnalysisGateway, QuickGatewayResult } from "./openai-responses-gateway";
 import { QuickAnalysisValidationError, validateQuickAnalysis } from "./validator";
+import { selectRecommendations } from "./recommendations";
 
 function getQuestions(request: AnalysisRequest) {
   const source = request.documents.find((document) => document.kind === "cover_letter");
@@ -124,6 +125,7 @@ export function createQuickAnalysisResult(request: AnalysisRequest, gatewayResul
         originalAnnotations: resolveOriginalAnnotations(question.answer, revision.originalAnnotations, `${questionId}-annotation`),
         revisionReasons: revision.reasons.map((reason) => reason.reason),
         verificationNote: [ambiguousLengthNote, revision.verificationNote].filter(Boolean).join("\n") || undefined,
+        recommendations: selectRecommendations(question.answer, revision.recommendations ?? [], `${questionId}-recommendation`),
       };
     }),
     requirementMatches: (postingReady ? output.requirementMatches ?? [] : []).map((match, index) => ({ id: `requirement-${index + 1}`, ...match })),

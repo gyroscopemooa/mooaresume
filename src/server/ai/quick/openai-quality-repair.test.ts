@@ -41,7 +41,7 @@ const scores = (value: number) => ({ questionFit: value, evidence: value, logic:
 type Verdict = RevisionReview["questions"][number];
 const verdict = (order: number, patch: Partial<Verdict>): Verdict => ({
   order, before: scores(2), after: scores(3), meaningfulImprovement: true, newError: false, lostFactOrVoice: false, reintroducedIssue: false, preferenceOnly: false,
-  reason: "이유", sourceQuote: "", candidateQuote: "", previousErrorQuote: null, validAnnotationIndexes: [], validLengthNote: false, ...patch,
+  reason: "이유", sourceQuote: "", candidateQuote: "", previousErrorQuote: null, validAnnotationIndexes: [], validRecommendationIndexes: [], validLengthNote: false, ...patch,
 });
 const reviewOf = (questions: Verdict[], label = "보완 필요"): RevisionReview => ({
   diagnosis: { readiness: { score: 50, label, summary: "원문을 다듬었습니다.", reasons: ["구체적 경험이 있습니다."] }, priorities: [], verificationQuestions: [] },

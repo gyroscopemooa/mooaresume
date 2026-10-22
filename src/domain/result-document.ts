@@ -44,6 +44,16 @@ export const resultOriginalAnnotationSchema = z.object({
   end: z.number().int().nonnegative(),
 });
 
+export const resultRecommendationSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["improve", "add"]),
+  anchorQuote: z.string().min(1),
+  sentence: z.string().min(1),
+  why: z.string().min(1),
+  needsConfirmation: z.string().min(1).optional(),
+});
+export type ResultRecommendation = z.infer<typeof resultRecommendationSchema>;
+
 export const resultQuestionSchema = z.object({
   id: z.string().min(1),
   order: z.number().int().positive(),
@@ -77,6 +87,9 @@ export const resultQuestionSchema = z.object({
   originalAnnotations: z.array(resultOriginalAnnotationSchema).optional(),
   revisionReasons: z.array(z.string().min(1)),
   verificationNote: z.string().optional(),
+  // Shown beside the answer and never merged into it. Optional because every
+  // result stored before 2026-10-22 has none.
+  recommendations: z.array(resultRecommendationSchema).optional(),
 });
 
 export const requirementMatchSchema = z.object({
