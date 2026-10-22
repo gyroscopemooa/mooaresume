@@ -21,6 +21,12 @@ describe("다른 시각 추천안", () => {
     const concept = "신규 Concept 구조 개발에 참여하겠습니다.";
     expect(selectRecommendations(answer, [{ ...improve, anchorQuote: concept, sentence: "신규 구조 개발에 참여해 신뢰성을 높이겠습니다." }], "q")).toEqual([]);
   });
+  it("lets an added sentence sit beside its anchor without repeating the anchor's terms", () => {
+    const concept = "신규 Concept 구조 개발에 참여하겠습니다.";
+    const add = { ...improve, kind: "add" as const, anchorQuote: concept, sentence: "공고에 명시된 [확인 필요: 담당업무]와 관련해 공정 개선 경험을 활용하겠습니다.", needsConfirmation: "공고 문구를 확인하세요." };
+    expect(selectRecommendations(answer, [add], "q")).toHaveLength(1);
+    expect(selectRecommendations(answer, [{ ...add, kind: "improve", needsConfirmation: null }], "q")).toEqual([]);
+  });
   it("requires confirmation for anything new, and keeps three at most", () => {
     const invented = { ...improve, sentence: "작업 환경을 바꿔 불량을 90% 줄였습니다." };
     expect(selectRecommendations(answer, [invented], "q")).toEqual([]);

@@ -26,7 +26,8 @@ export function selectRecommendations(answer: string, drafts: DraftRecommendatio
     const key = normalizeRevisionText(sentence);
     if (!quoteAppearsIn(answer, draft.anchorQuote)) continue;
     if (key === normalizeRevisionText(draft.anchorQuote) || original.includes(compact(sentence)) || seen.has(key)) continue;
-    if (keyTerms(draft.anchorQuote).some(term => !compact(sentence).includes(term))) continue;
+    // Only a rewrite replaces its anchor; an added sentence sits beside it, so the anchor's terms stay in the answer.
+    if (draft.kind === "improve" && keyTerms(draft.anchorQuote).some(term => !compact(sentence).includes(term))) continue;
     const confirmation = draft.needsConfirmation?.trim() || undefined;
     const newTerms = keyTerms(sentence.replace(CONFIRM_MARK, "")).filter(term => !original.includes(term));
     if (newTerms.length && !confirmation) continue;

@@ -7,6 +7,7 @@
 - 파일: `src/server/second-review/automatic-contract.ts`, `automatic-gateway.ts`, `automatic-worker.ts`, `automatic.test.ts`, 본 기록.
 - 검증: vitest 148파일 1528 통과, `tsc --noEmit`·ESLint 통과.
 - 복구: 이 커밋 revert(이전 버전 초안·미리보기는 추천 없이 그대로 읽힘).
+- 후속 수정(같은 날): 10/22 건 실제 생성에서 4번의 kind=add 추천(공고 업무 [확인 필요] 연결)이 코드 필터에서 빠짐 — `selectRecommendations`가 add에도 anchor의 숫자·영문 용어(ISC)를 요구했기 때문. add는 anchor를 대신하지 않고 옆에 붙으므로 그 검사를 improve에만 적용(`src/server/ai/quick/recommendations.ts`/`.test.ts`, 1차에도 동일 적용). vitest 425 통과, tsc 통과.
 
 ## 2026-10-22 — Claude: 추가 첨삭본에도 '다른 시각 추천안' 카드 표시
 
