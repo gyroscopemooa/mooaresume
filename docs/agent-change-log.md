@@ -8,6 +8,7 @@
 - 파일: `src/domain/second-review-result.ts`/`.test.ts`, `src/app/result/second-review/[token]/page.tsx`, `src/app/meensoo/analyses/[id]/second-review/[previewId]/page.tsx`, `src/components/result-workspace-complete.tsx`(prop 1개·머리 표시·파일명·안내문), `src/components/recommendation-list.tsx`/`.module.css`/`.test.tsx`, `src/server/second-review/automatic-contract.ts`/`automatic.test.ts`, 본 기록.
 - 검증: 전체 vitest 2374 통과(기존 Expo 2파일 로드 실패 제외), `tsc --noEmit`·ESLint 통과.
 - 복구: 이 커밋 revert(저장된 미리보기는 그대로 읽힘).
+- 후속(같은 날): 추천을 만들었지만 검사를 모두 통과하지 못한 문항(빈 배열)은 '이 문항은 지금 문장 그대로 충분해 따로 드릴 다른 시각 추천안이 없습니다'를 M 마크와 함께 표시. 추천안 칸이 없는 과거 결과(undefined)는 아무것도 표시하지 않음(`recommendation-list.tsx`/`.module.css`/`.test.tsx`, `result-workspace-complete.tsx` 1줄). vitest 1047 통과.
 
 ## 2026-10-22 — Claude: 추가 첨삭 자동 생성에도 '다른 시각 추천안' 1~3개 (consultant-review-1.2)
 

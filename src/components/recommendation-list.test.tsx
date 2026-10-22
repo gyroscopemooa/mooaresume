@@ -16,8 +16,11 @@ describe("RecommendationList", () => {
     expect(document.body.textContent).not.toMatch(/개선안|더 좋/);
     expect(document.querySelector("header span[aria-hidden]")?.textContent).toBe("M");
   });
-  it("renders nothing when every recommendation was filtered out", () => {
-    const { container } = render(<RecommendationList items={[]} kept/>);
+  it("says the answer is enough when every recommendation was filtered out, and stays silent on older results", () => {
+    render(<RecommendationList items={[]} kept/>);
+    expect(screen.getByText(/지금 문장 그대로 충분해/)).toBeTruthy();
+    cleanup();
+    const { container } = render(<RecommendationList kept/>);
     expect(container.innerHTML).toBe("");
   });
 });

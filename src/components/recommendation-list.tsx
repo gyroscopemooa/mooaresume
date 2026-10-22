@@ -11,9 +11,11 @@ import styles from "./recommendation-list.module.css";
  * '개선안'이라고 부르지 않는다: 원문보다 낫다는 약속을 할 수 없고, 지원자의
  * 문체를 지키는 것이 이 서비스의 차별점이다. 고를지 말지는 지원자가 정한다.
  */
-export function RecommendationList({ items, kept }: { items: readonly ResultRecommendation[]; kept: boolean }) {
+export function RecommendationList({ items, kept }: { items?: readonly ResultRecommendation[]; kept: boolean }) {
   const [copied, setCopied] = useState<string | null>(null);
-  if (items.length === 0) return null;
+  // 추천안이 생기기 전 결과에는 칸 자체가 없다. 빈 배열은 만들어 봤지만 검사를 통과한 추천이 없다는 뜻이다.
+  if (!items) return null;
+  if (items.length === 0) return <p className={styles.none}><span className={styles.mark} aria-hidden="true">M</span>이 문항은 지금 문장 그대로 충분해 따로 드릴 다른 시각 추천안이 없습니다.</p>;
   const copy = async (item: ResultRecommendation) => {
     try { await navigator.clipboard.writeText(item.sentence); setCopied(item.id); } catch { setCopied(null); }
   };
