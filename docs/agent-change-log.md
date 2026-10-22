@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-22 — Claude: 추천안·추가 첨삭·내부 메모 숨기기 동시 배포
+
+- 요청(민수오빠, 테스트 메일 확인 후 승인): 세 브랜치를 main에 함께 배포.
+- 방법: 공유 폴더가 아닌 origin/main(bf76033) 기준 격리 worktree `.claude/worktrees/release-20261022`(node_modules 정션 없음)에서 `claude/second-review-guards-20261022`, `claude/recommendation-sentences-20261022`, `origin/claude/hide-internal-keep-reason-20261022`를 차례로 --no-ff 병합(c2978ca). 충돌: 공유 기록(양쪽 보존), `result-workspace-complete.tsx` 비교·유지 이유 줄 1곳 — '추가 첨삭본' 라벨 + 고객에게 내부 메모 숨김(관리자만 표시) + 다른 시각 추천안 줄을 모두 유지.
+- 검증: `tsc --noEmit` 통과, 변경 파일 ESLint 통과, 전체 vitest 268파일 중 266 통과·2368 테스트 통과(실패 2파일 `apps/mobile/src/analytics.test.ts`, `src/server/mobile/mobile.test.ts`는 이 PC에 Expo tsconfig가 없어 로드 실패하는 기존 문제, 이번 변경과 무관).
+- 배포: `release/extra-review-20261022` → main fast-forward 푸시 04:33Z, Cloudflare 새 Worker 버전 `660bbbaa-21af-4d5b-817b-6c7a8e8f9714`(04:37Z). 운영 `/result/sample` JS 청크에서 '다른 시각 추천안'·'이 문장 복사'·'원문을 그대로 두었습니다'·'추가 첨삭본'·내부 메모 처리 확인, '검토를 통과하지 못해'·'1차·2차 첨삭 비교' 없음 확인. 홈 200.
+- 미확인: 실제 고객 실행에서 추천안이 몇 개·어떤 품질로 나오는지(배포 후 첫 실행부터 생성), 관리자 화면 로그인 후 눈 확인, 추가 첨삭 메일의 실제 운영 발송(관리자 버튼). DB 변경 없음. 기존 결과는 추천안이 없어 화면에 아무것도 안 나옴(정상).
+- 복구: main을 bf76033으로 되돌리는 revert(병합 3개) 또는 Cloudflare 대시보드에서 이전 버전 `156c52c7-0642-4d38-b8d8-62af3d0689a9`로 롤백.
+
 ## 2026-10-22 — Claude: '2차 첨삭' → '추가 첨삭' 명칭·발송 메일 문구 변경
 
 - 요청(민수오빠): 2차는 1차보다 낫다는 뜻으로 읽혀 리스크가 있음. '추가 첨삭'으로 부르고, 메일은 "24시간 내로 임의로 선별된 첨삭본을 다른 시각을 통해 추가 첨삭… 1차 첨삭보다 개선을 의미하지 않으며 본인 스타일과 맞는 또는 종합하여 판단하기 위한 첨삭본" 취지로.
