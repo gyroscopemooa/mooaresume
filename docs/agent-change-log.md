@@ -7,6 +7,7 @@
 - 파일: `src/components/recommendation-list.tsx`/`.module.css`/`.test.tsx`, `src/components/result-workspace-complete.tsx`, `src/server/ai/quick/prompt.ts`, `revision-quality.ts`, `src/server/second-review/automatic-contract.ts`, 본 기록.
 - 검증: vitest 1473 통과, tsc 통과. 배포·메일은 사용자 확인 후.
 - 복구: 이 커밋 revert.
+- 후속(같은 날, 운영자 손 샘플): 지원 동기 두괄식 기준 문서 `docs/headline-first-writing-guide.md` 신설(운영자 원본 샘플 원문 보존 + 업그레이드 본 + 체크리스트). 1차·추가 첨삭 추천 규칙의 두괄식 항목을 이 기준으로 교체 — 답변 전체를 '지원한 이유는 두 가지입니다 → 첫째/둘째 ~때문입니다 → 입사 후 계획 그대로'로 다시 짠 추천 1개, 근거 없는 '판단했습니다' 금지, '이러한 관심'의 근거를 앞에, 원문·1차 좋은 표현 글자 그대로. 추천 문장 줄바꿈 표시(`white-space:pre-line`). vitest 429 통과.
 
 ## 2026-10-22 — Claude: 추가 첨삭 = 1차 결과 그대로 + 다른 시각 추천안, 1차 판단 뒤집기 금지 (consultant-review-1.3)
 

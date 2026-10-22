@@ -27,6 +27,12 @@ describe("다른 시각 추천안", () => {
     expect(selectRecommendations(answer, [add], "q")).toHaveLength(1);
     expect(selectRecommendations(answer, [{ ...add, kind: "improve", needsConfirmation: null }], "q")).toEqual([]);
   });
+  it("keeps a 두괄식 rewrite of the whole answer that only adds an opener", () => {
+    const opener = { ...improve, anchorQuote: anchor, sentence: `제가 지원한 이유는 두 가지입니다.
+
+첫째, 작은 조건이 불량을 가른다는 것을 현장에서 확인했기 때문입니다. ${answer}`, why: "지원 이유를 첫 문장에서 먼저 밝히는 구성입니다." };
+    expect(selectRecommendations(answer, [opener], "q")).toHaveLength(1);
+  });
   it("requires confirmation for anything new, and keeps three at most", () => {
     const invented = { ...improve, sentence: "작업 환경을 바꿔 불량을 90% 줄였습니다." };
     expect(selectRecommendations(answer, [invented], "q")).toEqual([]);
