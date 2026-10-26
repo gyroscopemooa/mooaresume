@@ -1,5 +1,12 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-26 — Codex: 가격 바 마감일 15일·30일 자동 순환
+
+- 요청/변경: 상단 가격 바의 고정 `11월 30일까지`를 한국 시간 기준 다음 마감일로 바꿨다. 매월 1~15일에는 해당 월 15일, 16~30일에는 해당 월 30일, 31일에는 다음 달 15일을 표시한다. 현재 시점에는 `10월 30일까지`가 노출된다.
+- 파일: `src/domain/recurring-price-deadline.ts`, 경계 테스트, `src/components/launch-price-banner.tsx`, 모바일 스타일, 본 기록.
+- 운영 경계: LIVE-SUB에서 배너 문구를 명시적으로 설정한 경우 운영 문구가 우선하며, 기본 문구에만 자동 마감일을 적용한다.
+- 검증: 마감일 경계 Vitest 5개, 변경 TypeScript ESLint, 전체 `tsc --noEmit --incremental false`, `git diff --check`를 통과했다. 배포 진행 중.
+
 ## 2026-10-26 — Codex: 상단 특별 가격 바 전면 슬림 디자인
 
 - 요청: 상단 광고 바를 얇게 전면 수정하고 `11월 30일까지 최대 10배 낮아진 가격` 메시지와 QUICK 9,900원·PRO 12,900원·FINAL 45,000원을 함께 노출한다.

@@ -27,8 +27,7 @@
   .offer strong { font-size:10px; }
 }
 @media(max-width:390px) {
-  .deadline { font-size:0; }
-  .deadline::before { content:"11.30까지"; font-size:8px; }
+  .deadline { font-size:8px; }
   .prices small { display:none; }
   .prices b { font-size:8.5px; }
 }

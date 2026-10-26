@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { getRecurringPriceDeadline } from "@/domain/recurring-price-deadline";
 import { getRuntimeLink, useRuntimeBanner, useRuntimeFlag } from "@/lib/live-sub-runtime";
 import styles from "./launch-price-banner.module.css";
 
 export function LaunchPriceBanner() {
   const enabled = useRuntimeFlag("launchPriceBanner", true);
   const banner = useRuntimeBanner("home_launch_price");
-  const eyebrow = banner?.eyebrow ?? "11월 30일까지";
+  const recurringDeadline = getRecurringPriceDeadline();
+  const eyebrow = banner?.eyebrow ?? recurringDeadline;
   const description = [banner?.title, banner?.description].filter(Boolean).join(" · ")
-    || "11월 30일까지, 최대 10배 낮아진 가격으로 만나보세요.";
+    || `${recurringDeadline}, 최대 10배 낮아진 가격으로 만나보세요.`;
   const link = banner ? getRuntimeLink(banner.targetUrl, banner.linkType) : { href: "/#plans", external: false };
 
   const offer = <>
@@ -22,7 +24,7 @@ export function LaunchPriceBanner() {
   </>;
 
   if (!enabled) return null;
-  return <aside className={styles.banner} aria-label="11월 30일까지 진행하는 특별 가격 안내">
+  return <aside className={styles.banner} aria-label={`${eyebrow} 진행하는 특별 가격 안내`}>
     <div className={styles.inner}>
       <span className={styles.deadline}>{eyebrow}</span>
       <div className={styles.offer}>
