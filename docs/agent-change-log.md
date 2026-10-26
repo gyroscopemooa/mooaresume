@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-26 — Codex: 영어 기본 전체 오류 화면을 한국어 복구 화면으로 교체
+
+- 요청/문제: 루트 렌더링 오류 때 Next.js 기본 `This page couldn’t load` 화면만 노출되어 사용자가 점검 여부와 복구 방법을 알 수 없었다.
+- 변경: App Router의 `global-error.tsx`를 추가해 루트 레이아웃 또는 하위 경계에서 처리되지 않은 렌더링 오류를 무아레쥬메 한국어 안내 화면으로 표시한다. 실제 점검이 아닌 오류도 있으므로 점검을 단정하지 않고 일시 오류·연결 불안정 가능성을 함께 안내하며, 전체 새로고침과 홈 이동을 제공한다. 루트 레이아웃과 전역 CSS도 실패할 수 있는 경계라 외부 컴포넌트·스타일 의존 없이 자체 문서와 인라인 스타일로 구성했다.
+- 범위: 이 화면은 애플리케이션 자바스크립트가 실행되어 오류 경계가 작동할 수 있는 장애를 다룬다. Worker·DNS·정적 자산 전달 자체가 실패하는 경우에는 Cloudflare 계층의 별도 장애 페이지가 필요하다.
+- 파일: `src/app/global-error.tsx`, 본 기록.
+- 검증/복구: 대상 ESLint, 전체 TypeScript와 Next.js production build를 통과했다. 본 커밋을 되돌리면 Next.js 기본 오류 화면으로 돌아간다.
+
 ## 2026-10-26 — Codex: 운영 전체 화면 로드 실패 긴급 복구
 
 - 증상/원인: 운영 `https://mooaresume.com`에서 `This page couldn’t load`가 재현됐다. 브라우저 콘솔은 클라이언트 번들에 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 없는 Zod 초기화 오류를 기록했다. 2026-10-26 12:09 UTC 직접 배포가 격리 작업트리의 빌드 시점 공개 환경변수 없이 생성된 것이 직접 원인이었다.
