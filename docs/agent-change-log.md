@@ -20,7 +20,7 @@
 
 - 원인/변경: 단일 flex 행에 브랜드·설명·네 개 링크·저작권·사업자정보를 함께 배치해 설명 문단이 한 글자 너비로 축소됐다. 브랜드/설명과 하단 메뉴를 첫 행으로, 저작권과 접이식 사업자정보를 둘째 행으로 분리하고 모바일에서는 명시적인 2열 링크 구조로 전환했다.
 - 파일: `src/app/page.tsx`, `src/app/home-footer.module.css`, 본 기록.
-- 검증: 대상 ESLint, 전체 `tsc --noEmit --incremental false`, `git diff --check`를 통과했다. 격리 작업본의 기존 Next 개발 서버는 별도 `home-mobile-header.module.css` 순수 선택자 오류 때문에 시각 확인이 막혔으며, 프로덕션 빌드와 운영 렌더링으로 최종 확인한다. 배포 진행 중.
+- 검증/배포: 대상 ESLint, 전체 `tsc --noEmit --incremental false`, `git diff --check`, 새 공개 환경변수 배포 검사와 OpenNext 프로덕션 빌드를 통과했다. 기능 커밋 `d40575b`을 `origin/main`에 fast-forward 푸시하고 Cloudflare Worker `22cb5a37-6c45-4a2f-b867-83a048b50d5b`로 배포했다. 운영 브라우저에서 설명 문단이 정상 가로 폭을 유지하고 브랜드·메뉴·저작권·사업자정보가 두 행으로 정렬되는 것을 확인했다.
 
 ## 2026-10-26 — Codex: 가격 바 마감일 15일·30일 자동 순환
 
