@@ -1,11 +1,15 @@
 import { listResearchCorpus } from "@/server/admin/admin-repository";
 import {
   MIN_GROUP_SIZE,
+  canCompareOutcomes,
   describeConfidence,
   documentPassRate,
   findingPatterns,
   groupBy,
+  monthlyTrend,
+  scalarTrend,
   splitOutcomes,
+  tagTrend,
 } from "@/domain/research-insight";
 import styles from "../admin.module.css";
 
@@ -18,6 +22,16 @@ export default async function AdminResearchPage() {
   const patterns = findingPatterns(corpus, 20);
   const byCompany = groupBy(corpus, "targetCompany");
   const byRole = groupBy(corpus, "targetRole");
+  const comparisonReady = canCompareOutcomes(overall);
+  const trends = [
+    ["기간별", monthlyTrend(corpus)],
+    ["상품별", scalarTrend(corpus, "product")],
+    ["산업별", tagTrend(corpus, "industryTags")],
+    ["표준 직무별", scalarTrend(corpus, "roleGroup")],
+    ["경력 단계", scalarTrend(corpus, "careerStage")],
+    ["경험 주제", tagTrend(corpus, "experienceTopics")],
+    ["개선 유형", tagTrend(corpus, "improvementTypes")],
+  ] as const;
 
   return (
     <>
@@ -69,21 +83,41 @@ export default async function AdminResearchPage() {
         ) : (
           <div className={styles.scroll}>
             <table className={styles.table}>
-              <thead><tr><th>지적</th><th>종류</th><th>전체</th><th>서류 통과 쪽</th><th>서류 탈락 쪽</th></tr></thead>
+              <thead><tr><th>지적</th><th>종류</th><th>전체</th>{comparisonReady && <><th>서류 통과 쪽</th><th>서류 탈락 쪽</th></>}</tr></thead>
               <tbody>
                 {patterns.map((pattern) => (
                   <tr key={`${pattern.kind}-${pattern.note}`}>
                     <td className={styles.wrap}>{pattern.note}</td>
                     <td className={styles.mono}>{pattern.kind}</td>
                     <td>{pattern.total}</td>
-                    <td className={styles.mono}>{pattern.amongPassed}</td>
-                    <td className={styles.mono}>{pattern.amongFailed}</td>
+                    {comparisonReady && <><td className={styles.mono}>{pattern.amongPassed}</td><td className={styles.mono}>{pattern.amongFailed}</td></>}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+        {!comparisonReady && <p className={styles.empty}>합격·불합격 결과가 양쪽에 합쳐 {MIN_GROUP_SIZE}건 이상 쌓인 뒤에만 차이를 표시합니다.</p>}
+      </section>
+
+      <section className={styles.panel}>
+        <div className={styles.panelHead}>
+          <h2>작성 경향</h2>
+          <small>개인 원문이 아닌 비식별 분류 태그의 건수</small>
+        </div>
+        <div className={styles.scroll}>
+          <table className={styles.table}>
+            <thead><tr><th>구분</th><th>항목</th><th>건수</th></tr></thead>
+            <tbody>
+              {trends.flatMap(([title, rows]) => rows.slice(0, 12).map((row, index) => (
+                <tr key={`${title}-${row.label}`}>
+                  <td>{index === 0 ? title : ""}</td><td>{row.label}</td><td className={styles.mono}>{row.count}</td>
+                </tr>
+              )))}
+            </tbody>
+          </table>
+        </div>
+        {trends.every(([, rows]) => rows.length === 0) && <p className={styles.empty}>새 분류 체계가 적용된 분석부터 자동으로 채워집니다.</p>}
       </section>
 
       {([["회사별", byCompany], ["직무별", byRole]] as const).map(([title, result]) => (

@@ -1,6 +1,7 @@
 import "server-only";
 import { RESEARCH_CONSENT_VERSION, redactPersonalData, type RedactionCount } from "@/domain/deidentify";
 import type { ResultDocument } from "@/domain/result-document";
+import { buildResearchTaxonomy, type ResearchTaxonomy } from "@/domain/research-taxonomy";
 
 /**
  * Turns a finished result into the copy that may be kept.
@@ -15,7 +16,7 @@ import type { ResultDocument } from "@/domain/result-document";
 
 export { RESEARCH_CONSENT_VERSION };
 
-export type ResearchSnapshotPayload = {
+export type ResearchSnapshotPayload = ResearchTaxonomy & {
   /** Where they applied, not where they worked. The first identifies nobody and is what every question groups by; the second is in the prose, where the redactor applies. */
   targetCompany: string | null;
   targetRole: string | null;
@@ -63,6 +64,7 @@ export function buildResearchSnapshot(
     result.questions.map((question) => question.revisedAnswer).join("\n\n"),
     { knownNames },
   );
+  const taxonomy = buildResearchTaxonomy(result);
 
   const findings = [
     ...result.priorities.map((item) => ({ kind: "priority", category: item.category, severity: item.severity, note: item.title })),
@@ -73,6 +75,7 @@ export function buildResearchSnapshot(
   ];
 
   return {
+    ...taxonomy,
     targetCompany: result.company.trim() || null,
     targetRole: result.role.trim() || null,
     product: result.product,

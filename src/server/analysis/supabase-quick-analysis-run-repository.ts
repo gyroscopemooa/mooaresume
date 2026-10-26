@@ -207,6 +207,12 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
         p_findings: payload.findings,
         p_target_company: payload.targetCompany,
         p_target_role: payload.targetRole,
+        p_taxonomy_version: payload.taxonomyVersion,
+        p_industry_tags: payload.industryTags,
+        p_role_group: payload.roleGroup,
+        p_career_stage: payload.careerStage,
+        p_experience_topics: payload.experienceTopics,
+        p_improvement_types: payload.improvementTypes,
       });
       if (error) console.error("research_snapshot_failed", error.message);
     } catch (caught) {

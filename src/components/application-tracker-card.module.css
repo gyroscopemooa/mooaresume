@@ -12,3 +12,4 @@
 .reportFailed { margin: 8px 0 0; color: #7a5757; font-size: 11.5px; line-height: 1.8; }
 .reportFailed b { color: #a34848; }
 .reportFailed em { display: block; margin-top: 3px; color: #a9b3ae; font-size: 10.5px; font-style: normal; word-break: break-word; }
+.followupPrompt{padding:10px 12px;border:1px solid #d9e8df;border-radius:10px;background:#f5faf7;color:#155c41}

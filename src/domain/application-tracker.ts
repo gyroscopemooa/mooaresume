@@ -41,6 +41,18 @@ export const applicationTrackerSchema = z.object({
 export type ApplicationTrackerStatus = z.infer<typeof applicationTrackerStatusSchema>;
 export type ApplicationTracker = z.infer<typeof applicationTrackerSchema>;
 
+export type OutcomeFollowup = { stage: "not_due" | "two_weeks" | "four_weeks"; daysSinceSubmission: number };
+
+export function outcomeFollowupStage(submittedAt: string | undefined, now = new Date()): OutcomeFollowup {
+  if (!submittedAt) return { stage: "not_due", daysSinceSubmission: 0 };
+  const submitted = new Date(submittedAt);
+  if (Number.isNaN(submitted.getTime())) return { stage: "not_due", daysSinceSubmission: 0 };
+  const daysSinceSubmission = Math.max(0, Math.floor((now.getTime() - submitted.getTime()) / 86_400_000));
+  if (daysSinceSubmission >= 28) return { stage: "four_weeks", daysSinceSubmission };
+  if (daysSinceSubmission >= 14) return { stage: "two_weeks", daysSinceSubmission };
+  return { stage: "not_due", daysSinceSubmission };
+}
+
 const allowedTransitions: Record<ApplicationTrackerStatus, ApplicationTrackerStatus[]> = {
   NOT_SUBMITTED: ["SUBMITTED", "WITHDRAWN"],
   SUBMITTED: ["RESULT_PENDING", "WITHDRAWN"],

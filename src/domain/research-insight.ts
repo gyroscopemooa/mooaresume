@@ -29,6 +29,12 @@ export type CorpusEntry = {
   readinessScore: number | null;
   findings: Array<{ kind: string; category?: string; severity?: string; note: string }>;
   outcomeStatus: string | null;
+  industryTags?: string[];
+  roleGroup?: string | null;
+  careerStage?: string | null;
+  experienceTopics?: string[];
+  improvementTypes?: string[];
+  createdAt?: string;
 };
 
 /** Below this a group is people, not a pattern. */
@@ -66,6 +72,41 @@ export function documentPassRate(split: OutcomeSplit): number | null {
   const known = split.passed + split.failed;
   if (known < MIN_GROUP_SIZE) return null;
   return Math.round((split.passed / known) * 100);
+}
+
+/** A difference needs enough known outcomes and examples on both sides. */
+export function canCompareOutcomes(split: OutcomeSplit): boolean {
+  return split.passed + split.failed >= MIN_GROUP_SIZE && split.passed > 0 && split.failed > 0;
+}
+
+export type TrendRow = { label: string; count: number };
+
+function countLabels(labels: readonly (string | null | undefined)[]): TrendRow[] {
+  const counts = new Map<string, number>();
+  for (const raw of labels) {
+    const label = raw?.trim();
+    if (!label) continue;
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+  return [...counts].map(([label, count]) => ({ label, count }))
+    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "ko"));
+}
+
+export function scalarTrend(entries: readonly CorpusEntry[], key: "product" | "roleGroup" | "careerStage"): TrendRow[] {
+  return countLabels(entries.map((entry) => entry[key]));
+}
+
+export function tagTrend(entries: readonly CorpusEntry[], key: "industryTags" | "experienceTopics" | "improvementTypes"): TrendRow[] {
+  return countLabels(entries.flatMap((entry) => [...new Set(entry[key] ?? [])]));
+}
+
+export function monthlyTrend(entries: readonly CorpusEntry[]): TrendRow[] {
+  return countLabels(entries.map((entry) => {
+    if (!entry.createdAt) return null;
+    const date = new Date(entry.createdAt);
+    if (Number.isNaN(date.getTime())) return null;
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  })).sort((left, right) => right.label.localeCompare(left.label));
 }
 
 export type FindingPattern = {

@@ -5,6 +5,7 @@ import { ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, Gift, RotateCcw, S
 import {
   appendTrackerEvent,
   applicationTrackerSchema,
+  outcomeFollowupStage,
   type ApplicationTracker,
   type ApplicationTrackerStatus,
 } from "@/domain/application-tracker";
@@ -59,8 +60,30 @@ export function ApplicationTrackerCard(props: Props) {
       }
       setReady(true);
     }, 0);
+    if (!props.isSample) {
+      void (async () => {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("application_outcomes")
+          .select("status, submitted_at, occurred_at")
+          .eq("application_case_id", props.caseId)
+          .maybeSingle();
+        if (error || !data) return;
+        const parsedStatus = applicationTrackerSchema.shape.currentStatus.safeParse(data.status);
+        if (!parsedStatus.success) return;
+        const occurredAt = typeof data.occurred_at === "string" ? data.occurred_at : new Date().toISOString();
+        setTracker((current) => ({
+          ...current,
+          currentStatus: parsedStatus.data,
+          submittedAt: typeof data.submitted_at === "string" ? data.submitted_at : current.submittedAt,
+          events: current.events.some((event) => event.status === parsedStatus.data)
+            ? current.events
+            : [...current.events, { id: `${props.caseId}-server-${occurredAt}`, status: parsedStatus.data, occurredAt, collectionMode: "ORGANIC", verification: "SELF_REPORTED" }],
+        }));
+      })();
+    }
     return () => window.clearTimeout(timeout);
-  }, [storageKey]);
+  }, [props.caseId, props.isSample, storageKey]);
 
   useEffect(() => {
     if (ready) sessionStorage.setItem(storageKey, JSON.stringify(tracker));
@@ -79,39 +102,14 @@ export function ApplicationTrackerCard(props: Props) {
   function transition(status: ApplicationTrackerStatus) {
     setTracker((current) => appendTrackerEvent(current, status));
     if (props.isSample) return;
-    void (async () => {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase.rpc("record_application_outcome", {
-          p_application_case_id: props.caseId,
-          p_status: status,
-        });
-        // 보고가 서버에 남지 않으면 보상도 없습니다.
-        //
-        // The tick on screen comes from this browser's own storage, so a failed
-        // call still looks like a saved report — and the free ticket that a
-        // 합격/불합격 report earns simply never arrives, with nothing said.
-        if (error) {
-          console.error("record_application_outcome", error);
-          setReportFailed([error.code, error.message].filter(Boolean).join(" · "));
-          return;
-        }
-        // Null means say nothing: the credit is a thank-you, and a notice
-        // explaining why one did *not* arrive reads as a refusal for having
-        // pressed the wrong button.
-        setRewardNotice(describeOutcomeReward(parseOutcomeReward(data)));
-      } catch (error) {
-        console.error("record_application_outcome", error);
-        setReportFailed(error instanceof Error ? error.message : "알 수 없는 오류");
-      }
-    })();
+    void persistStatus(status);
   }
 
   function confirmSubmission() {
     const now = new Date().toISOString();
     const submitted: ApplicationTracker = {
       ...tracker,
-      submissionSnapshotId: props.caseId + "-submission-" + Date.now(),
+      submissionSnapshotId: `${props.caseId}-submission-${now}`,
       submittedAt: now,
       currentStatus: "SUBMITTED",
       events: [...tracker.events, {
@@ -123,6 +121,19 @@ export function ApplicationTrackerCard(props: Props) {
       }],
     };
     setTracker(appendTrackerEvent(submitted, "RESULT_PENDING", now));
+    if (!props.isSample) void persistStatus("RESULT_PENDING");
+  }
+
+  async function persistStatus(status: ApplicationTrackerStatus) {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("record_application_outcome", { p_application_case_id: props.caseId, p_status: status });
+      if (error) { setReportFailed([error.code, error.message].filter(Boolean).join(" · ")); return; }
+      setReportFailed(null);
+      setRewardNotice(describeOutcomeReward(parseOutcomeReward(data)));
+    } catch (error) {
+      setReportFailed(error instanceof Error ? error.message : "알 수 없는 오류");
+    }
   }
 
   function reset() {
@@ -131,6 +142,7 @@ export function ApplicationTrackerCard(props: Props) {
   }
 
   const status = tracker.currentStatus;
+  const followup = outcomeFollowupStage(tracker.submittedAt);
   return <section className={styles.card}>
     <header>
       <div className={styles.icon}><BriefcaseBusiness /></div>
@@ -149,7 +161,7 @@ export function ApplicationTrackerCard(props: Props) {
         {tracker.submittedAt && <span>{new Date(tracker.submittedAt).toLocaleDateString("ko-KR")} 제출 확인</span>}
       </div>
       <div className={styles.actions}>
-        {status === "RESULT_PENDING" && <><b>서류 결과가 나왔나요?</b><div><button onClick={() => transition("DOCUMENT_PASS")}>서류 합격</button><button onClick={() => transition("DOCUMENT_FAIL")}>서류 불합격</button><button onClick={() => transition("UNKNOWN")}>아직 확인하지 못했어요</button></div></>}
+        {status === "RESULT_PENDING" && <><b className={followup.stage === "not_due" ? undefined : styles.followupPrompt}>{followup.stage === "four_weeks" ? "제출 후 4주가 지났어요. 결과를 한 번만 확인해 주세요." : followup.stage === "two_weeks" ? `제출 후 ${followup.daysSinceSubmission}일이 지났어요. 서류 결과가 나왔나요?` : "결과가 나오면 알려주세요."}</b><div><button onClick={() => transition("DOCUMENT_PASS")}>서류 합격</button><button onClick={() => transition("DOCUMENT_FAIL")}>서류 불합격</button><button onClick={() => transition("UNKNOWN")}>아직 확인하지 못했어요</button></div></>}
         {status === "UNKNOWN" && <><b>결과를 확인하면 다시 대기 상태로 바꿀 수 있어요.</b><div><button onClick={() => transition("RESULT_PENDING")}>결과 다시 확인하기</button></div></>}
         {status === "DOCUMENT_PASS" && <><b>축하해요. 이제 이 제출본을 기준으로 면접을 준비할 차례예요.</b><div><button className={styles.primary} onClick={props.onPrepareInterview}>예상 질문 확인 <ArrowRight /></button><button onClick={() => transition("INTERVIEW_1_PENDING")}>면접 진행으로 변경</button></div></>}
         {status === "DOCUMENT_FAIL" && <><b>이번 지원 기록은 보관하고, 다음 지원에서 먼저 보완할 부분을 확인해 보세요.</b><div><button onClick={props.onReviewIssues}>핵심 개선점 다시 보기</button></div></>}

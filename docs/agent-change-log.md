@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-27 — Codex: 비식별 작성 경향·제출 결과 후속 데이터 파이프라인
+
+- 요청/범위: 동의한 첨삭 결과에서 산업군·표준 직무군·경력 단계·경험 주제·개선 유형을 비식별 태그로 자동 축적하고, 관리자 축적 데이터에 기간·상품·산업·직무 등의 작성 경향을 추가했다. 결과 화면의 실제 제출 확인을 서버 기록으로 연결하고 제출 14일·28일 뒤에만 부담 낮은 서류 결과 확인 문구를 표시한다.
+- 정확성·개인정보 경계: 기존 연구 활용 동의와 서비스 역할 전용 저장 경계를 유지했다. 새 분류는 고정 키워드 규칙으로 만든 태그만 저장하며 새 개인정보나 원문을 추가 수집하지 않는다. 합격/탈락 차이는 알려진 결과가 최소 5건이고 양쪽 표본이 모두 있을 때만 노출한다. 결과는 자발적 입력·미검증으로 유지하며 성공 확률을 만들지 않는다.
+- 파일: `src/domain/research-taxonomy.ts` 및 테스트, `src/domain/research-insight.ts` 및 테스트, `src/domain/application-tracker.ts` 및 테스트, `src/server/analysis/research-capture.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/research/page.tsx`, `src/components/application-tracker-card.tsx` 및 CSS, `supabase/migrations/20261027010000_research_taxonomy_and_followups.sql`, 마이그레이션 테스트, 본 기록.
+- 배포/복구: 원격 `main` 기준 격리 릴리스 브랜치에서 적용한다. 코드가 DB보다 먼저 배포돼도 기존 축적 화면을 읽도록 구형 뷰 fallback을 둔다. 복구는 릴리스 커밋과 직전 Worker 버전으로 되돌리며, 적용된 새 컬럼은 데이터 보존을 위해 즉시 삭제하지 않는다.
+- 검증: 대상 Vitest 7파일 44테스트, 대상 ESLint, TypeScript를 통과했다. 운영 DB dry-run은 저장된 연결에 비밀번호가 없고 Supabase CLI access token도 없어 인증 단계에서 중단됐다. production build·푸시·Worker 배포·운영 smoke 결과는 아래 릴리스 기록에서 갱신한다.
+
 ## 2026-10-26 — Codex: 무아레쥬메 PRO 기준가 19,900원 반영
 
 - 요청/범위: 사용자 결정에 따라 무아레쥬메 `PRO` 기준가를 12,900원에서 19,900원으로 변경한다. Polar 상품 가격 자체는 사용자가 별도로 맞추는 운영 항목이며, 애플리케이션은 서버 소유 고정 가격으로 체크아웃을 생성한다.

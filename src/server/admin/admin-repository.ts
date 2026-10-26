@@ -796,6 +796,12 @@ export type ResearchCorpusRow = {
   readinessScore: number | null;
   findings: Array<{ kind: string; category?: string; severity?: string; note: string }>;
   outcomeStatus: string | null;
+  taxonomyVersion: string | null;
+  industryTags: string[];
+  roleGroup: string | null;
+  careerStage: string | null;
+  experienceTopics: string[];
+  improvementTypes: string[];
   createdAt: string;
 };
 
@@ -808,14 +814,22 @@ export type ResearchCorpusRow = {
  * view. Not before.
  */
 export async function listResearchCorpus(limit = 1000): Promise<ResearchCorpusRow[]> {
-  const { data, error } = await serviceClient()
+  const baseFields = "id, product, writing_mode, editing_stance, target_company, target_role, readiness_score, findings, outcome_status, created_at";
+  const primary = await serviceClient()
     .from("research_corpus")
-    .select("id, product, writing_mode, editing_stance, target_company, target_role, readiness_score, findings, outcome_status, created_at")
+    .select(`${baseFields}, taxonomy_version, industry_tags, role_group, career_stage, experience_topics, improvement_types`)
     .order("created_at", { ascending: false })
     .limit(limit);
+  let rows = primary.data as Array<Record<string, unknown>> | null;
+  let error = primary.error;
+  if (error?.code === "42703" || error?.code === "PGRST204") {
+    const fallback = await serviceClient().from("research_corpus").select(baseFields).order("created_at", { ascending: false }).limit(limit);
+    rows = fallback.data as Array<Record<string, unknown>> | null;
+    error = fallback.error;
+  }
   if (error) { console.error("admin-query", error); return []; }
-  if (!data) return [];
-  return data.map((row) => ({
+  if (!rows) return [];
+  return rows.map((row) => ({
     id: row.id as string,
     product: row.product as string,
     writingMode: row.writing_mode as string,
@@ -825,6 +839,12 @@ export async function listResearchCorpus(limit = 1000): Promise<ResearchCorpusRo
     readinessScore: (row.readiness_score as number | null) ?? null,
     findings: (row.findings as ResearchCorpusRow["findings"] | null) ?? [],
     outcomeStatus: (row.outcome_status as string | null) ?? null,
+    taxonomyVersion: (row.taxonomy_version as string | null) ?? null,
+    industryTags: Array.isArray(row.industry_tags) ? row.industry_tags.filter((value): value is string => typeof value === "string") : [],
+    roleGroup: (row.role_group as string | null) ?? null,
+    careerStage: (row.career_stage as string | null) ?? null,
+    experienceTopics: Array.isArray(row.experience_topics) ? row.experience_topics.filter((value): value is string => typeof value === "string") : [],
+    improvementTypes: Array.isArray(row.improvement_types) ? row.improvement_types.filter((value): value is string => typeof value === "string") : [],
     createdAt: row.created_at as string,
   }));
 }

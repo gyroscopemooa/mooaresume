@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   MIN_GROUP_SIZE,
+  canCompareOutcomes,
   describeConfidence,
   documentPassRate,
   findingPatterns,
   groupBy,
+  monthlyTrend,
+  scalarTrend,
   splitOutcomes,
+  tagTrend,
   type CorpusEntry,
 } from "./research-insight";
 
@@ -44,6 +48,32 @@ describe("결과 집계", () => {
   it("표본이 적으면 비율을 내지 않는다", () => {
     expect(documentPassRate({ passed: 2, failed: 1, unknown: 0 })).toBeNull();
     expect(documentPassRate({ passed: 3, failed: 2, unknown: 99 })).toBe(60);
+  });
+
+  it("양쪽 표본이 모두 있고 최소 결과 수를 넘을 때만 차이를 비교한다", () => {
+    expect(canCompareOutcomes({ passed: 5, failed: 0, unknown: 20 })).toBe(false);
+    expect(canCompareOutcomes({ passed: 3, failed: 2, unknown: 20 })).toBe(true);
+  });
+});
+
+describe("작성 경향 집계", () => {
+  it("상품·산업·표준 직무 태그를 센다", () => {
+    const entries = [
+      entry({ product: "PRO", industryTags: ["제조·생산"], roleGroup: "생산·품질" }),
+      entry({ product: "QUICK", industryTags: ["제조·생산", "IT·소프트웨어"], roleGroup: "IT·개발" }),
+    ];
+    expect(scalarTrend(entries, "product")).toEqual([{ label: "PRO", count: 1 }, { label: "QUICK", count: 1 }]);
+    expect(tagTrend(entries, "industryTags")[0]).toEqual({ label: "제조·생산", count: 2 });
+    expect(scalarTrend(entries, "roleGroup")).toHaveLength(2);
+  });
+
+  it("기간은 월 단위 최신순으로 센다", () => {
+    const rows = monthlyTrend([
+      entry({ createdAt: "2026-09-01T00:00:00.000Z" }),
+      entry({ createdAt: "2026-10-01T00:00:00.000Z" }),
+      entry({ createdAt: "2026-10-20T00:00:00.000Z" }),
+    ]);
+    expect(rows).toEqual([{ label: "2026-10", count: 2 }, { label: "2026-09", count: 1 }]);
   });
 });
 
