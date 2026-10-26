@@ -6,6 +6,7 @@
 - 변경: 첫 작성 지침에 `delete` 문단을 실제 최종문에서 제거하고 남은 자료의 사실만 요약·재배치해 문항 역할을 완결하도록 명시했다. 자료 없는 보강은 확정문이 아니라 `kind=add` 추천의 `[확인 필요]`로 분리한다. 독립 검수에는 다른 문항 실패와 무관하게 근거 있는 중복 제거를 문항별 채택하도록 명시했고, 해당 혼합 채택 회귀 테스트를 추가했다. 프롬프트 버전은 `quick-4.11`이다.
 - 파일: `src/server/ai/quick/prompt.ts`, `src/server/ai/quick/revision-quality.ts`, `src/server/ai/quick/revision-quality.test.ts`, 본 기록.
 - 개인정보/상품 경계: QUICK도 첫 첨삭에서 실제 수정과 문항별 추천을 제공한다. 목표 글자 수는 상한이며 없는 사실로 채우지 않는다. 고객 결과·결제·운영 데이터는 변경하지 않았다.
+- 검증/배포: 관련 Vitest 144개, 대상 ESLint, 전체 TypeScript, OpenNext 프로덕션 빌드가 통과했다. 소스 커밋 `e2272fef`를 `origin/main`에 푸시하고 Cloudflare Worker `74190eaa-0db0-4d03-82d4-df35301e2091`로 배포했다. 운영 홈과 `/quick`이 HTTP 200을 반환했다. 첫 빌드는 격리 작업트리의 누락된 `next` 의존성 때문에 배포 전에 중단됐고 `npm ci --include=dev`로 잠금파일 기준 의존성을 복구한 뒤 성공했다.
 - 복구: 위 두 지침과 회귀 테스트를 제거하고 프롬프트 버전을 `quick-4.10`으로 되돌린다.
 
 ## 2026-10-22 — Claude: 홈 Google Play 배너 위에 TranStream EDU 홍보 배너
