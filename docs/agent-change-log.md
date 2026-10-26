@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-26 — Codex: 운영 전체 화면 로드 실패 긴급 복구
+
+- 증상/원인: 운영 `https://mooaresume.com`에서 `This page couldn’t load`가 재현됐다. 브라우저 콘솔은 클라이언트 번들에 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`가 없는 Zod 초기화 오류를 기록했다. 2026-10-26 12:09 UTC 직접 배포가 격리 작업트리의 빌드 시점 공개 환경변수 없이 생성된 것이 직접 원인이었다.
+- 변경: `deploy`와 `upload` 전에 두 필수 공개 변수가 프로세스 환경 또는 Next.js가 사용하는 production/local env 파일에 존재하는지 검사한다. 값은 출력하거나 저장소에 기록하지 않으며, 누락 시 빌드·배포를 즉시 중단한다.
+- 파일: `scripts/check-deploy-public-env.mjs`, `package.json`, 본 기록.
+- 검증/배포: 누락 환경에서 검사가 실패하고 복구용 `.env.local`이 있는 격리 작업트리에서 통과하는지 확인한다. 이후 타입 검사와 OpenNext production build를 통과한 동일 산출물만 배포하고 운영 홈·QUICK·샘플 결과 및 브라우저 콘솔을 재확인한다.
+- 복구: 본 커밋을 되돌리면 배포 전 검사만 제거된다. 운영 Worker는 Cloudflare의 직전 정상 버전으로 롤백할 수 있다.
+
 ## 2026-10-26 — Codex: 가격 바 마감일 15일·30일 자동 순환
 
 - 요청/변경: 상단 가격 바의 고정 `11월 30일까지`를 한국 시간 기준 다음 마감일로 바꿨다. 매월 1~15일에는 해당 월 15일, 16~30일에는 해당 월 30일, 31일에는 다음 달 15일을 표시한다. 현재 시점에는 `10월 30일까지`가 노출된다.

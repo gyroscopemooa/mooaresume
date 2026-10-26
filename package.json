@@ -14,14 +14,15 @@
     "eval": "vitest run src/evals",
     "eval:live": "vitest run --config vitest.live.config.ts",
     "check:e2e": "node scripts/check-e2e-readiness.mjs",
+    "check:deploy-env": "node scripts/check-deploy-public-env.mjs",
     "db:remote:list": "supabase migration list",
     "db:remote:plan": "supabase db push --dry-run",
     "db:remote:push": "supabase db push",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy": "npm run check:deploy-env && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "typecheck:email-router": "tsc -p workers/account-deletion-email-router/tsconfig.json",
     "deploy:email-router": "wrangler deploy -c workers/account-deletion-email-router/wrangler.jsonc",
-    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "upload": "npm run check:deploy-env && opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
