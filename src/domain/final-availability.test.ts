@@ -3,17 +3,19 @@ import { describe, expect, it } from "vitest";
 import { isFinalEnabled } from "./final-availability";
 
 describe("FINAL 입구 스위치", () => {
-  it("켜라고 분명히 말했을 때만 열린다", () => {
+  it("출시 상품이라 기본으로 열린다", () => {
+    expect(isFinalEnabled(undefined)).toBe(true);
+    expect(isFinalEnabled("")).toBe(true);
+    expect(isFinalEnabled(" ")).toBe(true);
     expect(isFinalEnabled("1")).toBe(true);
     expect(isFinalEnabled("true")).toBe(true);
     expect(isFinalEnabled("TRUE")).toBe(true);
     expect(isFinalEnabled(" true ")).toBe(true);
+    expect(isFinalEnabled("yes")).toBe(true);
   });
 
-  it("나머지는 전부 닫힘이다", () => {
-    // A flag that exposes a purchase path with no checkout behind it has to
-    // fail closed on anything ambiguous — an empty value, a typo, "0".
-    for (const value of [undefined, "", " ", "0", "false", "yes", "on", "FINAL"]) {
+  it("명시적인 중단 값만 닫힌다", () => {
+    for (const value of ["0", "false", "FALSE", " false "]) {
       expect(isFinalEnabled(value)).toBe(false);
     }
   });
@@ -35,7 +37,7 @@ describe("FINAL 결제 경로가 스위치를 따른다", () => {
     // product advertising itself at 12,800원.
     expect(prepare).toContain("createFinalCheckoutQuote(totalCharacters)");
     expect(prepare).toContain("createProCheckoutQuote(totalCharacters)");
-    expect(prepare).not.toContain('product === "PRO"\n      ? "12,900원"');
+    expect(prepare).not.toContain('product === "PRO"\n      ? "19,900원"');
   });
 
   it("세 등급이 같은 결제 처리를 쓴다", () => {

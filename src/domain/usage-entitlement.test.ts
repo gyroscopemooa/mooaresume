@@ -79,19 +79,19 @@ describe("PRO·FINAL 초과분 과금", () => {
 });
 
 describe("QUICK이 PRO보다 비싸지는 자리", () => {
-  it("1블록은 아무 말도 하지 않는다", () => {
-    // 12,800원. PRO보다 100원 쌉니다. 여기서 PRO를 권하면 안내가 아니라
+  it("3블록까지는 아무 말도 하지 않는다", () => {
+    // 18,600원. PRO보다 1,300원 쌉니다. 여기서 PRO를 권하면 안내가 아니라
     // 장사입니다.
-    expect(quickCostsMoreThanPro(15_000)).toBe(false);
-    expect(createQuickCheckoutQuote(15_000).totalPriceKrw).toBe(12_800);
+    expect(quickCostsMoreThanPro(29_000)).toBe(false);
+    expect(createQuickCheckoutQuote(29_000).totalPriceKrw).toBe(18_600);
   });
 
-  it("2블록부터 PRO를 알려 준다", () => {
-    // 15,700원. 여기서 손님이 **더 내고 덜 받습니다.**
-    const quick = createQuickCheckoutQuote(15_001).totalPriceKrw;
-    expect(quick).toBe(15_700);
+  it("4블록부터 PRO를 알려 준다", () => {
+    // 21,500원. 여기서 손님이 **더 내고 덜 받습니다.**
+    const quick = createQuickCheckoutQuote(29_001).totalPriceKrw;
+    expect(quick).toBe(21_500);
     expect(quick).toBeGreaterThan(PRO_BASE_PRICE_KRW);
-    expect(quickCostsMoreThanPro(15_001)).toBe(true);
+    expect(quickCostsMoreThanPro(29_001)).toBe(true);
   });
 
   it("기준을 적어 두지 않고 두 값을 견준다", () => {

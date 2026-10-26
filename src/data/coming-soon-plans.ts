@@ -16,7 +16,7 @@ export const comingSoonPlans: ComingSoonPlan[] = [
   },
   {
     id: "PRO",
-    price: "12,900원",
+    price: "19,900원",
     title: "공고 기준으로 완성하고 싶다면",
     description: "채용공고 분석, 직무 적합도, 부족한 내용 보완까지 함께 진행합니다.",
   },

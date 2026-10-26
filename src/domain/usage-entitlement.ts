@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const QUICK_BASE_PRICE_KRW = 9_900;
-export const PRO_BASE_PRICE_KRW = 12_900;
+export const PRO_BASE_PRICE_KRW = 19_900;
 export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
 /**
  * PRO·FINAL 초과분 과금.
@@ -11,8 +11,8 @@ export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
  * result, for a reason the screen could not explain. QUICK already sold extra
  * blocks; PRO simply had not been given the same door.
  *
- * 3,900원 per 10,000자 sits just under PRO's own included rate (12,900 / 30,000
- * = 0.43원 per character). Someone who has already bought the tier and needs a
+ * 3,900원 per 10,000자 sits under PRO's own included rate (19,900 / 30,000
+ * = 0.66원 per character). Someone who has already bought the tier and needs a
  * little more room should not pay above the rate they already paid.
  */
 export const PRO_EXTRA_BLOCK_CHARS = 10_000;
@@ -96,14 +96,14 @@ export function createQuickCheckoutQuote(totalCharacters: number): CheckoutQuote
  * QUICK은 8,000자를 품고 7,000자마다 2,900원을 더 받습니다. 블록이 쌓이다 보면
  * 어느 지점에서 PRO 기본가를 넘어섭니다:
  *
- *   1블록 · ~15,000자 → 12,800원 (PRO보다 100원 쌈)
- *   2블록 · ~22,000자 → 15,700원 (**PRO보다 2,800원 비쌈**)
+ *   3블록 · ~29,000자 → 18,600원 (PRO보다 1,300원 쌈)
+ *   4블록 · ~36,000자 → 21,500원 (**PRO보다 1,600원 비쌈**)
  *
- * 두 번째 줄부터 손님이 **더 내고 덜 받습니다.** 그 위에서는 PRO가 값도 싸고
+ * 네 번째 블록부터 손님이 **더 내고 덜 받습니다.** 그 위에서는 PRO가 값도 싸고
  * 공고 대조·경험 매칭까지 하며 30,000자를 추가금 없이 품습니다. 알면 아무도
  * 고르지 않을 선택지인데, 모른다는 것은 파는 이유가 되지 못합니다.
  *
- * 그 아래(1~2블록)에서는 QUICK이 진짜로 더 쌉니다. 거기서 PRO를 권하면 그건
+ * 그 아래(1~3블록)에서는 QUICK이 진짜로 더 쌉니다. 거기서 PRO를 권하면 그건
  * 안내가 아니라 장사입니다. 그래서 아무 말도 하지 않습니다.
  *
  * 기준을 숫자로 적어 두지 않고 **두 값을 실제로 견주어 봅니다.** 언젠가 가격이

@@ -1,5 +1,14 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-26 — Codex: 무아레쥬메 PRO 기준가 19,900원 반영
+
+- 요청/범위: 사용자 결정에 따라 무아레쥬메 `PRO` 기준가를 12,900원에서 19,900원으로 변경한다. Polar 상품 가격 자체는 사용자가 별도로 맞추는 운영 항목이며, 애플리케이션은 서버 소유 고정 가격으로 체크아웃을 생성한다.
+- 변경: 서버 결제 견적, 랜딩 구조화 데이터·FAQ, 가격 비교표, 상단 가격 바, 온보딩·작성 단계·상품 입력 화면을 19,900원으로 통일했다. FINAL 45,000원의 PRO 구매 후 안내 차액은 25,100원으로 조정했다. QUICK이 PRO보다 비싸지는 안내 경계는 가격 비교 함수에 따라 2블록에서 4블록으로 이동했다.
+- FINAL 재개방: 운영에 이미 출시했던 FINAL이 오늘 격리 배포 빌드에서 `NEXT_PUBLIC_ENABLE_FINAL`을 전달받지 못해 기본 닫힘으로 굳은 원인을 확인했다. 출시 상품은 환경변수 누락만으로 다시 `준비 중`이 되지 않도록 기본 열림으로 바꾸고, 긴급 중단이 필요할 때만 `0` 또는 `false`로 명시적으로 닫는다.
+- 파일: `src/domain/usage-entitlement.ts`와 테스트, 결제 서비스·Polar 테스트, `src/app/page.tsx`, `begin/page.tsx`, `entry/page.tsx`, `onboarding/page.tsx`, `src/components/launch-price-banner.tsx`, `pricing-comparison.tsx`, `pro-input-page.tsx`, `src/data/coming-soon-plans.ts`, 본 기록.
+- 검증: 가격·결제·FINAL 경계 테스트 5개 파일 38건, 대상 ESLint, 전체 TypeScript와 Next.js 프로덕션 빌드(정적 74페이지)를 통과했다. 배포 후 운영 페이지의 가격·FINAL 진입 상태를 별도로 확인한다.
+- 복구: 위 파일의 PRO 기준가·표시가를 12,900원으로, FINAL 업그레이드 차액을 32,100원으로 되돌리고 QUICK 가격 비교 경계 테스트를 복원한다. FINAL 기본 열림을 되돌릴 때는 배포 빌드에 `NEXT_PUBLIC_ENABLE_FINAL=1`이 항상 전달되는 별도 보장을 먼저 둔다.
+
 ## 2026-10-26 — Codex: 전역 이용통계 바 제거·페이지 오류 복구 화면 추가
 
 - 요청/원인: 모든 일반 페이지의 본문·푸터 아래에 이용통계 동의 버튼이 별도 행으로 노출됐고, 페이지 로드 실패 시 브라우저 기본 영문 오류 화면이 보인 사례를 점검했다.

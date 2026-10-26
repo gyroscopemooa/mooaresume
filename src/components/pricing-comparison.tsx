@@ -13,7 +13,7 @@ type Feature = { name: string; quick: Value; pro: Value; final: Value };
 
 const plans = [
   { id: "QUICK" as const, price: "9,900원부터", terms: "공백 제외 8,000자 포함 · 초과 7,000자당 2,900원", title: "이미 쓴 것을 빠르게 고쳐요", body: "현재 작성본의 문장·논리·구체성과 최종 수정본에 집중합니다.", href: "/onboarding", cta: "무료로 시작하기" },
-  { id: "PRO" as const, price: "12,900원부터", terms: "공백 제외 30,000자 포함 · 초과 10,000자당 3,900원", title: "쓸 것부터 찾아 완성해요", body: "공고와 전체 지원자료를 연결해 처음 작성부터 최종검수까지 진행합니다.", href: "/onboarding", cta: "무료로 시작하기", recommended: true },
+  { id: "PRO" as const, price: "19,900원부터", terms: "공백 제외 30,000자 포함 · 초과 10,000자당 3,900원", title: "쓸 것부터 찾아 완성해요", body: "공고와 전체 지원자료를 연결해 처음 작성부터 최종검수까지 진행합니다.", href: "/onboarding", cta: "무료로 시작하기", recommended: true },
   // Reads the same flag as the FINAL routes and the onboarding card. A table
   // that says 준비 중 next to an entry point that works is the kind of
   // disagreement nobody notices until a customer does.

@@ -68,7 +68,7 @@ describe("QUICK checkout service", () => {
     }));
   });
 
-  it("prices a PRO checkout at the fixed 12,900 KRW server-side rate", async () => {
+  it("prices a PRO checkout at the fixed 19,900 KRW server-side rate", async () => {
     const polar = gateway();
     const result = await createQuickCheckout({
       rawRequest: { analysisRunId },
@@ -85,7 +85,7 @@ describe("QUICK checkout service", () => {
     expect(result.quote).toMatchObject({
       productTier: "PRO",
       totalCharacters: 25_000,
-      totalPriceKrw: 12_900,
+      totalPriceKrw: 19_900,
     });
     expect(polar.createCheckout).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({ tier: "PRO", applicationCaseId }),

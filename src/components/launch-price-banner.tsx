@@ -16,9 +16,9 @@ export function LaunchPriceBanner() {
 
   const offer = <>
     <span className={styles.message}>{description}</span>
-    <span className={styles.prices} aria-label="QUICK 9,900원, PRO 12,900원, FINAL 45,000원">
+    <span className={styles.prices} aria-label="QUICK 9,900원, PRO 19,900원, FINAL 45,000원">
       <span><small>QUICK</small><b>9,900원</b></span><i aria-hidden="true" />
-      <span><small>PRO</small><b>12,900원</b></span><i aria-hidden="true" />
+      <span><small>PRO</small><b>19,900원</b></span><i aria-hidden="true" />
       <span><small>FINAL</small><b>45,000원</b></span>
     </span>
   </>;

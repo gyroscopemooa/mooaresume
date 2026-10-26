@@ -244,7 +244,7 @@ export default function OnboardingPage() {
               )}
               <Link href={proHref} className={activeMode !== "POLISH" ? styles.recommended : ""}>
                 {activeMode !== "POLISH" && <em>추천</em>}
-                <small>PRO · 12,900원</small>
+                <small>PRO · 19,900원</small>
                 <b>{activeMode === "CREATE" ? "무엇을 쓸지부터 함께 찾기" : "공고와 지원자료 전체 분석"}</b>
                 <p>소재 선정부터 공고 교차검수까지 한 지원 건을 함께 진행해요.</p>
                 <span>PRO 시작 <ArrowRight /></span>
@@ -266,7 +266,7 @@ export default function OnboardingPage() {
                 </div>
               )}
             </div>
-            <p style={{ margin: "14px 2px 0", color: "#68756f", fontSize: 11, lineHeight: 1.6 }}>FINAL은 처음부터 45,000원에 선택하거나, PRO 이용 후 결과 화면에서 차액 32,100원으로 업그레이드할 수 있어요. 두 경로의 FINAL 이용 범위는 같습니다.</p>
+            <p style={{ margin: "14px 2px 0", color: "#68756f", fontSize: 11, lineHeight: 1.6 }}>FINAL은 처음부터 45,000원에 선택하거나, PRO 이용 후 결과 화면에서 차액 25,100원으로 업그레이드할 수 있어요. 두 경로의 FINAL 이용 범위는 같습니다.</p>
           </section>
         )}
       </div>
