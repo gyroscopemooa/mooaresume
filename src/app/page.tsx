@@ -24,6 +24,7 @@ import oneClickStyles from "./one-click.module.css";
 import careerCtaStyles from "./career-home-cta.module.css";
 import fieldStyles from "./field-credibility.module.css";
 import creedStyles from "./creed.module.css";
+import footerStyles from "./home-footer.module.css";
 import "./home-mobile-header.module.css";
 import "./home-startup-header.module.css";
 import { getSiteUrl } from "@/lib/site-url";
@@ -424,7 +425,21 @@ export default function HomePage() {
             빠른 방법은 설명이 아니라 그 화면입니다. */}
         <Link href="/result/sample" className="cta-secondary">첨삭 완성본 샘플 예시 보기 <ArrowRight size={16}/></Link>
       </div></div></section>
-      <footer className="container"><div className="brand"><span className="brand-mark">M</span><span>MOOA <b>Resume</b></span></div><p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p><Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><Link href="/privacy">개인정보처리방침</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의: support@mooaresume.com</a><span>© 2026 MOOA Resume</span><details className="footer-business"><summary>Business Information</summary><ul><li>상호: gyroscope</li><li>대표: 전민수</li><li>사업자등록번호: 696-55-00795</li><li>통신판매업신고번호: 2023-울산남구-0547</li><li>주소: 울산광역시 남구 번영로 124번길 21 울산비즈니스센터 307호</li><li>이메일: support@transtream.app</li></ul></details></footer>
+      <footer className={`container ${footerStyles.footer}`}>
+        <div className={footerStyles.top}>
+          <div className={footerStyles.identity}>
+            <div className={footerStyles.brand}><span className={footerStyles.brandMark}>M</span><span>MOOA <b>Resume</b></span></div>
+            <p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p>
+          </div>
+          <nav className={footerStyles.links} aria-label="하단 메뉴">
+            <Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><Link href="/privacy">개인정보처리방침</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의</a>
+          </nav>
+        </div>
+        <div className={footerStyles.bottom}>
+          <span>© 2026 MOOA Resume</span>
+          <details className={footerStyles.business}><summary>사업자 정보</summary><ul><li>상호: gyroscope · 대표: 전민수</li><li>사업자등록번호: 696-55-00795 · 통신판매업신고번호: 2023-울산남구-0547</li><li>울산광역시 남구 번영로 124번길 21 울산비즈니스센터 307호</li><li>support@transtream.app</li></ul></details>
+        </div>
+      </footer>
     </main></>
   );
 }
