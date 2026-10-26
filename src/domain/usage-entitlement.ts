@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const QUICK_BASE_PRICE_KRW = 5_900;
+export const QUICK_BASE_PRICE_KRW = 9_900;
 export const PRO_BASE_PRICE_KRW = 12_900;
 export const PRO_INCLUDED_LIMIT_CHARS = 30_000;
 /**
@@ -20,7 +20,7 @@ export const PRO_EXTRA_BLOCK_PRICE_KRW = 3_900;
 // FINAL is PRO's scope plus its own verification pass, so it buys the same
 // character budget at its own price. A separate limit would mean a customer who
 // upgraded mid-application could suddenly fit less than they already had.
-export const FINAL_BASE_PRICE_KRW = 19_900;
+export const FINAL_BASE_PRICE_KRW = 45_000;
 export const QUICK_SOFT_LIMIT_CHARS = 7_000;
 // A Korean cover letter runs 4-7 questions of 500-1,000 characters, so the
 // realistic ceiling is about 6,000 once the question headings are counted.
@@ -96,11 +96,10 @@ export function createQuickCheckoutQuote(totalCharacters: number): CheckoutQuote
  * QUICK은 8,000자를 품고 7,000자마다 2,900원을 더 받습니다. 블록이 쌓이다 보면
  * 어느 지점에서 PRO 기본가를 넘어섭니다:
  *
- *   1블록 · ~15,000자 →  8,800원 (PRO보다 4,100원 쌈)
- *   2블록 · ~22,000자 → 11,700원 (PRO보다 1,200원 쌈)
- *   3블록 · ~29,000자 → 14,600원 (**PRO보다 1,700원 비쌈**)
+ *   1블록 · ~15,000자 → 12,800원 (PRO보다 100원 쌈)
+ *   2블록 · ~22,000자 → 15,700원 (**PRO보다 2,800원 비쌈**)
  *
- * 세 번째 줄에서만 손님이 **더 내고 덜 받습니다.** 그 위에서는 PRO가 값도 싸고
+ * 두 번째 줄부터 손님이 **더 내고 덜 받습니다.** 그 위에서는 PRO가 값도 싸고
  * 공고 대조·경험 매칭까지 하며 30,000자를 추가금 없이 품습니다. 알면 아무도
  * 고르지 않을 선택지인데, 모른다는 것은 파는 이유가 되지 못합니다.
  *

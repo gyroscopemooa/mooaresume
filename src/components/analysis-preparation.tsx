@@ -139,8 +139,8 @@ export function AnalysisPreparation() {
   const missingQuestionCount = Math.max(totalQuestionCount - filledQuestionCount, 0);
   // 등급마다 자기 견적을 씁니다.
   //
-  // FINAL fell into the else branch and was shown the QUICK quote, so a 19,900원
-  // product advertised itself at 8,800원 — QUICK's base plus one extra block.
+  // FINAL fell into the else branch and was shown the QUICK quote, so a 45,000원
+  // product advertised itself at 12,800원 — QUICK's base plus one extra block.
   const quote =
     product === "FINAL" ? createFinalCheckoutQuote(totalCharacters)
     : product === "PRO" ? createProCheckoutQuote(totalCharacters)

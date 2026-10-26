@@ -10,7 +10,7 @@
  * checkout instead, where the price is computed exactly.
  *
  * 3 is generous for realistic use: QUICK's soft ceiling is already crossed
- * by PRO's own price at 3 blocks (~29,000자, see quickCostsMoreThanPro's
+ * by PRO's own price at 2 blocks (~22,000자, see quickCostsMoreThanPro's
  * comment in domain/usage-entitlement.ts), and PRO/FINAL's included limit
  * plus 3 blocks covers 60,000자. Raising this means creating more Play
  * Console products (see GOOGLE_PLAY_{TIER}_EXTRA_{n}_PRODUCT_ID in

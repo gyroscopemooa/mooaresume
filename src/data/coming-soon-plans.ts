@@ -10,7 +10,7 @@ export type ComingSoonPlan = {
 export const comingSoonPlans: ComingSoonPlan[] = [
   {
     id: "QUICK",
-    price: "5,900원",
+    price: "9,900원",
     title: "빠르게 점검하고 싶다면",
     description: "이미 작성한 자소서의 문장·논리·구체성을 빠르게 점검합니다.",
   },
@@ -22,7 +22,7 @@ export const comingSoonPlans: ComingSoonPlan[] = [
   },
   {
     id: "FINAL",
-    price: "19,900원",
+    price: "45,000원",
     title: "면접까지 준비하고 싶다면",
     description: "PRO의 모든 기능에 제출 전 최종검수와 면접 예상질문·모의면접을 더합니다.",
   },

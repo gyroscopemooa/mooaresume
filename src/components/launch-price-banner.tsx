@@ -19,17 +19,17 @@ export function LaunchPriceBanner() {
     ? {
         eyebrow: "런칭 기념 특별가",
         description: "서류 첨삭부터 면접 답변 준비까지, FINAL이 열렸어요.",
-        ctaLabel: "QUICK 5,900원 · PRO 12,900원 · FINAL 19,900원",
+        ctaLabel: "QUICK 9,900원 · PRO 12,900원 · FINAL 45,000원",
       }
     : {
         eyebrow: "런칭 기념 특별가",
         description: "전문가 1:1 자소서 첨삭 대비 최대 10배 낮은 가격으로 시작하세요.",
-        ctaLabel: "QUICK 5,900원 · PRO 12,900원",
+        ctaLabel: "QUICK 9,900원 · PRO 12,900원",
       };
   const eyebrow = banner?.eyebrow ?? defaultCopy.eyebrow;
   const description = [banner?.title, banner?.description].filter(Boolean).join(" · ") || defaultCopy.description;
   const ctaLabel = banner?.ctaLabel ?? defaultCopy.ctaLabel;
-  const mobileCtaLabel = banner ? "자세히 보기" : finalOpen ? "FINAL 19,900원" : "요금 보기";
+  const mobileCtaLabel = banner ? "자세히 보기" : finalOpen ? "FINAL 45,000원" : "요금 보기";
   const link = banner ? getRuntimeLink(banner.targetUrl, banner.linkType) : { href: "/#plans", external: false };
 
   if (!visible || !enabled) return null;

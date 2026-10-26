@@ -45,7 +45,7 @@ export default function FinalLandingPage() {
           {enabled
             ? <Link href="/onboarding" className="button">무료로 시작하기 <ArrowRight size={18}/></Link>
             : <button className="button" disabled>FINAL 준비 중</button>}
-          <span>19,900원 · 지원 건 1개 기준</span>
+          <span>45,000원 · 지원 건 1개 기준</span>
         </div>
         <Link href="/result/sample" className="hero-sample">FINAL 결과 화면 예시 보기 <ArrowRight size={18}/></Link>
         <div className="trust-row"><span><Check/> PRO의 모든 첨삭 포함</span><span><Check/> 확인 안 된 내용은 지어내지 않아요</span><span><Check/> 서류마다 다르면 먼저 여쭤봐요</span></div>

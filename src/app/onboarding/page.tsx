@@ -230,7 +230,7 @@ export default function OnboardingPage() {
               {quickEnabled ? (
                 <Link href="/quick" className={activeMode === "POLISH" ? styles.recommended : ""}>
                   {activeMode === "POLISH" && <em>추천</em>}
-                  <small>QUICK · 5,900원</small>
+                  <small>QUICK · 9,900원</small>
                   <b>작성한 글을 빠르게 첨삭</b>
                   <p>{activeMode === "BUILD" ? "현재 글의 사실로 설명과 논리를 보완해요. 새 자료 활용은 PRO에서 가능합니다." : "현재 글의 오류와 표현을 점검하고 좋은 문장은 유지해요."}</p>
                   <span>QUICK 시작 <ArrowRight /></span>
@@ -251,7 +251,7 @@ export default function OnboardingPage() {
               </Link>
               {finalOpen ? (
                 <Link href={finalHref}>
-                  <small>FINAL · 19,900원</small>
+                  <small>FINAL · 45,000원</small>
                   <b>PRO 전체 + AI 모의면접</b>
                   <p>{activeMode === "CREATE" ? "처음 작성부터 지원서를 완성한 뒤" : "지원서 분석과 첨삭을 완료한 뒤"} 실제 답변 평가, 동적 꼬리질문과 면접 최종 리포트까지 이어집니다.</p>
                   <span>FINAL 시작 <ArrowRight /></span>
@@ -259,14 +259,14 @@ export default function OnboardingPage() {
               ) : (
                 <div className={styles.disabled}>
                   <em>COMING SOON</em>
-                  <small>FINAL · 19,900원</small>
+                  <small>FINAL · 45,000원</small>
                   <b>PRO 전체 + AI 모의면접</b>
                   <p>{activeMode === "CREATE" ? "처음 작성부터 지원서를 완성한 뒤" : "지원서 분석과 첨삭을 완료한 뒤"} 실제 답변 평가, 동적 꼬리질문과 면접 최종 리포트까지 이어집니다.</p>
-                  <span>처음부터 FINAL 19,900원</span>
+                  <span>처음부터 FINAL 45,000원</span>
                 </div>
               )}
             </div>
-            <p style={{ margin: "14px 2px 0", color: "#68756f", fontSize: 11, lineHeight: 1.6 }}>FINAL은 처음부터 19,900원에 선택하거나, PRO 이용 후 결과 화면에서 차액 7,000원으로 업그레이드할 수 있어요. 두 경로의 FINAL 이용 범위는 같습니다.</p>
+            <p style={{ margin: "14px 2px 0", color: "#68756f", fontSize: 11, lineHeight: 1.6 }}>FINAL은 처음부터 45,000원에 선택하거나, PRO 이용 후 결과 화면에서 차액 32,100원으로 업그레이드할 수 있어요. 두 경로의 FINAL 이용 범위는 같습니다.</p>
           </section>
         )}
       </div>

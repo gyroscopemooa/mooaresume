@@ -25,7 +25,7 @@ function memoryStorage(initial: Record<string, string> = {}): StorageLike & { ma
 
 function service(overrides: Partial<DigitalGoodsServiceLike> = {}): DigitalGoodsServiceLike {
   return {
-    getDetails: vi.fn().mockResolvedValue([{ itemId: productId, price: { currency: "KRW", value: "5900" } }]),
+    getDetails: vi.fn().mockResolvedValue([{ itemId: productId, price: { currency: "KRW", value: "9900" } }]),
     listPurchases: vi.fn().mockResolvedValue([]),
     consume: vi.fn().mockResolvedValue(undefined),
     ...overrides,

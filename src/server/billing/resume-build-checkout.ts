@@ -69,7 +69,7 @@ export type ResumeBuildPaymentCheck =
  * 이 결제가 정말 이 사람의, 이 건의, 이 상품의 결제인지 봅니다.
  *
  * 넷 다 봅니다. 결제 상태만 보면 남의 결제 번호를 주워 자기 건을 여는 길이
- * 열리고(외부 고객 id), 상품을 안 보면 5,900원짜리 첨삭 결제 하나로 이력서를
+ * 열리고(외부 고객 id), 상품을 안 보면 9,900원짜리 첨삭 결제 하나로 이력서를
  * 계속 만들 수 있습니다(상품 id). 금액은 할인 코드가 붙을 수 있어 상한만 봅니다.
  */
 export async function checkResumeBuildPayment(input: {

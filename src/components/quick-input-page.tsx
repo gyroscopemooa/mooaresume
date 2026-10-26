@@ -120,7 +120,7 @@ export function QuickInputPage({ variant = "web" }: Props) {
       </div>}
       {/* 앱에서는 상단 셸이 이미 상품·가격·유형을 들고 있습니다. 같은 말을 큰
           제목으로 한 번 더 세우면 입력칸이 화면 밖으로 밀려납니다. */}
-      {!inApp && <div className={styles.heading}><span>QUICK · 5,900원 · {writingMode === "BUILD" ? "내용 보완" : "최종 첨삭"}</span><h1>{writingMode === "BUILD" ? "현재 초안을 바탕으로 부족한 내용을 보완합니다." : "작성한 글을 빠르고 정확하게 고칩니다."}</h1><p>{writingMode === "BUILD" ? "새로운 경험을 임의로 만들지 않고 현재 글 안에서 논리와 구체성을 강화합니다." : "말투와 사실을 보존하면서 문장, 글자 수, 논리와 최종 수정본에 집중합니다."}</p></div>}
+      {!inApp && <div className={styles.heading}><span>QUICK · 9,900원 · {writingMode === "BUILD" ? "내용 보완" : "최종 첨삭"}</span><h1>{writingMode === "BUILD" ? "현재 초안을 바탕으로 부족한 내용을 보완합니다." : "작성한 글을 빠르고 정확하게 고칩니다."}</h1><p>{writingMode === "BUILD" ? "새로운 경험을 임의로 만들지 않고 현재 글 안에서 논리와 구체성을 강화합니다." : "말투와 사실을 보존하면서 문장, 글자 수, 논리와 최종 수정본에 집중합니다."}</p></div>}
       <section className={styles.form}>
         <ResumeIntake key={resetKey} questions={questions} onChange={(next) => { setQuestions(next); setError(""); }} attachment={file} onAttachmentChange={setFile} onError={setError} onReset={resetDraft} showReset={Boolean(file || questions.some((question) => question.answer.trim()))}/>
         <div className={`${styles.usage} ${totalCharacters > QUICK_SOFT_LIMIT_CHARS ? styles.overSoftLimit : ""}`}>

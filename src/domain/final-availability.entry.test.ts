@@ -45,7 +45,7 @@ describe("FINAL 결제 경로", () => {
   it("FINAL 견적이 PRO와 같은 분량에 자기 가격을 붙인다", () => {
     // A smaller budget would mean someone upgrading mid-application suddenly
     // fits less than they already had.
-    expect(entitlement).toContain("FINAL_BASE_PRICE_KRW = 19_900");
+    expect(entitlement).toContain("FINAL_BASE_PRICE_KRW = 45_000");
     expect(entitlement).toContain("createFinalCheckoutQuote");
     expect(entitlement).toContain("allowedCharacters: PRO_INCLUDED_LIMIT_CHARS");
     expect(entitlement).toContain('z.enum(["QUICK", "PRO", "FINAL"])');

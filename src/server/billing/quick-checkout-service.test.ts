@@ -33,7 +33,7 @@ describe("QUICK checkout service", () => {
     expect(result.quote).toMatchObject({
       totalCharacters: 13_000,
       extraBlocks: 1,
-      totalPriceKrw: 8_800,
+      totalPriceKrw: 12_800,
     });
     expect(polar.createCheckout).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
@@ -63,7 +63,7 @@ describe("QUICK checkout service", () => {
     });
 
     expect(polar.createCheckout).toHaveBeenCalledWith(expect.objectContaining({
-      quote: expect.objectContaining({ totalPriceKrw: 5_900 }),
+      quote: expect.objectContaining({ totalPriceKrw: 9_900 }),
       metadata: expect.objectContaining({ applicationCaseId }),
     }));
   });

@@ -11,7 +11,7 @@ describe("QUICK usage entitlement", () => {
     // Korean application realistically takes.
     const quote = createQuickCheckoutQuote(5_800);
     expect(quote.extraBlocks).toBe(0);
-    expect(quote.totalPriceKrw).toBe(5_900);
+    expect(quote.totalPriceKrw).toBe(9_900);
     expect(quote.allowedCharacters).toBe(8_000);
   });
 
@@ -19,7 +19,7 @@ describe("QUICK usage entitlement", () => {
     const quote = createQuickCheckoutQuote(8_001);
     expect(quote.extraBlocks).toBe(1);
     expect(quote.extraCharacters).toBe(7_000);
-    expect(quote.totalPriceKrw).toBe(8_800);
+    expect(quote.totalPriceKrw).toBe(12_800);
     expect(quote.needsScopeReview).toBe(true);
   });
 
@@ -80,25 +80,18 @@ describe("PRO·FINAL 초과분 과금", () => {
 
 describe("QUICK이 PRO보다 비싸지는 자리", () => {
   it("1블록은 아무 말도 하지 않는다", () => {
-    // 8,800원. PRO보다 4,100원 쌉니다. 여기서 PRO를 권하면 안내가 아니라
+    // 12,800원. PRO보다 100원 쌉니다. 여기서 PRO를 권하면 안내가 아니라
     // 장사입니다.
     expect(quickCostsMoreThanPro(15_000)).toBe(false);
-    expect(createQuickCheckoutQuote(15_000).totalPriceKrw).toBe(8_800);
+    expect(createQuickCheckoutQuote(15_000).totalPriceKrw).toBe(12_800);
   });
 
-  it("2블록도 아무 말도 하지 않는다", () => {
-    // 11,700원. 여전히 PRO보다 1,200원 쌉니다. 덜 받는 대신 덜 냅니다 —
-    // 그것은 손해가 아니라 선택입니다.
-    expect(createQuickCheckoutQuote(22_000).totalPriceKrw).toBe(11_700);
-    expect(quickCostsMoreThanPro(22_000)).toBe(false);
-  });
-
-  it("3블록부터 PRO를 알려 준다", () => {
-    // 14,600원. 여기서만 손님이 **더 내고 덜 받습니다.**
-    const quick = createQuickCheckoutQuote(22_001).totalPriceKrw;
-    expect(quick).toBe(14_600);
+  it("2블록부터 PRO를 알려 준다", () => {
+    // 15,700원. 여기서 손님이 **더 내고 덜 받습니다.**
+    const quick = createQuickCheckoutQuote(15_001).totalPriceKrw;
+    expect(quick).toBe(15_700);
     expect(quick).toBeGreaterThan(PRO_BASE_PRICE_KRW);
-    expect(quickCostsMoreThanPro(22_001)).toBe(true);
+    expect(quickCostsMoreThanPro(15_001)).toBe(true);
   });
 
   it("기준을 적어 두지 않고 두 값을 견준다", () => {

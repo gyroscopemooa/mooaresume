@@ -31,8 +31,8 @@ describe("FINAL 결제 경로가 스위치를 따른다", () => {
   });
 
   it("등급마다 자기 견적으로 가격을 보여준다", () => {
-    // FINAL fell into the else branch and showed QUICK's quote — a 19,900원
-    // product advertising itself at 8,800원.
+    // FINAL fell into the else branch and showed QUICK's quote — a 45,000원
+    // product advertising itself at 12,800원.
     expect(prepare).toContain("createFinalCheckoutQuote(totalCharacters)");
     expect(prepare).toContain("createProCheckoutQuote(totalCharacters)");
     expect(prepare).not.toContain('product === "PRO"\n      ? "12,900원"');
