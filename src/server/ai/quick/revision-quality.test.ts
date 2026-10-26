@@ -61,6 +61,36 @@ describe("independent revision adoption", () => {
     expect(quickAnalysisOutputSchema.safeParse(result.output).success).toBe(true);
     expect(() => createQuickAnalysisResult(request, result)).not.toThrow();
   });
+  it("keeps a grounded duplicate removal even when the other questions are rejected", () => {
+    const duplicate = "Figma로 화면 흐름을 설계했습니다.";
+    const collaboration = "개발팀에 기능과 화면 전환 조건을 설명했습니다.";
+    const request = { ...qualityTestRequest, questions: [
+      { id: "1", title: "도구", prompt: "도구 경험", targetLength: 700, answer: duplicate },
+      { id: "2", title: "업무", prompt: "업무 경험", targetLength: 700, answer: duplicate },
+      { id: "3", title: "협업", prompt: "협업 경험", targetLength: 700, answer: `${duplicate}\n\n${collaboration}` },
+    ] };
+    const candidate = qualityTestCandidate();
+    candidate.output.revisions = [
+      { ...candidate.output.revision, questionOrder: 1, revisedAnswer: "화면 흐름을 설계했습니다." },
+      { ...candidate.output.revision, questionOrder: 2, revisedAnswer: "Figma를 활용했습니다." },
+      { ...candidate.output.revision, questionOrder: 3, revisedAnswer: `개발 가능한 화면으로 구체화하는 데 중점을 두었습니다.\n\n${collaboration}` },
+    ];
+    const review = qualityTestReview();
+    review.questions = [1, 2, 3].map(order => ({ ...review.questions[0], order,
+      sourceQuote: order === 3 ? collaboration : duplicate,
+      candidateQuote: order === 3 ? collaboration : candidate.output.revisions![order - 1].revisedAnswer,
+      lostFactOrVoice: order !== 3,
+    }));
+
+    const result = apply(review, request, candidate);
+
+    expect(result.output.revisions?.map(item => item.revisedAnswer)).toEqual([
+      duplicate,
+      duplicate,
+      `개발 가능한 화면으로 구체화하는 데 중점을 두었습니다.\n\n${collaboration}`,
+    ]);
+    expect(result.revisionQuality?.decision).toBe("adopt");
+  });
   it.each(["QUICK", "PRO", "FINAL"] as const)("adopts evidenced improvement for %s", product => {
     const result = apply(qualityTestReview(), { ...qualityTestRequest, product });
     expect(result.revisionQuality?.decision).toBe("adopt");

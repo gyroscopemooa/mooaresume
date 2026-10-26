@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-10-26 — Codex: 첫 첨삭부터 문항별 개선 채택·중복 삭제 후 안전 보강 명시
+
+- 요청/문제: QUICK 실제 결과에서 3번 문항의 중복 삭제는 독립 검수상 타당했지만 다른 문항 후보가 거절되면서 최종본 전체가 원문으로 남았고, 삭제 후 문항 역할 보강과 문항별 추천 문구도 고객이 기대한 첫 첨삭에 반영되지 않았다.
+- 변경: 첫 작성 지침에 `delete` 문단을 실제 최종문에서 제거하고 남은 자료의 사실만 요약·재배치해 문항 역할을 완결하도록 명시했다. 자료 없는 보강은 확정문이 아니라 `kind=add` 추천의 `[확인 필요]`로 분리한다. 독립 검수에는 다른 문항 실패와 무관하게 근거 있는 중복 제거를 문항별 채택하도록 명시했고, 해당 혼합 채택 회귀 테스트를 추가했다. 프롬프트 버전은 `quick-4.11`이다.
+- 파일: `src/server/ai/quick/prompt.ts`, `src/server/ai/quick/revision-quality.ts`, `src/server/ai/quick/revision-quality.test.ts`, 본 기록.
+- 개인정보/상품 경계: QUICK도 첫 첨삭에서 실제 수정과 문항별 추천을 제공한다. 목표 글자 수는 상한이며 없는 사실로 채우지 않는다. 고객 결과·결제·운영 데이터는 변경하지 않았다.
+- 복구: 위 두 지침과 회귀 테스트를 제거하고 프롬프트 버전을 `quick-4.10`으로 되돌린다.
+
 ## 2026-10-22 — Claude: 홈 Google Play 배너 위에 TranStream EDU 홍보 배너
 
 - 요청(민수오빠): 랜딩의 Google Play 앱 배너 위에 `https://transtream.app/edu#pricing`로 가는 TranStream EDU 홍보 배너(영화 보며 영화 공부, 드라마 보면서 외국어 공부).
