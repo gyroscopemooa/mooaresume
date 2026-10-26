@@ -6,7 +6,7 @@
 - 정확성·개인정보 경계: 기존 연구 활용 동의와 서비스 역할 전용 저장 경계를 유지했다. 새 분류는 고정 키워드 규칙으로 만든 태그만 저장하며 새 개인정보나 원문을 추가 수집하지 않는다. 합격/탈락 차이는 알려진 결과가 최소 5건이고 양쪽 표본이 모두 있을 때만 노출한다. 결과는 자발적 입력·미검증으로 유지하며 성공 확률을 만들지 않는다.
 - 파일: `src/domain/research-taxonomy.ts` 및 테스트, `src/domain/research-insight.ts` 및 테스트, `src/domain/application-tracker.ts` 및 테스트, `src/server/analysis/research-capture.ts`, `src/server/analysis/supabase-quick-analysis-run-repository.ts`, `src/server/admin/admin-repository.ts`, `src/app/meensoo/research/page.tsx`, `src/components/application-tracker-card.tsx` 및 CSS, `supabase/migrations/20261027010000_research_taxonomy_and_followups.sql`, 마이그레이션 테스트, 본 기록.
 - 배포/복구: 원격 `main` 기준 격리 릴리스 브랜치에서 적용한다. 코드가 DB보다 먼저 배포돼도 기존 축적 화면을 읽도록 구형 뷰 fallback을 둔다. 복구는 릴리스 커밋과 직전 Worker 버전으로 되돌리며, 적용된 새 컬럼은 데이터 보존을 위해 즉시 삭제하지 않는다.
-- 검증: 대상 Vitest 7파일 44테스트, 대상 ESLint, TypeScript를 통과했다. 운영 DB dry-run은 저장된 연결에 비밀번호가 없고 Supabase CLI access token도 없어 인증 단계에서 중단됐다. production build·푸시·Worker 배포·운영 smoke 결과는 아래 릴리스 기록에서 갱신한다.
+- 검증/릴리스: 대상 Vitest 7파일 44테스트, 대상 ESLint, TypeScript와 Next production build를 통과했다. 기능 커밋 `6db3343`을 `main`에 fast-forward 푸시하고 Cloudflare Worker `ba6c901f-9dca-4c2b-8bd5-c14764de42de`로 배포했다. 운영 `/`, `/result/sample`, `/meensoo/research` 모두 HTTP 200을 확인했다. 운영 DB dry-run은 저장된 연결에 비밀번호가 없고 Supabase CLI access token도 없어 인증 단계에서 중단됐으며, 따라서 신규 마이그레이션은 아직 적용되지 않았다. 적용 전에는 기존 축적 화면은 fallback으로 정상 동작하지만 신규 태그 저장·제출일 기반 14/28일 후속 데이터는 활성화되지 않는다.
 
 ## 2026-10-26 — Codex: 무아레쥬메 PRO 기준가 19,900원 반영
 
