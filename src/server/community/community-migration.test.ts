@@ -7,6 +7,7 @@ const lockedRateLimitMigration = readFileSync("supabase/migrations/2026090311000
 const relaxedPostRateLimitMigration = readFileSync("supabase/migrations/20260903120000_relax_community_post_rate_limit.sql", "utf8");
 const attachmentPostRateLimitMigration = readFileSync("supabase/migrations/20260904020000_attachment_post_rate_limit.sql", "utf8");
 const dailySeedMigration = readFileSync("supabase/migrations/20260904030000_community_daily_seed.sql", "utf8");
+const weeklySeedMigration = readFileSync("supabase/migrations/20261027020000_community_seed_weekly.sql", "utf8");
 
 describe("community lounge migration", () => {
   it("keeps attachments private and readable only to signed-in members", () => {
@@ -67,5 +68,12 @@ describe("community daily seed", () => {
     expect(dailySeedMigration).toContain("cron.schedule('community-seed-morning', '0 0 * * *'");
     expect(dailySeedMigration).toContain("cron.schedule('community-seed-midday', '0 4 * * *'");
     expect(dailySeedMigration).toContain("cron.schedule('community-seed-evening', '0 9 * * *'");
+  });
+});
+describe("community weekly seed", () => {
+  it("replaces every earlier seed job with one Monday 09:00 KST job", () => {
+    expect(weeklySeedMigration).toContain("'community-seed-morning', 'community-seed-midday', 'community-seed-evening'");
+    expect(weeklySeedMigration).toContain("cron.schedule('community-seed-weekly', '0 0 * * 1'");
+    expect(weeklySeedMigration).not.toMatch(/cron\.schedule\('community-seed-(morning|midday|evening|daily)'/);
   });
 });

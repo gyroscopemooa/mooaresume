@@ -33,13 +33,25 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
-describe("daily community publication limit", () => {
-  it.each([1, 2, 3])("skips AI generation when %i editorial posts already exist today", async (count) => {
+describe("weekly community publication limit", () => {
+  it.each([1, 2, 3])("skips AI generation when %i editorial posts already exist this week", async (count) => {
     const { from } = database(count);
     const response = await POST(request());
-    expect(await response.json()).toEqual({ skipped: "already_seeded_today", postsToday: count });
+    expect(await response.json()).toEqual({ skipped: "already_seeded_this_week", postsThisWeek: count });
     expect(mocks.generate).not.toHaveBeenCalled();
     expect(from).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts posts from the last seven publication days, not just today", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-02T00:00:05.000Z"));
+    try {
+      const { query } = database(1);
+      await POST(request());
+      expect(query.gte).toHaveBeenCalledWith("created_at", "2026-10-27T00:00:00.000Z");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("allows generation when no post exists yet", async () => {
@@ -62,12 +74,12 @@ describe("daily community publication limit", () => {
 
     const response = await POST(request());
 
-    expect(await response.json()).toEqual({ ok: true, postId: "seed-post", postsToday: 1 });
+    expect(await response.json()).toEqual({ ok: true, postId: "seed-post", postsThisWeek: 1 });
     expect(from).toHaveBeenCalledWith("community_posts");
     expect(from).not.toHaveBeenCalledWith("community_comments");
   });
 
-  it("does not generate if today's count cannot be verified", async () => {
+  it("does not generate if this week's count cannot be verified", async () => {
     database(null, { message: "count unavailable" });
     expect((await POST(request())).status).toBe(500);
     expect(mocks.generate).not.toHaveBeenCalled();

@@ -8779,3 +8779,12 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: `vitest run src/components/result-workspace-complete.test.tsx` 59테스트 통과. 새 테스트는 수정 전 코드에서 실패함을 확인. `tsc --noEmit`에서 해당 파일 오류 없음. 브라우저 화면 확인은 안 함(관리자/실결과 데이터 필요).
 - Rollback: 이 커밋 revert.
 - 상태: 로컬 커밋, 푸시·배포 승인 대기.
+
+## 2026-10-27 — Claude: 커뮤니티 자동 글 주 1회로 축소
+
+- 요청(민수오빠): "커뮤에 자동글쓰는기능 일주일에 한번으로 줄여주고 배포".
+- Branch: `claude/community-seed-weekly-20261027` (origin/main `6f35728` 기준 격리 worktree `.claude/worktrees/seed-weekly`).
+- Files: `src/app/api/community/seed/route.ts`(이미 썼는지 확인 범위를 "오늘 UTC 0시 이후" → "최근 7개 발행일(오늘 UTC 0시 − 6일) 이후"로, 응답 키 `already_seeded_this_week`/`postsThisWeek`), `src/app/api/community/seed/route.test.ts`, 새 `supabase/migrations/20261027020000_community_seed_weekly.sql`(기존 seed 크론 전부 해제 후 `community-seed-weekly` 월요일 00:00 UTC = 09:00 KST 1개), `src/server/community/community-migration.test.ts`(테스트 추가), 본 기록. 기존 마이그레이션 파일은 그대로.
+- 효과: 앱 코드만 배포돼도 크론이 매일 돌면 7일에 1번만 글을 만든다(그 외 호출은 AI 호출 없이 건너뜀). 크론 마이그레이션은 Supabase에 따로 적용해야 호출 자체가 주 1회가 된다.
+- Validation: 대상 4파일 29테스트 통과, `tsc --noEmit`·ESLint 통과. 전체 vitest 5파일 실패(apps/mobile·src/server/mobile Expo 고질, app-home·app-start-wizard·google-play-verification — 이번 변경과 무관한 파일).
+- Rollback: 이 커밋 revert. 크론은 `20260917010000_community_seed_once_daily.sql` 재실행으로 매일 1회 복구.

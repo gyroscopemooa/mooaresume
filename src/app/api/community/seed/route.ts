@@ -3,9 +3,9 @@ import { createCommunityPostSchema } from "@/domain/community";
 import { serviceClient } from "@/server/admin/admin-repository";
 import { generateCommunitySeedContent } from "@/server/community/community-seed-content";
 
-// 매일 자동 글 1개만 발행합니다.
-// Supabase pg_cron이 하루 한 번 이 라우트를 부릅니다(마이그레이션
-// 20260904030000_community_daily_seed.sql). 사람이 직접 배포·수동 호출할
+// 일주일에 자동 글 1개만 발행합니다.
+// Supabase pg_cron이 매주 월요일 오전 9시(KST)에 이 라우트를 부릅니다(마이그레이션
+// 20261027020000_community_seed_weekly.sql). 사람이 직접 배포·수동 호출할
 // 일이 없으므로 GET은 두지 않습니다.
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -32,24 +32,25 @@ export async function POST(request: NextRequest) {
 
   const supabase = serviceClient();
 
-  // 하루 최대 1개. 오전 9시(KST)에 한 번 호출하며, 같은 발행일에 이미
-  // 작성했다면 재호출에도 AI 생성 없이 종료합니다. 기존 UTC 자정 경계는
-  // 한국시간 오전 9시이므로 예약 발행 시각과 일치합니다.
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
+  // 일주일 최대 1개. 크론이 더 자주 돌더라도(예: 예전 매일 일정이 남아
+  // 있어도) 최근 7개 발행일 안에 작성했다면 AI 생성 없이 종료합니다.
+  // UTC 자정 경계는 한국시간 오전 9시이므로 예약 발행 시각과 일치합니다.
+  const windowStart = new Date();
+  windowStart.setUTCHours(0, 0, 0, 0);
+  windowStart.setUTCDate(windowStart.getUTCDate() - 6);
   const { count, error: countError } = await supabase
     .from("community_posts")
     .select("id", { count: "exact", head: true })
     .eq("owner_user_id", seedUserId)
     .eq("is_editorial", true)
-    .gte("created_at", todayStart.toISOString());
+    .gte("created_at", windowStart.toISOString());
   if (countError) {
     console.error("community_seed_count_failed", countError.message);
-    return NextResponse.json({ error: "오늘 작성 여부를 확인하지 못했습니다." }, { status: 500 });
+    return NextResponse.json({ error: "이번 주 작성 여부를 확인하지 못했습니다." }, { status: 500 });
   }
-  if ((count ?? 0) >= 1) return NextResponse.json({ skipped: "already_seeded_today", postsToday: count });
+  if ((count ?? 0) >= 1) return NextResponse.json({ skipped: "already_seeded_this_week", postsThisWeek: count });
 
-  // 최근 제목과 겹치는 질문을 피하도록 프롬프트에 같이 넣습니다(오늘 이미
+  // 최근 제목과 겹치는 질문을 피하도록 프롬프트에 같이 넣습니다(이번 주
   // 쓴 것도 포함) — 주제 후보가 한정돼 있어 이 목록 없이는 하루 안에도
   // 같은 질문이 반복될 위험이 있습니다.
   const { data: recentRows } = await supabase
@@ -93,5 +94,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "글을 저장하지 못했습니다." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, postId: post.id, postsToday: (count ?? 0) + 1 });
+  return NextResponse.json({ ok: true, postId: post.id, postsThisWeek: (count ?? 0) + 1 });
 }
