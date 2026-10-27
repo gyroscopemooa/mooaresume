@@ -8788,3 +8788,4 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 효과: 앱 코드만 배포돼도 크론이 매일 돌면 7일에 1번만 글을 만든다(그 외 호출은 AI 호출 없이 건너뜀). 크론 마이그레이션은 Supabase에 따로 적용해야 호출 자체가 주 1회가 된다.
 - Validation: 대상 4파일 29테스트 통과, `tsc --noEmit`·ESLint 통과. 전체 vitest 5파일 실패(apps/mobile·src/server/mobile Expo 고질, app-home·app-start-wizard·google-play-verification — 이번 변경과 무관한 파일).
 - Rollback: 이 커밋 revert. 크론은 `20260917010000_community_seed_once_daily.sql` 재실행으로 매일 1회 복구.
+- 완료(앱): main `ab503ff` push → Cloudflare Worker `7318899a-c4fb-45ba-8e40-d8cfbc94cf4f`(2026-10-27T02:52Z) 배포, 운영 `/api/community/seed` 토큰 없는 POST 401 정상. 크론 마이그레이션은 Supabase SQL 편집기 적용 대기(미적용).
