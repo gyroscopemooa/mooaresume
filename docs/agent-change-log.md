@@ -8824,3 +8824,5 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 빌드: 상위 node_modules만 있는 worktree의 Turbopack 해석 실패. Webpack 대체는 기존 CSS Module 전역 selector와 맞지 않아 중단. 기존 소스를 고치지 않고 해당 worktree에 npm ci --ignore-scripts로 고정 의존성 설치 후 원래 Turbopack 빌드 재시도.
 - 빌드 완료: 고정 의존성 설치 후 기존 Turbopack 컴파일/TypeScript/정적 페이지 생성 및 OpenNext Cloudflare 패키징 통과. wrangler deploy --dry-run 통과(529 assets, gzip 5791.91 KiB).
 - 현재 남은 차단: Supabase 관리 로그인. 새 테이블이 미적용이라 실제 접수가 실패할 상태에서 공개 배포하지 않았다. 로그인 완료 후 신규 SQL만 적용/권한 검증 → main fast-forward push → 기존 빌드 배포 → 합성 신청 및 관리자 접근 경계 확인. 운영 Worker는 기존 버전 유지.
+- 2026-10-28 로그인 후 운영 적용: Supabase oiucnkrknedqyktnwbce SQL Editor에서 신규 migration transaction 적용 성공(cron job 10). RLS 두 테이블 true, anon/authenticated 직접 SELECT 차단, service_role INSERT 허용, anon RPC 실행 차단, retention active true / 17 18 * * * 확인.
+- 원격 main 46e2fc2 및 운영 e2cded0f 재확인. 기존 검증된 빌드로 main 반영/공개 배포 진행. next-env.d.ts 변경은 운영 빌드가 만든 타입 경로 차이이며 제품 커밋에는 포함하지 않음.
