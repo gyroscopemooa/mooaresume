@@ -1,0 +1,44 @@
+// Local in-memory PostgreSQL only. No production credentials or network.
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import assert from "node:assert/strict";
+const { PGlite } = await import(process.argv[2] ? pathToFileURL(process.argv[2]).href : "@electric-sql/pglite");
+const db = new PGlite();
+await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+create schema cron; create table cron.job(jobname text, schedule text, command text);
+create function cron.schedule(text,text,text) returns bigint language sql as 'insert into cron.job values ($1,$2,$3);select 1::bigint';`);
+const sql = await readFile(new URL("../supabase/migrations/20261028010000_mentor_pool.sql", import.meta.url), "utf8");
+await db.exec(sql);
+assert.equal((await db.query("select relrowsecurity from pg_class where relname='mentor_pool_applications'")).rows[0].relrowsecurity, true);
+const id = "10000000-0000-4000-8000-000000000001";
+const insert = `insert into public.mentor_pool_applications(id,kind,name,email,headline,story,fields,mode,consent_version) values('${id}','mentee','테스트','test@example.com','만나고 싶은 사람','누군가의 다양한 경험을 들어보고 싶습니다.','{life}','online','mentor-pool-2026-10-28-v1')`;
+for (const role of ["anon", "authenticated"]) {
+  await db.exec(`set role ${role}`);
+  await assert.rejects(db.query("select * from public.mentor_pool_applications"), /permission denied/);
+  await assert.rejects(db.exec(insert), /permission denied/);
+  await assert.rejects(db.query("select public.take_mentor_pool_limit('x',2,60)"), /permission denied/);
+  await db.exec("reset role");
+}
+await db.exec("set role service_role");
+await db.exec(insert);
+await db.exec(insert + " on conflict(id) do nothing");
+assert.equal(Number((await db.query("select count(*) as n from public.mentor_pool_applications")).rows[0].n), 1);
+await assert.rejects(db.exec("update public.mentor_pool_applications set fields='{made-up}'"), /check constraint/);
+await assert.rejects(db.exec("update public.mentor_pool_applications set mode='offline'"), /check constraint/);
+for (const expected of [true, true, false]) assert.equal((await db.query("select public.take_mentor_pool_limit('test',2,60) as allowed")).rows[0].allowed, expected);
+await db.exec("update public.mentor_pool_rate_limits set expires_at=now()-interval '1 hour'");
+assert.equal((await db.query("select public.take_mentor_pool_limit('test',2,60) as allowed")).rows[0].allowed, true);
+const stamp = (await db.query("select updated_at::text as stamp from public.mentor_pool_applications")).rows[0].stamp;
+await db.query("update public.mentor_pool_applications set updated_at=updated_at+interval '1 second',admin_note='운영자1' where id=$1 and updated_at=$2", [id,stamp]);
+assert.equal((await db.query("update public.mentor_pool_applications set admin_note='운영자2' where id=$1 and updated_at=$2 returning id", [id,stamp])).rows.length, 0);
+await db.exec("reset role");
+const job = (await db.query("select * from cron.job where jobname='mentor-pool-retention'")).rows[0];
+assert.equal(job.schedule, "17 18 * * *");
+await db.exec(job.command);
+assert.equal(Number((await db.query("select count(*) as n from public.mentor_pool_applications")).rows[0].n), 1);
+await db.exec("update public.mentor_pool_applications set expires_at=now()-interval '1 second';update public.mentor_pool_rate_limits set expires_at=now()-interval '1 second'");
+await db.exec(job.command);
+assert.equal(Number((await db.query("select count(*) as n from public.mentor_pool_applications")).rows[0].n), 0);
+assert.equal(Number((await db.query("select count(*) as n from public.mentor_pool_rate_limits")).rows[0].n), 0);
+await db.close();
+console.log("PASS: SQL migration, RLS/grants, retry deduplication, constraints, rate limits/reset, stale edit protection, scheduled retention.");

@@ -8789,3 +8789,34 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: 대상 4파일 29테스트 통과, `tsc --noEmit`·ESLint 통과. 전체 vitest 5파일 실패(apps/mobile·src/server/mobile Expo 고질, app-home·app-start-wizard·google-play-verification — 이번 변경과 무관한 파일).
 - Rollback: 이 커밋 revert. 크론은 `20260917010000_community_seed_once_daily.sql` 재실행으로 매일 1회 복구.
 - 완료(앱): main `ab503ff` push → Cloudflare Worker `7318899a-c4fb-45ba-8e40-d8cfbc94cf4f`(2026-10-27T02:52Z) 배포, 운영 `/api/community/seed` 토큰 없는 POST 401 정상. 크론 마이그레이션은 Supabase SQL 편집기 적용 대기(미적용).
+
+## 2026-10-28 — Codex: 무료 멘토 연결 참여 희망 풀 (진행 중)
+- 사용자 요청: 기존 프리랜서 모집과 별도 무료 모집. 직무 외 꿈·경험·일상 대화 포함. 현재 수동 연결, 유사 분야 분류만 보조.
+- Baseline: origin/main 46e2fc2f, 별도 codex/mentor-pool-20261028 worktree. 루트 dirty tree 보존. 최신 홈에는 AppLaunchBanner가 있어 그 아래 독립 배너 1개 추가; 기존 프리랜서/컨설턴트 배너 수정 없음.
+- Files: docs/mentor-pool-2026-10-28.md, src/domain/mentor-pool*, src/server/mentor-pool/*, src/app/mentors/*, src/components/mentor-pool*, src/app/api/mentor-pool/*, src/app/api/meensoo/mentor-pool/*, src/app/meensoo/mentor-pool/*, 신규 Supabase migration 및 tests. 기존 통합 파일은 src/app/page.tsx, src/app/meensoo/admin-shell.tsx에 추가만.
+- 신규 테이블은 현재 비공개 신청 기록과 비회원 분산 요청 제한에 필요. 기존 사용자/유료 리뷰 개념과 분리. 개인정보는 공개하지 않고 관리자만 접근.
+- Validation: 진행 중. 원격 migration, 유료 API, 연락, 배포 없음.
+- Rollback: 본 브랜치의 좁은 추가 diff만 역패치. 운영 접수 후 데이터 테이블은 승인 없이 삭제하지 않는다.
+- Final status: 로컬 구현·검증 완료, 미커밋. 기존 루트/운영 사이트/원격 DB는 미변경. 별도 작업 경로 C:/6.mooaresume/.release-worktrees/mentor-pool-20261028, 로컬 미리보기 127.0.0.1:3088/mentors.
+- Validation: 신규 Vitest 5파일 30테스트 통과; 전체 TypeScript 통과; 대상 ESLint 통과; diff --check 통과. PGlite 격리 SQL에서 RLS/권한, 비회원 직접 접근 차단, 중복 접수, DB 제약, 원자적 요청 제한 및 만료 초기화, 낡은 수정 충돌, 보관 기간 정리 통과. 실제 HTTP에서 관리자 변경 401, 접수 출처 누락 403 확인.
+- Full suite: 273파일 통과/5파일 실패/1파일 skip, 2428테스트 통과/5테스트 실패/1 skip. 기존 app-home(FINAL 플래그), app-start-wizard(PRO 중복 버튼·플래그), google-play-verification 기대값 실패. Expo tsconfig 미설치 2 suite와 기존 결과 화면 Supabase 공개 환경변수 누락으로 10 unhandled 오류. 실패 파일은 baseline과 동일하며 이 작업에서 수정하지 않음.
+- UI: 실제 브라우저로 PC/390px 모집 페이지, 멘토 선택 전환, 홈 앱 배너 바로 아래 새 배너, 모바일 세로 버튼, 홈에서 멘토 신청 진입을 확인. 390px에서 가로 넘침 없음. 전역 body zoom은 신규 모집 페이지에서만 상쇄. 관리자 실제 데이터 E2E/운영 접수는 원격 migration 미적용으로 미실행.
+- Privacy: 신규 폼·관리자 목록 Clarity 마스킹. 신청자의 이메일은 마스킹된 일반 텍스트로만 렌더링해 링크 URL에 넣지 않음. 연락/자동 전송 없음. 기본 보관 1년 및 일일 만료 정리, 본인 확인한 철회 요청만 관리자 삭제 확인 문구로 처리.
+- Preview limitation: 최초 홈 compile은 디스크 부족으로 실패. 이번 worktree에서 생성한 dev cache만 정리하고 서버 재시작 후 홈 200/배너 및 폼 확인. 개발 환경에서 외부 폰트 다운로드가 막혀 fallback font 사용. production build/배포 없음.
+
+## 2026-10-28 — Codex: 멘토 모집 배너 디자인 보완
+- 승인: 사용자의 배너 디자인 개선 요청 및 밝은 일러스트 시안 선호에 따라 적용. 앞서 만든 짙은 그린 시안은 tmp/mentor-banner-dark/에 보존, 초기본은 tmp/mentor-banner-before-polish/에 보존.
+- Files: src/components/mentor-pool-banner.tsx, src/components/mentor-pool-banner.module.css, public/images/mentors/conversation.webp, docs/mentor-pool-2026-10-28.md, 본 기록.
+- 변경: 세이지/아이보리 배경, 명조체 제목, 사람 대화 일러스트, 실 HTML 텍스트/참여 링크. PC 3열, 태블릿 설명 아래 CTA, 모바일 그림·설명·CTA 순서. 버튼 최소 49px, 키보드 focus/reduced-motion 대응. 접수 및 관리자 로직 변경 없음.
+- Asset: 내장 imagegen으로 사용자 시안의 글자/버튼을 제외한 일러스트 재구성. WebP 인코딩 46,684 bytes, 1536x1024. 원본 tmp/mentor-conversation-source.png 보존. 정확한 프롬프트는 기능 문서에 기록.
+- Validation: 기존 폼/도메인 15테스트 통과. PC/820/390/360px 브라우저 확인, 작은 모바일 배너 콘텐츠 넘침 없음. 최종 타입/린트 후속 기록 예정.
+- Rollback: 위 tmp 보존본에서 배너 두 파일만 복구. 루트 다른 에이전트 변경 보존. 상태: 로컬 미리보기만, 미배포.
+- 추가 기록 파일: docs/mentor-banner-art-2026-10-28.md (소재 경로/정확한 내장 imagegen 프롬프트/레이아웃 및 복구 경로). ESLint 및 diff --check 통과. 멘토 CTA 클릭 후 신청 화면의 mentor 선택 상태 확인. 최종 PC 배너 위치로 돌아오고 viewport override 해제.
+- 최종 검증: TypeScript 전체 typecheck 통과, 대상 ESLint 통과, 폼/도메인 15테스트 통과. 로컬 3088에서 최종 밝은 배너 확인 완료. 배포 및 원격 DB 적용 없음.
+
+## 2026-10-28 — Codex: 멘토 모집 운영 배포 진행
+- 승인: 사용자 `깃 커밋 푸시 배포` 요청. 최신 origin/main 46e2fc2f 확인, 별도 codex/mentor-pool-20261028에서 신규 기능만 커밋 및 배포. 루트 dirty tree는 보존.
+- 기준 운영 Worker: e2cded0f-d026-424e-a30a-680ec5d8c852. 대상 mooaresume / mooaresume.com.
+- 빌드에는 기존 환경 파일의 공개 NEXT_PUBLIC 및 사이트 검증 값만 별도 ignored .env.production.local에 준비. 서버 비밀키 복사/커밋 없음.
+- 배포 의존성: 신규 SQL만 적용 필요. CLI 관리 토큰 부재 및 Supabase 앱 브라우저 로그아웃으로 로그인 요청 중. 빌드/커밋 준비는 계속 진행.
+- 검증: 기존 신규 30테스트, 타입/린트/격리 SQL, 최종 배너 PC/모바일/태블릿 및 신청 진입 완료. 운영 빌드 및 DB 적용 결과 후속 기록.

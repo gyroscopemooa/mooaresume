@@ -11,6 +11,7 @@ import { LegalToolsDrawer } from "@/components/legal-tools-drawer";
 import { LandingEntry } from "@/components/landing-entry";
 import { HomePromoVideo } from "@/components/home-promo-video";
 import { AppLaunchBanner, EduPromoBanner } from "@/components/app-launch-banner";
+import { MentorPoolBanner } from "@/components/mentor-pool-banner";
 import { PricingComparison } from "@/components/pricing-comparison";
 import { ConsultantReviewBanner } from "@/components/consultant-review-banner";
 import { LandingConsistency } from "@/components/landing-consistency";
@@ -154,6 +155,7 @@ export default function HomePage() {
         <Link href="/result/sample" className="hero-sample">첨삭 예시 보기 <ArrowRight size={18}/></Link>
         <EduPromoBanner />
         <AppLaunchBanner />
+        <MentorPoolBanner />
         <HomePromoVideo />
         <div className="trust-row"><span><Check/> 없는 경험은 지어내지 않아요</span><span><Check/> 내 말투 그대로 남겨요</span><span><Check/> 점수 대신 고칠 곳을 알려드려요</span></div>
         {isFinalEnabled() && <p style={{ textAlign: "center", marginTop: 14, fontSize: 13.5 }}><Link href="/final" style={{ color: "var(--green)", fontWeight: 800 }}>FINAL · 지원서 완성부터 면접 답변까지 한 번에 <ArrowRight size={14} style={{ verticalAlign: "-2px" }}/></Link></p>}

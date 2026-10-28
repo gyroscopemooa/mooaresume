@@ -44,6 +44,7 @@ const NAV = [
   { href: "/meensoo/account-deletions", label: "계정 삭제 요청", Icon: UserRoundX, badgeKey: "accountDeletions" as const },
   { href: "/meensoo/community-reports", label: "커뮤니티 신고", Icon: ShieldAlert },
   { href: "/meensoo/waitlist", label: "사전 신청", Icon: Users },
+  { href: "/meensoo/mentor-pool", label: "무료 멘토 연결", Icon: Users },
 ];
 
 type Props = { children: React.ReactNode; newInquiries?: number; newFeedback?: number; accountDeletionRequests?: number };
