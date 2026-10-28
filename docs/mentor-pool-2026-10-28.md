@@ -21,3 +21,10 @@
 
 ## 배너 디자인 후속
 - 밝은 일러스트 시안으로 반응형 배너 보완. 소재·정확한 생성 프롬프트·복구 경로는 [배너 디자인 기록](mentor-banner-art-2026-10-28.md)에 기록.
+
+## 배포 상태 (2026-10-28)
+- 기능 커밋: 8884fbb. 원격 작업 브랜치 codex/mentor-pool-20261028 push 완료.
+- 운영 DB 조회: 신규 mentor_pool_applications 테이블 미적용(PGRST205). Supabase 관리 로그인 이후 해당 기능 migration만 적용해야 한다. 전체 db push는 다른 미적용 migration을 포함할 수 있어 사용하지 않는다.
+- 원격 DB 적용 전에는 운영 접수 시작을 완료로 표시하지 않는다.
+- 운영 빌드와 Cloudflare dry-run 통과. 기존 Worker 버전 e2cded0f-d026-424e-a30a-680ec5d8c852 유지. Supabase 로그인 대기로 공개 배포/main 반영 전.
+- 다음 실행: Supabase 프로젝트 oiucnkrknedqyktnwbce에서 20261028010000_mentor_pool.sql만 적용 후 RLS/권한/cron 확인, 최신 main 재확인 및 fast-forward push, 생성한 .open-next 빌드 배포, 공개 페이지·접수·비인가 관리자 차단 확인. 기존 생성 빌드는 이 worktree에 남아 있다.

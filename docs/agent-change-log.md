@@ -8820,3 +8820,7 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 빌드에는 기존 환경 파일의 공개 NEXT_PUBLIC 및 사이트 검증 값만 별도 ignored .env.production.local에 준비. 서버 비밀키 복사/커밋 없음.
 - 배포 의존성: 신규 SQL만 적용 필요. CLI 관리 토큰 부재 및 Supabase 앱 브라우저 로그아웃으로 로그인 요청 중. 빌드/커밋 준비는 계속 진행.
 - 검증: 기존 신규 30테스트, 타입/린트/격리 SQL, 최종 배너 PC/모바일/태블릿 및 신청 진입 완료. 운영 빌드 및 DB 적용 결과 후속 기록.
+- 커밋 8884fbb / 작업 브랜치 push 완료. 운영 테이블 실제 GET은 404/PGRST205로 미적용 확인.
+- 빌드: 상위 node_modules만 있는 worktree의 Turbopack 해석 실패. Webpack 대체는 기존 CSS Module 전역 selector와 맞지 않아 중단. 기존 소스를 고치지 않고 해당 worktree에 npm ci --ignore-scripts로 고정 의존성 설치 후 원래 Turbopack 빌드 재시도.
+- 빌드 완료: 고정 의존성 설치 후 기존 Turbopack 컴파일/TypeScript/정적 페이지 생성 및 OpenNext Cloudflare 패키징 통과. wrangler deploy --dry-run 통과(529 assets, gzip 5791.91 KiB).
+- 현재 남은 차단: Supabase 관리 로그인. 새 테이블이 미적용이라 실제 접수가 실패할 상태에서 공개 배포하지 않았다. 로그인 완료 후 신규 SQL만 적용/권한 검증 → main fast-forward push → 기존 빌드 배포 → 합성 신청 및 관리자 접근 경계 확인. 운영 Worker는 기존 버전 유지.
