@@ -8826,3 +8826,6 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 현재 남은 차단: Supabase 관리 로그인. 새 테이블이 미적용이라 실제 접수가 실패할 상태에서 공개 배포하지 않았다. 로그인 완료 후 신규 SQL만 적용/권한 검증 → main fast-forward push → 기존 빌드 배포 → 합성 신청 및 관리자 접근 경계 확인. 운영 Worker는 기존 버전 유지.
 - 2026-10-28 로그인 후 운영 적용: Supabase oiucnkrknedqyktnwbce SQL Editor에서 신규 migration transaction 적용 성공(cron job 10). RLS 두 테이블 true, anon/authenticated 직접 SELECT 차단, service_role INSERT 허용, anon RPC 실행 차단, retention active true / 17 18 * * * 확인.
 - 원격 main 46e2fc2 및 운영 e2cded0f 재확인. 기존 검증된 빌드로 main 반영/공개 배포 진행. next-env.d.ts 변경은 운영 빌드가 만든 타입 경로 차이이며 제품 커밋에는 포함하지 않음.
+- 완료: main/작업 브랜치 반영 후 Worker bac3b444-3b70-4c34-b5e3-c0f2f4edbbd0 배포. Windows 배포 메시지의 공백 전달 오류는 단일 메시지 mentor-pool-8884fbb로 해결(제품 소스 변경 없음).
+- DB migration 이력 20261028010000 / mentor_pool 기록 확인. 운영 API 합성 mentee/mentor 각각 저장 및 재시도 중복 방지, 365일 만료, 인증된 관리자 목록 표시 통과. 익명 DB401/관리자 변경401/Origin 누락403 확인. 테스트 기록 2건은 해당 UUID+테스트 이름으로만 삭제하고 부재 확인. 실제 신청자 연락/유료 AI 실행 없음.
+- 공개 홈의 앱 배너 아래 최종 일러스트 배너를 실제 브라우저로 확인하고 운영 페이지를 열어둠. docs/mentor-pool-2026-10-28.md의 대기 상태를 완료 상태로 갱신. 테스트 실행 스크립트 tmp/verify-mentor-production.mjs는 비커밋 로컬 보조 파일.
