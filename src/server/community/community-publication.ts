@@ -1,5 +1,5 @@
 import { cache } from "react";
-import type { CommunityComment, CommunityPost } from "@/domain/community";
+import type { CommunityComment, CommunityPost, CommunityTopicId } from "@/domain/community";
 import { createClient } from "@/lib/supabase/server";
 import { toCommunityComment, toCommunityPost } from "./community-repository";
 
@@ -37,4 +37,23 @@ export async function listPublishedCommunityPostsForSitemap() {
     const updatedAt = typeof row.updated_at === "string" ? row.updated_at : "";
     return id ? [{ id, updatedAt }] : [];
   });
+}
+/** Use the normal request client/RLS, never elevated credentials for public discovery. */
+export async function getInitialCommunityFeed() {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  const { data, error } = await supabase.from("community_posts").select(communityPostSelect)
+    .eq("status", "PUBLISHED").order("created_at", { ascending: false }).range(0, 20);
+  if (error) throw error;
+  const rows = data ?? [];
+  return { posts: rows.slice(0, 20).map((row) => toCommunityPost(row as Record<string, unknown>, auth?.user?.id ?? null)), hasMore: rows.length > 20 };
+}
+
+export async function getRelatedCommunityPosts(postId: string, topic: CommunityTopicId): Promise<{ id: string; title: string }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("community_posts").select("id, title")
+    .eq("status", "PUBLISHED").eq("topic", topic).neq("id", postId)
+    .order("created_at", { ascending: false }).limit(3);
+  if (error) return [];
+  return (data ?? []).flatMap((row) => typeof row.id === "string" && typeof row.title === "string" ? [{ id: row.id, title: row.title }] : []);
 }

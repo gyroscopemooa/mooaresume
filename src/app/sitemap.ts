@@ -7,16 +7,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
   const launchedAt = new Date("2026-08-24");
 
-  // 낱개 게시글 상세 라우트(/community/[postId])는 이미 서버 컴포넌트로
-  // 완성돼 있어(제목=h1, JSON-LD 포함) 크롤러가 주소만 알면 색인하기 좋은
-  // 상태입니다. 문제는 그 주소를 알려줄 방법이었습니다 — 목록 화면
-  // (community-lounge.tsx)이 클라이언트 컴포넌트라 서버가 내려주는 최초
-  // HTML에는 글 링크가 하나도 없고, 전부 마운트 후 JS로 불러옵니다.
-  // 자바스크립트를 잘 못 읽는 크롤러(네이버 등)는 "더 보기"를 눌러볼 수
-  // 없으니, 목록의 페이지네이션 방식과 무관하게 사이트맵으로 직접 알려줘야
-  // 합니다. 이 조회 함수(`listPublishedCommunityPostsForSitemap`)는 이미
-  // 만들어져 있었는데 여기서 부르는 곳이 없어 실제로는 쓰인 적이
-  // 없었습니다.
+  // 목록은 첫 20개를 서버 렌더링한다. 더보기 이후의 공개 글도 검색엔진이
+  // 직접 발견할 수 있도록 상세 URL을 사이트맵에 함께 제공한다.
   const communityPosts = await listPublishedCommunityPostsForSitemap().catch(() => []);
 
   return [

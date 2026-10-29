@@ -8829,3 +8829,14 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - 완료: main/작업 브랜치 반영 후 Worker bac3b444-3b70-4c34-b5e3-c0f2f4edbbd0 배포. Windows 배포 메시지의 공백 전달 오류는 단일 메시지 mentor-pool-8884fbb로 해결(제품 소스 변경 없음).
 - DB migration 이력 20261028010000 / mentor_pool 기록 확인. 운영 API 합성 mentee/mentor 각각 저장 및 재시도 중복 방지, 365일 만료, 인증된 관리자 목록 표시 통과. 익명 DB401/관리자 변경401/Origin 누락403 확인. 테스트 기록 2건은 해당 UUID+테스트 이름으로만 삭제하고 부재 확인. 실제 신청자 연락/유료 AI 실행 없음.
 - 공개 홈의 앱 배너 아래 최종 일러스트 배너를 실제 브라우저로 확인하고 운영 페이지를 열어둠. docs/mentor-pool-2026-10-28.md의 대기 상태를 완료 상태로 갱신. 테스트 실행 스크립트 tmp/verify-mentor-production.mjs는 비커밋 로컬 보조 파일.
+
+## 2026-10-29 — Codex: community publishing and discovery
+- Authorization: user requested three-day automatic posts, problem-solving editorial guidance, related links, commit/push/production deploy.
+- Baseline: origin/main db50f438; isolated codex/community-content-20261029. Root dirty work and historical posts preserved. Existing production implementation is extended in place, no variant replacement.
+- Intended files: community seed route/prompt/tests; community publication queries, list/detail UI and related-links domain/tests; three-day schedule migration; this log and release notes.
+- Changes: daily scheduler checks with three publication-day gate (09:00 KST); problem-first factual editorial prompt; initial server-rendered list; same-topic recent published links and verified service destinations for old/new posts. No search-demand data invented or claimed connected; no historical body rewrites.
+- Validation: pending. Rollback: revert focused commit, restore weekly cron via 20261027020000 migration; no content deletion.
+- Validation: focused community tests 45 passed, typecheck and targeted ESLint passed. Full suite: 276 files/2438 tests passed, 5 files failed (5 assertions), 1 skipped, 10 unhandled env errors. Failures match prior release records: Expo config (two suites), app-home/app-start-wizard FINAL expectations, Google Play allowance; result-workspace missing public test env. Unrelated files unchanged.
+- Local built-server HTTP: first HTML contains 20 real public post links, detail related links/operator label, sitemap detail URL, unauthenticated seed 503 with no local cron secret. Mobile 390px review caught inherited global nav flex; scoped display:block correction added.
+- Additional files: src/app/sitemap.ts comments corrected for SSR, scripts/check-community-release.mjs read-only HTTP checks, docs/community-content-2026-10-29.md. No paid generation/manual publication.
+- Production DB: community-seed-three-days active daily 00:00 UTC verified; migration version 20261029020000 recorded. Only existing community scheduler replaced; content untouched. Prior Worker a62c60d1-9801-4075-8f73-d4e116547351. Final corrected build/deploy pending.

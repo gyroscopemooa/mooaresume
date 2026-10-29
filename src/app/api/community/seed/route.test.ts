@@ -33,25 +33,43 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
-describe("weekly community publication limit", () => {
-  it.each([1, 2, 3])("skips AI generation when %i editorial posts already exist this week", async (count) => {
+describe("three-day community publication limit", () => {
+  it.each([1, 2, 3])("skips AI generation when %i editorial posts already exist in the three-day window", async (count) => {
     const { from } = database(count);
     const response = await POST(request());
-    expect(await response.json()).toEqual({ skipped: "already_seeded_this_week", postsThisWeek: count });
+    expect(await response.json()).toEqual({ skipped: "already_seeded_recently", postsInWindow: count });
     expect(mocks.generate).not.toHaveBeenCalled();
     expect(from).toHaveBeenCalledTimes(1);
   });
 
-  it("counts posts from the last seven publication days, not just today", async () => {
+  it("counts posts from the last three publication days, not just today", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-11-02T00:00:05.000Z"));
     try {
       const { query } = database(1);
       await POST(request());
-      expect(query.gte).toHaveBeenCalledWith("created_at", "2026-10-27T00:00:00.000Z");
+      expect(query.gte).toHaveBeenCalledWith("created_at", "2026-10-31T00:00:00.000Z");
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("keeps a three-day cadence across month boundaries without making paid calls", async () => {
+    vi.useFakeTimers();
+    const published: string[] = [];
+    try {
+      for (let day = 0; day < 10; day++) {
+        const now = new Date(Date.UTC(2026, 9, 29 + day, 0, 0, 5));
+        vi.setSystemTime(now);
+        const { query } = database(0);
+        query.gte.mockImplementation(async (_column: string, since: string) => ({ count: published.filter((time) => time >= since).length, error: null }));
+        mocks.generate.mockResolvedValue({ topic: "job-search", title: "공고 확인 질문", body: "공고를 비교할 때 확인할 항목" });
+        query.single.mockResolvedValue({ data: { id: "post" }, error: null });
+        const result = await (await POST(request())).json();
+        if (result.ok) published.push(now.toISOString());
+      }
+      expect(published.map((time) => time.slice(0, 10))).toEqual(["2026-10-29", "2026-11-01", "2026-11-04", "2026-11-07"]);
+    } finally { vi.useRealTimers(); }
   });
 
   it("allows generation when no post exists yet", async () => {
@@ -74,15 +92,30 @@ describe("weekly community publication limit", () => {
 
     const response = await POST(request());
 
-    expect(await response.json()).toEqual({ ok: true, postId: "seed-post", postsThisWeek: 1 });
+    expect(await response.json()).toEqual({ ok: true, postId: "seed-post", postsInWindow: 1 });
     expect(from).toHaveBeenCalledWith("community_posts");
     expect(from).not.toHaveBeenCalledWith("community_comments");
   });
 
-  it("does not generate if this week's count cannot be verified", async () => {
+  it("does not generate if in the three-day window's count cannot be verified", async () => {
     database(null, { message: "count unavailable" });
     expect((await POST(request())).status).toBe(500);
     expect(mocks.generate).not.toHaveBeenCalled();
+  });
+
+  it("does not spend on generation when recent history cannot be read", async () => {
+    const { query } = database(0);
+    query.limit.mockResolvedValueOnce({ data: null, error: { message: "unavailable" } });
+    expect((await POST(request())).status).toBe(500);
+    expect(mocks.generate).not.toHaveBeenCalled();
+  });
+
+  it("does not publish a title repeated with different spacing or punctuation", async () => {
+    const { query } = database(0);
+    query.limit.mockResolvedValueOnce({ data: [{ title: "첫 취업 준비", topic: "job-search" }] });
+    mocks.generate.mockResolvedValueOnce({ topic: "job-search", title: "첫 취업: 준비!", body: "공고를 비교할 때 확인할 항목" });
+    expect(await (await POST(request())).json()).toEqual({ skipped: "duplicate_title" });
+    expect(query.insert).not.toHaveBeenCalled();
   });
 
   it("rejects unauthorized requests before accessing the database", async () => {

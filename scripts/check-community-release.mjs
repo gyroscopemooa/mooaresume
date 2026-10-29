@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";
+const origin = process.argv[2] ?? "http://localhost:3092";
+const get = async (path, init) => {
+  const response = await fetch(new URL(path, origin), { ...init, signal: AbortSignal.timeout(30000) });
+  assert.equal(response.status, 200, path);
+  return response;
+};
+const { posts } = await (await get("/api/community/posts?limit=20")).json();
+assert.ok(posts.length > 0, "Public fixture required");
+const html = await (await get("/community")).text();
+const initialHtml = html.replace(/<script[\s\S]*?<\/script>/g, "");
+for (const post of posts) assert.ok(initialHtml.includes(`href="/community/${post.id}"`), "Missing first-response post link");
+const post = posts.find((item) => item.topic === "application") ?? posts[0];
+const detail = await (await get(`/community/${post.id}`)).text();
+assert.ok(detail.includes("같은 주제의 최근 글"));
+if (post.topic === "application") assert.ok(detail.includes('href="/guide"'));
+if (post.isEditorial) assert.ok(detail.includes("MOOA Resume 운영팀"));
+const sitemap = await (await get("/sitemap.xml")).text();
+assert.ok(sitemap.includes(`/community/${post.id}`));
+const blocked = await fetch(new URL("/api/community/seed", origin), { method: "POST", signal: AbortSignal.timeout(30000) });
+assert.ok([401, 503].includes(blocked.status));
+console.log(JSON.stringify({ origin, firstHtmlPostLinks: posts.length, detailRelatedLinks: true, sitemapPost: true, unauthenticatedSeed: blocked.status }));

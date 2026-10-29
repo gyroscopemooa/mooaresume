@@ -3,9 +3,9 @@ import { createCommunityPostSchema } from "@/domain/community";
 import { serviceClient } from "@/server/admin/admin-repository";
 import { generateCommunitySeedContent } from "@/server/community/community-seed-content";
 
-// 일주일에 자동 글 1개만 발행합니다.
-// Supabase pg_cron이 매주 월요일 오전 9시(KST)에 이 라우트를 부릅니다(마이그레이션
-// 20261027020000_community_seed_weekly.sql). 사람이 직접 배포·수동 호출할
+// 3개 발행일마다 자동 글 1개를 발행합니다.
+// Supabase pg_cron은 매일 오전 9시(KST)에 확인하고 아래 3일 제한으로 건너뜁니다.
+// 20261029020000_community_seed_three_days.sql을 함께 적용합니다. 사람이 직접 배포·수동 호출할
 // 일이 없으므로 GET은 두지 않습니다.
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
 
   const supabase = serviceClient();
 
-  // 일주일 최대 1개. 크론이 더 자주 돌더라도(예: 예전 매일 일정이 남아
-  // 있어도) 최근 7개 발행일 안에 작성했다면 AI 생성 없이 종료합니다.
+  // 3개 발행일에 최대 1개. 크론이 더 자주 돌더라도(예: 예전 매일 일정이 남아
+  // 있어도) 최근 3개 발행일 안에 작성했다면 AI 생성 없이 종료합니다.
   // UTC 자정 경계는 한국시간 오전 9시이므로 예약 발행 시각과 일치합니다.
   const windowStart = new Date();
   windowStart.setUTCHours(0, 0, 0, 0);
-  windowStart.setUTCDate(windowStart.getUTCDate() - 6);
+  windowStart.setUTCDate(windowStart.getUTCDate() - 2);
   const { count, error: countError } = await supabase
     .from("community_posts")
     .select("id", { count: "exact", head: true })
@@ -46,19 +46,20 @@ export async function POST(request: NextRequest) {
     .gte("created_at", windowStart.toISOString());
   if (countError) {
     console.error("community_seed_count_failed", countError.message);
-    return NextResponse.json({ error: "이번 주 작성 여부를 확인하지 못했습니다." }, { status: 500 });
+    return NextResponse.json({ error: "최근 3일 작성 여부를 확인하지 못했습니다." }, { status: 500 });
   }
-  if ((count ?? 0) >= 1) return NextResponse.json({ skipped: "already_seeded_this_week", postsThisWeek: count });
+  if ((count ?? 0) >= 1) return NextResponse.json({ skipped: "already_seeded_recently", postsInWindow: count });
 
-  // 최근 제목과 겹치는 질문을 피하도록 프롬프트에 같이 넣습니다(이번 주
+  // 최근 제목과 겹치는 질문을 피하도록 프롬프트에 같이 넣습니다(최근에
   // 쓴 것도 포함) — 주제 후보가 한정돼 있어 이 목록 없이는 하루 안에도
   // 같은 질문이 반복될 위험이 있습니다.
-  const { data: recentRows } = await supabase
+  const { data: recentRows, error: historyError } = await supabase
     .from("community_posts")
     .select("title, topic")
     .eq("is_editorial", true)
     .order("created_at", { ascending: false })
     .limit(30);
+  if (historyError) return NextResponse.json({ error: "최근 글을 확인하지 못했습니다." }, { status: 500 });
   const recentTitles = (recentRows ?? [])
     .map((row) => (typeof row.title === "string" ? row.title : ""))
     .filter(Boolean);
@@ -81,6 +82,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "생성된 글이 검증을 통과하지 못했습니다." }, { status: 502 });
   }
 
+  const normalizedTitle = (value: string) => value.normalize("NFKC").replace(/[\p{P}\p{Z}\s]/gu, "").toLowerCase();
+  if (recentTitles.some((title) => normalizedTitle(title) === normalizedTitle(parsedPost.data.title))) {
+    return NextResponse.json({ skipped: "duplicate_title" });
+  }
+
   // 서비스 키 클라이언트라 RLS를 우회하므로 owner_user_id를 직접 지정합니다.
   // set_community_alias 트리거가 이 값의 해시로 anonymous_alias를 채우고,
   // is_editorial=true가 화면에 "운영팀" 배지를 띄우는 유일한 근거입니다.
@@ -94,5 +100,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "글을 저장하지 못했습니다." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, postId: post.id, postsThisWeek: (count ?? 0) + 1 });
+  return NextResponse.json({ ok: true, postId: post.id, postsInWindow: (count ?? 0) + 1 });
 }

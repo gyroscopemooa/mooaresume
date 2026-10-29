@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CommunityLounge } from "@/components/community-lounge";
+import { getInitialCommunityFeed } from "@/server/community/community-publication";
 
 export const metadata: Metadata = {
   title: "취업/진로 고민 익명게시판",
@@ -9,5 +10,6 @@ export const metadata: Metadata = {
 
 export default async function CommunityPage({ searchParams }: { searchParams: Promise<{ attachment?: string }> }) {
   const { attachment } = await searchParams;
-  return <CommunityLounge attachmentNotice={attachment === "login-required"} />;
+  const initialFeed = await getInitialCommunityFeed().catch(() => undefined);
+  return <CommunityLounge attachmentNotice={attachment === "login-required"} initialFeed={initialFeed} />;
 }

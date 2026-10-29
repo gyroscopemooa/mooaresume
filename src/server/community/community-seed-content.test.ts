@@ -20,8 +20,8 @@ describe("community editorial diversity", () => {
   });
 
   it("includes review and experience boundaries plus varied formats", () => {
-    const instructions = buildCommunitySeedInstructions(["최근 면접 준비 글"], ["application"]);
-    for (const text of ["취업·진로·이직", "기업 리뷰", "직무 경험", "가상 사례", "지어내지 마세요", "현재 검색 결과나 검증된 자료는 제공되지 않았습니다", "마크다운 굵게 표기", "최근 면접 준비 글"])
+    const instructions = buildCommunitySeedInstructions(["최근 면접 준비 글", "질문 한 가지", "첫 문단에서 바로 답", "검색량·순위·인기도", "적용되지 않는 경우와 대안", "본문에 URL", "운영팀의 안내"], ["application"]);
+    for (const text of ["취업·진로·이직", "기업 리뷰", "직무 경험", "가상 사례", "지어내지 마세요", "현재 검색 결과나 검증된 자료는 제공되지 않았습니다", "마크다운 굵게 표기", "최근 면접 준비 글", "질문 한 가지", "첫 문단에서 바로 답", "검색량·순위·인기도", "적용되지 않는 경우와 대안", "본문에 URL", "운영팀의 안내"])
       expect(instructions).toContain(text);
   });
 
