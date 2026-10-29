@@ -15,5 +15,7 @@
 - 변경 SQL: supabase/migrations/20261029020000_community_seed_three_days.sql. 커뮤니티 잡만 정리해 daily check 1개로 명명하고 관련 없는 잡은 보존.
 - 검증: 커뮤니티 대상 45테스트, 전체 타입 검사, 대상 린트 통과. 전체 2438테스트 통과/5실패/1skip 및 공개 테스트 환경변수 관련 10 unhandled 오류. 기존 Expo 2 suite·FINAL UI·Google Play 기대값 실패가 남으며 관련 없는 코드 수정 없음.
 - 실제 HTML 검사: 첫 20개 글 링크, 상세 관련 링크, 사이트맵 확인. 운영 글 본문 수정·유료 AI 검증 호출 없음.
-- 운영 DB: daily check 1개 active=true 및 migration 20261029020000 기록 확인. 앱 배포 진행 중.
+- 운영 DB: daily check 1개 active=true 및 migration 20261029020000 기록 확인. 앱 배포 완료.
+- 배포 완료: 소스 커밋 816e76e, main/작업 브랜치 push, Worker c7bd1e47-bc09-4e17-8bad-d48058fb4dad. 최종 Next/OpenNext 빌드·dry-run 통과.
+- 운영 검증: 첫 HTML에 공개 글 20개 링크, 상세 관련 글·이용 안내·운영팀 표시, 사이트맵 주소, 비인증 자동발행401, 올바른 canonical과 모바일 세로 배치 확인. 수동 AI 생성은 실행하지 않았다.
 - 롤백: 이번 소스 커밋만 revert. 주 1회 복원은 20261027020000_community_seed_weekly.sql로 스케줄을 복원한다. 게시글 삭제 불필요.
