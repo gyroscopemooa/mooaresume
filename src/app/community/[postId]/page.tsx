@@ -4,6 +4,8 @@ import { BadgeCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { communityPostPath, communitySearchDescription, communityTopicMeta } from "@/domain/community";
 import { getPublishedCommunityComments, getPublishedCommunityPost, getRelatedCommunityPosts } from "@/server/community/community-publication";
+import { communityAuthorName, communityStructuredData, serializeCommunityStructuredData } from "@/domain/community-structured-data";
+import { getSiteUrl } from "@/lib/site-url";
 import { communityGuidance } from "@/domain/community-guidance";
 import { PostComments } from "./post-comments";
 import styles from "./page.module.css";
@@ -35,24 +37,14 @@ export default async function CommunityPostPage({ params }: PageProps) {
     getRelatedCommunityPosts(post.id, post.topic).catch(() => []),
   ]);
   const guidance = communityGuidance(post.topic);
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "DiscussionForumPosting",
-    headline: post.title,
-    articleBody: post.body,
-    datePublished: post.createdAt,
-    dateModified: post.updatedAt || post.createdAt,
-    url: communityPostPath(post.id),
-    interactionStatistic: [{ "@type": "InteractionCounter", interactionType: "https://schema.org/LikeAction", userInteractionCount: post.recommendationCount }, { "@type": "InteractionCounter", interactionType: "https://schema.org/CommentAction", userInteractionCount: comments.length }],
-    comment: comments.map((comment) => ({ "@type": "Comment", text: comment.body, dateCreated: comment.createdAt })),
-  };
+  const jsonLd = communityStructuredData(post, comments, getSiteUrl());
   return <main className={styles.page}>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeCommunityStructuredData(jsonLd) }} />
     <header className={styles.header}><Link href="/community">← 취업·진로 라운지</Link><Link href="/">MOOA Resume</Link></header>
     <article className={styles.article}>
       <p className={styles.topic}>{communityTopicMeta[post.topic].label}</p>
       <h1>{post.title}</h1>
-      <p className={styles.meta}>{post.isEditorial ? "MOOA Resume 운영팀" : "익명"}{post.isEditorial && <BadgeCheck className={styles.editorialBadge}/>} · <time dateTime={post.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "long" }).format(new Date(post.createdAt))}</time> · 추천 {post.recommendationCount}</p>
+      <p className={styles.meta}>{communityAuthorName(post)}{post.isEditorial && <BadgeCheck className={styles.editorialBadge}/>} · <time dateTime={post.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "long" }).format(new Date(post.createdAt))}</time> · 추천 {post.recommendationCount}</p>
       <div className={styles.body}>{post.body}</div>
     </article>
     {(relatedPosts.length > 0 || guidance.length > 0) && <nav className={styles.related} aria-label="관련 글과 이용 안내">

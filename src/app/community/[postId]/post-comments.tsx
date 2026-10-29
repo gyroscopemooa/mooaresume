@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BadgeCheck, LoaderCircle, Send, Trash2 } from "lucide-react";
 import { COMMUNITY_ADMIN_DISPLAY_EMAIL, type CommunityComment } from "@/domain/community";
+import { communityAuthorName } from "@/domain/community-structured-data";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./page.module.css";
 
@@ -64,7 +65,7 @@ export function PostComments({ postId, initialComments }: { postId: string; init
     {comments.length === 0 ? <p>아직 댓글이 없어요.</p> : <ol>{comments.map((comment) => <li key={comment.id}>
       <p>{comment.body}</p>
       <small>
-        익명{comment.isEditorial && <BadgeCheck className={styles.editorialBadge}/>} · <time dateTime={comment.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(comment.createdAt))}</time>
+        {communityAuthorName(comment)}{comment.isEditorial && <BadgeCheck className={styles.editorialBadge}/>} · <time dateTime={comment.createdAt}>{new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(comment.createdAt))}</time>
         {(comment.isMine || isAdmin) && <button type="button" className={styles.commentDelete} onClick={() => void remove(comment.id)} aria-label="댓글 삭제"><Trash2/></button>}
       </small>
     </li>)}</ol>}

@@ -25,6 +25,9 @@ describe("community first-response HTML", () => {
     expect(html).toContain("이전 본문 그대로");
     expect(html).toContain('href="/community/new-post"');
     expect(html).toContain('href="/guide"');
+    const schema = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(html)![1]);
+    expect(schema["@type"]).toBe("BlogPosting");
+    expect(schema.author).toEqual({ "@type": "Organization", name: "MOOA Resume 운영팀" });
     expect(html).toContain("MOOA Resume 운영팀");
   });
 });

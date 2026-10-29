@@ -434,6 +434,7 @@ export default function HomePage() {
             <p>지원자의 실제 경험을 존중하는 AI 취업 코치<br/><small>정답을 강요하기보다, 불필요한 감점 요소를 줄입니다.</small></p>
           </div>
           <nav className={footerStyles.links} aria-label="하단 메뉴">
+            <Link href="/community">취업·진로 커뮤니티 라운지</Link>
             <Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><Link href="/privacy">개인정보처리방침</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의</a>
           </nav>
         </div>

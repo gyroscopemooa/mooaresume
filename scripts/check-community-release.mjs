@@ -13,10 +13,22 @@ for (const post of posts) assert.ok(initialHtml.includes(`href="/community/${pos
 const post = posts.find((item) => item.topic === "application") ?? posts[0];
 const detail = await (await get(`/community/${post.id}`)).text();
 assert.ok(detail.includes("같은 주제의 최근 글"));
+const structured = [...detail.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map((match) => JSON.parse(match[1]));
+const article = structured.find((item) => ["BlogPosting", "DiscussionForumPosting"].includes(item["@type"]));
+assert.ok(article, "Missing article/forum structured data");
+assert.equal(article["@type"], post.isEditorial ? "BlogPosting" : "DiscussionForumPosting");
+assert.ok(article.author?.name);
+assert.equal(article.url, `https://mooaresume.com/community/${post.id}`);
+for (const comment of article.comment ?? []) {
+  assert.ok(comment.author?.name);
+  assert.ok(comment.datePublished);
+  assert.ok(comment.text);
+}
+assert.ok(html.includes("커뮤니티 라운지"));
 if (post.topic === "application") assert.ok(detail.includes('href="/guide"'));
 if (post.isEditorial) assert.ok(detail.includes("MOOA Resume 운영팀"));
 const sitemap = await (await get("/sitemap.xml")).text();
 assert.ok(sitemap.includes(`/community/${post.id}`));
 const blocked = await fetch(new URL("/api/community/seed", origin), { method: "POST", signal: AbortSignal.timeout(30000) });
 assert.ok([401, 503].includes(blocked.status));
-console.log(JSON.stringify({ origin, firstHtmlPostLinks: posts.length, detailRelatedLinks: true, sitemapPost: true, unauthenticatedSeed: blocked.status }));
+console.log(JSON.stringify({ origin, firstHtmlPostLinks: posts.length, detailRelatedLinks: true, structuredType: article["@type"], authorPresent: true, sitemapPost: true, unauthenticatedSeed: blocked.status }));
