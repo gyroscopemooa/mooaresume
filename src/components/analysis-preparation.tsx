@@ -373,7 +373,7 @@ export function AnalysisPreparation() {
               ))}
             </ul>
             {product !== "QUICK" && postingLength === 0 && !runActive && !creditRunId && (
-              <div role="alert" className={styles.postingGate}>
+              <div role="alert" id="posting-skip-gate" className={styles.postingGate}>
                 <div className={styles.postingGateRow}>
                   <TriangleAlert aria-hidden="true" />
                   <label><input type="checkbox" checked={allowMissingPosting} onChange={event => setAllowMissingPosting(event.target.checked)} /> <span>공고 요구사항 대조 없이 진행</span></label>

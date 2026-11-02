@@ -613,6 +613,24 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         if (postingMissing) {
           setPostingNudge(true);
           window.setTimeout(() => setPostingNudge(false), 4000);
+          // 체크 칸은 다른 컴포넌트에 있어서, 눌렀을 때 그 칸을 직접
+          // 바운스+테두리로 짚어 줍니다.
+          const target = document.getElementById("posting-skip-gate");
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+              target.animate(
+                [
+                  { transform: "translateY(0)", boxShadow: "0 0 0 0 #e8b04a" },
+                  { transform: "translateY(-7px)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.25 },
+                  { transform: "translateY(0)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.5 },
+                  { transform: "translateY(-4px)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.7 },
+                  { transform: "translateY(0)", boxShadow: "0 0 0 0 #e8b04a" },
+                ],
+                { duration: 1400, easing: "ease-out" },
+              );
+            }
+          }
           return;
         }
         void saveApplicationCase();
