@@ -19,8 +19,12 @@ describe("연구 동의 체크", () => {
   });
 
   it("하나를 고르기 전에는 시작할 수 없다", () => {
-    expect(handoff).toContain("disabled={busy || runActive || !guest || !consentDecided || contextInvalid || (!postingReady && !allowMissingPosting)}");
-    expect(handoff).toContain("위에서 하나를 골라 주세요.");
+    // 버튼은 눌러 볼 수 있지만(안내를 띄우려고), 선택 전에는 저장 호출 앞에서 막힌다.
+    const click = handoff.slice(handoff.indexOf("aria-disabled={!consentDecided"));
+    expect(click.indexOf("if (!consentDecided)")).toBeGreaterThan(-1);
+    expect(click.indexOf("if (!consentDecided)")).toBeLessThan(click.indexOf("void saveApplicationCase()"));
+    expect(click.indexOf("if (postingMissing)")).toBeLessThan(click.indexOf("void saveApplicationCase()"));
+    expect(handoff).toContain("중 하나를 골라 주세요.");
   });
 
   it("거절도 한 번의 클릭이다", () => {
