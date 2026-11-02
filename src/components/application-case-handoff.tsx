@@ -1,7 +1,7 @@
 "use client";
 
 import { trackWeb } from "@/lib/analytics/web";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import { isFinalEnabled } from "@/domain/final-availability";
 import type { GuestDraft } from "@/lib/guest-draft";
@@ -155,6 +155,10 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   // default: a pre-selected answer to an optional data question is not consent
   // that would survive a complaint.
   const [consentDecided, setConsentDecided] = useState(false);
+  const [consentNudge, setConsentNudge] = useState(false);
+  const [postingNudge, setPostingNudge] = useState(false);
+  const postingMissing = !postingReady && !allowMissingPosting;
+  const consentRef = useRef<HTMLDivElement>(null);
   const [creditCheckFailed, setCreditCheckFailed] = useState(false);
   /**
    * 다른 상품용으로 가지고 있는 이용권.
@@ -574,7 +578,9 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
             .finally(() => setBusy(false));
         }}
       />
-      <ResearchConsentGate onDecided={setConsentDecided} locked={runActive}/>
+      <div ref={consentRef} className={consentNudge ? styles.consentNudge : undefined}>
+        <ResearchConsentGate onDecided={setConsentDecided} locked={runActive}/>
+      </div>
       {/* Named before the button is pressed. A free ticket that only reveals
           itself after the case is saved reads as if it was not applied. */}
       {creditCheckFailed && <p className={styles.creditNotice}><Gift/> <span><b>무료 이용권 보유 여부를 확인하지 못했습니다.</b> 이용권이 있으실 수도 있습니다. 새로고침한 뒤에도 이 안내가 보이면 결제 전에 알려 주세요.</span></p>}
@@ -594,8 +600,25 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         </p>
       )}
       <p>같은 원문·설정·분석 기준의 기존 결과가 확인되면 추가 결제나 이용권 사용 없이 엽니다.</p>
-      <button type="button" disabled={busy || runActive || !guest || !consentDecided || contextInvalid || (!postingReady && !allowMissingPosting)} onClick={() => void saveApplicationCase()}>{runActive ? "분석이 진행 중입니다" : busy ? "기존 결과 확인 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
-      {guest && !consentDecided && !busy && !runActive && <p className={styles.noDraft}>위에서 하나를 골라 주세요.</p>}
+      {/* 선택 전에도 눌러 볼 수 있게 둡니다. 회색 버튼이 아무 말 없이
+          안 눌리면 무엇을 해야 하는지 알 수 없어서, 누르면 무엇이
+          부족한지 알려 줍니다(aria-disabled로 접근성은 유지). */}
+      <button type="button" aria-disabled={!consentDecided || postingMissing} className={!consentDecided || postingMissing ? styles.softDisabled : undefined} disabled={busy || runActive || !guest || contextInvalid} onClick={() => {
+        if (!consentDecided) {
+          consentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          setConsentNudge(true);
+          window.setTimeout(() => setConsentNudge(false), 2200);
+          return;
+        }
+        if (postingMissing) {
+          setPostingNudge(true);
+          window.setTimeout(() => setPostingNudge(false), 4000);
+          return;
+        }
+        void saveApplicationCase();
+      }}>{runActive ? "분석이 진행 중입니다" : busy ? "기존 결과 확인 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
+      {guest && !consentDecided && !busy && !runActive && <p className={consentNudge ? styles.needChoice : styles.noDraft} role="status">위에서 ‘데이터 활용’이나 ‘활용하지 않기’ 중 하나를 골라 주세요.</p>}
+      {guest && consentDecided && postingMissing && !busy && !runActive && <p className={postingNudge ? styles.needChoice : styles.noDraft} role="status">채용공고 본문을 넣거나, 위쪽의 ‘공고 요구사항 대조 없이 진행’에 체크해 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL
           directly — or in a new tab — arrives with nothing to analyse and a
           grey button explaining nothing. Say which of the two it is. */}
