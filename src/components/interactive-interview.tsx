@@ -1,5 +1,6 @@
 "use client";
 
+import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 import { useEffect, useState } from "react";
 import type { ResultDocument } from "@/domain/result-document";
 import type { InterviewEvaluation, InterviewReport } from "@/domain/interview";
@@ -308,6 +309,7 @@ export function InteractiveInterview({ result, analysisRunId }: { result: Result
         <div className={styles.head}>
           <span>AI 모의면접</span>
           <h2>무료 재시도를 모두 사용했습니다</h2>
+          <ServiceDeliveryNotice kind="interview" />
           <p>
             {pendingFocusQuestionIds ? "약점만 다시 연습하기" : "처음부터 다시 연습하기"}는 각각 1회 무료로 제공됩니다.
             추가로 진행하려면 3,000원을 결제해 주세요.

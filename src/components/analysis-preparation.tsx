@@ -1,5 +1,6 @@
 "use client";
 
+import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 import { useEffect, useMemo, useState } from "react";
 import { ContextEnhancementOption } from "./context-enhancement-option";
 import type { ContextEnhancement } from "@/domain/context-enhancement";
@@ -335,6 +336,7 @@ export function AnalysisPreparation() {
                 <small>분석에는 5~10분이 걸립니다. 창을 닫으셔도 서버에서 계속 진행되고, 끝나면 결과 링크를 이메일로 보내드립니다. 기다리시면 완료 즉시 결과 화면으로 이동합니다. 분석에 실패하면 추가 결제 없이 다시 시도할 수 있습니다.</small>
               </span>
             </div>
+            <ServiceDeliveryNotice kind="analysis" />
             <div className={styles.privacy}>
               <LockKeyhole />
               <span>

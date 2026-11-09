@@ -1,5 +1,6 @@
 "use client";
 
+import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, Minus, X } from "lucide-react";
@@ -84,6 +85,7 @@ export function PricingComparison() {
           <span>PRICING</span><h2>지금 필요한 범위만 선택하세요.</h2>
           <p>이미 쓴 글을 고치는 것부터 지원서 전체와 면접을 준비하는 것까지, 한 지원 건을 기준으로 이용합니다.</p>
         </div>
+        <ServiceDeliveryNotice kind="analysis" />
         <div className={styles.cards}>
           {plans.map((plan) => (
             <article key={plan.id} className={plan.recommended ? styles.recommended : ""}>

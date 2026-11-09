@@ -1,5 +1,6 @@
 "use client";
 
+import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -291,6 +292,7 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
         <section className={styles.featureList}>{featureCopy.map(([Icon, titleText, body]) => <article key={titleText}><span><Icon /></span><div><b>{titleText}</b><p>{body}</p></div></article>)}</section>
       </div>
       <aside className={styles.packageCard}>
+        <ServiceDeliveryNotice kind="career" />
         <div className={styles.packageHead}><small>AI DEEP INTERPRETATION</small><h2>{isCombined ? "종합 심층해설" : "개별 심층해설"}</h2><p>결제하면 선택한 검사 결과를 바탕으로 AI가 바로 해설과 확인 질문을 만듭니다.</p></div>
         <ul>{["검사 결과 핵심 요약", isCombined ? "세 결과의 공통점·차이점" : "해당 결과의 의미와 확인 질문", "실제 경험과 공고를 볼 기준"].map((item) => <li key={item}><CheckCircle2 />{item}</li>)}</ul>
         <Link className={styles.sampleButton} href={`/career/ai/sample?scope=${scope}`}>심층해설 예시 보기 <ArrowRight /></Link>

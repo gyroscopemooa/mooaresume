@@ -1,5 +1,6 @@
 "use client";
 
+import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, ArrowRight, CheckCircle2, FileText, Loader2, LogIn, Mail, Trash2, UploadCloud, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -417,6 +418,7 @@ export function ResumeBuildPanel({ variant = "default" }: { variant?: "default" 
           {busy ? <><Loader2 className={styles.spin} />{phase === "running" ? "이력서를 만드는 중" : "결제 페이지로 이동 중"}</> : <>{RESUME_BUILD_PRICE_KRW.toLocaleString()}원 · AI로 이력서 만들기<ArrowRight /></>}
         </button>}
       </div>
+      <ServiceDeliveryNotice kind="document" />
       <p className={styles.terms}>1건 정액 {RESUME_BUILD_PRICE_KRW.toLocaleString()}원(부가세 포함). 올린 자료는 이력서를 만드는 데만 쓰이고 서버에 저장하지 않습니다. 결과가 나오지 않으면 결제한 건이 그대로 남아 다시 시도할 수 있고, 그래도 실패하면 환불해 드립니다.</p>
     </footer>
 
