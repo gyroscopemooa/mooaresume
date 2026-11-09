@@ -440,7 +440,7 @@ export default function HomePage() {
         </div>
         <div className={footerStyles.bottom}>
           <span>© 2026 MOOA Resume</span>
-          <details className={footerStyles.business}><summary>사업자 정보</summary><ul><li>상호: gyroscope · 대표: 전민수</li><li>사업자등록번호: 696-55-00795 · 통신판매업신고번호: 2023-울산남구-0547</li><li>울산광역시 남구 번영로 124번길 21 울산비즈니스센터 307호</li><li>support@transtream.app</li></ul></details>
+          <details className={footerStyles.business}><summary>사업자 정보</summary><ul><li>상호: gyroscope · 대표: 전민수</li><li>사업자등록번호: 696-55-00795 · 통신판매업신고번호: 2023-울산남구-0547</li><li>울산광역시 남구 팔등로 41번길,9 1202</li><li>support@mooaresume.com</li></ul></details>
         </div>
       </footer>
     </main></>

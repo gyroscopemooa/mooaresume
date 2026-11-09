@@ -8852,3 +8852,14 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Rollback: revert this focused follow-up commit. Validation/deploy pending.
 - Validation: 12 focused tests passed; targeted ESLint and production TypeScript/Next/OpenNext build passed. Local HTTP confirms 20 first-HTML post links, BlogPosting/operator author, related links and sitemap. Existing full-suite failures remain documented above; no unrelated changes.
 - Completed: source d7db0e7 pushed to main/task branch; dry-run and deployment passed, Worker 98c9970d-1d56-4a75-9332-a86a04e346a5. Live smoke passed (20 initial HTML links, author, BlogPosting, sitemap, unauthorized seed401). Google Rich Results live test of ef4299bb-c277-4eb1-a4e7-90b666fe7f2a: one valid Article, no critical errors; optional image and author.url warnings remain. Result https://search.google.com/test/rich-results/result?id=-lLENdibH1OidZ2-5bJn_A . No guaranteed sitelink/indexing claim.
+
+## 2026-11-09 — Codex: footer support email
+- Authorized: footer email correction, commit, push and production deployment.
+- Files: src/app/page.tsx and this log. Replace only support@transtream.app with support@mooaresume.com in business information.
+- Preservation: isolated origin/main worktree; root uncommitted work untouched. Rollback baseline: 1dd71cb7.
+- Status: implementation; validation and deployment pending.
+
+- Follow-up authorization: replace footer address with 울산광역시 남구 팔등로 41번길,9 1202. Same single-line scope; other business information unchanged.
+- Local build accommodation: temporary turbopack.root points to C:/6.mooaresume to resolve shared dependencies per installed Next docs; restored after build, no shipped source change. Webpack attempt rejected existing global CSS selectors.
+- Packaging accommodation: temporary outputFileTracingRoot set to the isolated worktree alongside turbopack.root so standalone paths match OpenNext expectations; both settings restored after build.
+- Validation: changed-page ESLint and full TypeScript passed. Full Vitest: 2443 passed, 5 failed, 1 skipped; four failing files concern existing app FINAL/PRO expectations, Google Play allowance, and missing Expo tsconfig. Full lint retains existing src/app/error.tsx anchor rule error plus seven warnings. No unrelated fixes included. Build packaging pending; temporary config restored. Shared dependency junction replaced with an isolated npm ci installation using the existing lockfile.
