@@ -435,7 +435,7 @@ export default function HomePage() {
           </div>
           <nav className={footerStyles.links} aria-label="하단 메뉴">
             <Link href="/community">취업·진로 커뮤니티 라운지</Link>
-            <Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><Link href="/privacy">개인정보처리방침</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의</a>
+            <Link href="/guide">이용방법 · 자주 묻는 질문</Link><Link href="/refer">친구 추천</Link><Link href="/policy">운영정책</Link><Link href="/privacy">개인정보처리방침</Link><a href="mailto:support@mooaresume.com">제휴·협업 문의</a>
           </nav>
         </div>
         <div className={footerStyles.bottom}>

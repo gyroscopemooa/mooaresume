@@ -10,6 +10,6 @@ const descriptions = {
 export function ServiceDeliveryNotice({ kind }: { kind: keyof typeof descriptions }) {
   return <aside aria-label="서비스 제공 안내" style={{ fontSize: "0.875rem", lineHeight: 1.7, marginBlock: "1rem", overflowWrap: "anywhere" }}>
     <p>{descriptions[kind]} 자동 갱신되는 정기결제가 아닙니다.</p>
-    <p>처리 시간은 입력 분량과 시스템 상황에 따라 달라질 수 있습니다. 결과의 보관·열람 기간은 서비스 제공기간과 구분됩니다. <Link href="/service-policy">서비스 제공·이용범위 안내</Link></p>
+    <p>처리 시간은 입력 분량과 시스템 상황에 따라 달라질 수 있습니다. 결과의 보관·열람 기간은 서비스 제공기간과 구분됩니다. <Link href="/policy#service-delivery">서비스 제공·이용범위 안내</Link></p>
   </aside>;
 }

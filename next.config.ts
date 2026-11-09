@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["local.mooaresume.com", "dev.mooaresume.com"],
   async redirects() {
     return [
+      { source: "/service-policy", destination: "/policy#service-delivery", permanent: true },
       { source: "/start", destination: "/begin", permanent: false },
       { source: "/analyze", destination: "/begin", permanent: false },
       { source: "/sample", destination: "/examples", permanent: false },

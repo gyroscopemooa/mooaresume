@@ -3,14 +3,15 @@ import Link from "next/link";
 import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 
 export const metadata: Metadata = {
-  title: "서비스 제공·이용범위 안내 | 무아레쥬메",
+  title: "운영정책",
   description: "상품별 결제 방식, 서비스 제공 시점과 이용범위, 결과 보관의 구분을 안내합니다.",
 };
 
-export default function ServicePolicyPage() {
+export default function OperatingPolicyPage() {
   return <main style={{ maxWidth: "48rem", margin: "0 auto", padding: "2rem 1rem", lineHeight: 1.8 }}>
     <Link href="/">무아레쥬메 홈</Link>
-    <h1>서비스 제공·이용범위 안내</h1>
+    <h1>운영정책</h1>
+    <h2 id="service-delivery">서비스 제공·이용범위·결제 방식</h2>
     <p>구매 화면에서 선택한 상품·분량·횟수를 기준으로 서비스를 제공합니다. 상품별 가격과 구매 가능 여부는 해당 구매 화면에서 확인할 수 있습니다.</p>
     <h2>AI 자기소개서 분석·첨삭</h2>
     <ServiceDeliveryNotice kind="analysis" />
