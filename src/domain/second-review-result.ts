@@ -41,15 +41,16 @@ export function buildExtraReviewResult(source: ResultDocument, preview: AdminAna
     analyzedAt: preview.createdAt,
     questions: source.questions.map((question, index) => {
       const items = groups[index];
+      const recommendationOnly = items.every(item => item.section?.recommendationOnly === true);
       const single = items.length === 1 ? items[0] : null;
-      const revisedAnswer = single ? single.revisedAnswer : items.reduce((text, item) =>
+      const revisedAnswer = recommendationOnly ? question.revisedAnswer : single ? single.revisedAnswer : items.reduce((text, item) =>
         same(item.section!.originalAnswer, item.revisedAnswer) ? text : text.replace(item.section!.originalAnswer.trim(), item.revisedAnswer.trim()), question.revisedAnswer);
       const changed = !same(revisedAnswer, question.revisedAnswer);
       return {
         ...question,
         revisedAnswer,
         revisionReasons: changed ? items.filter(item => !same(item.section!.originalAnswer, item.revisedAnswer)).flatMap(item => item.section!.revisionReasons) : question.revisionReasons,
-        recommendations: items.flatMap(item => item.section!.recommendations ?? []),
+        recommendations: [...(recommendationOnly ? question.recommendations ?? [] : []), ...items.flatMap(item => item.section!.recommendations ?? [])],
         // 1차 소제목이 있으면 그대로 두고, 없을 때만 추가 첨삭의 다른 시각 소제목을 보여 준다(문항 하나에 항목 하나일 때만).
         subheading: question.subheading ?? (single && !/^\s*\[/.test(single.revisedAnswer) ? single.section!.subheading : undefined),
       };

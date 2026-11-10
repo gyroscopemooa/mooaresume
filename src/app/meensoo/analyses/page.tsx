@@ -245,7 +245,7 @@ export default async function AnalysesPage() {
                         <small>{(recipientsByRun[analysis.id] ?? []).filter(email => email === analysis.email.toLowerCase()).length > 0 ? "고객 발송됨" : "미발송"}</small>
                         <ExtraReviewSend compact runId={analysis.id} previewId={previewByRun[analysis.id].id} ownerEmail={analysis.email}
                           sentToOwner={(recipientsByRun[analysis.id] ?? []).filter(email => email === analysis.email.toLowerCase()).length} />
-                      </> : automatic.items[analysis.id] ? <small>{automatic.items[analysis.id].status === "needs_attention" ? "생성 중단" : "생성 중"}</small> : <span className={styles.mono}>—</span>}
+                      </> : automatic.items[analysis.id] ? <small>{automatic.items[analysis.id].failure === "SECOND_REVIEW_NO_ADDITIONAL_SUGGESTIONS" ? "추가 제안 없음" : automatic.items[analysis.id].status === "needs_attention" ? "생성 중단" : "생성 중"}</small> : <span className={styles.mono}>—</span>}
                     </td>
                     <td>{kst(analysis.completedAt)}</td>
                     <td className={styles.mono}>{analysis.model ?? "—"}<br />{analysis.promptVersion ?? ""}</td>

@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { AUTO_REVIEW_VERSION, CONSULTANT_RULES, VERIFY_RULES, draftRequestSchema, verificationRequestSchema } from "./automatic-contract";
+import { RECOMMENDATION_REVIEW_VERSION, RECOMMENDATION_RULES, RECOMMENDATION_VERIFY_RULES, recommendationDraftSchema, recommendationVerificationSchema } from "./recommendation-contract";
 
 const envelopeSchema = z.object({
   id: z.string(), model: z.string().optional(), status: z.string(),
@@ -16,28 +17,33 @@ export type AutomaticPoll =
   | { status: "failed" };
 export interface AutomaticGateway {
   readonly model?: string;
-  start(stage: "draft" | "verify", input: unknown): Promise<string>;
-  poll(responseId: string): Promise<AutomaticPoll>;
+  start(stage: "draft" | "verify", input: unknown, version?: string): Promise<string>;
+  poll(responseId: string, version?: string): Promise<AutomaticPoll>;
 }
 export class AutomaticReviewGateway implements AutomaticGateway {
   constructor(private readonly apiKey: string, readonly model: string, private readonly transport: typeof fetch = fetch) {}
-  async start(stage: "draft" | "verify", input: unknown) {
-    const schema = z.toJSONSchema(stage === "draft" ? draftRequestSchema : verificationRequestSchema);
+  async start(stage: "draft" | "verify", input: unknown, version = AUTO_REVIEW_VERSION) {
+    const recommendationOnly = version === RECOMMENDATION_REVIEW_VERSION;
+    const schema = z.toJSONSchema(recommendationOnly
+      ? stage === "draft" ? recommendationDraftSchema : recommendationVerificationSchema
+      : stage === "draft" ? draftRequestSchema : verificationRequestSchema);
     const response = await this.transport("https://api.openai.com/v1/responses", {
       method: "POST", headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
       signal: AbortSignal.timeout(25_000),
       body: JSON.stringify({
         model: this.model, background: true, store: true,
-        instructions: stage === "draft" ? CONSULTANT_RULES : VERIFY_RULES,
+        instructions: recommendationOnly
+          ? stage === "draft" ? RECOMMENDATION_RULES : RECOMMENDATION_VERIFY_RULES
+          : stage === "draft" ? CONSULTANT_RULES : VERIFY_RULES,
         input: JSON.stringify(input), max_output_tokens: stage === "draft" ? 24000 : 12000,
         text: { format: { type: "json_schema", name: `consultant_${stage}`, strict: true, schema } },
-        metadata: { purpose: "admin_second_review", version: AUTO_REVIEW_VERSION, stage },
+        metadata: { purpose: "admin_second_review", version, stage },
       }),
     });
     if (!response.ok) throw new Error(`SECOND_REVIEW_START_HTTP_${response.status}`);
     return envelopeSchema.parse(await response.json()).id;
   }
-  async poll(responseId: string): Promise<AutomaticPoll> {
+  async poll(responseId: string, version = AUTO_REVIEW_VERSION): Promise<AutomaticPoll> {
     if (!/^resp_[a-zA-Z0-9_-]+$/.test(responseId)) throw new Error("SECOND_REVIEW_INVALID_RESPONSE");
     const response = await this.transport(`https://api.openai.com/v1/responses/${responseId}`, {
       headers: { Authorization: `Bearer ${this.apiKey}` }, signal: AbortSignal.timeout(15_000),
@@ -50,7 +56,7 @@ export class AutomaticReviewGateway implements AutomaticGateway {
     if (!text) throw new Error("SECOND_REVIEW_EMPTY_OUTPUT");
     return { status: "completed", output: JSON.parse(text), execution: {
       responseId: data.id, model: data.model ?? this.model, usage: data.usage ?? null,
-      promptVersion: AUTO_REVIEW_VERSION, rubricVersion: AUTO_REVIEW_VERSION, schemaVersion: AUTO_REVIEW_VERSION,
+      promptVersion: version, rubricVersion: version, schemaVersion: version,
     } };
   }
 }

@@ -1,7 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only",()=>({}));
 import { AutomaticReviewGateway } from "./automatic-gateway";
+import { RECOMMENDATION_REVIEW_VERSION } from "./recommendation-contract";
 describe("automatic review wire contract",()=>{
+  it("requests only versioned recommendations and per-recommendation judgments for v2", async () => {
+    const transport = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "resp_v2", status: "queued" })));
+    const gateway = new AutomaticReviewGateway("key", "fixture", transport);
+    await gateway.start("draft", {}, RECOMMENDATION_REVIEW_VERSION);
+    const request = JSON.parse(transport.mock.calls[0][1].body);
+    expect(request.metadata.version).toBe(RECOMMENDATION_REVIEW_VERSION);
+    expect(JSON.stringify(request.text.format.schema)).not.toMatch(/revisedAnswer|disposition/);
+    expect(request.instructions).toContain("0~3개");
+    transport.mockResolvedValue(new Response(JSON.stringify({ id: "resp_verify_v2", status: "queued" })));
+    await gateway.start("verify", {}, RECOMMENDATION_REVIEW_VERSION);
+    const verification = JSON.parse(transport.mock.calls[1][1].body);
+    expect(JSON.stringify(verification.text.format.schema)).toContain("consistentWithFirst");
+    expect(JSON.stringify(verification.text.format.schema)).not.toContain('"approved"');
+    expect(verification.instructions).toContain("본문에서 무엇이 삭제/변경됐다는 추정");
+  });
   it("starts bounded structured background calls with separate instructions",async()=>{
     const transport=vi.fn().mockResolvedValue(new Response(JSON.stringify({id:"resp_test",status:"queued",model:"fixture"})));
     const gateway=new AutomaticReviewGateway("test-key","fixture",transport);

@@ -8,7 +8,7 @@ import { advanceAutomaticReview, jobSchema, type AutomaticRepository } from "./a
 export function automaticRepository(): AutomaticRepository {
   const db = serviceClient();
   return {
-    async loadContext(runId) {
+    async loadContext(runId, recommendationOnly = false) {
       const run = await db.from("analysis_runs").select("submission_snapshot_id,writing_mode,writing_style,target_length,status").eq("id",runId).single();
       const result = await db.from("analysis_results").select("result_data").eq("analysis_run_id",runId).single();
       if (run.error || result.error || run.data.status !== "COMPLETED") throw new Error("SECOND_REVIEW_SOURCE_MISSING");
@@ -21,7 +21,11 @@ export function automaticRepository(): AutomaticRepository {
       if (docs.error) throw new Error("SECOND_REVIEW_DOCUMENTS_MISSING");
       const kinds = new Map(docs.data.map(d => [d.id,d.kind]));
       return contextSchema.parse({
-        units: buildReviewUnits(source), source: reviewSource(source),
+        // v2 attaches suggestions to saved questions; unmatched section titles cannot duplicate the body.
+        units: recommendationOnly ? source.questions.map((question, index) => ({
+          order: index + 1, sourceQuestionOrder: question.order, title: question.title,
+          sourceText: question.originalAnswer, firstAnswer: question.revisedAnswer,
+        })) : buildReviewUnits(source), source: reviewSource(source),
         documents: versions.data.map(v => ({ kind: kinds.get(v.document_id) ?? "UNKNOWN", text: v.normalized_text ?? "" })),
         writingMode: run.data.writing_mode, writingStyle: run.data.writing_style ?? "DEFAULT",
         targetLength: run.data.target_length,
