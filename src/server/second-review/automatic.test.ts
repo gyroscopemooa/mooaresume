@@ -22,6 +22,15 @@ function mocks() {
   return { repository, gateway };
 }
 describe("automatic consultant review", () => {
+  it("allows maintained polite -bieup-nida text while still blocking plain text", () => {
+    const text = "부담을 느낍니다. 성과를 냅니다. 앞으로 갑니다.";
+    const politeContext = { ...context, units: [{ ...context.units[0], sourceText: text, firstAnswer: text }] };
+    const kept: ReviewDraft = { ...draft, answers: [{ ...draft.answers[0], disposition: "maintained", revisedAnswer: text }] };
+    expect(() => validateDraft(politeContext, kept)).not.toThrow();
+    const plainText = "사실이 아니다.";
+    expect(() => validateDraft({ ...context, units: [{ ...context.units[0], sourceText: plainText, firstAnswer: plainText }] },
+      { ...kept, answers: [{ ...kept.answers[0], revisedAnswer: plainText }] })).toThrow("PLAIN_STYLE");
+  });
   it("preserves all five source topics even when the first output collapsed them", () => {
     const titles = ["지원 계기","하고 싶은 일","경험 ①","강점과 일하는 방식","입사 후 목표"];
     const source = { ...sampleResultDocument, questions: [{ ...sampleResultDocument.questions[0],

@@ -72,8 +72,12 @@ export function sentenceEndingStyles(text: string) {
   let polite = 0;
   let plain = 0;
   for (const sentence of sentences) {
-    const body = sentence.replace(/[.!?]+$/, "").trim();
-    if (/(?:습니다|입니다|겠습니다|드립니다|합니다|됩니다|있습니다|없습니다)$/.test(body)) polite += 1;
+    const body = sentence.normalize("NFC").replace(/[.!?]+$/, "").trim();
+    // -ㅂ니다 attaches its final ㅂ to the preceding syllable (갑니다, 냅니다).
+    // Do not accept every -니다: 아니다 is still a plain ending.
+    const beforeNida = body.endsWith("니다") ? body.charCodeAt(body.length - 3) : 0;
+    const bieupNida = beforeNida >= 0xac00 && beforeNida <= 0xd7a3 && (beforeNida - 0xac00) % 28 === 17;
+    if (bieupNida || /(?:습니다|입니다|겠습니다|드립니다|합니다|됩니다|있습니다|없습니다)$/.test(body)) polite += 1;
     else if (/(?:다|한다|했다|된다|싶다|있다|없다)$/.test(body)) plain += 1;
   }
   return { plain, polite };

@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import type { QuickAnalysisOutput } from "./schema";
-import { BLOCKING_VALIDATION_CODES, validateQuickAnalysis } from "./validator";
+import { BLOCKING_VALIDATION_CODES, sentenceEndingStyles, validateQuickAnalysis } from "./validator";
+
+describe("sentence ending styles", () => {
+  it.each(["부담을 느낍니다.", "성과를 냅니다.", "앞으로 갑니다.", "경험입니다.", "노력했습니다."])("recognizes polite ending: %s", text => {
+    expect(sentenceEndingStyles(text)).toEqual({ plain: 0, polite: 1 });
+  });
+  it.each(["사실이 아니다.", "앞으로 간다.", "성과를 낸다.", "일하고 싶다."])("still detects plain ending: %s", text => {
+    expect(sentenceEndingStyles(text)).toEqual({ plain: 1, polite: 0 });
+  });
+  it("keeps mixed style detectable", () => {
+    expect(sentenceEndingStyles("부담을 느낍니다. 사실이 아니다.")).toEqual({ plain: 1, polite: 1 });
+  });
+});
 
 const output = (revisedAnswer: string, evidenceQuote: string): QuickAnalysisOutput => ({
   schemaVersion: "1.0",
