@@ -14,7 +14,7 @@ export function SocialLoginButtons({ onSignIn, busy = false, className }: {
     {providers.map(({ id, label }) => <button
       type="button"
       key={id}
-      className={`${className ?? ""} ${styles.button}`}
+      className={`${id === "google" ? className ?? "" : ""} ${styles.button}`}
       data-provider={id === "google" ? "google" : id === "kakao" ? "kakao" : "naver"}
       disabled={busy}
       onClick={() => onSignIn(id)}

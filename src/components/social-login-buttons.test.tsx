@@ -38,6 +38,13 @@ describe("SocialLoginButtons", () => {
     expect(kakao.querySelector("img")?.getAttribute("alt")).toBe("");
     expect(naver.querySelector("img")?.getAttribute("width")).toBe("210");
   });
+  it("limits legacy consumer styling to Google so branded buttons stay compact", () => {
+    enableProviders();
+    render(<SocialLoginButtons className="legacy-google-style" onSignIn={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Google로 계속하기" }).classList.contains("legacy-google-style")).toBe(true);
+    expect(screen.getByRole("button", { name: "카카오로 계속하기" }).classList.contains("legacy-google-style")).toBe(false);
+    expect(screen.getByRole("button", { name: "네이버로 계속하기" }).classList.contains("legacy-google-style")).toBe(false);
+  });
   it("blocks repeated/different provider clicks while a sign-in is pending", () => {
     enableProviders();
     const signIn = vi.fn();

@@ -34,6 +34,19 @@ function seedDraft(answerLength: number, overrides: Record<string, unknown> = {}
 const findNotice = () => screen.queryByText(/문항당 목표 분량의/);
 
 describe("분량이 부족한 채로 최종 첨삭을 고른 경우", () => {
+  it("keeps the full service disclosure below both columns, outside the left card", async () => {
+    seedDraft(640);
+    render(<AnalysisPreparation />);
+    await screen.findByText("분석 시작 전 확인");
+    const notice = screen.getByRole("complementary", { name: "서비스 제공 안내" });
+    const footer = notice.closest("footer");
+    expect(footer).not.toBeNull();
+    expect(footer?.parentElement?.lastElementChild).toBe(footer);
+    expect(notice.closest("section")).toBeNull();
+    expect(footer?.previousElementSibling?.querySelectorAll(":scope > section").length).toBe(2);
+    expect(notice.style.fontSize).toBe("0.75rem");
+    expect(screen.getByRole("link", { name: "서비스 제공·이용범위 안내" }).getAttribute("href")).toBe("/policy#service-delivery");
+  });
   it("a URL alone is not ready and proceeding without the body requires acknowledgement", async () => {
     seedDraft(640);
     sessionStorage.setItem("mooa:guest-job-posting:v1", "https://example.com/jobs");

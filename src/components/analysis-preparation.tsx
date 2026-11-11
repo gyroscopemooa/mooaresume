@@ -356,7 +356,6 @@ export function AnalysisPreparation() {
                 넣은 사람이 받습니다. 한 칸이면 그 차이를 물어보게 됩니다. */}
             <div className={styles.referralNote}><CouponCodeEntry compact requireSignIn returnTo="/analysis/prepare" /></div>
             </details>
-            <ServiceDeliveryNotice kind="analysis" compact />
           </section>
           <section className={styles.scope}>
             <small>{product} 제공 범위</small>
@@ -400,6 +399,9 @@ export function AnalysisPreparation() {
             </p>
           </section>
         </div>
+        <footer className={styles.deliveryFooter}>
+          <ServiceDeliveryNotice kind="analysis" compact />
+        </footer>
       </div>
     </main>
   );

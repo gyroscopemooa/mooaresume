@@ -17,7 +17,7 @@ describe("service delivery disclosure", () => {
     expect(notice.textContent).toContain("처리 시간은 입력 분량과 시스템 상황에 따라 달라질 수 있습니다.");
     expect(notice.textContent).toContain("결과의 보관·열람 기간은 서비스 제공기간과 구분됩니다.");
     expect(screen.getByRole("link", { name: "서비스 제공·이용범위 안내" }).getAttribute("href")).toBe("/policy#service-delivery");
-    expect(notice.style.fontSize).toBe("0.8125rem");
+    expect(notice.style.fontSize).toBe("0.75rem");
     expect(notice.closest("details")).toBeNull();
     expect(notice.hidden).toBe(false);
   });

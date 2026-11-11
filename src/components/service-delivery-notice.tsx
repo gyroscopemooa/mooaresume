@@ -8,7 +8,7 @@ const descriptions = {
 };
 
 export function ServiceDeliveryNotice({ kind, compact = false }: { kind: keyof typeof descriptions; compact?: boolean }) {
-  return <aside aria-label="서비스 제공 안내" style={{ fontSize: compact ? "0.8125rem" : "0.875rem", lineHeight: compact ? 1.6 : 1.7, marginBlock: compact ? "0.75rem" : "1rem", color: compact ? "#5f6b65" : undefined, overflowWrap: "anywhere" }}>
+  return <aside aria-label="서비스 제공 안내" style={{ fontSize: compact ? "0.75rem" : "0.875rem", lineHeight: compact ? 1.6 : 1.7, marginBlock: compact ? "0.75rem" : "1rem", color: compact ? "#5f6b65" : undefined, overflowWrap: "anywhere" }}>
     <p style={compact ? { margin: 0 } : undefined}>{descriptions[kind]} 자동 갱신되는 정기결제가 아닙니다.</p>
     <p style={compact ? { margin: "0.25rem 0 0" } : undefined}>처리 시간은 입력 분량과 시스템 상황에 따라 달라질 수 있습니다. 결과의 보관·열람 기간은 서비스 제공기간과 구분됩니다. <Link href="/policy#service-delivery">서비스 제공·이용범위 안내</Link></p>
   </aside>;
