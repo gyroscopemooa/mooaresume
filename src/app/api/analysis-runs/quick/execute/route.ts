@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { socialEmailGuard } from "@/server/auth/social-email-guard";
 import { authenticateMobile, mobileFailure } from "@/server/mobile/auth";
 import { sendAnalysisCompleteEmail } from "@/server/notifications/analysis-complete-email";
 import { OpenAIResponsesGateway } from "@/server/ai/quick/openai-responses-gateway";
@@ -95,6 +96,8 @@ export async function POST(request: NextRequest) {
   if (error || !data.user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
+  const emailGuard = socialEmailGuard(data.user, "/analysis/prepare");
+  if (emailGuard) return emailGuard;
 
   // 바깥 catch에서도 쓸 수 있게 밖에 둡니다.
   //

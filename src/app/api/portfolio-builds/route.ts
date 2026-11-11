@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { socialEmailGuard } from "@/server/auth/social-email-guard";
 import { PORTFOLIO_BUILD_PRICE_KRW } from "@/domain/portfolio-build";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
 import { createDocumentBuildCheckout } from "@/server/billing/document-build-checkout";
@@ -27,6 +28,8 @@ export async function POST(request: NextRequest) {
   if (authError || !authData.user) {
     return NextResponse.json({ error: "로그인이 필요합니다.", code: "AUTH_REQUIRED" }, { status: 401 });
   }
+  const emailGuard = socialEmailGuard(authData.user, "/portfolio");
+  if (emailGuard) return emailGuard;
 
   const siteUrl = getCheckoutReturnOrigin(request.nextUrl);
   let buildId: string | null = null;

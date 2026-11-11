@@ -9,6 +9,7 @@ import { RuntimeSiteNotice } from "@/components/runtime-site-notice";
 import "./globals.css";
 import "./site-header-modern.css";
 import { HeaderMotion } from "@/components/header-motion";
+import { AuthCallbackNotice } from "@/components/auth-callback-notice";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
 
 // Do not let a cached document from an older Worker version request assets
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: APP_MARKER_SCRIPT }} />
       </head>
       <body className={notoSansKr.variable}>
+        <AuthCallbackNotice />
         <RuntimeSiteNotice />
         <MaintenanceGate>{children}</MaintenanceGate>
         {/* 하이브리드 앱 셸에서만 보이는 하단 메뉴바. 일반 웹 방문자에게는

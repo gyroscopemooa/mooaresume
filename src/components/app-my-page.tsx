@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CircleUser, Gift, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
+import { emailCompletionPath } from "@/lib/auth/redirect";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import { AccountDeleteForm } from "./account-delete-form";
 import { AppIntroReplayButton } from "./app-first-run-onboarding";
@@ -42,12 +46,15 @@ function formatDate(value: string): string {
 
 export function AppMyPage() {
   const [email, setEmail] = useState<string | null>(null);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
   const [ready, setReady] = useState(false);
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [caseTitles, setCaseTitles] = useState<Record<string, string>>({});
   const [credits, setCredits] = useState<string[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  useOAuthReturnReset(() => setBusy(false));
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +63,9 @@ export function AppMyPage() {
       try {
         const { data: auth } = await supabase.auth.getUser();
         if (cancelled) return;
-        setEmail(auth.user?.email ?? null);
+        setEmail(auth.user?.email || null);
+        setEmailConfirmed(Boolean(auth.user?.email && auth.user.email_confirmed_at));
+        setSignedIn(Boolean(auth.user));
         setReady(true);
         if (!auth.user) return;
         // RLS가 본인 것만 돌려줍니다. 새 서버 경로를 만들지 않은 이유입니다.
@@ -78,14 +87,18 @@ export function AppMyPage() {
     return () => { cancelled = true; };
   }, []);
 
-  async function signIn() {
+  async function signIn(provider: SocialLoginProvider = "google") {
     setBusy(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
         options: { redirectTo: createAuthCallbackUrl("/app/my") },
-    });
-    if (error) setBusy(false);
+      });
+      if (error) setBusy(false);
+    } catch {
+      setBusy(false);
+    }
   }
 
   async function signOut() {
@@ -93,6 +106,7 @@ export function AppMyPage() {
     try {
       await createClient().auth.signOut();
       setEmail(null);
+      setSignedIn(false);
       setRuns([]);
       setCredits([]);
     } finally {
@@ -107,16 +121,17 @@ export function AppMyPage() {
       <div className={styles.account}>
         <CircleUser/>
         <div>
-          <b>{!ready ? "확인 중..." : email ?? "로그인하지 않았습니다"}</b>
-          <small>{email ? "지원 건과 결과는 이 계정에만 보입니다." : "로그인하면 지난 분석과 이용권을 볼 수 있습니다."}</small>
+          <b>{!ready ? "확인 중..." : signedIn ? email ?? "이메일 확인 필요" : "로그인하지 않았습니다"}</b>
+          <small>{signedIn ? "지원 건과 결과는 이 계정에만 보입니다." : "로그인하면 지난 분석과 이용권을 볼 수 있습니다."}</small>
         </div>
       </div>
-      {ready && (email
+      {ready && signedIn && !emailConfirmed && <Link href={emailCompletionPath("/app/my")}>이메일 확인하기</Link>}
+      {ready && (signedIn
         ? <button type="button" className={styles.secondary} disabled={busy} onClick={() => void signOut()}>{busy ? "처리 중..." : "로그아웃"}</button>
-        : <button type="button" className={styles.primary} disabled={busy} onClick={() => void signIn()}>{busy ? "이동 중..." : "Google로 로그인"} <ArrowRight/></button>)}
+        : <SocialLoginButtons className={styles.primary} onSignIn={(provider) => void signIn(provider)} busy={busy} />)}
     </section>
 
-    {email && <section className={styles.card}>
+    {signedIn && <section className={styles.card}>
       <h2>지난 분석</h2>
       {loadFailed && <p className={styles.notice}>목록을 모두 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>}
       {runs.length === 0 && !loadFailed && <p className={styles.empty}>아직 분석 기록이 없습니다. 첨삭 탭에서 자기소개서를 넣어 보세요.</p>}
@@ -133,7 +148,7 @@ export function AppMyPage() {
       </ul>
     </section>}
 
-    {email && credits.length > 0 && <p className={styles.credit}>
+    {signedIn && credits.length > 0 && <p className={styles.credit}>
       <Gift/> <span><b>사용하지 않은 이용권 {credits.length}개</b> · {[...new Set(credits)].join(", ")}</span>
     </p>}
 

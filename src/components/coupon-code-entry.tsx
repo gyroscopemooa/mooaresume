@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import { getSocialLoginProviders, type SocialLoginProvider } from "@/lib/auth/social-providers";
+import { createAuthCallbackUrl } from "@/lib/app-context";
 import { PENDING_COUPON_CODE, stashPendingCode, takePendingCode } from "@/lib/pending-code";
 import { announceCreditChange } from "@/lib/credit-events";
 import styles from "./coupon-code-entry.module.css";
@@ -52,9 +56,11 @@ export function CouponCodeEntry({
 }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  useOAuthReturnReset(() => setBusy(false));
   const [done, setDone] = useState(false);
   const [message, setMessage] = useState("");
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [choosingProvider, setChoosingProvider] = useState(false);
 
   useEffect(() => {
     if (!requireSignIn) return;
@@ -85,17 +91,24 @@ export function CouponCodeEntry({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signedIn]);
 
-  async function signIn() {
+  async function signIn(provider: SocialLoginProvider = "google") {
     setBusy(true);
     try {
       const { error } = await createClient().auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=${returnTo}` },
+        provider,
+        options: { redirectTo: createAuthCallbackUrl(returnTo) },
       });
-      if (error) setBusy(false);
+      if (error) throw error;
     } catch {
       setBusy(false);
+      setMessage("로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
+  }
+
+  function cancelSignIn() {
+    takePendingCode(PENDING_COUPON_CODE);
+    setChoosingProvider(false);
+    setMessage("");
   }
 
   async function apply(given?: string) {
@@ -105,10 +118,18 @@ export function CouponCodeEntry({
     // 로그인 전에는 코드가 맞는지 확인해 줄 수 없습니다. 확인해 주는 창구를
     // 열어 두면 코드를 찍어 보며 남의 쿠폰을 캐낼 수 있기 때문입니다. 그래서
     // 오타는 로그인하고 돌아온 뒤에야 알려드리게 됩니다.
+    if (requireSignIn && signedIn === null) {
+      setMessage("로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
     if (requireSignIn && signedIn === false) {
       stashPendingCode(PENDING_COUPON_CODE, trimmed);
       setMessage("로그인 후 자동으로 등록해 드립니다.");
-      await signIn();
+      if (getSocialLoginProviders().length > 1) {
+        setChoosingProvider(true);
+      } else {
+        await signIn();
+      }
       return;
     }
 
@@ -148,16 +169,20 @@ export function CouponCodeEntry({
           value={code}
           onChange={(event) => setCode(event.target.value.toUpperCase())}
           placeholder="YOUTH-MUA-2026"
-          disabled={busy || done}
+          disabled={busy || done || choosingProvider}
           maxLength={40}
           aria-label="쿠폰 코드"
           onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void apply(); } }}
         />
-        <button type="button" onClick={() => void apply()} disabled={busy || done}>
+        <button type="button" onClick={() => void apply()} disabled={busy || done || choosingProvider}>
           {done ? "완료" : busy ? "확인 중" : needsSignIn ? "로그인하고 등록" : "등록"}
         </button>
       </div>
-      {/* 누르기 전에 무슨 일이 생길지 미리 말해 둡니다. 구글 화면으로 넘어가는
+      {choosingProvider && <div className={styles.row}>
+        <SocialLoginButtons onSignIn={(provider) => void signIn(provider)} busy={busy} />
+        <button type="button" onClick={cancelSignIn} disabled={busy}>로그인 선택 취소</button>
+      </div>}
+      {/* 누르기 전에 무슨 일이 생길지 미리 말해 둡니다. 로그인 화면으로 넘어가는
           것은 놀랄 만한 일이라, 버튼을 누른 다음에 알리면 늦습니다. */}
       {needsSignIn && !message && (
         <p className={styles.hint}>등록을 누르면 로그인 후 자동으로 적용됩니다.</p>

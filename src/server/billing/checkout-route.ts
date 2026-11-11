@@ -4,6 +4,7 @@ import { isIP } from "node:net";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { socialEmailGuard } from "@/server/auth/social-email-guard";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
 import { classifyPolarFailure, createPolarCheckoutGatewayFromEnv, describePolarConfigShape } from "@/server/billing/polar-checkout";
 import { createQuickCheckout, QuickCheckoutError } from "@/server/billing/quick-checkout-service";
@@ -55,6 +56,8 @@ export async function handleCheckoutRequest(request: NextRequest) {
   if (authError || !authData.user) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
+  const emailGuard = socialEmailGuard(authData.user, "/analysis/prepare");
+  if (emailGuard) return emailGuard;
 
   let body: unknown;
   try {

@@ -7,6 +7,10 @@ import { ArrowRight, BadgeCheck, FileText, Flame, ImagePlus, LoaderCircle, Messa
 import { COMMUNITY_ADMIN_DISPLAY_EMAIL, communityPostPath, communityTopicMeta, communityTopics, type CommunityAttachmentInput, type CommunityComment, type CommunityPost, type CommunityTopicId } from "@/domain/community";
 import { SiteNav } from "@/components/site-nav";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import { getSocialLoginProviders, type SocialLoginProvider } from "@/lib/auth/social-providers";
+import { createAuthCallbackUrl } from "@/lib/app-context";
 import styles from "./community-lounge.module.css";
 
 type Sort = "latest" | "popular";
@@ -20,6 +24,8 @@ export function CommunityLounge({ attachmentNotice = false, initialFeed }: { att
   // 처음 값(마운트 시점)만 씁니다 — 배너를 닫은 뒤 부모가 리렌더된다고
   // 다시 켜지면 안 됩니다. 그래서 useState 초깃값으로만 받습니다.
   const [showAttachmentNotice, setShowAttachmentNotice] = useState(attachmentNotice);
+  const [attachmentAuthBusy, setAttachmentAuthBusy] = useState(false);
+  useOAuthReturnReset(() => setAttachmentAuthBusy(false));
   useEffect(() => {
     // 새로고침해도 같은 배너가 또 뜨지 않게, 보여준 즉시 주소의 표시만 지웁니다.
     if (attachmentNotice) router.replace("/community");
@@ -161,11 +167,18 @@ export function CommunityLounge({ attachmentNotice = false, initialFeed }: { att
   // 헤더의 계정 메뉴가 쓰는 것과 같은 로그인입니다. 첨부를 누르자마자
   // 새 탭이 아니라 이 배너에서 바로 로그인까지 끝낼 수 있게 여기서도
   // 직접 부릅니다.
-  async function signInForAttachment() {
-    await createClient().auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/community` },
-    });
+  async function signInForAttachment(provider: SocialLoginProvider = "google") {
+    setAttachmentAuthBusy(true);
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: createAuthCallbackUrl("/community") },
+      });
+      if (error) throw error;
+    } catch {
+      setAttachmentAuthBusy(false);
+      setMessage("로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
   }
 
   // 데스크톱 사이드바는 20개까지 다 보여주지만, 모바일은 페이지 맨 위에
@@ -189,7 +202,9 @@ export function CommunityLounge({ attachmentNotice = false, initialFeed }: { att
 
     {showAttachmentNotice && <div className={styles.loginNotice} role="status">
       <ShieldAlert/> 첨부파일은 로그인 후에 볼 수 있어요.
-      <button type="button" onClick={() => void signInForAttachment()}>로그인하기</button>
+      {getSocialLoginProviders().length > 1
+        ? <SocialLoginButtons onSignIn={(provider) => void signInForAttachment(provider)} busy={attachmentAuthBusy} />
+        : <button type="button" disabled={attachmentAuthBusy} onClick={() => void signInForAttachment()}>로그인하기</button>}
       <button type="button" aria-label="안내 닫기" onClick={() => setShowAttachmentNotice(false)}><X/></button>
     </div>}
 

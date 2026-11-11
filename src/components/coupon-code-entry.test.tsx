@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { CouponCodeEntry } from "./coupon-code-entry";
 import { PENDING_COUPON_CODE } from "@/lib/pending-code";
 import { CREDIT_CHANGED_EVENT } from "@/lib/credit-events";
+import { syncAppContext } from "@/lib/app-context";
 
 /**
  * 이 화면이 막히면 사람이 돈을 냅니다.
@@ -148,5 +149,77 @@ describe("로그인한 상태", () => {
     fireEvent.click(button());
 
     expect(await screen.findByText("준비된 수량이 모두 사용되었습니다.")).toBeTruthy();
+  });
+});
+
+
+describe("여러 소셜 로그인 방법을 사용할 때", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_LOGIN_ENABLED", "true");
+    vi.stubEnv("NEXT_PUBLIC_NAVER_LOGIN_ENABLED", "true");
+    vi.stubEnv("NEXT_PUBLIC_NAVER_AUTH_PROVIDER", "custom:naver-kr");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it.each([
+    { label: "카카오", provider: "kakao" },
+    { label: "네이버", provider: "custom:naver-kr" },
+  ])("$label 선택까지 쿠폰을 보관하고 로그인 왕복 뒤 한 번만 등록한다", async ({ label, provider }) => {
+    const returnTo = "/analysis/prepare?draft=kept&product=PRO";
+    syncAppContext({ pathname: "/analysis/prepare", search: "?source=twa", referrer: "", twaBilling: false });
+    const beforeLogin = render(<CouponCodeEntry requireSignIn returnTo={returnTo} />);
+    await screen.findByRole("button", { name: "로그인하고 등록" });
+
+    fireEvent.change(field(), { target: { value: "youth-mua-2026" } });
+    fireEvent.click(screen.getByRole("button", { name: "로그인하고 등록" }));
+
+    expect(screen.getByRole("group", { name: "로그인 방법" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Google로 계속하기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "카카오로 계속하기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "네이버로 계속하기" })).toBeTruthy();
+    expect(sessionStorage.getItem(PENDING_COUPON_CODE)).toBe("YOUTH-MUA-2026");
+    expect(signInWithOAuth).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: `${label}로 계속하기` }));
+    await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledTimes(1));
+    const oauth = signInWithOAuth.mock.calls[0][0] as { provider: string; options: { redirectTo: string } };
+    expect(oauth.provider).toBe(provider);
+    const callback = new URL(oauth.options.redirectTo);
+    expect(callback.pathname).toBe("/auth/callback");
+    const next = new URL(callback.searchParams.get("next")!, window.location.origin);
+    expect(next.pathname).toBe("/analysis/prepare");
+    expect(next.searchParams.get("draft")).toBe("kept");
+    expect(next.searchParams.get("product")).toBe("PRO");
+    expect(next.searchParams.get("source")).toBe("twa");
+    expect(rpc).not.toHaveBeenCalled();
+
+    beforeLogin.unmount();
+    getUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    render(<CouponCodeEntry requireSignIn returnTo={returnTo} />);
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith("claim_coupon_code", { p_code: "YOUTH-MUA-2026" }));
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(PENDING_COUPON_CODE)).toBeNull();
+    expect(await screen.findByText(/무료 이용권이 계정에 들어왔습니다/)).toBeTruthy();
+  });
+
+  it("로그인 선택을 취소해도 입력 코드는 남고 다시 선택할 수 있다", async () => {
+    render(<CouponCodeEntry requireSignIn />);
+    await screen.findByRole("button", { name: "로그인하고 등록" });
+    fireEvent.change(field(), { target: { value: "youth-mua-2026" } });
+    fireEvent.click(screen.getByRole("button", { name: "로그인하고 등록" }));
+    fireEvent.click(screen.getByRole("button", { name: "로그인 선택 취소" }));
+
+    expect(screen.queryByRole("group", { name: "로그인 방법" })).toBeNull();
+    expect((field() as HTMLInputElement).value).toBe("YOUTH-MUA-2026");
+    expect((field() as HTMLInputElement).disabled).toBe(false);
+    expect(sessionStorage.getItem(PENDING_COUPON_CODE)).toBeNull();
+    expect(signInWithOAuth).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "로그인하고 등록" }));
+    expect(screen.getByRole("group", { name: "로그인 방법" })).toBeTruthy();
+    expect(sessionStorage.getItem(PENDING_COUPON_CODE)).toBe("YOUTH-MUA-2026");
   });
 });

@@ -1,67 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { emailCompletionPath, safeAuthNextPath } from "@/lib/auth/redirect";
 
-function safeNextPath(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/analysis/prepare";
-}
+type FailureReason = "provider_cancelled" | "identity_already_exists" | "provider_failed" | "exchange_failed" | "verify_failed" | "missing_code_and_token_hash" | "invalid_type" | "session_failed";
 
-function failure(request: NextRequest, next: string, reason: string) {
+function failure(request: NextRequest, next: string, reason: FailureReason) {
+  // Never reflect provider error descriptions, codes or user data into logs/URLs.
   console.error(`auth_callback_failed:${reason}`);
   const errorUrl = new URL(next, request.url);
-  errorUrl.searchParams.set("auth_error", "로그인 링크를 확인하지 못했습니다. 링크를 요청한 것과 같은 브라우저에서 열어야 하며, 링크는 한 번만 사용할 수 있습니다.");
-  errorUrl.searchParams.set("auth_reason", reason.slice(0, 200));
+  errorUrl.searchParams.set("auth_error", reason === "provider_cancelled"
+    ? "로그인을 취소했습니다. 원하실 때 다시 로그인해 주세요."
+    : "로그인을 완료하지 못했습니다. 로그인을 시작한 브라우저에서 다시 시도해 주세요.");
+  errorUrl.searchParams.set("auth_reason", reason);
   return NextResponse.redirect(errorUrl, { status: 303, headers: { "Cache-Control": "no-store" } });
 }
 
-function completedRedirect(request: NextRequest, next: string) {
-  return NextResponse.redirect(new URL(next, request.url), { status: 303, headers: { "Cache-Control": "no-store" } });
+function completedRedirect(request: NextRequest, next: string, user: User | null) {
+  if (!user) return failure(request, next, "session_failed");
+  // Naver OIDC identifies users by sub, not by email. Verify a contact email
+  // before returning to flows that send results/receipts. Never invent one.
+  const destination = user.email && user.email_confirmed_at ? next : emailCompletionPath(next);
+  return NextResponse.redirect(new URL(destination, request.url), { status: 303, headers: { "Cache-Control": "no-store" } });
 }
 
-/**
- * Completes a Supabase sign-in.
- *
- * The first version handled only the PKCE `code` form and discarded whatever
- * went wrong, so a failure in production said "로그인 링크를 확인하지
- * 못했습니다" with nothing behind it. There are four distinct ways to arrive
- * here without a session, and telling them apart is the whole job:
- *
- *  - Supabase itself refused and appended `error` / `error_description`
- *  - an email link carrying `token_hash` + `type` rather than `code`
- *  - a `code` whose PKCE verifier is missing, because the link was opened in a
- *    different browser from the one that requested it, or already used
- *  - no recognisable parameters at all
- */
+const emailTypes = ["email", "magiclink", "recovery", "invite", "signup", "email_change"] as const;
+type EmailType = typeof emailTypes[number];
+function isEmailType(value: string): value is EmailType {
+  return emailTypes.some((type) => type === value);
+}
+
+/** Complete the existing Supabase PKCE or email-token flow for every provider. */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const next = safeNextPath(params.get("next"));
-
+  const next = safeAuthNextPath(params.get("next"));
   const providerError = params.get("error") ?? params.get("error_code");
-  if (providerError) {
-    return failure(request, next, `provider:${providerError}:${params.get("error_description") ?? ""}`);
+  if (providerError) return failure(request, next, params.get("error_code") === "identity_already_exists" ? "identity_already_exists" : providerError === "access_denied" ? "provider_cancelled" : "provider_failed");
+
+  try {
+    const supabase = await createClient();
+    const code = params.get("code");
+    if (code) {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) return failure(request, next, "exchange_failed");
+      return completedRedirect(request, next, data.user);
+    }
+    const tokenHash = params.get("token_hash");
+    const type = params.get("type");
+    if (tokenHash && type) {
+      if (!isEmailType(type)) return failure(request, next, "invalid_type");
+      const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+      if (error) return failure(request, next, "verify_failed");
+      return completedRedirect(request, next, data.user);
+    }
+    return failure(request, next, "missing_code_and_token_hash");
+  } catch {
+    return failure(request, next, "session_failed");
   }
-
-  const supabase = await createClient();
-
-  const code = params.get("code");
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return completedRedirect(request, next);
-    return failure(request, next, `exchange:${error.message}`);
-  }
-
-  // Email links are issued in this shape when the project is not using PKCE
-  // for them. Handled so a working link is not rejected for arriving in the
-  // other supported format.
-  const tokenHash = params.get("token_hash");
-  const type = params.get("type");
-  if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({
-      type: type as "email" | "magiclink" | "recovery" | "invite" | "signup",
-      token_hash: tokenHash,
-    });
-    if (!error) return completedRedirect(request, next);
-    return failure(request, next, `verify_otp:${error.message}`);
-  }
-
-  return failure(request, next, "missing_code_and_token_hash");
 }

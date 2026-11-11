@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import { REFERRAL_TERMS } from "@/domain/referral";
 import styles from "./referral-panel.module.css";
 
@@ -19,6 +22,7 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  useOAuthReturnReset(() => setBusy(false));
   const [pending, setPending] = useState(0);
   const [converted, setConverted] = useState(0);
   const [status, setStatus] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
@@ -67,12 +71,12 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
     }
   }
 
-  async function signIn() {
+  async function signIn(provider: SocialLoginProvider = "google") {
     setBusy(true);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: { redirectTo: `${window.location.origin}/auth/callback?next=/refer` },
       });
       if (error) setBusy(false);
@@ -119,9 +123,7 @@ export function ReferralPanel({ standalone = false }: { standalone?: boolean } =
           </div>
         </div>
         <div className={styles.codeRow}>
-          <button type="button" className={styles.copy} onClick={() => void signIn()} disabled={busy}>
-            {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={15}/>
-          </button>
+          <SocialLoginButtons className={styles.copy} onSignIn={(provider) => void signIn(provider)} busy={busy} />
         </div>
       </section>
     );

@@ -6,6 +6,9 @@ import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import { isFinalEnabled } from "@/domain/final-availability";
 import type { GuestDraft } from "@/lib/guest-draft";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { WritingHomeLink } from "@/components/writing-home-link";
@@ -131,6 +134,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
+  useOAuthReturnReset(() => setBusy(false));
   const [message, setMessage] = useState("");
   // 이메일 로그인은 링크 대신 코드로 받습니다. Gmail 등은 피싱 확인용으로
   // 메일을 열자마자 안의 링크를 미리 눌러 보는데, 매직링크는 한 번 쓰면
@@ -346,19 +350,21 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     window.location.reload();
   }
 
-  async function signInWithGoogle() {
+  async function signInWithSocial(provider: SocialLoginProvider = "google") {
     setBusy(true);
     setMessage("");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: createAuthCallbackUrl("/analysis/prepare"),
-      },
-    });
-    if (error) {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: createAuthCallbackUrl("/analysis/prepare"),
+        },
+      });
+      if (error) throw error;
+    } catch {
       setBusy(false);
-      setMessage("Google 로그인을 초기화하지 못했습니다.");
+      setMessage("로그인을 초기화하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
   }
   /**
@@ -656,7 +662,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   return <div className={styles.login}>
     {/* 로그인 → 결제 두 단계를 먼저 보여 줍니다. 지금 할 일이 1번이라는 것이 읽혀야 합니다. */}
     <div className={styles.steps}><span><i>1</i>로그인</span><ArrowRight/><span><i>2</i>결제</span></div>
-    <button className={styles.oauthButton} type="button" disabled={busy} onClick={() => void signInWithGoogle()}>Google로 로그인</button>
+    <SocialLoginButtons className={styles.oauthButton} onSignIn={(provider) => void signInWithSocial(provider)} busy={busy} />
     {emailOpen || otpSent ? (
       <>
         <label><Mail/><input type="email" autoComplete="email" value={email} onChange={(event) => { setEmail(event.target.value); setOtpSent(false); }} placeholder="이메일 주소" disabled={otpSent}/></label>
@@ -675,7 +681,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           </>
         )}
       </>
-    ) : <button type="button" className={styles.emailToggle} disabled={busy} onClick={() => setEmailOpen(true)}>Google이 없으면 이메일 코드로 로그인</button>}
+    ) : <button type="button" className={styles.emailToggle} disabled={busy} onClick={() => setEmailOpen(true)}>이메일 코드로 로그인</button>}
     {(message || authError) && <p>{message || authError}</p>}
   </div>;
 }

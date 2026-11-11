@@ -6,6 +6,9 @@ import {
   AlertCircle, ArrowRight, Briefcase, CheckCircle2, Download, FileStack, FileText, Loader2, LogIn, Mail, Sparkles, Trash2, UploadCloud, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import { ARCHIVE_DOCUMENT_ACCEPT, extractLocalDocuments } from "@/lib/local-document";
 import { CLASSIFIED_KIND_LABEL, CLASSIFIED_KIND_ORDER, classifyDocument, type ClassifiedKind } from "@/domain/document-classify";
 import { checkUploads, describeRejections, formatBytes } from "@/domain/upload-limits";
@@ -136,6 +139,7 @@ export function CareerDescriptionBuildPanel({ variant = "default" }: { variant?:
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  useOAuthReturnReset(() => setAuthBusy(false));
   const loginRef = useRef<HTMLDivElement>(null);
   const [loginNudge, setLoginNudge] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -296,13 +300,19 @@ export function CareerDescriptionBuildPanel({ variant = "default" }: { variant?:
     setMessage("");
   }
 
-  async function continueWithGoogle() {
+  async function continueWithSocial(provider: SocialLoginProvider = "google") {
     setAuthBusy(true);
-    const { error } = await createClient().auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/career-description")}` },
-    });
-    if (error) { setAuthBusy(false); setMessage("Google 로그인을 시작하지 못했습니다."); }
+    setMessage("");
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/career-description")}` },
+      });
+      if (error) throw error;
+    } catch {
+      setAuthBusy(false);
+      setMessage("로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
   }
 
   async function startCheckout() {
@@ -444,7 +454,7 @@ export function CareerDescriptionBuildPanel({ variant = "default" }: { variant?:
             <span><i>1</i>로그인</span><ArrowRight />
             <span><i>2</i>결제 {CAREER_DESCRIPTION_BUILD_PRICE_KRW.toLocaleString()}원</span>
           </div>
-          <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 로그인</button>
+          <SocialLoginButtons className={styles.googleButton} onSignIn={(provider) => void continueWithSocial(provider)} busy={authBusy} />
           {emailOpen || otpSent
             ? <div className={styles.loginRow}>
               <input type="email" value={email} placeholder="이메일" onChange={(event) => setEmail(event.target.value)} disabled={authBusy} />
@@ -453,7 +463,7 @@ export function CareerDescriptionBuildPanel({ variant = "default" }: { variant?:
                   <button type="button" onClick={() => void verifyLoginCode()} disabled={authBusy}>확인</button></>
                 : <button type="button" onClick={() => void sendLoginCode()} disabled={authBusy}><Mail />코드 받기</button>}
             </div>
-            : <button type="button" className={styles.emailToggle} onClick={() => setEmailOpen(true)}>Google이 없으면 이메일 코드로 로그인</button>}
+            : <button type="button" className={styles.emailToggle} onClick={() => setEmailOpen(true)}>이메일 코드로 로그인</button>}
         </div>}
 
         <footer className={styles.footer}>

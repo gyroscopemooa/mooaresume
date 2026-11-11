@@ -1,0 +1,13 @@
+.page { min-height: 75vh; display: grid; place-items: center; padding: 40px 20px; background: #f7faf8; }
+.card { width: min(100%, 460px); padding: 28px; border: 1px solid #dfe6e2; border-radius: 18px; background: white; color: #17221d; }
+.card h1 { font-size: 25px; margin: 0 0 16px; }
+.card p { line-height: 1.7; font-size: 14px; }
+.notice { background: #f2f6f3; padding: 12px; border-radius: 10px; }
+.card form { display: grid; gap: 10px; margin: 20px 0; }
+.card label { font-weight: 650; font-size: 14px; }
+.card input { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #a9b9af; border-radius: 8px; font: inherit; box-sizing: border-box; }
+.card button { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #176b4a; border-radius: 8px; background: #176b4a; color: white; font: inherit; cursor: pointer; }
+.card .secondary { background: white; color: #176b4a; margin: 12px 0; }
+.card button:disabled { opacity: .6; cursor: wait; }
+.card :focus-visible { outline: 3px solid #176b4a; outline-offset: 3px; }
+.card a { font-size: 14px; color: #176b4a; }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { socialEmailGuard } from "@/server/auth/social-email-guard";
 import { CAREER_AI_COMBINED_PRICE_KRW, CAREER_AI_SINGLE_PRICE_KRW } from "@/domain/builder-pricing";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
 import { createDocumentBuildCheckout } from "@/server/billing/document-build-checkout";
@@ -36,6 +37,8 @@ export async function POST(request: NextRequest) {
   if (authError || !authData.user) {
     return NextResponse.json({ error: "로그인이 필요합니다.", code: "AUTH_REQUIRED" }, { status: 401 });
   }
+  const emailGuard = socialEmailGuard(authData.user, "/career/ai");
+  if (emailGuard) return emailGuard;
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "해설 범위를 다시 선택해 주세요." }, { status: 400 });

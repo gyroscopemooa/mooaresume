@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { socialEmailGuard } from "@/server/auth/social-email-guard";
 import { getCheckoutReturnOrigin } from "@/server/billing/checkout-return-origin";
 import { createInterviewRetryCheckout } from "@/server/billing/interview-retry-checkout";
 
@@ -18,6 +19,8 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  const emailGuard = socialEmailGuard(authData.user, "/app/my");
+  if (emailGuard) return emailGuard;
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

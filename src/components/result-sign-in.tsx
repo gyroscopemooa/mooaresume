@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CircleCheck, RefreshCw, TriangleAlert, Users } from "lucide-react";
+import { CircleCheck, RefreshCw, TriangleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import styles from "./result-sign-in.module.css";
 
 const SUPPORT_EMAIL = "support@mooaresume.com";
@@ -32,24 +35,28 @@ type Props = {
 
 export function ResultSignIn({ nextPath, variant = "gate" }: Props) {
   const [busy, setBusy] = useState(false);
+  useOAuthReturnReset(() => setBusy(false));
   const [failed, setFailed] = useState(false);
 
-  async function signIn(switchAccount = false) {
+  async function signIn(provider: SocialLoginProvider = "google", switchAccount = false) {
     setBusy(true);
     setFailed(false);
     try {
       const client = createClient();
       // Signed out first, otherwise Google hands the same session straight back
       // and the "다른 계정" button appears to do nothing.
-      if (switchAccount) await client.auth.signOut();
+      if (switchAccount) {
+        const signedOut = await client.auth.signOut();
+        if (signedOut.error) throw signedOut.error;
+      }
       const { error } = await client.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
           // Forces the account chooser. Without it Google silently reuses the
           // account that is already signed in — the very one that cannot see
           // this result.
-          queryParams: switchAccount ? { prompt: "select_account" } : {},
+          queryParams: switchAccount && provider === "google" ? { prompt: "select_account" } : switchAccount && provider === "kakao" ? { prompt: "login" } : {},
         },
       });
       if (error) { setFailed(true); setBusy(false); }
@@ -84,9 +91,8 @@ export function ResultSignIn({ nextPath, variant = "gate" }: Props) {
         <h1>이 계정에는<br/>결과가 없습니다.</h1>
         <p><b>결제하신 계정과 다른 계정</b>으로 로그인하셨을 수 있습니다. 분석이 아직 진행 중일 수도 있고요.</p>
         <div className={styles.actions}>
-          <button type="button" className={styles.primary} onClick={() => signIn(true)} disabled={busy}>
-            <Users/> {busy ? "이동 중" : "다른 계정으로 로그인"}
-          </button>
+          <p className={styles.note}>다른 계정으로 로그인하려면 결제하신 로그인 방식을 선택해 주세요.</p>
+          <SocialLoginButtons className={styles.primary} onSignIn={(provider) => void signIn(provider, true)} busy={busy} />
           <a className={styles.secondary} href={nextPath}><RefreshCw/> 다시 확인하기</a>
           {failed && <p className={`${styles.note} ${styles.failed}`}>로그인 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.</p>}
           {/* They paid. A dead end here is the worst screen on the site, so the
@@ -105,9 +111,7 @@ export function ResultSignIn({ nextPath, variant = "gate" }: Props) {
           해서, 이 문장은 안내이자 약속입니다. */}
       <p>결과는 본인 계정에서만 열립니다. 로그인하면 <b>바로 이 결과로</b> 돌아옵니다.</p>
       <div className={styles.actions}>
-        <button type="button" className={styles.primary} onClick={() => signIn()} disabled={busy}>
-          {busy ? "이동 중" : "Google로 계속하기"}
-        </button>
+        <SocialLoginButtons className={styles.primary} onSignIn={(provider) => void signIn(provider)} busy={busy} />
         {failed && <p className={`${styles.note} ${styles.failed}`}>로그인 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요.</p>}
         <p className={styles.note}>결제하신 메일 주소와 같은 계정으로 로그인해 주세요.</p>
       </div>

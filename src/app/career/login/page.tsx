@@ -5,6 +5,9 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import styles from "./page.module.css";
 
@@ -26,6 +29,7 @@ function CareerLoginForm() {
   const next = safeNext(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  useOAuthReturnReset(() => setBusy(false));
   const [message, setMessage] = useState(searchParams.get("auth_error") ?? "");
 
   useEffect(() => {
@@ -39,12 +43,12 @@ function CareerLoginForm() {
 
   const callbackUrl = () => createAuthCallbackUrl(next);
 
-  async function continueWithGoogle() {
+  async function continueWithSocial(provider: SocialLoginProvider = "google") {
     setBusy(true);
     setMessage("");
     try {
-      const { error } = await createClient().auth.signInWithOAuth({ provider: "google", options: { redirectTo: callbackUrl() } });
-      if (error) setMessage("Google 로그인을 시작하지 못했습니다.");
+      const { error } = await createClient().auth.signInWithOAuth({ provider, options: { redirectTo: callbackUrl() } });
+      if (error) setMessage("로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } catch {
       setMessage("로그인 연결을 준비 중입니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -80,7 +84,7 @@ function CareerLoginForm() {
           <li><CheckCircle2 />완료한 검사 결과 보관</li>
           <li><CheckCircle2 />해설에 넣을 결과 직접 선택</li>
         </ul>
-        <button type="button" className={styles.google} disabled={busy} onClick={() => void continueWithGoogle()}>Google로 계속하기 <ArrowRight /></button>
+        <SocialLoginButtons className={styles.google} onSignIn={(provider) => void continueWithSocial(provider)} busy={busy} />
         <div className={styles.divider}><span>또는 이메일로 로그인</span></div>
         <label><Mail /><input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소" /></label>
         <button type="button" className={styles.email} disabled={busy} onClick={() => void sendMagicLink()}>{busy ? "처리 중" : "로그인 링크 받기"}<ArrowRight /></button>

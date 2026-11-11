@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { socialEmailGuard } from "@/server/auth/social-email-guard";
 
 /**
  * 라우트마다 되풀이되던 두 관문 — 출처 확인과 로그인 확인.
@@ -41,6 +42,8 @@ export async function guardMemberRequest(request: NextRequest): Promise<GuardFai
   if (error || !data.user) {
     return { ok: false, response: NextResponse.json({ error: "로그인이 필요합니다.", code: "AUTH_REQUIRED" }, { status: 401 }) };
   }
+  const emailGuard = socialEmailGuard(data.user, "/legal");
+  if (emailGuard) return { ok: false, response: emailGuard };
   return { ok: true, userId: data.user.id, email: data.user.email };
 }
 

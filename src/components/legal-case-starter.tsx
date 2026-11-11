@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowRight, FolderPlus, Loader2, LogIn, Mail, Scale } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import {
   legalCaseTypeSchema, legalDocumentTypeSchema, legalPartyRoleSchema, findLegalDocumentDefinition,
   LEGAL_CASE_TYPE_LABEL, LEGAL_CAUTIONS, LEGAL_PARTY_ROLE_LABEL,
@@ -34,6 +37,7 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  useOAuthReturnReset(() => setAuthBusy(false));
   // 나홀로소송 드로어에서 문서 하나를 골라 들어온 경우입니다("/legal?doc=...").
   // 사건은 그대로 하나로 열되, 어느 사건을 고르거나 만들든 그 문서로 이어서
   // 갈 수 있게 caseId 뒤에 이 값을 그대로 붙여 보냅니다.
@@ -96,13 +100,19 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
     router.refresh();
   }
 
-  async function continueWithGoogle() {
+  async function continueWithSocial(provider: SocialLoginProvider = "google") {
     setAuthBusy(true);
-    const { error } = await createClient().auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/legal")}` },
-    });
-    if (error) { setAuthBusy(false); setMessage("Google 로그인을 시작하지 못했습니다."); }
+    setMessage("");
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/legal")}` },
+      });
+      if (error) throw error;
+    } catch {
+      setAuthBusy(false);
+      setMessage("로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
   }
 
   return <section className={styles.page} aria-labelledby="legal-home-title">
@@ -161,7 +171,7 @@ export function LegalCaseStarter({ initialCases, signedIn }: { initialCases: Leg
           <b><LogIn /> 사건을 저장하려면 로그인이 필요합니다</b>
           <p>사건 자료는 본인만 볼 수 있게 계정에 묶여 저장됩니다.</p>
           <div className={styles.loginRow}>
-            <button type="button" className={styles.googleButton} onClick={() => void continueWithGoogle()} disabled={authBusy}>Google로 계속하기</button>
+            <SocialLoginButtons className={styles.googleButton} onSignIn={(provider) => void continueWithSocial(provider)} busy={authBusy} />
             <span className={styles.or}>또는</span>
             <input type="email" autoComplete="email" aria-label="로그인 코드를 받을 이메일" value={email} placeholder="이메일" onChange={(event) => setEmail(event.target.value)} disabled={authBusy} />
             {otpSent

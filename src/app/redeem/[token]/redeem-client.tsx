@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Gift, TriangleAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
+import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import {
   describeClaimFailure,
   isClaimToken,
@@ -40,6 +43,7 @@ export function RedeemClient({ token }: { token: string }) {
   const [phase, setPhase] = useState<Phase>(validToken ? "checking" : "failed");
   const [outcome, setOutcome] = useState<ClaimOutcome | null>(validToken ? null : { ok: false, reason: "not_found" });
   const [busy, setBusy] = useState(false);
+  useOAuthReturnReset(() => setBusy(false));
 
   const claim = useCallback(async () => {
     const supabase = createClient();
@@ -71,16 +75,20 @@ export function RedeemClient({ token }: { token: string }) {
     return () => { cancelled = true; };
   }, [validToken, claim]);
 
-  async function signInWithGoogle() {
+  async function signInWithSocial(provider: SocialLoginProvider = "google") {
     setBusy(true);
-    const supabase = createClient();
-    // Comes back to this same page, so the credit is claimed the moment the
-    // account exists rather than leaving them on a screen with no credit.
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/redeem/${token}` },
-    });
-    if (error) setBusy(false);
+    try {
+      const supabase = createClient();
+      // Comes back to this same page, so the credit is claimed the moment the
+      // account exists rather than leaving them on a screen with no credit.
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/redeem/${token}` },
+      });
+      if (error) setBusy(false);
+    } catch {
+      setBusy(false);
+    }
   }
 
   if (phase === "checking" || phase === "claiming") {
@@ -105,9 +113,7 @@ export function RedeemClient({ token }: { token: string }) {
           <h1>이용권을 받을 계정을<br/>연결해 주세요.</h1>
           <p>로그인하시면 그 계정에 이용권이 등록됩니다. <b>메일을 받으신 주소와 로그인 주소가 달라도 괜찮습니다.</b></p>
           <div className={styles.actions}>
-            <button className={styles.primary} onClick={signInWithGoogle} disabled={busy}>
-              {busy ? "이동 중..." : "Google로 계속하기"} <ArrowRight size={17}/>
-            </button>
+            <SocialLoginButtons className={styles.primary} onSignIn={(provider) => void signInWithSocial(provider)} busy={busy} />
           </div>
           <p className={styles.note}>
             이 링크는 <b>한 번만</b> 사용할 수 있습니다. 먼저 연결한 계정에 이용권이 등록되니, <b>평소 쓰시는 계정</b>으로 로그인해 주세요.
