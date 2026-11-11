@@ -10,7 +10,12 @@
 .drop:before{content:"";position:absolute;left:0;right:0;top:-10px;height:10px}
 .drop a,.drop button{display:block;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:9px;background:none;color:var(--ink,#17221d);font-size:13px;font-weight:700;cursor:pointer}
 .drop a:hover,.drop button:hover,.drop a:focus-visible,.drop button:focus-visible{background:var(--mint,#eaf5ef)}
-.email{padding:8px 12px 10px;border-bottom:1px solid #eef2f0;margin-bottom:4px;color:#8b968f;font-size:11.5px;word-break:break-all}
+.accountSummary{padding:8px 12px 10px;border-bottom:1px solid #eef2f0;margin-bottom:4px}
+.accountLabel{display:block;color:#526059;font-size:11px;font-weight:700}
+.email{margin-top:5px;color:#17221d;font-size:12px;overflow-wrap:anywhere}
+.identity{margin:8px 0 0;color:#176b4a;font-size:12px;font-weight:700;line-height:1.5}
+.accountHelp{margin:6px 0;padding:0 4px;color:#526059;font-size:11px;line-height:1.6}
+.accountSummary .accountHelp{padding:0}
 .signOut{color:#a14f4f !important}
 /* This used to be `@media(max-width:760px){.drop{display:none}}` — the menu was
    hidden outright on phones, presumably because it only opened on hover and a

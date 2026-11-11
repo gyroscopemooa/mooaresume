@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { emailCompletionPath, safeAuthNextPath } from "@/lib/auth/redirect";
+import { isIdentityConflict } from "@/lib/auth/callback-message";
 
 type FailureReason = "provider_cancelled" | "identity_already_exists" | "provider_failed" | "exchange_failed" | "verify_failed" | "missing_code_and_token_hash" | "invalid_type" | "session_failed";
 
@@ -35,14 +36,14 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const next = safeAuthNextPath(params.get("next"));
   const providerError = params.get("error") ?? params.get("error_code");
-  if (providerError) return failure(request, next, params.get("error_code") === "identity_already_exists" ? "identity_already_exists" : providerError === "access_denied" ? "provider_cancelled" : "provider_failed");
+  if (providerError) return failure(request, next, (params.get("error_code") === "identity_already_exists" || providerError === "identity_already_exists") ? "identity_already_exists" : providerError === "access_denied" ? "provider_cancelled" : "provider_failed");
 
   try {
     const supabase = await createClient();
     const code = params.get("code");
     if (code) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) return failure(request, next, "exchange_failed");
+      if (error) return failure(request, next, isIdentityConflict(error) ? "identity_already_exists" : "exchange_failed");
       return completedRedirect(request, next, data.user);
     }
     const tokenHash = params.get("token_hash");

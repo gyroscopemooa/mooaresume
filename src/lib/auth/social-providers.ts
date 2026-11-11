@@ -41,3 +41,11 @@ export function getSocialLoginOptions(config: ProviderConfig = publicProviderCon
 export function getSocialLoginLabel(provider: SocialLoginProvider): string {
   return provider === "google" ? "Google" : provider === "kakao" ? "카카오" : "네이버";
 }
+
+/** Identity labels come from linked providers, never from an email's domain.
+ * Existing identities remain visible even while a provider's new login is gated. */
+export function getLinkedSocialLoginLabels(providers: readonly string[], config: ProviderConfig = publicProviderConfig()): string[] {
+  const naver = config.naverProvider ?? "custom:naver";
+  const labels = providers.flatMap((provider) => provider === "google" ? ["Google"] : provider === "kakao" ? ["카카오"] : provider === "custom:naver" || (provider === naver && /^custom:[a-z0-9][a-z0-9:-]*$/.test(naver)) ? ["네이버"] : []);
+  return [...new Set(labels)];
+}

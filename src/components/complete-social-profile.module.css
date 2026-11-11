@@ -11,3 +11,7 @@
 .card button:disabled { opacity: .6; cursor: wait; }
 .card :focus-visible { outline: 3px solid #176b4a; outline-offset: 3px; }
 .card a { font-size: 14px; color: #176b4a; }
+
+.existingAccount{margin:24px 0 18px;padding-top:18px;border-top:1px solid #dfe6e2}
+.existingAccount h2{font-size:17px;margin:0 0 8px}
+.existingAccount p{font-size:12px}

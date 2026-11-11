@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
+import { getSocialLoginProviders, type SocialLoginProvider } from "@/lib/auth/social-providers";
+import { SocialLoginButtons } from "./social-login-buttons";
 import styles from "./complete-social-profile.module.css";
 
 export function CompleteSocialProfile() {
@@ -60,12 +62,17 @@ export function CompleteSocialProfile() {
     try {
       const client = createClient();
       const current = await client.auth.getUser();
-      if (!initiatingUserId.current || current.data.user?.id !== initiatingUserId.current) {
+      if (current.error || !initiatingUserId.current || current.data.user?.id !== initiatingUserId.current) {
         setMessage("로그인 계정이 바뀌었습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.");
         return;
       }
       const { error } = await client.auth.updateUser({ email: value }, { emailRedirectTo: createAuthCallbackUrl(next) });
       if (error) { setMessage("확인 메일을 보내지 못했습니다. 기존 계정에서 사용하던 이메일이면 기존 로그인 방법을 이용해 주세요."); return; }
+      const after = await client.auth.getUser();
+      if (after.error || after.data.user?.id !== initiatingUserId.current) {
+        setMessage("로그인 계정이 바뀌었거나 확인되지 않았습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.");
+        return;
+      }
       setSentEmail(value);
       setToken("");
       setMessage("확인 메일을 보냈습니다. 같은 브라우저에서 링크를 열거나, 메일에 코드가 있으면 아래에 입력해 주세요.");
@@ -81,6 +88,11 @@ export function CompleteSocialProfile() {
     setMessage("");
     try {
       const client = createClient();
+      const current = await client.auth.getUser();
+      if (current.error || !initiatingUserId.current || current.data.user?.id !== initiatingUserId.current) {
+        setMessage("로그인 계정이 바뀌었거나 확인되지 않았습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.");
+        return;
+      }
       const { error } = await client.auth.verifyOtp({ email: sentEmail, token: token.trim(), type: "email_change" });
       if (error) { setMessage("코드가 올바르지 않거나 만료됐습니다. 확인 메일을 다시 받아 주세요."); return; }
       const { data } = await client.auth.getUser();
@@ -91,16 +103,22 @@ export function CompleteSocialProfile() {
     finally { pending.current = false; setBusy(false); }
   }
 
-  async function continueWithExistingGoogleAccount() {
-    if (pending.current) return;
+  async function continueWithExistingAccount(provider: SocialLoginProvider) {
+    if (pending.current || !getSocialLoginProviders().some(({ id }) => id === provider)) return;
     pending.current = true;
     setBusy(true);
     setMessage("");
     try {
       const client = createClient();
-      const signedOut = await client.auth.signOut();
+      const signedOut = await client.auth.signOut({ scope: "local" });
+      // Local sign-out can clear this session even when server revocation fails.
+      initiatingUserId.current = null;
+      setSignedIn(false);
+      setEmail("");
+      setSentEmail("");
+      setToken("");
       if (signedOut.error) throw signedOut.error;
-      const { error } = await client.auth.signInWithOAuth({ provider: "google", options: { redirectTo: createAuthCallbackUrl(next), queryParams: { prompt: "select_account" } } });
+      const { error } = await client.auth.signInWithOAuth({ provider, options: { redirectTo: createAuthCallbackUrl(next), ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}) } });
       if (error) throw error;
     } catch {
       setMessage("로그인 화면을 열지 못했습니다. 다시 시도해 주세요.");
@@ -111,7 +129,7 @@ export function CompleteSocialProfile() {
 
   return <main className={styles.page}><section className={styles.card} data-clarity-mask="True">
     <h1>이메일을 확인해 주세요</h1>
-    <p>네이버 등 일부 로그인 방법은 이메일을 전달하지 않습니다. 분석 완료 알림을 받을 이메일을 한 번 확인합니다.</p>
+    <p>네이버 등 일부 로그인 방법은 이메일을 전달하지 않습니다. 현재 계정에서 분석 완료 알림을 받을 이메일을 한 번 확인합니다. 다음에 같은 소셜 계정으로 로그인하면 이 주소가 표시됩니다.</p>
     <p className={styles.notice}>기존 이용자라면 이전과 같은 방법으로 로그인해 주세요. 새 소셜 계정은 기존 구매 내역과 자동으로 합쳐지지 않습니다.</p>
     {!ready ? <p>로그인 정보를 확인하고 있어요.</p> : signedIn ? <>
       <form onSubmit={(event) => { event.preventDefault(); void sendEmail(); }}>
@@ -125,7 +143,11 @@ export function CompleteSocialProfile() {
         <button type="submit" disabled={busy}>이메일 확인하고 계속하기</button>
       </form>}
     </> : <p>로그인이 만료됐습니다. 다시 로그인해 주세요.</p>}
-    <button type="button" className={styles.secondary} onClick={() => void continueWithExistingGoogleAccount()} disabled={busy}>기존 Google 계정으로 로그인</button>
+    <section className={styles.existingAccount} aria-labelledby="existing-account-title">
+      <h2 id="existing-account-title">기존 계정으로 로그인</h2>
+      <p>전에 이용한 로그인 방법을 선택해 주세요. 선택하면 이 브라우저의 현재 로그인을 종료하고 다시 로그인합니다. 이메일을 등록하거나 바꿔도 다른 계정의 이용 내역은 합쳐지지 않습니다.</p>
+      <SocialLoginButtons busy={busy || !ready} onSignIn={(provider) => void continueWithExistingAccount(provider)} />
+    </section>
     <a href={next}>이전 화면으로 돌아가기</a>
     {message && <p role="status">{message}</p>}
   </section></main>;

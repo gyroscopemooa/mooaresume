@@ -276,3 +276,13 @@ it("does not present a pending change after an account switch during send", asyn
   await screen.findByText(/로그인 계정이 바뀌었거나/);
   expect(screen.queryByLabelText("이메일 확인 코드")).toBeNull();
 });
+
+
+it("explains email changes keep social login and do not merge accounts before editing", async () => {
+  render(<AccountEmailPanel />);
+  await screen.findByText("current@example.test");
+  expect(screen.getByText(/계정·알림 이메일과 소셜 로그인은 별개/)).toBeTruthy();
+  expect(screen.getByText(/이메일을 바꿔도 연결된 소셜 로그인은 유지/)).toBeTruthy();
+  expect(updateUser).not.toHaveBeenCalled();
+  expect(verifyOtp).not.toHaveBeenCalled();
+});

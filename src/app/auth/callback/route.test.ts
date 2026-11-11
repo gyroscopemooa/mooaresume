@@ -58,3 +58,21 @@ describe("OAuth callback", () => {
     expect(response.headers.get("location")).toContain("auth_reason=invalid_type");
   });
 });
+
+
+it.each<Record<string, string>>([
+  { error: "identity_already_exists" },
+  { error: "server_error", error_code: "identity_already_exists" },
+])("recognizes an already-linked provider without reflecting its description", async (params) => {
+  const response = await GET(request({ ...params, error_description: "private-email@example.test secret-token", next: "/app/my" }));
+  expect(response.headers.get("location")).toContain("auth_reason=identity_already_exists");
+  expect(response.headers.get("location")).not.toContain("secret-token");
+  expect(createClient).not.toHaveBeenCalled();
+});
+
+it("preserves an identity conflict reported by the code exchange", async () => {
+  exchangeCodeForSession.mockResolvedValue({ data: { user: null }, error: { code: "identity_already_exists", message: "private-token" } });
+  const response = await GET(request({ code: "single-use", next: "/app/my" }));
+  expect(response.headers.get("location")).toContain("auth_reason=identity_already_exists");
+  expect(response.headers.get("location")).not.toContain("private-token");
+});

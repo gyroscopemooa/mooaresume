@@ -187,6 +187,7 @@ export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
     {!ready ? <p className={styles.help}>현재 계정 이메일을 확인하고 있어요.</p> : user ? <>
       <p className={styles.current}>{user.email || "등록된 이메일이 없습니다."}</p>
       <p className={styles.help}>{!user.email ? "알림을 받을 이메일을 입력하고 확인해 주세요." : user.email_confirmed_at ? "현재 계정에 적용된 주소입니다. 결제 전에 확인해 주세요." : "아직 확인되지 않은 이메일입니다. 메일 인증을 완료해 주세요."}</p>
+      <p className={styles.help}>계정·알림 이메일과 소셜 로그인은 별개입니다. 이메일을 바꿔도 연결된 소셜 로그인은 유지되며, 다른 계정과 합쳐지지 않습니다.</p>
       {confirmation && <p className={styles.pending}>확인 대기: {confirmation.email}<br/>확인이 끝나기 전까지 현재 계정 이메일은 바뀌지 않습니다.</p>}
       {editing && <div id={`${id}-form`} className={styles.editor}>
         <p className={styles.help}>알림 전용 주소가 아니라 현재 계정 이메일을 변경합니다. 기존 주소와 새 주소 모두에 확인 메일이 오면 각각 인증해 주세요. 다른 계정과 구매 내역이 합쳐지지는 않습니다.</p>
