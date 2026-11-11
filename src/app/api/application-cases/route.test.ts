@@ -15,3 +15,13 @@ describe("posting readiness before payment",()=>{
   it("uses the actually supplied body in the immutable submission plan",async()=>{expect((await POST(request({...body,jobPosting:{...body.jobPosting,text:"자격요건 개발 경험, 담당업무 서비스 개발"}}))).status).toBe(201);expect(mocks.reuse.mock.calls[0][2].documents.find((d:{kind:string})=>d.kind==="JOB_POSTING").normalizedText).toContain("담당업무 서비스 개발");});
   it("opens a matching owned result without creating a payable case",async()=>{mocks.reuse.mockResolvedValue("owned-run");const result=await POST(request({...body,allowMissingPosting:true}));expect(await result.json()).toEqual({reusedAnalysisRunId:"owned-run"});expect(mocks.persist).not.toHaveBeenCalled();});
 });
+
+it("rejects a switched account before storing a tab-bound draft", async () => {
+  const result = await POST(request({ ...body, allowMissingPosting: true, expectedUserId: "another-account" }));
+  expect(result.status).toBe(409); expect((await result.json()).code).toBe("ACCOUNT_CHANGED");
+  expect(mocks.persist).not.toHaveBeenCalled(); expect(mocks.reuse).not.toHaveBeenCalled();
+});
+it("retains a same-account tab binding without changing ownership logic", async () => {
+  expect((await POST(request({ ...body, allowMissingPosting: true, expectedUserId: "owner" }))).status).toBe(201);
+  expect(mocks.persist).toHaveBeenCalled();
+});

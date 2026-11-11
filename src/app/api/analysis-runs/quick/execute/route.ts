@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { notificationEmail } from "@/lib/auth/delivery-preference";
 import { socialEmailGuard } from "@/server/auth/social-email-guard";
 import { authenticateMobile, mobileFailure } from "@/server/mobile/auth";
 import { sendAnalysisCompleteEmail } from "@/server/notifications/analysis-complete-email";
@@ -206,12 +207,15 @@ export async function POST(request: NextRequest) {
       await repository.saveBackgroundResponse(context.analysisRunId, responseId);
       return NextResponse.json({ analysisRunId: context.analysisRunId, status: "RUNNING" }, { status: 202 });
     }
-    if (data.user.email) {
-      try {
-        await sendAnalysisCompleteEmail({ to: data.user.email, resultUrl: `${getCheckoutReturnOrigin(request.nextUrl)}/result?analysisRunId=${body.analysisRunId}`, feedbackUrl: `${getCheckoutReturnOrigin(request.nextUrl)}/feedback/${body.analysisRunId}` });
-      } catch (emailError) {
-        console.error("analysis_complete_email_failed", { error: emailError instanceof Error ? emailError.message : "UNKNOWN_ERROR" });
+    try {
+      // Re-read Auth at delivery time; initial auth can predate an opt-out.
+      const fresh = await supabase.auth.getUser();
+      const to = !fresh.error && fresh.data.user?.id === data.user.id ? notificationEmail(fresh.data.user) : undefined;
+      if (to) {
+        await sendAnalysisCompleteEmail({ to, resultUrl: `${getCheckoutReturnOrigin(request.nextUrl)}/result?analysisRunId=${body.analysisRunId}`, feedbackUrl: `${getCheckoutReturnOrigin(request.nextUrl)}/feedback/${body.analysisRunId}` });
       }
+    } catch (emailError) {
+      console.error("analysis_complete_email_failed", { error: emailError instanceof Error ? emailError.message : "UNKNOWN_ERROR" });
     }
     return NextResponse.json({
       analysisRunId: body.analysisRunId,

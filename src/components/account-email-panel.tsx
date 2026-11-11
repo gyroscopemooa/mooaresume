@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { createAuthCallbackUrl } from "@/lib/app-context";
+import { canStartWithDelivery, hasVerifiedAccountEmail, isDashboardEligible, isDashboardOnly } from "@/lib/auth/delivery-preference";
 import styles from "./account-email-panel.module.css";
 
 type Confirmation = { email: string; type: "email_change" | "signup" };
@@ -13,10 +14,13 @@ const confirmed = (user: User, email: string) => Boolean(user.email_confirmed_at
 const staleMessage = "로그인 계정이 바뀌었거나 만료됐습니다. 화면을 새로고침한 뒤 다시 확인해 주세요.";
 
 /** Displays the same Auth email used by checkout and analysis notifications. No separate recipient is stored. */
-export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
+export type DeliveryReadiness = { userId: string | null; ready: boolean };
+
+export function AccountEmailPanel({ locked = false, onReadinessChange }: { locked?: boolean; onReadinessChange?: (state: DeliveryReadiness) => void }) {
   const id = useId();
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
+  const [accountChecked, setAccountChecked] = useState(false);
   const [editing, setEditing] = useState(false);
   const [email, setEmail] = useState("");
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -32,15 +36,20 @@ export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
   const initialized = useRef(false);
   const target = useRef<Confirmation | null>(null);
 
+  useEffect(() => {
+    onReadinessChange?.({ userId: user?.id ?? null, ready: accountChecked && !busy && !blocked && Boolean(user && canStartWithDelivery(user)) });
+  }, [accountChecked, blocked, busy, onReadinessChange, user]);
+
   const readAccount = useCallback(async () => {
     const { data, error } = await createClient().auth.getUser();
     if (error) throw new Error("로그인 정보를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.");
     if (stale.current || !data.user || (initiatingUserId.current && initiatingUserId.current !== data.user.id)) {
       stale.current = true;
-      if (mounted.current) { setUser(null); setConfirmation(null); setEmail(""); setToken(""); setBlocked(true); }
+      if (mounted.current) { setAccountChecked(false); setUser(null); setConfirmation(null); setEmail(""); setToken(""); setBlocked(true); }
       throw new Error(staleMessage);
     }
     initiatingUserId.current ??= data.user.id;
+    if (mounted.current) setAccountChecked(true);
     return data.user;
   }, []);
 
@@ -68,13 +77,14 @@ export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
         target.current = restored;
         setConfirmation(restored);
         setEmail(restored?.email ?? current.email ?? "");
-        setEditing(Boolean(restored || !current.email || !current.email_confirmed_at));
+        setEditing(Boolean(restored || (!isDashboardOnly(current) && (!current.email || !current.email_confirmed_at))));
         setMessage("");
       } else if (target.current) {
         setMessage("이메일 확인이 아직 완료되지 않았습니다. 기존 주소와 새 주소로 받은 메일을 모두 확인해 주세요.");
       }
       initialized.current = true;
     } catch (error) {
+      if (mounted.current) setAccountChecked(false);
       if (mounted.current) setMessage(error instanceof Error && error.message === staleMessage ? staleMessage : "로그인 정보를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.");
     } finally {
       pending.current = false;
@@ -133,7 +143,7 @@ export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
       setToken("");
       setCodeAddress("new");
       setEditing(true);
-      setMessage("확인 메일을 요청했습니다. 받은 메일의 링크를 열거나 확인 코드를 입력해 주세요.");
+      setMessage("확인 메일을 요청했습니다. 받은 메일의 링크를 열거나 확인 코드를 입력해 주세요. 새 탭에서 확인했다면 작성하던 원래 탭으로 돌아오세요.");
     } catch (error) {
       if (mounted.current) setMessage(error instanceof Error && error.message === staleMessage ? staleMessage : "확인 메일을 요청하지 못했습니다. 로그인 상태와 네트워크를 확인한 뒤 다시 시도해 주세요.");
     } finally {
@@ -178,15 +188,61 @@ export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
     }
   }
 
-  const disabled = busy || locked;
-  return <section className={styles.panel} aria-labelledby={`${id}-title`} data-clarity-mask="True">
+  async function chooseDashboardOnly(dashboardOnly: boolean) {
+    if (pending.current || locked || stale.current) return;
+    pending.current = true;
+    setBusy(true);
+    setMessage("");
+    try {
+      const current = await readAccount();
+      if (!mounted.current) return;
+      if (!isDashboardEligible(current)) throw new Error(staleMessage);
+      if (!dashboardOnly && !hasVerifiedAccountEmail(current)) {
+        setEditing(true);
+        setMessage("알림을 다시 받으려면 아래에서 계정 이메일을 확인해 주세요. 확인 전까지 대시보드 전용 설정은 유지됩니다.");
+        return;
+      }
+      const response = await fetch("/api/account/delivery-preference", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: current.id, dashboardOnly }),
+      });
+      const result: unknown = await response.json().catch(() => null);
+      if (!response.ok || !result || typeof result !== "object" || !("userId" in result) || result.userId !== current.id) {
+        throw new Error("이용 방식을 저장하지 못했습니다. 다시 시도해 주세요.");
+      }
+      const refreshed = await readAccount();
+      if (!mounted.current) return;
+      if (isDashboardOnly(refreshed) !== dashboardOnly) throw new Error("저장 상태를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.");
+      setUser(refreshed);
+      if (dashboardOnly) setEditing(false);
+      setMessage(dashboardOnly ? "대시보드 전용으로 저장했습니다. 서비스 알림 메일은 보내지 않습니다." : "확인된 계정 이메일로 서비스 알림을 받습니다.");
+    } catch (error) {
+      if (mounted.current) { setAccountChecked(false); setMessage(error instanceof Error ? error.message : "이용 방식을 저장하지 못했습니다. 다시 시도해 주세요."); }
+    } finally {
+      pending.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  }
+
+  const disabled = busy || locked || blocked;
+  return <section id="account-delivery" tabIndex={-1} className={styles.panel} aria-labelledby={`${id}-title`} data-clarity-mask="True">
     <div className={styles.heading}>
       <h3 id={`${id}-title`}>분석 완료 알림 이메일</h3>
       {ready && user && <button type="button" className={styles.change} disabled={disabled} aria-expanded={editing} aria-controls={`${id}-form`} onClick={() => { setEditing(!editing); setMessage(""); }}>{editing ? "닫기" : user.email ? "변경" : "등록"}</button>}
     </div>
     {!ready ? <p className={styles.help}>현재 계정 이메일을 확인하고 있어요.</p> : user ? <>
       <p className={styles.current}>{user.email || "등록된 이메일이 없습니다."}</p>
-      <p className={styles.help}>{!user.email ? "알림을 받을 이메일을 입력하고 확인해 주세요." : user.email_confirmed_at ? "현재 계정에 적용된 주소입니다. 결제 전에 확인해 주세요." : "아직 확인되지 않은 이메일입니다. 메일 인증을 완료해 주세요."}</p>
+      <p className={styles.help}>{!user.email ? "알림을 원하면 이메일을 입력하고 확인해 주세요. 네이버·카카오 계정은 아래에서 대시보드 전용 이용도 선택할 수 있습니다." : user.email_confirmed_at ? "현재 계정에 적용된 주소입니다. 대시보드 전용을 선택하면 이 주소로도 서비스 알림을 보내지 않습니다." : "아직 확인되지 않은 이메일입니다. 알림을 받으려면 메일 인증을 완료해 주세요."}</p>
+      {isDashboardEligible(user) && <>
+        <label className={styles.choice}>
+          <input type="checkbox" checked={isDashboardOnly(user)} disabled={disabled} onChange={(event) => void chooseDashboardOnly(event.target.checked)} />
+          <span>추가 이메일 인증 없이, 서비스 알림 메일을 받지 않고 대시보드에서 확인</span>
+        </label>
+        <p className={styles.help}>분석 결과는 대시보드에서 직접 확인해 주세요. MOOA의 분석 완료·환불 안내 메일은 보내지 않습니다. 환불은 결제 내역과 결제 서비스 안내를 확인해 주세요. 다시 방문할 때도 같은 네이버·카카오 계정으로 로그인해야 합니다. 계정 이메일은 삭제되지 않습니다.</p>
+        <p className={styles.help}>결제 시 이메일 입력이 필요할 수 있으며, 결제 서비스의 영수증·환불 안내는 별도로 발송될 수 있습니다.</p>
+        <a className={styles.secondary} href="/app/my">대시보드에서 내 분석 보기</a>
+        {isDashboardOnly(user) && <p className={styles.pending}>대시보드 전용 사용 중 · 이메일 확인 후 위 선택을 해제하면 서비스 알림을 다시 받을 수 있습니다.</p>}
+      </>}
       <p className={styles.help}>계정·알림 이메일과 소셜 로그인은 별개입니다. 이메일을 바꿔도 연결된 소셜 로그인은 유지되며, 다른 계정과 합쳐지지 않습니다.</p>
       {confirmation && <p className={styles.pending}>확인 대기: {confirmation.email}<br/>확인이 끝나기 전까지 현재 계정 이메일은 바뀌지 않습니다.</p>}
       {editing && <div id={`${id}-form`} className={styles.editor}>
@@ -195,6 +251,7 @@ export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
           <label htmlFor={`${id}-email`}>사용할 이메일</label>
           <input id={`${id}-email`} type="email" autoComplete="email" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} disabled={disabled} />
           <button type="submit" className={styles.primary} disabled={disabled}>확인 메일 받기</button>
+          <p className={styles.help}>네이버·다음·Gmail 등 실제로 확인할 수 있는 메일 주소를 사용할 수 있습니다. 메일이 오지 않으면 스팸함과 주소를 확인한 뒤 다시 요청해 주세요. 다른 계정이 사용 중인 주소는 등록할 수 없습니다.</p>
         </form>
         {confirmation && <>
           <form onSubmit={(event) => { event.preventDefault(); void verifyCode(); }} noValidate>
@@ -215,6 +272,7 @@ export function AccountEmailPanel({ locked = false }: { locked?: boolean }) {
           </div>
         </>}
       </div>}
+      <button type="button" className={styles.secondary} disabled={busy || locked || blocked} onClick={() => void refreshAccount()}>이메일·이용 방식 다시 확인</button>
     </> : <button type="button" className={styles.secondary} disabled={busy || blocked} onClick={() => void refreshAccount()}>이메일 정보 다시 확인</button>}
     {message && <p role="status" className={styles.message}>{message}</p>}
   </section>;

@@ -9,6 +9,8 @@ import { SocialLoginButtons } from "@/components/social-login-buttons";
 import type { SocialLoginProvider } from "@/lib/auth/social-providers";
 import { emailCompletionPath } from "@/lib/auth/redirect";
 import { createAuthCallbackUrl } from "@/lib/app-context";
+import { isDashboardEligible } from "@/lib/auth/delivery-preference";
+import { AccountEmailPanel } from "./account-email-panel";
 import { AccountDeleteForm } from "./account-delete-form";
 import { AppIntroReplayButton } from "./app-first-run-onboarding";
 import styles from "./app-my-page.module.css";
@@ -47,6 +49,7 @@ function formatDate(value: string): string {
 export function AppMyPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
+  const [deliveryEligible, setDeliveryEligible] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const [ready, setReady] = useState(false);
   const [runs, setRuns] = useState<RunRow[]>([]);
@@ -66,6 +69,7 @@ export function AppMyPage() {
         setEmail(auth.user?.email || null);
         setEmailConfirmed(Boolean(auth.user?.email && auth.user.email_confirmed_at));
         setSignedIn(Boolean(auth.user));
+        setDeliveryEligible(isDashboardEligible(auth.user));
         setReady(true);
         if (!auth.user) return;
         // RLS가 본인 것만 돌려줍니다. 새 서버 경로를 만들지 않은 이유입니다.
@@ -121,15 +125,17 @@ export function AppMyPage() {
       <div className={styles.account}>
         <CircleUser/>
         <div>
-          <b>{!ready ? "확인 중..." : signedIn ? email ?? "이메일 확인 필요" : "로그인하지 않았습니다"}</b>
+          <b>{!ready ? "확인 중..." : signedIn ? email ?? (deliveryEligible ? "소셜 계정" : "이메일 확인 필요") : "로그인하지 않았습니다"}</b>
           <small>{signedIn ? "지원 건과 결과는 이 계정에만 보입니다." : "로그인하면 지난 분석과 이용권을 볼 수 있습니다."}</small>
         </div>
       </div>
-      {ready && signedIn && !emailConfirmed && <Link href={emailCompletionPath("/app/my")}>이메일 확인하기</Link>}
+      {ready && signedIn && !deliveryEligible && !emailConfirmed && <Link href={emailCompletionPath("/app/my")}>이메일 확인하기</Link>}
       {ready && (signedIn
         ? <button type="button" className={styles.secondary} disabled={busy} onClick={() => void signOut()}>{busy ? "처리 중..." : "로그아웃"}</button>
         : <SocialLoginButtons className={styles.primary} onSignIn={(provider) => void signIn(provider)} busy={busy} />)}
     </section>
+
+    {signedIn && deliveryEligible && <AccountEmailPanel />}
 
     {signedIn && <section className={styles.card}>
       <h2>지난 분석</h2>

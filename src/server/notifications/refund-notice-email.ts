@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { notificationEmail } from "@/lib/auth/delivery-preference";
 import type { RefundSummary } from "./run-failure-alert-email";
 
 /**
@@ -64,8 +65,8 @@ export async function notifyRefundedApplicant(
   // 조용히 멈춰도 이 건이 묻히지는 않습니다.
   let to = "";
   try {
-    const { data } = await client.auth.admin.getUserById(input.ownerUserId);
-    to = data.user?.email ?? "";
+    const { data, error } = await client.auth.admin.getUserById(input.ownerUserId);
+    to = !error && data.user?.id === input.ownerUserId ? notificationEmail(data.user) ?? "" : "";
   } catch {
     // 그대로 둡니다.
   }

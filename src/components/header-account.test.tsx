@@ -166,3 +166,12 @@ it.each([new AuthSessionMissingError(), { code: "session_not_found" }])("shows l
   fireEvent.click(login);
   await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledTimes(1));
 });
+
+it("shows dashboard-only mode without demanding email verification", async () => {
+  getUser.mockResolvedValue({ data: { user: { id: "social-user", identities: [{ provider: "kakao" }], app_metadata: { provider: "kakao", mooa_delivery_preference: { version: 1, mode: "dashboard_only", user_id: "social-user", updated_at: "2026-11-11T00:00:00Z" } } } } });
+  render(<HeaderAccount />); fireEvent.click(await screen.findByRole("button", { name: "내 계정" }));
+  await screen.findByText("대시보드 전용 계정");
+  expect(screen.queryByText("이메일 확인하기")).toBeNull();
+  expect(screen.getByRole("link", { name: "대시보드 · 내 분석" }).getAttribute("href")).toBe("/app/my");
+  expect(screen.getByRole("link", { name: "이메일·이용 방식 변경" }).getAttribute("href")).toBe("/app/my#account-delivery");
+});

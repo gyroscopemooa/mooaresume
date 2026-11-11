@@ -6,7 +6,7 @@ import { AccountEmailPanel } from "./account-email-panel";
 const { getUser, updateUser, verifyOtp, resend } = vi.hoisted(() => ({ getUser: vi.fn(), updateUser: vi.fn(), verifyOtp: vi.fn(), resend: vi.fn() }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser, updateUser, verifyOtp, resend } }) }));
 const initial = { id: "account-a", email: "current@example.test", email_confirmed_at: "2026-11-11", app_metadata: { provider: "google" } };
-let current: { id: string; email?: string; email_confirmed_at?: string; new_email?: string; app_metadata?: { provider: string } } | null;
+let current: { id: string; email?: string; email_confirmed_at?: string; new_email?: string; app_metadata?: { provider: string; mooa_delivery_preference?: Record<string, unknown> } } | null;
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -19,7 +19,7 @@ beforeEach(() => {
   verifyOtp.mockResolvedValue({ data: { user: null }, error: null });
   resend.mockResolvedValue({ error: null });
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const panel = () => screen.getByRole("region", { name: "분석 완료 알림 이메일" });
 const shownEmail = () => panel().querySelector("p")?.textContent;
@@ -285,4 +285,87 @@ it("explains email changes keep social login and do not merge accounts before ed
   expect(screen.getByText(/이메일을 바꿔도 연결된 소셜 로그인은 유지/)).toBeTruthy();
   expect(updateUser).not.toHaveBeenCalled();
   expect(verifyOtp).not.toHaveBeenCalled();
+});
+
+const dashboardPreference = () => ({ version: 1, mode: "dashboard_only", user_id: "account-a", updated_at: "2026-11-11T00:00:00Z" });
+const dashboardChoice = () => screen.getByRole("checkbox", { name: /추가 이메일 인증 없이/ }) as HTMLInputElement;
+
+describe("explicit dashboard-only service delivery", () => {
+  it.each(["google", "email"])("does not offer the choice for %s-only accounts", async (provider) => {
+    current = { ...initial, app_metadata: { provider } };
+    render(<AccountEmailPanel />);
+    await screen.findByText("current@example.test");
+    expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+  it.each(["kakao", "custom:naver"])("persists explicit %s choice without sending mail or changing account email", async (provider) => {
+    current = { id: "account-a", app_metadata: { provider } };
+    const ready = vi.fn();
+    const send = vi.fn().mockImplementation(async (_url, options) => {
+      expect(JSON.parse(options.body)).toEqual({ userId: "account-a", dashboardOnly: true });
+      current = { ...current!, app_metadata: { provider, mooa_delivery_preference: dashboardPreference() } };
+      return { ok: true, json: async () => ({ userId: "account-a", ready: true }) };
+    });
+    vi.stubGlobal("fetch", send);
+    render(<AccountEmailPanel onReadinessChange={ready} />);
+    await screen.findByText("등록된 이메일이 없습니다.");
+    expect(ready).toHaveBeenLastCalledWith({ userId: "account-a", ready: false });
+    fireEvent.click(dashboardChoice());
+    await screen.findByText(/대시보드 전용으로 저장했습니다/);
+    expect(dashboardChoice().checked).toBe(true);
+    expect(ready).toHaveBeenLastCalledWith({ userId: "account-a", ready: true });
+    expect(updateUser).not.toHaveBeenCalled(); expect(resend).not.toHaveBeenCalled(); expect(verifyOtp).not.toHaveBeenCalled();
+  });
+  it("keeps verified email and pending change when opting out", async () => {
+    current = { ...initial, new_email: "pending@example.test", app_metadata: { provider: "kakao" } };
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => {
+      current = { ...current!, app_metadata: { provider: "kakao", mooa_delivery_preference: dashboardPreference() } };
+      return { ok: true, json: async () => ({ userId: "account-a" }) };
+    }));
+    render(<AccountEmailPanel />); await screen.findByText("current@example.test");
+    fireEvent.click(dashboardChoice()); await screen.findByText(/대시보드 전용으로 저장했습니다/);
+    expect(current?.email).toBe(initial.email); expect(current?.new_email).toBe("pending@example.test");
+    expect(screen.getByText(/확인 대기:/).textContent).toContain("pending@example.test");
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+  it("keeps dashboard-only enabled until a real confirmed email exists", async () => {
+    current = { id: "account-a", app_metadata: { provider: "kakao", mooa_delivery_preference: dashboardPreference() } };
+    const send = vi.fn(); vi.stubGlobal("fetch", send);
+    render(<AccountEmailPanel />); await screen.findByText("등록된 이메일이 없습니다.");
+    fireEvent.click(dashboardChoice()); await screen.findByText(/알림을 다시 받으려면/);
+    expect(dashboardChoice().checked).toBe(true); expect(send).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("사용할 이메일")).toBeTruthy();
+  });
+  it("does not optimistically allow checkout when save fails, and supports retry", async () => {
+    current = { id: "account-a", app_metadata: { provider: "kakao" } };
+    const send = vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }); vi.stubGlobal("fetch", send);
+    const ready = vi.fn(); render(<AccountEmailPanel onReadinessChange={ready} />);
+    await screen.findByText("등록된 이메일이 없습니다."); fireEvent.click(dashboardChoice());
+    await screen.findByText(/이용 방식을 저장하지 못했습니다/);
+    expect(dashboardChoice().checked).toBe(false); expect(ready).toHaveBeenLastCalledWith({ userId: "account-a", ready: false });
+    fireEvent.click(dashboardChoice()); await waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+  });
+  it("ignores repeated clicks and rejects a changed UUID after persistence", async () => {
+    current = { id: "account-a", app_metadata: { provider: "kakao" } };
+    let resolve!: (value: unknown) => void;
+    const send = vi.fn().mockImplementation(() => new Promise((done) => { resolve = done; })); vi.stubGlobal("fetch", send);
+    const ready = vi.fn(); render(<AccountEmailPanel onReadinessChange={ready} />); await screen.findByText("등록된 이메일이 없습니다.");
+    fireEvent.click(dashboardChoice()); fireEvent.click(dashboardChoice());
+    await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    current = { ...initial, id: "account-b" };
+    await act(async () => resolve({ ok: true, json: async () => ({ userId: "account-a" }) }));
+    await screen.findByText(/로그인 계정이 바뀌었거나/);
+    expect(ready).toHaveBeenLastCalledWith({ userId: null, ready: false });
+  });
+  it("refreshes saved preference on focus and allows verified email opt-in", async () => {
+    current = { ...initial, app_metadata: { provider: "kakao" } };
+    render(<AccountEmailPanel />); await screen.findByText("current@example.test");
+    current = { ...current, app_metadata: { provider: "kakao", mooa_delivery_preference: dashboardPreference() } };
+    fireEvent(window, new Event("focus")); await waitFor(() => expect(dashboardChoice().checked).toBe(true));
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => {
+      current = { ...current!, app_metadata: { provider: "kakao", mooa_delivery_preference: { ...dashboardPreference(), mode: "email" } } };
+      return { ok: true, json: async () => ({ userId: "account-a" }) };
+    }));
+    fireEvent.click(dashboardChoice()); await screen.findByText("확인된 계정 이메일로 서비스 알림을 받습니다.");
+    expect(dashboardChoice().checked).toBe(false);
+  });
 });

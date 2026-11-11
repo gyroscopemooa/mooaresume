@@ -70,7 +70,7 @@ describe("socialEmailGuard", () => {
   it("does not create external completion destinations", async () => {
     const response = socialEmailGuard({ app_metadata: { provider: "kakao" } }, "//attacker.example/collect");
     const body = await response!.json();
-    expect(body.confirmationPath).toBe("/auth/complete-profile?next=%2Fanalysis%2Fprepare");
+    expect(body.confirmationPath).toBe("/analysis/prepare#account-delivery");
   });
 });
 
@@ -113,4 +113,14 @@ describe("interrupted social signup cannot bypass completion", () => {
     getUser.mockResolvedValue({ data: { user: { id: "verified", email: "verified@example.com", email_confirmed_at: "2026-11-11T00:00:00Z", app_metadata: { provider: "custom:naver" } } }, error: null });
     expect(await guardMemberRequest(request)).toEqual({ ok: true, userId: "verified", email: "verified@example.com" });
   });
+});
+
+it("accepts an explicit trusted dashboard choice while preserving inline remediation", async () => {
+  const id = "3b6a0483-61ba-4783-b6b9-458e2630cad1";
+  const user = { id, app_metadata: { provider: "kakao", mooa_delivery_preference: { version: 1, mode: "dashboard_only", user_id: id, updated_at: "2026-11-11T00:00:00Z" } } };
+  expect(socialEmailGuard(user, "/analysis/prepare")).toBeNull();
+  getUser.mockResolvedValue({ data: { user }, error: null });
+  expect(await guardMemberRequest(new NextRequest("https://mooaresume.com/api/legal-cases", { method: "POST" }))).toEqual({ ok: true, userId: id, email: undefined });
+  const missing = socialEmailGuard({ id, app_metadata: { provider: "kakao" } }, "/analysis/prepare?product=PRO");
+  expect((await missing!.json()).confirmationPath).toBe("/analysis/prepare?product=PRO#account-delivery");
 });

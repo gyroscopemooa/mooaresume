@@ -1,3 +1,4 @@
+import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       buildId: build.id,
       userId: authData.user.id,
       priceKrw,
-      customerEmail: authData.user.email,
+      customerEmail: checkoutEmail(authData.user),
       successUrl: `${siteUrl}/career/ai?scope=${scope}&career_ai_build=${build.id}&checkout=success`,
       returnUrl: `${siteUrl}/career/ai?scope=${scope}&career_ai_build=${build.id}`,
     });

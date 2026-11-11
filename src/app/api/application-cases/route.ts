@@ -42,6 +42,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "요청 본문이 올바른 JSON이 아닙니다." }, { status: 400 });
   }
 
+  // New checkout clients bind their tab's draft to the account they displayed.
+  // Older callers omit this hint; RLS/ownership remain authoritative for all.
+  if (body && typeof body === "object" && "expectedUserId" in body && body.expectedUserId !== authData.user.id) {
+    return NextResponse.json({ code: "ACCOUNT_CHANGED", error: "로그인 계정이 바뀌었습니다. 작성하던 탭을 새로고침한 뒤 확인해 주세요." }, { status: 409 });
+  }
+
   try {
     const input = guestApplicationHandoffSchema.parse(body);
     if (input.product !== "QUICK" && !hasJobPostingText(input.jobPosting.text) && !input.allowMissingPosting) {

@@ -1,3 +1,4 @@
+import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { socialEmailGuard } from "@/server/auth/social-email-guard";
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       buildId: build.id,
       userId: authData.user.id,
       priceKrw: PORTFOLIO_BUILD_PRICE_KRW,
-      customerEmail: authData.user.email,
+      customerEmail: checkoutEmail(authData.user),
       successUrl: `${siteUrl}/portfolio?portfolio_build=${build.id}&checkout=success`,
       returnUrl: `${siteUrl}/portfolio?portfolio_build=${build.id}`,
     });

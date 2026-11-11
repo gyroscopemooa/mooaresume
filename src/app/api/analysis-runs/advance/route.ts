@@ -1,3 +1,4 @@
+import { notificationEmail } from "@/lib/auth/delivery-preference";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { sendAnalysisCompleteEmail } from "@/server/notifications/analysis-complete-email";
@@ -123,10 +124,11 @@ async function advanceOne(run: RunRow, origin: string) {
     throw error;
   }
 
-  const { data: owner } = await serviceRoleClient().auth.admin.getUserById(run.owner_user_id);
-  if (owner?.user?.email) {
+  const { data: owner, error: ownerError } = await serviceRoleClient().auth.admin.getUserById(run.owner_user_id);
+  const to = !ownerError && owner?.user?.id === run.owner_user_id ? notificationEmail(owner.user) : undefined;
+  if (to) {
     try {
-      await sendAnalysisCompleteEmail({ to: owner.user.email, resultUrl: `${origin}/result?analysisRunId=${run.id}`, feedbackUrl: `${origin}/feedback/${run.id}` });
+      await sendAnalysisCompleteEmail({ to, resultUrl: `${origin}/result?analysisRunId=${run.id}`, feedbackUrl: `${origin}/feedback/${run.id}` });
     } catch (emailError) {
       console.error("advance_email_failed", emailError instanceof Error ? emailError.message : "UNKNOWN_ERROR");
     }

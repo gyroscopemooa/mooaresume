@@ -31,7 +31,7 @@ beforeEach(() => {
   process.env.RESEND_API_KEY = "key";
   process.env.ANALYSIS_EMAIL_FROM = "noreply@mooaresume.com";
   process.env.ANALYSIS_EMAIL_REPLY_TO = "help@mooaresume.com";
-  getUserById.mockReset().mockResolvedValue({ data: { user: { email: "applicant@example.com" } } });
+  getUserById.mockReset().mockResolvedValue({ data: { user: { id: "user-1", email: "applicant@example.com" } } });
 });
 
 afterEach(() => { vi.clearAllMocks(); });
@@ -89,4 +89,14 @@ describe("환불 안내 메일", () => {
     expect(await notifyRefundedApplicant({ ownerUserId: "user-1", refund: REFUNDED }, sent))
       .toEqual({ disposition: "FAILED", detail: "RESEND_429" });
   });
+});
+
+it.each(["dashboard", "unverified", "wrong-owner", "lookup-error"])("suppresses customer refund mail for %s", async (mode) => {
+  getUserById.mockResolvedValue({ error: mode === "lookup-error" ? new Error("lookup failed") : null, data: { user: {
+    id: mode === "wrong-owner" ? "other" : "user-1", email: "applicant@example.com", email_confirmed_at: mode === "unverified" ? null : "2026-11-11",
+    app_metadata: { provider: "kakao", ...(mode === "dashboard" ? { mooa_delivery_preference: { version: 1, mode: "dashboard_only", user_id: "user-1", updated_at: "2026-11-11T00:00:00Z" } } : {}) },
+  } } });
+  const sent = okFetch();
+  expect(await notifyRefundedApplicant({ ownerUserId: "user-1", refund: REFUNDED }, sent)).toEqual({ disposition: "SKIPPED_NO_ADDRESS" });
+  expect(sent).not.toHaveBeenCalled();
 });

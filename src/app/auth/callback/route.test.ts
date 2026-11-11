@@ -76,3 +76,25 @@ it("preserves an identity conflict reported by the code exchange", async () => {
   expect(response.headers.get("location")).toContain("auth_reason=identity_already_exists");
   expect(response.headers.get("location")).not.toContain("private-token");
 });
+
+it.each(["custom:naver", "kakao"])("returns first-time %s checkout to the same inline preparation URL", async (provider) => {
+  exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "same-user", app_metadata: { provider } } }, error: null });
+  const response = await GET(request({ code: "code", next: "/analysis/prepare?source=twa&product=PRO#draft" }));
+  expect(response.headers.get("location")).toBe("https://mooaresume.com/analysis/prepare?source=twa&product=PRO#draft");
+});
+it("respects the explicit dashboard-only preference for a subsequent safe destination", async () => {
+  exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "same-user", app_metadata: { provider: "kakao", mooa_delivery_preference: { version: 1, mode: "dashboard_only", user_id: "same-user", updated_at: "2026-11-11T00:00:00Z" } } } }, error: null });
+  const response = await GET(request({ code: "code", next: "/app/my?source=twa" }));
+  expect(response.headers.get("location")).toBe("https://mooaresume.com/app/my?source=twa");
+});
+it("still rejects missing session and does not trust a mutable dashboard claim", async () => {
+  exchangeCodeForSession.mockResolvedValue({ data: { user: null }, error: null });
+  expect((await GET(request({ code: "code" }))).headers.get("location")).toContain("auth_reason=session_failed");
+  exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "same-user", app_metadata: { provider: "kakao" }, user_metadata: { mooa_delivery_preference: { mode: "dashboard_only" } } } }, error: null });
+  expect((await GET(request({ code: "code", next: "/app/my" }))).headers.get("location")).toContain("/auth/complete-profile");
+});
+
+it.each(["google", "email"])("preserves unverified %s completion even when next is preparation", async (provider) => {
+  exchangeCodeForSession.mockResolvedValue({ data: { user: { id: "same-user", app_metadata: { provider } } }, error: null });
+  expect((await GET(request({ code: "code", next: "/analysis/prepare" }))).headers.get("location")).toContain("/auth/complete-profile");
+});

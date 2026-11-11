@@ -5,6 +5,7 @@ import { CheckCircle2, LoaderCircle, TriangleAlert } from "lucide-react";
 import { z } from "zod";
 import styles from "./quick-checkout-return.module.css";
 import { createClient } from "@/lib/supabase/client";
+import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import { reportPurchaseConversion } from "@/lib/google-ads-conversion";
 
 const statusSchema = z.object({
@@ -236,7 +237,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         }
         if (status.analysisStatus === "RUNNING") {
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
           if (!executing.current) {
             executing.current = true;
             try {
@@ -270,7 +271,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         if (status.entitlementStatus === "ACTIVE" && !executing.current) {
           executing.current = true;
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
           try {
             const executeResponse = await fetch("/api/analysis-runs/quick/execute", {
               method: "POST",
@@ -314,7 +315,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
       } catch {
         if (!cancelled) {
           setPhase("failed");
-          setMessage("결제 확인이 지연되고 있습니다. 다시 결제하지 마세요. 결제가 확인되면 분석을 시작하고 결과를 대시보드에 저장합니다.");
+          setMessage("결제 확인이 지연되고 있습니다. 다시 결제하지 마세요. 다시 방문할 때도 같은 소셜 계정으로 로그인하고 대시보드에서 상태를 확인해 주세요.");
         }
       }
     }
@@ -362,7 +363,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
     async function run(attempt: number) {
       if (cancelled) return;
       setPhase("analyzing");
-      setMessage("무료 이용권으로 분석을 시작했습니다. 창을 닫으셔도 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
+      setMessage("무료 이용권으로 분석을 시작했습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
       try {
         const response = await fetch("/api/analysis-runs/quick/execute", {
           method: "POST",
@@ -401,7 +402,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         return;
       }
       setPhase("failed");
-      setMessage("분석이 예상보다 오래 걸리고 있습니다. 창을 닫으셔도 서버에서 계속 진행되며, 끝나면 결과 링크를 이메일로 보내드립니다.");
+      setMessage("분석이 예상보다 오래 걸리고 있습니다. 창을 닫으셔도 서버에서 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
     }
 
     void run(0);
@@ -443,11 +444,13 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
   }
 
   async function requestEmailLink() {
+    if (emailBusy) return;
     setEmailBusy(true);
     try {
       const supabase = createClient();
       const { data } = await supabase.auth.getUser();
-      const email = data.user?.email;
+      // This button explicitly requests a login OTP, not an automatic service notice.
+      const email = checkoutEmail(data.user);
       if (!email) {
         setMessage("결제 확인이 지연되고 있습니다. 다시 결제하지 마세요. 결제가 확인되면 분석을 시작하고 결과를 대시보드에 저장합니다.");
         return;
@@ -509,6 +512,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         {/* 결제를 확인하지 못한 경우에만 띄웁니다. 분석이 실패한 손님에게
             로그인 링크는 할 일이 아니라 헛걸음입니다 — 로그인해도 결과가
             없고, 그 사이에 손님은 자기가 뭘 잘못한 줄 압니다. */}
+        {phase === "failed" && <a className={styles.emailButton} href="/app/my">대시보드에서 내 분석 확인</a>}
         {phase === "failed" && failureKind === "checkout" && !otpSent && <button type="button" className={styles.emailButton} disabled={emailBusy} onClick={() => void requestEmailLink()}>
           {emailBusy ? "전송 중..." : "이메일로 다시 안내받기"}
         </button>}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CircleUser } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { isDashboardOnly } from "@/lib/auth/delivery-preference";
 import { emailCompletionPath } from "@/lib/auth/redirect";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import { getSocialLoginOptions, getSocialLoginProviders, getSocialLoginLabel, getLinkedSocialLoginLabels, type SocialLoginProvider } from "@/lib/auth/social-providers";
@@ -30,6 +31,7 @@ export function HeaderAccount() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [emailConfirmed, setEmailConfirmed] = useState(false);
+  const [dashboardOnly, setDashboardOnly] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
   const [message, setMessage] = useState("");
@@ -55,6 +57,7 @@ export function HeaderAccount() {
         if (cancelled) return;
         setEmail(data.user?.email ?? null);
         setEmailConfirmed(Boolean(data.user?.email && data.user.email_confirmed_at));
+        setDashboardOnly(isDashboardOnly(data.user));
         setSignedIn(Boolean(data.user));
         setLinkedProviders(data.user?.identities?.map((identity) => identity.provider) ?? []);
         setReady(true);
@@ -89,6 +92,7 @@ export function HeaderAccount() {
       void createClient().auth.getUser().then(({ data }) => {
         setEmail(data.user?.email ?? null);
         setEmailConfirmed(Boolean(data.user?.email && data.user.email_confirmed_at));
+        setDashboardOnly(isDashboardOnly(data.user));
         setSignedIn(Boolean(data.user));
         setLinkedProviders(data.user?.identities?.map((identity) => identity.provider) ?? []);
       }).catch(() => {});
@@ -111,6 +115,7 @@ export function HeaderAccount() {
       if (error && !isAuthSessionMissingError(error) && error.code !== "session_not_found") throw error;
       setEmail(data.user?.email ?? null);
       setEmailConfirmed(Boolean(data.user?.email && data.user.email_confirmed_at));
+        setDashboardOnly(isDashboardOnly(data.user));
       setSignedIn(Boolean(data.user));
       setLinkedProviders(data.user?.identities?.map((identity) => identity.provider) ?? []);
       setAccountReadFailed(false);
@@ -187,14 +192,17 @@ export function HeaderAccount() {
       {open && <div className={styles.drop}>
         <div className={styles.accountSummary} data-clarity-mask="True" aria-busy={checkingAccount}>
           <span className={styles.accountLabel}>계정·알림 이메일</span>
-          <div className={styles.email}>{email ?? "이메일 확인 필요"}</div>
+          <div className={styles.email}>{email ?? (dashboardOnly ? "대시보드 전용 계정" : "이메일 확인 필요")}</div>
           {socialLabels.length > 0 && <p className={styles.identity}>연결된 소셜 로그인: {socialLabels.join(" · ")}</p>}
           <p className={styles.accountHelp}>이메일 주소와 소셜 로그인은 별개입니다.</p>
         </div>
-        {!emailConfirmed && <Link href={emailCompletionPath(typeof window === "undefined" ? "/app/my" : `${window.location.pathname}${window.location.search}`)} onClick={() => setOpen(false)}>이메일 확인하기</Link>}
+        {dashboardOnly && <p className={styles.accountHelp}>서비스 알림 메일 없이 대시보드에서 확인합니다.</p>}
+        {dashboardOnly && <Link href="/app/my#account-delivery" onClick={() => setOpen(false)}>이메일·이용 방식 변경</Link>}
+        {!dashboardOnly && !emailConfirmed && <Link href={emailCompletionPath(typeof window === "undefined" ? "/app/my" : `${window.location.pathname}${window.location.search}`)} onClick={() => setOpen(false)}>이메일 확인하기</Link>}
         {linkableProviders.length > 0 && <p className={styles.accountHelp}>다른 계정에 연결되지 않은 소셜 계정만 추가할 수 있습니다. 이용 내역은 합쳐지지 않습니다.</p>}
         {linkableProviders.map(({ id, label }) => <button key={id} type="button" disabled={busy || checkingAccount || accountReadFailed} onClick={() => void signIn(id, true)}>{label} 계정 연결</button>)}
         {message && <p role="alert">{message}</p>}
+        <Link href="/app/my" onClick={() => setOpen(false)}>대시보드 · 내 분석</Link>
         <Link href="/refer" onClick={() => setOpen(false)}>추천코드 · 무료 이용권</Link>
         <Link href="/analyze" onClick={() => setOpen(false)}>새 지원서 분석하기</Link>
         <button type="button" className={styles.signOut} onClick={() => void signOut()} disabled={busy || checkingAccount || accountReadFailed}>

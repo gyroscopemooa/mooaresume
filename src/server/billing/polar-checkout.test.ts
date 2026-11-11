@@ -161,3 +161,12 @@ describe("Polar 실패 분류", () => {
     expect(classifyPolarFailure(new Error("something else entirely"))).toBe("POLAR_UNKNOWN");
   });
 });
+
+it("omits email for a new social buyer while keeping its stable external customer ID", async () => {
+  const create = vi.fn().mockResolvedValue({ id: "checkout", url: "https://sandbox.polar.sh/checkout", expiresAt: new Date("2026-11-11T00:00:00Z") });
+  const gateway = new PolarSdkCheckoutGateway({ checkouts: { create } } as never, { QUICK: "quick", PRO: "pro", FINAL: "final" });
+  const quote = createQuickCheckoutQuote(1000);
+  await gateway.createCheckout({ quote, metadata: toQuickCheckoutMetadata(quote, "11111111-1111-4111-8111-111111111111"), externalCustomerId: "stable-supabase-uuid", successUrl: "https://example.test/success", returnUrl: "https://example.test/return" });
+  expect(create.mock.calls[0][0].externalCustomerId).toBe("stable-supabase-uuid");
+  expect(create.mock.calls[0][0].customerEmail).toBeUndefined();
+});

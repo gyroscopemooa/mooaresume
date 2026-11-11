@@ -1,3 +1,4 @@
+import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
     const result = await createInterviewRetryCheckout({
       analysisRunId: parsed.data.analysisRunId,
       externalCustomerId: authData.user.id,
-      customerEmail: authData.user.email,
+      customerEmail: checkoutEmail(authData.user),
       successUrl: `${siteUrl}/result?analysisRunId=${parsed.data.analysisRunId}&interviewRetryCheckout={CHECKOUT_ID}`,
       returnUrl: `${siteUrl}/result?analysisRunId=${parsed.data.analysisRunId}`,
     });

@@ -1,3 +1,4 @@
+import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import "server-only";
 
 import { isIP } from "node:net";
@@ -94,7 +95,7 @@ export async function handleCheckoutRequest(request: NextRequest) {
       },
       user: {
         id: authData.user.id,
-        email: authData.user.email,
+        email: checkoutEmail(authData.user),
       },
       successUrl: `${siteUrl}/analysis/prepare?checkout=success&checkout_id={CHECKOUT_ID}`,
       returnUrl: `${siteUrl}/analysis/prepare`,

@@ -1,3 +1,4 @@
+import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { socialEmailGuard } from "@/server/auth/social-email-guard";
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       buildId: build.id,
       userId: authData.user.id,
       priceKrw: CAREER_DESCRIPTION_BUILD_PRICE_KRW,
-      customerEmail: authData.user.email,
+      customerEmail: checkoutEmail(authData.user),
       successUrl: `${siteUrl}/career-description?career_description_build=${build.id}&checkout=success`,
       returnUrl: `${siteUrl}/career-description?career_description_build=${build.id}`,
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import { trackWeb } from "@/lib/analytics/web";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowRight, CheckCircle2, Gift, Mail } from "lucide-react";
 import { isFinalEnabled } from "@/domain/final-availability";
 import type { GuestDraft } from "@/lib/guest-draft";
@@ -13,7 +13,9 @@ import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { WritingHomeLink } from "@/components/writing-home-link";
 import { ResearchConsentGate } from "./research-consent-gate";
-import { AccountEmailPanel } from "./account-email-panel";
+import { canStartWithDelivery } from "@/lib/auth/delivery-preference";
+import { safeAuthNextPath } from "@/lib/auth/redirect";
+import { AccountEmailPanel, type DeliveryReadiness } from "./account-email-panel";
 import styles from "./application-case-handoff.module.css";
 import { onCreditChange } from "@/lib/credit-events";
 import {
@@ -135,7 +137,31 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   const [email, setEmail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [busy, setBusy] = useState(false);
-  useOAuthReturnReset(() => setBusy(false));
+  const actionPending = useRef(false);
+  const accountId = useRef<string | null>(null);
+  const [deliveryReady, setDeliveryReady] = useState(false);
+  const deliveryRef = useRef<HTMLDivElement>(null);
+  const onDeliveryReadiness = useCallback((state: DeliveryReadiness) => {
+    setDeliveryReady(state.ready && Boolean(accountId.current && accountId.current === state.userId));
+  }, []);
+  function showDeliveryChoice() {
+    setMessage("위에서 이메일을 확인하거나 ‘추가 이메일 인증 없이 대시보드에서 확인’을 선택해 주세요.");
+    deliveryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("account-delivery")?.focus({ preventScroll: true });
+  }
+  async function assertDeliveryReady() {
+    const { data, error } = await createClient().auth.getUser();
+    if (error || !data.user || !accountId.current || data.user.id !== accountId.current) {
+      setDeliveryReady(false);
+      throw new Error("로그인 계정이 바뀌었거나 확인되지 않았습니다. 작성 내용은 이 탭에 남아 있습니다. 새로고침 후 다시 확인해 주세요.");
+    }
+    if (!canStartWithDelivery(data.user)) {
+      setDeliveryReady(false);
+      showDeliveryChoice();
+      throw new Error("이메일 확인 또는 대시보드 전용 이용을 먼저 선택해 주세요.");
+    }
+  }
+  useOAuthReturnReset(() => { actionPending.current = false; setBusy(false); });
   const [message, setMessage] = useState("");
   // 이메일 로그인은 링크 대신 코드로 받습니다. Gmail 등은 피싱 확인용으로
   // 메일을 열자마자 안의 링크를 미리 눌러 보는데, 매직링크는 한 번 쓰면
@@ -197,6 +223,12 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         const supabase = createClient();
         const { data } = await supabase.auth.getUser();
         if (cancelled) return;
+        if (accountId.current && data.user?.id !== accountId.current) {
+          setDeliveryReady(false);
+          setMessage("로그인 계정이 바뀌었습니다. 작성 내용은 이 탭에 남아 있습니다. 새로고침 후 다시 확인해 주세요.");
+          return;
+        }
+        accountId.current ??= data.user?.id ?? null;
         setAuthenticated(Boolean(data.user));
         if (!data.user) return;
         // RLS already limits this to the signed-in account's own credits, so
@@ -269,6 +301,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
    * same two steps here: consume, then start.
    */
   async function startWithCredit(applicationCaseId: string, analysisRunId: string) {
+    await assertDeliveryReady();
     const supabase = createClient();
     // 테스트 이용권이 있으면 그것을 먼저 쓴다(테스트 계정이 실수로 실제 무료 이용권을 쓰지 않게).
     const { error } = await supabase.rpc(availableTestGrant ? "consume_admin_test_grant" : "consume_reward_credit", {
@@ -352,6 +385,8 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   }
 
   async function signInWithSocial(provider: SocialLoginProvider = "google") {
+    if (actionPending.current) return;
+    actionPending.current = true;
     setBusy(true);
     setMessage("");
     try {
@@ -359,11 +394,12 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: createAuthCallbackUrl("/analysis/prepare"),
+          redirectTo: createAuthCallbackUrl(safeAuthNextPath(`${window.location.pathname}${window.location.search}${window.location.hash}`)),
         },
       });
       if (error) throw error;
     } catch {
+      actionPending.current = false;
       setBusy(false);
       setMessage("로그인을 초기화하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
@@ -373,6 +409,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
    * 구매·복구)에서 씁니다.
    */
   async function startVerifiedRun(analysisRunId: string) {
+    await assertDeliveryReady();
     const executed = await fetch("/api/analysis-runs/quick/execute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -388,6 +425,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   }
 
   async function beginCheckout(analysisRunId: string, product: "QUICK" | "PRO" | "FINAL") {
+    await assertDeliveryReady();
     trackWeb("checkout_clicked", { product });
     // FINAL has no Polar product yet, so there is no checkout to create. Said
     // plainly here rather than letting the fetch 404 into "오류가 발생했습니다":
@@ -465,14 +503,17 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     window.location.assign(result.checkoutUrl);
   }
   async function saveApplicationCase() {
+    if (actionPending.current || runActive) return;
     if (!guest) {
       setMessage("저장할 입력 내용을 찾지 못했습니다.");
       return;
     }
 
+    actionPending.current = true;
     setBusy(true);
     setMessage("");
     try {
+      await assertDeliveryReady();
       const postingText = sessionStorage.getItem("mooa:guest-job-posting:v1") ?? "";
       const postingSourceRaw = sessionStorage.getItem("mooa:guest-job-posting-source:v1");
       const materialRaw = sessionStorage.getItem("mooa:guest-candidate-materials:v1");
@@ -486,6 +527,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          expectedUserId: accountId.current,
           title: guest.companyName?.trim() || "새 지원서",
           companyName: contextEnhancement?.company ?? guest.companyName,
           roleName: contextEnhancement?.role ?? guest.roleName,
@@ -517,6 +559,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         setMessage(errorMessage);
         return;
       }
+      await assertDeliveryReady();
       if (result && typeof result === "object" && "reusedAnalysisRunId" in result && typeof result.reusedAnalysisRunId === "string") {
         setMessage("같은 입력과 설정의 기존 결과를 찾았습니다. 결제 없이 결과를 엽니다.");
         window.location.assign(`/result?analysisRunId=${encodeURIComponent(result.reusedAnalysisRunId)}&reused=1`);
@@ -545,16 +588,19 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           }
         }
       }
-    } catch {
-      setMessage("브라우저 입력을 저장하는 중 오류가 발생했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "브라우저 입력을 저장하는 중 오류가 발생했습니다.");
     } finally {
+      actionPending.current = false;
       setBusy(false);
     }
   }
 
   if (savedCaseId) {
     async function retryCheckout() {
-      if (!savedAnalysisRunId) return;
+      if (!savedAnalysisRunId || actionPending.current || runActive) return;
+      if (!deliveryReady) { showDeliveryChoice(); return; }
+      actionPending.current = true;
       setBusy(true);
       setMessage("");
       try {
@@ -563,27 +609,31 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "결제 페이지로 연결하는 중 오류가 발생했습니다.");
       } finally {
+        actionPending.current = false;
         setBusy(false);
       }
     }
 
-    return <div className={styles.action}><AccountEmailPanel locked={busy || runActive}/><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
+    return <div className={styles.action}><div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy || runActive} aria-disabled={!deliveryReady} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   if (authenticated) {
     return <div className={styles.action}>
-      <AccountEmailPanel locked={busy || runActive}/>
+      <div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div>
       <GooglePlayRecoveryNotice
         entitled={recoveredPurchases}
         awaiting={awaitingPurchases}
-        busy={busy}
+        busy={busy || runActive}
         onStart={(analysisRunId) => {
+          if (actionPending.current || runActive) return;
+          if (!deliveryReady) { showDeliveryChoice(); return; }
+          actionPending.current = true;
           setBusy(true);
           setMessage("");
           void startVerifiedRun(analysisRunId)
             .then(() => setRecoveredPurchases((current) => current.filter((item) => item.analysisRunId !== analysisRunId)))
             .catch((error: unknown) => setMessage(error instanceof Error ? error.message : "분석을 시작하지 못했습니다."))
-            .finally(() => setBusy(false));
+            .finally(() => { actionPending.current = false; setBusy(false); });
         }}
       />
       <div ref={consentRef} className={consentNudge ? styles.consentNudge : undefined}>
@@ -611,7 +661,9 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       {/* 선택 전에도 눌러 볼 수 있게 둡니다. 회색 버튼이 아무 말 없이
           안 눌리면 무엇을 해야 하는지 알 수 없어서, 누르면 무엇이
           부족한지 알려 줍니다(aria-disabled로 접근성은 유지). */}
-      <button type="button" aria-disabled={!consentDecided || postingMissing} className={!consentDecided || postingMissing ? styles.softDisabled : undefined} disabled={busy || runActive || !guest || contextInvalid} onClick={() => {
+      <button type="button" aria-disabled={!deliveryReady || !consentDecided || postingMissing} className={!deliveryReady || !consentDecided || postingMissing ? styles.softDisabled : undefined} disabled={busy || runActive || !guest || contextInvalid} onClick={() => {
+        if (actionPending.current) return;
+        if (!deliveryReady) { showDeliveryChoice(); return; }
         if (!consentDecided) {
           consentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
           setConsentNudge(true);
@@ -649,7 +701,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
           directly — or in a new tab — arrives with nothing to analyse and a
           grey button explaining nothing. Say which of the two it is. */}
       {!guest && !busy && <p className={styles.noDraft}>
-        이 탭에 저장된 작성본이 없습니다. 자기소개서를 넣는 화면에서 다시 시작해 주세요.
+        이 탭에 저장된 작성본이 없습니다. 이메일 확인 링크로 새 탭을 열었다면 작성하던 원래 탭으로 돌아가 주세요. 작성본이 없는 경우 작성 화면에서 시작할 수 있습니다.
         {" "}<WritingHomeLink>작성 화면으로 가기</WritingHomeLink>
       </p>}
       {availableCredit && (

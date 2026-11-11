@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createAuthCallbackUrl } from "@/lib/app-context";
-import { safeAuthNextPath } from "@/lib/auth/redirect";
+import { isInlineDeliveryPath, safeAuthNextPath } from "@/lib/auth/redirect";
+import { isDashboardEligible, isDashboardOnly } from "@/lib/auth/delivery-preference";
 import { getSocialLoginProviders, type SocialLoginProvider } from "@/lib/auth/social-providers";
 import { SocialLoginButtons } from "./social-login-buttons";
 import styles from "./complete-social-profile.module.css";
@@ -29,7 +30,7 @@ export function CompleteSocialProfile() {
       try {
         const { data, error } = await createClient().auth.getUser();
         if (cancelled) return;
-        if (!error && data.user?.email && data.user.email_confirmed_at) {
+        if (!error && ((data.user && isInlineDeliveryPath(next) && isDashboardEligible(data.user)) || isDashboardOnly(data.user) || (data.user?.email && data.user.email_confirmed_at))) {
           router.replace(next);
           return;
         }

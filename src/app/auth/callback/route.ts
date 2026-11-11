@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { emailCompletionPath, safeAuthNextPath } from "@/lib/auth/redirect";
+import { emailCompletionPath, isInlineDeliveryPath, safeAuthNextPath } from "@/lib/auth/redirect";
+import { isDashboardEligible, isDashboardOnly } from "@/lib/auth/delivery-preference";
 import { isIdentityConflict } from "@/lib/auth/callback-message";
 
 type FailureReason = "provider_cancelled" | "identity_already_exists" | "provider_failed" | "exchange_failed" | "verify_failed" | "missing_code_and_token_hash" | "invalid_type" | "session_failed";
@@ -19,9 +20,10 @@ function failure(request: NextRequest, next: string, reason: FailureReason) {
 
 function completedRedirect(request: NextRequest, next: string, user: User | null) {
   if (!user) return failure(request, next, "session_failed");
-  // Naver OIDC identifies users by sub, not by email. Verify a contact email
-  // before returning to flows that send results/receipts. Never invent one.
-  const destination = user.email && user.email_confirmed_at ? next : emailCompletionPath(next);
+  // Checkout owns verification and the explicit dashboard-only choice inline.
+  // The existing Auth UUID remains the identity; this never links accounts.
+  const destination = (isInlineDeliveryPath(next) && isDashboardEligible(user)) || (user.email && user.email_confirmed_at) || isDashboardOnly(user)
+    ? next : emailCompletionPath(next);
   return NextResponse.redirect(new URL(destination, request.url), { status: 303, headers: { "Cache-Control": "no-store" } });
 }
 

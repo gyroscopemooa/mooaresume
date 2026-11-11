@@ -3,12 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CompleteSocialProfile } from "./complete-social-profile";
 
+const returnPath = vi.hoisted(() => ({ value: "next=%2Fresult%3FanalysisRunId%3D123" }));
 const { getUser, updateUser, verifyOtp, signOut, signInWithOAuth, replace, refresh } = vi.hoisted(() => ({ getUser: vi.fn(), updateUser: vi.fn(), verifyOtp: vi.fn(), signOut: vi.fn(), signInWithOAuth: vi.fn(), replace: vi.fn(), refresh: vi.fn() }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser, updateUser, verifyOtp, signOut, signInWithOAuth } }) }));
-vi.mock("next/navigation", () => { const router = { replace, refresh }; return { useRouter: () => router, useSearchParams: () => new URLSearchParams("next=%2Fresult%3FanalysisRunId%3D123") }; });
+vi.mock("next/navigation", () => { const router = { replace, refresh }; return { useRouter: () => router, useSearchParams: () => new URLSearchParams(returnPath.value) }; });
 
 beforeEach(() => {
   vi.clearAllMocks();
+  returnPath.value = "next=%2Fresult%3FanalysisRunId%3D123";
   vi.stubEnv("NEXT_PUBLIC_KAKAO_LOGIN_ENABLED", "true");
   vi.stubEnv("NEXT_PUBLIC_NAVER_LOGIN_ENABLED", "false");
   vi.stubEnv("NEXT_PUBLIC_NAVER_LOGIN_COMING_SOON", "true");
@@ -198,4 +200,15 @@ it("does not finish if the account changes during OTP verification", async () =>
   fireEvent.click(screen.getByRole("button", { name: "이메일 확인하고 계속하기" }));
   await screen.findByText(/이메일 확인이 아직/);
   expect(replace).not.toHaveBeenCalled();
+});
+
+it("returns a first-time Naver preparation link to the inline choice", async () => {
+  returnPath.value = "next=%2Fanalysis%2Fprepare%3Fsource%3Dtwa";
+  getUser.mockResolvedValue({ data: { user: { id: "naver-user", app_metadata: { provider: "custom:naver" } } }, error: null });
+  render(<CompleteSocialProfile />); await waitFor(() => expect(replace).toHaveBeenCalledWith("/analysis/prepare?source=twa"));
+  expect(updateUser).not.toHaveBeenCalled();
+});
+it("does not redirect a missing session through the inline shortcut", async () => {
+  returnPath.value = "next=%2Fanalysis%2Fprepare"; getUser.mockResolvedValue({ data: { user: null }, error: null });
+  render(<CompleteSocialProfile />); await screen.findByText(/로그인이 만료됐습니다/); expect(replace).not.toHaveBeenCalled();
 });

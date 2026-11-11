@@ -1,3 +1,4 @@
+import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { socialEmailGuard } from "@/server/auth/social-email-guard";
@@ -44,7 +45,7 @@ export async function guardMemberRequest(request: NextRequest): Promise<GuardFai
   }
   const emailGuard = socialEmailGuard(data.user, "/legal");
   if (emailGuard) return { ok: false, response: emailGuard };
-  return { ok: true, userId: data.user.id, email: data.user.email };
+  return { ok: true, userId: data.user.id, email: checkoutEmail(data.user) };
 }
 
 /** 본문이 JSON이 아닐 때의 응답도 한 곳에 둡니다. */

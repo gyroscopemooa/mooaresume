@@ -84,3 +84,14 @@ NEXT_PUBLIC_SOCIAL_ACCOUNT_LINKING_ENABLED=true
 ### 개인정보 고지 확인
 
 현재 개인정보처리방침은 이메일/Google과 카카오 ID·이메일·닉네임·프로필 이미지를 명시한다. 준비 중 네이버 버튼은 인증을 시작하거나 네이버 정보를 수집하지 않는다. 네이버 실제 로그인을 공개하기 전 실제 요청 항목과 이메일 확인 흐름에 맞게 고지를 다시 검토한다.
+
+
+## Optional dashboard-only delivery (2026-11-11)
+
+Naver/Kakao identities can explicitly choose dashboard-only service delivery on checkout preparation or My Page. This does not bypass social authentication, change the Auth UUID/email, verify an email address, link identities, or merge purchases. The same-origin authenticated preference endpoint stores a UUID-bound versioned preference in server-controlled Auth app_metadata. Client-editable user_metadata is never evidence of verification or eligibility. Returning to email notifications requires a genuinely confirmed Auth email.
+
+Completion and customer refund mail resolve the current owner preference at delivery time, including queued completion. Dashboard-only suppresses these MOOA notices even when Kakao already supplied a confirmed email. Auth/security mail and an explicitly requested later email verification remain available. Results are visible in /app/my; refund status is checked in payment history/provider notices, not promised as an existing refund dashboard.
+
+Polar billing remains independent: retain the immutable Supabase UUID as externalCustomerId; never pass an unconfirmed social Auth email as customerEmail. Official current source keeps customer_id null for a new unmatched external ID and renders a required editable buyer-email field. A known Polar customer uses its stored billing email. This email is not copied to Auth or treated as ownership verification. Provider receipts/refund notices may still be sent. Source: https://github.com/polarsource/polar/blob/main/server/polar/checkout/service.py and https://github.com/polarsource/polar/blob/main/clients/packages/checkout/src/components/CheckoutForm.tsx . Hosted/sandbox behavior still needs acceptance testing; no live payment or mail was sent during code validation.
+
+Kakao's upstream email-required setting is unchanged; accepting Kakao accounts with no provider email may require a separately approved provider change. Production Naver stays green coming-soon with no OAuth until review approval.
