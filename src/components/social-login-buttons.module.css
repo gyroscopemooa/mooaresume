@@ -1,7 +1,12 @@
 .buttons { display: grid; gap: 8px; width: 100%; min-width: 0; }
-.buttons .button { width: 100%; min-height: 44px; display: flex; justify-content: center; align-items: center; gap: 8px; border-radius: 9px; padding: 11px 14px; font: inherit; font-weight: 650; cursor: pointer; }
-.buttons .button[data-provider="kakao"] { color: #191919; background: #fee500; border: 1px solid #fee500; }
-.buttons .button[data-provider="naver"] { color: #fff; background: #03a843; border: 1px solid #03a843; }
+.buttons .button { width: 100%; min-height: 48px; display: flex; justify-content: center; align-items: center; gap: 8px; border-radius: 9px; padding: 11px 14px; font: inherit; font-weight: 650; cursor: pointer; }
+.buttons .button[data-provider="kakao"] { color: rgba(0, 0, 0, .85); background: #fee500; border: 1px solid #fee500; }
+.buttons .button[data-provider="naver"] { color: #fff; background: #03a94d; border: 1px solid #03a94d; }
 .buttons .button:focus-visible { outline: 3px solid #176b4a; outline-offset: 3px; }
 .buttons .button:disabled { cursor: wait; opacity: .65; }
 .buttons .notice { margin: 3px 0 0; font-size: 12px; line-height: 1.65; color: #526059; font-weight: 400; text-align: left; }
+
+/* Official complete artwork is not recolored or reshaped. */
+.buttons .button[data-provider="kakao"], .buttons .button[data-provider="naver"] { padding: 0; overflow: hidden; }
+.brandImage { display: block; flex: 0 0 auto; object-fit: contain; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

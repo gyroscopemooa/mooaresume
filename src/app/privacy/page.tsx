@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const EFFECTIVE_DATE = "2026년 9월 19일";
+const EFFECTIVE_DATE = "2026년 11월 11일";
 
 /**
  * 국내 서비스는 개인정보처리방침 게시가 의무입니다.
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
             <tbody>
               <tr>
                 <th>계정</th>
-                <td>이메일 주소. Google 계정으로 로그인하시면 Google이 제공하는 이메일 주소와 계정 식별자를 받습니다. <b>비밀번호는 저장하지 않습니다</b> — 이메일 링크 또는 Google 로그인만 사용합니다.</td>
+                <td>이메일 주소. Google 계정으로 로그인하시면 Google이 제공하는 이메일 주소와 계정 식별자를 받습니다. 카카오 로그인을 선택하시면 카카오 계정 식별자, 이메일 주소, 닉네임과 프로필 이미지를 받습니다. 이 정보는 로그인과 계정 연결에 사용합니다. <b>비밀번호는 저장하지 않습니다</b> — 이메일 링크 또는 소셜 로그인을 사용합니다.</td>
               </tr>
               <tr>
                 <th>지원 자료</th>

@@ -28,6 +28,16 @@ describe("SocialLoginButtons", () => {
     expect(signIn.mock.calls).toEqual([["kakao"], ["custom:naver"]]);
     expect(screen.getByText(/기존 이용 내역을 유지/)).toBeTruthy();
   });
+  it("uses locally hosted official brand artwork without changing accessible actions", () => {
+    enableProviders();
+    render(<SocialLoginButtons onSignIn={vi.fn()} />);
+    const kakao = screen.getByRole("button", { name: "카카오로 계속하기" });
+    const naver = screen.getByRole("button", { name: "네이버로 계속하기" });
+    expect(kakao.querySelector("img")?.getAttribute("src")).toBe("/auth/kakao-login.svg");
+    expect(naver.querySelector("img")?.getAttribute("src")).toBe("/auth/naver-login.png");
+    expect(kakao.querySelector("img")?.getAttribute("alt")).toBe("");
+    expect(naver.querySelector("img")?.getAttribute("width")).toBe("210");
+  });
   it("blocks repeated/different provider clicks while a sign-in is pending", () => {
     enableProviders();
     const signIn = vi.fn();

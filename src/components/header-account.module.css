@@ -33,3 +33,6 @@
 @media (max-width: 680px) {
   .drop { right: -6px; min-width: 200px; }
 }
+
+/* Keep the official social artwork readable in the account dropdown. */
+.drop:has([data-provider]) { min-width: 248px; }
