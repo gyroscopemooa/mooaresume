@@ -13,6 +13,7 @@ import { candidateMaterialDraftSchema } from "@/domain/candidate-material";
 import { createCoverLetterQuestion } from "@/domain/cover-letter-question";
 import { WritingHomeLink } from "@/components/writing-home-link";
 import { ResearchConsentGate } from "./research-consent-gate";
+import { AccountEmailPanel } from "./account-email-panel";
 import styles from "./application-case-handoff.module.css";
 import { onCreditChange } from "@/lib/credit-events";
 import {
@@ -566,11 +567,12 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       }
     }
 
-    return <div className={styles.action}><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
+    return <div className={styles.action}><AccountEmailPanel locked={busy || runActive}/><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   if (authenticated) {
     return <div className={styles.action}>
+      <AccountEmailPanel locked={busy || runActive}/>
       <GooglePlayRecoveryNotice
         entitled={recoveredPurchases}
         awaiting={awaitingPurchases}

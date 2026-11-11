@@ -7,7 +7,7 @@ import { CircleUser } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { emailCompletionPath } from "@/lib/auth/redirect";
 import { createAuthCallbackUrl } from "@/lib/app-context";
-import { getSocialLoginProviders, getSocialLoginLabel, type SocialLoginProvider } from "@/lib/auth/social-providers";
+import { getSocialLoginOptions, getSocialLoginProviders, getSocialLoginLabel, type SocialLoginProvider } from "@/lib/auth/social-providers";
 import { SocialLoginButtons } from "./social-login-buttons";
 import styles from "./header-account.module.css";
 
@@ -133,7 +133,7 @@ export function HeaderAccount() {
 
   if (!signedIn) {
     // Preserve the one-click Google entrypoint until extra providers are ready.
-    if (getSocialLoginProviders().length === 1) return <button type="button" className={styles.link} onClick={() => void signIn()} disabled={busy}>{busy ? "이동 중..." : "로그인"}</button>;
+    if (getSocialLoginOptions().length === 1) return <button type="button" className={styles.link} onClick={() => void signIn()} disabled={busy}>{busy ? "이동 중..." : "로그인"}</button>;
     return <div className={styles.menu} ref={wrapRef}>
       <button type="button" className={styles.link} onClick={() => setOpen((current) => !current)} aria-expanded={open}>로그인</button>
       {open && <div className={styles.drop}>

@@ -21,6 +21,15 @@ describe("result provider switching", () => {
     await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledWith({ provider, options: { redirectTo: expect.stringContaining("next=%2Fresult%3FanalysisRunId%3D123"), queryParams: { prompt } } }));
     expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(signInWithOAuth.mock.invocationCallOrder[0]);
   });
+  it("does not sign out or start OAuth when unavailable Naver is clicked", () => {
+    vi.stubEnv("NEXT_PUBLIC_NAVER_LOGIN_ENABLED", "false");
+    vi.stubEnv("NEXT_PUBLIC_NAVER_LOGIN_COMING_SOON", "true");
+    render(<ResultSignIn nextPath="/result?analysisRunId=123" variant="missing" />);
+    fireEvent.click(screen.getByRole("button", { name: "네이버 로그인 준비 중" }));
+    expect(screen.getByRole("status").textContent).toContain("준비 중");
+    expect(signOut).not.toHaveBeenCalled();
+    expect(signInWithOAuth).not.toHaveBeenCalled();
+  });
   it("does not start another provider when signout fails", async () => {
     signOut.mockResolvedValue({ error: { message: "offline" } });
     render(<ResultSignIn nextPath="/result?analysisRunId=123" variant="missing" />);

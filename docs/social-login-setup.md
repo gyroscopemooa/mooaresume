@@ -1,6 +1,6 @@
 # 네이버 · 카카오 로그인 연결
 
-상태: 로컬 구현/검증 중. 운영 공급자, 비밀키, 배포는 변경하지 않았다. Google/이메일 로그인은 유지되며 새 공급자는 공개 표시 플래그의 기본값 `false`로 숨겨진다. 이 문서의 설정은 실제 개발자 계정과 Supabase 프로젝트를 확인한 후 적용한다.
+상태(2026-11-11): 카카오 로그인과 계정 연결은 운영에 공개됐다. Google/이메일 로그인은 유지한다. 네이버 실제 로그인은 검증 전이므로 비활성 상태이며, 이번 후속 변경은 공개 버튼을 누르면 준비 중 안내만 표시한다. 개발 환경에서는 명시적인 활성화 값으로 네이버를 테스트할 수 있다.
 
 ## 유지되는 계정과 데이터
 
@@ -57,12 +57,13 @@ Supabase Authentication → Custom OAuth Providers에 다음 값을 준비한다
 
 ```env
 NEXT_PUBLIC_KAKAO_LOGIN_ENABLED=true
-NEXT_PUBLIC_NAVER_LOGIN_ENABLED=true
+NEXT_PUBLIC_NAVER_LOGIN_ENABLED=false
+NEXT_PUBLIC_NAVER_LOGIN_COMING_SOON=true
 NEXT_PUBLIC_NAVER_AUTH_PROVIDER=custom:naver
 NEXT_PUBLIC_SOCIAL_ACCOUNT_LINKING_ENABLED=true
 ```
 
-공급자 하나만 준비됐다면 해당 공급자만 켠다. 새 비밀키를 애플리케이션 `NEXT_PUBLIC_*` 변수에 넣지 않는다. 운영 배포는 별도 승인 후 진행한다.
+현재 승인된 운영 기본값은 카카오/계정 연결=true, 네이버 실제 로그인=false, 네이버 준비 중 표시=true다. `next.config.ts`의 공개 UI 값 허용 목록에 기본값을 두어 자동 운영 빌드에서도 유지하며 명시적인 환경변수는 우선한다. 개발 기본값은 비활성이고, 로컬에서 네이버 실제 로그인을 true로 켜면 준비 중 버튼 대신 실제 공급자 버튼이 표시된다. 준비 중 선택지는 인증 공급자 목록에 들어가지 않으므로 OAuth, 로그아웃, 계정 연결을 호출하지 않는다. 실제 네이버를 공개하려면 별도 검증과 운영 활성화 승인이 필요하다. 비밀키를 `NEXT_PUBLIC_*` 변수에 넣지 않는다.
 
 ## 출시 전 실제 확인 목록
 
@@ -82,4 +83,4 @@ NEXT_PUBLIC_SOCIAL_ACCOUNT_LINKING_ENABLED=true
 
 ### 개인정보 고지 확인
 
-현재 `src/app/privacy/page.tsx`는 이메일/Google 로그인만 명시한다. 새 공급자를 공개하기 전 실제 동의항목(계정 식별자, 제공되는 이메일/프로필)과 네이버 추가 이메일 확인 흐름에 맞게 고지 문구를 검토·반영한다. 이번 코드 준비 단계에서는 운영 법률 고지를 임의로 변경하지 않았다.
+현재 개인정보처리방침은 이메일/Google과 카카오 ID·이메일·닉네임·프로필 이미지를 명시한다. 준비 중 네이버 버튼은 인증을 시작하거나 네이버 정보를 수집하지 않는다. 네이버 실제 로그인을 공개하기 전 실제 요청 항목과 이메일 확인 흐름에 맞게 고지를 다시 검토한다.

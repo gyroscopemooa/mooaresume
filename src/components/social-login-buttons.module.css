@@ -10,3 +10,11 @@
 .buttons .button[data-provider="kakao"], .buttons .button[data-provider="naver"] { padding: 0; overflow: hidden; }
 .brandImage { display: block; flex: 0 0 auto; height: 32px; width: auto; max-width: 100%; object-fit: contain; }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.comingSoonBadge { font-size: 11px; line-height: 1.4; font-weight: 650; border-radius: 4px; padding: 2px 5px; color: #fff; background: #096c36; white-space: nowrap; }
+.buttons .comingSoonMessage { margin: 0; color: #526059; font-size: 12px; line-height: 1.6; text-align: left; font-weight: 400; }
+
+@font-face { font-family: "Mooa Google Sans"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/google-sans-wordmark.woff2") format("woff2"); unicode-range: U+47, U+65, U+67, U+6c, U+6f; }
+/* Scoped important rules override legacy Google-only consumer classes. */
+.buttons .button[data-provider="google"] { background: #fff !important; color: #1f1f1f !important; border: 1px solid #747775 !important; padding: 8px 12px !important; font-family: "Mooa Google Sans", "Pretendard", Arial, sans-serif !important; font-size: 14px !important; font-weight: 500 !important; line-height: 20px; gap: 10px; }
+.googleIcon { display: block; width: 18px; height: 18px; flex: none; object-fit: contain; background: #fff; }

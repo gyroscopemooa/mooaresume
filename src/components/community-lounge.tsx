@@ -9,7 +9,7 @@ import { SiteNav } from "@/components/site-nav";
 import { createClient } from "@/lib/supabase/client";
 import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
 import { SocialLoginButtons } from "@/components/social-login-buttons";
-import { getSocialLoginProviders, type SocialLoginProvider } from "@/lib/auth/social-providers";
+import { getSocialLoginOptions, type SocialLoginProvider } from "@/lib/auth/social-providers";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import styles from "./community-lounge.module.css";
 
@@ -202,7 +202,7 @@ export function CommunityLounge({ attachmentNotice = false, initialFeed }: { att
 
     {showAttachmentNotice && <div className={styles.loginNotice} role="status">
       <ShieldAlert/> 첨부파일은 로그인 후에 볼 수 있어요.
-      {getSocialLoginProviders().length > 1
+      {getSocialLoginOptions().length > 1
         ? <SocialLoginButtons onSignIn={(provider) => void signInForAttachment(provider)} busy={attachmentAuthBusy} />
         : <button type="button" disabled={attachmentAuthBusy} onClick={() => void signInForAttachment()}>로그인하기</button>}
       <button type="button" aria-label="안내 닫기" onClick={() => setShowAttachmentNotice(false)}><X/></button>

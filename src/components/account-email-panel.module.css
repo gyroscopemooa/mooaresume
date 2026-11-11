@@ -1,0 +1,18 @@
+.panel{display:grid;gap:7px;min-width:0;margin:0 0 12px;padding:14px;border:1px solid #d5e2da;border-radius:10px;background:#f7faf8;color:#263d31}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.heading h3{margin:0;font-size:13px;font-weight:800;line-height:1.5}
+.panel .current{margin:0;overflow-wrap:anywhere;color:#214c35;font-size:14px;font-weight:700;text-align:left;line-height:1.5}
+.panel .help,.panel .pending,.panel .message{margin:0;color:#617068;font-size:12px;line-height:1.65;text-align:left;overflow-wrap:anywhere}
+.panel .pending{color:#8a5c13}
+.panel .message{color:#365e47}
+.editor{display:grid;gap:12px;padding-top:6px}
+.editor form{display:grid;gap:7px;min-width:0}
+.editor label{color:#3b5143;font-size:12px;font-weight:700}
+.editor input,.editor select{box-sizing:border-box;width:100%;min-width:0;min-height:40px;border:1px solid #c6d5cc;border-radius:7px;background:#fff;padding:9px;color:#263d31;font:inherit;font-size:14px}
+.editor input:focus-visible,.editor select:focus-visible,.panel button:focus-visible{outline:2px solid #176b4a;outline-offset:2px}
+.panel .primary{min-height:40px;padding:9px;border:0;border-radius:7px;background:#176b4a;color:#fff;font-size:12px;font-weight:700}
+.panel .change,.panel .secondary{width:auto;padding:6px 0;border:0;background:transparent;color:#176b4a;font-size:12px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.panel .change{flex:none}
+.panel button:disabled{opacity:.55;cursor:not-allowed}
+.panel .change:disabled,.panel .secondary:disabled{background:transparent}
+.controls{display:flex;flex-wrap:wrap;gap:5px 14px;justify-content:space-between}

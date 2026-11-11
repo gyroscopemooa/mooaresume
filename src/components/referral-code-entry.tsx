@@ -5,7 +5,7 @@ import { Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
 import { SocialLoginButtons } from "@/components/social-login-buttons";
-import { getSocialLoginProviders, type SocialLoginProvider } from "@/lib/auth/social-providers";
+import { getSocialLoginOptions, type SocialLoginProvider } from "@/lib/auth/social-providers";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import { describeReferralError, parseReferralCode } from "@/domain/referral";
 import { PENDING_REFERRAL_CODE, stashPendingCode, takePendingCode } from "@/lib/pending-code";
@@ -122,7 +122,7 @@ export function ReferralCodeEntry({
     if (requireSignIn && signedIn === false) {
       stashPendingCode(PENDING_REFERRAL_CODE, parsed.code);
       setMessage("로그인 후 자동으로 적용해 드립니다.");
-      if (getSocialLoginProviders().length > 1) {
+      if (getSocialLoginOptions().length > 1) {
         setChoosingProvider(true);
       } else {
         await signIn();

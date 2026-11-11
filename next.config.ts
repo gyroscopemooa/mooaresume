@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { socialBuildEnvironment } from "./src/lib/auth/build-rollout";
 
 const privatePaths = [
   "analysis",
@@ -22,6 +23,8 @@ const nextConfig: NextConfig = {
   // Optional local worktree preview; production config and the default root stay unchanged.
   ...(process.env.NODE_ENV === "development" && process.env.MOOA_PREVIEW_ROOT
     ? { turbopack: { root: process.env.MOOA_PREVIEW_ROOT } } : {}),
+  // Persist the approved staged release across automatic builds; explicit overrides win.
+  env: socialBuildEnvironment(process.env),
   poweredByHeader: false,
   allowedDevOrigins: ["local.mooaresume.com", "dev.mooaresume.com"],
   async redirects() {

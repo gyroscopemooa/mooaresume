@@ -5,7 +5,7 @@ import { Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useOAuthReturnReset } from "@/lib/auth/use-oauth-return-reset";
 import { SocialLoginButtons } from "@/components/social-login-buttons";
-import { getSocialLoginProviders, type SocialLoginProvider } from "@/lib/auth/social-providers";
+import { getSocialLoginOptions, type SocialLoginProvider } from "@/lib/auth/social-providers";
 import { createAuthCallbackUrl } from "@/lib/app-context";
 import { PENDING_COUPON_CODE, stashPendingCode, takePendingCode } from "@/lib/pending-code";
 import { announceCreditChange } from "@/lib/credit-events";
@@ -125,7 +125,7 @@ export function CouponCodeEntry({
     if (requireSignIn && signedIn === false) {
       stashPendingCode(PENDING_COUPON_CODE, trimmed);
       setMessage("로그인 후 자동으로 등록해 드립니다.");
-      if (getSocialLoginProviders().length > 1) {
+      if (getSocialLoginOptions().length > 1) {
         setChoosingProvider(true);
       } else {
         await signIn();

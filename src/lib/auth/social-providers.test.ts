@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSocialLoginProviders } from "./social-providers";
+import { getSocialLoginOptions, getSocialLoginProviders } from "./social-providers";
 import { emailCompletionPath, safeAuthNextPath } from "./redirect";
 
 describe("social provider rollout", () => {
@@ -12,6 +12,25 @@ describe("social provider rollout", () => {
   });
   it.each(["naver", "google", "custom:", "custom:bad provider", "https://evil.test", `custom:${"a".repeat(50)}`])("rejects invalid custom identifier %s", (naverProvider) => {
     expect(getSocialLoginProviders({ naverEnabled: "true", naverProvider })).toHaveLength(1);
+  });
+});
+
+describe("unavailable Naver display", () => {
+  it("adds a display-only option but never a linkable/authenticating provider", () => {
+    const config = { naverEnabled: "false", naverComingSoon: "true", naverProvider: "custom:naver" };
+    expect(getSocialLoginProviders(config)).toEqual([{ id: "google", label: "Google" }]);
+    expect(getSocialLoginOptions(config)).toEqual([
+      { id: "google", label: "Google", status: "available" },
+      { id: "naver-coming-soon", label: "네이버", status: "coming-soon" },
+    ]);
+  });
+  it("keeps an enabled test provider functional without a duplicate placeholder", () => {
+    const options = getSocialLoginOptions({ naverEnabled: "true", naverComingSoon: "true", naverProvider: "custom:naver" });
+    expect(options).toHaveLength(2);
+    expect(options[1]).toEqual({ id: "custom:naver", label: "네이버", status: "available" });
+  });
+  it("fails closed to the placeholder for an invalid active provider identifier", () => {
+    expect(getSocialLoginOptions({ naverEnabled: "true", naverComingSoon: "true", naverProvider: "google" })[1].status).toBe("coming-soon");
   });
 });
 

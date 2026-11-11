@@ -45,6 +45,35 @@ describe("SocialLoginButtons", () => {
     expect(screen.getByRole("button", { name: "카카오로 계속하기" }).classList.contains("legacy-google-style")).toBe(false);
     expect(screen.getByRole("button", { name: "네이버로 계속하기" }).classList.contains("legacy-google-style")).toBe(false);
   });
+  it("announces coming soon without invoking authentication, and leaves Kakao usable", () => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_LOGIN_ENABLED", "true");
+    vi.stubEnv("NEXT_PUBLIC_NAVER_LOGIN_ENABLED", "false");
+    vi.stubEnv("NEXT_PUBLIC_NAVER_LOGIN_COMING_SOON", "true");
+    const signIn = vi.fn();
+    render(<SocialLoginButtons onSignIn={signIn} />);
+    const pending = screen.getByRole("button", { name: "네이버 로그인 준비 중" });
+    expect(pending.getAttribute("data-readiness")).toBe("coming-soon");
+    expect(pending.querySelector("img")?.getAttribute("src")).toBe("/auth/naver-login.png");
+    fireEvent.click(pending);
+    fireEvent.click(pending);
+    expect(screen.getByRole("status").textContent).toBe("네이버 로그인은 준비 중입니다.");
+    expect(signIn).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "카카오로 계속하기" }));
+    expect(signIn).toHaveBeenCalledWith("kakao");
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+  it("includes the official locally hosted Google G without changing its action label", () => {
+    const signIn = vi.fn();
+    render(<SocialLoginButtons onSignIn={signIn} />);
+    const google = screen.getByRole("button", { name: "Google로 계속하기" });
+    const icon = google.querySelector("img");
+    expect(icon?.getAttribute("src")).toBe("/auth/google-g.png");
+    expect(icon?.getAttribute("width")).toBe("18");
+    expect(icon?.getAttribute("height")).toBe("18");
+    expect(icon?.getAttribute("alt")).toBe("");
+    fireEvent.click(google);
+    expect(signIn).toHaveBeenCalledWith("google");
+  });
   it("blocks repeated/different provider clicks while a sign-in is pending", () => {
     enableProviders();
     const signIn = vi.fn();
