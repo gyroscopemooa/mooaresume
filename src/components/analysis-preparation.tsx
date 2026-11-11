@@ -336,7 +336,6 @@ export function AnalysisPreparation() {
                 <small>분석에는 5~10분이 걸립니다. 창을 닫으셔도 서버에서 계속 진행되고, 끝나면 결과 링크를 이메일로 보내드립니다. 기다리시면 완료 즉시 결과 화면으로 이동합니다. 분석에 실패하면 추가 결제 없이 다시 시도할 수 있습니다.</small>
               </span>
             </div>
-            <ServiceDeliveryNotice kind="analysis" />
             <div className={styles.privacy}>
               <LockKeyhole />
               <span>
@@ -357,6 +356,7 @@ export function AnalysisPreparation() {
                 넣은 사람이 받습니다. 한 칸이면 그 차이를 물어보게 됩니다. */}
             <div className={styles.referralNote}><CouponCodeEntry compact requireSignIn returnTo="/analysis/prepare" /></div>
             </details>
+            <ServiceDeliveryNotice kind="analysis" compact />
           </section>
           <section className={styles.scope}>
             <small>{product} 제공 범위</small>
