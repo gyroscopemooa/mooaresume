@@ -21,6 +21,24 @@ vi.mock("@/lib/analytics/web", () => ({ trackWeb: vi.fn() }));
 const draft: GuestDraft = { draftText: "그대로 남아야 하는 자소서", questionDrafts: ["첫째 답변", "둘째 답변"], targetLength: 700, writingStyle: "BALANCED", editingStance: "BALANCED", selectedProduct: "PRO", savedAt: "2026-11-11T00:00:00Z" };
 const runId = "cd6a613d-f614-4ef5-812e-a53b604838cb";
 const caseId = "89190611-72f8-4447-8676-a6e20c29006f";
+it("shows easy-payment guidance only after login for a paid draft", async () => {
+  render(<ApplicationCaseHandoff guest={draft} />);
+  expect(await screen.findByRole("region", { name: "간편결제 안내" })).toBeTruthy();
+});
+it("does not advertise paid methods while using a free credit", async () => {
+  mocks.credits = [{ product: "PRO" }];
+  render(<ApplicationCaseHandoff guest={draft} />);
+  await screen.findByRole("button", { name: /무료 이용권으로 분석 시작/ });
+  expect(screen.queryByRole("region", { name: "간편결제 안내" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /이용권을 아끼고/ }));
+  expect(await screen.findByRole("region", { name: "간편결제 안내" })).toBeTruthy();
+});
+it("does not show payment guidance to signed-out users", async () => {
+  mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
+  render(<ApplicationCaseHandoff guest={draft} />);
+  await screen.findByRole("button", { name: "이메일 코드로 로그인" });
+  expect(screen.queryByRole("region", { name: "간편결제 안내" })).toBeNull();
+});
 beforeEach(() => {
   vi.resetAllMocks(); mocks.credits = []; mocks.play = false; mocks.recovered = []; mocks.panelReady = true; mocks.testGrant = false;
   mocks.getUser.mockResolvedValue({ data: { user }, error: null }); mocks.rpc.mockResolvedValue({ error: null }); mocks.oauth.mockResolvedValue({ error: null });

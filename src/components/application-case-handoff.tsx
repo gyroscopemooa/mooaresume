@@ -17,6 +17,7 @@ import { canStartWithDelivery } from "@/lib/auth/delivery-preference";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
 import { AccountEmailPanel, type DeliveryReadiness } from "./account-email-panel";
 import styles from "./application-case-handoff.module.css";
+import { CheckoutPaymentMethods } from "./checkout-payment-methods";
 import { onCreditChange } from "@/lib/credit-events";
 import {
   describeDigitalGoodsFailure,
@@ -614,7 +615,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       }
     }
 
-    return <div className={styles.action}><div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy || runActive} aria-disabled={!deliveryReady} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{(message || authError) && <p>{message || authError}</p>}</div>;
+    return <div className={styles.action}><div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy || runActive} aria-disabled={!deliveryReady} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{!(availableCredit && spendCredit) && !runActive && <CheckoutPaymentMethods />}{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   if (authenticated) {
@@ -695,6 +696,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         }
         void saveApplicationCase();
       }}>{runActive ? "분석이 진행 중입니다" : busy ? "기존 결과 확인 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
+      {guest && !(availableCredit && spendCredit) && !runActive && <CheckoutPaymentMethods />}
       {guest && !consentDecided && !busy && !runActive && <p className={consentNudge ? styles.needChoice : styles.noDraft} role="status">위에서 ‘데이터 활용’이나 ‘활용하지 않기’ 중 하나를 골라 주세요.</p>}
       {guest && consentDecided && postingMissing && !busy && !runActive && <p className={postingNudge ? styles.needChoice : styles.noDraft} role="status">채용공고 본문을 넣거나, 위쪽의 ‘공고 요구사항 대조 없이 진행’에 체크해 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL
