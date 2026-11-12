@@ -8,6 +8,7 @@ export function classifyAnalyticsOrder(order:AnalyticsOrder){
   if(order.amount===0||order.provider==='MOOA_CREDIT')return 'free' as const;
   if(order.metadata.polarEnvironment==='sandbox'||order.metadata.testPurchase===true)return 'test' as const;
   if(order.provider==='POLAR'&&order.metadata.polarEnvironment==='production'&&order.analysis_entitlements.length>0)return 'actual' as const;
+  if(order.provider==='NICEPAY'&&order.metadata.nicepayEnvironment==='production'&&order.analysis_entitlements.length>0)return 'actual' as const;
   return 'unclassified' as const;
 }
 export function analyticsOrderAmounts(order:AnalyticsOrder){

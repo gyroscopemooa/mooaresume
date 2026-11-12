@@ -1,4 +1,5 @@
 ﻿import "server-only";
+import { refundNicepayBillingOrder } from "./nicepay-refund";
 
 import { Polar } from "@polar-sh/sdk";
 import { createClient } from "@supabase/supabase-js";
@@ -17,6 +18,7 @@ const claimSchema = z.discriminatedUnion("disposition", [
     disposition: z.literal("REFUND_REQUIRED"),
     billingOrderId: z.string().uuid(),
     providerOrderId: z.string().min(1),
+    provider: z.enum(["POLAR", "NICEPAY", "GOOGLE_PLAY", "MOOA_CREDIT"]).default("POLAR"),
     amount: z.number().int().positive(),
     currency: z.string().length(3),
   }),
@@ -44,6 +46,11 @@ export async function refundTimedOutQuickAnalysis(input: { analysisRunId: string
   if (claim.disposition !== "REFUND_REQUIRED") return claim;
 
   try {
+    if (claim.provider === "NICEPAY") {
+      const refunded = await refundNicepayBillingOrder({ ...claim, ownerUserId: input.ownerUserId, analysisRunId: input.analysisRunId });
+      return { disposition: "REFUND_SUBMITTED" as const, amount: refunded.amount, currency: refunded.currency };
+    }
+    if (claim.provider !== "POLAR") throw new Error("REFUND_PROVIDER_NOT_SUPPORTED");
     const config = getPolarCheckoutConfiguration();
     const polar = new Polar({ accessToken: config.accessToken, server: config.server });
     // 저장해 둔 금액은 `totalAmount`라 폴라가 돌려줄 수 있는 것보다 클 수

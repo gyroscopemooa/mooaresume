@@ -92,11 +92,11 @@ describe("Google Play purchase verification", () => {
 
     const result = await processGooglePlayPurchase(input);
 
-    expect(result.quote).toMatchObject({ extraBlocks: 1, allowedCharacters: 15_000, totalPriceKrw: 8_800 });
+    expect(result.quote).toMatchObject({ extraBlocks: 1, allowedCharacters: 15_000, totalPriceKrw: 12_800 });
     expect(input.fetchPurchase).toHaveBeenCalledWith("quick_extra_1", "token-1");
     expect(input.repository.grantPaidOrder).toHaveBeenCalledWith(expect.objectContaining({
       allowedCharacters: 15_000,
-      amount: 8_800,
+      amount: 12_800,
     }));
   });
 

@@ -1,0 +1,9 @@
+.choice{min-width:0;margin:12px 0;padding:14px;border:1px solid #dce5df;border-radius:10px;background:#f8faf9;color:#33483d}
+.choice legend{padding:0 5px;font-size:13px;font-weight:800}
+.choice label{display:flex;align-items:flex-start;gap:9px;margin:8px 0;padding:10px;border:1px solid #dce5df;border-radius:8px;background:#fff;cursor:pointer}
+.choice input{flex:none;margin-top:4px;accent-color:#176b4a}
+.choice span{display:flex;min-width:0;flex-direction:column;gap:3px}
+.choice b{font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.choice small,.choice p{font-size:11px;line-height:1.7;color:#64746a}
+.choice p{margin:10px 0 0}
+.choice:disabled{opacity:.65}

@@ -54,20 +54,20 @@ describe("checkout delivery prerequisites", () => {
   it("keeps first-time users inline until a choice is saved", async () => {
     mocks.panelReady = false; mocks.getUser.mockResolvedValue({ data: { user: { id: user.id, app_metadata: { provider: "kakao" } } }, error: null });
     render(<ApplicationCaseHandoff guest={draft} />); await ready(); fireEvent.click(pay());
-    expect(mocks.fetch).not.toHaveBeenCalled(); expect(screen.getByText(/위에서 이메일을 확인하거나/)).toBeTruthy();
+    expect(mocks.fetch.mock.calls.filter(([url]) => url !== "/api/billing/payment-methods")).toHaveLength(0); expect(screen.getByText(/위에서 이메일을 확인하거나/)).toBeTruthy();
     expect(sessionStorage.getItem("mooa:guest-draft:v1")).toBe(JSON.stringify(draft));
   });
   it("rechecks readiness and UUID before saving any case even if UI is stale", async () => {
     render(<ApplicationCaseHandoff guest={draft} />); await ready();
     mocks.getUser.mockResolvedValue({ data: { user: { ...user, id: "different-account" } }, error: null });
-    fireEvent.click(pay()); await screen.findByText(/로그인 계정이 바뀌었거나/); expect(mocks.fetch).not.toHaveBeenCalled();
+    fireEvent.click(pay()); await screen.findByText(/로그인 계정이 바뀌었거나/); expect(mocks.fetch.mock.calls.filter(([url]) => url !== "/api/billing/payment-methods")).toHaveLength(0);
   });
   it.each(["QUICK", "PRO", "FINAL"] as const)("keeps %s and question data, prevents repeated save, and protects saved retry", async (product) => {
     vi.stubEnv("NEXT_PUBLIC_ENABLE_FINAL", "true");
     render(<ApplicationCaseHandoff guest={{ ...draft, selectedProduct: product }} />); await ready();
     const initialPay = pay(); fireEvent.click(initialPay); fireEvent.click(initialPay); await screen.findByText("결제 준비 실패");
     expect(mocks.fetch.mock.calls.filter(([url]) => url === "/api/application-cases")).toHaveLength(1);
-    const body = JSON.parse(mocks.fetch.mock.calls[0][1].body);
+    const body = JSON.parse(mocks.fetch.mock.calls.find(([url]) => url === "/api/application-cases")![1].body);
     expect(body.product).toBe(product); expect(body.questions.map((q: { answer: string }) => q.answer)).toEqual(draft.questionDrafts);
     expect(mocks.fetch).toHaveBeenCalledWith("/api/checkouts/" + product.toLowerCase(), expect.anything());
     const before = mocks.fetch.mock.calls.length;
@@ -87,10 +87,10 @@ describe("checkout delivery prerequisites", () => {
   it("blocks recovered purchases until delivery choice and on stale account", async () => {
     mocks.play = true; mocks.panelReady = false; mocks.recovered = [{ purchaseToken: "private-mock", analysisRunId: runId }];
     render(<ApplicationCaseHandoff guest={draft} />); const recovered = await screen.findByRole("button", { name: "이 결제로 분석 시작" });
-    fireEvent.click(recovered); expect(mocks.fetch).not.toHaveBeenCalled();
+    fireEvent.click(recovered); expect(mocks.fetch.mock.calls.filter(([url]) => url !== "/api/billing/payment-methods")).toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: "이용 방식 선택" }));
     mocks.getUser.mockResolvedValue({ data: { user: { ...user, id: "other" } }, error: null });
-    fireEvent.click(recovered); await screen.findByText(/로그인 계정이 바뀌었거나/); expect(mocks.fetch).not.toHaveBeenCalled();
+    fireEvent.click(recovered); await screen.findByText(/로그인 계정이 바뀌었거나/); expect(mocks.fetch.mock.calls.filter(([url]) => url !== "/api/billing/payment-methods")).toHaveLength(0);
   });
   it("locks saved retry when a run becomes active", async () => {
     const view = render(<ApplicationCaseHandoff guest={draft} />); await ready(); fireEvent.click(pay()); await screen.findByText("결제 준비 실패");

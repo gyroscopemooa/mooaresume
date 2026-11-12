@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notifyRefundedApplicant } from "@/server/notifications/refund-notice-email";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
 import { createPolarCheckoutReconciliationRuntime, reconcilePolarCheckout } from "@/server/billing/polar-checkout-reconciliation";
+import { getNicepayCheckoutStatus } from "@/server/billing/nicepay-checkout-status";
 import { SupabasePolarEntitlementRepository } from "@/server/billing/supabase-polar-entitlement-repository";
 
 const querySchema = z.object({
@@ -27,9 +28,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "결제 식별자가 올바르지 않습니다." }, { status: 400 });
   }
 
-  const { data, error } = await supabase.rpc("get_quick_checkout_return", {
+  let { data, error } = await supabase.rpc("get_quick_checkout_return", {
     p_provider_checkout_id: parsed.data.checkoutId,
   });
+  if (error?.code === "P0002") {
+    try {
+      const nicepay = await getNicepayCheckoutStatus(parsed.data.checkoutId, authData.user.id);
+      if (nicepay) { data = nicepay; error = null; }
+    } catch {
+      return NextResponse.json({ error: "결제 승인 상태를 확인 중입니다. 추가 결제하지 말고 잠시 후 다시 확인해 주세요." }, { status: 503 });
+    }
+  }
   if (error) {
     const status = error.code === "P0002" ? 404 : 500;
     return NextResponse.json({
@@ -50,6 +59,7 @@ export async function GET(request: NextRequest) {
 
   if (
     parsed.data.reconcile
+    && checkout.provider !== "NICEPAY"
     && checkout.checkoutStatus === "OPEN"
     && checkout.analysisStatus === "PENDING"
     && checkout.entitlementStatus === null

@@ -1,5 +1,6 @@
 import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import "server-only";
+import { SupabaseNicepayOrderRepository } from "./nicepay-order-repository";
 
 import { isIP } from "node:net";
 import { NextRequest, NextResponse } from "next/server";
@@ -72,6 +73,7 @@ export async function handleCheckoutRequest(request: NextRequest) {
     const result = await createQuickCheckout({
       rawRequest: body,
       loadContext: async (analysisRunId) => {
+        if (process.env.NICEPAY_ENABLED === "true") await new SupabaseNicepayOrderRepository().reserve(analysisRunId, authData.user.id, "POLAR");
         const { data, error } = await supabase.rpc("prepare_quick_checkout", {
           p_analysis_run_id: analysisRunId,
         });

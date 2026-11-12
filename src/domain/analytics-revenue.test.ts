@@ -4,3 +4,10 @@ const order:AnalyticsOrder={id:'1',provider:'POLAR',amount:4900,currency:'krw',s
 it('accepts the real one-to-one PostgREST entitlement shape',()=>{expect(normalizeEntitlements({id:'e',status:'ACTIVE'})).toEqual(order.analysis_entitlements);expect(normalizeEntitlements(null)).toEqual([]);});
 it('counts only server classified actual orders with entitlements',()=>{expect(analyticsOrderAmounts(order).net).toBe(4900);for(const altered of [{metadata:{polarEnvironment:'sandbox'}},{analysis_entitlements:[]},{provider:'GOOGLE_PLAY'},{metadata:{}}])expect(analyticsOrderAmounts({...order,...altered}).net).toBe(0);expect(classifyAnalyticsOrder({...order,provider:'GOOGLE_PLAY'})).toBe('unclassified');});
 it('subtracts consumed entitlement refunds and review-required amounts conservatively',()=>{expect(analyticsOrderAmounts({...order,status:'REVIEW_REQUIRED',refunded_at:'2026-10-01',analysis_entitlements:[{id:'e',status:'CONSUMED'}]})).toEqual({gross:4900,refunds:4900,net:0});});
+it('counts verified NICE purchases but excludes pilot payments and undelivered charges',()=>{
+  const nice={...order,provider:'NICEPAY',metadata:{nicepayEnvironment:'production'}};
+  expect(analyticsOrderAmounts(nice).net).toBe(4900);
+  expect(classifyAnalyticsOrder({...nice,metadata:{...nice.metadata,testPurchase:true}})).toBe('test');
+  expect(analyticsOrderAmounts({...nice,analysis_entitlements:[]}).net).toBe(0);
+  expect(analyticsOrderAmounts({...nice,status:'REFUNDED'}).net).toBe(0);
+});

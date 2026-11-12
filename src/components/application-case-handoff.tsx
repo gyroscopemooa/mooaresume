@@ -17,7 +17,7 @@ import { canStartWithDelivery } from "@/lib/auth/delivery-preference";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
 import { AccountEmailPanel, type DeliveryReadiness } from "./account-email-panel";
 import styles from "./application-case-handoff.module.css";
-import { CheckoutPaymentMethods } from "./checkout-payment-methods";
+import { CheckoutPaymentChoice, type WebPaymentMethod } from "./checkout-payment-choice";
 import { onCreditChange } from "@/lib/credit-events";
 import {
   describeDigitalGoodsFailure,
@@ -214,6 +214,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   // their link had just been rejected, so the natural next move was to request
   // another one and hit the same wall.
   const authError = useSyncExternalStore(subscribeToNothing, readAuthError, readNoAuthError);
+  const [webPaymentMethod, setWebPaymentMethod] = useState<WebPaymentMethod>("POLAR");
 
   const wantedProduct = guest?.selectedProduct ?? "QUICK";
 
@@ -485,10 +486,10 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       throw new Error("앱에서 Google Play 결제를 불러오지 못했습니다. Google Play 스토어와 Chrome을 업데이트한 뒤 다시 시도해 주세요. 입력하신 내용은 저장되어 있습니다.");
     }
 
-    const response = await fetch(`/api/checkouts/${product.toLowerCase()}`, {
+    const response = await fetch(webPaymentMethod === "POLAR" ? `/api/checkouts/${product.toLowerCase()}` : "/api/checkouts/nicepay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ analysisRunId }),
+      body: JSON.stringify(webPaymentMethod === "POLAR" ? { analysisRunId } : { analysisRunId, method: webPaymentMethod === "NICE_CARD" ? "CARD" : "EASYPAY" }),
     });
     const result: unknown = await response.json();
     if (!response.ok || !result || typeof result !== "object" || !("checkoutUrl" in result) || typeof result.checkoutUrl !== "string") {
@@ -615,7 +616,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       }
     }
 
-    return <div className={styles.action}><div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy || runActive} aria-disabled={!deliveryReady} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{!(availableCredit && spendCredit) && !runActive && <CheckoutPaymentMethods />}{(message || authError) && <p>{message || authError}</p>}</div>;
+    return <div className={styles.action}><div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy || runActive} aria-disabled={!deliveryReady} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{!(availableCredit && spendCredit) && !runActive && <CheckoutPaymentChoice value={webPaymentMethod} onChange={setWebPaymentMethod} disabled={busy || runActive}/>}{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   if (authenticated) {
@@ -662,6 +663,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       {/* 선택 전에도 눌러 볼 수 있게 둡니다. 회색 버튼이 아무 말 없이
           안 눌리면 무엇을 해야 하는지 알 수 없어서, 누르면 무엇이
           부족한지 알려 줍니다(aria-disabled로 접근성은 유지). */}
+      {guest && !(availableCredit && spendCredit) && !runActive && <CheckoutPaymentChoice value={webPaymentMethod} onChange={setWebPaymentMethod} disabled={busy || runActive}/>}
       <button type="button" aria-disabled={!deliveryReady || !consentDecided || postingMissing} className={!deliveryReady || !consentDecided || postingMissing ? styles.softDisabled : undefined} disabled={busy || runActive || !guest || contextInvalid} onClick={() => {
         if (actionPending.current) return;
         if (!deliveryReady) { showDeliveryChoice(); return; }
@@ -696,7 +698,6 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
         }
         void saveApplicationCase();
       }}>{runActive ? "분석이 진행 중입니다" : busy ? "기존 결과 확인 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
-      {guest && !(availableCredit && spendCredit) && !runActive && <CheckoutPaymentMethods />}
       {guest && !consentDecided && !busy && !runActive && <p className={consentNudge ? styles.needChoice : styles.noDraft} role="status">위에서 ‘데이터 활용’이나 ‘활용하지 않기’ 중 하나를 골라 주세요.</p>}
       {guest && consentDecided && postingMissing && !busy && !runActive && <p className={postingNudge ? styles.needChoice : styles.noDraft} role="status">채용공고 본문을 넣거나, 위쪽의 ‘공고 요구사항 대조 없이 진행’에 체크해 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL
