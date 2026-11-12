@@ -128,6 +128,6 @@ it.each([
   await screen.findByText("결제 준비 실패");
   const nice = mocks.fetch.mock.calls.find(([url]) => url === "/api/checkouts/nicepay");
   expect(JSON.parse(nice?.[1].body)).toEqual(method === "CARD" ? { analysisRunId: runId, method: "CARD" } : { analysisRunId: runId, method: "EASYPAY", preferredPay: method });
-  fireEvent.click(screen.getByRole("button", { name: "결제하고 분석 시작" }));
+  fireEvent.click(screen.getByRole("button", { name: "일반결제하고 분석 시작" }));
   await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("/api/checkouts/pro", expect.anything()));
 });
