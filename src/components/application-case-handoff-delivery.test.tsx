@@ -112,3 +112,22 @@ it.each(["google", "email"])("preserves existing %s checkout without a new socia
   render(<ApplicationCaseHandoff guest={draft} />); await ready(); fireEvent.click(pay()); await screen.findByText("결제 준비 실패");
   expect(mocks.fetch).toHaveBeenCalledWith("/api/checkouts/pro", expect.anything());
 });
+
+it.each([
+  ["카카오페이로 결제하고 분석 시작", "KAKAO"],
+  ["네이버페이로 결제하고 분석 시작", "NAVER"],
+  ["삼성페이로 결제하고 분석 시작", "SAMSUNG"],
+  ["카드로 결제하고 분석 시작", "CARD"],
+])("routes %s to NICE and preserves the original Polar action", async (label, method) => {
+  mocks.fetch.mockImplementation(async (url: string) => url === "/api/billing/payment-methods"
+    ? { ok: true, json: async () => ({ nicepay: true }) }
+    : url === "/api/application-cases" ? { ok: true, json: async () => ({ applicationCaseId: caseId, analysisRunId: runId }) }
+    : { ok: false, json: async () => ({ error: "결제 준비 실패" }) });
+  render(<ApplicationCaseHandoff guest={draft}/>); await ready();
+  fireEvent.click(await screen.findByRole("button", { name: label }));
+  await screen.findByText("결제 준비 실패");
+  const nice = mocks.fetch.mock.calls.find(([url]) => url === "/api/checkouts/nicepay");
+  expect(JSON.parse(nice?.[1].body)).toEqual(method === "CARD" ? { analysisRunId: runId, method: "CARD" } : { analysisRunId: runId, method: "EASYPAY", preferredPay: method });
+  fireEvent.click(screen.getByRole("button", { name: "결제하고 분석 시작" }));
+  await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("/api/checkouts/pro", expect.anything()));
+});

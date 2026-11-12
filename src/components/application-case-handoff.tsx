@@ -17,7 +17,8 @@ import { canStartWithDelivery } from "@/lib/auth/delivery-preference";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
 import { AccountEmailPanel, type DeliveryReadiness } from "./account-email-panel";
 import styles from "./application-case-handoff.module.css";
-import { CheckoutPaymentChoice, type WebPaymentMethod } from "./checkout-payment-choice";
+import { NicepayPaymentActions } from "./nicepay-payment-actions";
+import type { NicepayAction } from "@/domain/nicepay-method";
 import { onCreditChange } from "@/lib/credit-events";
 import {
   describeDigitalGoodsFailure,
@@ -214,7 +215,6 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
   // their link had just been rejected, so the natural next move was to request
   // another one and hit the same wall.
   const authError = useSyncExternalStore(subscribeToNothing, readAuthError, readNoAuthError);
-  const [webPaymentMethod, setWebPaymentMethod] = useState<WebPaymentMethod>("POLAR");
 
   const wantedProduct = guest?.selectedProduct ?? "QUICK";
 
@@ -426,7 +426,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     onCreditRunStarted?.(analysisRunId);
   }
 
-  async function beginCheckout(analysisRunId: string, product: "QUICK" | "PRO" | "FINAL") {
+  async function beginCheckout(analysisRunId: string, product: "QUICK" | "PRO" | "FINAL", paymentMethod: NicepayAction | "POLAR" = "POLAR") {
     await assertDeliveryReady();
     trackWeb("checkout_clicked", { product });
     // FINAL has no Polar product yet, so there is no checkout to create. Said
@@ -486,10 +486,10 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       throw new Error("앱에서 Google Play 결제를 불러오지 못했습니다. Google Play 스토어와 Chrome을 업데이트한 뒤 다시 시도해 주세요. 입력하신 내용은 저장되어 있습니다.");
     }
 
-    const response = await fetch(webPaymentMethod === "POLAR" ? `/api/checkouts/${product.toLowerCase()}` : "/api/checkouts/nicepay", {
+    const response = await fetch(paymentMethod === "POLAR" ? `/api/checkouts/${product.toLowerCase()}` : "/api/checkouts/nicepay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(webPaymentMethod === "POLAR" ? { analysisRunId } : { analysisRunId, method: webPaymentMethod === "NICE_CARD" ? "CARD" : "EASYPAY" }),
+      body: JSON.stringify(paymentMethod === "POLAR" ? { analysisRunId } : { analysisRunId, method: paymentMethod === "CARD" ? "CARD" : "EASYPAY", ...(paymentMethod === "CARD" ? {} : { preferredPay: paymentMethod }) }),
     });
     const result: unknown = await response.json();
     if (!response.ok || !result || typeof result !== "object" || !("checkoutUrl" in result) || typeof result.checkoutUrl !== "string") {
@@ -504,7 +504,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     }
     window.location.assign(result.checkoutUrl);
   }
-  async function saveApplicationCase() {
+  async function saveApplicationCase(paymentMethod: NicepayAction | "POLAR" = "POLAR") {
     if (actionPending.current || runActive) return;
     if (!guest) {
       setMessage("저장할 입력 내용을 찾지 못했습니다.");
@@ -584,7 +584,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
             // it did nothing: it was registered, and the next screen still
             // asked for money.
             if (availableCredit && spendCredit) await startWithCredit(result.applicationCaseId, analysisRunId);
-            else await beginCheckout(analysisRunId, wantedProduct);
+            else await beginCheckout(analysisRunId, wantedProduct, paymentMethod);
           } catch (checkoutError) {
             setMessage(checkoutError instanceof Error ? checkoutError.message : "결제 페이지로 연결하는 중 오류가 발생했습니다.");
           }
@@ -598,8 +598,43 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
     }
   }
 
+  function requestCheckout(paymentMethod: NicepayAction | "POLAR" = "POLAR") {
+        if (actionPending.current) return;
+        if (!deliveryReady) { showDeliveryChoice(); return; }
+        if (!consentDecided) {
+          consentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+          setConsentNudge(true);
+          window.setTimeout(() => setConsentNudge(false), 2200);
+          return;
+        }
+        if (postingMissing) {
+          setPostingNudge(true);
+          window.setTimeout(() => setPostingNudge(false), 4000);
+          // 체크 칸은 다른 컴포넌트에 있어서, 눌렀을 때 그 칸을 직접
+          // 바운스+테두리로 짚어 줍니다.
+          const target = document.getElementById("posting-skip-gate");
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+              target.animate(
+                [
+                  { transform: "translateY(0)", boxShadow: "0 0 0 0 #e8b04a" },
+                  { transform: "translateY(-7px)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.25 },
+                  { transform: "translateY(0)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.5 },
+                  { transform: "translateY(-4px)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.7 },
+                  { transform: "translateY(0)", boxShadow: "0 0 0 0 #e8b04a" },
+                ],
+                { duration: 1400, easing: "ease-out" },
+              );
+            }
+          }
+          return;
+        }
+        void saveApplicationCase(paymentMethod);
+  }
+
   if (savedCaseId) {
-    async function retryCheckout() {
+    async function retryCheckout(paymentMethod: NicepayAction | "POLAR" = "POLAR") {
       if (!savedAnalysisRunId || actionPending.current || runActive) return;
       if (!deliveryReady) { showDeliveryChoice(); return; }
       actionPending.current = true;
@@ -607,7 +642,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       setMessage("");
       try {
         if (availableCredit && spendCredit && savedCaseId) await startWithCredit(savedCaseId, savedAnalysisRunId);
-        else await beginCheckout(savedAnalysisRunId, wantedProduct);
+        else await beginCheckout(savedAnalysisRunId, wantedProduct, paymentMethod);
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "결제 페이지로 연결하는 중 오류가 발생했습니다.");
       } finally {
@@ -616,7 +651,7 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       }
     }
 
-    return <div className={styles.action}><div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy || runActive} aria-disabled={!deliveryReady} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{!(availableCredit && spendCredit) && !runActive && <CheckoutPaymentChoice value={webPaymentMethod} onChange={setWebPaymentMethod} disabled={busy || runActive}/>}{(message || authError) && <p>{message || authError}</p>}</div>;
+    return <div className={styles.action}><div ref={deliveryRef}><AccountEmailPanel locked={busy || runActive} onReadinessChange={onDeliveryReadiness}/></div><div className={styles.saved}><CheckCircle2/><span><b>{busy ? (availableCredit ? "분석을 시작하는 중..." : "결제 페이지로 이동 중...") : "비공개 저장 완료"}</b><small>지원 건 ID · {savedCaseId}</small></span></div>{savedAnalysisRunId && <button type="button" disabled={busy || runActive} aria-disabled={!deliveryReady} onClick={() => void retryCheckout()}>{busy ? (availableCredit ? "시작하는 중..." : "결제 페이지 준비 중...") : availableCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>}{!(availableCredit && spendCredit) && !runActive && <NicepayPaymentActions onPay={(method) => void retryCheckout(method)} disabled={busy || runActive}/>}{(message || authError) && <p>{message || authError}</p>}</div>;
   }
 
   if (authenticated) {
@@ -663,41 +698,8 @@ export function ApplicationCaseHandoff({ guest, onCreditRunStarted, runActive = 
       {/* 선택 전에도 눌러 볼 수 있게 둡니다. 회색 버튼이 아무 말 없이
           안 눌리면 무엇을 해야 하는지 알 수 없어서, 누르면 무엇이
           부족한지 알려 줍니다(aria-disabled로 접근성은 유지). */}
-      {guest && !(availableCredit && spendCredit) && !runActive && <CheckoutPaymentChoice value={webPaymentMethod} onChange={setWebPaymentMethod} disabled={busy || runActive}/>}
-      <button type="button" aria-disabled={!deliveryReady || !consentDecided || postingMissing} className={!deliveryReady || !consentDecided || postingMissing ? styles.softDisabled : undefined} disabled={busy || runActive || !guest || contextInvalid} onClick={() => {
-        if (actionPending.current) return;
-        if (!deliveryReady) { showDeliveryChoice(); return; }
-        if (!consentDecided) {
-          consentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-          setConsentNudge(true);
-          window.setTimeout(() => setConsentNudge(false), 2200);
-          return;
-        }
-        if (postingMissing) {
-          setPostingNudge(true);
-          window.setTimeout(() => setPostingNudge(false), 4000);
-          // 체크 칸은 다른 컴포넌트에 있어서, 눌렀을 때 그 칸을 직접
-          // 바운스+테두리로 짚어 줍니다.
-          const target = document.getElementById("posting-skip-gate");
-          if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "center" });
-            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-              target.animate(
-                [
-                  { transform: "translateY(0)", boxShadow: "0 0 0 0 #e8b04a" },
-                  { transform: "translateY(-7px)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.25 },
-                  { transform: "translateY(0)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.5 },
-                  { transform: "translateY(-4px)", boxShadow: "0 0 0 3px #e8b04a", offset: 0.7 },
-                  { transform: "translateY(0)", boxShadow: "0 0 0 0 #e8b04a" },
-                ],
-                { duration: 1400, easing: "ease-out" },
-              );
-            }
-          }
-          return;
-        }
-        void saveApplicationCase();
-      }}>{runActive ? "분석이 진행 중입니다" : busy ? "기존 결과 확인 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
+      <button type="button" aria-disabled={!deliveryReady || !consentDecided || postingMissing} className={!deliveryReady || !consentDecided || postingMissing ? styles.softDisabled : undefined} disabled={busy || runActive || !guest || contextInvalid} onClick={() => requestCheckout("POLAR")}>{runActive ? "분석이 진행 중입니다" : busy ? "기존 결과 확인 중..." : availableCredit && spendCredit ? (availableTestGrant ? "테스트 이용권으로 분석 시작 · 결제 없음" : "무료 이용권으로 분석 시작 · 0원") : "결제하고 분석 시작"} <ArrowRight/></button>
+      {guest && !(availableCredit && spendCredit) && !runActive && <NicepayPaymentActions onPay={requestCheckout} disabled={busy || runActive || contextInvalid}/>}
       {guest && !consentDecided && !busy && !runActive && <p className={consentNudge ? styles.needChoice : styles.noDraft} role="status">위에서 ‘데이터 활용’이나 ‘활용하지 않기’ 중 하나를 골라 주세요.</p>}
       {guest && consentDecided && postingMissing && !busy && !runActive && <p className={postingNudge ? styles.needChoice : styles.noDraft} role="status">채용공고 본문을 넣거나, 위쪽의 ‘공고 요구사항 대조 없이 진행’에 체크해 주세요.</p>}
       {/* The draft lives in this tab's sessionStorage, so opening this URL

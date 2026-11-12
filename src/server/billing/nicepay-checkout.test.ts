@@ -34,3 +34,10 @@ it("keeps unapproved users out of the pilot even with a valid login", async () =
   await expect(createNicepayCheckout({ raw: { analysisRunId: run, method: "CARD" }, userId: owner, origin: "https://mooaresume.com", loadContext: vi.fn() })).rejects.toThrow("NICEPAY_NOT_ENABLED");
   expect(mocks.reserve).not.toHaveBeenCalled();
 });
+it.each(["KAKAO", "NAVER", "SAMSUNG"])("carries the requested %s display preference without accepting a price or skipping NICE terms", async preferredPay => {
+  enable();
+  mocks.create.mockResolvedValue({ id: owner, quote_snapshot: createCheckoutQuote("QUICK", 8001), pricing_version: "stored-v1", expires_at: "2026-12-01T00:00:00Z" });
+  const result = await createNicepayCheckout({ raw: { analysisRunId: run, method: "EASYPAY", preferredPay }, userId: owner, origin: "https://mooaresume.com", loadContext: async () => ({ data: context, error: null }) });
+  expect(new URL(result.checkoutUrl).searchParams.get("pay")).toBe(preferredPay);
+  expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ method: "EASYPAY", quote: createCheckoutQuote("QUICK", 8001) }));
+});
