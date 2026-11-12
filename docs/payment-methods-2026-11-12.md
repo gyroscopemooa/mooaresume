@@ -51,8 +51,8 @@ https://developers.nicepay.co.kr/docs/pg/auth/payment-window-skip/
 
 ## Verification states
 
-- Source/UI tests: recorded in agent change log after completion.
-- Build/deployment/public assets: recorded separately after completion.
+- Source/UI tests: 20 tests, full TypeScript and scoped lint passed (one pre-existing lint warning); Next production build passed. Component fixture desktop/390px visual QA passed; fixture removed.
+- Publication: fe6553d is pushed. Initial automatic build succeeded as a branch preview; production traffic/served assets were still on the prior release at that check. Final production verification is recorded separately.
 - Real account payment-window availability: not yet verified in this task.
 - Authentication, monetary approval, server verification, entitlement grant and
   cancellation: not performed. Approval for a real payment amount/method is absent.
