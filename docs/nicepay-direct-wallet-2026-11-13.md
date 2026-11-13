@@ -13,3 +13,9 @@ Official contract checked on 2026-11-13:
 Rollout stays pilot-only. No actual agreement acceptance, payment authentication, monetary approval, paid AI or cancellation is performed by this implementation task. Unit DOM tests execute the inline controller with a stubbed SDK and synthetic order; local screenshot is a synthetic non-payment rendering. These do not establish real wallet availability, merchant approval or real-money end-to-end success. Earlier PPT screenshots document the prior common-selector release and are historical after this change.
 
 Rollback reference: parent `8801a6c`; reverse only the direct-wallet change to restore the common-selector entry for branded actions. Do not disable return/recovery handling for existing paid orders.
+
+## Inline consent refinement
+
+The user replaced the standalone consent step with a thin expandable bar above the existing wallet actions. Missing consent triggers a shake/highlight, checkbox focus and an announced prompt; reduced-motion preference disables movement. Each click carries explicit current consent through both initial save and retry. The server validates the version/required flags and signs an expiring owner/order/wallet-bound receipt for the authenticated window route. Only a valid receipt enables immediate SDK invocation; absent/tampered/expired receipts use the preserved standalone consent fallback. This receipt is not a durable consent-history database.
+
+Payment availability now starts as loading rather than flashing the old informational labels. A shared posting/data/delivery preflight covers both first checkout and saved retries, including Polar and NICE card. Public activation remains unchanged. Toss Pay is documented by NICE with E025, but MOOA-specific activation is unverified and no live customer option is advertised.

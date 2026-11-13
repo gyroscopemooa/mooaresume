@@ -2,15 +2,18 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { createCheckoutQuote } from "@/domain/usage-entitlement";
-import { nicepayBrandSchema, nicepayBrandNames, type NicepayBrand } from "@/domain/nicepay-method";
+import { nicepayBrandSchema, nicepayBrandNames, nicepayConsentSchema, type NicepayConsent, type NicepayBrand } from "@/domain/nicepay-method";
 import { escapeNicepayHtml, nicepayReviewHtml } from "./nicepay-review";
 import { nicepayDigest, nicepayTimestamp } from "./nicepay-protocol";
 import { getNicepayPaymentConfig, nicepayAvailableFor } from "./nicepay-payment-service";
 import { SupabaseNicepayOrderRepository, type NicepayOrder } from "./nicepay-order-repository";
 import { renderNicepayDirectWindow } from "./nicepay-direct-window";
+import { signNicepayConsent } from "./nicepay-consent";
 
-export const nicepayCheckoutRequestSchema = z.object({ analysisRunId: z.string().uuid(), method: z.enum(["CARD", "EASYPAY"]), preferredPay: nicepayBrandSchema.optional() }).strict()
-  .refine(value => value.method === "EASYPAY" || !value.preferredPay);
+export const nicepayCheckoutRequestSchema = z.object({ analysisRunId: z.string().uuid(), method: z.enum(["CARD", "EASYPAY"]), preferredPay: nicepayBrandSchema.optional(), consent: nicepayConsentSchema.optional() }).strict()
+  .refine(value => value.method === "EASYPAY" || !value.preferredPay)
+  .refine(value => !value.preferredPay || !!value.consent, "NICEPAY_CONSENT_REQUIRED")
+  .refine(value => value.preferredPay !== "NAVER" || !!value.consent?.naverMethod, "NICEPAY_NAVER_METHOD_REQUIRED");
 const contextSchema = z.object({ analysisRunId: z.string().uuid(), applicationCaseId: z.string().uuid(),
   product: z.enum(["QUICK", "PRO", "FINAL"]), totalCharacters: z.number().int().positive() });
 
@@ -35,13 +38,14 @@ export async function createNicepayCheckout(input: {
   const order = await repo.create({ id: randomUUID(), runId: context.analysisRunId, ownerId: input.userId,
     mid: config.mid, method: request.method, quote: createCheckoutQuote(context.product, context.totalCharacters),
     pricingVersion: currentSourcePricingVersion(), test: process.env.NICEPAY_PUBLIC_ENABLED !== "true" });
-  return { checkoutId: order.id, checkoutUrl: `${new URL(input.origin).origin}/api/checkouts/nicepay/window?id=${order.id}${request.preferredPay ? `&pay=${request.preferredPay}` : ""}`,
+  const receipt = request.preferredPay && request.consent ? signNicepayConsent(order, request.preferredPay, request.consent) : undefined;
+  return { checkoutId: order.id, checkoutUrl: `${new URL(input.origin).origin}/api/checkouts/nicepay/window?id=${order.id}${request.preferredPay ? `&pay=${request.preferredPay}` : ""}${receipt ? `&consent=${encodeURIComponent(receipt)}` : ""}`,
     expiresAt: order.expires_at, quote: order.quote_snapshot, pricingVersion: order.pricing_version };
 }
 
-export function renderNicepayPurchaseWindow(order: NicepayOrder, origin: string, preferredPay?: NicepayBrand): string {
+export function renderNicepayPurchaseWindow(order: NicepayOrder, origin: string, preferredPay?: NicepayBrand, consent?: NicepayConsent): string {
   if (preferredPay && order.method !== "CARD") {
-    return renderNicepayDirectWindow(order, origin, preferredPay);
+    return renderNicepayDirectWindow(order, origin, preferredPay, consent);
   }
   return renderNicepayCommonPurchaseWindow(order, origin, preferredPay);
 }

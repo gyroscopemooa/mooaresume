@@ -29,6 +29,11 @@ it("refuses a caller-supplied amount before reserving an order", async () => {
   await expect(createNicepayCheckout({ raw: { analysisRunId: run, method: "CARD", amount: 1 }, userId: owner, origin: "https://mooaresume.com", loadContext: vi.fn() })).rejects.toThrow();
   expect(mocks.reserve).not.toHaveBeenCalled();
 });
+it("rejects a branded checkout without explicit inline consent before reserving", async () => {
+  enable();
+  await expect(createNicepayCheckout({ raw: { analysisRunId: run, method: "EASYPAY", preferredPay: "KAKAO" }, userId: owner, origin: "https://mooaresume.com", loadContext: vi.fn() })).rejects.toThrow();
+  expect(mocks.reserve).not.toHaveBeenCalled();
+});
 it("keeps unapproved users out of the pilot even with a valid login", async () => {
   enable(); vi.stubEnv("NICEPAY_PILOT_USER_IDS", "");
   await expect(createNicepayCheckout({ raw: { analysisRunId: run, method: "CARD" }, userId: owner, origin: "https://mooaresume.com", loadContext: vi.fn() })).rejects.toThrow("NICEPAY_NOT_ENABLED");
@@ -37,7 +42,7 @@ it("keeps unapproved users out of the pilot even with a valid login", async () =
 it.each(["KAKAO", "NAVER", "SAMSUNG"])("carries the requested %s display preference without accepting a price or skipping NICE terms", async preferredPay => {
   enable();
   mocks.create.mockResolvedValue({ id: owner, quote_snapshot: createCheckoutQuote("QUICK", 8001), pricing_version: "stored-v1", expires_at: "2026-12-01T00:00:00Z" });
-  const result = await createNicepayCheckout({ raw: { analysisRunId: run, method: "EASYPAY", preferredPay }, userId: owner, origin: "https://mooaresume.com", loadContext: async () => ({ data: context, error: null }) });
+  const result = await createNicepayCheckout({ raw: { analysisRunId: run, method: "EASYPAY", preferredPay, consent: { version: "2026-11-13", financial: true, collection: true, sharing: true, naverMethod: "CARD" } }, userId: owner, origin: "https://mooaresume.com", loadContext: async () => ({ data: context, error: null }) });
   expect(new URL(result.checkoutUrl).searchParams.get("pay")).toBe(preferredPay);
   expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ method: "EASYPAY", quote: createCheckoutQuote("QUICK", 8001) }));
 });

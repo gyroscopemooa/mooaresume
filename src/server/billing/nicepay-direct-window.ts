@@ -1,5 +1,5 @@
 import "server-only";
-import { nicepayBrandNames, type NicepayBrand } from "@/domain/nicepay-method";
+import { nicepayBrandNames, type NicepayBrand, type NicepayConsent } from "@/domain/nicepay-method";
 import type { NicepayOrder } from "./nicepay-order-repository";
 import { getNicepayPaymentConfig } from "./nicepay-payment-service";
 import { nicepayDigest, nicepayTimestamp } from "./nicepay-protocol";
@@ -8,7 +8,7 @@ import { escapeNicepayHtml } from "./nicepay-review";
 // NICE's v3 direct-call contract. Naver requires an explicit card/point choice.
 const codes: Record<NicepayBrand, string> = { KAKAO: "E016", NAVER: "E020", SAMSUNG: "E021" };
 
-export function renderNicepayDirectWindow(order: NicepayOrder, origin: string, brand: NicepayBrand): string {
+export function renderNicepayDirectWindow(order: NicepayOrder, origin: string, brand: NicepayBrand, consent?: NicepayConsent): string {
   const config = getNicepayPaymentConfig();
   if (order.method === "CARD" || order.merchant_mid !== config.mid || order.status !== "OPEN"
     || new Date(order.expires_at).getTime() <= Date.now()) throw new Error("NICEPAY_WINDOW_NOT_OPEN");
@@ -20,6 +20,11 @@ export function renderNicepayDirectWindow(order: NicepayOrder, origin: string, b
     SignData: nicepayDigest(ediDate + order.merchant_mid + order.amount + config.merchantKey),
     DirectShowOpt: "CARD", DirectEasyPay: codes[brand] };
   const hidden = Object.entries(fields).map(([key, value]) => `<input type="hidden" name="${key}" value="${escapeNicepayHtml(value)}">`).join("");
+  // Only the authenticated window route supplies a verified, order-bound receipt.
+  if (consent && (brand !== "NAVER" || consent.naverMethod)) {
+    const method = brand === "NAVER" ? `<input type="hidden" name="EasyPayMethod" value="E020=${consent.naverMethod}">` : "";
+    return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${name} 연결 | MOOA Resume</title><body style="font-family:Arial,sans-serif;color:#203b2e;margin:32px"><p id="status" role="status">${name} 인증창으로 연결하고 있습니다.</p><form name="payForm" method="post" accept-charset="euc-kr" action="/api/checkouts/nicepay/return">${hidden}${method}<button type="button" id="retry" hidden>인증창 다시 열기</button></form><a href="/analysis/prepare">입력 확인으로 돌아가기</a><script src="https://pg-web.nicepay.co.kr/v3/common/js/nicepay-pgweb.js"></script><script>let opening=false;const retry=document.getElementById('retry');const status=document.getElementById('status');function nicepaySubmit(){HTMLFormElement.prototype.submit.call(document.forms.namedItem('payForm'))}function nicepayClose(){opening=false;retry.hidden=false;status.textContent='인증창을 닫았습니다. 다시 열어 이어서 진행할 수 있습니다.'}function openNice(){if(opening)return;if(typeof goPay!=='function'){status.textContent='인증창을 불러오지 못했습니다. 다시 시도해 주세요.';retry.hidden=false;return}opening=true;retry.hidden=true;try{goPay(document.forms.namedItem('payForm'))}catch{nicepayClose()}}retry.onclick=openNice;window.addEventListener('load',openNice);</script></body></html>`;
+  }
   const terms = [
     ["financial", "전자금융거래 이용약관", "https://www.nicepay.co.kr/cs/terms/policy1.do"],
     ["collection", "개인정보 수집 및 이용", "https://www.nicepay.co.kr/cs/terms/private.do"],

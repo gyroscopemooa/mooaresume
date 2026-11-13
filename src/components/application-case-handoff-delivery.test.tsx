@@ -124,10 +124,35 @@ it.each([
     : url === "/api/application-cases" ? { ok: true, json: async () => ({ applicationCaseId: caseId, analysisRunId: runId }) }
     : { ok: false, json: async () => ({ error: "결제 준비 실패" }) });
   render(<ApplicationCaseHandoff guest={draft}/>); await ready();
+  if (method !== "CARD") {
+    await screen.findByRole("checkbox", { name: "필수 결제 약관 전체 동의" });
+    fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
+    if (method === "NAVER") { fireEvent.click(screen.getByRole("button", { name: "보기 ∨" })); fireEvent.change(screen.getByRole("combobox"), { target: { value: "CARD" } }); }
+  }
   fireEvent.click(await screen.findByRole("button", { name: label }));
   await screen.findByText("결제 준비 실패");
   const nice = mocks.fetch.mock.calls.find(([url]) => url === "/api/checkouts/nicepay");
-  expect(JSON.parse(nice?.[1].body)).toEqual(method === "CARD" ? { analysisRunId: runId, method: "CARD" } : { analysisRunId: runId, method: "EASYPAY", preferredPay: method });
+  expect(JSON.parse(nice?.[1].body)).toEqual(method === "CARD" ? { analysisRunId: runId, method: "CARD" } : { analysisRunId: runId, method: "EASYPAY", preferredPay: method, consent: { version: "2026-11-13", financial: true, collection: true, sharing: true, ...(method === "NAVER" ? { naverMethod: "CARD" } : {}) } });
   fireEvent.click(screen.getByRole("button", { name: "일반결제하고 분석 시작" }));
   await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("/api/checkouts/pro", expect.anything()));
+});
+it.each(["일반결제하고 분석 시작", "카드로 결제하고 분석 시작", "카카오페이로 결제하고 분석 시작"])("enforces posting consent for initial and saved checkout: %s", async label => {
+  mocks.fetch.mockImplementation(async (url: string) => url === "/api/billing/payment-methods"
+    ? { ok: true, json: async () => ({ nicepay: true }) }
+    : url === "/api/application-cases" ? { ok: true, json: async () => ({ applicationCaseId: caseId, analysisRunId: runId }) }
+    : { ok: false, json: async () => ({ error: "결제 준비 실패" }) });
+  const view = render(<ApplicationCaseHandoff guest={draft} postingReady={false} allowMissingPosting={false}/>); await ready();
+  await screen.findByRole("checkbox", { name: "필수 결제 약관 전체 동의" });
+  fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
+  fireEvent.click(screen.getByRole("button", { name: label }));
+  expect(mocks.fetch.mock.calls.some(([url]) => url === "/api/application-cases")).toBe(false);
+  view.rerender(<ApplicationCaseHandoff guest={draft} postingReady={false} allowMissingPosting/>);
+  fireEvent.click(screen.getByRole("button", { name: label })); await screen.findByText("결제 준비 실패");
+  view.rerender(<ApplicationCaseHandoff guest={draft} postingReady={false} allowMissingPosting={false}/>);
+  // Saving replaces the initial subtree; consent is intentionally not carried across remounts.
+  if (label.includes("카카오")) fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
+  const before = mocks.fetch.mock.calls.length;
+  fireEvent.click(screen.getByRole("button", { name: label }));
+  expect(mocks.fetch).toHaveBeenCalledTimes(before);
+  expect(screen.getByText(/채용공고 본문을 넣거나 ‘공고 요구사항/)).toBeTruthy();
 });
