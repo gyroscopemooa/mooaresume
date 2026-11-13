@@ -65,9 +65,10 @@ it.each(["PAID", "EXPIRED"] as const)("cannot open a %s order directly", status 
   const value = order(); value.status = status;
   expect(() => renderNicepayPurchaseWindow(value, "https://mooaresume.com", "KAKAO")).toThrow("NICEPAY_WINDOW_NOT_OPEN");
 });
-it("opens the selected wallet immediately after server-verified inline consent without a second consent page", () => {
+it("requires a user click for the selected popup wallet after verified consent without a second consent page", () => {
   const html = renderNicepayPurchaseWindow(order(), "https://mooaresume.com", "NAVER", { version: "2026-11-13", financial: true, collection: true, sharing: true, naverMethod: "POINT" });
   expect(html).toContain('name="EasyPayMethod" value="E020=POINT"');
-  expect(html).toContain("window.addEventListener('load',openNice)");
+  expect(html).not.toContain("window.addEventListener('load',openNice)");
+  expect(html).toContain("아래 버튼을 눌러 네이버페이 인증을 계속");
   expect(html).not.toContain('type="checkbox"');
 });

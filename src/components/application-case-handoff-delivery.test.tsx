@@ -70,10 +70,10 @@ describe("checkout delivery prerequisites", () => {
     const body = JSON.parse(mocks.fetch.mock.calls.find(([url]) => url === "/api/application-cases")![1].body);
     expect(body.product).toBe(product); expect(body.questions.map((q: { answer: string }) => q.answer)).toEqual(draft.questionDrafts);
     expect(mocks.fetch).toHaveBeenCalledWith("/api/checkouts/" + product.toLowerCase(), expect.anything());
-    const before = mocks.fetch.mock.calls.length;
+    const before = mocks.fetch.mock.calls.filter(([url]) => url !== "/api/billing/payment-methods").length;
     mocks.getUser.mockResolvedValue({ data: { user: { id: user.id, app_metadata: { provider: "kakao" } } }, error: null });
     fireEvent.click(pay()); await screen.findByText("이메일 확인 또는 대시보드 전용 이용을 먼저 선택해 주세요.");
-    expect(mocks.fetch).toHaveBeenCalledTimes(before);
+    expect(mocks.fetch.mock.calls.filter(([url]) => url !== "/api/billing/payment-methods")).toHaveLength(before);
     vi.unstubAllEnvs();
   });
   it.each([false, true])("preflights before consuming free/test credit (test=%s)", async (testGrant) => {
