@@ -6,7 +6,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); sessionStorage.clear(); wind
 it("names each pay action and places the NICE card action last", () => {
   const onPay = vi.fn(); render(<NicepayPaymentButtons onPay={onPay}/>);
   const labels = ["카카오페이로 결제하고 분석 시작", "네이버페이로 결제하고 분석 시작", "토스페이로 결제하고 분석 시작", "삼성페이로 결제하고 분석 시작", "Apple Pay로 결제하고 분석 시작", "PAYCO로 결제하고 분석 시작", "카드로 결제하고 분석 시작"];
-  expect(screen.getAllByRole("button").filter(button => button.textContent?.includes("결제하고")).map(button => button.getAttribute("aria-label") ?? button.textContent)).toEqual(labels);
+  expect(screen.getAllByRole("button").filter(button => (button.getAttribute("aria-label") ?? button.textContent)?.includes("결제하고")).map(button => button.getAttribute("aria-label") ?? button.textContent)).toEqual(labels);
   fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
   fireEvent.click(screen.getByRole("button", { name: "보기 ∨" }));
   fireEvent.change(screen.getByRole("combobox"), { target: { value: "CARD" } });
@@ -16,7 +16,7 @@ it("names each pay action and places the NICE card action last", () => {
 });
 it("locks all payment actions while a request is pending", () => {
   const onPay = vi.fn(); render(<NicepayPaymentButtons onPay={onPay} disabled/>);
-  for (const button of screen.getAllByRole("button").filter(button => button.textContent?.includes("결제하고"))) { expect((button as HTMLButtonElement).disabled).toBe(true); fireEvent.click(button); }
+  for (const button of screen.getAllByRole("button").filter(button => (button.getAttribute("aria-label") ?? button.textContent)?.includes("결제하고"))) { expect((button as HTMLButtonElement).disabled).toBe(true); fireEvent.click(button); }
   expect(onPay).not.toHaveBeenCalled();
 });
 it("nudges and focuses the unchecked consent bar without starting checkout", () => {

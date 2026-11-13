@@ -64,9 +64,8 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
       <span>{nicepayBrandNames[brand.method]}로 결제하고 분석 시작</span>
     </button>)}
     <div className={styles.secondary} role="group" aria-label="다른 간편결제">
-      {secondaryBrands.map(brand => <button key={brand.method} type="button" aria-label={`${nicepayBrandNames[brand.method]}로 결제하고 분석 시작`} className={`${styles.square} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
+      {secondaryBrands.map(brand => <button key={brand.method} type="button" aria-label={`${nicepayBrandNames[brand.method]}로 결제하고 분석 시작`} title={nicepayBrandNames[brand.method]} className={`${styles.square} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
         <Image src={brand.logo} width={brand.width} height={brand.height} alt="" unoptimized/>
-        <span>{nicepayBrandNames[brand.method]}</span><small>결제하고 분석 시작</small>
       </button>)}
     </div>
     <button type="button" className={`${styles.payButton} ${styles.card}`} disabled={disabled} onClick={() => onPay("CARD")}><CreditCard aria-hidden="true"/><span>카드로 결제하고 분석 시작</span></button>
