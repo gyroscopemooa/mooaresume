@@ -34,3 +34,19 @@ it("submits authentication success once and ignores later close callbacks", () =
   const c = controller(); (c.form.elements.namedItem("AuthResultCode") as HTMLInputElement).value = "0000";
   c.submit(); c.submit(); c.close(); expect(submit).toHaveBeenCalledTimes(1); expect(c.button.disabled).toBe(true);
 });
+it("can auto-launch on load while keeping failure recovery", () => {
+  const events = vi.spyOn(window, "addEventListener").mockImplementation(() => {});
+  const c = controller(vi.fn(), true);
+  const load = events.mock.calls.find(([name]) => name === "load")![1] as EventListener;
+  load(new Event("load")); expect(c.goPay).toHaveBeenCalledTimes(1);
+  c.close(); expect(c.button.disabled).toBe(false);
+});
+it("explains I009 as a rejected request without pretending retry fixes merchant eligibility", () => {
+  const c = controller();
+  (c.form.elements.namedItem("AuthResultCode") as HTMLInputElement).value = "I009";
+  (c.form.elements.namedItem("AuthResultMsg") as HTMLInputElement).value = "결제수단이 유효하지 않습니다.";
+  c.close();
+  expect(c.status.textContent).toContain("I009");
+  expect(c.status.textContent).toContain("기본 결제창");
+  expect(c.button.disabled).toBe(false);
+});
