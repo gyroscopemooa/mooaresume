@@ -7,6 +7,7 @@ import { escapeNicepayHtml, nicepayReviewHtml } from "./nicepay-review";
 import { nicepayDigest, nicepayTimestamp } from "./nicepay-protocol";
 import { getNicepayPaymentConfig, nicepayAvailableFor } from "./nicepay-payment-service";
 import { SupabaseNicepayOrderRepository, type NicepayOrder } from "./nicepay-order-repository";
+import { renderNicepayDirectWindow } from "./nicepay-direct-window";
 
 export const nicepayCheckoutRequestSchema = z.object({ analysisRunId: z.string().uuid(), method: z.enum(["CARD", "EASYPAY"]), preferredPay: nicepayBrandSchema.optional() }).strict()
   .refine(value => value.method === "EASYPAY" || !value.preferredPay);
@@ -39,6 +40,14 @@ export async function createNicepayCheckout(input: {
 }
 
 export function renderNicepayPurchaseWindow(order: NicepayOrder, origin: string, preferredPay?: NicepayBrand): string {
+  if (preferredPay && order.method !== "CARD") {
+    return renderNicepayDirectWindow(order, origin, preferredPay);
+  }
+  return renderNicepayCommonPurchaseWindow(order, origin, preferredPay);
+}
+
+/** Preserved common-selector variant for card purchases and focused rollback. */
+export function renderNicepayCommonPurchaseWindow(order: NicepayOrder, origin: string, preferredPay?: NicepayBrand): string {
   const config = getNicepayPaymentConfig();
   if (order.merchant_mid !== config.mid || order.status !== "OPEN" || new Date(order.expires_at).getTime() <= Date.now()) {
     throw new Error("NICEPAY_WINDOW_NOT_OPEN");

@@ -24,7 +24,7 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
       <span>{nicepayBrandNames[brand.method]}로 결제하고 분석 시작</span>
     </button>)}
     <button type="button" className={`${styles.payButton} ${styles.card}`} disabled={disabled} onClick={() => onPay("CARD")}><CreditCard aria-hidden="true"/><span>카드로 결제하고 분석 시작</span></button>
-    <p>NICE 결제창에서 약관과 이용할 결제수단을 확인해 주세요.</p>
+    <p>간편결제는 약관 동의 후 해당 페이로 연결됩니다. 카드는 NICE 결제창에서 선택해 주세요.</p>
   </section>;
 }
 
