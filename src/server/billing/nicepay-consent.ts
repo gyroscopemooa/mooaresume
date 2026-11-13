@@ -1,11 +1,11 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { nicepayConsentSchema, type NicepayBrand, type NicepayConsent } from "@/domain/nicepay-method";
+import { nicepayBrandSchema, nicepayConsentSchema, type NicepayBrand, type NicepayConsent } from "@/domain/nicepay-method";
 import { getNicepayPaymentConfig } from "./nicepay-payment-service";
 
 type Binding = { id: string; owner_user_id: string; expires_at: string };
-const receiptSchema = z.object({ order: z.string(), owner: z.string(), brand: z.enum(["KAKAO", "NAVER", "SAMSUNG"]), consent: nicepayConsentSchema, expires: z.number().finite() }).strict();
+const receiptSchema = z.object({ order: z.string(), owner: z.string(), brand: nicepayBrandSchema, consent: nicepayConsentSchema, expires: z.number().finite() }).strict();
 function signature(payload: string) { return createHmac("sha256", getNicepayPaymentConfig().merchantKey).update("inline-consent-v1:" + payload).digest("base64url"); }
 export function signNicepayConsent(order: Binding, brand: NicepayBrand, consent: NicepayConsent): string {
   const value = nicepayConsentSchema.parse(consent);

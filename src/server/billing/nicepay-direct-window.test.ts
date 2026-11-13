@@ -14,7 +14,7 @@ function order(): NicepayOrder {
     amount: 9900, currency: "krw", pricing_version: "test", quote_snapshot: createCheckoutQuote("QUICK", 1), test_purchase: true,
     status: "OPEN", tid: null, billing_order_id: null, expires_at: new Date(Date.now() + 60_000).toISOString() };
 }
-function page(brand: "KAKAO" | "NAVER" | "SAMSUNG") {
+function page(brand: "KAKAO" | "NAVER" | "TOSS" | "SAMSUNG" | "APPLE" | "PAYCO") {
   const html = renderNicepayPurchaseWindow(order(), "https://mooaresume.com", brand);
   document.body.innerHTML = html;
   const goPay = vi.fn();
@@ -23,7 +23,7 @@ function page(brand: "KAKAO" | "NAVER" | "SAMSUNG") {
   return { html, document, goPay, close, button: document.getElementById("openNice") as HTMLButtonElement,
     change: () => document.forms[0].dispatchEvent(new Event("change", { bubbles: true })) };
 }
-it.each([["KAKAO", "E016"], ["NAVER", "E020"], ["SAMSUNG", "E021"]] as const)("uses actual %s direct fields without exposing the key or auto-opening", (brand, code) => {
+it.each([["KAKAO", "E016"], ["NAVER", "E020"], ["SAMSUNG", "E021"], ["TOSS", "E025"], ["APPLE", "E022"], ["PAYCO", "E015"]] as const)("uses actual %s direct fields without exposing the key or auto-opening", (brand, code) => {
   const p = page(brand);
   expect((p.document.querySelector('[name="DirectEasyPay"]') as HTMLInputElement).value).toBe(code);
   expect((p.document.querySelector('[name="DirectShowOpt"]') as HTMLInputElement).value).toBe("CARD");

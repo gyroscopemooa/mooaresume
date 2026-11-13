@@ -11,7 +11,12 @@ const subscribe = () => () => {};
 const brands: { method: NicepayBrand; logo: string; width: number; height: number; className: string }[] = [
   { method: "KAKAO", logo: "/payment-brands/kakaopay.svg", width: 57, height: 22, className: styles.kakao },
   { method: "NAVER", logo: "/payment-brands/naverpay.svg", width: 72, height: 23, className: styles.naver },
+  { method: "TOSS", logo: "/payment-brands/tosspay.png", width: 180, height: 60, className: styles.toss },
+];
+const secondaryBrands: typeof brands = [
   { method: "SAMSUNG", logo: "/payment-brands/samsungpay.png", width: 94, height: 42, className: styles.samsung },
+  { method: "APPLE", logo: "/payment-brands/applepay.svg", width: 82, height: 34, className: styles.apple },
+  { method: "PAYCO", logo: "/payment-brands/payco.png", width: 64, height: 64, className: styles.payco },
 ];
 type Props = { onPay: (method: NicepayAction, consent?: NicepayConsent) => void; disabled?: boolean };
 
@@ -58,8 +63,14 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
       <span className={styles.logo}><Image src={brand.logo} width={brand.width} height={brand.height} alt="" unoptimized/></span>
       <span>{nicepayBrandNames[brand.method]}로 결제하고 분석 시작</span>
     </button>)}
+    <div className={styles.secondary} role="group" aria-label="다른 간편결제">
+      {secondaryBrands.map(brand => <button key={brand.method} type="button" aria-label={`${nicepayBrandNames[brand.method]}로 결제하고 분석 시작`} className={`${styles.square} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
+        <Image src={brand.logo} width={brand.width} height={brand.height} alt="" unoptimized/>
+        <span>{nicepayBrandNames[brand.method]}</span><small>결제하고 분석 시작</small>
+      </button>)}
+    </div>
     <button type="button" className={`${styles.payButton} ${styles.card}`} disabled={disabled} onClick={() => onPay("CARD")}><CreditCard aria-hidden="true"/><span>카드로 결제하고 분석 시작</span></button>
-    <p>간편결제는 약관 동의 후 해당 페이로 연결됩니다. 카드는 NICE 결제창에서 선택해 주세요.</p>
+    <p>결제 완료 후 분석·첨삭을 자동으로 시작합니다.</p>
   </section>;
 }
 

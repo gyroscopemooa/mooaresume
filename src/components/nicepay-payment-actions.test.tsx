@@ -5,14 +5,14 @@ import { NicepayPaymentActions, NicepayPaymentButtons } from "./nicepay-payment-
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); sessionStorage.clear(); window.history.replaceState(null, "", "/analysis/prepare"); });
 it("names each pay action and places the NICE card action last", () => {
   const onPay = vi.fn(); render(<NicepayPaymentButtons onPay={onPay}/>);
-  const labels = ["카카오페이로 결제하고 분석 시작", "네이버페이로 결제하고 분석 시작", "삼성페이로 결제하고 분석 시작", "카드로 결제하고 분석 시작"];
-  expect(screen.getAllByRole("button").filter(button => button.textContent?.includes("결제하고")).map(button => button.textContent)).toEqual(labels);
+  const labels = ["카카오페이로 결제하고 분석 시작", "네이버페이로 결제하고 분석 시작", "토스페이로 결제하고 분석 시작", "삼성페이로 결제하고 분석 시작", "Apple Pay로 결제하고 분석 시작", "PAYCO로 결제하고 분석 시작", "카드로 결제하고 분석 시작"];
+  expect(screen.getAllByRole("button").filter(button => button.textContent?.includes("결제하고")).map(button => button.getAttribute("aria-label") ?? button.textContent)).toEqual(labels);
   fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
   fireEvent.click(screen.getByRole("button", { name: "보기 ∨" }));
   fireEvent.change(screen.getByRole("combobox"), { target: { value: "CARD" } });
   for (const label of labels) fireEvent.click(screen.getByRole("button", { name: label }));
-  expect(onPay.mock.calls.map(call => call[0])).toEqual(["KAKAO", "NAVER", "SAMSUNG", "CARD"]);
-  expect(document.body.textContent).not.toMatch(/토스/);
+  expect(onPay.mock.calls.map(call => call[0])).toEqual(["KAKAO", "NAVER", "TOSS", "SAMSUNG", "APPLE", "PAYCO", "CARD"]);
+  expect(screen.getByRole("group", { name: "다른 간편결제" })).toBeTruthy();
 });
 it("locks all payment actions while a request is pending", () => {
   const onPay = vi.fn(); render(<NicepayPaymentButtons onPay={onPay} disabled/>);
