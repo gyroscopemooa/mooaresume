@@ -16,7 +16,7 @@ it.each(["interest","work_style","work_values","combined"] as const)("keeps %s o
  configure();const scoped={...order,scope};const html=renderCareerNicepayWindow(scoped,"https://mooaresume.com","KAKAO",signNicepayConsent(scoped,"KAKAO",consent));
  expect(html).toContain('/api/career-ai-builds/nicepay/return');expect(html).toContain('DirectEasyPay" value="E016');
  expect(html).toContain(careerReturnPath(scoped).replaceAll("&","&amp;"));expect(html).not.toContain('/analysis/prepare');expect(html).not.toContain('/api/checkouts/nicepay');
- expect(html).toContain("심층해설을 시작합니다.");
+ expect(html).toContain("심층해설을 시작합니다.");expect(html).not.toContain("CAREER_AI");
 });
 it("never grants generation from a URL success flag or an unpaid order",async()=>{
  vi.spyOn(CareerNicepayRepository.prototype,"loadById").mockResolvedValue(order);

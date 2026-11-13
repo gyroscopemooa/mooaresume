@@ -73,7 +73,7 @@ export function renderCareerNicepayWindow(order: CareerNicepayOrder, origin: str
     .replaceAll("더 나은 자기소개서로.", "나의 커리어를 더 깊이.")
     .replaceAll("자동으로 분석을 시작하고<br>자기소개서 첨삭을 진행합니다.", "자동으로 검사 결과의<br>심층해설을 시작합니다.")
     .replaceAll("분석을 자동으로 시작합니다.", "심층해설을 자동으로 시작합니다.")
-    .replaceAll("MOOA CAREER_AI", "MOOA 커리어 심층해설");
+    .replaceAll("CAREER_AI", "커리어 심층해설");
 }
 
 export async function checkCareerNicepayPayment(input: { checkoutId: string; buildId: string; userId: string; scope: CareerScope; price: number }) {
