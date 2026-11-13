@@ -9,8 +9,7 @@ it("names each pay action and places the NICE card action last", () => {
   expect(screen.getAllByRole("button").filter(button => (button.getAttribute("aria-label") ?? button.textContent)?.includes("결제하고")).map(button => button.getAttribute("aria-label") ?? button.textContent)).toEqual(labels);
   fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
   fireEvent.click(screen.getByRole("button", { name: "보기 ∨" }));
-  fireEvent.change(screen.getByRole("combobox"), { target: { value: "CARD" } });
-  for (const label of labels) fireEvent.click(screen.getByRole("button", { name: label }));
+  for (const label of labels) { fireEvent.click(screen.getByRole("button", { name: label })); if (label.startsWith("네이버")) fireEvent.click(screen.getByRole("button", { name: "네이버페이 카드로 결제" })); }
   expect(onPay.mock.calls.map(call => call[0])).toEqual(["KAKAO", "NAVER", "TOSS", "SAMSUNG", "APPLE", "PAYCO", "CARD"]);
   expect(screen.getByRole("group", { name: "다른 간편결제" })).toBeTruthy();
 });
@@ -35,6 +34,17 @@ it("does not flash the old guidance while availability is loading", () => {
   render(<NicepayPaymentActions onPay={vi.fn()}/>);
   expect(screen.getByRole("status").textContent).toContain("결제수단을 확인");
   expect(screen.queryByRole("region", { name: "간편결제 안내" })).toBeNull();
+});
+it("shows Naver methods only after its button and does not mark completed consent as missing", () => {
+  const onPay = vi.fn(); render(<NicepayPaymentButtons onPay={onPay}/>);
+  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(screen.queryByRole("group", { name: "네이버페이 결제수단" })).toBeNull();
+  fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
+  fireEvent.click(screen.getByRole("button", { name: "네이버페이로 결제하고 분석 시작" }));
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(onPay).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "네이버페이 포인트로 결제" }));
+  expect(onPay).toHaveBeenCalledWith("NAVER", expect.objectContaining({ naverMethod: "POINT", financial: true }));
 });
 it("keeps all web payment actions out of the installed Play app", () => {
   window.history.replaceState(null, "", "/analysis/prepare?source=twa");

@@ -26,7 +26,7 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [nudge, setNudge] = useState(0);
   const [message, setMessage] = useState("");
-  const [naverMethod, setNaverMethod] = useState<"CARD" | "POINT" | "">("");
+  const [naverOpen, setNaverOpen] = useState(false);
   const consentRef = useRef<HTMLDivElement>(null);
   const allRef = useRef<HTMLInputElement>(null);
   const all = agreed.every(Boolean);
@@ -35,14 +35,20 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
   function pay(method: NicepayAction) {
     if (disabled) return;
     if (method === "CARD") { onPay(method); return; }
-    if (!all || (method === "NAVER" && !naverMethod)) {
+    if (!all) {
       setNudge(value => value + 1);
-      setMessage(!all ? "필수 결제 약관에 동의해 주세요." : "네이버페이 카드 또는 포인트를 선택해 주세요.");
-      if (method === "NAVER" && all) setExpanded(true);
+      setMessage("필수 결제 약관에 동의해 주세요.");
       consentRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
       allRef.current?.focus({ preventScroll: true });
       return;
     }
+    setMessage("");
+    if (method === "NAVER") { setNaverOpen(value => !value); return; }
+    beginPay(method);
+  }
+  function beginPay(method: NicepayBrand, naverMethod?: "CARD" | "POINT") {
+    if (disabled) return;
+    if (!all) { pay(method); return; }
     setMessage("");
     onPay(method, { version: "2026-11-13", financial: true, collection: true, sharing: true, ...(naverMethod ? { naverMethod } : {}) });
   }
@@ -55,14 +61,13 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
       </div>
       {expanded && <div className={styles.consentDetails}>
         {["전자금융거래 이용약관", "개인정보 수집 및 이용", "개인정보 제3자 제공"].map((label, index) => <div key={label}><label><input type="checkbox" checked={agreed[index]} disabled={disabled} onChange={event => { setAgreed(values => values.map((value, i) => i === index ? event.target.checked : value)); setMessage(""); }}/> [필수] {label}</label><a href={index === 0 ? "https://www.nicepay.co.kr/cs/terms/policy1.do" : "https://www.nicepay.co.kr/cs/terms/private.do"} target="_blank" rel="noopener noreferrer">내용 보기</a></div>)}
-        <label>네이버페이 결제수단 <select value={naverMethod} disabled={disabled} onChange={event => { setNaverMethod(event.target.value as "CARD" | "POINT" | ""); setMessage(""); }}><option value="">선택</option><option value="CARD">카드</option><option value="POINT">포인트</option></select></label>
       </div>}
       {message && <p role="alert" className={styles.consentMessage}>{message}</p>}
     </div>
-    {brands.map(brand => <button key={brand.method} type="button" className={`${styles.payButton} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
+    {brands.map(brand => <div key={brand.method} className={styles.primaryAction}><button type="button" className={`${styles.payButton} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
       <span className={styles.logo}><Image src={brand.logo} width={brand.width} height={brand.height} alt="" unoptimized/></span>
       <span>{nicepayBrandNames[brand.method]}로 결제하고 분석 시작</span>
-    </button>)}
+    </button>{brand.method === "NAVER" && naverOpen && <div className={styles.naverChoice} role="group" aria-label="네이버페이 결제수단"><span>네이버페이 결제수단</span><button type="button" disabled={disabled} onClick={() => beginPay("NAVER", "CARD")}>네이버페이 카드로 결제</button><button type="button" disabled={disabled} onClick={() => beginPay("NAVER", "POINT")}>네이버페이 포인트로 결제</button><small>카드·포인트 복합결제는 지원하지 않습니다.</small></div>}</div>)}
     <div className={styles.secondary} role="group" aria-label="다른 간편결제">
       {secondaryBrands.map(brand => <button key={brand.method} type="button" aria-label={`${nicepayBrandNames[brand.method]}로 결제하고 분석 시작`} title={nicepayBrandNames[brand.method]} className={`${styles.square} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
         <Image src={brand.logo} width={brand.width} height={brand.height} alt="" unoptimized/>

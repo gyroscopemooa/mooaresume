@@ -127,9 +127,9 @@ it.each([
   if (method !== "CARD") {
     await screen.findByRole("checkbox", { name: "필수 결제 약관 전체 동의" });
     fireEvent.click(screen.getByRole("checkbox", { name: "필수 결제 약관 전체 동의" }));
-    if (method === "NAVER") { fireEvent.click(screen.getByRole("button", { name: "보기 ∨" })); fireEvent.change(screen.getByRole("combobox"), { target: { value: "CARD" } }); }
   }
   fireEvent.click(await screen.findByRole("button", { name: label }));
+  if (method === "NAVER") fireEvent.click(screen.getByRole("button", { name: "네이버페이 카드로 결제" }));
   await screen.findByText("결제 준비 실패");
   const nice = mocks.fetch.mock.calls.find(([url]) => url === "/api/checkouts/nicepay");
   expect(JSON.parse(nice?.[1].body)).toEqual(method === "CARD" ? { analysisRunId: runId, method: "CARD" } : { analysisRunId: runId, method: "EASYPAY", preferredPay: method, consent: { version: "2026-11-13", financial: true, collection: true, sharing: true, ...(method === "NAVER" ? { naverMethod: "CARD" } : {}) } });
