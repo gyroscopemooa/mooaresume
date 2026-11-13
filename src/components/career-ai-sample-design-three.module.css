@@ -9,3 +9,6 @@
 .lockedCard p{margin:0 0 16px;color:#5f6672;font-size:12px;font-weight:500;line-height:1.7;word-break:keep-all}
 .lockedCard span{display:inline-flex;align-items:center;border:1px solid #d8dbe4;border-radius:999px;padding:7px 14px;background:#f4f5fa;color:#6a7180;font-size:11px;font-weight:800}
 @media(max-width:760px){.lockedContent{max-height:520px}.lockedCard{padding:22px 18px}}
+
+/* Separate navigation from the report title at every width. */
+.topbar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);column-gap:32px}.topbar .backButton{justify-self:start;white-space:nowrap;min-height:44px}.topbar h1{white-space:nowrap}@media(max-width:480px){.topbar{grid-template-columns:auto minmax(0,1fr) auto;column-gap:20px;padding-inline:16px}.topbar h1{justify-self:center;font-size:17px}.topbar .backButton{font-size:11px}}

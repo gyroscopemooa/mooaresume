@@ -1,5 +1,6 @@
 import "server-only";
 import { nicepayAuthSchema, nicepayConfigSchema, nicepayDigest, NicepayGateway, verifyNicepayPaymentResponse, verifyNicepayAuthentication } from "./nicepay-protocol";
+import type { NicepayBoundOrder } from "./nicepay-protocol";
 import type { NicepayOrder, NicepayOrderRepository } from "./nicepay-order-repository";
 
 export function getNicepayPaymentConfig() {
@@ -11,9 +12,9 @@ export function nicepayAvailableFor(userId: string): boolean {
   return process.env.NICEPAY_PUBLIC_ENABLED === "true"
     || (process.env.NICEPAY_PILOT_USER_IDS ?? "").split(",").map(value => value.trim()).includes(userId);
 }
-export type NicepayPaymentOutcome = { order: NicepayOrder; disposition: "PAID" | "WAITING" | "FAILED" | "CANCELLED" | "REVIEW_REQUIRED" };
+export type NicepayPaymentOutcome<T extends NicepayBoundOrder = NicepayOrder> = { order: T; disposition: "PAID" | "WAITING" | "FAILED" | "CANCELLED" | "REVIEW_REQUIRED" };
 
-async function recordGrant(repo: NicepayOrderRepository, gateway: NicepayGateway, order: NicepayOrder, tid: string, proof: unknown): Promise<NicepayPaymentOutcome["disposition"]> {
+async function recordGrant<T extends NicepayBoundOrder>(repo: NicepayOrderRepository<T>, gateway: NicepayGateway, order: T, tid: string, proof: unknown): Promise<NicepayPaymentOutcome["disposition"]> {
   const result = await repo.grant(order.id, tid, nicepayDigest(JSON.stringify(proof)));
   if (result !== "CANCEL_REQUIRED") return "PAID";
   // Another provider/entitlement won before approval completed: refund this new charge.
@@ -22,7 +23,7 @@ async function recordGrant(repo: NicepayOrderRepository, gateway: NicepayGateway
   return "CANCELLED";
 }
 
-export async function processNicepayAuthentication(raw: unknown, repo: NicepayOrderRepository, gateway: NicepayGateway): Promise<NicepayPaymentOutcome> {
+export async function processNicepayAuthentication<T extends NicepayBoundOrder>(raw: unknown, repo: NicepayOrderRepository<T>, gateway: NicepayGateway): Promise<NicepayPaymentOutcome<T>> {
   const auth = nicepayAuthSchema.parse(raw);
   const order = await repo.loadByMoid(auth.Moid);
   if (!order) throw new Error("NICEPAY_ORDER_NOT_FOUND");
@@ -57,7 +58,7 @@ export async function processNicepayAuthentication(raw: unknown, repo: NicepayOr
   }
 }
 
-export async function recoverNicepayOrder(order: NicepayOrder, repo: NicepayOrderRepository, gateway: NicepayGateway): Promise<NicepayPaymentOutcome["disposition"]> {
+export async function recoverNicepayOrder<T extends NicepayBoundOrder>(order: T, repo: NicepayOrderRepository<T>, gateway: NicepayGateway): Promise<NicepayPaymentOutcome["disposition"]> {
   if (!order.tid || !(await repo.claimRecovery(order.id))) return "WAITING";
   try {
     const proof = await gateway.inquire(order);

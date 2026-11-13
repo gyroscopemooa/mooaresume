@@ -6,14 +6,15 @@ import { nicepayBrandSchema, nicepayBrandNames, nicepayConsentSchema, type Nicep
 import { escapeNicepayHtml, nicepayReviewHtml } from "./nicepay-review";
 import { nicepayDigest, nicepayTimestamp } from "./nicepay-protocol";
 import { getNicepayPaymentConfig, nicepayAvailableFor } from "./nicepay-payment-service";
-import { SupabaseNicepayOrderRepository, type NicepayOrder } from "./nicepay-order-repository";
-import { renderNicepayDirectWindow } from "./nicepay-direct-window";
+import { SupabaseNicepayOrderRepository } from "./nicepay-order-repository";
+import { renderNicepayDirectWindow, type NicepayWindowOrder } from "./nicepay-direct-window";
 import { signNicepayConsent } from "./nicepay-consent";
 
-export const nicepayCheckoutRequestSchema = z.object({ analysisRunId: z.string().uuid(), method: z.enum(["CARD", "EASYPAY"]), preferredPay: nicepayBrandSchema.optional(), consent: nicepayConsentSchema.optional() }).strict()
+export const nicepayPaymentRequestSchema = z.object({ method: z.enum(["CARD", "EASYPAY"]), preferredPay: nicepayBrandSchema.optional(), consent: nicepayConsentSchema.optional() }).strict()
   .refine(value => value.method === "EASYPAY" || !value.preferredPay)
   .refine(value => !value.preferredPay || !!value.consent, "NICEPAY_CONSENT_REQUIRED")
   .refine(value => value.preferredPay !== "NAVER" || !!value.consent?.naverMethod, "NICEPAY_NAVER_METHOD_REQUIRED");
+export const nicepayCheckoutRequestSchema = nicepayPaymentRequestSchema.safeExtend({ analysisRunId: z.string().uuid() });
 const contextSchema = z.object({ analysisRunId: z.string().uuid(), applicationCaseId: z.string().uuid(),
   product: z.enum(["QUICK", "PRO", "FINAL"]), totalCharacters: z.number().int().positive() });
 
@@ -43,7 +44,7 @@ export async function createNicepayCheckout(input: {
     expiresAt: order.expires_at, quote: order.quote_snapshot, pricingVersion: order.pricing_version };
 }
 
-export function renderNicepayPurchaseWindow(order: NicepayOrder, origin: string, preferredPay?: NicepayBrand, consent?: NicepayConsent): string {
+export function renderNicepayPurchaseWindow(order: NicepayWindowOrder, origin: string, preferredPay?: NicepayBrand, consent?: NicepayConsent): string {
   if (preferredPay && order.method !== "CARD") {
     return renderNicepayDirectWindow(order, origin, preferredPay, consent);
   }
@@ -51,7 +52,7 @@ export function renderNicepayPurchaseWindow(order: NicepayOrder, origin: string,
 }
 
 /** Preserved common-selector variant for card purchases and focused rollback. */
-export function renderNicepayCommonPurchaseWindow(order: NicepayOrder, origin: string, preferredPay?: NicepayBrand): string {
+export function renderNicepayCommonPurchaseWindow(order: NicepayWindowOrder, origin: string, preferredPay?: NicepayBrand): string {
   const config = getNicepayPaymentConfig();
   if (order.merchant_mid !== config.mid || order.status !== "OPEN" || new Date(order.expires_at).getTime() <= Date.now()) {
     throw new Error("NICEPAY_WINDOW_NOT_OPEN");

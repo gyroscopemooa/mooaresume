@@ -1,3 +1,6 @@
+import { createCareerNicepayCheckout } from "@/server/billing/career-nicepay";
+import { nicepayPaymentRequestSchema } from "@/server/billing/nicepay-checkout";
+import { nicepayAvailableFor } from "@/server/billing/nicepay-payment-service";
 import { checkoutEmail } from "@/lib/auth/delivery-preference";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -21,7 +24,7 @@ function isSameOrigin(request: NextRequest) {
   }
 }
 
-const bodySchema = z.object({ scope: z.enum(["interest", "work_style", "work_values", "combined"]) });
+const bodySchema = z.object({ scope: z.enum(["interest", "work_style", "work_values", "combined"]), payment: nicepayPaymentRequestSchema.optional() }).strict();
 
 /**
  * AI 심층해설 1건을 사는 자리.
@@ -44,7 +47,8 @@ export async function POST(request: NextRequest) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "해설 범위를 다시 선택해 주세요." }, { status: 400 });
 
-  const { scope } = parsed.data;
+  const { scope, payment } = parsed.data;
+  if (payment && !nicepayAvailableFor(authData.user.id)) return NextResponse.json({ error: "현재 계정에서는 NICE 결제를 이용할 수 없습니다." }, { status: 403 });
   const definition = getCareerAiBuildDefinition(scope);
   const priceKrw = scope === "combined" ? CAREER_AI_COMBINED_PRICE_KRW : CAREER_AI_SINGLE_PRICE_KRW;
 
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
   try {
     const build = await createBuild(definition.table, authData.user.id, priceKrw, { scope });
     buildId = build.id;
-    const session = await createDocumentBuildCheckout(definition.product, {
+    const session = payment ? await createCareerNicepayCheckout(build.id, authData.user.id, { scope, payment }, siteUrl) : await createDocumentBuildCheckout(definition.product, {
       buildId: build.id,
       userId: authData.user.id,
       priceKrw,

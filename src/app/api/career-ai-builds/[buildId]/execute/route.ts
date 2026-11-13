@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { CAREER_AI_MATERIAL_MAX_CHARS } from "@/domain/career-ai-contract";
+import { checkCareerNicepayPayment } from "@/server/billing/career-nicepay";
 import { checkDocumentBuildPayment } from "@/server/billing/document-build-checkout";
 import { createCareerInterpretationGatewayFromEnv } from "@/server/ai/career-interpretation/career-interpretation-gateway";
 import { buildCareerInterpretationRequest, type CareerAiScope } from "@/server/career/career-ai-request-builder";
@@ -76,7 +77,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ bu
     return NextResponse.json({ error: "결제가 확인되지 않았습니다.", code: "PAYMENT_REQUIRED" }, { status: 402 });
   }
 
-  const payment = await checkDocumentBuildPayment(definition.product, {
+  const payment = build.provider_checkout_id.startsWith("nicepay-career:")
+    ? await checkCareerNicepayPayment({ checkoutId: build.provider_checkout_id, buildId: build.id, userId: authData.user.id, scope, price: build.price_krw })
+    : await checkDocumentBuildPayment(definition.product, {
     checkoutId: build.provider_checkout_id,
     buildId: build.id,
     userId: authData.user.id,

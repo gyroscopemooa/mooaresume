@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useSyncExternalStore } from "react";
-import { ArrowRight, BriefcaseBusiness, FileText, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, FileText, LockKeyhole } from "lucide-react";
 import { getCareerProfileHeadline, scoreWorkStyle, type WorkStyleAnswer } from "@/domain/career-assessment";
 import { getInterestHeadline, scoreCareerInterest, type InterestAnswer } from "@/domain/career-interest";
 import { scoreWorkValues, type WorkValueAnswer } from "@/domain/career-work-values";
@@ -29,7 +29,7 @@ export function CareerProfileComplete() {
   const topValues = values ? [...values].sort((a, b) => b.score - a.score).slice(0, 2) : [];
 
   return <main className={styles.result}>
-    <div className={styles.resultHero}><span><Sparkles />MOOA CAREER PROFILE</span><h1>나의 커리어 탐색 요약</h1><p>{completed === 3 ? "세 가지 관점을 함께 보며, 다음 지원에서 확인할 기준을 정리했어요." : `현재 ${completed} / 3개 탐색 결과가 있어요.`}</p><small>이 프로필은 자기이해와 직무 탐색을 위한 자료입니다. 직업 적합성·채용 결과·능력을 판정하지 않습니다.</small></div>
+    <div className={styles.resultHero}><span>MOOA CAREER PROFILE</span><h1>나의 커리어 탐색 요약</h1><p>{completed === 3 ? "세 가지 관점을 함께 보며, 다음 지원에서 확인할 기준을 정리했어요." : `현재 ${completed} / 3개 탐색 결과가 있어요.`}</p><small>이 프로필은 자기이해와 직무 탐색을 위한 자료입니다. 직업 적합성·채용 결과·능력을 판정하지 않습니다.</small></div>
     <section className={styles.scoreGrid} style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
       <article><div><span>업무성향</span><b>{workStyle ? "완료" : "미완료"}</b></div><strong>{workStyle ? "01" : "—"}</strong><p>{workStyle ? getCareerProfileHeadline(workStyle) : "일할 때의 선호 방식과 업무환경 단서를 확인합니다."}</p><Link href={workStyle ? "/career/work-style/result" : "/career/work-style"}>{workStyle ? "결과 보기" : "시작하기"} <ArrowRight /></Link></article>
       <article><div><span>직업흥미</span><b>{interest ? "완료" : "미완료"}</b></div><strong>{interest ? "02" : "—"}</strong><p>{interest ? getInterestHeadline(interest) : "어떤 활동과 문제 해결 방식에 끌리는지 탐색합니다."}</p><Link href={interest ? "/career/interest/result" : "/career/interest"}>{interest ? "결과 보기" : "시작하기"} <ArrowRight /></Link></article>

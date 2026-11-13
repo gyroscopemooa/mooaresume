@@ -9,7 +9,8 @@ import { nicepayWindowController } from "./nicepay-window-controller";
 // NICE's v3 direct-call contract. Naver requires an explicit card/point choice.
 const codes: Record<NicepayBrand, string> = { KAKAO: "E016", NAVER: "E020", TOSS: "E025", SAMSUNG: "E021", APPLE: "E022", PAYCO: "E015" };
 
-export function renderNicepayDirectWindow(order: NicepayOrder, origin: string, brand: NicepayBrand, consent?: NicepayConsent): string {
+export type NicepayWindowOrder = Pick<NicepayOrder, "id" | "moid" | "merchant_mid" | "amount" | "method" | "status" | "expires_at"> & { product: string };
+export function renderNicepayDirectWindow(order: NicepayWindowOrder, origin: string, brand: NicepayBrand, consent?: NicepayConsent): string {
   const config = getNicepayPaymentConfig();
   if (order.method === "CARD" || order.merchant_mid !== config.mid || order.status !== "OPEN"
     || new Date(order.expires_at).getTime() <= Date.now()) throw new Error("NICEPAY_WINDOW_NOT_OPEN");

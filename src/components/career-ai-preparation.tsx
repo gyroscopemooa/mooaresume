@@ -1,5 +1,7 @@
 "use client";
 
+import { NicepayPaymentActions } from "@/components/nicepay-payment-actions";
+import type { NicepayAction, NicepayConsent } from "@/domain/nicepay-method";
 import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 import Image from "next/image";
 import Link from "next/link";
@@ -201,7 +203,7 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
     }
   }
 
-  async function startCheckout() {
+  async function startCheckout(method?: NicepayAction, consent?: NicepayConsent) {
     // 앱에서는 외부 결제창을 열지 않습니다. 버튼도 가려져 있지만, 다른 경로로
     // 불려도 여기서 멈춥니다.
     if (inApp) return;
@@ -211,7 +213,7 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
       const response = await fetch("/api/career-ai-builds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope }),
+        body: JSON.stringify({ scope, ...(method ? { payment: { method: method === "CARD" ? "CARD" : "EASYPAY", ...(method !== "CARD" ? { preferredPay: method, consent } : {}) } } : {}) }),
       });
       const body = await response.json().catch(() => null) as { checkoutUrl?: string; error?: string } | null;
       if (!response.ok || !body?.checkoutUrl) {
@@ -303,6 +305,7 @@ export function CareerAiPreparation({ scope }: { scope: Scope }) {
               <button type="button" onClick={() => void startCheckout()} disabled={busy}>
                 {phase === "creating_checkout" ? "결제 페이지 여는 중..." : phase === "generating" ? "AI가 해설 만드는 중..." : <>{priceKrw.toLocaleString("ko-KR")}원 · 심층해설 받기 <ArrowRight /></>}
               </button>
+              <div className={styles.paymentActions}><NicepayPaymentActions availabilityUrl="/api/career-ai-builds/payment-methods" hideUnavailable disabled={busy} actionLabel="심층해설 시작" onPay={(method, consent) => void startCheckout(method, consent)} /></div>
               <span className={styles.packageFoot}><ShieldCheck />결제 확인 후에만 AI를 호출합니다.</span>
             </>}
           </>}

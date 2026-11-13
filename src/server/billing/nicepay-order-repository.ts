@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { NicepayBoundOrder } from "./nicepay-protocol";
 import { checkoutQuoteSchema } from "@/domain/usage-entitlement";
 
 export const nicepayOrderSchema = z.object({
@@ -18,8 +19,8 @@ export function createNicepayServiceClient() {
   const key = z.string().min(1).parse(process.env.SUPABASE_SECRET_KEY);
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
-export interface NicepayOrderRepository {
-  loadByMoid(moid: string): Promise<NicepayOrder | null>;
+export interface NicepayOrderRepository<T extends NicepayBoundOrder = NicepayOrder> {
+  loadByMoid(moid: string): Promise<T | null>;
   claimApproval(id: string, tid: string, tokenHash: string): Promise<string>;
   grant(id: string, tid: string, proofHash: string): Promise<string>;
   mark(id: string, status: "FAILED" | "REVIEW_REQUIRED", failure: string): Promise<void>;

@@ -18,10 +18,10 @@ const secondaryBrands: typeof brands = [
   { method: "APPLE", logo: "/payment-brands/applepay.svg", width: 82, height: 34, className: styles.apple },
   { method: "PAYCO", logo: "/payment-brands/payco.png", width: 64, height: 64, className: styles.payco },
 ];
-type Props = { onPay: (method: NicepayAction, consent?: NicepayConsent) => void; disabled?: boolean };
+type Props = { onPay: (method: NicepayAction, consent?: NicepayConsent) => void; disabled?: boolean; actionLabel?: string; availabilityUrl?: string; hideUnavailable?: boolean };
 
 /** Pure buttons are also used by the local design preview; they never store a payment choice. */
-export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
+export function NicepayPaymentButtons({ onPay, disabled = false, actionLabel = "분석 시작" }: Props) {
   const [agreed, setAgreed] = useState([false, false, false]);
   const [expanded, setExpanded] = useState(false);
   const [nudge, setNudge] = useState(0);
@@ -52,7 +52,7 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
     setMessage("");
     onPay(method, { version: "2026-11-13", financial: true, collection: true, sharing: true, ...(naverMethod ? { naverMethod } : {}) });
   }
-  return <section className={styles.actions} aria-label="카드·간편결제로 분석 시작">
+  return <section className={styles.actions} aria-label={`카드·간편결제로 ${actionLabel}`}>
     <div className={styles.divider}><span>또는 카드·간편결제로</span></div>
     <div ref={consentRef} className={styles.consent}>
       <div key={nudge} className={`${styles.consentBar} ${message ? styles.attention : ""}`}>
@@ -64,33 +64,33 @@ export function NicepayPaymentButtons({ onPay, disabled = false }: Props) {
       </div>}
       {message && <p role="alert" className={styles.consentMessage}>{message}</p>}
     </div>
-    <button type="button" className={`${styles.payButton} ${styles.card}`} disabled={disabled} onClick={() => onPay("CARD")}><CreditCard aria-hidden="true"/><span>카드로 결제하고 분석 시작</span></button>
+    <button type="button" className={`${styles.payButton} ${styles.card}`} disabled={disabled} onClick={() => onPay("CARD")}><CreditCard aria-hidden="true"/><span>카드로 결제하고 {actionLabel}</span></button>
     {brands.map(brand => <div key={brand.method} className={styles.primaryAction}><button type="button" className={`${styles.payButton} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
       <span className={styles.logo}><Image src={brand.logo} width={brand.width} height={brand.height} alt="" unoptimized/></span>
-      <span>{nicepayBrandNames[brand.method]}로 결제하고 분석 시작</span>
+      <span>{nicepayBrandNames[brand.method]}로 결제하고 {actionLabel}</span>
     </button>{brand.method === "NAVER" && naverOpen && <div className={styles.naverChoice} role="group" aria-label="네이버페이 결제수단"><span>네이버페이 결제수단</span><button type="button" disabled={disabled} onClick={() => beginPay("NAVER", "CARD")}>네이버페이 카드로 결제</button><button type="button" disabled={disabled} onClick={() => beginPay("NAVER", "POINT")}>네이버페이 포인트로 결제</button><small>카드·포인트 복합결제는 지원하지 않습니다.</small></div>}</div>)}
     <div className={styles.secondary} role="group" aria-label="다른 간편결제">
-      {secondaryBrands.map(brand => <button key={brand.method} type="button" aria-label={`${nicepayBrandNames[brand.method]}로 결제하고 분석 시작`} title={nicepayBrandNames[brand.method]} className={`${styles.square} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
+      {secondaryBrands.map(brand => <button key={brand.method} type="button" aria-label={`${nicepayBrandNames[brand.method]}로 결제하고 ${actionLabel}`} title={nicepayBrandNames[brand.method]} className={`${styles.square} ${brand.className}`} disabled={disabled} onClick={() => pay(brand.method)}>
         <Image src={brand.logo} width={brand.width} height={brand.height} alt="" unoptimized/>
       </button>)}
     </div>
-    <p>결제 완료 후 분석·첨삭을 자동으로 시작합니다.</p>
+    <p>{actionLabel === "심층해설 시작" ? "결제 완료 후 검사 결과 심층해설을 자동으로 시작합니다." : "결제 완료 후 분석·첨삭을 자동으로 시작합니다."}</p>
   </section>;
 }
 
-export function NicepayPaymentActions(props: Props) {
+export function NicepayPaymentActions({ availabilityUrl = "/api/billing/payment-methods", hideUnavailable = false, ...props }: Props) {
   const installed = useSyncExternalStore(subscribe, isInstalledAppContext, () => true);
   const [enabled, setEnabled] = useState<boolean | null>(null);
   useEffect(() => {
     if (installed) return;
     let cancelled = false;
-    void fetch("/api/billing/payment-methods", { cache: "no-store" }).then(async response => {
+    void fetch(availabilityUrl, { cache: "no-store" }).then(async response => {
       const data: unknown = await response.json();
       if (!cancelled) setEnabled(response.ok && !!data && typeof data === "object" && "nicepay" in data && data.nicepay === true);
     }).catch(() => { if (!cancelled) setEnabled(false); });
     return () => { cancelled = true; };
-  }, [installed]);
+  }, [installed, availabilityUrl]);
   if (installed) return null;
   if (enabled === null) return <p role="status">결제수단을 확인하고 있습니다…</p>;
-  return enabled ? <NicepayPaymentButtons {...props}/> : <CheckoutPaymentMethods/>;
+  return enabled ? <NicepayPaymentButtons {...props}/> : hideUnavailable ? null : <CheckoutPaymentMethods/>;
 }
