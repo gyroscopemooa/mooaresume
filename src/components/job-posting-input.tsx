@@ -55,7 +55,7 @@ export function JobPostingInput({
         : "";
 
   return (
-    <section className={styles.box}>
+    <section className={styles.box} data-posting-box="">
       <div className={styles.heading}>
         <div>
           <span>

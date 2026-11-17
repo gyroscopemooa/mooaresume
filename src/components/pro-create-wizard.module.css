@@ -189,3 +189,37 @@
   .page[data-create-polish] .layout>section>footer{margin-top:24px;padding-top:18px}
   .page[data-create-polish] .layout>section>footer button{min-width:88px;padding:12px 14px}
 }
+
+/* ── 공고 입력 심플화 (토스식) — 2026-11-18, Claude ────────────────────────
+   채용공고 안내 4줄(배지·제목·설명·보조문구)을 한 줄로 줄이고, 바깥 상자 테두리를
+   없애 입력창 하나만 얇은 선(1px)으로 남깁니다. 입력창은 키워 붙여넣기 편하게.
+   data-posting-box를 빼면(또는 이 블록을 지우면) 이전 모습으로 돌아갑니다. */
+.page[data-create-polish] .layout>section>section[data-posting-box]{padding:0;border:0;border-radius:0;background:transparent}
+.page[data-create-polish] [data-posting-box]>div:first-child{display:grid;grid-template-columns:minmax(0,1fr);margin-bottom:10px}
+.page[data-create-polish] [data-posting-box]>div:first-child>div{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:10px;min-width:0}
+.page[data-create-polish] [data-posting-box]>div:first-child>div>span,
+.page[data-create-polish] [data-posting-box]>div:first-child>small{display:none}
+.page[data-create-polish] [data-posting-box] h3{margin:0;font-size:15px;white-space:nowrap}
+.page[data-create-polish] [data-posting-box]>div:first-child p{flex:1;min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pp-faint);font-size:12.5px}
+.page[data-create-polish] [data-posting-box]>div:nth-of-type(2){border:1px solid var(--pp-line);box-shadow:none}
+.page[data-create-polish] [data-posting-box]>div:nth-of-type(2):focus-within{border-color:var(--pp-green);box-shadow:0 0 0 3px rgba(23,107,74,.08)}
+.page[data-create-polish] [data-posting-box]>div:nth-of-type(2) footer{border-top:0}
+.page[data-create-polish] .layout>section>section[data-posting-box] textarea{min-height:260px;max-height:520px}
+@media(max-width:760px){
+  .page[data-create-polish] [data-posting-box]>div:first-child>div{grid-template-columns:minmax(0,1fr);gap:2px}
+  .page[data-create-polish] [data-posting-box] h3{white-space:normal}
+  .page[data-create-polish] .layout>section>section[data-posting-box] textarea{min-height:220px}
+}
+
+/* ── 체크박스 목록 느낌 (designbookmark "Checkbox list" 참고) ─────────────────
+   단계 번호가 완료되면 체크가 통통 튀며 나타나고, 이어진 선이 위에서 아래로 채워집니다.
+   원본 스프링 pop(강성 520·감쇠 16)은 CSS로 같은 출렁임을 내는 곡선으로 근사했습니다. */
+@keyframes cp-check-pop{0%{transform:scale(.3);opacity:0}55%{transform:scale(1.32);opacity:1}78%{transform:scale(.92)}100%{transform:scale(1)}}
+.page[data-create-polish] .layout aside button[data-done=true] span svg{animation:cp-check-pop .42s both}
+.page[data-create-polish] .layout aside button[data-done=true]::after{animation:cp-line-fill .4s .12s both ease-out;transform-origin:top}
+@keyframes cp-line-fill{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.page[data-create-polish] .layout aside button[data-active=true] span{animation:cp-check-pop .42s both}
+@media(prefers-reduced-motion:reduce){
+  .page[data-create-polish] .layout aside button span,.page[data-create-polish] .layout aside button::after,.page[data-create-polish] .layout aside button span svg{animation:none!important}
+}
+
