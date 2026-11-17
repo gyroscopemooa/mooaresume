@@ -14,6 +14,7 @@ import { AppLaunchBanner, EduPromoBanner } from "@/components/app-launch-banner"
 import { MentorPoolBanner } from "@/components/mentor-pool-banner";
 import { PricingComparison } from "@/components/pricing-comparison";
 import { FeedbackLens } from "@/components/feedback-lens";
+import { LandingLens } from "@/components/landing-lens";
 import { ConsultantReviewBanner } from "@/components/consultant-review-banner";
 import { LandingConsistency } from "@/components/landing-consistency";
 import { LandingConsistencyB } from "@/components/landing-consistency-b";
@@ -447,6 +448,8 @@ export default function HomePage() {
           <details className={footerStyles.business}><summary>사업자 정보</summary><ul><li>상호: gyroscope · 대표: 전민수</li><li>사업자등록번호: 696-55-00795 · 통신판매업신고번호: 2023-울산남구-0547</li><li>울산광역시 남구 팔등로 41번길,9 1202</li><li>support@mooaresume.com</li></ul></details>
         </div>
       </footer>
+      {/* 메인 전체에서 마우스를 따라다니는 돋보기(Glass lens). 마우스 화면에서만 켜진다. 반드시 main 안쪽에 둔다: .home-page가 body zoom을 상쇄하므로 좌표가 맞는다. */}
+      <LandingLens />
     </main></>
   );
 }

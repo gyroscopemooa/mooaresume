@@ -1,4 +1,4 @@
-/* Glass lens over a sample sentence. Uses the site's own tokens (--green, --mint,
+/* Section that explains the page-wide glass lens. Uses the site's own tokens (--green, --mint,
    --line, --muted, --ink, 18px card radius, Noto Sans KR from the body). No stroke
    on the glass and no shadow: it reads as glass through how it bends the text, a
    darker refraction band at the edge, a thin bright rim and a soft reflection. */
@@ -11,42 +11,10 @@
 .stage{
   position:relative;max-width:760px;margin:0 auto;border-radius:18px;
   background:var(--mint);overflow:hidden;
-  touch-action:pan-y;user-select:none;-webkit-user-select:none;
-}
-.paper,.copy{padding:44px clamp(22px,5vw,48px)}
-.paper p,.copy p{margin:0;font-size:clamp(15px,1.9vw,18px);line-height:1.95;letter-spacing:-.01em;color:var(--ink)}
-.paper mark,.copy mark{background:none;color:inherit}
-
-.lens{
-  position:absolute;left:0;top:0;width:150px;height:150px;border-radius:50%;
-  overflow:hidden;pointer-events:none;will-change:transform;z-index:4;
-  isolation:isolate;opacity:0;transition:opacity .25s ease;
-}
-.view,.layer{position:absolute;left:0;top:0;width:100%;height:100%}
-.layer{overflow:hidden;border-radius:50%;background:var(--mint)}
-.copy{position:absolute;will-change:transform}
-/* inside the glass the vague phrases light up */
-.copy mark{background:linear-gradient(transparent 58%,rgba(255,196,60,.55) 58%);border-radius:2px}
-/* each layer bends a bit more toward the rim, like a real convex lens */
-.l0{filter:saturate(1.08) contrast(1.03)}
-.l1{-webkit-mask:radial-gradient(circle closest-side,transparent 52%,#000 74%);mask:radial-gradient(circle closest-side,transparent 52%,#000 74%)}
-.l2{-webkit-mask:radial-gradient(circle closest-side,transparent 74%,#000 90%);mask:radial-gradient(circle closest-side,transparent 74%,#000 90%)}
-
-.glass{
-  position:absolute;inset:0;border-radius:50%;pointer-events:none;
-  background:
-    radial-gradient(40% 22% at 34% 17%,rgba(255,255,255,.26),rgba(255,255,255,.06) 60%,rgba(255,255,255,0) 80%),
-    radial-gradient(12% 7% at 70% 86%,rgba(255,255,255,.42),rgba(255,255,255,0) 80%),
-    radial-gradient(circle closest-side,rgba(255,255,255,0) 88%,rgba(255,255,255,.08) 95%,rgba(255,255,255,.34) 99%,rgba(255,255,255,.12) 100%),
-    radial-gradient(circle closest-side,rgba(0,0,0,0) 74%,rgba(10,20,30,.06) 87%,rgba(10,20,30,.13) 94%,rgba(10,20,30,0) 98%);
-}
-.glass::after{
-  content:"";position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from 200deg,rgba(255,80,80,0),rgba(255,120,90,.22),rgba(255,220,120,0) 20%,rgba(90,170,255,0) 45%,rgba(90,150,255,.24) 60%,rgba(160,100,255,0) 75%,rgba(255,80,80,0));
-  -webkit-mask:radial-gradient(circle closest-side,transparent 88%,#000 95%,transparent 99%);
-  mask:radial-gradient(circle closest-side,transparent 88%,#000 95%,transparent 99%);
-  mix-blend-mode:screen;
-}
+  }
+.paper{padding:44px clamp(22px,5vw,48px)}
+.paper p{margin:0;font-size:clamp(15px,1.9vw,18px);line-height:1.95;letter-spacing:-.01em;color:var(--ink)}
+.paper mark{background:none;color:inherit}
 
 .note{display:block;max-width:760px;margin:10px auto 0;color:#8a948f;font-size:12px;text-align:right}
 .points{list-style:none;max-width:760px;margin:26px auto 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -56,7 +24,6 @@
 
 @media (max-width:760px){
   .section{padding-bottom:64px}
-  .paper,.copy{padding:30px 20px}
+  .paper{padding:30px 20px}
   .points{grid-template-columns:1fr}
 }
-@media (prefers-reduced-motion:reduce){.lens{transition:none}}
