@@ -61,6 +61,15 @@ export function LandingLens() {
     // components that mount late), at most once every 600 ms.
     const build = () => {
       const w = main.offsetWidth;
+      const kids = Array.from(main.children).filter((child) => child !== root && child.tagName !== "SCRIPT");
+      // position:fixed things (side drawers, edge tabs, banners) would, inside the
+      // transformed copy, stretch to the height of the whole page and cover it, so
+      // they are left out of the copy. Found on the real page, in the same order
+      // as in the clone.
+      const fixedAt = kids.map((k) => {
+        const all = [k, ...Array.from(k.querySelectorAll("*"))];
+        return all.map((n) => getComputedStyle(n).position === "fixed");
+      });
       holds.forEach((hold) => {
         hold.replaceChildren();
         const wrap = document.createElement("div");
@@ -68,14 +77,17 @@ export function LandingLens() {
         wrap.style.width = w + "px";
         wrap.setAttribute("aria-hidden", "true");
         wrap.setAttribute("inert", "");
-        Array.from(main.children).forEach((child) => {
-          if (child === root) return;
-          const c = child.cloneNode(true) as HTMLElement;
-          c.querySelectorAll("script,video,iframe,canvas,[id]").forEach((n) => {
-            if (n.tagName === "SCRIPT" || n.tagName === "VIDEO" || n.tagName === "IFRAME" || n.tagName === "CANVAS") n.remove();
+        kids.forEach((k, ki) => {
+          const c = k.cloneNode(true) as HTMLElement;
+          const all = [c, ...Array.from(c.querySelectorAll("*"))];
+          const drop: Element[] = [];
+          all.forEach((n, i) => {
+            if (fixedAt[ki][i] || ["SCRIPT", "VIDEO", "IFRAME", "CANVAS"].includes(n.tagName)) drop.push(n);
             else n.removeAttribute("id");
           });
-          if (c.tagName !== "SCRIPT") wrap.appendChild(c);
+          if (drop[0] === c) return; // the whole child is fixed
+          drop.forEach((n) => n.remove());
+          wrap.appendChild(c);
         });
         hold.appendChild(wrap);
       });
