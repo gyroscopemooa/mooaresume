@@ -13,6 +13,7 @@ import { HomePromoVideo } from "@/components/home-promo-video";
 import { AppLaunchBanner, EduPromoBanner } from "@/components/app-launch-banner";
 import { MentorPoolBanner } from "@/components/mentor-pool-banner";
 import { PricingComparison } from "@/components/pricing-comparison";
+import { FeedbackLens } from "@/components/feedback-lens";
 import { ConsultantReviewBanner } from "@/components/consultant-review-banner";
 import { LandingConsistency } from "@/components/landing-consistency";
 import { LandingConsistencyB } from "@/components/landing-consistency-b";
@@ -171,6 +172,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 돋보기 모션(Glass lens). 랜딩에서만 쓴다. 예시 문장은 가상이며 실제 지원자 글이 아니다. */}
+      <FeedbackLens />
 
       {/* FINAL의 새 면접 준비팩을 홈에서 보여주는 자리. 위 첨삭 예시와 같은
           지원자(현대모비스·생산관리)가 이어서 FINAL을 썼다면 어떻게 되는지
