@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, LockKeyhole } from "lucide-react";
+import { ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
+import { SpringStepBadge } from "@/components/spring-step-badge";
 import { JobPostingInput } from "@/components/job-posting-input";
 import { MaterialUpload } from "@/components/material-upload";
 import { AdditionalInfoInput } from "@/components/additional-info-input";
@@ -132,13 +133,13 @@ export function ProCreateWizard() {
         <b>작성 진행</b>
         {intro.map((item, index) => (
           <button key={item.id} data-active={index === current} data-done={index < current} onClick={() => setStepIndex(index)}>
-            <span>{index < current ? <Check /> : index + 1}</span>{item.short}
+            <SpringStepBadge number={index + 1} done={index < current} />{item.short}
           </button>
         ))}
         {/* The interview is many steps; listing every one would bury the shape
             of the flow, so the sidebar shows it as a single stage. */}
         <button data-active={guidedStep !== null} data-done={current > intro.length + guidedSteps.length - 1} onClick={() => setStepIndex(intro.length)}>
-          <span>{current > intro.length + guidedSteps.length - 1 ? <Check /> : intro.length + 1}</span>
+          <SpringStepBadge number={intro.length + 1} done={current > intro.length + guidedSteps.length - 1} />
           경험과 문항
           {guidedStep && <em>{guidedIndex + 1}/{guidedSteps.length}</em>}
         </button>

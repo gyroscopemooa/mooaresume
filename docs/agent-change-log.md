@@ -9105,3 +9105,9 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Change: 채용공고 안내 4줄을 한 줄로, 바깥 상자 테두리 제거·입력창 1px 얇은 선, 입력창 높이 확대(260px). 사이드 단계 목록에 체크 통통(스프링 pop 근사)·연결선 채움 애니메이션(reduced-motion 시 꺼짐). 기존 규칙은 삭제하지 않고 뒤에 덮어씀.
 - Validation: tsc·eslint 통과, 로컬 브라우저에서 한 줄/말줄임/가로 넘침 없음 확인. 모바일 폭은 미확인.
 - Rollback: 추가 블록(파일 끝 "공고 입력 심플화"~끝)과 data-posting-box 속성 삭제 또는 해당 커밋 revert. Status: main 배포 진행. 왼쪽 메뉴 변경 요청은 문장이 끊겨 이번엔 미반영.
+
+## 2026-11-18 — Claude: 왼쪽 단계 목록을 실제 스프링 체크 목록으로
+- Files: 신규 src/components/spring-step-badge.tsx; src/components/pro-create-wizard.tsx(번호 배지 2곳을 SpringStepBadge로 교체, 미사용 Check import 제거); pro-create-wizard.module.css(이전 CSS 근사 keyframe 제거, 연결선 채움만 유지).
+- Change: designbookmark 토큰의 스프링 값(pop 520/16, fade 420/32)을 JS 스프링으로 구현. 단계 완료 시 배지가 눌렸다 튀고 체크가 그려짐. reduced-motion이면 즉시 전환. 원본 JS 전문은 열람 불가해 값만 따름.
+- Validation: tsc 통과, eslint 오류 0(경고 1), 로컬 브라우저에서 scale 0.81~1.09 출렁임·체크 그리기 측정. 폰 폭 미확인.
+- Rollback: 해당 커밋 revert. Status: main 배포.

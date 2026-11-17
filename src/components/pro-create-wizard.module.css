@@ -212,14 +212,8 @@
 }
 
 /* ── 체크박스 목록 느낌 (designbookmark "Checkbox list" 참고) ─────────────────
-   단계 번호가 완료되면 체크가 통통 튀며 나타나고, 이어진 선이 위에서 아래로 채워집니다.
-   원본 스프링 pop(강성 520·감쇠 16)은 CSS로 같은 출렁임을 내는 곡선으로 근사했습니다. */
-@keyframes cp-check-pop{0%{transform:scale(.3);opacity:0}55%{transform:scale(1.32);opacity:1}78%{transform:scale(.92)}100%{transform:scale(1)}}
-.page[data-create-polish] .layout aside button[data-done=true] span svg{animation:cp-check-pop .42s both}
-.page[data-create-polish] .layout aside button[data-done=true]::after{animation:cp-line-fill .4s .12s both ease-out;transform-origin:top}
+   번호 배지의 통통 튐·체크 그리기는 spring-step-badge.tsx가 실제 스프링(520/16, 420/32)으로
+   움직입니다. 여기서는 단계 사이 연결선이 위에서 아래로 채워지는 것만 담당합니다. */
 @keyframes cp-line-fill{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-.page[data-create-polish] .layout aside button[data-active=true] span{animation:cp-check-pop .42s both}
-@media(prefers-reduced-motion:reduce){
-  .page[data-create-polish] .layout aside button span,.page[data-create-polish] .layout aside button::after,.page[data-create-polish] .layout aside button span svg{animation:none!important}
-}
-
+.page[data-create-polish] .layout aside button[data-done=true]::after{animation:cp-line-fill .4s .12s both ease-out;transform-origin:top}
+@media(prefers-reduced-motion:reduce){.page[data-create-polish] .layout aside button::after{animation:none!important}}
