@@ -6,6 +6,7 @@
 - 파일: `src/domain/quick-summary.ts` 및 테스트, `src/components/quick-summary-preview.tsx` 및 CSS, `src/app/quick-summary/page.tsx`, `src/components/site-nav.tsx`, `next.config.ts`, 본 기록.
 - 개인정보/정확성: 입력은 네트워크로 전송하지 않는다. 결과는 설명 가능한 휴리스틱이며, 사실성·직무 적합성·합격 가능성을 판단하거나 후보자 사실을 만들지 않는다.
 - 검증/복구: 대상 순수 로직 테스트·ESLint·공백 검사를 통과했다. 최신 `main` 기준 프로덕션 빌드는 이 기능과 무관한 기존 충돌 마커(`result-workspace-complete.tsx`, `quick/prompt.ts`) 및 기존 CSS 모듈 순수 선택자 오류로 실패해 Worker 배포를 중단했다. 공개 `/quick-summary`는 이전 Worker에서 404인 상태다. 복구는 이 커밋을 되돌린다.
+- 배포 복구(사용자 승인 2026-11-23): 최신 릴리스 브랜치를 재확인해 충돌 마커는 현재 소스에 남아 있지 않음을 확인했다. 홈 헤더 CSS 모듈의 전역 선택자 두 파일과 이력서 인쇄 CSS의 전역 `html/body` 규칙만 최소 수정해 빌드를 다시 검증·배포한다. 기존 분석·결제·결과 의미는 바꾸지 않는다.
 
 ## 2026-10-27 — Codex: 비식별 작성 경향·제출 결과 후속 데이터 파이프라인
 

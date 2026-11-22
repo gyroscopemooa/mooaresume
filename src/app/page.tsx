@@ -28,8 +28,8 @@ import careerCtaStyles from "./career-home-cta.module.css";
 import fieldStyles from "./field-credibility.module.css";
 import creedStyles from "./creed.module.css";
 import footerStyles from "./home-footer.module.css";
-import "./home-mobile-header.module.css";
-import "./home-startup-header.module.css";
+import mobileHeaderStyles from "./home-mobile-header.module.css";
+import startupHeaderStyles from "./home-startup-header.module.css";
 import { getSiteUrl } from "@/lib/site-url";
 
 const differences = [
@@ -94,7 +94,7 @@ export default function HomePage() {
     ],
   };
   return (
-    <><LaunchPriceBanner /><RuntimeEventSlot slot="announcement_bar" /><RuntimeEventSlot slot="home_modal" /><main className="home-page">
+    <><LaunchPriceBanner /><RuntimeEventSlot slot="announcement_bar" /><RuntimeEventSlot slot="home_modal" /><main className={`home-page ${mobileHeaderStyles.scope} ${startupHeaderStyles.scope}`}>
       {/* Inside .home-page, not beside it.
           body carries zoom:1.25 and .home-page cancels it with calc(1/1.25).
           Placed outside, the drawer took the 1.25 without the 0.8 back, so a

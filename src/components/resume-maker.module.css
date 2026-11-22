@@ -191,7 +191,6 @@
 @page { margin: 12mm; }
 
 @media print {
-  :global(html), :global(body) { background: #fff !important; }
   .shell { background: #fff; }
   .topbar, .tabs, .editor, .previewHead { display: none !important; }
   .body { display: block; max-width: none; margin: 0; padding: 0; }
