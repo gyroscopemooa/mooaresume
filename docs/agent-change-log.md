@@ -1,5 +1,12 @@
 # Agent Change Log and Variant Registry
 
+## 2026-11-23 — Codex: 간단 요약·피드백 실험 페이지
+
+- 요청/범위: 기존 QUICK/PRO 분석을 대체하지 않고, 자소서 초안을 브라우저에서만 간단 요약·점검하는 메뉴와 공유 가능한 테스트 페이지를 추가했다. 결제, 저장, AI 호출, 기존 결과는 변경하지 않는다.
+- 파일: `src/domain/quick-summary.ts` 및 테스트, `src/components/quick-summary-preview.tsx` 및 CSS, `src/app/quick-summary/page.tsx`, `src/components/site-nav.tsx`, `next.config.ts`, 본 기록.
+- 개인정보/정확성: 입력은 네트워크로 전송하지 않는다. 결과는 설명 가능한 휴리스틱이며, 사실성·직무 적합성·합격 가능성을 판단하거나 후보자 사실을 만들지 않는다.
+- 검증/복구: 대상 테스트·lint·프로덕션 빌드 및 배포 후 라이브 URL을 확인한다. 복구는 이 커밋을 되돌린다.
+
 ## 2026-09-25 — Claude: LIVE-SUB 점검 모드 2단계 (implemented locally; commit/deploy pending)
 
 - Requested: HQ `maintenance.scope` 가 "all" 이면 전체 차단, 기능 key 이면 그 기능 진입 화면만 차단. 우회(QA) 수단 포함. 서버 API 는 건드리지 않는다.

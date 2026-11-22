@@ -13,6 +13,7 @@ const privatePaths = [
   "onboarding",
   "pro",
   "quick",
+  "quick-summary",
   "result",
   "sample",
   "start",
