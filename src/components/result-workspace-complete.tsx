@@ -557,6 +557,9 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   const [sampleNotice, setSampleNotice] = useState(false);
   const summarySource = result.questions.find((question) => question.originalAnswer.trim())?.originalAnswer.trim() ?? null;
   const summarySourceSentence = summarySource?.match(/[^.!?\n]+(?:[.!?]+|$)/)?.[0]?.trim() ?? summarySource;
+  const changedQuestion = result.questions.find((question) => question.originalAnswer.trim() !== question.revisedAnswer.trim());
+  const changedOriginalSentence = changedQuestion?.originalAnswer.trim().match(/[^.!?\n]+(?:[.!?]+|$)/)?.[0]?.trim() ?? changedQuestion?.originalAnswer.trim();
+  const changedRevisedSentence = changedQuestion?.revisedAnswer.trim().match(/[^.!?\n]+(?:[.!?]+|$)/)?.[0]?.trim() ?? changedQuestion?.revisedAnswer.trim();
 
   /**
    * Saving from the sample.
@@ -629,11 +632,12 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
 
       {view === "summary" && <section className={styles.workspace}>
         <div className={styles.title}><div><span className={styles.eyebrow}>3-MINUTE BRIEF</span><h2>결과를 보기 전, <SummaryMarkerText kind="underline">이것만 확인하세요</SummaryMarkerText></h2></div><p>저장된 분석 결과만 다시 묶었습니다. 새 점수나 새로운 판단은 만들지 않습니다.</p></div>
-        <section className={styles.markerLab} aria-label="손그림 마커 기능 테스트"><small>MARKER UI TEST · 표현만 시험 중</small><div><SummaryMarkerText kind="highlight" delay={40}>형광펜</SummaryMarkerText><SummaryMarkerText kind="underline" delay={150}>밑줄</SummaryMarkerText><SummaryMarkerText kind="circle" delay={270}>동그라미</SummaryMarkerText><SummaryMarkerText kind="box" delay={390}>박스</SummaryMarkerText><SummaryMarkerText kind="strike" delay={510}>취소선</SummaryMarkerText></div></section>
         {summarySourceSentence && <blockquote className={styles.summarySource}><small>내가 쓴 문장에서 시작</small><p>&ldquo;{summarySourceSentence}&rdquo;</p><span>첫 문항의 첫 문장</span></blockquote>}
         <section className={styles.summaryPriority}><span className={styles.eyebrow}>01 · 가장 먼저 고칠 곳</span><h2><SummaryMarkerText delay={150}>{result.priorities.length ? result.priorities[0].title : "제출 조건과 사실관계를 마지막으로 확인하세요"}</SummaryMarkerText></h2><p>{result.priorities.length ? result.priorities[0].description : "이번 분석에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다."}</p><button className={styles.wideButton} onClick={() => setView(result.priorities.length ? "revision" : "final")}>{result.priorities.length ? "문항별 수정안 보기" : "최종 첨삭본 보기"} <ArrowRight/></button></section>
         {result.priorities.length > 1 && <section className={styles.consulting}><span className={styles.eyebrow}>그다음 볼 점</span><h3>핵심 개선 {Math.min(result.priorities.length, 3)}가지</h3><div className={styles.adviceGrid}>{result.priorities.slice(0, 3).map((item, index) => <article key={item.id}><span>0{index + 1}</span><div><h4><SummaryMarkerText kind={index === 1 ? "box" : "highlight"} delay={220 + index * 120}>{item.title}</SummaryMarkerText></h4><p>{item.description}</p></div></article>)}</div></section>}
+        {changedQuestion && changedOriginalSentence && changedRevisedSentence && <section className={styles.summaryRewrite}><div><span className={styles.eyebrow}>02 · 문장 피드백 한눈에</span><h3>{changedQuestion.order}번 문항, 이렇게 다듬었습니다</h3><p>원문에 없던 사실을 더한 것이 아니라, 기존 문장을 더 직접적으로 읽히게 정리한 제안입니다.</p></div><div className={styles.rewriteCompare}><article><small>다시 볼 표현</small><p><SummaryMarkerText kind="strike" delay={260}>{changedOriginalSentence}</SummaryMarkerText></p></article><article><small>수정본에서 확인</small><p><SummaryMarkerText kind="underline" delay={420}>{changedRevisedSentence}</SummaryMarkerText></p></article></div><button className={styles.textButton} onClick={() => setView("submission")}>원문·수정본 전체 비교 <ArrowRight/></button></section>}
         <section className={styles.summaryCheck}><AlertCircle/><div><small>03 · 제출 전 사실 확인</small><p><SummaryMarkerText kind="circle" delay={360}>{result.verificationQuestions.length ? result.verificationQuestions[0] : "수정한 문장이 실제 경험과 맞는지, 제출 양식의 글자 수와 문항을 다시 확인해 주세요."}</SummaryMarkerText></p></div></section>
+        {result.verificationQuestions.length > 1 && <section className={styles.summaryMoreChecks}><span className={styles.eyebrow}>추가로 확인할 점</span>{result.verificationQuestions.slice(1, 3).map((question, index) => <p key={question}><b>0{index + 2}</b><SummaryMarkerText kind={index === 0 ? "box" : "highlight"} delay={520 + index * 120}>{question}</SummaryMarkerText></p>)}</section>}
       </section>}
 
       {view === "overview" && <section className={styles.overview}>

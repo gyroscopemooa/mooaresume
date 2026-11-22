@@ -3,6 +3,7 @@
 import { CheckCircle2, Info, ShieldAlert } from "lucide-react";
 import { computeFinalVerdict, countAnswerStructure } from "@/domain/final-verdict";
 import type { ResultDocument } from "@/domain/result-document";
+import { SummaryMarkerText } from "./summary-marker-text";
 import styles from "./final-verification.module.css";
 
 /**
@@ -97,7 +98,7 @@ export function FinalVerification({ result, hasResume }: { result: ResultDocumen
               <li key={`${item.source}-${index}`}>
                 <span className={`${styles.sev} ${item.severity === "high" ? styles.sevHigh : styles.sevMedium}`}>{SEVERITY_LABEL[item.severity]}</span>
                 <span className={styles.from}>{SOURCE_LABEL[item.source]}</span>
-                <b>{item.headline}</b>
+                <b><SummaryMarkerText kind={item.severity === "high" ? "circle" : "box"} delay={index * 90}>{item.headline}</SummaryMarkerText></b>
               </li>
             ))}
           </ul>
@@ -122,9 +123,9 @@ export function FinalVerification({ result, hasResume }: { result: ResultDocumen
                     <span className={`${styles.tag} ${styles[`tag${risk.severity === "high" ? "High" : risk.severity === "medium" ? "Medium" : "Low"}`]}`}>위험 {SEVERITY_LABEL[risk.severity]}</span>
                     <span className={`${styles.tag} ${styles[handling.tone]}`}>{handling.label}</span>
                   </div>
-                  <p className={styles.quote}>{risk.evidenceQuote}</p>
+                  <p className={styles.quote}><SummaryMarkerText kind="strike">{risk.evidenceQuote}</SummaryMarkerText></p>
                   <p>{risk.reason}</p>
-                  <p><b>이렇게 하면 됩니다.</b> {risk.fix}</p>
+                  <p><b>이렇게 하면 됩니다.</b> <SummaryMarkerText kind="underline">{risk.fix}</SummaryMarkerText></p>
                 </article>
               );
             })}
@@ -150,9 +151,9 @@ export function FinalVerification({ result, hasResume }: { result: ResultDocumen
                 <div className={styles.cardTop}>
                   <b>{LENS_LABEL[note.lens] ?? note.lens}</b>
                 </div>
-                <p className={styles.quote}>{note.evidenceQuote}</p>
+                <p className={styles.quote}><SummaryMarkerText kind="box">{note.evidenceQuote}</SummaryMarkerText></p>
                 <p>{note.finding}</p>
-                <p><b>제안.</b> {note.recommendation}</p>
+                <p><b>제안.</b> <SummaryMarkerText kind="underline">{note.recommendation}</SummaryMarkerText></p>
               </article>
             ))}
           </div>

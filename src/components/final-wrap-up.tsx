@@ -9,6 +9,7 @@ import {
 } from "@/domain/final-wrap-up";
 import { buildPatchQuestions } from "@/domain/final-patch";
 import { FinalPatchForm } from "./final-patch-form";
+import { SummaryMarkerText } from "./summary-marker-text";
 import styles from "./final-wrap-up.module.css";
 
 /**
@@ -99,9 +100,9 @@ export function FinalWrapUp({ result, analysisRunId = null }: { result: ResultDo
                     <span className={`${styles.sev} ${SEVERITY_CLASS[item.severity]}`}>{SEVERITY_LABEL[item.severity]}</span>
                     <span className={styles.from}>{item.sources.join(" · ")}</span>
                   </div>
-                  <b>{item.headline}</b>
-                  {item.quote && <p className={styles.quote}>{item.quote}</p>}
-                  <p className={styles.todo}>{item.todo}</p>
+                  <b><SummaryMarkerText kind={item.severity === "high" ? "circle" : "box"}>{item.headline}</SummaryMarkerText></b>
+                  {item.quote && <p className={styles.quote}><SummaryMarkerText kind="strike" delay={120}>{item.quote}</SummaryMarkerText></p>}
+                  <p className={styles.todo}><SummaryMarkerText kind="underline" delay={240}>{item.todo}</SummaryMarkerText></p>
                 </li>
               ))}
             </ul>

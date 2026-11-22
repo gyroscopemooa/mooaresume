@@ -45,7 +45,7 @@ export function SummaryMarkerText({ children, kind = "highlight", delay = 0 }: S
     <span ref={textRef} className={styles.text}>{children}</span>
     {box.width > 0 && <svg aria-hidden="true" className={styles.svg} height={svgHeight} viewBox={`0 0 ${width + 4} ${svgHeight}`} width={width + 4}>
       {kind === "highlight" && <path className={styles.highlightPath} d={`M1 ${height * .17} Q${width * .36} ${height * .03} ${width - 1} ${height * .17} L${width - 1} ${height * .92} Q${width * .55} ${height * .78} 1 ${height * .92}Z`} />}
-      {kind !== "highlight" && <path className={styles.linePath} d={stroke} />}
+      {kind !== "highlight" && <path className={styles.linePath} d={stroke} pathLength={1} />}
     </svg>}
   </span>;
 }
