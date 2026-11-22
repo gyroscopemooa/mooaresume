@@ -40,6 +40,7 @@ import { RuntimeEventSlot } from "./runtime-event-slot";
 import { ContextResearchNotice } from "./context-research-notice";
 // 기존 ResultEncouragement(./result-encouragement)는 보존된 이전 변형입니다.
 import { ResultOneMore } from "./result-one-more";
+import { SummaryMarkerText } from "./summary-marker-text";
 
 type View = "summary" | "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final" | "encouragement";
 
@@ -554,6 +555,8 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   // 면접 준비 from the tier that costs more than PRO.
   const showsProTabs = result.product === "PRO" || result.product === "FINAL";
   const [sampleNotice, setSampleNotice] = useState(false);
+  const summarySource = result.questions.find((question) => question.originalAnswer.trim())?.originalAnswer.trim() ?? null;
+  const summarySourceSentence = summarySource?.match(/[^.!?\n]+(?:[.!?]+|$)/)?.[0]?.trim() ?? summarySource;
 
   /**
    * Saving from the sample.
@@ -625,10 +628,11 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
       )}
 
       {view === "summary" && <section className={styles.workspace}>
-        <div className={styles.title}><div><span className={styles.eyebrow}>QUICK SUMMARY</span><h2>제출 전, 이것만 먼저 보세요</h2></div><p>기존 분석에서 가장 중요한 내용만 압축했습니다. 새 점수나 새로운 판단은 만들지 않습니다.</p></div>
-        <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 할 일</span><h2>{result.priorities.length ? result.priorities[0].title : "제출 조건과 사실관계를 마지막으로 확인하세요"}</h2><p>{result.priorities.length ? result.priorities[0].description : "이번 분석에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다."}</p><button className={styles.wideButton} onClick={() => setView(result.priorities.length ? "revision" : "final")}>{result.priorities.length ? "문항별 수정안 보기" : "최종 첨삭본 보기"} <ArrowRight/></button></section>
+        <div className={styles.title}><div><span className={styles.eyebrow}>3-MINUTE BRIEF</span><h2>결과를 보기 전, <SummaryMarkerText kind="underline">이것만 확인하세요</SummaryMarkerText></h2></div><p>저장된 분석 결과만 다시 묶었습니다. 새 점수나 새로운 판단은 만들지 않습니다.</p></div>
+        {summarySourceSentence && <blockquote className={styles.summarySource}><small>내가 쓴 문장에서 시작</small><p>&ldquo;{summarySourceSentence}&rdquo;</p><span>첫 문항의 첫 문장</span></blockquote>}
+        <section className={styles.summaryPriority}><span className={styles.eyebrow}>01 · 가장 먼저 고칠 곳</span><h2><SummaryMarkerText delay={150}>{result.priorities.length ? result.priorities[0].title : "제출 조건과 사실관계를 마지막으로 확인하세요"}</SummaryMarkerText></h2><p>{result.priorities.length ? result.priorities[0].description : "이번 분석에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다."}</p><button className={styles.wideButton} onClick={() => setView(result.priorities.length ? "revision" : "final")}>{result.priorities.length ? "문항별 수정안 보기" : "최종 첨삭본 보기"} <ArrowRight/></button></section>
         {result.priorities.length > 1 && <section className={styles.consulting}><span className={styles.eyebrow}>그다음 볼 점</span><h3>핵심 개선 {Math.min(result.priorities.length, 3)}가지</h3><div className={styles.adviceGrid}>{result.priorities.slice(0, 3).map((item, index) => <article key={item.id}><span>0{index + 1}</span><div><h4>{item.title}</h4><p>{item.description}</p></div></article>)}</div></section>}
-        <section className={styles.fact}><AlertCircle/><p><b>제출 전 확인</b>{result.verificationQuestions.length ? result.verificationQuestions[0] : "수정한 문장이 실제 경험과 맞는지, 제출 양식의 글자 수와 문항을 다시 확인해 주세요."}</p></section>
+        <section className={styles.summaryCheck}><AlertCircle/><div><small>03 · 제출 전 사실 확인</small><p><SummaryMarkerText kind="circle" delay={360}>{result.verificationQuestions.length ? result.verificationQuestions[0] : "수정한 문장이 실제 경험과 맞는지, 제출 양식의 글자 수와 문항을 다시 확인해 주세요."}</SummaryMarkerText></p></div></section>
       </section>}
 
       {view === "overview" && <section className={styles.overview}>
