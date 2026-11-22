@@ -25,6 +25,7 @@ const SECTIONS = [
     links: [
       { href: "/#plans", label: "요금 안내", hint: "QUICK · PRO · FINAL 한눈에 비교" },
       { href: "/result/sample", label: "첨삭 예시 보기", hint: "완성본이 어떤 모습인지 먼저" },
+      { href: "/quick-summary", label: "간단 요약 · 피드백", hint: "저장 없이 초안 흐름을 빠르게 확인" },
     ],
   },
   {
