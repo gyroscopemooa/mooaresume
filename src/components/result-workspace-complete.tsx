@@ -41,7 +41,7 @@ import { ContextResearchNotice } from "./context-research-notice";
 // 기존 ResultEncouragement(./result-encouragement)는 보존된 이전 변형입니다.
 import { ResultOneMore } from "./result-one-more";
 
-type View = "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final" | "encouragement";
+type View = "summary" | "overview" | "submission" | "revision" | "verification" | "wrapup" | "fit" | "interview" | "mockInterview" | "interviewPack" | "final" | "encouragement";
 
 const ANNOTATION_LABEL: Record<ResultOriginalAnnotation["type"], string> = {
   good: "좋은 표현",
@@ -541,6 +541,7 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
   }
 
   const tabs: Array<[View, string, boolean]> = [
+    ["summary", "간단 요약", false],
     ["overview", "한눈에 보기", false],
     ["submission", "제출본", false],
     ["revision", "문항별 첨삭", false],
@@ -622,6 +623,13 @@ export function ResultWorkspaceComplete({ result: sourceResult = sampleResultDoc
           ? <InterviewPackPanel api={interviewPackApi} mode="live" />
           : <InterviewPackPanel api={interviewPackApi} mode="sample" publicPreview /> }</div>
       )}
+
+      {view === "summary" && <section className={styles.workspace}>
+        <div className={styles.title}><div><span className={styles.eyebrow}>QUICK SUMMARY</span><h2>제출 전, 이것만 먼저 보세요</h2></div><p>기존 분석에서 가장 중요한 내용만 압축했습니다. 새 점수나 새로운 판단은 만들지 않습니다.</p></div>
+        <section className={styles.panel}><span className={styles.eyebrow}>가장 먼저 할 일</span><h2>{result.priorities.length ? result.priorities[0].title : "제출 조건과 사실관계를 마지막으로 확인하세요"}</h2><p>{result.priorities.length ? result.priorities[0].description : "이번 분석에서 우선적으로 고칠 핵심 문제는 확인되지 않았습니다."}</p><button className={styles.wideButton} onClick={() => setView(result.priorities.length ? "revision" : "final")}>{result.priorities.length ? "문항별 수정안 보기" : "최종 첨삭본 보기"} <ArrowRight/></button></section>
+        {result.priorities.length > 1 && <section className={styles.consulting}><span className={styles.eyebrow}>그다음 볼 점</span><h3>핵심 개선 {Math.min(result.priorities.length, 3)}가지</h3><div className={styles.adviceGrid}>{result.priorities.slice(0, 3).map((item, index) => <article key={item.id}><span>0{index + 1}</span><div><h4>{item.title}</h4><p>{item.description}</p></div></article>)}</div></section>}
+        <section className={styles.fact}><AlertCircle/><p><b>제출 전 확인</b>{result.verificationQuestions.length ? result.verificationQuestions[0] : "수정한 문장이 실제 경험과 맞는지, 제출 양식의 글자 수와 문항을 다시 확인해 주세요."}</p></section>
+      </section>}
 
       {view === "overview" && <section className={styles.overview}>
         {sectionReview ? <div className={styles.score}><div><small>추가 첨삭 · 항목별 검토</small><h2>원문의 작성 항목을 보존했습니다</h2><strong>{result.questions.length}<span>개 항목</span></strong><p>항목별 수정문 · 수정 이유 · 남은 확인 사항</p></div><p>지원자가 제공한 경험을 바탕으로 문장을 재작성했습니다. 문항별 첨삭에서 실제 변경 내용을 확인할 수 있습니다.</p><p className={styles.scoreBasis}>공식 채용 문항 수와 분량 제한을 확정한 결과는 아닙니다. 검토하지 않은 점수나 합격 가능성을 제시하지 않습니다.</p></div> :
