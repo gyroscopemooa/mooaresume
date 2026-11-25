@@ -145,7 +145,7 @@ export function ExternalOrderConsole({enabled}:{enabled:boolean}){
     try{const response=await fetch(API,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:row.id,action})});const data=await response.json();if(!response.ok)setError(errorFor(data));else setMessage(action==="revoke"?"링크 회수 완료":emailLabel[data.status]??"발송 요청 처리");await refresh();}
     catch{setError("처리 상태를 확인하지 못했습니다. 이력을 새로고침하세요.");}finally{setBusy(false);}
   }
-  const preview=[["구매처",salesChannel],["상품주문번호",orderNumber],["구매 상품",product+" 자기소개서 분석"],["결제 금액",amount===""?"":money(Number(amount))],["지원 기업",company],["지원 직무",role]].filter(row=>row[1]);
+  const preview=[["고객명",customerName],["구매처",salesChannel],["상품주문번호",orderNumber],["구매 상품",product+" 자기소개서 분석"],["결제 금액",amount===""?"":money(Number(amount))],["지원 기업",company],["지원 직무",role]].filter(row=>row[1]);
   return <main className={styles.page}>
     <header><h1>외부 주문 분석</h1><p>스마트스토어·크몽 등에서 받은 자료를 한 번에 접수합니다. 별도 PG 결제 없이 기존 분석 엔진을 사용합니다.</p></header>
     {!enabled&&<div className={styles.warning}>외부 주문 기능이 비활성 상태입니다. DB 마이그레이션과 운영 환경 설정을 확인하세요.</div>}

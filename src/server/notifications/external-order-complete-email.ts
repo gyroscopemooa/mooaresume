@@ -46,6 +46,7 @@ export function buildExternalOrderEmail(input: ExternalOrderEmailInput) {
   const greeting = name ? `${name} 고객님, 안녕하세요.` : "안녕하세요, 무아레쥬메입니다.";
   const expiry = koreanDate(input.expiresAt);
   const rows: Array<[string, string | undefined]> = [
+    ["고객명", name],
     ["구매처", input.salesChannel?.trim()],
     ["상품주문번호", input.orderNumber?.trim()],
     ["구매 상품", `${input.product} 자기소개서 분석`],

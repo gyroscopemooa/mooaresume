@@ -1,5 +1,13 @@
 # Agent Change Log and Variant Registry
 
+## 2026-11-25 — Codex: 외부 주문 후기 토큰 권한 보강
+
+- 요청/범위: `feat/external-order-analysis`의 운영 전 보안 검토에서, 외부 고객의 후기 제출도 결과 링크와 동일한 만료·회수 가능한 서명 토큰으로 보호한다.
+- 변경: 외부 후기 화면은 새 `/api/feedback/external`에 토큰만 전달한다. 서버가 `readExternalResult`로 토큰·만료·회수·완료 상태를 다시 검증한 뒤에만 실제 `analysis_run_id`를 찾아 저장한다. 브라우저가 보낸 실행 ID는 외부 경로에서 신뢰하지 않는다. 기존 로그인/일반 후기 API와 동작은 변경하지 않았다. `.env.example`에 외부 주문 기능 플래그와 서버 전용 비밀값을 문서화했다.
+- 이메일: 선택 입력된 고객명은 인사말뿐 아니라 실제 메일과 관리자 미리보기의 행에도 표시하고, 미입력 시에는 행 전체를 생략한다.
+- 파일: `src/app/feedback/[analysisRunId]/feedback-form.tsx`, `src/app/feedback/external/[token]/page.tsx`, `src/app/api/feedback/external/route.ts`, `.env.example`, 본 기록.
+- 검증/복구: 타입 검사·린트·테스트·빌드를 이 브랜치에서 실행한다. 복구는 외부 화면의 `externalToken` 전달과 신규 API만 제거하면 이전의 일반 후기 흐름으로 돌아간다.
+
 ## 2026-11-23 — Codex: 간단 요약·피드백 실험 페이지
 
 - 요청/범위: 기존 QUICK/PRO 분석을 대체하지 않고, 자소서 초안을 브라우저에서만 간단 요약·점검하는 메뉴와 공유 가능한 테스트 페이지를 추가했다. 결제, 저장, AI 호출, 기존 결과는 변경하지 않는다.

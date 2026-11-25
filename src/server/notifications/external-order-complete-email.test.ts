@@ -9,7 +9,7 @@ describe("external order completion mail", () => {
       expect(full.html).toContain(value); expect(full.text).toContain(value);
     }
     const minimal=buildExternalOrderEmail(base);
-    for (const label of ["상품주문번호","구매처","결제 금액","지원 기업","지원 직무"]) expect(minimal.html).not.toContain(label);
+    for (const label of ["고객명","상품주문번호","구매처","결제 금액","지원 기업","지원 직무"]) expect(minimal.html).not.toContain(label);
   });
   it("escapes metadata and rejects foreign links", () => {
     expect(buildExternalOrderEmail({...base, customerName:"<script>bad</script>"}).html).not.toContain("<script>");

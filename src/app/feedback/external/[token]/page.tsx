@@ -9,5 +9,5 @@ export default async function ExternalFeedbackPage({params}:{params:Promise<{tok
   const {token}=await params;
   const delivery=await readExternalResult(token).catch(()=>null);
   if(!delivery) notFound();
-  return <FeedbackForm analysisRunId={delivery.analysisRunId} alreadyAnswered={await hasFeedback(delivery.analysisRunId)}/>;
+  return <FeedbackForm analysisRunId={delivery.analysisRunId} alreadyAnswered={await hasFeedback(delivery.analysisRunId)} externalToken={token}/>;
 }
