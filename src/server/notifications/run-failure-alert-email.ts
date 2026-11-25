@@ -89,6 +89,11 @@ export async function alertExhaustedRun(
     // 그대로 둡니다.
   }
 
+  let refundLine = describeRefund(input.refund);
+  if (process.env.EXTERNAL_ORDERS_ENABLED === "true") {
+    const external = await client.from("external_analysis_orders").select("customer_email,sales_channel,order_number").eq("analysis_run_id",input.analysisRunId).maybeSingle();
+    if (external.data) { email = external.data.customer_email || "(이메일 미입력)"; refundLine = "외부 판매 주문입니다. 원래 판매처에서 취소·환불 여부를 확인하세요."; }
+  }
   const response = await fetchImplementation(RESEND_ENDPOINT, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -106,7 +111,7 @@ export async function alertExhaustedRun(
         `시도 횟수: ${run.attempt_count ?? "?"}`,
         `신청자: ${email}`,
         "",
-        describeRefund(input.refund),
+        refundLine,
         "관리자 화면의 첨삭 결과에서 이 건을 확인해 주세요.",
       ].join("\n"),
     }),

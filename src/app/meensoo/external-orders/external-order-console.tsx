@@ -125,8 +125,8 @@ export function ExternalOrderConsole({enabled}:{enabled:boolean}){
     const id=requestId||crypto.randomUUID();setRequestId(id);setBusy(true);
     try{
       const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-        id,customerName,customerEmail,salesChannel,orderNumber,paidAmountKrw:amount===""?undefined:Number(amount),autoEmail,
-        intake:{title:company?company+" "+role:"외부 주문 자기소개서",companyName:company,roleName:role,product,
+        id,customerName,customerEmail,salesChannel,orderNumber,paidAmountKrw:amount===""?undefined:Number(amount),autoEmail,confirmed,
+        intake:{title:company?(company+" "+role).slice(0,120):"외부 주문 자기소개서",companyName:company,roleName:role,product,
           writingMode:resolvedMode,writingStyle:style,editingStance:resolveEditingStance(product,stance),targetLength:targetNumber,
           questions:mapping.questions,sourceFilename:mapping.sourceFile?.filename,allowMissingPosting:allowMissing,
           jobPosting:{url:postingUrl.trim(),text:actualPosting,filenames:mapping.postingFilenames},
@@ -134,7 +134,7 @@ export function ExternalOrderConsole({enabled}:{enabled:boolean}){
       })});
       const data=await response.json();
       if(!response.ok){setError(errorFor(data));return;}
-      setMessage("접수 완료. 기존 분석 스케줄러가 분석을 실행하며, 완료 후 설정한 이메일로 결과가 발송됩니다.");
+      setMessage(autoEmail&&customerEmail.trim()?"접수 완료. 기존 분석 스케줄러가 분석을 실행하며, 완료 후 고객 이메일로 결과 발송을 시도합니다.":"접수 완료. 분석 완료 후 이력에서 결과 링크를 복사할 수 있습니다.");
       setRequestId("");setCustomerName("");setCustomerEmail("");setOrderNumber("");setAmount("");setCompany("");setRole("");setLetter("");setPostingUrl("");setPostingText("");setNotes("");setFiles([]);setQuestionLimits({});setConfirmed(false);setAllowMissing(false);
       await refresh();
     }catch{setError("연결이 끊겼습니다. 중복 접수 방지를 위해 이 화면에서 같은 요청으로 다시 시도하세요.");}finally{setBusy(false);}
@@ -153,6 +153,7 @@ export function ExternalOrderConsole({enabled}:{enabled:boolean}){
       <fieldset disabled={busy||!enabled} className={styles.section}>
         <legend>1. 상품 및 자료</legend>
         <div className={styles.products}>{(["QUICK","PRO","FINAL"] as const).map(item=><label key={item} data-active={product===item}><input type="radio" name="product" checked={product===item} onChange={()=>setProduct(item)}/><b>{item}</b><small>{item==="QUICK"?"기본 첨삭 · 8천자":item==="PRO"?"정밀 첨삭 · 3만자":"심층 첨삭 · 3만자"}</small></label>)}</div>
+        {product==="QUICK"&&<p className={styles.warning}>QUICK은 기존 상품과 동일하게 자기소개서 중심이며, 별도 참고자료 대조는 PRO 이상에서 제공됩니다.</p>}
         {product==="FINAL"&&<p className={styles.warning}>비회원 결과는 첨삭 결과 열람·다운로드용입니다. 계정이 필요한 FINAL 모의면접·면접 준비팩은 제공 범위를 확인한 후 판매하세요.</p>}
         <label>자기소개서 한 번에 붙여넣기<textarea rows={7} value={letter} maxLength={120000} onChange={event=>{setLetter(event.target.value);setQuestionLimits({});}} placeholder="문항 번호·질문·글자수·답변을 그대로 붙여넣으세요."/></label>
         <label className={styles.drop} onDragOver={event=>event.preventDefault()} onDrop={event=>{event.preventDefault();void upload(event.dataTransfer.files);}}>
@@ -182,6 +183,7 @@ export function ExternalOrderConsole({enabled}:{enabled:boolean}){
     <section className={styles.history}><div className={styles.inline}><h2>외부 주문 접수 이력</h2><button type="button" disabled={!enabled||busy} onClick={()=>void refresh().catch(()=>setHistoryError("이력 조회 실패"))}>새로고침</button></div>
       {historyError&&<p role="alert">{historyError}</p>}{!rows.length&&!historyError&&<p>접수 이력이 없습니다.</p>}
       {rows.map(row=><article key={row.id} className={styles.order}><div className={styles.inline}><b>{row.product} · {row.customerName||"고객명 미입력"}</b><span>{statusLabel[row.status]??row.status}</span></div><p>{[row.salesChannel,row.orderNumber,row.customerEmail,row.paidAmountKrw===null?"":money(row.paidAmountKrw)].filter(Boolean).join(" · ")}</p><small>{date(row.createdAt)} · 메일: {emailLabel[row.emailStatus]??row.emailStatus}{row.failureCode?" · "+row.failureCode:""}{row.revoked?" · 링크 회수됨":""}</small>
+        <a href={"/meensoo/analyses/"+row.analysisRunId} target="_blank" rel="noopener noreferrer">관리자 분석 상세</a>
         {row.resultUrl&&<div className={styles.inline}><a href={row.resultUrl} target="_blank" rel="noopener noreferrer">결과 열람</a><button type="button" onClick={()=>void navigator.clipboard.writeText(row.resultUrl!).then(()=>setMessage("결과 링크를 복사했습니다.")).catch(()=>setError("링크를 복사하지 못했습니다."))}>링크 복사</button><button type="button" disabled={busy||!row.customerEmail} onClick={()=>void act(row,"resend")}>메일 발송·재발송</button><button type="button" disabled={busy} onClick={()=>void act(row,"revoke")}>링크 회수</button></div>}
         {row.expiresAt&&<small>열람 기한 {date(row.expiresAt)}</small>}
       </article>)}

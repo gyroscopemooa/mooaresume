@@ -11,3 +11,5 @@
 - Cloudflare: 기존 Resend 설정 유지, EXTERNAL_ORDER_SIGNING_SECRET (32자 이상, 안전한 랜덤 값), EXTERNAL_ORDERS_ENABLED=true는 검증 이후 설정. 기존 cron 설정 확인.
 - 상태: 개발 브랜치에 소스 작성. 실제 빌드·DB 적용·운영 배포·메일 테스트 미실행. 본 브랜치를 바로 운영에 합치지 않는다.
 - 롤백: flag off, draft branch 유지. 기존 main untouched.
+
+- 추가 점검: 내부 owner 로그인 차단, 고객 자료 처리 확인 서버 검증, 외부 주문 실패 안내 및 원가/외부 판매 표시. 기존 추가 첨삭 메일은 계정 기반이므로 외부 주문에서는 비활성. SQL dollar delimiter 복구 및 원본 대형 agent-change-log blob 그대로 보존. 운영 배포는 여전히 미검증.

@@ -1,5 +1,5 @@
 import "server-only";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHmac, randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { guestApplicationHandoffSchema, buildApplicationCasePlan } from "@/application/application-case-handoff";
 import { hasJobPostingText } from "@/domain/job-posting-source";
@@ -19,6 +19,7 @@ export const externalOrderInputSchema = z.object({
   orderNumber: z.string().trim().max(150).default(""),
   paidAmountKrw: z.number().int().min(0).max(100_000_000).optional(),
   autoEmail: z.boolean().default(true),
+  confirmed: z.literal(true),
 }).strict();
 type ExternalOrderInput = z.infer<typeof externalOrderInputSchema>;
 const rowSchema = z.object({
@@ -44,17 +45,18 @@ async function readOrder(id: string): Promise<Order | null> {
 async function internalOwner(id: string) {
   const db=serviceClient();
   const lookup=async()=>{const result=await db.rpc("find_external_analysis_owner",{p_id:id});if(result.error) throw new Error("EXTERNAL_OWNER_LOOKUP_FAILED");return typeof result.data==="string"?result.data:null;};
+  const blockLogin=async(owner:string)=>{const blocked=await db.auth.admin.updateUserById(owner,{ban_duration:"876000h"});if(blocked.error) throw new Error("EXTERNAL_OWNER_LOCK_FAILED");return owner;};
   const existing=await lookup();
-  if(existing) return existing;
+  if(existing) return blockLogin(existing);
   // No customer's real address or password is used to construct an Auth
   // account. The random password is discarded and no invitation is sent.
   const created=await db.auth.admin.createUser({
-    email:`external-${id}@orders.mooaresume.com`, password:randomBytes(36).toString("base64url"),
+    email:`external-${createHmac("sha256",externalOrderSigningSecret()).update("owner:"+id).digest("hex").slice(0,40)}@orders.mooaresume.com`, password:randomBytes(36).toString("base64url"),
     email_confirm:false, app_metadata:{mooa_external_order:id},
   });
-  if(created.data.user && !created.error) return created.data.user.id;
+  if(created.data.user && !created.error) return blockLogin(created.data.user.id);
   const raced=await lookup();
-  if(raced) return raced;
+  if(raced) return blockLogin(raced);
   throw new Error("EXTERNAL_OWNER_CREATE_FAILED");
 }
 export async function createExternalOrder(raw: ExternalOrderInput) {

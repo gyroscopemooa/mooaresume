@@ -83,7 +83,7 @@ function CostCell({ analysis }: { analysis: AdminAnalysis }) {
     <div className={styles.costCell}>
       <strong>{won(cost.costKrw)}</strong>
       <span className={`${styles.pill} ${RISK_TONE[cost.risk]}`}>{RISK_LABEL[cost.risk]}</span>
-      {analysis.paid ? (
+      {analysis.externalOrder ? (<small>외부 주문 · {analysis.externalOrder.paidAmountKrw === null ? "금액 미입력" : `판매 ${won(analysis.externalOrder.paidAmountKrw)} · 남음 ${won(cost.marginKrw)}`}</small>) : analysis.paid ? (
         <small>
           판매 {cost.priceKrw.toLocaleString("ko-KR")}원 · 남음 {won(cost.marginKrw)}
           {cost.marginRate !== null && ` (${Math.round(cost.marginRate * 100)}%)`}
@@ -118,7 +118,7 @@ function AttentionList({ items }: { items: AdminAnalysis[] }) {
               <span className={`${styles.pill} ${RISK_TONE[analysis.cost.risk]}`}>{RISK_LABEL[analysis.cost.risk]}</span>
               <b>{won(analysis.cost.costKrw)}</b>
               <small>
-                {analysis.paid
+                {analysis.externalOrder ? "외부 주문" : analysis.paid
                   ? `판매 ${analysis.cost.priceKrw.toLocaleString("ko-KR")}원 · 남음 ${won(analysis.cost.marginKrw)}`
                   : analysis.testGrant ? "테스트 이용권" : "무료 이용권"}
               </small>
@@ -243,8 +243,8 @@ export default async function AnalysesPage() {
                       {previewByRun[analysis.id] ? <>
                         <Link href={`/meensoo/analyses/${analysis.id}/second-review/${previewByRun[analysis.id].id}`}>추가 첨삭 확인</Link>
                         <small>{(recipientsByRun[analysis.id] ?? []).filter(email => email === analysis.email.toLowerCase()).length > 0 ? "고객 발송됨" : "미발송"}</small>
-                        <ExtraReviewSend compact runId={analysis.id} previewId={previewByRun[analysis.id].id} ownerEmail={analysis.email}
-                          sentToOwner={(recipientsByRun[analysis.id] ?? []).filter(email => email === analysis.email.toLowerCase()).length} />
+                        {!analysis.externalOrder && <ExtraReviewSend compact runId={analysis.id} previewId={previewByRun[analysis.id].id} ownerEmail={analysis.email}
+                          sentToOwner={(recipientsByRun[analysis.id] ?? []).filter(email => email === analysis.email.toLowerCase()).length} />}
                       </> : automatic.items[analysis.id] ? <small>{automatic.items[analysis.id].failure === "SECOND_REVIEW_NO_ADDITIONAL_SUGGESTIONS" ? "추가 제안 없음" : automatic.items[analysis.id].status === "needs_attention" ? "생성 중단" : "생성 중"}</small> : <span className={styles.mono}>—</span>}
                     </td>
                     <td>{kst(analysis.completedAt)}</td>

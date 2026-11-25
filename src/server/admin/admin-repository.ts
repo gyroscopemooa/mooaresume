@@ -151,6 +151,7 @@ export type AdminAnalysis = {
   paid: boolean;
   /** 관리자 테스트 이용권으로 돌린 건인지. 결제·매출 집계와 무관한 점검용 실행입니다. */
   testGrant: boolean;
+  externalOrder?: { paidAmountKrw: number | null; customerEmail: string };
   /** 시도별 원장을 합친 원가. 원장이 없으면 시도 0건으로 나옵니다. */
   cost: RunCostSummary;
   /** 화면에 시도 내역을 그대로 펼치기 위한 목록. */
@@ -242,6 +243,15 @@ async function loadTestGrantRunIds(runIds: string[]): Promise<Set<string>> {
   return new Set((data ?? []).map((row) => row.consumed_by_analysis_run_id as string));
 }
 
+async function loadExternalRunOrders(runIds: string[]) {
+  const orders = new Map<string, { paidAmountKrw: number | null; customerEmail: string }>();
+  if (!runIds.length || process.env.EXTERNAL_ORDERS_ENABLED !== "true") return orders;
+  const { data, error } = await serviceClient().from("external_analysis_orders").select("analysis_run_id,paid_amount_krw,customer_email").in("analysis_run_id",runIds);
+  if (error) return orders;
+  for (const row of data ?? []) orders.set(String(row.analysis_run_id), { paidAmountKrw: row.paid_amount_krw as number | null, customerEmail: String(row.customer_email ?? "") });
+  return orders;
+}
+
 export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
   const [{ data, error }, emails] = await Promise.all([
     serviceClient()
@@ -259,18 +269,19 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
   // 줍니다 — 틀린 원가는 없는 것보다 나쁩니다. FINAL이 다른 모델을 쓰면
   // 단가도 달라지므로, 여기서 미리 하나로 고정하지 않고 행마다 그 행의
   // product로 다시 읽습니다.
-  const [ledger, paidRunIds, testRunIds] = await Promise.all([loadAttemptLedger(runIds), loadPaidRunIds(runIds), loadTestGrantRunIds(runIds)]);
+  const [ledger, paidRunIds, testRunIds, externalOrders] = await Promise.all([loadAttemptLedger(runIds), loadPaidRunIds(runIds), loadTestGrantRunIds(runIds), loadExternalRunOrders(runIds)]);
 
   return data.map((row) => {
     const applicationCase = row.application_cases as unknown as EmbeddedCase;
     const results = row.analysis_results as unknown as unknown[] | { id: string } | null;
     const id = row.id as string;
     const product = row.product as string;
+    const externalOrder = externalOrders.get(id);
     const paid = paidRunIds.has(id);
     const attempts = ledger.get(id) ?? [];
     return {
       id,
-      email: emails.get(row.owner_user_id as string) ?? "(알 수 없음)",
+      email: externalOrder ? externalOrder.customerEmail || "(이메일 미입력)" : emails.get(row.owner_user_id as string) ?? "(알 수 없음)",
       product,
       writingMode: row.writing_mode as string,
       status: row.status as string,
@@ -286,11 +297,12 @@ export async function listAnalyses(limit = 100): Promise<AdminAnalysis[]> {
       hasResult: Array.isArray(results) ? results.length > 0 : Boolean(results),
       paid,
       testGrant: testRunIds.has(id),
+      externalOrder,
       attempts,
       cost: summarizeRunCost({
         product,
         // 정가 기준입니다. 할인가로 팔린 건은 실제 마진이 이보다 낮습니다.
-        priceKrw: paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0,
+        priceKrw: externalOrder?.paidAmountKrw ?? (paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0),
         attempts,
         pricing: readModelPricingFromEnv(process.env, product),
       }),
@@ -373,10 +385,11 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
   });
   const attempts = ledger.get(analysisRunId) ?? [];
   const paid = paidRunIds.has(analysisRunId);
+  const externalOrder = (await loadExternalRunOrders([analysisRunId])).get(analysisRunId);
   return {
     run: {
       id: run.id as string,
-      email: emails.get(run.owner_user_id as string) ?? "(알 수 없음)",
+      email: externalOrder ? externalOrder.customerEmail || "(이메일 미입력)" : emails.get(run.owner_user_id as string) ?? "(알 수 없음)",
       product: run.product as string,
       writingMode: run.writing_mode as string,
       status: run.status as string,
@@ -392,6 +405,7 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
       hasResult: Boolean(result?.result_data),
       paid,
       testGrant: (await loadTestGrantRunIds([analysisRunId])).has(analysisRunId),
+      externalOrder,
       attempts,
       cost: summarizeRunCost({
         product,
