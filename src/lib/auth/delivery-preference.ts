@@ -2,7 +2,7 @@ export type DeliveryUser = {
   id?: string;
   email?: string | null;
   email_confirmed_at?: string | null;
-  app_metadata?: { provider?: unknown; providers?: unknown; mooa_delivery_preference?: unknown } | null;
+  app_metadata?: { provider?: unknown; providers?: unknown; mooa_delivery_preference?: unknown; mooa_external_order?: unknown } | null;
 };
 
 /** Provider and preference claims must come from server-controlled Auth metadata. */
@@ -34,7 +34,7 @@ export function canStartWithDelivery(user: DeliveryUser | null | undefined): boo
 }
 
 export function notificationEmail(user: DeliveryUser | null | undefined): string | undefined {
-  if (!user || isDashboardOnly(user) || (isDashboardEligible(user) && !hasVerifiedAccountEmail(user))) return undefined;
+  if (!user || typeof user.app_metadata?.mooa_external_order === "string" || isDashboardOnly(user) || (isDashboardEligible(user) && !hasVerifiedAccountEmail(user))) return undefined;
   return user.email?.trim() || undefined;
 }
 

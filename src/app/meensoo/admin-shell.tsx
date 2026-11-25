@@ -33,6 +33,7 @@ const NAV = [
   { href: "/meensoo", label: "대시보드", Icon: LayoutDashboard, exact: true },
   { href: "/meensoo/purchases", label: "구매 내역", Icon: CreditCard },
   { href: "/meensoo/analyses", label: "첨삭 결과", Icon: FileText },
+  { href: "/meensoo/external-orders", label: "외부 주문 분석", Icon: ClipboardList },
   { href: "/meensoo/mail", label: "메일 보내기", Icon: Send, exact: true },
   { href: "/meensoo/mail/history", label: "메일 발송 기록", Icon: History },
   { href: "/meensoo/rewards", label: "무료 이용권", Icon: Gift },

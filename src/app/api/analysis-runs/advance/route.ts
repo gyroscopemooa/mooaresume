@@ -10,6 +10,7 @@ import { recordAnalysisAttempt } from "@/server/analysis/attempt-ledger";
 import { refundTimedOutQuickAnalysis } from "@/server/billing/quick-timeout-refund";
 import { selectStrandedPaidRuns, type PendingRun } from "@/server/analysis/stranded-paid-runs";
 import { SupabaseQuickAnalysisRunRepository } from "@/server/analysis/supabase-quick-analysis-run-repository";
+import { externalOrdersEnabled, deliverPendingExternalOrders, externalPaidRunIds } from "@/server/external-orders/service";
 import { advanceAutomaticReviewBatch } from "@/server/second-review/automatic-repository";
 
 export const runtime = "nodejs";
@@ -181,6 +182,7 @@ async function findStrandedPaidRuns(client: SupabaseClient): Promise<PendingRun[
     .in("analysis_run_id", runs.map((row) => row.id));
   if (intentError) throw new Error(`CHECKOUT_INTENT_QUERY_FAILED:${intentError.code}`);
 
+  const externalIds = externalOrdersEnabled() ? await externalPaidRunIds(runs.map(row => row.id)).catch(() => []) : [];
   return selectStrandedPaidRuns({
     entitlements: entitlements.map((row) => ({
       applicationCaseId: row.application_case_id,
@@ -195,7 +197,7 @@ async function findStrandedPaidRuns(client: SupabaseClient): Promise<PendingRun[
       product: row.product,
       createdAt: row.created_at,
     })),
-    paidRunIds: (intents ?? []).map((row) => row.analysis_run_id),
+    paidRunIds: [...(intents ?? []).map((row) => row.analysis_run_id), ...externalIds],
     now: Date.now(),
     graceMs: START_GRACE_MINUTES * 60_000,
     limit: MAX_STARTS_PER_CALL,
@@ -298,6 +300,11 @@ export async function POST(request: NextRequest) {
       // This cannot fail/refund the already-completed customer's first result.
       console.error("automatic_second_review_step_failed");
       secondReview = { status: "error" };
+    }
+    // Independent delivery queue: a completed run remains deliverable even
+    // if Resend or the worker failed after the result was committed.
+    if (externalOrdersEnabled()) {
+      await deliverPendingExternalOrders().catch(() => console.error("external_delivery_batch_failed"));
     }
     return NextResponse.json({ examined: results.length, results, started, secondReview });
   } catch (error) {

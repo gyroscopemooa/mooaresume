@@ -15,6 +15,8 @@ create table public.external_analysis_orders (
   role text not null default '',
   auto_email boolean not null default true,
   expires_at timestamptz,
+  link_version uuid not null default gen_random_uuid(),
+  email_request_id uuid,
   revoked_at timestamptz,
   email_status text not null default 'PENDING' check (email_status in ('PENDING','SENDING','SENT','FAILED','SKIPPED')),
   email_attempt_at timestamptz,
@@ -55,11 +57,11 @@ begin
   select coalesce(sum(v.character_count),0)::integer into chars from public.submission_snapshot_items i
     join public.document_versions v on v.id=i.document_version_id
     where i.snapshot_id=(result->>'submissionSnapshotId')::uuid and i.purpose='PRIMARY';
-  if chars < 1 or chars > 20000 then raise exception 'INVALID_EXTERNAL_PRIMARY_LENGTH'; end if;
+  if chars < 1 or chars > case when p_plan->>'product'='QUICK' then 8000 else 30000 end then raise exception 'INVALID_EXTERNAL_PRIMARY_LENGTH'; end if;
   insert into public.external_analysis_orders(id,analysis_run_id,owner_user_id,product,sales_channel,order_number,customer_name,customer_email,paid_amount_krw,company,role,auto_email,email_status)
     values(p_id,run_id,p_owner,p_plan->>'product',coalesce(p_meta->>'salesChannel',''),coalesce(p_meta->>'orderNumber',''),coalesce(p_meta->>'customerName',''),coalesce(p_meta->>'customerEmail',''),(p_meta->>'paidAmountKrw')::integer,coalesce(p_plan->>'companyName',''),coalesce(p_plan->>'roleName',''),coalesce((p_meta->>'autoEmail')::boolean,true),case when coalesce(p_meta->>'customerEmail','')='' or not coalesce((p_meta->>'autoEmail')::boolean,true) then 'SKIPPED' else 'PENDING' end);
   insert into public.analysis_entitlements(application_case_id,owner_user_id,product,allowed_characters,external_order_id)
-    values(case_id,p_owner,p_plan->>'product',chars,p_id);
+    values(case_id,p_owner,p_plan->>'product',case when p_plan->>'product'='QUICK' then 8000 else 30000 end,p_id);
   return result;
 end; $$;
 revoke all on function public.create_external_analysis_order(uuid,uuid,jsonb,jsonb) from public,anon,authenticated;
@@ -75,4 +77,10 @@ begin
   if patched=original then raise exception 'EXTERNAL_ORDER_PAID_BUDGET_PATCH_FAILED'; end if;
   execute patched;
 end $$;
+create function public.find_external_analysis_owner(p_id uuid)
+returns uuid language sql security definer set search_path='' as $
+  select id from auth.users where raw_app_meta_data->>'mooa_external_order'=p_id::text order by created_at limit 1
+$;
+revoke all on function public.find_external_analysis_owner(uuid) from public,anon,authenticated;
+grant execute on function public.find_external_analysis_owner(uuid) to service_role;
 commit;
