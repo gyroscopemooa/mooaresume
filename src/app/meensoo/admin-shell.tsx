@@ -161,7 +161,7 @@ export function AdminShell({ children, newInquiries = 0, newFeedback = 0, accoun
           // deeper, so a prefix match would light both up at once.
           const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
           return (
-            <Link key={href} href={href} className={styles.link} data-active={active}>
+            <Link key={href} href={href} prefetch={href === "/meensoo/external-orders" ? false : undefined} onClick={href === "/meensoo/external-orders" ? (event) => { if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); window.location.assign(href); } } : undefined} className={styles.link} data-active={active}>
               <Icon />
               <span className={styles.label}>{label}</span>
               {badgeKey === "inquiries" && newInquiries > 0 && (

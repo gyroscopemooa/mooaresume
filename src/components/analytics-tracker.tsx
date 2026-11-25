@@ -5,7 +5,7 @@ import { consentSnapshot,subscribeConsent,setAnalyticsConsent,startWebAnalytics,
 import { routeCategory } from "@/domain/analytics";
 export function AnalyticsTracker(){
   const path=usePathname();const consent=useSyncExternalStore(subscribeConsent,consentSnapshot,()=>"unset");
-  const privateDelivery=path.startsWith("/result/second-review/");
+  const privateDelivery=path.startsWith("/result/second-review/") || path.startsWith("/result/external/") || path.startsWith("/feedback/external/") || path.startsWith("/meensoo/external-orders");
   useEffect(()=>{if(!privateDelivery)return startWebAnalytics();},[privateDelivery]);
   useEffect(()=>{if(!privateDelivery)trackWeb('page_viewed',{route:routeCategory(path)});},[path,privateDelivery]);
   return null;

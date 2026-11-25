@@ -40,7 +40,12 @@ const nextConfig: NextConfig = {
     return [...privatePaths.map((path) => ({
       source: `/${path}/:path*`,
       headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
-    })), {
+    })), ...["/result/external/:path*", "/feedback/external/:path*", "/meensoo/external-orders/:path*"].map(source => ({ source, headers: [
+      { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+      { key: "Cache-Control", value: "private, no-store, max-age=0" },
+      { key: "Referrer-Policy", value: "no-referrer" },
+      { key: "Content-Security-Policy", value: "script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-src 'none'; img-src 'self' data: blob:; frame-ancestors 'none'" },
+    ] })), {
       source: "/result/second-review/:path*",
       headers: [
         { key: "Cache-Control", value: "private, no-store, max-age=0" },
