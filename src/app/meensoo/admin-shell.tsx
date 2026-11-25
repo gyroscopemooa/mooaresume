@@ -33,6 +33,7 @@ const NAV = [
   { href: "/meensoo", label: "대시보드", Icon: LayoutDashboard, exact: true },
   { href: "/meensoo/purchases", label: "구매 내역", Icon: CreditCard },
   { href: "/meensoo/analyses", label: "첨삭 결과", Icon: FileText },
+  { href: "/meensoo/external-orders", label: "외부 주문 분석", Icon: ClipboardList },
   { href: "/meensoo/mail", label: "메일 보내기", Icon: Send, exact: true },
   { href: "/meensoo/mail/history", label: "메일 발송 기록", Icon: History },
   { href: "/meensoo/rewards", label: "무료 이용권", Icon: Gift },
@@ -160,7 +161,7 @@ export function AdminShell({ children, newInquiries = 0, newFeedback = 0, accoun
           // deeper, so a prefix match would light both up at once.
           const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
           return (
-            <Link key={href} href={href} className={styles.link} data-active={active}>
+            <Link key={href} href={href} prefetch={href === "/meensoo/external-orders" ? false : undefined} onClick={href === "/meensoo/external-orders" ? (event) => { if (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); window.location.assign(href); } } : undefined} className={styles.link} data-active={active}>
               <Icon />
               <span className={styles.label}>{label}</span>
               {badgeKey === "inquiries" && newInquiries > 0 && (

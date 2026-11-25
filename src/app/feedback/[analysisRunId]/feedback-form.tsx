@@ -25,7 +25,7 @@ const WORDS: Record<number, string> = {
   5: "감사합니다. 어떤 점이 좋았는지 알려주시면 그대로 지키겠습니다.",
 };
 
-export function FeedbackForm({ analysisRunId, alreadyAnswered }: { analysisRunId: string; alreadyAnswered: boolean }) {
+export function FeedbackForm({ analysisRunId, alreadyAnswered, externalToken }: { analysisRunId: string; alreadyAnswered: boolean; externalToken?: string }) {
   const [rating, setRating] = useState(0);
   const [helpful, setHelpful] = useState("");
   const [wish, setWish] = useState("");
@@ -39,11 +39,11 @@ export function FeedbackForm({ analysisRunId, alreadyAnswered }: { analysisRunId
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/feedback", {
+      const response = await fetch(externalToken ? "/api/feedback/external" : "/api/feedback", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          analysisRunId,
+          ...(externalToken ? { token: externalToken } : { analysisRunId }),
           rating,
           helpfulText: helpful.trim() || null,
           wishText: wish.trim() || null,

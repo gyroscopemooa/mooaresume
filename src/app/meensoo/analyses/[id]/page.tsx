@@ -71,8 +71,8 @@ const REFERENCE_PRIORITY: Record<string, number> = {
 };
 
 function inputCoverage(detail: AdminAnalysisDetail) {
-  const perDocumentLimit = detail.run.paid ? 20_000 : 10_000;
-  const referenceBudget = detail.run.product === "QUICK" ? 0 : (detail.run.paid ? 60_000 : 30_000);
+  const perDocumentLimit = (detail.run.paid || detail.run.externalOrder) ? 20_000 : 10_000;
+  const referenceBudget = detail.run.product === "QUICK" ? 0 : ((detail.run.paid || detail.run.externalOrder) ? 60_000 : 30_000);
   let spentReference = 0;
   const referenceOrder = [...detail.inputDocuments]
     .filter((document) => document.purpose !== "PRIMARY")
@@ -109,7 +109,7 @@ function InputSnapshot({ detail }: { detail: AdminAnalysisDetail }) {
     <p className={styles.hint}>
       {run.product === "QUICK"
         ? `QUICK은 자기소개서만 분석합니다. 참고 자료 ${referenceDocuments.length}개는 제출되었더라도 결과 생성에는 넣지 않습니다.`
-        : `${run.paid ? "유료" : "무료 이용권"} 분석 기준: 자료 한 개당 최대 ${coverage.perDocumentLimit.toLocaleString("ko-KR")}자, 참고 자료 전체 최대 ${coverage.referenceBudget.toLocaleString("ko-KR")}자까지 투입됩니다. 각 자료에 실제 투입된 범위도 아래에 표시합니다.`}
+        : `${run.externalOrder ? "외부 주문(유료 자료 한도)" : run.paid ? "유료" : "무료 이용권"} 분석 기준: 자료 한 개당 최대 ${coverage.perDocumentLimit.toLocaleString("ko-KR")}자, 참고 자료 전체 최대 ${coverage.referenceBudget.toLocaleString("ko-KR")}자까지 투입됩니다. 각 자료에 실제 투입된 범위도 아래에 표시합니다.`}
     </p>
     {inputDocuments.length === 0 ? <p className={styles.empty}>저장된 입력 스냅샷을 읽지 못했습니다.</p> : <div className={styles.inputSnapshotList}>
       {inputDocuments.map((document, index) => {
@@ -155,7 +155,7 @@ export default async function AnalysisDetailPage({ params }: { params: Promise<{
         <Link href="/meensoo/analyses" className={styles.mono}>← 목록으로</Link>
       </div>
 
-      {run.status === "COMPLETED" && <AdminExtraReviewPanel runId={run.id} ownerEmail={run.email} />}
+      {run.status === "COMPLETED" && !run.externalOrder && <AdminExtraReviewPanel runId={run.id} ownerEmail={run.email} />}
 
       <section className={styles.panel}>
         <div className={styles.meta}>
