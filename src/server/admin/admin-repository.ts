@@ -409,7 +409,7 @@ export async function getAnalysis(analysisRunId: string): Promise<AdminAnalysisD
       attempts,
       cost: summarizeRunCost({
         product,
-        priceKrw: paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0,
+        priceKrw: externalOrder?.paidAmountKrw ?? (paid ? (PRODUCT_PRICE_KRW[product] ?? 0) : 0),
         attempts,
         pricing: readModelPricingFromEnv(process.env, product),
       }),
