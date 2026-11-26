@@ -163,7 +163,9 @@ export async function POST(request: NextRequest) {
       }
       const blockingIssues = validationIssues.filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
       if (blockingIssues.length > 0) {
-        await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true);
+        await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true, {
+      proBuildLengthShort: step.request.product === "PRO" && step.request.writingMode === "BUILD" && blockingIssues.some(issue => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("70%에 못 미칩니다")),
+    });
         // 여기까지 온 응답은 모델이 끝까지 만들어 낸 것입니다. 버려지지만
         // 요금은 이미 나갔으므로, 토큰을 적어 두지 않으면 그 비용이 어디에도
         // 남지 않습니다.
