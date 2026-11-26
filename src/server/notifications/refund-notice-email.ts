@@ -47,7 +47,7 @@ function formatAmount(amount: number, currency: string): string {
 }
 
 export async function notifyRefundedApplicant(
-  input: { ownerUserId: string; refund: RefundSummary },
+  input: { ownerUserId: string; refund: RefundSummary; proBuildLengthShort?: boolean },
   fetchImplementation: typeof fetch = fetch,
 ): Promise<{ disposition: RefundNoticeDisposition; detail?: string }> {
   // 환불되지 않은 건에는 아무 말도 하지 않습니다.
@@ -92,7 +92,11 @@ export async function notifyRefundedApplicant(
         `결제하신 ${amount}은 전액 환불 처리했습니다. 따로 문의하지 않으셔도 됩니다.`,
         "카드사에 따라 실제 반영까지 3~5영업일 걸릴 수 있습니다.",
         "",
-        "다시 시도하셔도 추가로 청구되지 않습니다.",
+        ...(input.proBuildLengthShort ? [
+          "문항별 목표 글자 수의 70%에 도달하지 못해 최종 분석에 실패했습니다.",
+          "원문이나 경험 정보가 부족하다면 PRO 처음부터 작성하기(CREATE)에서 단계별로 경험을 정리한 뒤 새로 신청해 주세요. 새 신청에는 별도 결제가 필요할 수 있습니다.",
+          "https://mooaresume.com/pro/create",
+        ] : ["다시 시도하셔도 추가로 청구되지 않습니다."]),
         ...(replyTo ? ["", `궁금한 점은 이 메일에 그대로 답장해 주세요. (${replyTo})`] : []),
       ].join("\n"),
       html: `<div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#16241d">
@@ -101,7 +105,7 @@ export async function notifyRefundedApplicant(
 <p style="margin:0;font-size:15px;font-weight:700">결제하신 ${amount}은 전액 환불했습니다.</p>
 <p style="margin:8px 0 0;color:#68756f;font-size:13px;line-height:1.7">따로 문의하지 않으셔도 됩니다. 카드사에 따라 실제 반영까지 3~5영업일 걸릴 수 있습니다.</p>
 </div>
-<p style="color:#68756f;font-size:13px;line-height:1.7">다시 시도하셔도 추가로 청구되지 않습니다.${replyTo ? " 궁금한 점은 이 메일에 그대로 답장해 주세요." : ""}</p>
+<p style="color:#68756f;font-size:13px;line-height:1.7">${input.proBuildLengthShort ? '문항별 목표 글자 수의 70%에 도달하지 못해 최종 분석에 실패했습니다. 원문이나 경험 정보가 부족하다면 <a href="https://mooaresume.com/pro/create">PRO 처음부터 작성하기(CREATE)</a>에서 단계별로 경험을 정리한 뒤 새로 신청해 주세요. 새 신청에는 별도 결제가 필요할 수 있습니다.' : "다시 시도하셔도 추가로 청구되지 않습니다."}${replyTo ? " 궁금한 점은 이 메일에 그대로 답장해 주세요." : ""}</p>
 </div>`,
     }),
   });
