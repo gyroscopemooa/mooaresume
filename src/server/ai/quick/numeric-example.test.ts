@@ -4,20 +4,24 @@ import { validateQuickAnalysis } from "./validator";
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import type { QuickAnalysisOutput } from "./schema";
 
-it("preserves a replacement example for numeric-only PRO input and rejects invented evidence", () => {
+it.each([500, 700])("preserves a replacement example for numeric-only PRO input at %i characters and rejects invented evidence", (targetLength) => {
   const source = "123 123123";
   const request: AnalysisRequest = {
-    requestId: "numeric-example", product: "PRO", writingMode: "BUILD", writingStyle: "BALANCED", targetLength: 500,
+    requestId: "numeric-example", product: "PRO", writingMode: "BUILD", writingStyle: "BALANCED", targetLength,
     documents: [{ kind: "cover_letter", text: source }],
-    questions: [{ id: "first", title: "지원 동기", prompt: "지원 동기를 작성해 주세요.", answer: source, targetLength: 500 }],
+    questions: [{ id: "first", title: "지원 동기", prompt: "지원 동기를 작성해 주세요.", answer: source, targetLength }],
   };
-  const body = "[임의 예시·교체 필요: " + "가".repeat(350 - "[임의예시·교체필요:]".length) + "]";
+  const minimum = Math.ceil(targetLength * 70 / 100);
+  const example = (length: number) => "[임의 예시·교체 필요: " + "가".repeat(length - "[임의예시·교체필요:]".length) + "]";
+  const body = example(minimum);
   const output: QuickAnalysisOutput = {
     schemaVersion: "1.0", readiness: { score: 0, label: "보완 권장", summary: "확인이 필요합니다.", reasons: ["숫자 입력"] },
     priorities: [], verificationQuestions: ["실제로 맡은 역할은 무엇인가요?"],
     revision: { subheading: null, lengthNote: null, revisedAnswer: body, highlightedPhrases: [], originalAnnotations: [], reasons: [], verificationNote: "실제 경험으로 교체해 주세요." },
   };
+  expect(validateQuickAnalysis(request, { ...output, revision: { ...output.revision, revisedAnswer: example(minimum - 1) } })).toContainEqual(expect.objectContaining({ code: "ANSWER_TOO_SHORT" }));
   expect(validateQuickAnalysis(request, output)).toEqual([]);
+  expect(validateQuickAnalysis(request, { ...output, revision: { ...output.revision, revisedAnswer: example(minimum + 1) } })).toEqual([]);
   const result = createQuickAnalysisResult(request, { output, execution: {
     responseId: "fixture", model: "fixture", promptVersion: "test", rubricVersion: "test", schemaVersion: "1.0", inputTokens: 0, outputTokens: 0, totalTokens: 0,
   } });
