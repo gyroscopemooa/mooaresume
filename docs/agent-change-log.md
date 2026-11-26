@@ -1,5 +1,11 @@
 # Agent Change Log and Variant Registry
 
+## 2026-11-27 — Codex: 첨삭 대기 및 자동 환불 기준 20분
+
+- 첨삭 대기 및 결제 복귀 페이지에 최대 20분과 유료 타임아웃 자동 환불을 안내한다. 대시보드 및 확인된 이메일 안내 조건은 유지한다.
+- `analysis-timeout.ts` 기준을 크론(`advance/route.ts`)과 환불 RPC 호출(`quick-timeout-refund.ts`)이 공유한다. 복구는 이 커밋을 되돌린다.
+- 결제 화면의 조회 시간도 늘리고, PRO BUILD 백그라운드 재시도에 실검증한 60,000토큰 예산과 문항별 분량 및 예시 안내 지시를 연결한다.
+
 ## 2026-11-25 — Codex: 외부 주문 후기 토큰 권한 보강
 
 - 요청/범위: `feat/external-order-analysis`의 운영 전 보안 검토에서, 외부 고객의 후기 제출도 결과 링크와 동일한 만료·회수 가능한 서명 토큰으로 보호한다.
