@@ -220,7 +220,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     }
   }
 
-  async fail(analysisRunId: string, failureCode: string, retryable: boolean) {
+  async fail(analysisRunId: string, failureCode: string, retryable: boolean, notice?: { proBuildLengthShort?: boolean }) {
     const { error } = await client().rpc("fail_quick_analysis", {
       p_analysis_run_id: analysisRunId,
       p_owner_user_id: this.ownerUserId,
@@ -256,7 +256,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     // **돈이 돌아갔다는 사실을 유일하게 손님에게 전하는 경로**입니다 — 결제
     // 복귀 화면은 창을 닫으면 사라집니다.
     try {
-      await notifyRefundedApplicant({ ownerUserId: this.ownerUserId, refund });
+      await notifyRefundedApplicant({ ownerUserId: this.ownerUserId, refund, proBuildLengthShort: notice?.proBuildLengthShort });
     } catch (noticeError) {
       console.error("refund_notice_email_failed", noticeError instanceof Error ? noticeError.message : "UNKNOWN_ERROR");
     }
