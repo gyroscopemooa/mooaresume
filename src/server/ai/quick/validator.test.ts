@@ -92,8 +92,13 @@ describe("내용 보완 목표 분량", () => {
 
   it("짧은 원문을 500자로 보완해 달랬는데 두세 줄만 반환하면 완료 처리하지 않는다", () => {
     const issues = validateQuickAnalysis(request, output("고객 응대 경험을 살려 지원했습니다.", "고객 응대 경험"));
-    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("목표 500자의 90%"))).toBe(true);
+    expect(issues.some((issue) => issue.code === "ANSWER_TOO_SHORT" && issue.message.includes("목표 500자의 70%"))).toBe(true);
     expect(BLOCKING_VALIDATION_CODES.has("ANSWER_TOO_SHORT")).toBe(true);
+  });
+
+  it.each([[349, true], [350, false], [351, false]] as const)("PRO 500자 목표에서 %i자 분량 경계를 적용한다", (length, blocked) => {
+    const issues = validateQuickAnalysis(request, output("가".repeat(length), "고객 응대 경험"));
+    expect(issues.some(issue => issue.code === "ANSWER_TOO_SHORT")).toBe(blocked);
   });
 
   it("목표의 90%를 채운 BUILD 결과는 분량 하한을 통과한다", () => {

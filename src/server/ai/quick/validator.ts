@@ -38,7 +38,7 @@ export const BLOCKING_VALIDATION_CODES: ReadonlySet<QuickValidationIssue["code"]
  * 원문의 3~4%였습니다.
  */
 const MIN_REVISION_RATIO = 0.4;
-const MIN_BUILD_TARGET_RATIO = 0.9;
+const FINAL_BUILD_MINIMUM_PERCENT = 90;
 
 /**
  * 이보다 짧은 원문에는 비율을 적용하지 않습니다. 100자짜리 답변에서 40%는
@@ -191,11 +191,14 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
       });
     }
     if (request && expandsToTargetLength(request) && request.writingMode === "BUILD" && question.targetLength > 0) {
-      const minimumBuildLength = Math.floor(question.targetLength * MIN_BUILD_TARGET_RATIO);
+      const minimumPercent = request.product === "PRO" ? 70 : FINAL_BUILD_MINIMUM_PERCENT;
+      const minimumBuildLength = request.product === "PRO"
+        ? Math.ceil(question.targetLength * minimumPercent / 100)
+        : Math.floor(question.targetLength * minimumPercent / 100);
       if (revisedLength < minimumBuildLength) {
         issues.push({
           code: "ANSWER_TOO_SHORT",
-          message: `문항 ${question.order} 내용 보완본이 목표 ${question.targetLength}자의 90%에 못 미칩니다(${revisedLength}자). 제출 자료를 먼저 활용하고, 부족한 구간은 [임의 예시·교체 필요: ...]로 표시해 목표 분량에 가깝게 완성하세요.`,
+          message: `문항 ${question.order} 내용 보완본이 목표 ${question.targetLength}자의 ${minimumPercent}%에 못 미칩니다(${revisedLength}자). 제출 자료를 먼저 활용하고, 부족한 구간은 [임의 예시·교체 필요: ...]로 표시해 목표 분량에 가깝게 완성하세요.`,
         });
       }
     }

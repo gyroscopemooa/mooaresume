@@ -9146,3 +9146,4 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 ## 2026-11-27 Codex — PRO BUILD sparse input
 - Baseline/rollback 717d9da5. Scope: quick/prompt.ts, prompt.test.ts and result-workspace-complete.tsx. Give numeric-only drafts a fully labelled example and literal evidence rules, and distinguish replacement text in the comparison view. Validation pending.
 - Validation: 127 prompt/validator tests, scoped ESLint and full TypeScript passed. No paid inference or refund operation. Release via main production build.
+- Codex follow-up (commit only; rollback baseline ad4bdf6): validator.ts and validator.test.ts accept PRO BUILD at 70% of the per-question target. Generation still aims for the full answer. Check 349/350/351 of 500.
