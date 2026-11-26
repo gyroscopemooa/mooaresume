@@ -15,7 +15,7 @@ import {
   SUPPORTING_KINDS,
 } from "./questions";
 
-export const QUICK_PROMPT_VERSION = "quick-4.11";
+export const QUICK_PROMPT_VERSION = "quick-4.12";
 
 // Documents beyond the cover letter and the posting. PRO collects these
 // (경험, 프로필, 자유 메모, 첨부파일) but they were never placed in the prompt,
@@ -442,6 +442,11 @@ polish: 위 여섯에 해당하지 않으면서 다듬으면 깔끔해지는 사
       : []),
     // 검토에서 탈락한 문항만 다시 쓰는 호출(revision-repair.ts)에서만 붙는다. 보통의 분석에는 들어가지 않는다.
     ...(request.repair ? [REPAIR_INSTRUCTION] : []),
+    ...(request.product === "PRO" && request.writingMode === "BUILD" ? [
+      "숫자만 적은 테스트 입력처럼 지원자 사실을 확인할 수 없는 문항도 전체 예시 초안을 제공합니다. 원문과 함께 제출한 자료에서 관련 사실을 먼저 찾으세요. 하나도 없으면 본문 전체를 예시로 쓰고 문단마다 [임의 예시·교체 필요: 완성된 예시 문단]으로 감싸세요. 중첩 대괄호는 쓰지 마세요.",
+      "문항별 목표 분량을 늘려 달라는 요청에는 예시 본문 자체로 목표의 90~100%를 채우세요. 공식 상한을 지키세요. 숫자 메모를 성과로 해석하지 마세요. 지원 이유나 상황, 판단과 행동, 결과와 직무 적용까지 질문에 맞춰 구체적인 문장으로 연결하세요. 회사명·기간·실적 수치는 만들지 마세요.",
+      "임의 예시는 지원자 근거로 인용할 수 없습니다. 원문에 인용할 사실이 없으면 priorities와 해당 문항의 reasons는 빈 배열로 두세요. verificationNote와 verificationQuestions에 실제로 교체할 상황·역할·행동·결과를 물으세요.",
+    ] : []),
     "출력은 지정된 JSON Schema를 정확히 따르세요.",
   ].join("\n");
 }

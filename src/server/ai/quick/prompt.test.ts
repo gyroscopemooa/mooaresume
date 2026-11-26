@@ -859,3 +859,11 @@ describe("고치는 크기와 단정 다루기", () => {
     expect(REVISION_REVIEW_INSTRUCTIONS).toContain("낮춰 쓴 것을 내용 손실로 보지 말고");
   });
 });
+
+it("provides full replacement examples for a numeric-only PRO BUILD draft", () => {
+  const input: AnalysisRequest = { ...request, writingMode: "BUILD", documents: [{ kind: "cover_letter", text: "123 123123" }] };
+  const rules = buildQuickAnalysisInstructions(input);
+  expect(rules).toContain("본문 전체를 예시로");
+  expect(rules).toContain("해당 문항의 reasons는 빈 배열");
+  expect(buildQuickAnalysisInstructions({ ...input, product: "QUICK" })).not.toContain("본문 전체를 예시로");
+});
