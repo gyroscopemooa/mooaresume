@@ -12,6 +12,7 @@ import { selectStrandedPaidRuns, type PendingRun } from "@/server/analysis/stran
 import { SupabaseQuickAnalysisRunRepository } from "@/server/analysis/supabase-quick-analysis-run-repository";
 import { externalOrdersEnabled, deliverPendingExternalOrders, externalPaidRunIds } from "@/server/external-orders/service";
 import { advanceAutomaticReviewBatch } from "@/server/second-review/automatic-repository";
+import { ANALYSIS_TIMEOUT_MINUTES } from "@/domain/analysis-timeout";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -40,8 +41,6 @@ export const maxDuration = 300;
 // One run can involve an OpenAI poll, a validation pass and an email, so a
 // batch is kept small enough to finish inside the request.
 const MAX_RUNS_PER_CALL = 5;
-// Matches the browser path: a run older than this is refunded rather than waited on.
-const TIMEOUT_MINUTES = 10;
 // Starting a run is cheaper than finishing one, but it shares the request with
 // the batch above and each start costs an OpenAI call. The job runs every
 // minute, so a backlog still drains quickly.
@@ -69,7 +68,7 @@ function serviceRoleClient() {
 async function advanceOne(run: RunRow, origin: string) {
   const startedAt = run.started_at ? new Date(run.started_at).getTime() : null;
   const runningMinutes = startedAt ? (Date.now() - startedAt) / 60_000 : 0;
-  if (runningMinutes > TIMEOUT_MINUTES) {
+  if (runningMinutes >= ANALYSIS_TIMEOUT_MINUTES) {
     const refund = await refundTimedOutQuickAnalysis({ analysisRunId: run.id, ownerUserId: run.owner_user_id });
     return { analysisRunId: run.id, outcome: "REFUNDED" as const, detail: refund };
   }
