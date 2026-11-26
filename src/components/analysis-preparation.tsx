@@ -330,6 +330,11 @@ export function AnalysisPreparation() {
                 <span><b>이력서(입사지원서) 없이 진행합니다.</b></span>
               </div>
             )}
+            {product === "PRO" && guest?.temporaryWritingMode === "BUILD" && (
+              <div className={styles.runtimeNotice}>
+                <span><b>문항별 목표 글자 수 안내</b><small>설정하신 글자 수의 70~100% 범위에서 결과를 제공합니다. 자동 재시도 후에도 70% 미만이면 분석 실패로 처리하고 결제 건은 기존 환불 절차를 진행합니다. 원문과 경험 정보가 부족하다면 <a href="/pro/create">PRO 처음부터 작성하기</a>를 추천합니다.</small></span>
+              </div>
+            )}
             <div className={styles.runtimeNotice}>
               <Clock />
               <span>
