@@ -1,4 +1,5 @@
 "use client";
+import { ANALYSIS_TIMEOUT_SECONDS, ANALYSIS_WAIT_MESSAGE, PAID_ANALYSIS_WAIT_MESSAGE } from "@/domain/analysis-timeout";
 
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, LoaderCircle, TriangleAlert } from "lucide-react";
@@ -42,7 +43,7 @@ type FailureKind = "checkout" | "analysis";
 // minutes (claim_quick_analysis_timeout_refund's 600s window). Poll well
 // past that server-side bound so a slow-but-healthy run is never mistaken
 // for a client-side timeout.
-const MAX_POLLS = 330;
+const MAX_POLLS = (ANALYSIS_TIMEOUT_SECONDS + 60) / 2;
 
 const formatElapsed = (seconds: number) => {
   const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
@@ -237,7 +238,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         }
         if (status.analysisStatus === "RUNNING") {
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
+          setMessage(PAID_ANALYSIS_WAIT_MESSAGE);
           if (!executing.current) {
             executing.current = true;
             try {
@@ -271,7 +272,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         if (status.entitlementStatus === "ACTIVE" && !executing.current) {
           executing.current = true;
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
+          setMessage(PAID_ANALYSIS_WAIT_MESSAGE);
           try {
             const executeResponse = await fetch("/api/analysis-runs/quick/execute", {
               method: "POST",
@@ -363,7 +364,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
     async function run(attempt: number) {
       if (cancelled) return;
       setPhase("analyzing");
-      setMessage("무료 이용권으로 분석을 시작했습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
+      setMessage(`무료 이용권으로 분석을 시작했습니다. ${ANALYSIS_WAIT_MESSAGE}`);
       try {
         const response = await fetch("/api/analysis-runs/quick/execute", {
           method: "POST",
@@ -402,7 +403,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         return;
       }
       setPhase("failed");
-      setMessage("분석이 예상보다 오래 걸리고 있습니다. 창을 닫으셔도 서버에서 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
+      setMessage(ANALYSIS_WAIT_MESSAGE);
     }
 
     void run(0);
