@@ -190,6 +190,10 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
         message: `문항 ${question.order} 결과가 목표 ${question.targetLength}자를 크게 초과했습니다(${revisedLength}자). 핵심 사실을 보존해 허용 범위 안으로 다시 작성해야 합니다.`,
       });
     }
+    // PRO BUILD alone has a strict per-question user-selected upper bound.
+    if (request?.product === "PRO" && request.writingMode === "BUILD" && question.targetLength > 0 && revisedLength > question.targetLength && revisedLength <= Math.ceil(question.targetLength * 1.15)) {
+      issues.push({ code: "ANSWER_TOO_SHORT", message: `문항 ${question.order} 내용 보완본이 목표 ${question.targetLength}자를 초과했습니다(${revisedLength}자). 목표 글자 수 이하로 다시 작성하세요.` });
+    }
     if (request && expandsToTargetLength(request) && request.writingMode === "BUILD" && question.targetLength > 0) {
       const minimumPercent = request.product === "PRO" ? 70 : FINAL_BUILD_MINIMUM_PERCENT;
       const minimumBuildLength = request.product === "PRO"
