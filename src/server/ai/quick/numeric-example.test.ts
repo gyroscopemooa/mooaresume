@@ -22,6 +22,8 @@ it.each([500, 700])("preserves a replacement example for numeric-only PRO input 
   expect(validateQuickAnalysis(request, { ...output, revision: { ...output.revision, revisedAnswer: example(minimum - 1) } })).toContainEqual(expect.objectContaining({ code: "ANSWER_TOO_SHORT" }));
   expect(validateQuickAnalysis(request, output)).toEqual([]);
   expect(validateQuickAnalysis(request, { ...output, revision: { ...output.revision, revisedAnswer: example(minimum + 1) } })).toEqual([]);
+  expect(validateQuickAnalysis(request, { ...output, revision: { ...output.revision, revisedAnswer: example(targetLength) } })).toEqual([]);
+  expect(validateQuickAnalysis(request, { ...output, revision: { ...output.revision, revisedAnswer: example(targetLength + 1) } })).toContainEqual(expect.objectContaining({ code: "ANSWER_TOO_SHORT" }));
   const result = createQuickAnalysisResult(request, { output, execution: {
     responseId: "fixture", model: "fixture", promptVersion: "test", rubricVersion: "test", schemaVersion: "1.0", inputTokens: 0, outputTokens: 0, totalTokens: 0,
   } });
