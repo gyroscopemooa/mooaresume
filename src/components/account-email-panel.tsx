@@ -18,6 +18,7 @@ export type DeliveryReadiness = { userId: string | null; ready: boolean };
 
 export function AccountEmailPanel({ locked = false, onReadinessChange }: { locked?: boolean; onReadinessChange?: (state: DeliveryReadiness) => void }) {
   const id = useId();
+  const [expanded, setExpanded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [accountChecked, setAccountChecked] = useState(false);
@@ -228,8 +229,11 @@ export function AccountEmailPanel({ locked = false, onReadinessChange }: { locke
   return <section id="account-delivery" tabIndex={-1} className={styles.panel} aria-labelledby={`${id}-title`} data-clarity-mask="True">
     <div className={styles.heading}>
       <h3 id={`${id}-title`}>분석 완료 알림 이메일</h3>
-      {ready && user && <button type="button" className={styles.change} disabled={disabled} aria-expanded={editing} aria-controls={`${id}-form`} onClick={() => { setEditing(!editing); setMessage(""); }}>{editing ? "닫기" : user.email ? "변경" : "등록"}</button>}
+      <button type="button" className={styles.change} aria-expanded={expanded} aria-controls={`${id}-details`} onClick={() => setExpanded(value => !value)}>{expanded ? "설정 접기" : "설정 보기"}</button>
     </div>
+    {!expanded && <span className={styles.summary}>{!ready ? "이용 방식을 확인하고 있어요." : user && isDashboardOnly(user) ? "대시보드에서 결과 확인" : user && canStartWithDelivery(user) ? "현재 계정 이메일로 알림 받기" : "이용 방식 확인이 필요합니다. 설정을 열어 주세요."}</span>}
+    <div id={`${id}-details`} className={styles.details} hidden={!expanded}>
+    {ready && user && <button type="button" className={styles.change} disabled={disabled} aria-expanded={editing} aria-controls={`${id}-form`} onClick={() => { setEditing(!editing); setMessage(""); }}>{editing ? "닫기" : user.email ? "변경" : "등록"}</button>}
     {!ready ? <p className={styles.help}>현재 계정 이메일을 확인하고 있어요.</p> : user ? <>
       <p className={styles.current}>{user.email || "등록된 이메일이 없습니다."}</p>
       <p className={styles.help}>{!user.email ? "알림을 원하면 이메일을 입력하고 확인해 주세요. 네이버·카카오 계정은 아래에서 대시보드 전용 이용도 선택할 수 있습니다." : user.email_confirmed_at ? "현재 계정에 적용된 주소입니다. 대시보드 전용을 선택하면 이 주소로도 서비스 알림을 보내지 않습니다." : "아직 확인되지 않은 이메일입니다. 알림을 받으려면 메일 인증을 완료해 주세요."}</p>
@@ -275,5 +279,6 @@ export function AccountEmailPanel({ locked = false, onReadinessChange }: { locke
       <button type="button" className={styles.secondary} disabled={busy || locked || blocked} onClick={() => void refreshAccount()}>이메일·이용 방식 다시 확인</button>
     </> : <button type="button" className={styles.secondary} disabled={busy || blocked} onClick={() => void refreshAccount()}>이메일 정보 다시 확인</button>}
     {message && <p role="status" className={styles.message}>{message}</p>}
+    </div>
   </section>;
 }

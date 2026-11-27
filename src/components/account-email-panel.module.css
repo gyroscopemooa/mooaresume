@@ -19,3 +19,5 @@
 
 .panel .choice{display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid #c6d5cc;border-radius:8px;background:#fff;color:#214c35;font-size:13px;font-weight:700;line-height:1.6}
 .panel .choice input{flex:none;width:18px;height:18px;margin-top:2px;accent-color:#176b4a}
+
+.details{display:grid;gap:7px;min-width:0}.details[hidden]{display:none}.summary{font-size:12px;line-height:1.6;color:#617068}

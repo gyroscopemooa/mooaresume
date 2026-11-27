@@ -14,7 +14,7 @@ it("places account email above data consent without changing checkout prerequisi
   const consent = screen.getByRole("region", { name: "데이터 활용 선택" });
   expect(email.compareDocumentPosition(consent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(email.getAttribute("data-locked")).toBe("false");
-  expect((screen.getByRole("button", { name: /결제하고 분석 시작/ }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole("button", { name: "일반결제하고 분석 시작" }) as HTMLButtonElement).disabled).toBe(true);
 });
 it("locks account changes when analysis is already active", async () => {
   render(<ApplicationCaseHandoff guest={null} runActive />);

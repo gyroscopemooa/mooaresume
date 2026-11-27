@@ -21,10 +21,16 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
+function renderExpanded(ui: Parameters<typeof render>[0]) {
+  const view = render(ui);
+  fireEvent.click(screen.getByRole("button", { name: "설정 보기" }));
+  return view;
+}
+
 const panel = () => screen.getByRole("region", { name: "분석 완료 알림 이메일" });
 const shownEmail = () => panel().querySelector("p")?.textContent;
 async function openEditor() {
-  render(<AccountEmailPanel />);
+  renderExpanded(<AccountEmailPanel />);
   await screen.findByText("current@example.test");
   fireEvent.click(screen.getByRole("button", { name: "변경" }));
 }
@@ -42,7 +48,7 @@ async function enterCode() {
 describe("checkout account email", () => {
   it.each(["google", "kakao"])("shows the actual confirmed %s account email without requesting mail", async (provider) => {
     current = { ...initial, app_metadata: { provider } };
-    render(<AccountEmailPanel />);
+    renderExpanded(<AccountEmailPanel />);
     await screen.findByText("current@example.test");
     expect(shownEmail()).toBe("current@example.test");
     expect(panel().getAttribute("data-clarity-mask")).toBe("True");
@@ -53,7 +59,7 @@ describe("checkout account email", () => {
 
   it("prompts for a missing address and sends only after an explicit request", async () => {
     current = { id: "account-a" };
-    render(<AccountEmailPanel />);
+    renderExpanded(<AccountEmailPanel />);
     await screen.findByText("등록된 이메일이 없습니다.");
     expect(updateUser).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("사용할 이메일"), { target: { value: "new@example.test" } });
@@ -65,7 +71,7 @@ describe("checkout account email", () => {
 
   it("confirms an unchanged unconfirmed email using resend, never no-op updateUser", async () => {
     current = { id: "account-a", email: "unconfirmed@example.test" };
-    render(<AccountEmailPanel />);
+    renderExpanded(<AccountEmailPanel />);
     await screen.findByText(/아직 확인되지 않은 이메일/);
     expect(resend).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "확인 메일 받기" }));
@@ -191,7 +197,7 @@ describe("checkout account email", () => {
 
   it("restores pending email on mount without sending and supports close/reopen", async () => {
     current = { ...initial, new_email: "pending@example.test" };
-    render(<AccountEmailPanel />);
+    renderExpanded(<AccountEmailPanel />);
     await screen.findByLabelText("이메일 확인 코드");
     expect(shownEmail()).toBe("current@example.test");
     fireEvent.click(screen.getByRole("button", { name: "닫기" }));
@@ -226,7 +232,7 @@ describe("checkout account email", () => {
 
   it("locks mutations during checkout or an active run", async () => {
     current = { ...initial, new_email: "pending@example.test" };
-    render(<AccountEmailPanel locked />);
+    renderExpanded(<AccountEmailPanel locked />);
     await screen.findByLabelText("이메일 확인 코드");
     for (const name of ["확인 메일 받기", "확인 메일 다시 받기", "코드 확인"]) {
       expect((within(panel()).getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true);
@@ -248,7 +254,7 @@ it("preserves an unsent draft and the open editor on focus", async () => {
 
 it("does not expose arbitrary rejected auth errors on mount or refresh", async () => {
   getUser.mockRejectedValueOnce(new Error("private-person@example.test secret-response-token"));
-  render(<AccountEmailPanel />);
+  renderExpanded(<AccountEmailPanel />);
   await screen.findByText("로그인 정보를 확인하지 못했습니다. 잠시 후 다시 확인해 주세요.");
   expect(panel().textContent).not.toContain("private-person");
   expect(panel().textContent).not.toContain("secret-response");
@@ -279,7 +285,7 @@ it("does not present a pending change after an account switch during send", asyn
 
 
 it("explains email changes keep social login and do not merge accounts before editing", async () => {
-  render(<AccountEmailPanel />);
+  renderExpanded(<AccountEmailPanel />);
   await screen.findByText("current@example.test");
   expect(screen.getByText(/계정·알림 이메일과 소셜 로그인은 별개/)).toBeTruthy();
   expect(screen.getByText(/이메일을 바꿔도 연결된 소셜 로그인은 유지/)).toBeTruthy();
@@ -293,7 +299,7 @@ const dashboardChoice = () => screen.getByRole("checkbox", { name: /추가 이�
 describe("explicit dashboard-only service delivery", () => {
   it.each(["google", "email"])("does not offer the choice for %s-only accounts", async (provider) => {
     current = { ...initial, app_metadata: { provider } };
-    render(<AccountEmailPanel />);
+    renderExpanded(<AccountEmailPanel />);
     await screen.findByText("current@example.test");
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
@@ -306,7 +312,7 @@ describe("explicit dashboard-only service delivery", () => {
       return { ok: true, json: async () => ({ userId: "account-a", ready: true }) };
     });
     vi.stubGlobal("fetch", send);
-    render(<AccountEmailPanel onReadinessChange={ready} />);
+    renderExpanded(<AccountEmailPanel onReadinessChange={ready} />);
     await screen.findByText("등록된 이메일이 없습니다.");
     expect(ready).toHaveBeenLastCalledWith({ userId: "account-a", ready: false });
     fireEvent.click(dashboardChoice());
@@ -321,7 +327,7 @@ describe("explicit dashboard-only service delivery", () => {
       current = { ...current!, app_metadata: { provider: "kakao", mooa_delivery_preference: dashboardPreference() } };
       return { ok: true, json: async () => ({ userId: "account-a" }) };
     }));
-    render(<AccountEmailPanel />); await screen.findByText("current@example.test");
+    renderExpanded(<AccountEmailPanel />); await screen.findByText("current@example.test");
     fireEvent.click(dashboardChoice()); await screen.findByText(/대시보드 전용으로 저장했습니다/);
     expect(current?.email).toBe(initial.email); expect(current?.new_email).toBe("pending@example.test");
     expect(screen.getByText(/확인 대기:/).textContent).toContain("pending@example.test");
@@ -330,7 +336,7 @@ describe("explicit dashboard-only service delivery", () => {
   it("keeps dashboard-only enabled until a real confirmed email exists", async () => {
     current = { id: "account-a", app_metadata: { provider: "kakao", mooa_delivery_preference: dashboardPreference() } };
     const send = vi.fn(); vi.stubGlobal("fetch", send);
-    render(<AccountEmailPanel />); await screen.findByText("등록된 이메일이 없습니다.");
+    renderExpanded(<AccountEmailPanel />); await screen.findByText("등록된 이메일이 없습니다.");
     fireEvent.click(dashboardChoice()); await screen.findByText(/알림을 다시 받으려면/);
     expect(dashboardChoice().checked).toBe(true); expect(send).not.toHaveBeenCalled();
     expect(screen.getByLabelText("사용할 이메일")).toBeTruthy();
@@ -338,7 +344,7 @@ describe("explicit dashboard-only service delivery", () => {
   it("does not optimistically allow checkout when save fails, and supports retry", async () => {
     current = { id: "account-a", app_metadata: { provider: "kakao" } };
     const send = vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }); vi.stubGlobal("fetch", send);
-    const ready = vi.fn(); render(<AccountEmailPanel onReadinessChange={ready} />);
+    const ready = vi.fn(); renderExpanded(<AccountEmailPanel onReadinessChange={ready} />);
     await screen.findByText("등록된 이메일이 없습니다."); fireEvent.click(dashboardChoice());
     await screen.findByText(/이용 방식을 저장하지 못했습니다/);
     expect(dashboardChoice().checked).toBe(false); expect(ready).toHaveBeenLastCalledWith({ userId: "account-a", ready: false });
@@ -348,7 +354,7 @@ describe("explicit dashboard-only service delivery", () => {
     current = { id: "account-a", app_metadata: { provider: "kakao" } };
     let resolve!: (value: unknown) => void;
     const send = vi.fn().mockImplementation(() => new Promise((done) => { resolve = done; })); vi.stubGlobal("fetch", send);
-    const ready = vi.fn(); render(<AccountEmailPanel onReadinessChange={ready} />); await screen.findByText("등록된 이메일이 없습니다.");
+    const ready = vi.fn(); renderExpanded(<AccountEmailPanel onReadinessChange={ready} />); await screen.findByText("등록된 이메일이 없습니다.");
     fireEvent.click(dashboardChoice()); fireEvent.click(dashboardChoice());
     await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
     current = { ...initial, id: "account-b" };
@@ -358,7 +364,7 @@ describe("explicit dashboard-only service delivery", () => {
   });
   it("refreshes saved preference on focus and allows verified email opt-in", async () => {
     current = { ...initial, app_metadata: { provider: "kakao" } };
-    render(<AccountEmailPanel />); await screen.findByText("current@example.test");
+    renderExpanded(<AccountEmailPanel />); await screen.findByText("current@example.test");
     current = { ...current, app_metadata: { provider: "kakao", mooa_delivery_preference: dashboardPreference() } };
     fireEvent(window, new Event("focus")); await waitFor(() => expect(dashboardChoice().checked).toBe(true));
     vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => {
@@ -368,4 +374,33 @@ describe("explicit dashboard-only service delivery", () => {
     fireEvent.click(dashboardChoice()); await screen.findByText("확인된 계정 이메일로 서비스 알림을 받습니다.");
     expect(dashboardChoice().checked).toBe(false);
   });
+});
+
+
+it("starts collapsed even with a pending email change and checks readiness without user actions", async () => {
+  current = { ...initial, new_email: "pending@example.test" };
+  const readiness = vi.fn();
+  const view = render(<AccountEmailPanel onReadinessChange={readiness}/>);
+  await waitFor(() => expect(readiness).toHaveBeenLastCalledWith({ userId: "account-a", ready: true }));
+  const toggle = screen.getByRole("button", { name: "설정 보기" });
+  expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  expect(screen.queryByRole("textbox", { name: "사용할 이메일" })).toBeNull();
+  expect(updateUser).not.toHaveBeenCalled();
+  fireEvent.click(toggle);
+  expect(screen.getByRole("textbox", { name: "사용할 이메일" })).toBeTruthy();
+  view.unmount();
+  render(<AccountEmailPanel/>);
+  expect(screen.getByRole("button", { name: "설정 보기" }).getAttribute("aria-expanded")).toBe("false");
+});
+
+it("keeps settings collapsed after focus refresh and permits explicit open and close", async () => {
+  render(<AccountEmailPanel/>);
+  await waitFor(() => expect(getUser).toHaveBeenCalled());
+  fireEvent(window, new Event("focus"));
+  await waitFor(() => expect(getUser).toHaveBeenCalledTimes(2));
+  expect(screen.queryByRole("button", { name: "변경" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "설정 보기" }));
+  expect(screen.getByRole("button", { name: "변경" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "설정 접기" }));
+  expect(screen.queryByRole("button", { name: "변경" })).toBeNull();
 });

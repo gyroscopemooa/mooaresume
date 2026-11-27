@@ -23,21 +23,21 @@ const runId = "cd6a613d-f614-4ef5-812e-a53b604838cb";
 const caseId = "89190611-72f8-4447-8676-a6e20c29006f";
 it("shows easy-payment guidance only after login for a paid draft", async () => {
   render(<ApplicationCaseHandoff guest={draft} />);
-  expect(await screen.findByRole("region", { name: "간편결제 안내" })).toBeTruthy();
+  expect(await screen.findByRole("region", { name: "카드·간편결제로 분석 시작" })).toBeTruthy();
 });
 it("does not advertise paid methods while using a free credit", async () => {
   mocks.credits = [{ product: "PRO" }];
   render(<ApplicationCaseHandoff guest={draft} />);
   await screen.findByRole("button", { name: /무료 이용권으로 분석 시작/ });
-  expect(screen.queryByRole("region", { name: "간편결제 안내" })).toBeNull();
+  expect(screen.queryByRole("region", { name: "카드·간편결제로 분석 시작" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: /이용권을 아끼고/ }));
-  expect(await screen.findByRole("region", { name: "간편결제 안내" })).toBeTruthy();
+  expect(await screen.findByRole("region", { name: "카드·간편결제로 분석 시작" })).toBeTruthy();
 });
 it("does not show payment guidance to signed-out users", async () => {
   mocks.getUser.mockResolvedValue({ data: { user: null }, error: null });
   render(<ApplicationCaseHandoff guest={draft} />);
   await screen.findByRole("button", { name: "이메일 코드로 로그인" });
-  expect(screen.queryByRole("region", { name: "간편결제 안내" })).toBeNull();
+  expect(screen.queryByRole("region", { name: "카드·간편결제로 분석 시작" })).toBeNull();
 });
 beforeEach(() => {
   vi.resetAllMocks(); mocks.credits = []; mocks.play = false; mocks.recovered = []; mocks.panelReady = true; mocks.testGrant = false;
@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); sessionStorage.clear(); });
 async function ready() { await screen.findByRole("button", { name: "데이터 선택" }); fireEvent.click(screen.getByRole("button", { name: "데이터 선택" })); }
-const pay = () => screen.getByRole("button", { name: /결제하고 분석 시작/ });
+const pay = () => screen.getByRole("button", { name: "일반결제하고 분석 시작" });
 
 describe("checkout delivery prerequisites", () => {
   it("keeps first-time users inline until a choice is saved", async () => {

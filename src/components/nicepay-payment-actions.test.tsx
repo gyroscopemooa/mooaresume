@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NicepayPaymentActions, NicepayPaymentButtons } from "./nicepay-payment-actions";
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); sessionStorage.clear(); window.history.replaceState(null, "", "/analysis/prepare"); });
 it("names each pay action and places the NICE card action above all wallets", () => {
@@ -51,4 +51,44 @@ it("keeps all web payment actions out of the installed Play app", () => {
   const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
   render(<NicepayPaymentActions onPay={vi.fn()}/>);
   expect(screen.queryByRole("region")).toBeNull(); expect(fetcher).not.toHaveBeenCalled();
+});
+
+
+it("keeps the current brand layout disabled when NICE is unavailable instead of showing old Polar boxes", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ nicepay: false }) }));
+  const onPay = vi.fn();
+  render(<NicepayPaymentActions onPay={onPay}/>);
+  await screen.findByText(/현재 계정에서 NICE/);
+  const card = screen.getByRole("button", { name: "카드로 결제하고 분석 시작" }) as HTMLButtonElement;
+  expect(card.disabled).toBe(true);
+  fireEvent.click(card);
+  expect(onPay).not.toHaveBeenCalled();
+  expect(screen.queryByRole("region", { name: "간편결제 안내" })).toBeNull();
+  expect(screen.queryByText(/Polar 결제창에서 선택/)).toBeNull();
+});
+
+it("distinguishes a failed lookup and recovers the same buttons on explicit retry", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce({ ok: false, json: async () => ({ nicepay: false }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ nicepay: true }) });
+  vi.stubGlobal("fetch", fetcher);
+  const onPay = vi.fn();
+  render(<NicepayPaymentActions onPay={onPay}/>);
+  await screen.findByText(/결제수단을 불러오지 못했습니다/);
+  expect(screen.queryByText(/현재 계정에서 NICE/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "결제수단 다시 확인" }));
+  const card = screen.getByRole("button", { name: "카드로 결제하고 분석 시작" }) as HTMLButtonElement;
+  await waitFor(() => expect(card.disabled).toBe(false));
+  fireEvent.click(card);
+  expect(onPay).toHaveBeenCalledWith("CARD");
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});
+
+it("does not retain permission from a different availability endpoint", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => ({ nicepay: true }) })
+    .mockImplementationOnce(() => new Promise(() => {}));
+  vi.stubGlobal("fetch", fetcher);
+  const view = render(<NicepayPaymentActions onPay={vi.fn()}/>);
+  await waitFor(() => expect((screen.getByRole("button", { name: "카드로 결제하고 분석 시작" }) as HTMLButtonElement).disabled).toBe(false));
+  view.rerender(<NicepayPaymentActions availabilityUrl="/api/other/payment-methods" onPay={vi.fn()}/>);
+  expect((screen.getByRole("button", { name: "카드로 결제하고 분석 시작" }) as HTMLButtonElement).disabled).toBe(true);
 });

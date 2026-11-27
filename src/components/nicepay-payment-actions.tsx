@@ -4,7 +4,6 @@ import { CreditCard } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { isInstalledAppContext } from "@/lib/app-context";
 import { nicepayBrandNames, type NicepayAction, type NicepayBrand, type NicepayConsent } from "@/domain/nicepay-method";
-import { CheckoutPaymentMethods } from "./checkout-payment-methods";
 import styles from "./nicepay-payment-actions.module.css";
 
 const subscribe = () => () => {};
@@ -80,17 +79,29 @@ export function NicepayPaymentButtons({ onPay, disabled = false, actionLabel = "
 
 export function NicepayPaymentActions({ availabilityUrl = "/api/billing/payment-methods", hideUnavailable = false, ...props }: Props) {
   const installed = useSyncExternalStore(subscribe, isInstalledAppContext, () => true);
-  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const key = `${availabilityUrl}:${attempt}`;
+  const [result, setResult] = useState<{ key: string; status: "available" | "unavailable" | "error" } | null>(null);
+  const status = result?.key === key ? result.status : "loading";
   useEffect(() => {
     if (installed) return;
     let cancelled = false;
-    void fetch(availabilityUrl, { cache: "no-store" }).then(async response => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 10_000);
+    void fetch(availabilityUrl, { cache: "no-store", signal: controller.signal }).then(async response => {
       const data: unknown = await response.json();
-      if (!cancelled) setEnabled(response.ok && !!data && typeof data === "object" && "nicepay" in data && data.nicepay === true);
-    }).catch(() => { if (!cancelled) setEnabled(false); });
-    return () => { cancelled = true; };
-  }, [installed, availabilityUrl]);
-  if (installed) return null;
-  if (enabled === null) return <p role="status">결제수단을 확인하고 있습니다…</p>;
-  return enabled ? <NicepayPaymentButtons {...props}/> : hideUnavailable ? null : <CheckoutPaymentMethods/>;
+      if (!response.ok || !data || typeof data !== "object" || !("nicepay" in data) || typeof data.nicepay !== "boolean") throw new Error("PAYMENT_METHODS_UNAVAILABLE");
+      if (!cancelled) setResult({ key, status: data.nicepay ? "available" : "unavailable" });
+    }).catch(() => { if (!cancelled) setResult({ key, status: "error" }); })
+      .finally(() => window.clearTimeout(timeout));
+    return () => { cancelled = true; controller.abort(); window.clearTimeout(timeout); };
+  }, [installed, availabilityUrl, key]);
+  if (installed || (hideUnavailable && status === "unavailable")) return null;
+  return <>
+    {status !== "available" && <div className={styles.availability} role="status">
+      <p>{status === "loading" ? "결제수단을 확인하고 있습니다…" : status === "error" ? "결제수단을 불러오지 못했습니다. 다시 확인해 주세요." : "현재 계정에서 NICE 카드·간편결제를 사용할 수 없습니다. 일반결제를 이용하거나 다시 확인해 주세요."}</p>
+      {status !== "loading" && <button type="button" onClick={() => setAttempt(value => value + 1)}>결제수단 다시 확인</button>}
+    </div>}
+    <NicepayPaymentButtons {...props} disabled={props.disabled || status !== "available"}/>
+  </>;
 }
