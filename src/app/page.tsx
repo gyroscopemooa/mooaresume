@@ -12,6 +12,7 @@ import { LandingEntry } from "@/components/landing-entry";
 import { HomePromoVideo } from "@/components/home-promo-video";
 import { AppLaunchBanner, EduPromoBanner } from "@/components/app-launch-banner";
 import { MentorPoolBanner } from "@/components/mentor-pool-banner";
+import { HomepageReviews } from "@/components/homepage-reviews";
 import { PricingComparison } from "@/components/pricing-comparison";
 import { FeedbackLens } from "@/components/feedback-lens";
 import { LandingLens } from "@/components/landing-lens";
@@ -245,6 +246,7 @@ export default function HomePage() {
       </section>
 
       <ConsultantReviewBanner />
+      <HomepageReviews />
       <PricingComparison />
 
       {/* 세 번째 FINAL 소개 자리(히어로 링크·예시 카드·기능 목록에 이어). 가격표를 막 본 사람에게
