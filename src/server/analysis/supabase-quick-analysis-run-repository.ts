@@ -220,7 +220,7 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
     }
   }
 
-  async fail(analysisRunId: string, failureCode: string, retryable: boolean) {
+  async fail(analysisRunId: string, failureCode: string, retryable: boolean, lengthFailure = false) {
     const { error } = await client().rpc("fail_quick_analysis", {
       p_analysis_run_id: analysisRunId,
       p_owner_user_id: this.ownerUserId,
@@ -252,17 +252,22 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       console.error("run_failure_refund_failed", refundError instanceof Error ? refundError.message : "UNKNOWN_ERROR");
     }
 
+    // Retain the generic retry code until the terminal refund is confirmed.
+    if (lengthFailure && refund.disposition === "REFUNDED") {
+      await client().from("analysis_runs").update({ failure_code: "PRO_BUILD_LENGTH" })
+        .eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "FAILED");
+    }
     // 손님에게 먼저 알립니다. 관리자 알림은 우리를 부르는 것이고, 이건
     // **돈이 돌아갔다는 사실을 유일하게 손님에게 전하는 경로**입니다 — 결제
     // 복귀 화면은 창을 닫으면 사라집니다.
     try {
-      await notifyRefundedApplicant({ ownerUserId: this.ownerUserId, refund });
+      await notifyRefundedApplicant({ ownerUserId: this.ownerUserId, refund, lengthFailure });
     } catch (noticeError) {
       console.error("refund_notice_email_failed", noticeError instanceof Error ? noticeError.message : "UNKNOWN_ERROR");
     }
 
     try {
-      await alertExhaustedRun({ analysisRunId, ownerUserId: this.ownerUserId, failureCode, refund });
+      await alertExhaustedRun({ analysisRunId, ownerUserId: this.ownerUserId, failureCode: lengthFailure ? "PRO_BUILD_LENGTH" : failureCode, refund });
     } catch (alertError) {
       console.error("run_failure_alert_failed", alertError instanceof Error ? alertError.message : "UNKNOWN_ERROR");
     }

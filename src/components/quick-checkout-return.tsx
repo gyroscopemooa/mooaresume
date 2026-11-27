@@ -93,6 +93,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
   const [phase, setPhase] = useState<Phase>("idle");
   const [product, setProduct] = useState<"QUICK" | "PRO" | "FINAL" | null>(null);
   const [message, setMessage] = useState("");
+  const [lengthFailed, setLengthFailed] = useState(false);
   const [emailBusy, setEmailBusy] = useState(false);
   // 링크 대신 코드로 확인합니다. Gmail 등이 메일을 열자마자 안의 링크를
   // 미리 눌러 보는데, 매직링크는 한 번 쓰면 끝나는 값이라 사람이 누르기
@@ -198,6 +199,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         if (status.analysisStatus === "FAILED" || status.entitlementStatus === "REVOKED") {
           // 결제는 됐고 분석이 실패한 것입니다. 로그인 링크는 도움이 되지
           // 않습니다 — 로그인해도 볼 결과가 없습니다.
+          setLengthFailed(status.failureCode === "PRO_BUILD_LENGTH");
           setFailureKind("analysis");
           setPhase("failed");
           if (status.timeoutRefunded) {
@@ -237,7 +239,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         }
         if (status.analysisStatus === "RUNNING") {
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 대기와 재시도를 포함해 20분 이상 걸릴 수 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
           if (!executing.current) {
             executing.current = true;
             try {
@@ -271,7 +273,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
         if (status.entitlementStatus === "ACTIVE" && !executing.current) {
           executing.current = true;
           setPhase("analyzing");
-          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
+          setMessage("결제가 확인되어 AI가 첨삭을 진행하고 있습니다. 대기와 재시도를 포함해 20분 이상 걸릴 수 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
           try {
             const executeResponse = await fetch("/api/analysis-runs/quick/execute", {
               method: "POST",
@@ -363,7 +365,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
     async function run(attempt: number) {
       if (cancelled) return;
       setPhase("analyzing");
-      setMessage("무료 이용권으로 분석을 시작했습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
+      setMessage("무료 이용권으로 분석을 시작했습니다. 대기와 재시도를 포함해 20분 이상 걸릴 수 있습니다. 창을 닫으셔도 계속 진행되며, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다.");
       try {
         const response = await fetch("/api/analysis-runs/quick/execute", {
           method: "POST",
@@ -506,6 +508,7 @@ export function QuickCheckoutReturn({ onProductConfirmed, creditRunId = null, on
       <div>
         <b>{product ? `${product} · ` : ""}{autoRetrying ? "다시 시도 중" : phase === "failed" ? (refunded ? "환불했습니다" : "확인이 필요합니다") : phase === "waiting" ? "결제 확인 중" : "분석 진행 중"}</b>
         <p>{message}</p>
+        {phase === "failed" && lengthFailed && <p>첨삭본이 요청 글자 수 범위를 벗어났습니다. 자료가 적다면 <a href="/pro/create">처음부터 작성</a>을 이용해 주세요.</p>}
         {phase === "failed" && retryRunId && <button type="button" className={styles.emailButton} onClick={() => void retryAnalysis()}>
           {"\uAE30\uC874 \uACB0\uC81C\uB85C \uB2E4\uC2DC \uBD84\uC11D\uD558\uAE30"}
         </button>}

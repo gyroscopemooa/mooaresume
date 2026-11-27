@@ -1,3 +1,4 @@
+import { fitBuildRevisions, numericBuildExample } from "@/server/ai/quick/numeric-build-example";
 import type { AnalysisRequest } from "@/application/analysis-contract";
 import type {
   QuickBackgroundResponse,
@@ -82,9 +83,17 @@ export async function advanceQuickBackgroundAnalysis(input: {
     status: "polled",
     analysisRunId: running.analysisRunId,
     request: running.request,
-    response,
+    response: running.request.product === "PRO" && running.request.writingMode === "BUILD" && response.status === "completed" ? { ...response, result: { ...response.result, output: fitBuildRevisions(running.request, response.result.output) } } : response,
   });
   if (response.status !== "completed") return polled(response);
+  const example = numericBuildExample(running.request);
+  if (example) {
+    const draft = response.result.output;
+    const answers = draft.revisions ?? (draft.revision ? [draft.revision] : []);
+    const fullyMarked = answers.every(rev => /^\s*\[임의 예시·교체 필요:[^\]]+\](?:\s*\[임의 예시·교체 필요:[^\]]+\])*\s*$/.test(rev.revisedAnswer));
+    if (fullyMarked && !validateQuickAnalysis(running.request, draft).some(issue => BLOCKING_VALIDATION_CODES.has(issue.code))) return polled(response);
+    return polled({ status: "completed", result: { ...response.result, output: example } });
+  }
   if (!input.gateway.startReview || !input.gateway.getReview) return polled(response);
   // Do not let restoring the source hide a fabricated candidate from the
   // existing factuality/coverage rejection and retry accounting.

@@ -111,6 +111,7 @@ export async function alertExhaustedRun(
         `시도 횟수: ${run.attempt_count ?? "?"}`,
         `신청자: ${email}`,
         "",
+        ...(input.failureCode === "PRO_BUILD_LENGTH" ? ["첨삭본 글자 수가 요청 범위를 벗어났습니다. 자료가 적으면 처음부터 작성: https://mooaresume.com/pro/create"] : []),
         refundLine,
         "관리자 화면의 첨삭 결과에서 이 건을 확인해 주세요.",
       ].join("\n"),

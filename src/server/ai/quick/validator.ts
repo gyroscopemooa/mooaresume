@@ -3,7 +3,7 @@ import type { CoverLetterQuestion } from "@/domain/cover-letter-question";
 import { expandsToTargetLength, getAnalysisQuestions } from "./questions";
 import type { QuickAnalysisOutput } from "./schema";
 
-export type QuickValidationIssue = { code: "NEW_NUMBER" | "INVALID_EVIDENCE" | "INVALID_HIGHLIGHT" | "LENGTH_OVER" | "ANSWER_TOO_SHORT" | "QUESTION_MISMATCH" | "DUPLICATE_ACROSS_QUESTIONS"; message: string };
+export type QuickValidationIssue = { code: "NEW_NUMBER" | "INVALID_EVIDENCE" | "INVALID_HIGHLIGHT" | "LENGTH_OVER" | "ANSWER_TOO_SHORT" | "QUESTION_MISMATCH" | "DUPLICATE_ACROSS_QUESTIONS"; message: string; lengthFailure?: boolean };
 
 /**
  * Issues that must block a result from reaching the applicant, per the product
@@ -184,13 +184,15 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
         });
       }
     }
-    if (request && expandsToTargetLength(request) && question.targetLength > 0 && revisedLength > Math.ceil(question.targetLength * 1.15)) {
+    const proBuild = request?.product === "PRO" && request.writingMode === "BUILD";
+    if (request && (proBuild || expandsToTargetLength(request)) && question.targetLength > 0 && revisedLength > (proBuild ? question.targetLength : Math.ceil(question.targetLength * 1.15))) {
       issues.push({
         code: "ANSWER_TOO_SHORT",
-        message: `문항 ${question.order} 결과가 목표 ${question.targetLength}자를 크게 초과했습니다(${revisedLength}자). 핵심 사실을 보존해 허용 범위 안으로 다시 작성해야 합니다.`,
+        lengthFailure: proBuild,
+          message: `문항 ${question.order} 결과가 목표 ${question.targetLength}자를 크게 초과했습니다(${revisedLength}자). 핵심 사실을 보존해 허용 범위 안으로 다시 작성해야 합니다.`,
       });
     }
-    if (request && expandsToTargetLength(request) && request.writingMode === "BUILD" && question.targetLength > 0) {
+    if (request && (proBuild || expandsToTargetLength(request)) && request.writingMode === "BUILD" && question.targetLength > 0) {
       const minimumPercent = request.product === "PRO" ? 70 : FINAL_BUILD_MINIMUM_PERCENT;
       const minimumBuildLength = request.product === "PRO"
         ? Math.ceil(question.targetLength * minimumPercent / 100)
@@ -198,6 +200,7 @@ export function validateQuickAnalysis(input: AnalysisRequest | QuickQuestion[] |
       if (revisedLength < minimumBuildLength) {
         issues.push({
           code: "ANSWER_TOO_SHORT",
+          lengthFailure: proBuild,
           message: `문항 ${question.order} 내용 보완본이 목표 ${question.targetLength}자의 ${minimumPercent}%에 못 미칩니다(${revisedLength}자). 제출 자료를 먼저 활용하고, 부족한 구간은 [임의 예시·교체 필요: ...]로 표시해 목표 분량에 가깝게 완성하세요.`,
         });
       }

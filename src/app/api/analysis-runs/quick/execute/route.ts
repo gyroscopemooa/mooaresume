@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       }
       const blockingIssues = validationIssues.filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
       if (blockingIssues.length > 0) {
-        await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true);
+        await repository.fail(body.analysisRunId, "AI_OUTPUT_VALIDATION_FAILED", true, blockingIssues.some(issue => issue.lengthFailure));
         // 여기까지 온 응답은 모델이 끝까지 만들어 낸 것입니다. 버려지지만
         // 요금은 이미 나갔으므로, 토큰을 적어 두지 않으면 그 비용이 어디에도
         // 남지 않습니다.
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
         // log is the only place the cause is visible.
         console.error(`quick_analysis_validation_blocked:${blockingIssues.map((issue) => issue.code).join(",")}`);
         for (const issue of blockingIssues) console.error(`  ${issue.code}: ${issue.message}`);
-        return NextResponse.json({ error: "사실 확인에 실패해 결과를 보류했습니다.", detail, code: "OUTPUT_VALIDATION_FAILED" }, { status: 422 });
+        return NextResponse.json({ error: blockingIssues.some(issue => issue.lengthFailure) ? "첨삭본 글자 수가 요청 범위를 벗어났습니다. 경험 자료가 적다면 처음부터 작성을 이용해 주세요." : "사실 확인에 실패해 결과를 보류했습니다.", detail, code: "OUTPUT_VALIDATION_FAILED" }, { status: 422 });
       }
 
       try {

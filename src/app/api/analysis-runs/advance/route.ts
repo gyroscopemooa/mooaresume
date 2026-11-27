@@ -95,7 +95,7 @@ async function advanceOne(run: RunRow, origin: string) {
   const blocking = validateQuickAnalysis(step.request, step.response.result.output)
     .filter((issue) => BLOCKING_VALIDATION_CODES.has(issue.code));
   if (blocking.length > 0) {
-    await repository.fail(run.id, "AI_OUTPUT_VALIDATION_FAILED", true);
+    await repository.fail(run.id, "AI_OUTPUT_VALIDATION_FAILED", true, blocking.some(issue => issue.lengthFailure));
     // 버려지는 응답이지만 요금은 이미 나갔습니다. 여기서 적지 않으면
     // 그 비용은 어디에도 남지 않습니다.
     // 원장에는 어느 규칙에 걸렸는지까지 적습니다. 지금까지 그 이름은 서버

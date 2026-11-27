@@ -31,6 +31,7 @@ type RunRow = {
   status: string;
   created_at: string;
   application_case_id: string;
+  failure_code: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -74,7 +75,7 @@ export function AppMyPage() {
         if (!auth.user) return;
         // RLS가 본인 것만 돌려줍니다. 새 서버 경로를 만들지 않은 이유입니다.
         const [runResult, caseResult, creditResult] = await Promise.all([
-          supabase.from("analysis_runs").select("id, product, status, created_at, application_case_id").order("created_at", { ascending: false }).limit(20),
+          supabase.from("analysis_runs").select("id, product, status, created_at, application_case_id, failure_code").order("created_at", { ascending: false }).limit(20),
           supabase.from("application_cases").select("id, title, company_name, role_name").order("updated_at", { ascending: false }).limit(40),
           supabase.from("reward_credits").select("product").eq("status", "AVAILABLE").limit(20),
         ]);
@@ -150,6 +151,7 @@ export function AppMyPage() {
             </div>
             <ArrowRight/>
           </Link>
+          {run.status === "FAILED" && run.failure_code === "PRO_BUILD_LENGTH" && <p>첨삭본이 요청 글자 수 범위를 벗어났습니다. 자료가 적다면 <Link href="/pro/create">처음부터 작성</Link>을 이용해 주세요.</p>}
         </li>)}
       </ul>
     </section>}

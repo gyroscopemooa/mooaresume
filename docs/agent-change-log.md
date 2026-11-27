@@ -9148,3 +9148,7 @@ ORDER  8406b3db net=8000 tax=800 total=8800 refunded=8000 refundedTax=800 stillR
 - Validation: 127 prompt/validator tests, scoped ESLint and full TypeScript passed. No paid inference or refund operation. Release via main production build.
 - Codex follow-up (commit only; rollback baseline ad4bdf6): validator.ts and validator.test.ts accept PRO BUILD at 70% of the per-question target. Generation still aims for the full answer. Check 349/350/351 of 500.
 - Codex release verification: numeric-example.test.ts exercises numeric-only input through validation and result assembly, checks example retention and rejects invented evidence. 425 relevant tests, scoped ESLint and typecheck passed. Baseline for this test: 14221aa. Shipping the 70% change via main.
+
+## 2026-11-27 Codex PRO length recovery
+- Baseline 5b13f877. Quick validator, numeric-build-example, background execution, advance/execute, run repository, failure/refund notifications, status and history components, payment availability and preparation notice. Recover single numeric drafts, enforce target ceiling, identify confirmed refunded length failures, expose public wallet availability without granting pilot access. Validation pending.
+- Follow-up: result-workspace-complete displays marked spans on both final and comparison tabs. fitBuildRevisions normalizes per-question lengths at browser/cron delivery. Existing provider responses inspected read-only: first answers 449/523/622/498 and second 438/496/602/426 compact characters. No new paid inference or charge. Scoped suites 641 passed.

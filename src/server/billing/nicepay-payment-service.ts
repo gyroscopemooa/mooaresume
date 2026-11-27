@@ -10,7 +10,7 @@ export function nicepayAvailableFor(userId: string): boolean {
   if (process.env.NICEPAY_ENABLED !== "true") return false;
   if (!nicepayConfigSchema.safeParse({ mid: process.env.NICEPAY_MID, merchantKey: process.env.NICEPAY_MERCHANT_KEY }).success) return false;
   return process.env.NICEPAY_PUBLIC_ENABLED === "true"
-    || (process.env.NICEPAY_PILOT_USER_IDS ?? "").split(",").map(value => value.trim()).includes(userId);
+    || Boolean(userId) && (process.env.NICEPAY_PILOT_USER_IDS ?? "").split(",").map(value => value.trim()).includes(userId);
 }
 export type NicepayPaymentOutcome<T extends NicepayBoundOrder = NicepayOrder> = { order: T; disposition: "PAID" | "WAITING" | "FAILED" | "CANCELLED" | "REVIEW_REQUIRED" };
 
