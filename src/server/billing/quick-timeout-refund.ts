@@ -1,5 +1,6 @@
 ﻿import "server-only";
 import { refundNicepayBillingOrder } from "./nicepay-refund";
+import { ANALYSIS_TIMEOUT_SECONDS } from "@/domain/analysis-timeout";
 
 import { Polar } from "@polar-sh/sdk";
 import { createClient } from "@supabase/supabase-js";
@@ -35,7 +36,7 @@ export async function refundTimedOutQuickAnalysis(input: { analysisRunId: string
   const { data, error } = await supabase.rpc("claim_quick_analysis_timeout_refund", {
     p_analysis_run_id: input.analysisRunId,
     p_owner_user_id: input.ownerUserId,
-    p_timeout_seconds: 600,
+    p_timeout_seconds: ANALYSIS_TIMEOUT_SECONDS,
   });
   if (error) {
     throw new Error(

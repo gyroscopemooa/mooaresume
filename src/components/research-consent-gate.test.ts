@@ -20,10 +20,10 @@ describe("연구 동의 체크", () => {
 
   it("하나를 고르기 전에는 시작할 수 없다", () => {
     // 버튼은 눌러 볼 수 있지만(안내를 띄우려고), 선택 전에는 저장 호출 앞에서 막힌다.
-    const click = handoff.slice(handoff.indexOf("aria-disabled={!consentDecided"));
+    const click = handoff.slice(handoff.indexOf("function checkoutInputsReady("));
     expect(click.indexOf("if (!consentDecided)")).toBeGreaterThan(-1);
-    expect(click.indexOf("if (!consentDecided)")).toBeLessThan(click.indexOf("void saveApplicationCase()"));
-    expect(click.indexOf("if (postingMissing)")).toBeLessThan(click.indexOf("void saveApplicationCase()"));
+    expect(click.indexOf("if (!consentDecided)")).toBeLessThan(click.indexOf("void saveApplicationCase(paymentMethod, paymentConsent)"));
+    expect(click.indexOf("if (postingMissing)")).toBeLessThan(click.indexOf("void saveApplicationCase(paymentMethod, paymentConsent)"));
     expect(handoff).toContain("중 하나를 골라 주세요.");
   });
 

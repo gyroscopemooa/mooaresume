@@ -10,6 +10,7 @@ import {
   QUICK_SCHEMA_VERSION,
 } from "./prompt";
 import { resolveMaxOutputTokens } from "./output-budget";
+import { expandsToTargetLength, getAnalysisQuestions } from "./questions";
 import { getQuickAnalysisJsonSchema, parseQuickAnalysisOutput, type QuickAnalysisOutput } from "./schema";
 import { resolveModelConfig } from "../model-config";
 import type { RevisionQuality } from "@/domain/revision-quality";
@@ -350,7 +351,16 @@ export class OpenAIResponsesGateway implements QuickAnalysisGateway {
 
   async startBackground(request: AnalysisRequest, attemptNo: number = 1): Promise<string> {
     const { model, reasoningEffort } = resolveModelConfig(request.product, this.options.model);
-    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model, background: true, max_output_tokens: resolveMaxOutputTokens(request, attemptNo, reasoningEffort), instructions: buildQuickAnalysisInstructions(request), input: buildQuickAnalysisInput(request), ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
+    const standardBudget = resolveMaxOutputTokens(request, attemptNo, reasoningEffort);
+    const buildRetry = attemptNo > 1 && request.product === "PRO" && request.writingMode === "BUILD" && expandsToTargetLength(request);
+    const input = buildQuickAnalysisInput(request);
+    const constraints = buildRetry ? getAnalysisQuestions(request).map(question =>
+      `문항 ${question.order}: revisedAnswer는 공백 제외 ${Math.floor(question.targetLength * 0.9)}자 이상 ${question.targetLength}자 이하로 작성하세요.`
+    ).join("\n") : "";
+    const retryInput = buildRetry
+      ? `${input}\n\n[재시도 분량 확인]\n${constraints}\n확인된 사실로 먼저 채우고, 부족하면 [임의 예시·교체 필요: …] 표시를 붙인 문장 예시를 본문에 넣으세요. 가상의 경험이나 수치를 지원자의 사실로 단정하지 마세요. 예시를 넣은 문항의 verificationNote에 "자료가 부족하여 부족한 분량은 임의 예시로 추가했습니다."라고 적고 verificationQuestions에 교체할 실제 정보를 물어보세요. 문항별 분량을 다시 점검하세요.`
+      : input;
+    const response = await this.fetchImplementation("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${this.options.apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(30_000), body: JSON.stringify({ model, background: true, max_output_tokens: buildRetry ? Math.max(60_000, standardBudget) : standardBudget, instructions: buildQuickAnalysisInstructions(request), input: retryInput, ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}), text: { format: { type: "json_schema", name: "quick_resume_analysis", strict: true, schema: toOpenAIStrictSchema(getQuickAnalysisJsonSchema(request.product)) } } }) });
     if (!response.ok) throw new Error(`OpenAI Responses API 백그라운드 시작에 실패했습니다. status=${response.status}${await this.describeFailureBody(response)}`);
     return responsesEnvelopeSchema.parse(await response.json()).id;
   }

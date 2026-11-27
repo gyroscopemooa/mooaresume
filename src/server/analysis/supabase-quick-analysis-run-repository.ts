@@ -252,8 +252,8 @@ export class SupabaseQuickAnalysisRunRepository implements QuickAnalysisRunRepos
       console.error("run_failure_refund_failed", refundError instanceof Error ? refundError.message : "UNKNOWN_ERROR");
     }
 
-    // Retain the generic retry code until the terminal refund is confirmed.
-    if (lengthFailure && refund.disposition === "REFUNDED") {
+    // Only terminal runs get the dashboard reason. Refund status independently gates the email.
+    if (lengthFailure) {
       await client().from("analysis_runs").update({ failure_code: "PRO_BUILD_LENGTH" })
         .eq("id", analysisRunId).eq("owner_user_id", this.ownerUserId).eq("status", "FAILED");
     }

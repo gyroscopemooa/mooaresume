@@ -100,3 +100,13 @@ it.each(["dashboard", "unverified", "wrong-owner", "lookup-error"])("suppresses 
   expect(await notifyRefundedApplicant({ ownerUserId: "user-1", refund: REFUNDED }, sent)).toEqual({ disposition: "SKIPPED_NO_ADDRESS" });
   expect(sent).not.toHaveBeenCalled();
 });
+
+it("includes CREATE guidance in both formats for a confirmed length refund", async () => {
+  const sent = okFetch();
+  await notifyRefundedApplicant({ ownerUserId: "user-1", refund: REFUNDED, lengthFailure: true }, sent);
+  const { text, html } = bodyOf(sent);
+  for (const message of [text, html]) {
+    expect(message).toContain("요청 글자 수 범위를 벗어났습니다");
+    expect(message).toContain("https://mooaresume.com/pro/create");
+  }
+});

@@ -93,3 +93,12 @@ describe("분량이 부족한 채로 최종 첨삭을 고른 경우", () => {
     expect(findNotice()).toBeNull();
   });
 });
+
+it("shows the permitted result length and timeout before PRO BUILD payment", async () => {
+  seedDraft(6, { temporaryWritingMode: "BUILD" });
+  render(<AnalysisPreparation />);
+  await screen.findByText("문항별 목표 글자 수 안내");
+  expect(screen.getAllByText(/490~700자/).length).toBeGreaterThan(0);
+  expect(screen.getByText(/최대 20분/)).toBeTruthy();
+  expect(screen.getByRole("link", { name: "PRO 처음부터 작성하기" }).getAttribute("href")).toBe("/pro/create");
+});

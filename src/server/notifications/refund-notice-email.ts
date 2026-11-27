@@ -103,7 +103,7 @@ ${input.lengthFailure ? '<p>첨삭본이 요청 글자 수 범위를 벗어났�
 <p style="margin:0;font-size:15px;font-weight:700">결제하신 ${amount}은 전액 환불했습니다.</p>
 <p style="margin:8px 0 0;color:#68756f;font-size:13px;line-height:1.7">따로 문의하지 않으셔도 됩니다. 카드사에 따라 실제 반영까지 3~5영업일 걸릴 수 있습니다.</p>
 </div>
-<p style="color:#68756f;font-size:13px;line-height:1.7">다시 시도하셔도 추가로 청구되지 않습니다.${replyTo ? " 궁금한 점은 이 메일에 그대로 답장해 주세요." : ""}</p>
+<p style="color:#68756f;font-size:13px;line-height:1.7">${replyTo ? " 궁금한 점은 이 메일에 그대로 답장해 주세요." : ""}</p>
 </div>`,
     }),
   });

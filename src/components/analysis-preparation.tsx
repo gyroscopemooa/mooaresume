@@ -1,4 +1,5 @@
 "use client";
+import { PAID_ANALYSIS_WAIT_MESSAGE } from "@/domain/analysis-timeout";
 
 import { ServiceDeliveryNotice } from "@/components/service-delivery-notice";
 import { useEffect, useMemo, useState } from "react";
@@ -268,7 +269,7 @@ export function AnalysisPreparation() {
                         ]).toLocaleString()}
                         자
                         {question.targetLength
-                          ? ` / 제한 ${question.targetLength.toLocaleString()}자`
+                          ? product === "PRO" && guest?.temporaryWritingMode === "BUILD" ? ` / 결과 범위 ${Math.ceil(question.targetLength * 70 / 100)}~${question.targetLength}자` : ` / 제한 ${question.targetLength.toLocaleString()}자`
                           : ""}
                       </small>
                     </span>
@@ -329,11 +330,16 @@ export function AnalysisPreparation() {
                 <span><b>이력서(입사지원서) 없이 진행합니다.</b></span>
               </div>
             )}
+            {product === "PRO" && guest?.temporaryWritingMode === "BUILD" && (
+              <div className={styles.runtimeNotice}>
+                <span><b>문항별 목표 글자 수 안내</b><small>설정하신 글자 수의 70~100% 범위에서 결과를 제공합니다. 자동 재시도 후에도 요청 범위를 벗어나면 분석 실패로 처리하고 결제 건은 기존 환불 절차를 진행합니다. 원문과 경험 정보가 부족하다면 <a href="/pro/create">PRO 처음부터 작성하기</a>를 추천합니다.</small></span>
+              </div>
+            )}
             <div className={styles.runtimeNotice}>
               <Clock />
               <span>
-                <b>대기와 재시도를 포함해 결과 안내까지 20분 이상 걸릴 수 있습니다.</b>
-                <small>창을 닫으셔도 서버에서 계속 진행되고, 결과는 대시보드에 저장됩니다. 서비스 알림을 사용하는 계정에는 확인된 이메일로도 안내합니다. 기다리시면 완료 즉시 결과 화면으로 이동합니다. 분석에 실패하면 추가 결제 없이 다시 시도할 수 있습니다.</small>
+                <b>분석 시간과 환불 안내</b>
+                <small>{PAID_ANALYSIS_WAIT_MESSAGE}</small>
               </span>
             </div>
             <div className={styles.privacy}>
