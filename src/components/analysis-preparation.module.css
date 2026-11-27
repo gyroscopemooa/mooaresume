@@ -49,6 +49,7 @@
 .betterTierNotice a svg { width: 15px; }
 
 /* 추천코드·쿠폰은 대부분 없습니다. 결제 직전 화면에서는 한 줄로 접어 둡니다. */
+.runtimeNotice + .privacy{margin-top:16px}
 .codesFold{margin-top:12px}
 .codesFold>summary{cursor:pointer;color:#6b7a72;font-size:12px;font-weight:700;list-style:none}
 .codesFold>summary::-webkit-details-marker{display:none}
